@@ -1,0 +1,5 @@
+CREATE DATABASE IF NOT EXISTS `bird_test` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+GRANT ALL PRIVILEGES ON `bird_test`.* TO 'bird' @'%';
+
+FLUSH PRIVILEGES;
