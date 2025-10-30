@@ -3,7 +3,7 @@ PHP_SHELL=$(DC) exec -T app bash -lc
 ARTISAN=$(PHP_SHELL) "cd app && php artisan"
 COMPOSER_CMD=$(PHP_SHELL) 'cd app && composer'
 
-.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh
+.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa
 
 build:
 	$(DC) build
@@ -50,6 +50,7 @@ coverage:
 	$(PHP_SHELL) 'cd app && php artisan test --coverage'
 
 dusk:
+	$(PHP_SHELL) 'cd app && php artisan migrate:fresh --seed'
 	$(PHP_SHELL) 'cd app && php artisan dusk'
 
 cs-fix:
@@ -57,6 +58,11 @@ cs-fix:
 
 analyse:
 	$(DC) exec -T app vendor/bin/phpstan analyse
+
+qa:
+	$(DC) exec -T app bash -lc 'cd app && vendor/bin/pint --test'
+	$(DC) exec -T app bash -lc 'cd app && vendor/bin/phpstan analyse --no-progress'
+	$(DC) exec -T app bash -lc 'cd app && XDEBUG_MODE=coverage php artisan test --min=80'
 
 init: build up install init-env migrate
 

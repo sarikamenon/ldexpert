@@ -1,0 +1,9 @@
+parameters:
+  paths:
+    - app
+  level: 8
+  checkMissingIterableValueType: false
+  ignoreErrors:
+    - '#Call to an undefined method Illuminate\\Support\\Stringable::toString\(\)#'
+
+
