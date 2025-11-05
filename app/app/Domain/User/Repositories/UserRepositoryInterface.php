@@ -12,4 +12,8 @@ interface UserRepositoryInterface
     public function create(CreateUserDTO $dto, string $role): User;
 
     public function findByEmail(string $email): ?User;
+
+    public function countStudentsByStatus(string $status): int;
+
+    public function countNewStudentsThisMonth(): int;
 }

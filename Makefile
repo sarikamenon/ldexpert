@@ -33,6 +33,7 @@ init-env:
 
 init-test-env:
 	$(PHP_SHELL) 'cp -n docker/env/testing.env app/.env.testing || true'
+	$(PHP_SHELL) 'cd app && if [ -f .env.dusk.local ]; then if ! grep -q "^APP_KEY=" .env.dusk.local; then APP_KEY=$$(grep "^APP_KEY=" .env 2>/dev/null | cut -d= -f2); if [ -n "$$APP_KEY" ]; then echo "APP_KEY=$$APP_KEY" >> .env.dusk.local; fi; fi; fi'
 
 migrate:
 	$(PHP_SHELL) 'cd app && php artisan migrate'

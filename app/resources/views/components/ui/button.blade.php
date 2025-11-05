@@ -1,5 +1,5 @@
 @props([
-    'variant' => 'primary', // primary|secondary|ghost|danger
+    'variant' => 'primary', // primary|secondary|ghost|success|danger
     'size' => 'md', // sm|md|lg
     'type' => 'button',
 ])
@@ -16,6 +16,7 @@
         'primary' => 'bg-primary text-primary-foreground hover:bg-primary/90',
         'secondary' => 'bg-background text-foreground border border-border hover:bg-background/subtle',
         'ghost' => 'bg-transparent text-foreground hover:bg-background/muted',
+        'success' => 'bg-success text-success-foreground hover:bg-success/90',
         'danger' => 'bg-danger text-danger-foreground hover:bg-danger/90',
     ];
 @endphp

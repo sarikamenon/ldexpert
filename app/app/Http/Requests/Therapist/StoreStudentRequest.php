@@ -4,13 +4,21 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Enums\Role;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreStudentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role === 'therapist';
+        $user = $this->user();
+        if (! $user) {
+            return false;
+        }
+
+        $userRole = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
+
+        return $userRole === Role::THERAPIST;
     }
 
     public function rules(): array
@@ -18,7 +26,11 @@ class StoreStudentRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'date_of_birth' => ['nullable', 'date'],
+            'grade_level' => ['nullable', 'string', 'max:255'],
+            'phone' => ['nullable', 'string', 'max:255'],
+            'emergency_contact' => ['nullable', 'string', 'max:255'],
+            'parent_id' => ['nullable', 'exists:users,id'],
         ];
     }
 }
