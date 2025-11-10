@@ -9,6 +9,8 @@ it('therapist can create a student', function () {
     $response = $this->post('/therapist/students', [
         'name' => 'Student A',
         'email' => 'student.a@example.com',
+        'first_name' => 'Student',
+        'last_name' => 'A',
         'password' => 'Secret123!',
     ]);
 
@@ -16,5 +18,9 @@ it('therapist can create a student', function () {
     $this->assertDatabaseHas('users', [
         'email' => 'student.a@example.com',
         'role' => 'student',
+    ]);
+    $this->assertDatabaseHas('student_profiles', [
+        'first_name' => 'Student',
+        'last_name' => 'A',
     ]);
 });

@@ -19,12 +19,14 @@ class LoginTest extends DuskTestCase
         ]);
 
         $this->browse(function (Browser $browser) use ($user, $password) {
-            $browser->visit('/logout') // ensure guest
-                ->visit('/login')
-                ->waitFor('input[name="email"]', 5)
-                ->type('email', $user->email)
-                ->type('password', $password)
-                ->press('LOG IN')
+            $browser->visit('/login')
+                ->assertPathIs('/login')
+                ->waitFor('input[name="email"]', 10)
+                ->assertPresent('input[name="email"]')
+                ->assertPresent('input[name="password"]')
+                ->type('input[name="email"]', $user->email)
+                ->type('input[name="password"]', $password)
+                ->press('button[type="submit"]')
                 ->assertPathIs('/dashboard')
                 ->assertSee('Welcome back');
         });

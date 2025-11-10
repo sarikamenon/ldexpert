@@ -19,7 +19,7 @@ it('creates a user with a specific role', function () {
     $user = $service->createWithRole($dto, 'therapist');
 
     expect($user->exists)->toBeTrue();
-    expect($user->role)->toBe('therapist');
+    expect((string) ($user->role instanceof \App\Enums\Role ? $user->role->value : $user->role))->toBe('therapist');
     $this->assertDatabaseHas('users', [
         'email' => 'unit@example.com',
         'role' => 'therapist',

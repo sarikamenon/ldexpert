@@ -8,18 +8,27 @@
 - Tests are mandatory for new logic:
   - Unit tests for DTOs/Services/Repositories
   - Feature tests for routes/commands
+  - Dusk browser tests for any UI (views, forms, interactions)
+  - Do not merge features without corresponding tests
 - Keep CSS and JS in separate files. Use Tailwind for styles.
 - Use jQuery for DOM/AJAX interactivity; avoid vanilla JS for features.
 - Create Blade UI components in `resources/views/components/ui` and reuse them.
+- Prefer `x-ui-card` for page sections and forms. Always add a card when adding new UI.
 - No public registration routes; users created via command or privileged UI.
 - Roles: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
+- Always add policies for new models/features. Use `$this->authorize()` in controllers.
+- Always use `use` statements for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
 - Follow PSR-12; run `make qa` before commits.
+- Keep files small and focused: hard cap of 300 lines per file. If approaching 300, extract to smaller classes, view components, or dedicated services. No exceptions without a comment justifying and a follow-up task to split.
+  — Use soft deletes by default on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
 
 Project-enforced conventions
 
 - Always run commands via Docker:
   - Use `docker compose exec -T app bash -lc 'cd app && <command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly.
+  - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'cd app && php artisan migrate'`).
 
 Quality gates
 
 - Every development task must include tests and follow these rules by default, even if work will be refined later.
+- Before implementing a feature, add (or outline) the tests; before moving to next steps, run tests locally (Feature/Unit) and Dusk (headless) in Docker and fix failures.
