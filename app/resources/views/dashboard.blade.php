@@ -7,9 +7,11 @@
         <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
             <!-- Metrics -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <x-dashboard::metric :title="'Active Students'" :value="$activeStudents ?? 0">
-                    <x-slot name="badge">+{{ $newStudentsThisMonth ?? 0 }} this month</x-slot>
-                </x-dashboard::metric>
+                <a href="{{ route('therapist.students.index') }}" class="block transition-transform hover:scale-105">
+                    <x-dashboard::metric :title="'Active Students'" :value="$activeStudents ?? 0">
+                        <x-slot name="badge">+{{ $newStudentsThisMonth ?? 0 }} this month</x-slot>
+                    </x-dashboard::metric>
+                </a>
                 <x-dashboard::metric :title="'This Week\'s Lessons'" :value="'18'">
                     <x-slot name="badge"><span class="text-xs text-foreground/60">3 today</span></x-slot>
                 </x-dashboard::metric>

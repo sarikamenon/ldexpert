@@ -16,10 +16,22 @@ class StudentProfile extends Model
     protected $fillable = [
         'user_id',
         'parent_id',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'school',
+        'id_number',
+        'timezone',
+        'gender',
+        'address',
+        'city',
+        'state',
+        'zip_code',
+        'parent_guardian_name',
+        'parent_guardian_email',
+        'parent_guardian_phone',
         'date_of_birth',
         'grade_level',
-        'phone',
-        'emergency_contact',
     ];
 
     protected function casts(): array

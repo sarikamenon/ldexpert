@@ -16,6 +16,12 @@
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    @stack('styles')
+
+    @isset($styles)
+        {{ $styles }}
+    @endisset
 </head>
 
 <body class="font-sans antialiased">
@@ -33,6 +39,7 @@
                     </h2>
                     <div class="flex-1 flex items-end justify-center">
                         <x-ui::menubar>
+                            <x-ui::menubar-item :href="route('dashboard')">Dashboard</x-ui::menubar-item>
                             <x-ui::menubar-menu>
                                 <x-slot name="trigger">Students</x-slot>
                                 <x-slot name="content">
@@ -75,6 +82,12 @@
             {{ $slot }}
         </main>
     </div>
+
+    @stack('scripts')
+
+    @isset($scripts)
+        {{ $scripts }}
+    @endisset
 </body>
 
 </html>

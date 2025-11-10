@@ -10,6 +10,8 @@ it('creating a student assigns them to the therapist via pivot', function () {
     $response = $this->post('/therapist/students', [
         'name' => 'Student A',
         'email' => 'student.assign@example.com',
+        'first_name' => 'Student',
+        'last_name' => 'A',
         'password' => 'Secret123!',
     ]);
 

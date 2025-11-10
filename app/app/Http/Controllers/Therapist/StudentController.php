@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Therapist;
 
 use App\Domain\User\Services\UserService;
 use App\DTOs\CreateUserDTO;
+use App\DTOs\CreateStudentProfileDTO;
+use App\DTOs\UpdateStudentProfileDTO;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -33,7 +35,7 @@ class StudentController extends Controller
             abort(403);
         }
 
-        $students = $user->students()->with('studentProfile')->paginate(15);
+        $students = $user->students()->with('studentProfile')->get();
 
         return view('therapist.students.index', [
             'students' => $students,
@@ -56,21 +58,42 @@ class StudentController extends Controller
         $this->authorize('create', StudentProfile::class);
         $plainPassword = Str::random(16);
 
-        $dto = CreateUserDTO::fromArray([
-            'name' => $request->string('name')->toString(),
+        // Generate full name from name components
+        $firstName = $request->filled('first_name') ? $request->string('first_name')->toString() : '';
+        $middleName = $request->filled('middle_name') ? $request->string('middle_name')->toString() : '';
+        $lastName = $request->filled('last_name') ? $request->string('last_name')->toString() : '';
+        $fullName = trim(implode(' ', array_filter([$firstName, $middleName, $lastName])));
+
+        // Create user DTO with full name
+        $userDTO = CreateUserDTO::fromArray([
+            'name' => $fullName ?: $request->string('email')->toString(),
             'email' => $request->string('email')->toString(),
             'password' => $plainPassword,
         ]);
 
+        // Create profile DTO (user_id will be set by the service)
         $profileData = [
+            'user_id' => 0, // Temporary, will be set by service
+            'first_name' => $firstName ?: null,
+            'middle_name' => $middleName ?: null,
+            'last_name' => $lastName ?: null,
+            'school' => $request->filled('school') ? $request->string('school')->toString() : null,
+            'id_number' => $request->filled('id_number') ? $request->string('id_number')->toString() : null,
+            'timezone' => $request->filled('timezone') ? $request->string('timezone')->toString() : null,
+            'gender' => $request->filled('gender') ? $request->string('gender')->toString() : null,
+            'address' => $request->filled('address') ? $request->string('address')->toString() : null,
+            'city' => $request->filled('city') ? $request->string('city')->toString() : null,
+            'state' => $request->filled('state') ? $request->string('state')->toString() : null,
+            'zip_code' => $request->filled('zip_code') ? $request->string('zip_code')->toString() : null,
+            'parent_guardian_name' => $request->filled('parent_guardian_name') ? $request->string('parent_guardian_name')->toString() : null,
+            'parent_guardian_email' => $request->filled('parent_guardian_email') ? $request->string('parent_guardian_email')->toString() : null,
+            'parent_guardian_phone' => $request->filled('parent_guardian_phone') ? $request->string('parent_guardian_phone')->toString() : null,
             'date_of_birth' => $request->filled('date_of_birth') ? $request->string('date_of_birth')->toString() : null,
             'grade_level' => $request->filled('grade_level') ? $request->string('grade_level')->toString() : null,
-            'phone' => $request->filled('phone') ? $request->string('phone')->toString() : null,
-            'emergency_contact' => $request->filled('emergency_contact') ? $request->string('emergency_contact')->toString() : null,
             'parent_id' => $request->filled('parent_id') ? $request->integer('parent_id') : null,
         ];
 
-        $user = $this->userService->createWithProfile($dto, 'student', $profileData);
+        $user = $this->userService->createWithProfile($userDTO, 'student', $profileData);
 
         // Send welcome email with the generated password
         Mail::to($user->email)->send(new WelcomeUserMail(
@@ -116,17 +139,40 @@ class StudentController extends Controller
     {
         $this->authorize('update', $user->studentProfile);
 
-        $user->name = $request->string('name')->toString();
+        // Generate full name from name components
+        $firstName = $request->filled('first_name') ? $request->string('first_name')->toString() : '';
+        $middleName = $request->filled('middle_name') ? $request->string('middle_name')->toString() : '';
+        $lastName = $request->filled('last_name') ? $request->string('last_name')->toString() : '';
+        $fullName = trim(implode(' ', array_filter([$firstName, $middleName, $lastName])));
+
+        // Update user basic info with full name
+        $user->name = $fullName ?: $request->string('email')->toString();
         $user->email = $request->string('email')->toString();
         $user->save();
 
-        $user->studentProfile()->update([
+        // Create profile update DTO
+        $profileDTO = UpdateStudentProfileDTO::fromArray([
+            'first_name' => $firstName ?: null,
+            'middle_name' => $middleName ?: null,
+            'last_name' => $lastName ?: null,
+            'school' => $request->input('school'),
+            'id_number' => $request->input('id_number'),
+            'timezone' => $request->input('timezone'),
+            'gender' => $request->input('gender'),
+            'address' => $request->input('address'),
+            'city' => $request->input('city'),
+            'state' => $request->input('state'),
+            'zip_code' => $request->input('zip_code'),
+            'parent_guardian_name' => $request->input('parent_guardian_name'),
+            'parent_guardian_email' => $request->input('parent_guardian_email'),
+            'parent_guardian_phone' => $request->input('parent_guardian_phone'),
             'date_of_birth' => $request->input('date_of_birth'),
             'grade_level' => $request->input('grade_level'),
-            'phone' => $request->input('phone'),
-            'emergency_contact' => $request->input('emergency_contact'),
             'parent_id' => $request->input('parent_id'),
         ]);
+
+        // Update profile using DTO
+        $user->studentProfile()->update($profileDTO->toArray());
 
         return redirect()->route('therapist.students.show', $user)->with('status', 'Student updated.');
     }
