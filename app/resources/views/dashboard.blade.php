@@ -1,8 +1,4 @@
 <x-app-layout>
-    <x-slot name="header">Welcome back</x-slot>
-
-
-
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
             <!-- Metrics -->

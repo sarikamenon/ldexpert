@@ -1,0 +1,37 @@
+# NOVA Knowledge Base
+
+NOVA is LD Expert's bird-care platform that coordinates schools, therapists, students, and financial operations. This wiki holds the product requirements for every module, capturing both the **current implementation** in this repository and the **planned capabilities** requested for the NOVA launch.
+
+## How to Use This Wiki
+- PRDs now live inside domain folders under `app/wiki` (`admin`, `finance`, `therapist`, `student`). Each file follows the same structure: purpose, personas, current vs. planned scope, domain model (DB + states), API/routes, workflows, integrations, metrics, and open risks.
+- Cross-cutting concepts (roles, authentication, notifications, auditing) are referenced inside each PRD and summarized in the "Shared Concepts" section below.
+- Update PRDs alongside code changes. When a module ships, move items from "Planned" to "Current" and link to the relevant pull request.
+
+## Module Index
+
+### Admin Operations (`app/wiki/admin`)
+- [Manage Schools](./admin/schools.md) — onboard, edit, activate/deactivate schools plus contracted services/rates.
+- [Manage Therapists](./admin/therapists.md) — lifecycle of therapist providers, credentials, compensation rates, availability sync.
+- [Manage Students](./admin/students.md) — student master data and guardians; currently therapists can CRUD assigned students.
+- [Manage SSA](./admin/ssa.md) — service agreements per student outlining services, duration, frequency, therapist assignments.
+- [Manage Services](./admin/services.md) — catalog definitions (SLP, OT, PT, Progress Reports, IEP meetings, etc.) with billing metadata.
+
+### Financial Operations (`app/wiki/finance`)
+- [Invoice Schools / Private Families](./finance/invoicing.md) — AR pipeline derived from SSA schedules and service delivery.
+- [Bill Therapists](./finance/billing.md) — AP pipeline to compensate therapists per delivered service.
+- [RSM/CAVA Sync](./finance/sync.md) — import canonical records (students, sessions, rates) to eliminate double entry.
+
+### Therapist Experience (`app/wiki/therapist`)
+- [Therapist Workspace](./therapist/workspace.md) — dashboard, caseload management, scheduling, session notes, billing visibility.
+
+### Student Experience (`app/wiki/student`)
+- [Student Portal](./student/portal.md) — schedules, past sessions, progress reporting aligned to SSA goals.
+
+## Shared Concepts
+- **Roles & Authorization** — Implemented via `App\Enums\Role` and policies (e.g., `StudentProfilePolicy`). Future PRDs should reference these enums instead of duplicating logic.
+- **User Status Lifecycle** — `App\Enums\UserStatus` keeps users active/inactive; planned modules should reuse the same state machine.
+- **Soft Deletes & Auditing** — Core tables already include `deleted_at`. New tables must do the same and emit domain events for downstream sync.
+- **Notifications & Emails** — Welcome emails (see `WelcomeUserMail`) exist for student onboarding; extend the same pattern for therapists, SSA milestones, billing events.
+- **Integrations** — All modules that ingest or push data externally should describe API contracts (REST, SFTP, etc.) and retry/logging expectations in their PRDs.
+
+Refer back to this index whenever you add, refine, or discuss a module PRD.
