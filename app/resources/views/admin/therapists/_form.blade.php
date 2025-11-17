@@ -1,0 +1,213 @@
+@php
+    $isEdit = isset($therapist);
+    $profile = $isEdit ? $therapist->therapistProfile : null;
+@endphp
+
+<form method="POST" action="{{ $isEdit ? route('admin.therapists.update', $therapist) : route('admin.therapists.store') }}" class="space-y-6">
+    @csrf
+    @if ($isEdit)
+        @method('PUT')
+    @endif
+
+    {{-- Section A: Employment & Identity --}}
+    <x-ui::card class="p-6">
+        <h3 class="text-lg font-semibold mb-4">Employment & Identity</h3>
+        
+        <div class="space-y-4">
+            {{-- Employee Type --}}
+            <div>
+                <x-input-label for="employee_type" value="Employee Type *" />
+                <div class="flex gap-4 mt-2">
+                    @foreach ($employeeTypes as $type)
+                        <label class="flex items-center">
+                            <input type="radio" name="employee_type" value="{{ $type->value }}"
+                                {{ old('employee_type', $profile?->employee_type?->value) === $type->value ? 'checked' : '' }}
+                                class="rounded border-gray-300 text-primary shadow-sm focus:ring-primary">
+                            <span class="ml-2 text-sm">{{ $type->value }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                <x-input-error :messages="$errors->get('employee_type')" class="mt-2" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Title --}}
+                <div>
+                    <x-input-label for="title" value="Title *" />
+                    <select name="title" id="title"
+                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                        <option value="">Select Title</option>
+                        @foreach ($titles as $title)
+                            <option value="{{ $title->value }}"
+                                {{ old('title', $profile?->title?->value) === $title->value ? 'selected' : '' }}>
+                                {{ $title->value }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('title')" class="mt-2" />
+                </div>
+
+                {{-- First Name --}}
+                <div>
+                    <x-input-label for="first_name" value="First Name *" />
+                    <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
+                        :value="old('first_name', $profile?->first_name)" />
+                    <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
+                </div>
+            </div>
+
+            {{-- Last Name --}}
+            <div>
+                <x-input-label for="last_name" value="Last Name *" />
+                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
+                    :value="old('last_name', $profile?->last_name)" />
+                <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
+            </div>
+        </div>
+    </x-ui::card>
+
+    {{-- Section B: Contact & Account Details --}}
+    <x-ui::card class="p-6">
+        <h3 class="text-lg font-semibold mb-4">Contact & Account Details</h3>
+        
+        <div class="space-y-4">
+            {{-- Personal Email --}}
+            <div>
+                <x-input-label for="personal_email" value="Personal Email *" />
+                <x-text-input id="personal_email" name="personal_email" type="email" class="mt-1 block w-full"
+                    :value="old('personal_email', $profile?->personal_email ?? ($isEdit ? $therapist->email : ''))" />
+                <x-input-error :messages="$errors->get('personal_email')" class="mt-2" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Phone --}}
+                <div>
+                    <x-input-label for="phone" value="Phone *" />
+                    <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full"
+                        placeholder="123-456-7890"
+                        :value="old('phone', $profile?->phone)" />
+                    <x-input-error :messages="$errors->get('phone')" class="mt-2" />
+                </div>
+
+                {{-- LD Expert Email --}}
+                <div>
+                    <x-input-label for="ld_email" value="LD Expert Email" />
+                    <x-text-input id="ld_email" name="ld_email" type="email" class="mt-1 block w-full"
+                        :value="old('ld_email', $profile?->ld_email)" />
+                    <x-input-error :messages="$errors->get('ld_email')" class="mt-2" />
+                </div>
+            </div>
+
+            {{-- Address --}}
+            <div>
+                <x-input-label for="address" value="Address" />
+                <textarea id="address" name="address" rows="3"
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('address', $profile?->address) }}</textarea>
+                <x-input-error :messages="$errors->get('address')" class="mt-2" />
+            </div>
+
+            {{-- Comments --}}
+            <div>
+                <x-input-label for="comments" value="Internal Comments" />
+                <textarea id="comments" name="comments" rows="3"
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('comments', $profile?->comments) }}</textarea>
+                <x-input-error :messages="$errors->get('comments')" class="mt-2" />
+            </div>
+        </div>
+    </x-ui::card>
+
+    {{-- Section C: Professional Details --}}
+    <x-ui::card class="p-6">
+        <h3 class="text-lg font-semibold mb-4">Professional Details</h3>
+        
+        <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Position --}}
+                <div>
+                    <x-input-label for="position" value="Position *" />
+                    <select name="position" id="position"
+                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                        <option value="">Select Position</option>
+                        @foreach ($positions as $position)
+                            <option value="{{ $position->value }}"
+                                {{ old('position', $profile?->position?->value) === $position->value ? 'selected' : '' }}>
+                                {{ $position->value }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('position')" class="mt-2" />
+                </div>
+
+                {{-- State --}}
+                <div>
+                    <x-input-label for="state" value="State Residing *" />
+                    <select name="state" id="state"
+                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                        <option value="">Select State</option>
+                        @foreach ($states as $code => $name)
+                            <option value="{{ $code }}"
+                                {{ old('state', $profile?->state) === $code ? 'selected' : '' }}>
+                                {{ $name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('state')" class="mt-2" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Timezone --}}
+                <div>
+                    <x-input-label for="timezone" value="Timezone *" />
+                    <select name="timezone" id="timezone"
+                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                        <option value="">Select Timezone</option>
+                        @foreach ($timezones as $tz => $label)
+                            <option value="{{ $tz }}"
+                                {{ old('timezone', $profile?->timezone) === $tz ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
+                </div>
+
+                {{-- Manager --}}
+                <div>
+                    <x-input-label for="manager_id" value="Therapist Manager *" />
+                    <select name="manager_id" id="manager_id"
+                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                        <option value="">Select Manager</option>
+                        @foreach ($managers as $manager)
+                            <option value="{{ $manager->id }}"
+                                {{ old('manager_id', $profile?->manager_id) == $manager->id ? 'selected' : '' }}>
+                                {{ $manager->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <x-input-error :messages="$errors->get('manager_id')" class="mt-2" />
+                </div>
+            </div>
+
+            {{-- Date of Birth --}}
+            <div>
+                <x-input-label for="dob" value="Date of Birth" />
+                <x-text-input id="dob" name="dob" type="date" class="mt-1 block w-full"
+                    :value="old('dob', $profile?->dob?->format('Y-m-d'))" />
+                <x-input-error :messages="$errors->get('dob')" class="mt-2" />
+            </div>
+        </div>
+    </x-ui::card>
+
+    {{-- Action Buttons --}}
+    <div class="flex items-center justify-end gap-3">
+        <a href="{{ route('admin.therapists.index') }}"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50">
+            Cancel
+        </a>
+        <x-primary-button>
+            {{ $isEdit ? 'Update Therapist Info' : 'Create Therapist' }}
+        </x-primary-button>
+    </div>
+</form>
+

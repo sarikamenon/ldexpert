@@ -1,0 +1,217 @@
+<x-admin.layouts.app>
+    <x-slot name="styles">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    </x-slot>
+
+    <div class="flex items-center justify-between mb-6">
+        <x-page-title title="Therapists Analytics" />
+        <a href="{{ route('admin.analytics.index') }}" class="text-sm text-primary hover:underline">← Back to Overview</a>
+    </div>
+
+    <!-- Date Range Filter -->
+    <x-ui::card class="p-4 mb-6">
+        <form method="GET" class="flex flex-wrap gap-3 items-end">
+            <div>
+                <label class="block text-sm font-medium text-foreground/70 mb-1">Date Range</label>
+                <select name="date_range" id="dateRangeSelect"
+                    class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="last_7_days" @selected($dateRange === 'last_7_days')>Last 7 Days</option>
+                    <option value="last_30_days" @selected($dateRange === 'last_30_days')>Last 30 Days</option>
+                    <option value="last_90_days" @selected($dateRange === 'last_90_days')>Last 90 Days</option>
+                    <option value="this_month" @selected($dateRange === 'this_month')>This Month</option>
+                    <option value="last_month" @selected($dateRange === 'last_month')>Last Month</option>
+                    <option value="this_year" @selected($dateRange === 'this_year')>This Year</option>
+                    <option value="custom" @selected($dateRange === 'custom')>Custom</option>
+                </select>
+            </div>
+
+            <div id="customDateRange" class="{{ $dateRange === 'custom' ? '' : 'hidden' }}">
+                <label class="block text-sm font-medium text-foreground/70 mb-1">Start Date</label>
+                <x-text-input type="date" name="start_date" value="{{ $startDate }}" />
+            </div>
+
+            <div id="customDateRangeEnd" class="{{ $dateRange === 'custom' ? '' : 'hidden' }}">
+                <label class="block text-sm font-medium text-foreground/70 mb-1">End Date</label>
+                <x-text-input type="date" name="end_date" value="{{ $endDate }}" />
+            </div>
+
+            <button type="submit"
+                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                Apply Filter
+            </button>
+        </form>
+    </x-ui::card>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <x-admin.widgets.stat-card 
+            title="Total Therapists" 
+            :value="$analytics['total']" 
+            icon="users"
+            color="primary" />
+        
+        <x-admin.widgets.stat-card 
+            title="Active Therapists" 
+            :value="$analytics['active']" 
+            icon="check"
+            color="success" />
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Therapists by Position -->
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Therapists by Position</h3>
+            <div style="position: relative; height: 300px;">
+                <canvas id="therapistsByPositionChart"></canvas>
+            </div>
+        </x-ui::card>
+
+        <!-- Therapists by Employee Type -->
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">By Employee Type</h3>
+            <div style="position: relative; height: 300px;">
+                <canvas id="therapistsByEmployeeTypeChart"></canvas>
+            </div>
+        </x-ui::card>
+
+        <!-- Therapists by State -->
+        <x-ui::card class="p-6 lg:col-span-2">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Therapists by State</h3>
+            <div style="position: relative; height: 300px;">
+                <canvas id="therapistsByStateChart"></canvas>
+            </div>
+        </x-ui::card>
+
+        <!-- Growth Trend -->
+        <x-ui::card class="p-6 lg:col-span-2">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Growth Trend</h3>
+            <div style="position: relative; height: 300px;">
+                <canvas id="growthTrendChart"></canvas>
+            </div>
+        </x-ui::card>
+    </div>
+
+    <!-- Recent Additions -->
+    <x-ui::card class="p-6">
+        <h3 class="text-lg font-semibold text-foreground mb-4">Recent Therapist Additions</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="border-b border-border">
+                    <tr>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">ID</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Name</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Position</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($analytics['recent_additions'] as $therapist)
+                        <tr class="border-b border-border last:border-b-0">
+                            <td class="py-3 px-4">{{ $therapist['id'] }}</td>
+                            <td class="py-3 px-4">{{ $therapist['name'] }}</td>
+                            <td class="py-3 px-4">{{ $therapist['position'] }}</td>
+                            <td class="py-3 px-4">{{ $therapist['created_at'] }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </x-ui::card>
+
+    <x-slot name="scripts">
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const dateRangeSelect = document.getElementById('dateRangeSelect');
+                const customDateRange = document.getElementById('customDateRange');
+                const customDateRangeEnd = document.getElementById('customDateRangeEnd');
+
+                if (dateRangeSelect) {
+                    dateRangeSelect.addEventListener('change', function() {
+                        if (this.value === 'custom') {
+                            customDateRange?.classList.remove('hidden');
+                            customDateRangeEnd?.classList.remove('hidden');
+                        } else {
+                            customDateRange?.classList.add('hidden');
+                            customDateRangeEnd?.classList.add('hidden');
+                        }
+                    });
+                }
+
+                const byPositionData = @json($analytics['by_position']);
+                new Chart(document.getElementById('therapistsByPositionChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: byPositionData.labels,
+                        datasets: [{
+                            data: byPositionData.data,
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+
+                const byEmployeeTypeData = @json($analytics['by_employee_type']);
+                new Chart(document.getElementById('therapistsByEmployeeTypeChart'), {
+                    type: 'pie',
+                    data: {
+                        labels: byEmployeeTypeData.labels,
+                        datasets: [{
+                            data: byEmployeeTypeData.data,
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+
+                const byStateData = @json($analytics['by_state']);
+                new Chart(document.getElementById('therapistsByStateChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: byStateData.labels,
+                        datasets: [{
+                            label: 'Therapists',
+                            data: byStateData.data,
+                            backgroundColor: '#3b82f6',
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+
+                const growthData = @json($analytics['growth_trend']);
+                new Chart(document.getElementById('growthTrendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: growthData.labels,
+                        datasets: [{
+                            label: 'New Therapists',
+                            data: growthData.data,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            fill: true,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            });
+        </script>
+    </x-slot>
+</x-admin.layouts.app>
+

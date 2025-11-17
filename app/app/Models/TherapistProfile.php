@@ -4,33 +4,71 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\EmployeeType;
+use App\Enums\TherapistPosition;
+use App\Enums\TherapistTitle;
+use App\Models\Scopes\TherapistScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TherapistProfile extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory;
+    use SoftDeletes;
 
     protected $fillable = [
         'user_id',
+        'employee_type',
+        'title',
+        'first_name',
+        'last_name',
+        'personal_email',
         'phone',
-        'license_number',
-        'specialization',
-        'years_of_experience',
-        'bio',
+        'ld_email',
+        'address',
+        'comments',
+        'position',
+        'state',
+        'timezone',
+        'manager_id',
+        'dob',
     ];
 
     protected function casts(): array
     {
         return [
-            'years_of_experience' => 'integer',
+            'employee_type' => EmployeeType::class,
+            'title' => TherapistTitle::class,
+            'position' => TherapistPosition::class,
+            'dob' => 'date',
         ];
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        return TherapistScope::search($query, $term);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return TherapistScope::active($query, $this);
+    }
+
+    public function scopeInactive(Builder $query): Builder
+    {
+        return TherapistScope::inactive($query, $this);
     }
 }

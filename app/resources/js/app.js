@@ -10,3 +10,4 @@ Alpine.start();
 import $ from 'jquery';
 window.$ = $;
 window.jQuery = $;
+

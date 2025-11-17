@@ -1,0 +1,45 @@
+<?php
+
+use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\TherapistController;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware('role:admin')
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        
+        Route::get('schools/export', [SchoolController::class, 'export'])->name('schools.export');
+        Route::patch('schools/{school}/status', [SchoolController::class, 'updateStatus'])->name('schools.status');
+        Route::resource('schools', SchoolController::class)->except(['destroy', 'show']);
+        
+        Route::get('therapists/export', [TherapistController::class, 'export'])->name('therapists.export');
+        Route::patch('therapists/{therapist}/status', [TherapistController::class, 'updateStatus'])->name('therapists.status');
+        Route::resource('therapists', TherapistController::class)->except(['destroy', 'show']);
+        
+        // Activity Logs
+        Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::get('activity-logs/export', [ActivityLogController::class, 'export'])->name('activity-logs.export');
+        
+        // Analytics
+        Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+        Route::get('analytics/schools', [AnalyticsController::class, 'schools'])->name('analytics.schools');
+        Route::get('analytics/therapists', [AnalyticsController::class, 'therapists'])->name('analytics.therapists');
+        
+        // Notifications
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('notifications/unread', [NotificationController::class, 'unread'])->name('notifications.unread');
+        Route::post('notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+        Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+        Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+        
+        // Settings
+        Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+    });

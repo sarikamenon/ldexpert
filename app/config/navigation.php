@@ -33,17 +33,27 @@ return [
                 'route' => 'admin.services.index',
                 'active' => 'admin.services.*',
             ],
+            [
+                'label' => 'Activity Logs',
+                'route' => 'admin.activity-logs.index',
+                'active' => 'admin.activity-logs.*',
+            ],
+            [
+                'label' => 'Analytics',
+                'route' => 'admin.analytics.index',
+                'active' => 'admin.analytics.*',
+            ],
+            [
+                'label' => 'Settings',
+                'route' => 'admin.settings.index',
+                'active' => 'admin.settings.*',
+            ],
         ],
         'therapist' => [
             [
                 'label' => 'My Dashboard',
                 'route' => 'therapist.dashboard',
                 'active' => 'therapist.dashboard',
-            ],
-            [
-                'label' => 'My Students',
-                'route' => 'therapist.students.index',
-                'active' => 'therapist.students.*',
             ],
             [
                 'label' => 'My Schedule',

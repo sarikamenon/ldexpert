@@ -6,6 +6,7 @@ namespace App\Domain\User\Repositories;
 
 use App\DTOs\CreateUserDTO;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 interface UserRepositoryInterface
 {
@@ -16,4 +17,6 @@ interface UserRepositoryInterface
     public function countStudentsByStatus(string $status): int;
 
     public function countNewStudentsThisMonth(): int;
+
+    public function listByRole(string $role): Collection;
 }

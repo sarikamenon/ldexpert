@@ -1,0 +1,174 @@
+# Laravel Project - LD Export System
+
+## General Rules
+
+You are an expert in Laravel, PHP, and related web development technologies.
+
+## Key Principles
+
+- Write concise, technical responses with accurate PHP examples.
+- Follow Laravel best practices and conventions.
+- Use object-oriented programming with a focus on SOLID principles.
+- Prefer iteration and modularization over duplication.
+- Use descriptive variable and method names.
+- Use lowercase with dashes for directories (e.g., app/Http/Controllers).
+- Favor dependency injection and service containers.
+
+## PHP/Laravel
+
+- Use PHP 8.2+ features when appropriate (e.g., typed properties, match expressions).
+- Follow PSR-12 coding standards.
+- Use strict typing: declare(strict_types=1);
+- Utilize Laravel's built-in features and helpers when possible.
+- File structure: Follow Laravel's directory structure and naming conventions.
+- Implement proper error handling and logging:
+  - Use Laravel's exception handling and logging features.
+  - Create custom exceptions when necessary.
+  - Use try-catch blocks for expected exceptions.
+- Use Laravel's validation features for form and request validation.
+- Implement middleware for request filtering and modification.
+- Utilize Laravel's Eloquent ORM for database interactions.
+- Use Laravel's query builder for complex database queries.
+- Implement proper database migrations and seeders.
+
+## Dependencies
+
+- Laravel (latest stable version)
+- Composer for dependency management
+
+## Laravel Best Practices
+
+- Use Eloquent ORM instead of raw SQL queries when possible.
+- Implement Repository pattern for data access layer.
+- Use Laravel's built-in authentication and authorization features.
+- Utilize Laravel's caching mechanisms for improved performance.
+- Implement job queues for long-running tasks.
+- Use Laravel's built-in testing tools (PHPUnit, Dusk) for unit and feature tests.
+- Implement API versioning for public APIs.
+- Use Laravel's localization features for multi-language support.
+- Implement proper CSRF protection and security measures.
+- Use Laravel Mix for asset compilation.
+- Implement proper database indexing for improved query performance.
+- Use Laravel's built-in pagination features.
+- Implement proper error logging and monitoring.
+
+## Key Conventions
+
+1. Follow Laravel's MVC architecture.
+2. Use Laravel's routing system for defining application endpoints.
+3. Implement proper request validation using Form Requests.
+4. Use Laravel's Blade templating engine for views.
+5. Implement proper database relationships using Eloquent.
+6. Use Laravel's built-in authentication scaffolding.
+7. Implement proper API resource transformations.
+8. Use Laravel's event and listener system for decoupled code.
+9. Implement proper database transactions for data integrity.
+10. Use Laravel's built-in scheduling features for recurring tasks.
+
+## JavaScript & Frontend
+
+- Use modern ES6+ JavaScript features.
+- Utilize Vite for asset compilation and bundling.
+- Implement modular JavaScript with proper imports/exports.
+- Use Tailwind CSS for styling following utility-first approach.
+- Organize JavaScript files by feature/page in `resources/js/pages/`.
+- Use shared utilities in `resources/js/common/`.
+
+## User Interactions & Confirmations
+
+- **Always use SweetAlert2 for user confirmations and alerts** instead of native browser prompts (`alert()`, `confirm()`, `prompt()`).
+- SweetAlert2 is installed via npm and should be imported from `'sweetalert2'`.
+- Use the helper module `resources/js/common/sweetalert.js` for consistent alert patterns:
+  - `confirmDialog()` - For confirmation dialogs with optional input field
+  - `successToast()` - For success notifications (toast style)
+  - `errorAlert()` - For error messages
+  - `showLoading()` - For loading indicators
+  - `closeAlert()` - To close any open alert
+- SweetAlert2 works seamlessly with Tailwind CSS using custom classes.
+- All dialog buttons should use Tailwind-compatible rounded styling.
+
+### Example Usage:
+
+```javascript
+import { confirmDialog, successToast, errorAlert } from "../common/sweetalert";
+
+// Confirmation with reason input
+const result = await confirmDialog({
+  title: "Deactivate User?",
+  text: "You are about to deactivate this user.",
+  icon: "warning",
+  confirmButtonText: "Yes, deactivate",
+  showInput: true,
+  inputPlaceholder: "Provide a reason...",
+});
+
+if (result.isConfirmed && result.value) {
+  // Perform action
+  await successToast("User deactivated successfully!");
+}
+
+// Error handling
+try {
+  // ... code
+} catch (error) {
+  errorAlert("An error occurred while processing your request");
+}
+```
+
+## DataTables Integration
+
+- Use the common DataTables module: `resources/js/common/datatables.js`
+- Import and initialize with `initDataTable()` helper
+- Always await `loadDataTablesLibrary()` before initialization
+- Configure table-specific options (ordering, pageLength, columnDefs, etc.)
+- Use DataTables CSS from `resources/css/common/datatables.css`
+
+## Code Organization Patterns
+
+### DTOs (Data Transfer Objects)
+
+- Create DTOs for data transport between layers
+- Implement `fromArray()` and `toArray()` methods
+- Place in `app/DTOs/` directory
+
+### Repository Pattern
+
+- Define interfaces in `app/Domain/[Entity]/Repositories/`
+- Implement in `app/Infrastructure/Repositories/`
+- Bind interfaces in `AppServiceProvider`
+
+### Service Layer
+
+- Create service classes in `app/Domain/[Entity]/Services/`
+- Encapsulate business logic
+- Use dependency injection for repositories
+
+### Scopes
+
+- Create separate scope classes extending `BaseModelScope`
+- Place in `app/Models/Scopes/`
+- Keep models clean by delegating scope logic
+
+### Policies
+
+- Create policy classes for authorization
+- Register in `AppServiceProvider`
+- Use consistent method names: `viewAny()`, `view()`, `create()`, `update()`, etc.
+
+## Testing Standards
+
+- Write unit tests for DTOs, repositories, and services
+- Write feature tests for HTTP workflows
+- Write Dusk tests for browser interactions
+- Use factories for test data generation
+- Test both success and failure scenarios
+- Test authorization rules
+
+## UI Standards
+
+- Use Blade components for reusable UI elements
+- Implement responsive designs with Tailwind CSS
+- Provide clear user feedback for all actions
+- Use consistent button styles and icons
+- Implement proper form validation with error messages
+- Show loading states for async operations

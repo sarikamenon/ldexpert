@@ -2,6 +2,7 @@
 @php
     $variants = [
         'primary' => 'bg-primary/10 text-primary border border-primary/20',
+        'secondary' => 'bg-gray-100 text-gray-700 border border-gray-200',
         'muted' => 'bg-background/subtle text-foreground border border-border',
         'success' => 'bg-success/10 text-success border border-success/20',
         'warning' => 'bg-warning/10 text-warning border border-warning/20',

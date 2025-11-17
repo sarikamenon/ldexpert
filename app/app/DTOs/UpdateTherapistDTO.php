@@ -1,0 +1,73 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\DTOs;
+
+final class UpdateTherapistDTO
+{
+    public function __construct(
+        public readonly string $employeeType,
+        public readonly string $title,
+        public readonly string $firstName,
+        public readonly string $lastName,
+        public readonly string $personalEmail,
+        public readonly string $phone,
+        public readonly ?string $ldEmail,
+        public readonly ?string $address,
+        public readonly ?string $comments,
+        public readonly string $position,
+        public readonly string $state,
+        public readonly string $timezone,
+        public readonly int $managerId,
+        public readonly ?string $dob,
+    ) {}
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            employeeType: $data['employee_type'],
+            title: $data['title'],
+            firstName: $data['first_name'],
+            lastName: $data['last_name'],
+            personalEmail: $data['personal_email'],
+            phone: $data['phone'],
+            ldEmail: $data['ld_email'] ?? null,
+            address: $data['address'] ?? null,
+            comments: $data['comments'] ?? null,
+            position: $data['position'],
+            state: $data['state'],
+            timezone: $data['timezone'],
+            managerId: (int) $data['manager_id'],
+            dob: $data['dob'] ?? null,
+        );
+    }
+
+    public function toUserArray(): array
+    {
+        return [
+            'name' => $this->firstName . ' ' . $this->lastName,
+            'email' => $this->personalEmail,
+        ];
+    }
+
+    public function toProfileArray(): array
+    {
+        return [
+            'employee_type' => $this->employeeType,
+            'title' => $this->title,
+            'first_name' => $this->firstName,
+            'last_name' => $this->lastName,
+            'personal_email' => $this->personalEmail,
+            'phone' => $this->phone,
+            'ld_email' => $this->ldEmail,
+            'address' => $this->address,
+            'comments' => $this->comments,
+            'position' => $this->position,
+            'state' => $this->state,
+            'timezone' => $this->timezone,
+            'manager_id' => $this->managerId,
+            'dob' => $this->dob,
+        ];
+    }
+}
