@@ -28,55 +28,6 @@
     <div class="min-h-screen bg-gray-100">
         @include('layouts.navigation')
 
-        <!-- Page Heading -->
-        <header class="bg-white border-b border-border">
-            <div class="max-w-7xl mx-auto py-4 px-4 lg:px-8">
-                <div class="flex items-center justify-between">
-                    <h2 class="font-semibold text-xl text-foreground">
-                        @isset($header)
-                            {{ $header }}
-                        @endisset
-                    </h2>
-                    <div class="flex-1 flex items-end justify-center">
-                        <x-ui::menubar>
-                            <x-ui::menubar-item :href="route('dashboard')">Dashboard</x-ui::menubar-item>
-                            <x-ui::menubar-menu>
-                                <x-slot name="trigger">Students</x-slot>
-                                <x-slot name="content">
-                                    <x-ui::menubar-item :href="route('therapist.students.create')">Create</x-ui::menubar-item>
-                                    <x-ui::menubar-item :href="route('therapist.students.index')">List</x-ui::menubar-item>
-                                </x-slot>
-                            </x-ui::menubar-menu>
-                            <x-ui::menubar-menu>
-                                <x-slot name="trigger">Lessons</x-slot>
-                                <x-slot name="content">
-                                    <x-ui::menubar-item href="#">Schedule</x-ui::menubar-item>
-                                    <x-ui::menubar-item href="#">Calendar</x-ui::menubar-item>
-                                </x-slot>
-                            </x-ui::menubar-menu>
-                            <x-ui::menubar-menu>
-                                <x-slot name="trigger">Invoices</x-slot>
-                                <x-slot name="content">
-                                    <x-ui::menubar-item href="#">Create</x-ui::menubar-item>
-                                    <x-ui::menubar-item href="#">List</x-ui::menubar-item>
-                                </x-slot>
-                            </x-ui::menubar-menu>
-                            <x-ui::menubar-menu>
-                                <x-slot name="trigger">Reports</x-slot>
-                                <x-slot name="content">
-                                    <x-ui::menubar-item href="#">Monthly</x-ui::menubar-item>
-                                    <x-ui::menubar-item href="#">Custom</x-ui::menubar-item>
-                                </x-slot>
-                            </x-ui::menubar-menu>
-                        </x-ui::menubar>
-                    </div>
-                    <div class="space-x-2">
-                        <x-ui::button variant="primary">+ Quick Actions</x-ui::button>
-                    </div>
-                </div>
-            </div>
-        </header>
-
         <!-- Page Content -->
         <main>
             {{ $slot }}

@@ -1,16 +1,12 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-foreground">Students</h2>
-        </div>
-    </x-slot>
-
     <x-slot name="styles">
         @vite(['resources/css/common/datatables.css'])
     </x-slot>
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
+            <x-page-title title="Students" />
+
             @if (session('status'))
                 <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>
             @endif

@@ -1,14 +1,15 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-foreground">Edit Student</h2>
-            <a href="{{ route('therapist.students.show', $student) }}"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-gray-50">Back</a>
-        </div>
-    </x-slot>
-
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
+            <x-page-title title="Edit Student">
+                <x-slot name="actions">
+                    <a href="{{ route('therapist.students.show', $student) }}"
+                        class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-gray-50">
+                        Back
+                    </a>
+                </x-slot>
+            </x-page-title>
+
             @if (session('status'))
                 <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>
             @endif
