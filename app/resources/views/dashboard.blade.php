@@ -3,11 +3,11 @@
         <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
             <!-- Metrics -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <a href="{{ route('therapist.students.index') }}" class="block transition-transform hover:scale-105">
+                <div class="block">
                     <x-dashboard::metric :title="'Active Students'" :value="$activeStudents ?? 0">
                         <x-slot name="badge">+{{ $newStudentsThisMonth ?? 0 }} this month</x-slot>
                     </x-dashboard::metric>
-                </a>
+                </div>
                 <x-dashboard::metric :title="'This Week\'s Lessons'" :value="'18'">
                     <x-slot name="badge"><span class="text-xs text-foreground/60">3 today</span></x-slot>
                 </x-dashboard::metric>
@@ -43,9 +43,6 @@
                 <!-- Quick Actions -->
                 <x-dashboard::quick-actions>
                     <x-ui::button class="w-full">+ Schedule New Lesson</x-ui::button>
-                    <a href="{{ route('therapist.students.create') }}"
-                        class="inline-flex items-center justify-center w-full px-4 py-2 border border-border rounded-lg hover:bg-gray-50">Add
-                        Student</a>
                     <x-ui::button variant="secondary" class="w-full">Create Invoice</x-ui::button>
                     <x-slot name="footer">
                         <div class="text-sm font-medium text-foreground">Recent Activity</div>

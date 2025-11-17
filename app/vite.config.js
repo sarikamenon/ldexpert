@@ -10,7 +10,9 @@ export default defineConfig({
                 // Common files
                 'resources/css/common/datatables.css',
                 // Page-specific files
-                'resources/js/pages/students-index.js',
+                'resources/js/pages/admin-schools-index.js',
+                'resources/js/pages/admin-therapists-index.js',
+                'resources/js/pages/admin-activity-logs-index.js',
             ],
             refresh: true,
         }),

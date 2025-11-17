@@ -9,13 +9,13 @@ Give therapists a unified workspace to manage caseloads, schedules, documentatio
 
 ## Current Implementation
 - Auth & routing: therapists authenticate via standard Laravel auth and are routed through `routes/therapist.php` with middleware `role:therapist`.
-- Dashboard: `Therapist\DashboardController@index` uses `DashboardService` + `UserRepositoryInterface` to show metrics `activeStudents` and `newStudentsThisMonth`. View: `resources/views/dashboard.blade.php`.
-- Student management: `Therapist\StudentController` plus Blade views under `resources/views/therapist/students/` supports CRUD for assigned students, guardian data, and activate/deactivate flows. Validation handled by `StoreStudentRequest` / `UpdateStudentRequest`; policies via `StudentProfilePolicy` ensure therapists only touch assigned students.
+- Dashboard: `Therapist\DashboardController@index` uses `DashboardService` + `UserRepositoryInterface` to show metrics. View: `resources/views/dashboard.blade.php`.
+- **Student management has been removed** — Students are now created and managed by admins through the SSA (Student Service Agreement) workflow. Therapists will receive read-only access to assigned students.
 - No scheduling, session notes, SSA view, or billing surfaces exist yet.
 
 ## Planned Scope
 - Extend dashboard with actionable widgets: upcoming sessions, pending notes, expiring SSAs, billing reminders.
-- Caseload view with SSA context, goals, and contact logs.
+- **Read-only caseload view** with SSA context, goals, and contact logs. Therapists can view assigned students but cannot create or edit student records.
 - Calendar-based scheduling integrated with student availability + SSA limits; support manual session creation for non-RSM/CAVA schools.
 - Session documentation forms tied to service templates (from Services module) with goal tracking and attachments.
 - Billing visibility: therapists see submitted sessions, bill status, disputes, and pay statements (from Billing module).
@@ -42,15 +42,10 @@ Give therapists a unified workspace to manage caseloads, schedules, documentatio
 ### Existing Routes
 ```
 GET    /therapist/dashboard
-GET    /therapist/students
-GET    /therapist/students/create
-POST   /therapist/students
-GET    /therapist/students/{user}
-GET    /therapist/students/{user}/edit
-PATCH  /therapist/students/{user}
-PATCH  /therapist/students/{user}/status/{activate|deactivate}
 ```
 Controllers live under `App\Http\Controllers\Therapist`.
+
+**Note:** Previous student CRUD routes have been removed. Students are now managed by admins via SSA workflow.
 
 ### Planned Routes
 - `GET /therapist/schedule` — calendar view (week, month) filtered by student/service.
@@ -62,9 +57,11 @@ Controllers live under `App\Http\Controllers\Therapist`.
 - Notification APIs (mark read, list) under `/therapist/notifications`.
 
 ## Workflows
-1. **Caseload Intake**
-   1. Therapist receives notification when admin assigns SSA service.
-   2. Caseload list updates to include new student; SSA details + goals visible.
+1. **Caseload Intake (SSA-Based)**
+   1. Admin creates SSA with student information.
+   2. Admin assigns therapist to student via SSA.
+   3. Therapist receives notification when admin assigns SSA service.
+   4. Caseload list updates to include new student (read-only); SSA details + goals visible.
 2. **Scheduling & Session Documentation**
    1. Therapist opens schedule, selects available slot abiding by SSA frequency and student availability.
    2. After delivering session, therapist completes note template (auto-filled goals) and submits within 24 hours.
@@ -74,9 +71,10 @@ Controllers live under `App\Http\Controllers\Therapist`.
    2. After AP approves bill, therapist can view statement; disputes initiated from the same screen.
 
 ## Authorization & Security
-- Continue using policies (`StudentProfilePolicy`, future `SessionPolicy`) to restrict data by assignment.
+- Use policies (future `SessionPolicy`, `SchedulePolicy`) to restrict data by assignment.
 - All POST/PATCH routes protected by middleware stack: `auth`, `role:therapist`, CSRF.
 - Audit log every session note submission (user_id, timestamp, IP).
+- Student data is read-only for therapists; only admins can modify student profiles.
 
 ## Dependencies
 - Requires SSA, Services, Sessions, Billing modules to expose APIs.
@@ -88,6 +86,6 @@ Controllers live under `App\Http\Controllers\Therapist`.
 - Outstanding tasks (notes, schedule confirmations).
 
 ## Risks & Open Questions
-- Need UX decision on therapist ability to edit student demographics once admin owns master data.
+- **Resolved:** Therapists cannot edit student demographics. All student data is managed by admins via SSA workflow.
 - Confirm whether therapists can create sessions for RSM/CAVA schools or only mark attendance (if schedule imported via Sync).
 - Determine offline/mobile access requirements.

@@ -7,12 +7,12 @@ namespace App\Domain\User\Services;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateAdminProfileDTO;
 use App\DTOs\CreateParentProfileDTO;
-use App\DTOs\CreateStudentProfileDTO;
 use App\DTOs\CreateTherapistProfileDTO;
 use App\DTOs\CreateUserDTO;
 use App\Enums\Role;
 use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 class UserService
 {
@@ -36,9 +36,8 @@ class UserService
             Role::THERAPIST->value => $this->repository->createTherapistProfile(
                 CreateTherapistProfileDTO::fromArray($profileData)
             ),
-            Role::STUDENT->value => $this->repository->createStudentProfile(
-                CreateStudentProfileDTO::fromArray($profileData)
-            ),
+            // Student profile creation removed - will be handled by SSA workflow
+            // Role::STUDENT->value => $this->repository->createStudentProfile(...),
             Role::PARENT->value => $this->repository->createParentProfile(
                 CreateParentProfileDTO::fromArray($profileData)
             ),
@@ -49,5 +48,10 @@ class UserService
         };
 
         return $user->fresh();
+    }
+
+    public function listByRole(Role $role): Collection
+    {
+        return $this->users->listByRole($role->value);
     }
 }

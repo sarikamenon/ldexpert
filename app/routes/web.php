@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DashboardRedirectController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
@@ -8,9 +9,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return redirect()->route('therapist.dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', DashboardRedirectController::class)
+    ->middleware(['auth'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -25,6 +26,7 @@ Route::middleware('auth')->group(function () {
     })->name('cache.clear');
 
     require __DIR__ . '/therapist.php';
+    require __DIR__ . '/admin.php';
 });
 
 require __DIR__ . '/auth.php';

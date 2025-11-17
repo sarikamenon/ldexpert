@@ -6,8 +6,7 @@ Define the therapist-facing navigation (“My …” labels) for the NOVA worksp
 ## Menu Items
 | Menu | Description | Planned Routes | Notes |
 | --- | --- | --- | --- |
-| My Dashboard | Landing page with widgets for upcoming sessions, pending notes, expiring SSAs, and billing reminders. | `/therapist/dashboard` | Extend existing dashboard controller to include new widgets fed by Sessions, SSA, Billing data. |
-| My Students | Caseload management list showing assigned students, SSA context, goals, and contact logs with CRUD limited by policy. | `/therapist/students`, `/therapist/students/{user}`, `/therapist/students/{user}/edit` | Reuses current student CRUD screens; ensure assignments filter results. |
+| My Dashboard | Landing page with widgets for upcoming sessions, pending notes, expiring SSAs, and billing reminders. | `/therapist/dashboard` | Currently implemented; needs extension to include widgets fed by Sessions, SSA, Billing data. |
 | My Schedule | Calendar view (week/month) for booking sessions that respect SSA frequency and student availability. | `/therapist/schedule` | Requires new scheduling UI and integration with SSA + Sessions modules. |
 | My Sessions | Workspace to create, edit, and submit session records using service-specific documentation templates. | `/therapist/sessions`, `/therapist/sessions/{session}`, `/therapist/sessions/{session}/submit` | Session submission locks notes and emits notifications/audit logs. |
 | My Bills | Transparency into submitted sessions, approval status, disputes, and pay statements, plus notification/task hooks. | `/therapist/billing`, `/therapist/billing/{bill}` | Depends on Billing module; should surface disputes and confirmations. |
@@ -20,7 +19,7 @@ Define the therapist-facing navigation (“My …” labels) for the NOVA worksp
 5. **Testing** – Add feature specs to confirm role-based navigation, ensure unauthorized roles cannot hit `/therapist/*`, and verify that menu badges reflect pending tasks.
 
 ## Backlog / Open Questions
-- Define whether “My Students” retains create/edit capabilities once admins control the master student record.
+- **Student Management Removed** — Old "My Students" CRUD has been removed. Students are now managed by admins via SSA workflow. Therapists will have read-only access to assigned students through Sessions/Schedule views.
 - Determine offline support or calendar sync needs before finalizing the My Schedule experience.
 - Clarify how My Bills handles therapists with multiple employment types (W2 + 1099) and whether statements should split by type.
 
