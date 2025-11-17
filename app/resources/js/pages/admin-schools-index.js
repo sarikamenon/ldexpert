@@ -9,7 +9,7 @@ async function initSchoolsTable() {
             order: [[0, 'asc']],
             pageLength: 25,
             columnDefs: [
-                { orderable: false, targets: [6] }
+                { orderable: false, targets: -1 }
             ]
         });
     } catch (error) {
