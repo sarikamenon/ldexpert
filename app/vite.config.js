@@ -12,6 +12,7 @@ export default defineConfig({
                 // Page-specific files
                 'resources/js/pages/admin-schools-index.js',
                 'resources/js/pages/admin-therapists-index.js',
+                'resources/js/pages/admin-students-index.js',
                 'resources/js/pages/admin-activity-logs-index.js',
             ],
             refresh: true,

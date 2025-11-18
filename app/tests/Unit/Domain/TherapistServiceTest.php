@@ -164,8 +164,8 @@ final class TherapistServiceTest extends TestCase
         $metrics = $this->service->getMetrics();
 
         $this->assertSame($initialTotal + 8, $metrics['total']);
-        $this->assertSame($initialActive + 5, $metrics['active']->count());
-        $this->assertSame($initialInactive + 3, $metrics['inactive']->count());
+        $this->assertSame($initialActive + 5, $metrics['active']);
+        $this->assertSame($initialInactive + 3, $metrics['inactive']);
     }
 
     public function test_export_returns_therapist_collection(): void

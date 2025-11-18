@@ -3,7 +3,7 @@ PHP_SHELL=$(DC) exec -T app bash -lc
 ARTISAN=$(PHP_SHELL) "cd app && php artisan"
 COMPOSER_CMD=$(PHP_SHELL) 'cd app && composer'
 
-.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa
+.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa assets-build
 
 build:
 	$(DC) build
@@ -66,4 +66,8 @@ qa:
 	$(DC) exec -T app bash -lc 'cd app && XDEBUG_MODE=coverage php artisan test --min=80'
 
 init: build up install init-env migrate
+
+assets-build:
+	$(PHP_SHELL) 'cd app && npm install'
+	$(PHP_SHELL) 'cd app && npm run build'
 

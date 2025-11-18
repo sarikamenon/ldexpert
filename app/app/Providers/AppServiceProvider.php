@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\TherapistRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Http\Middleware\RoleMiddleware;
 use App\Infrastructure\Repositories\EloquentSchoolRepository;
+use App\Infrastructure\Repositories\EloquentStudentRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Models\School;
+use App\Models\StudentProfile;
 use App\Models\TherapistProfile;
 use App\Policies\SchoolPolicy;
+use App\Policies\StudentProfilePolicy;
 use App\Policies\TherapistProfilePolicy;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
@@ -27,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
         $this->app->bind(SchoolRepositoryInterface::class, EloquentSchoolRepository::class);
         $this->app->bind(TherapistRepositoryInterface::class, EloquentTherapistRepository::class);
+        $this->app->bind(StudentRepositoryInterface::class, EloquentStudentRepository::class);
     }
 
     public function boot(Router $router): void
@@ -37,5 +42,6 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(School::class, SchoolPolicy::class);
         Gate::policy(TherapistProfile::class, TherapistProfilePolicy::class);
+        Gate::policy(StudentProfile::class, StudentProfilePolicy::class);
     }
 }
