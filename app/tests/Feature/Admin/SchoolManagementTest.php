@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function adminUser(): User
+function schoolAdminUser(): User
 {
     return User::factory()->admin()->create();
 }
@@ -33,7 +33,7 @@ function validSchoolPayload(int $managerId): array
 }
 
 it('allows admin to view schools index', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     School::factory()->create();
 
     $this->actingAs($admin)
@@ -51,7 +51,7 @@ it('prevents non-admin from accessing schools', function () {
 });
 
 it('creates a school', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $payload = validSchoolPayload($admin->id);
 
     $this->actingAs($admin)
@@ -66,7 +66,7 @@ it('creates a school', function () {
 });
 
 it('updates a school', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $school = School::factory()->create();
 
     $payload = validSchoolPayload($admin->id);
@@ -84,7 +84,7 @@ it('updates a school', function () {
 });
 
 it('changes school status with reason', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $school = School::factory()->create(['status' => 'active']);
 
     $this->actingAs($admin)
@@ -103,7 +103,7 @@ it('changes school status with reason', function () {
 });
 
 it('exports schools as csv', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $school = School::factory()->create(['display_name' => 'Export School']);
 
     $response = $this->actingAs($admin)->get(route('admin.schools.export'));

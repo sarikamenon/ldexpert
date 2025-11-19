@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Admin\Contract;
+
+use App\Enums\ContractStatus;
+use App\Enums\RateType;
+use App\Enums\ServiceStatus;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+abstract class SchoolContractFormRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    protected function baseRules(): array
+    {
+        return [
+            'start_date' => ['required', 'date'],
+            'end_date' => ['required', 'date', 'after:start_date'],
+            'notes' => ['nullable', 'string'],
+            'status' => ['required', Rule::in(ContractStatus::values())],
+            'services' => ['required', 'array', 'min:1'],
+            'services.*.service_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('services', 'id')
+                    ->whereNull('deleted_at')
+                    ->where('status', ServiceStatus::ACTIVE->value),
+            ],
+            'services.*.rate' => ['required', 'numeric', 'min:0'],
+            'services.*.rate_type' => ['required', Rule::in(RateType::values())],
+        ];
+    }
+}

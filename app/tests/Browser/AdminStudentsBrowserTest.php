@@ -24,7 +24,7 @@ final class AdminStudentsBrowserTest extends DuskTestCase
         parent::setUp();
 
         $this->admin = User::factory()->admin()->create([
-            'email' => 'admin@example.com',
+            'email' => 'admin+students@example.com',
             'password' => bcrypt('password'),
         ]);
 
@@ -73,10 +73,10 @@ final class AdminStudentsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/students/create')
-                ->type('first_name', 'Dusk')
-                ->type('last_name', 'Student')
-                ->type('email', 'dusk.student@example.com')
-                ->type('date_of_birth', '2012-05-05')
+                ->type('@student-first-name', 'Dusk')
+                ->type('@student-last-name', 'Student')
+                ->type('@student-email', 'dusk.student@example.com')
+                ->type('@student-date-of-birth', '2012-05-05')
                 ->select('timezone', 'America/New_York')
                 ->select('school_id', (string) $this->school->id)
                 ->press('Create Student')
@@ -95,7 +95,7 @@ final class AdminStudentsBrowserTest extends DuskTestCase
                 ->click('@edit-student-' . $this->student->id)
                 ->assertPathIs('/admin/students/' . $this->student->id . '/edit')
                 ->assertInputValue('first_name', 'Browser')
-                ->type('first_name', 'UpdatedBrowser')
+                ->type('@student-first-name', 'UpdatedBrowser')
                 ->press('Update Student Info')
                 ->assertPathIs('/admin/students')
                 ->assertSee('Student information updated successfully.');

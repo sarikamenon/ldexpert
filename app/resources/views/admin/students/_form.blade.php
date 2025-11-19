@@ -19,7 +19,7 @@
             <div>
                 <x-input-label for="first_name" value="First Name *" />
                 <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
-                    :value="old('first_name', $profile?->first_name)" />
+                    :value="old('first_name', $profile?->first_name)" dusk="student-first-name" />
                 <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
             </div>
 
@@ -33,7 +33,7 @@
             <div>
                 <x-input-label for="last_name" value="Last Name *" />
                 <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
-                    :value="old('last_name', $profile?->last_name)" />
+                    :value="old('last_name', $profile?->last_name)" dusk="student-last-name" />
                 <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
             </div>
         </div>
@@ -42,7 +42,7 @@
             <div>
                 <x-input-label for="email" value="Email *" />
                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
-                    :value="old('email', $isEdit ? $student->email : '')" />
+                    :value="old('email', $isEdit ? $student->email : '')" dusk="student-email" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 
@@ -63,7 +63,7 @@
             <div>
                 <x-input-label for="date_of_birth" value="Date of Birth *" />
                 <x-text-input id="date_of_birth" name="date_of_birth" type="date" class="mt-1 block w-full"
-                    :value="old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d'))" />
+                    :value="old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d'))" dusk="student-date-of-birth" />
                 <x-input-error :messages="$errors->get('date_of_birth')" class="mt-2" />
             </div>
         </div>
@@ -222,7 +222,7 @@
             <div>
                 <x-input-label for="first_name" value="First Name *" />
                 <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
-                    :value="old('first_name', $profile?->first_name)" required />
+                    :value="old('first_name', $profile?->first_name)" required dusk="student-first-name" />
                 <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
             </div>
 
@@ -236,7 +236,7 @@
             <div>
                 <x-input-label for="last_name" value="Last Name *" />
                 <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
-                    :value="old('last_name', $profile?->last_name)" required />
+                    :value="old('last_name', $profile?->last_name)" required dusk="student-last-name" />
                 <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
             </div>
         </div>
@@ -245,7 +245,7 @@
             <div>
                 <x-input-label for="email" value="Email *" />
                 <x-text-input id="email" name="email" type="email" class="mt-1 block w-full"
-                    :value="old('email', $isEdit ? $student->email : '')" required />
+                    :value="old('email', $isEdit ? $student->email : '')" required dusk="student-email" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
             </div>
 
@@ -264,7 +264,7 @@
             <div>
                 <x-input-label for="date_of_birth" value="Date of Birth *" />
                 <x-text-input id="date_of_birth" name="date_of_birth" type="date" class="mt-1 block w-full"
-                    :value="old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d'))" required />
+                    :value="old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d'))" required dusk="student-date-of-birth" />
                 <x-input-error :messages="$errors->get('date_of_birth')" class="mt-2" />
             </div>
         </div>

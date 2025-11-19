@@ -19,7 +19,7 @@ class DashboardService
     {
         // Temporarily disabled caching to show real-time data
         // return Cache::remember('dashboard.key.metrics', now()->addSeconds(30), function () {
-            
+
         // Real data for Schools
         $totalSchools = School::count();
         $activeSchools = School::where('status', SchoolStatus::ACTIVE)->count();
@@ -28,16 +28,19 @@ class DashboardService
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Real data for Therapists
-        $totalTherapists = TherapistProfile::count();
-        $activeTherapists = TherapistProfile::active()->count();
-        $newTherapistsThisMonth = TherapistProfile::whereMonth('created_at', now()->month)
+        // Real data for Therapists (align with therapist listing)
+        $therapistQuery = User::query()->where('role', Role::THERAPIST);
+        $totalTherapists = (clone $therapistQuery)->count();
+        $activeTherapists = (clone $therapistQuery)
+            ->where('status', UserStatus::ACTIVE)
+            ->count();
+        $inactiveTherapists = (clone $therapistQuery)
+            ->where('status', UserStatus::INACTIVE)
+            ->count();
+        $newTherapistsThisMonth = (clone $therapistQuery)
+            ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
-        
-        // Calculate therapists available for assignment (active therapists with capacity)
-        // TODO: When SSA/assignment system is ready, calculate based on actual caseload
-        $availableForAssignment = $activeTherapists > 0 ? max(0, (int)($activeTherapists * 0.7)) : 0;
 
         // Dummy data for Students (not yet implemented)
         $totalStudents = 245;
@@ -61,7 +64,7 @@ class DashboardService
             'therapists' => [
                 'total' => $totalTherapists,
                 'active' => $activeTherapists,
-                'available_for_assignment' => $availableForAssignment,
+                'inactive' => $inactiveTherapists,
                 'new_this_month' => $newTherapistsThisMonth,
             ],
             'students' => [
@@ -96,10 +99,10 @@ class DashboardService
         }
 
         // Real alert: Inactive therapists that might need attention
-        $inactiveTherapists = TherapistProfile::whereHas('user', function($query) {
+        $inactiveTherapists = TherapistProfile::whereHas('user', function ($query) {
             $query->where('status', '!=', UserStatus::ACTIVE);
         })->count();
-        
+
         if ($inactiveTherapists > 0) {
             $alerts[] = [
                 'type' => 'info',
@@ -348,4 +351,3 @@ class DashboardService
         return $data;
     }
 }
-

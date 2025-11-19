@@ -2,9 +2,10 @@
 
 use Laravel\Dusk\Browser;
 
-test('basic example', function () {
+test('landing redirects to login page', function () {
     $this->browse(function (Browser $browser) {
         $browser->visit('/')
-                ->assertSee('Laravel');
+            ->assertPathIs('/login')
+            ->assertSee('Sign in');
     });
 });

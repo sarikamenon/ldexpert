@@ -10,7 +10,6 @@ use App\DTOs\TherapistFilterDTO;
 use App\Enums\UserStatus;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -44,7 +43,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         return TherapistProfile::with(['user', 'manager'])->find($id);
     }
 
-    public function list(TherapistFilterDTO $filters): LengthAwarePaginator
+    public function list(TherapistFilterDTO $filters): Collection
     {
         $query = User::query()
             ->where('role', 'therapist')
@@ -60,7 +59,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $query->where('status', $filters->status);
         }
 
-        return $query->latest()->paginate($filters->perPage);
+        return $query->latest()->get();
     }
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User

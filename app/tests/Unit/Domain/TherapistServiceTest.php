@@ -118,7 +118,7 @@ final class TherapistServiceTest extends TestCase
         $this->assertSame('inactive', $updatedUser->status->value);
     }
 
-    public function test_list_returns_paginated_therapists(): void
+    public function test_list_returns_all_therapists(): void
     {
         $manager = User::factory()->admin()->create();
 
@@ -130,15 +130,11 @@ final class TherapistServiceTest extends TestCase
             ->count(3)
             ->create();
 
-        $dto = new TherapistFilterDTO(
-            search: null,
-            status: null,
-            perPage: 25
-        );
+        $dto = new TherapistFilterDTO();
 
         $result = $this->service->list($dto);
 
-        $this->assertCount($initialCount + 3, $result->items());
+        $this->assertCount($initialCount + 3, $result);
     }
 
     public function test_get_metrics_returns_therapist_metrics(): void
@@ -180,11 +176,7 @@ final class TherapistServiceTest extends TestCase
             ->count(2)
             ->create();
 
-        $dto = new TherapistFilterDTO(
-            search: null,
-            status: null,
-            perPage: 1000
-        );
+        $dto = new TherapistFilterDTO();
 
         $result = $this->service->export($dto);
 

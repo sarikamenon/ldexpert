@@ -20,8 +20,6 @@ final class IndexTherapistRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(UserStatus::values())],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ];
     }
 }
-

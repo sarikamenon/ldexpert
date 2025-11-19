@@ -4,9 +4,12 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\TherapistContractController;
 use App\Http\Controllers\Admin\TherapistController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +30,25 @@ Route::middleware('role:admin')
         Route::get('students/export', [StudentController::class, 'export'])->name('students.export');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::resource('students', StudentController::class)->except(['destroy', 'show']);
+
+        Route::patch('services/{service}/status', [ServiceController::class, 'updateStatus'])->name('services.status');
+        Route::resource('services', ServiceController::class)->except(['destroy', 'show']);
+
+        Route::prefix('contracts')
+            ->name('contracts.')
+            ->group(function () {
+                Route::patch('schools/{schoolContract}/status', [SchoolContractController::class, 'updateStatus'])
+                    ->name('schools.status');
+                Route::resource('schools', SchoolContractController::class)
+                    ->parameters(['schools' => 'schoolContract'])
+                    ->except(['destroy']);
+
+                Route::patch('therapists/{therapistContract}/status', [TherapistContractController::class, 'updateStatus'])
+                    ->name('therapists.status');
+                Route::resource('therapists', TherapistContractController::class)
+                    ->parameters(['therapists' => 'therapistContract'])
+                    ->except(['destroy']);
+            });
 
         // Activity Logs
         Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');

@@ -22,7 +22,8 @@
                         <label class="flex items-center">
                             <input type="radio" name="employee_type" value="{{ $type->value }}"
                                 {{ old('employee_type', $profile?->employee_type?->value) === $type->value ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-primary shadow-sm focus:ring-primary">
+                                class="rounded border-gray-300 text-primary shadow-sm focus:ring-primary"
+                                dusk="therapist-employee-type-{{ \Illuminate\Support\Str::slug($type->value) }}">
                             <span class="ml-2 text-sm">{{ $type->value }}</span>
                         </label>
                     @endforeach
@@ -51,7 +52,7 @@
                 <div>
                     <x-input-label for="first_name" value="First Name *" />
                     <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
-                        :value="old('first_name', $profile?->first_name)" />
+                        :value="old('first_name', $profile?->first_name)" dusk="therapist-first-name" />
                     <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
                 </div>
             </div>
@@ -60,7 +61,7 @@
             <div>
                 <x-input-label for="last_name" value="Last Name *" />
                 <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
-                    :value="old('last_name', $profile?->last_name)" />
+                    :value="old('last_name', $profile?->last_name)" dusk="therapist-last-name" />
                 <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
             </div>
         </div>
@@ -75,7 +76,8 @@
             <div>
                 <x-input-label for="personal_email" value="Personal Email *" />
                 <x-text-input id="personal_email" name="personal_email" type="email" class="mt-1 block w-full"
-                    :value="old('personal_email', $profile?->personal_email ?? ($isEdit ? $therapist->email : ''))" />
+                    :value="old('personal_email', $profile?->personal_email ?? ($isEdit ? $therapist->email : ''))"
+                    dusk="therapist-personal-email" />
                 <x-input-error :messages="$errors->get('personal_email')" class="mt-2" />
             </div>
 
@@ -85,7 +87,7 @@
                     <x-input-label for="phone" value="Phone *" />
                     <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full"
                         placeholder="123-456-7890"
-                        :value="old('phone', $profile?->phone)" />
+                        :value="old('phone', $profile?->phone)" dusk="therapist-phone" />
                     <x-input-error :messages="$errors->get('phone')" class="mt-2" />
                 </div>
 
@@ -93,7 +95,7 @@
                 <div>
                     <x-input-label for="ld_email" value="LD Expert Email" />
                     <x-text-input id="ld_email" name="ld_email" type="email" class="mt-1 block w-full"
-                        :value="old('ld_email', $profile?->ld_email)" />
+                        :value="old('ld_email', $profile?->ld_email)" dusk="therapist-ld-email" />
                     <x-input-error :messages="$errors->get('ld_email')" class="mt-2" />
                 </div>
             </div>

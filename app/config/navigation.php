@@ -11,17 +11,63 @@ return [
             [
                 'label' => 'Schools',
                 'route' => 'admin.schools.index',
-                'active' => 'admin.schools.*',
+                'active' => ['admin.schools.*', 'admin.contracts.schools.*'],
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.schools.index',
+                        'active' => 'admin.schools.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.schools.create',
+                        'active' => 'admin.schools.create',
+                    ],
+                    [
+                        'label' => 'Contracts',
+                        'route' => 'admin.contracts.schools.index',
+                        'active' => 'admin.contracts.schools.*',
+                    ],
+                ],
             ],
             [
                 'label' => 'Therapists',
                 'route' => 'admin.therapists.index',
-                'active' => 'admin.therapists.*',
+                'active' => ['admin.therapists.*', 'admin.contracts.therapists.*'],
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.therapists.index',
+                        'active' => 'admin.therapists.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.therapists.create',
+                        'active' => 'admin.therapists.create',
+                    ],
+                    [
+                        'label' => 'Contracts',
+                        'route' => 'admin.contracts.therapists.index',
+                        'active' => 'admin.contracts.therapists.*',
+                    ],
+                ],
             ],
             [
                 'label' => 'Students',
                 'route' => 'admin.students.index',
                 'active' => 'admin.students.*',
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.students.index',
+                        'active' => 'admin.students.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.students.create',
+                        'active' => 'admin.students.create',
+                    ],
+                ],
             ],
             [
                 'label' => 'Service Support Agreements',

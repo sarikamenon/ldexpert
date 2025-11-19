@@ -23,7 +23,7 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
         parent::setUp();
 
         $this->admin = User::factory()->admin()->create([
-            'email' => 'admin@example.com',
+            'email' => 'admin+therapists@example.com',
             'password' => bcrypt('password'),
         ]);
 
@@ -71,13 +71,13 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/therapists/create')
-                ->radio('employee_type', 'W2')
+                ->radio('@therapist-employee-type-w2')
                 ->select('title', 'Dr.')
-                ->type('first_name', 'Jane')
-                ->type('last_name', 'Smith')
-                ->type('personal_email', 'jane.smith@example.com')
-                ->type('phone', '555-123-4567')
-                ->type('ld_email', 'jane.smith@ldexpert.com')
+                ->type('@therapist-first-name', 'Jane')
+                ->type('@therapist-last-name', 'Smith')
+                ->type('@therapist-personal-email', 'jane.smith@example.com')
+                ->type('@therapist-phone', '555-123-4567')
+                ->type('@therapist-ld-email', 'jane.smith@ldexpert.com')
                 ->select('position', 'SLP')
                 ->select('state', 'CA')
                 ->select('timezone', 'America/Los_Angeles')
@@ -112,8 +112,8 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/therapists/' . $this->therapist->id . '/edit')
-                ->type('first_name', 'Updated')
-                ->type('last_name', 'Name')
+                ->type('@therapist-first-name', 'Updated')
+                ->type('@therapist-last-name', 'Name')
                 ->press('Update Therapist Info')
                 ->assertPathIs('/admin/therapists')
                 ->assertSee('Therapist information updated successfully');

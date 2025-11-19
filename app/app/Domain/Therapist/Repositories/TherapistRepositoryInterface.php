@@ -8,7 +8,6 @@ use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 interface TherapistRepositoryInterface
@@ -19,7 +18,7 @@ interface TherapistRepositoryInterface
 
     public function find(int $id): ?TherapistProfile;
 
-    public function list(TherapistFilterDTO $filters): LengthAwarePaginator;
+    public function list(TherapistFilterDTO $filters): Collection;
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User;
 

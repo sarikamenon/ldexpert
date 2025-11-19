@@ -9,7 +9,6 @@ final class TherapistFilterDTO
     public function __construct(
         public readonly ?string $search = null,
         public readonly ?string $status = null,
-        public readonly int $perPage = 15,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -17,7 +16,6 @@ final class TherapistFilterDTO
         return new self(
             search: $data['search'] ?? null,
             status: $data['status'] ?? null,
-            perPage: (int) ($data['per_page'] ?? 15),
         );
     }
 
@@ -26,7 +24,6 @@ final class TherapistFilterDTO
         return [
             'search' => $this->search,
             'status' => $this->status,
-            'per_page' => $this->perPage,
         ];
     }
 }
