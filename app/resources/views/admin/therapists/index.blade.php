@@ -44,6 +44,18 @@
                         </select>
                     </div>
 
+                    <div class="relative">
+                        <select name="position"
+                            class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">All Positions</option>
+                            @foreach ($positions as $position)
+                                <option value="{{ $position->value }}" @selected(($filters['position'] ?? null) === $position->value)>
+                                    {{ $position->value }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
                 </form>
@@ -71,9 +83,8 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Manager</th>
-                            <th>Phone</th>
                             <th>Position</th>
-                            <th>Type</th>
+                            <th>Max Weekly Hours</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -82,18 +93,22 @@
                         @foreach ($therapists as $therapist)
                             <tr>
                                 <td>
-                                    <a href="{{ route('admin.therapists.edit', $therapist) }}"
+                                    <a href="{{ route('admin.therapists.show', $therapist) }}"
                                         class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="Edit Therapist">
+                                        title="View Therapist">
                                         {{ $therapist->id }}
                                     </a>
                                 </td>
-                                <td>{{ $therapist->name }}</td>
+                                <td>
+                                    <a href="{{ route('admin.therapists.show', $therapist) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $therapist->name }}
+                                    </a>
+                                </td>
                                 <td>{{ $therapist->email }}</td>
                                 <td>{{ $therapist->therapistProfile?->manager?->name ?? '—' }}</td>
-                                <td>{{ $therapist->therapistProfile?->phone ?? '—' }}</td>
                                 <td>{{ $therapist->therapistProfile?->position?->value ?? '—' }}</td>
-                                <td>{{ $therapist->therapistProfile?->employee_type?->value ?? '—' }}</td>
+                                <td>{{ $therapist->therapistProfile?->max_weekly_hours ?? '—' }}</td>
                                 <td>
                                     <x-ui::badge :variant="$therapist->status?->value === 'active' ? 'success' : 'secondary'">
                                         {{ ucfirst($therapist->status?->value ?? 'inactive') }}
@@ -101,6 +116,16 @@
                                 </td>
                                 <td>
                                     <div class="flex space-x-1">
+                                        <a href="{{ route('admin.therapists.show', $therapist) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View Therapist" dusk="view-therapist-{{ $therapist->id }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('admin.therapists.edit', $therapist) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                                             title="Edit Therapist" dusk="edit-therapist-{{ $therapist->id }}">

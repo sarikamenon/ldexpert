@@ -24,6 +24,8 @@ use App\Http\Requests\Admin\Therapist\StoreTherapistRequest;
 use App\Http\Requests\Admin\Therapist\UpdateTherapistRequest;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use App\Models\ServiceSupportAgreement;
+use App\Enums\SSAStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -49,6 +51,7 @@ final class TherapistController extends Controller
             'therapists' => $therapists,
             'metrics' => $metrics,
             'filters' => $request->validated(),
+            'positions' => TherapistPosition::cases(),
         ]);
     }
 
@@ -81,6 +84,45 @@ final class TherapistController extends Controller
         return view('admin.therapists.edit', [
             'therapist' => $therapist->load('therapistProfile'),
         ] + $this->referenceData());
+    }
+
+    public function show(User $therapist): View
+    {
+        $this->authorize('view', TherapistProfile::class);
+
+        $therapist->load([
+            'therapistProfile',
+            'students.studentProfile.school',
+        ]);
+
+        $ssas = ServiceSupportAgreement::with(['student', 'primaryService'])
+            ->where('assigned_therapist_id', $therapist->id)
+            ->orderByDesc('start_date')
+            ->get();
+
+        $totalTho = (int) $ssas->sum('tho_minutes');
+        $served = (int) $ssas->sum('served_minutes');
+
+        $chartData = [
+            'served' => $served,
+            'remaining' => max(0, $totalTho - $served),
+            'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
+        ];
+
+        $metrics = [
+            'total_students' => $therapist->students->count(),
+            'active_ssas' => $ssas->where('status', SSAStatus::ACTIVE)->count(),
+            'completed_ssas' => $ssas->where('status', SSAStatus::COMPLETED)->count(),
+            'pending_ssas' => $ssas->where('status', SSAStatus::PENDING)->count(),
+        ];
+
+        return view('admin.therapists.show', [
+            'therapist' => $therapist,
+            'ssas' => $ssas,
+            'students' => $therapist->students,
+            'chartData' => $chartData,
+            'metrics' => $metrics,
+        ]);
     }
 
     public function update(UpdateTherapistRequest $request, User $therapist): RedirectResponse
@@ -165,4 +207,3 @@ final class TherapistController extends Controller
         ];
     }
 }
-

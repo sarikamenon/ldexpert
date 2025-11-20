@@ -71,7 +71,7 @@
                             <th>Email</th>
                             <th>School</th>
                             <th>Grade Level</th>
-                            <th>Date of Birth</th>
+                            <th class="w-40">Date of Birth</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -84,17 +84,33 @@
                             @endphp
                             <tr>
                                 <td>
-                                    <a href="{{ route('admin.students.edit', $student) }}"
+                                    <a href="{{ route('admin.students.show', $student) }}"
                                         class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="Edit Student">
+                                        title="View Student">
                                         {{ $student->id }}
                                     </a>
                                 </td>
-                                <td>{{ $student->name }}</td>
+                                <td>
+                                    <a href="{{ route('admin.students.show', $student) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $student->name }}
+                                    </a>
+                                </td>
                                 <td>{{ $student->email }}</td>
-                                <td>{{ $profile?->school?->display_name ?? '—' }}</td>
+                                <td>
+                                    @if ($profile?->school)
+                                        <a href="{{ route('admin.schools.show', $profile->school) }}"
+                                            class="text-primary hover:underline">
+                                            {{ $profile->school->display_name }}
+                                        </a>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
                                 <td>{{ $profile?->grade_level ?? '—' }}</td>
-                                <td>{{ optional($profile?->date_of_birth)->format('Y-m-d') ?? '—' }}</td>
+                                <td class="w-40 whitespace-nowrap">
+                                    {{ optional($profile?->date_of_birth)->format('Y-m-d') ?? '—' }}
+                                </td>
                                 <td>
                                     <x-ui::badge :variant="$isActive ? 'success' : 'secondary'">
                                         {{ ucfirst($student->status?->value ?? 'inactive') }}
@@ -102,6 +118,16 @@
                                 </td>
                                 <td>
                                     <div class="flex space-x-1">
+                                        <a href="{{ route('admin.students.show', $student) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View Student">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('admin.students.edit', $student) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                                             title="Edit Student" dusk="edit-student-{{ $student->id }}">

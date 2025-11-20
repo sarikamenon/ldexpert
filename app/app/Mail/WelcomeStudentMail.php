@@ -20,7 +20,7 @@ final class WelcomeStudentMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Welcome to Learning Dynamics')
+        return $this->subject('Welcome to NOVA')
             ->view('emails.welcome-student');
     }
 }

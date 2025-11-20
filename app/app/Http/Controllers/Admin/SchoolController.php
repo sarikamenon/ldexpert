@@ -22,6 +22,9 @@ use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
 use App\Http\Requests\Admin\School\UpdateSchoolRequest;
 use App\Models\School;
+use App\Models\User;
+use App\Models\ServiceSupportAgreement;
+use App\Enums\SSAStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -107,6 +110,60 @@ final class SchoolController extends Controller
             ->with('status', $message);
     }
 
+    public function show(School $school): View
+    {
+        $this->authorize('view', $school);
+
+        $school->load('manager');
+
+        $students = User::query()
+            ->where('role', Role::STUDENT)
+            ->whereHas('studentProfile', fn($q) => $q->where('school_id', $school->id))
+            ->with('studentProfile')
+            ->get();
+
+        $ssas = ServiceSupportAgreement::with(['student', 'primaryService', 'assignedTherapist'])
+            ->whereHas('student.studentProfile', fn($q) => $q->where('school_id', $school->id))
+            ->orderByDesc('start_date')
+            ->get();
+
+        $therapists = User::query()
+            ->where('role', Role::THERAPIST)
+            ->whereHas('students.studentProfile', fn($q) => $q->where('school_id', $school->id))
+            ->with('therapistProfile')
+            ->get()
+            ->unique('id')
+            ->values();
+
+        $statusCounts = [
+            'Active' => $ssas->where('status', SSAStatus::ACTIVE)->count(),
+            'Pending' => $ssas->where('status', SSAStatus::PENDING)->count(),
+            'Completed' => $ssas->where('status', SSAStatus::COMPLETED)->count(),
+            'Deactivated' => $ssas->where('status', SSAStatus::DEACTIVATED)->count(),
+        ];
+
+        $metrics = [
+            'total_students' => $students->count(),
+            'total_therapists' => $therapists->count(),
+            'total_ssas' => $ssas->count(),
+        ];
+
+        $chartData = [
+            'labels' => array_keys($statusCounts),
+            'data' => array_values($statusCounts),
+        ];
+
+        return view('admin.schools.show', [
+            'school' => $school,
+            'students' => $students,
+            'therapists' => $therapists,
+            'ssas' => $ssas,
+            'statusCounts' => $statusCounts,
+            'metrics' => $metrics,
+            'chartData' => $chartData,
+        ]);
+    }
+
     public function export(ExportSchoolsRequest $request): StreamedResponse
     {
         $this->authorize('export', School::class);
@@ -131,6 +188,7 @@ final class SchoolController extends Controller
                 'Status',
             ]);
 
+            /** @var \App\Models\School $school */
             foreach ($rows as $school) {
                 fputcsv($handle, [
                     $school->id,

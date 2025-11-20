@@ -6,18 +6,18 @@ namespace App\Enums;
 
 enum ServiceFrequency: string
 {
-    case DAILY = 'daily';
     case WEEKLY = 'weekly';
+    case BI_WEEKLY = 'bi_weekly';
     case MONTHLY = 'monthly';
-    case ADHOC = 'adhoc';
+    case QUARTERLY = 'quarterly';
 
     public function label(): string
     {
         return match ($this) {
-            self::DAILY => 'Daily',
             self::WEEKLY => 'Weekly',
+            self::BI_WEEKLY => 'Bi-weekly',
             self::MONTHLY => 'Monthly',
-            self::ADHOC => 'Ad Hoc',
+            self::QUARTERLY => 'Quarterly',
         };
     }
 

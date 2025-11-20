@@ -20,6 +20,7 @@ final class CreateTherapistDTO
         public readonly string $state,
         public readonly string $timezone,
         public readonly int $managerId,
+        public readonly int $maxWeeklyHours,
         public readonly ?string $dob,
         public readonly string $password,
     ) {}
@@ -40,6 +41,7 @@ final class CreateTherapistDTO
             state: $data['state'],
             timezone: $data['timezone'],
             managerId: (int) $data['manager_id'],
+            maxWeeklyHours: (int) $data['max_weekly_hours'],
             dob: $data['dob'] ?? null,
             password: $data['password'],
         );
@@ -73,6 +75,7 @@ final class CreateTherapistDTO
             'state' => $this->state,
             'timezone' => $this->timezone,
             'manager_id' => $this->managerId,
+            'max_weekly_hours' => $this->maxWeeklyHours,
             'dob' => $this->dob,
         ];
     }

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use App\Models\Service;
 use App\Models\User;
@@ -20,9 +19,9 @@ function servicePayload(): array
     return [
         'name' => 'Speech Therapy',
         'description' => 'Weekly individual session.',
-        'direct_service' => true,
-        'group_service' => false,
-        'frequency' => ServiceFrequency::WEEKLY->value,
+        'is_direct_service' => true,
+        'is_group_service' => false,
+        'is_frequency_service' => true,
         'delivery_mode' => 'virtual',
         'is_billable' => true,
         'min_duration_minutes' => 30,
@@ -32,6 +31,7 @@ function servicePayload(): array
 }
 
 it('allows admin to view services index', function () {
+    /** @var \Tests\TestCase $this */
     $admin = admin();
     Service::factory()->create();
 
@@ -42,6 +42,7 @@ it('allows admin to view services index', function () {
 });
 
 it('prevents non-admin access to services index', function () {
+    /** @var \Tests\TestCase $this */
     $therapist = User::factory()->therapist()->create();
 
     $this->actingAs($therapist)
@@ -50,6 +51,7 @@ it('prevents non-admin access to services index', function () {
 });
 
 it('creates a service', function () {
+    /** @var \Tests\TestCase $this */
     $admin = admin();
     $payload = servicePayload();
 
@@ -60,13 +62,14 @@ it('creates a service', function () {
 
     $this->assertDatabaseHas('services', [
         'name' => 'Speech Therapy',
-        'frequency' => ServiceFrequency::WEEKLY->value,
-        'direct_service' => true,
-        'group_service' => false,
+        'is_frequency_service' => true,
+        'is_direct_service' => true,
+        'is_group_service' => false,
     ]);
 });
 
 it('updates a service', function () {
+    /** @var \Tests\TestCase $this */
     $admin = admin();
     $service = Service::factory()->create();
     $payload = servicePayload();
@@ -84,6 +87,7 @@ it('updates a service', function () {
 });
 
 it('changes service status via api', function () {
+    /** @var \Tests\TestCase $this */
     $admin = admin();
     $service = Service::factory()->create([
         'status' => ServiceStatus::ACTIVE->value,

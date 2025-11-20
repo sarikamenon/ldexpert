@@ -17,9 +17,9 @@ final class ServiceSeeder extends Seeder
             $payload = Arr::only($serviceData, [
                 'name',
                 'description',
-                'direct_service',
-                'group_service',
-                'frequency',
+                'is_direct_service',
+                'is_group_service',
+                'is_frequency_service',
                 'delivery_mode',
                 'is_billable',
                 'min_duration_minutes',

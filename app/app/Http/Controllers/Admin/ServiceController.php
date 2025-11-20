@@ -9,7 +9,6 @@ use App\DTOs\ChangeServiceStatusDTO;
 use App\DTOs\CreateServiceDTO;
 use App\DTOs\ServiceFilterDTO;
 use App\DTOs\UpdateServiceDTO;
-use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Service\ChangeServiceStatusRequest;
@@ -40,8 +39,6 @@ final class ServiceController extends Controller
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'statuses' => ServiceStatus::cases(),
-            'frequencies' => ServiceFrequency::cases(),
-            'deliveryModes' => Service::deliveryModeOptions(),
         ]);
     }
 
@@ -49,7 +46,7 @@ final class ServiceController extends Controller
     {
         $this->authorize('create', Service::class);
 
-        return view('admin.services.create', $this->formData());
+        return view('admin.services.create');
     }
 
     public function store(StoreServiceRequest $request): RedirectResponse
@@ -70,7 +67,7 @@ final class ServiceController extends Controller
 
         return view('admin.services.edit', [
             'service' => $service,
-        ] + $this->formData());
+        ]);
     }
 
     public function update(UpdateServiceRequest $request, Service $service): RedirectResponse
@@ -102,18 +99,4 @@ final class ServiceController extends Controller
         ]);
     }
 
-    /**
-     * @return array{
-     *     statuses: array<int, ServiceStatus>,
-     *     frequencies: array<int, ServiceFrequency>
-     * }
-     */
-    private function formData(): array
-    {
-        return [
-            'statuses' => ServiceStatus::cases(),
-            'frequencies' => ServiceFrequency::cases(),
-            'deliveryModes' => Service::deliveryModeOptions(),
-        ];
-    }
 }

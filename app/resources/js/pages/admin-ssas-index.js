@@ -1,0 +1,302 @@
+import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
+import Swal from 'sweetalert2';
+
+async function initSSATable() {
+    try {
+        await loadDataTablesLibrary();
+        await initDataTable('#ssasTable', {
+            order: [[0, 'desc']],
+            pageLength: 25,
+            columnDefs: [{ orderable: false, targets: -1 }],
+        });
+    } catch (error) {
+        console.error('Failed to init SSAs table', error);
+    }
+}
+
+function setupStatusChanges() {
+    const buttons = document.querySelectorAll('.change-status-btn');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    buttons.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const ssaId = button.dataset.ssaId;
+            const status = button.dataset.status;
+            const statusLabels = {
+                active: 'Activate',
+                completed: 'Complete',
+                deactivated: 'Deactivate',
+            };
+            const action = statusLabels[status] || 'Update';
+
+            // For Complete and Deactivate, require reason input
+            const requiresReason = status === 'completed' || status === 'deactivated';
+            const reasonText = status === 'completed' 
+                ? 'Service has been completed successfully.'
+                : 'Student has left in between of service.';
+
+            const result = await confirmDialog({
+                title: `${action} SSA?`,
+                text: requiresReason 
+                    ? `You are about to ${action.toLowerCase()} this SSA. Please provide a reason (optional).`
+                    : `You are about to ${action.toLowerCase()} this SSA.`,
+                icon: 'warning',
+                confirmButtonText: `Yes, ${action.toLowerCase()}`,
+                showInput: requiresReason,
+                inputPlaceholder: requiresReason ? `Reason (optional, e.g., ${reasonText})` : '',
+                inputValidator: requiresReason ? () => null : undefined, // Optional reason - return null means valid
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            try {
+                showLoading('Updating SSA status...');
+                const response = await fetch(`/admin/ssas/${ssaId}/status`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        status,
+                        reason: result.value || null,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    await successToast(data.message);
+                    window.location.reload();
+                } else {
+                    errorAlert(data.message || 'Failed to update SSA status.');
+                }
+            } catch (error) {
+                console.error('Failed to update SSA status', error);
+                errorAlert('An unexpected error occurred.');
+            } finally {
+                closeAlert();
+            }
+        });
+    });
+}
+
+function setupAssignmentActions() {
+    const assignBtn = document.getElementById('assignTherapistBtn');
+    const unassignBtn = document.getElementById('unassignTherapistBtn');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    if (assignBtn) {
+        assignBtn.addEventListener('click', async () => {
+            const ssaId = assignBtn.dataset.ssaId;
+
+            // Get therapists from a hidden select or fetch from page
+            const therapistSelect = document.getElementById('therapist_select_for_assignment');
+            if (!therapistSelect) {
+                errorAlert('Therapist list not available. Please refresh the page.');
+                return;
+            }
+
+            // Build options object for SweetAlert2
+            const inputOptions = {};
+            Array.from(therapistSelect.options).forEach((option) => {
+                if (option.value) {
+                    inputOptions[option.value] = option.text;
+                }
+            });
+
+            const result = await Swal.fire({
+                title: 'Assign Therapist?',
+                text: 'Please select a therapist to assign.',
+                icon: 'question',
+                input: 'select',
+                inputOptions: inputOptions,
+                inputPlaceholder: 'Select a therapist',
+                showCancelButton: true,
+                confirmButtonText: 'Assign',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                customClass: {
+                    popup: 'rounded-lg',
+                    confirmButton: 'rounded-lg px-4 py-2',
+                    cancelButton: 'rounded-lg px-4 py-2',
+                },
+            });
+
+            if (!result.isConfirmed || !result.value) {
+                return;
+            }
+
+            try {
+                showLoading('Assigning therapist...');
+                const response = await fetch(`/admin/ssas/${ssaId}/assign-therapist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        therapist_id: result.value,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    await successToast(data.message);
+                    window.location.reload();
+                } else {
+                    errorAlert(data.message || 'Failed to assign therapist.');
+                }
+            } catch (error) {
+                console.error('Failed to assign therapist', error);
+                errorAlert('An unexpected error occurred.');
+            } finally {
+                closeAlert();
+            }
+        });
+    }
+
+    if (unassignBtn) {
+        unassignBtn.addEventListener('click', async () => {
+            const ssaId = unassignBtn.dataset.ssaId;
+
+            const result = await confirmDialog({
+                title: 'Unassign Therapist?',
+                text: 'You are about to unassign the therapist from this SSA.',
+                icon: 'warning',
+                confirmButtonText: 'Yes, unassign',
+                showInput: true,
+                inputPlaceholder: 'Reason (optional)',
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            try {
+                showLoading('Unassigning therapist...');
+                const response = await fetch(`/admin/ssas/${ssaId}/unassign-therapist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        reason: result.value || null,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    await successToast(data.message);
+                    window.location.reload();
+                } else {
+                    errorAlert(data.message || 'Failed to unassign therapist.');
+                }
+            } catch (error) {
+                console.error('Failed to unassign therapist', error);
+                errorAlert('An unexpected error occurred.');
+            } finally {
+                closeAlert();
+            }
+        });
+    }
+}
+
+function setupListAssignmentActions() {
+    const assignButtons = document.querySelectorAll('.assign-therapist-btn');
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+    assignButtons.forEach((button) => {
+        button.addEventListener('click', async () => {
+            const ssaId = button.dataset.ssaId;
+
+            // Get therapists from a hidden select
+            const therapistSelect = document.getElementById('therapist_select_for_assignment');
+            if (!therapistSelect) {
+                errorAlert('Therapist list not available. Please refresh the page.');
+                return;
+            }
+
+            // Build options object for SweetAlert2
+            const inputOptions = {};
+            Array.from(therapistSelect.options).forEach((option) => {
+                if (option.value) {
+                    inputOptions[option.value] = option.text;
+                }
+            });
+
+            const result = await Swal.fire({
+                title: 'Assign Therapist?',
+                text: 'Please select a therapist to assign.',
+                icon: 'question',
+                input: 'select',
+                inputOptions: inputOptions,
+                inputPlaceholder: 'Select a therapist',
+                showCancelButton: true,
+                confirmButtonText: 'Assign',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                customClass: {
+                    popup: 'rounded-lg',
+                    confirmButton: 'rounded-lg px-4 py-2',
+                    cancelButton: 'rounded-lg px-4 py-2',
+                },
+            });
+
+            if (!result.isConfirmed || !result.value) {
+                return;
+            }
+
+            try {
+                showLoading('Assigning therapist...');
+                const response = await fetch(`/admin/ssas/${ssaId}/assign-therapist`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        Accept: 'application/json',
+                    },
+                    body: JSON.stringify({
+                        therapist_id: result.value,
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    await successToast(data.message);
+                    window.location.reload();
+                } else {
+                    errorAlert(data.message || 'Failed to assign therapist.');
+                }
+            } catch (error) {
+                console.error('Failed to assign therapist', error);
+                errorAlert('An unexpected error occurred.');
+            } finally {
+                closeAlert();
+            }
+        });
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('ssasTable')) {
+        initSSATable();
+    }
+
+    setupStatusChanges();
+    setupAssignmentActions();
+    setupListAssignmentActions();
+});
+

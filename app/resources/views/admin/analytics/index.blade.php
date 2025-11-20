@@ -1,6 +1,19 @@
 <x-admin.layouts.app>
     <x-slot name="styles">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            // NOVA Brand Colors for Charts
+            const novaColors = {
+                primary: '#5563b8',
+                secondary: '#14b8a6',
+                accent: '#a855f7',
+                cyan: '#06b6d4',
+                fuchsia: '#d946ef',
+                palette: ['#5563b8', '#14b8a6', '#a855f7', '#06b6d4', '#d946ef', '#2dd4bf', '#c084fc', '#9333ea'],
+                primaryBg: 'rgba(85, 99, 184, 0.1)',
+                accentBg: 'rgba(168, 85, 247, 0.1)',
+            };
+        </script>
     </x-slot>
 
     <x-page-title title="Analytics Overview" />
@@ -163,7 +176,7 @@
                             labels: usersByRoleData.labels.map(label => label.charAt(0).toUpperCase() + label.slice(1)),
                             datasets: [{
                                 data: usersByRoleData.data,
-                                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                                backgroundColor: novaColors.palette.slice(0, 5),
                             }]
                         },
                         options: {
@@ -187,7 +200,7 @@
                             datasets: [{
                                 label: 'Count',
                                 data: activityData.data,
-                                backgroundColor: '#3b82f6',
+                                backgroundColor: novaColors.primary,
                             }]
                         },
                         options: {

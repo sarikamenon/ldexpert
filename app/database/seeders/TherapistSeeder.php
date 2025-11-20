@@ -48,6 +48,7 @@ class TherapistSeeder extends Seeder
                 'state' => env('THERAPIST_STATE', 'CA'),
                 'timezone' => env('THERAPIST_TIMEZONE', 'America/Los_Angeles'),
                 'manager_id' => $managerId,
+                'max_weekly_hours' => (int) env('THERAPIST_MAX_WEEKLY_HOURS', 40),
                 'dob' => env('THERAPIST_DOB', now()->subYears(32)->format('Y-m-d')),
             ]
         );

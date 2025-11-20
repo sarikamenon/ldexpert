@@ -49,6 +49,7 @@ final class TherapistServiceTest extends TestCase
             state: 'CA',
             timezone: 'America/Los_Angeles',
             managerId: $manager->id,
+            maxWeeklyHours: 40,
             dob: null,
             password: 'SecurePass123!'
         );
@@ -88,6 +89,7 @@ final class TherapistServiceTest extends TestCase
             state: 'NY',
             timezone: 'America/New_York',
             managerId: $manager->id,
+            maxWeeklyHours: 25,
             dob: '1990-01-01'
         );
 

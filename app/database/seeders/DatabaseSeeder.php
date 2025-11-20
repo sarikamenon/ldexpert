@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             StudentSeeder::class,
             SchoolContractSeeder::class,
             TherapistContractSeeder::class,
+            SSASeeder::class,
         ]);
     }
 }

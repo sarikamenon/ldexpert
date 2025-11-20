@@ -1,1 +1,2 @@
-<img src="{{ asset('images/ld-expert-logo.png') }}" alt="LD Expert" {{ $attributes }}>
+<img src="{{ asset('images/nova-logo.png') }}" alt="NOVA - Neuroaffirming Operations & Virtual Administration"
+    {{ $attributes }}>

@@ -25,6 +25,7 @@ final class CreateTherapistDTOTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => 1,
+            'max_weekly_hours' => 30,
             'dob' => '1990-01-01',
             'password' => 'SecurePass123!',
         ];
@@ -44,6 +45,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame('CA', $dto->state);
         $this->assertSame('America/Los_Angeles', $dto->timezone);
         $this->assertSame(1, $dto->managerId);
+        $this->assertSame(30, $dto->maxWeeklyHours);
         $this->assertSame('1990-01-01', $dto->dob);
         $this->assertSame('SecurePass123!', $dto->password);
     }
@@ -61,6 +63,7 @@ final class CreateTherapistDTOTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => 1,
+            'max_weekly_hours' => 25,
             'password' => 'Pass123!',
         ];
 
@@ -88,6 +91,7 @@ final class CreateTherapistDTOTest extends TestCase
             state: 'NY',
             timezone: 'America/New_York',
             managerId: 2,
+            maxWeeklyHours: 32,
             dob: '1985-05-15',
             password: 'TestPass456!'
         );
@@ -117,6 +121,7 @@ final class CreateTherapistDTOTest extends TestCase
             state: 'TX',
             timezone: 'America/Chicago',
             managerId: 3,
+            maxWeeklyHours: 28,
             dob: null,
             password: 'Pass789!'
         );
@@ -137,6 +142,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame('TX', $array['state']);
         $this->assertSame('America/Chicago', $array['timezone']);
         $this->assertSame(3, $array['manager_id']);
+        $this->assertSame(28, $array['max_weekly_hours']);
         $this->assertNull($array['dob']);
     }
 }

@@ -1,6 +1,19 @@
 <x-admin.layouts.app>
     <x-slot name="styles">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            // NOVA Brand Colors for Charts
+            const novaColors = {
+                primary: '#5563b8',
+                secondary: '#14b8a6',
+                accent: '#a855f7',
+                cyan: '#06b6d4',
+                fuchsia: '#d946ef',
+                palette: ['#5563b8', '#14b8a6', '#a855f7', '#06b6d4', '#d946ef', '#2dd4bf', '#c084fc', '#9333ea'],
+                primaryBg: 'rgba(85, 99, 184, 0.1)',
+                accentBg: 'rgba(168, 85, 247, 0.1)',
+            };
+        </script>
     </x-slot>
 
     {{-- 
@@ -8,13 +21,13 @@
         
         LIVE DATA:
         - Schools Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
-        - Therapist Capacity: Total, Active, Available for Assignment, New This Month (clickable - links to therapists index)
-        - Recent Activity: Latest schools and therapists added
-        
-        DUMMY DATA (will be replaced when modules are implemented):
-        - Student Population metrics
-        - Service Delivery (SSAs) metrics
-        - Upcoming Events & Deadlines
+        - Therapist Capacity: Total, Active, Inactive, New This Month (clickable - links to therapists index)
+        - Student Population: Total, Active, Needing SSA, New This Month (clickable - links to students index)
+        - Service Delivery: Active SSAs, Pending, Utilization (clickable - links to SSAs index)
+        - Recent Activity: Latest schools, therapists, students, and SSAs added
+        - Upcoming Events: Real SSA expiration dates and contract expirations
+        - Charts: Real SSA status distribution, therapist positions, utilization trends
+        - Operational Metrics: Real calculated metrics from database
         
         HIDDEN/DISABLED:
         - Needs Attention section (will be implemented later)
@@ -100,68 +113,72 @@
         </a>
 
         {{-- Student Population --}}
-        <x-ui::card class="p-6 h-full">
-            <div class="flex items-center justify-between mb-2">
-                <p class="text-sm text-foreground/70">Student Population</p>
-            </div>
-            <div class="flex items-start justify-between mb-4">
-                <div>
-                    <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['students']['total'] }}</p>
+        <a href="{{ route('admin.students.index') }}" class="block hover:scale-[1.02] transition-transform">
+            <x-ui::card class="p-6 h-full hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm text-foreground/70">Student Population</p>
                 </div>
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['students']['total'] }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
                 </div>
-            </div>
-            <div class="space-y-1 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Active:</span>
-                    <span class="font-medium text-success">{{ $metrics['students']['active'] }}</span>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Active:</span>
+                        <span class="font-medium text-success">{{ $metrics['students']['active'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Needing SSA:</span>
+                        <span class="font-medium text-warning">{{ $metrics['students']['needing_ssa'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">New This Month:</span>
+                        <span class="font-medium text-primary">+{{ $metrics['students']['new_this_month'] }}</span>
+                    </div>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Needing SSA:</span>
-                    <span class="font-medium text-warning">{{ $metrics['students']['needing_ssa'] }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">New This Month:</span>
-                    <span class="font-medium text-primary">+{{ $metrics['students']['new_this_month'] }}</span>
-                </div>
-            </div>
-        </x-ui::card>
+            </x-ui::card>
+        </a>
 
         {{-- Service Delivery Status --}}
-        <x-ui::card class="p-6 h-full">
-            <div class="flex items-center justify-between mb-2">
-                <p class="text-sm text-foreground/70">Service Delivery</p>
-            </div>
-            <div class="flex items-start justify-between mb-4">
-                <div>
-                    <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['ssas']['active'] }}</p>
+        <a href="{{ route('admin.ssas.index') }}" class="block hover:scale-[1.02] transition-transform">
+            <x-ui::card class="p-6 h-full hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm text-foreground/70">Service Delivery</p>
                 </div>
-                <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['ssas']['active'] }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
                 </div>
-            </div>
-            <div class="space-y-1 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Active SSAs:</span>
-                    <span class="font-medium text-success">{{ $metrics['ssas']['active'] }}</span>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Active SSAs:</span>
+                        <span class="font-medium text-success">{{ $metrics['ssas']['active'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Pending:</span>
+                        <span class="font-medium text-warning">{{ $metrics['ssas']['pending'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Utilization:</span>
+                        <span class="font-medium text-primary">{{ $metrics['ssas']['avg_utilization'] }}%</span>
+                    </div>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Pending:</span>
-                    <span class="font-medium text-warning">{{ $metrics['ssas']['pending'] }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Utilization:</span>
-                    <span class="font-medium text-primary">{{ $metrics['ssas']['avg_utilization'] }}%</span>
-                </div>
-            </div>
-        </x-ui::card>
+            </x-ui::card>
+        </a>
     </div>
 
     {{-- Section 2: Critical Alerts (Hidden for now - will be implemented later) --}}
@@ -226,6 +243,10 @@
         <x-ui::card class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-foreground">Recent Activity</h3>
+                <a href="{{ route('admin.activity-logs.index') }}"
+                    class="text-sm font-medium text-primary hover:underline">
+                    View more
+                </a>
             </div>
             @if (count($recentActivity) > 0)
                 <div class="space-y-3">
@@ -245,6 +266,12 @@
                                             stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    @elseif($activity['icon'] === 'document')
+                                        <svg class="w-4 h-4 text-{{ $activity['color'] }}" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                     @endif
                                 </div>
@@ -428,15 +455,15 @@
                         datasets: [{
                                 label: 'THO Minutes',
                                 data: utilizationData.tho_minutes.filter((_, i) => i % 5 === 0),
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderColor: novaColors.primary,
+                                backgroundColor: novaColors.primaryBg,
                                 fill: false,
                             },
                             {
                                 label: 'Served Minutes',
                                 data: utilizationData.served_minutes.filter((_, i) => i % 5 === 0),
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderColor: novaColors.accent,
+                                backgroundColor: novaColors.accentBg,
                                 fill: false,
                             }
                         ]

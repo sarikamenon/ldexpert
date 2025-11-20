@@ -12,7 +12,7 @@
         style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:8px; border:1px solid #e5e7eb;">
         <tr>
             <td style="padding:24px 24px 8px 24px;">
-                <h1 style="margin:0; font-size:20px; color:#0b1220;">Welcome to Bird</h1>
+                <h1 style="margin:0; font-size:20px; color:#0b1220;">Welcome to NOVA</h1>
                 <p style="margin:8px 0 0; color:#475569;">Hi {{ $name }}, your account has been created.</p>
             </td>
         </tr>
@@ -23,12 +23,13 @@
                 <p style="margin:0 0 16px; color:#475569;">Please verify your email and change the password after first
                     login.</p>
                 <a href="{{ config('app.url') }}/login"
-                    style="display:inline-block; background:#0ea5e9; color:#ffffff; text-decoration:none; padding:10px 14px; border-radius:8px;">Go
+                    style="display:inline-block; background:linear-gradient(135deg, #5563b8 0%, #a855f7 100%); color:#ffffff; text-decoration:none; padding:10px 14px; border-radius:8px;">Go
                     to Login</a>
             </td>
         </tr>
         <tr>
-            <td style="padding:24px; color:#94a3b8; font-size:12px;">&copy; {{ date('Y') }} Bird</td>
+            <td style="padding:24px; color:#94a3b8; font-size:12px;">&copy; {{ date('Y') }} NOVA - Neuroaffirming
+                Operations & Virtual Administration</td>
         </tr>
     </table>
 </body>

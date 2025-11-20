@@ -9,6 +9,7 @@ final class TherapistFilterDTO
     public function __construct(
         public readonly ?string $search = null,
         public readonly ?string $status = null,
+        public readonly ?string $position = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -16,6 +17,7 @@ final class TherapistFilterDTO
         return new self(
             search: $data['search'] ?? null,
             status: $data['status'] ?? null,
+            position: $data['position'] ?? null,
         );
     }
 
@@ -24,6 +26,7 @@ final class TherapistFilterDTO
         return [
             'search' => $this->search,
             'status' => $this->status,
+            'position' => $this->position,
         ];
     }
 }

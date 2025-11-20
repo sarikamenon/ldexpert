@@ -37,4 +37,17 @@ abstract class SchoolContractFormRequest extends FormRequest
             'services.*.rate_type' => ['required', Rule::in(RateType::values())],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'services.*.service_id.required' => 'Please select a service.',
+            'services.*.service_id.distinct' => 'This service has already been added. Please select a different service.',
+            'services.*.service_id.exists' => 'The selected service is invalid or no longer available.',
+            'services.*.rate.required' => 'Rate is required.',
+            'services.*.rate.numeric' => 'Rate must be a valid number.',
+            'services.*.rate.min' => 'Rate must be 0 or greater.',
+            'services.*.rate_type.required' => 'Rate type is required.',
+        ];
+    }
 }

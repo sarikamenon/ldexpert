@@ -3,7 +3,9 @@
     $profile = $isEdit ? $therapist->therapistProfile : null;
 @endphp
 
-<form method="POST" action="{{ $isEdit ? route('admin.therapists.update', $therapist) : route('admin.therapists.store') }}" class="space-y-6">
+<form method="POST"
+    action="{{ $isEdit ? route('admin.therapists.update', $therapist) : route('admin.therapists.store') }}"
+    class="space-y-6">
     @csrf
     @if ($isEdit)
         @method('PUT')
@@ -12,22 +14,13 @@
     {{-- Section A: Employment & Identity --}}
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold mb-4">Employment & Identity</h3>
-        
+
         <div class="space-y-4">
             {{-- Employee Type --}}
             <div>
-                <x-input-label for="employee_type" value="Employee Type *" />
-                <div class="flex gap-4 mt-2">
-                    @foreach ($employeeTypes as $type)
-                        <label class="flex items-center">
-                            <input type="radio" name="employee_type" value="{{ $type->value }}"
-                                {{ old('employee_type', $profile?->employee_type?->value) === $type->value ? 'checked' : '' }}
-                                class="rounded border-gray-300 text-primary shadow-sm focus:ring-primary"
-                                dusk="therapist-employee-type-{{ \Illuminate\Support\Str::slug($type->value) }}">
-                            <span class="ml-2 text-sm">{{ $type->value }}</span>
-                        </label>
-                    @endforeach
-                </div>
+                {{-- Temporarily hide employee type selection; default all therapists to 1099 --}}
+                <input type="hidden" name="employee_type"
+                    value="{{ old('employee_type', $profile?->employee_type?->value ?? \App\Enums\EmployeeType::CONTRACTOR_1099->value) }}">
                 <x-input-error :messages="$errors->get('employee_type')" class="mt-2" />
             </div>
 
@@ -60,8 +53,8 @@
             {{-- Last Name --}}
             <div>
                 <x-input-label for="last_name" value="Last Name *" />
-                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full"
-                    :value="old('last_name', $profile?->last_name)" dusk="therapist-last-name" />
+                <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full" :value="old('last_name', $profile?->last_name)"
+                    dusk="therapist-last-name" />
                 <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
             </div>
         </div>
@@ -70,14 +63,13 @@
     {{-- Section B: Contact & Account Details --}}
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold mb-4">Contact & Account Details</h3>
-        
+
         <div class="space-y-4">
             {{-- Personal Email --}}
             <div>
                 <x-input-label for="personal_email" value="Personal Email *" />
                 <x-text-input id="personal_email" name="personal_email" type="email" class="mt-1 block w-full"
-                    :value="old('personal_email', $profile?->personal_email ?? ($isEdit ? $therapist->email : ''))"
-                    dusk="therapist-personal-email" />
+                    :value="old('personal_email', $profile?->personal_email ?? ($isEdit ? $therapist->email : ''))" dusk="therapist-personal-email" />
                 <x-input-error :messages="$errors->get('personal_email')" class="mt-2" />
             </div>
 
@@ -86,14 +78,13 @@
                 <div>
                     <x-input-label for="phone" value="Phone *" />
                     <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full"
-                        placeholder="123-456-7890"
-                        :value="old('phone', $profile?->phone)" dusk="therapist-phone" />
+                        placeholder="123-456-7890" :value="old('phone', $profile?->phone)" dusk="therapist-phone" />
                     <x-input-error :messages="$errors->get('phone')" class="mt-2" />
                 </div>
 
-                {{-- LD Expert Email --}}
+                {{-- NOVA Email --}}
                 <div>
-                    <x-input-label for="ld_email" value="LD Expert Email" />
+                    <x-input-label for="ld_email" value="NOVA Email" />
                     <x-text-input id="ld_email" name="ld_email" type="email" class="mt-1 block w-full"
                         :value="old('ld_email', $profile?->ld_email)" dusk="therapist-ld-email" />
                     <x-input-error :messages="$errors->get('ld_email')" class="mt-2" />
@@ -121,7 +112,7 @@
     {{-- Section C: Professional Details --}}
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold mb-4">Professional Details</h3>
-        
+
         <div class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {{-- Position --}}
@@ -191,12 +182,23 @@
                 </div>
             </div>
 
-            {{-- Date of Birth --}}
-            <div>
-                <x-input-label for="dob" value="Date of Birth" />
-                <x-text-input id="dob" name="dob" type="date" class="mt-1 block w-full"
-                    :value="old('dob', $profile?->dob?->format('Y-m-d'))" />
-                <x-input-error :messages="$errors->get('dob')" class="mt-2" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- Max Weekly Hours --}}
+                <div>
+                    <x-input-label for="max_weekly_hours" value="Max Weekly Hours *" />
+                    <x-text-input id="max_weekly_hours" name="max_weekly_hours" type="number" min="1"
+                        max="168" step="1" class="mt-1 block w-full" :value="old('max_weekly_hours', $profile?->max_weekly_hours ?? 40)"
+                        placeholder="e.g. 40" dusk="therapist-max-weekly-hours" />
+                    <x-input-error :messages="$errors->get('max_weekly_hours')" class="mt-2" />
+                </div>
+
+                {{-- Date of Birth --}}
+                <div>
+                    <x-input-label for="dob" value="Date of Birth" />
+                    <x-text-input id="dob" name="dob" type="date" class="mt-1 block w-full"
+                        :value="old('dob', $profile?->dob?->format('Y-m-d'))" />
+                    <x-input-error :messages="$errors->get('dob')" class="mt-2" />
+                </div>
             </div>
         </div>
     </x-ui::card>
@@ -212,4 +214,3 @@
         </x-primary-button>
     </div>
 </form>
-

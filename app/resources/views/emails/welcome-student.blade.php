@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Learning Dynamics</title>
+    <title>Welcome to NOVA</title>
 </head>
 
 <body style="font-family: 'Inter', ui-sans-serif, system-ui; background:#f5f7fb; padding:24px; color:#0f172a;">
@@ -13,7 +13,7 @@
         <tr>
             <td style="padding:28px 28px 12px 28px;">
                 <p style="margin:0 0 8px; font-size:14px; color:#475569;">Hi {{ $name }},</p>
-                <h1 style="margin:0; font-size:22px; color:#0f172a;">Welcome to your Learning Dynamics space</h1>
+                <h1 style="margin:0; font-size:22px; color:#0f172a;">Welcome to NOVA</h1>
             </td>
         </tr>
         <tr>
@@ -30,31 +30,32 @@
                 </div>
 
                 <p style="margin:0 0 16px;">
-                    For your safety, please sign in soon and create a new password you’ll remember. If you ever feel
+                    For your safety, please sign in soon and create a new password you'll remember. If you ever feel
                     unsure
-                    or need help, reply to this email or reach us at <a href="mailto:support@learningdynamics.com"
-                        style="color:#0ea5e9;">support@learningdynamics.com</a>.
+                    or need help, reply to this email or reach us at <a href="mailto:support@nova.com"
+                        style="color:#5563b8;">support@nova.com</a>.
                 </p>
 
                 <a href="{{ config('app.url') }}/login"
-                    style="display:inline-block; background:#0ea5e9; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:999px; font-weight:600;">
+                    style="display:inline-block; background:linear-gradient(135deg, #5563b8 0%, #a855f7 100%); color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:999px; font-weight:600;">
                     Go to Student Portal
                 </a>
 
                 <p style="margin:24px 0 0;">
-                    We’re here to celebrate your progress and support you on the calm days and the tough ones. Take your
-                    time, breathe, and know that your LD team is just a message away.
+                    We're here to celebrate your progress and support you on the calm days and the tough ones. Take your
+                    time, breathe, and know that your NOVA team is just a message away.
                 </p>
 
                 <p style="margin:24px 0 0;">
                     With care,<br>
-                    The Learning Dynamics Support Team
+                    The NOVA Support Team
                 </p>
             </td>
         </tr>
         <tr>
             <td style="padding:24px 28px; color:#94a3b8; font-size:12px; text-align:center;">
-                &copy; {{ date('Y') }} Learning Dynamics. You’re receiving this email because a secure student
+                &copy; {{ date('Y') }} NOVA - Neuroaffirming Operations & Virtual Administration. You're receiving
+                this email because a secure student
                 account was created for you.
             </td>
         </tr>

@@ -50,6 +50,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $manager->id,
+            'max_weekly_hours' => 40,
         ];
 
         $profile = $this->repository->create($userData, $profileData);
@@ -84,6 +85,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'first_name' => 'Jane',
             'last_name' => 'Smith Updated',
             'phone' => '999-888-7777',
+            'max_weekly_hours' => 30,
         ];
 
         $profile = $this->repository->update($user, $userData, $profileData);
@@ -118,6 +120,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $manager->id,
+            'max_weekly_hours' => 35,
         ];
 
         $profile = $this->repository->update($user, $userData, $profileData);
@@ -223,6 +226,41 @@ final class EloquentTherapistRepositoryTest extends TestCase
         $result = $this->repository->list($filters);
 
         $this->assertCount($initialActiveCount + 3, $result);
+    }
+
+    public function test_list_filters_by_position(): void
+    {
+        $manager = User::factory()->admin()->create();
+
+        $initialCount = User::where('role', 'therapist')
+            ->whereHas('therapistProfile', fn($q) => $q->where('position', 'OT'))
+            ->count();
+
+        User::factory()
+            ->therapist()
+            ->has(TherapistProfile::factory()->state([
+                'manager_id' => $manager->id,
+                'position' => 'OT',
+            ]), 'therapistProfile')
+            ->count(2)
+            ->create();
+
+        User::factory()
+            ->therapist()
+            ->has(TherapistProfile::factory()->state([
+                'manager_id' => $manager->id,
+                'position' => 'SLP',
+            ]), 'therapistProfile')
+            ->count(3)
+            ->create();
+
+        $filters = new TherapistFilterDTO(position: 'OT');
+        $result = $this->repository->list($filters);
+
+        $this->assertCount($initialCount + 2, $result);
+        $this->assertTrue($result->every(
+            fn($user) => $user->therapistProfile?->position?->value === 'OT'
+        ));
     }
 
     public function test_change_status_updates_user_status(): void

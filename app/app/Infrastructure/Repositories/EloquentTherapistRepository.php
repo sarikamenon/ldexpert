@@ -59,6 +59,12 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $query->where('status', $filters->status);
         }
 
+        if ($filters->position) {
+            $query->whereHas('therapistProfile', function ($q) use ($filters) {
+                $q->where('position', $filters->position);
+            });
+        }
+
         return $query->latest()->get();
     }
 
@@ -104,6 +110,12 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
 
         if ($filters->status) {
             $query->where('status', $filters->status);
+        }
+
+        if ($filters->position) {
+            $query->whereHas('therapistProfile', function ($q) use ($filters) {
+                $q->where('position', $filters->position);
+            });
         }
 
         return $query->latest()->get();

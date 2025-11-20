@@ -40,28 +40,25 @@
                     @endforeach
                 </select>
 
-                <select name="frequency"
+                <select name="is_frequency_service"
                     class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">All Frequencies</option>
-                    @foreach ($frequencies as $frequency)
-                        <option value="{{ $frequency->value }}" @selected(($filters['frequency'] ?? null) === $frequency->value)>
-                            {{ $frequency->label() }}
-                        </option>
-                    @endforeach
+                    <option value="">Frequency?</option>
+                    <option value="1" @selected(($filters['is_frequency_service'] ?? null) === '1')>Yes</option>
+                    <option value="0" @selected(($filters['is_frequency_service'] ?? null) === '0')>No</option>
                 </select>
 
-                <select name="direct_service"
+                <select name="is_direct_service"
                     class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
                     <option value="">Direct?</option>
-                    <option value="1" @selected(($filters['direct_service'] ?? null) === '1')>Yes</option>
-                    <option value="0" @selected(($filters['direct_service'] ?? null) === '0')>No</option>
+                    <option value="1" @selected(($filters['is_direct_service'] ?? null) === '1')>Yes</option>
+                    <option value="0" @selected(($filters['is_direct_service'] ?? null) === '0')>No</option>
                 </select>
 
-                <select name="group_service"
+                <select name="is_group_service"
                     class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
                     <option value="">Group?</option>
-                    <option value="1" @selected(($filters['group_service'] ?? null) === '1')>Yes</option>
-                    <option value="0" @selected(($filters['group_service'] ?? null) === '0')>No</option>
+                    <option value="1" @selected(($filters['is_group_service'] ?? null) === '1')>Yes</option>
+                    <option value="0" @selected(($filters['is_group_service'] ?? null) === '0')>No</option>
                 </select>
 
                 <select name="is_billable"
@@ -69,16 +66,6 @@
                     <option value="">Billable?</option>
                     <option value="1" @selected(($filters['is_billable'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_billable'] ?? null) === '0')>No</option>
-                </select>
-
-                <select name="delivery_mode"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">Any Delivery</option>
-                    @foreach ($deliveryModes as $mode => $label)
-                        <option value="{{ $mode }}" @selected(($filters['delivery_mode'] ?? null) === $mode)>
-                            {{ $label }}
-                        </option>
-                    @endforeach
                 </select>
 
                 <button type="submit"
@@ -99,7 +86,6 @@
                             <th>Name</th>
                             <th>Frequency</th>
                             <th>Flags</th>
-                            <th>Delivery Modes</th>
                             <th>Duration</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -113,27 +99,31 @@
                                     <p class="text-sm text-foreground/70">
                                         {{ \Illuminate\Support\Str::limit($service->description, 60) }}</p>
                                 </td>
-                                <td>{{ $service->frequency?->label() ?? '—' }}</td>
+                                <td>
+                                    <span class="inline-flex items-center gap-1">
+                                        <span
+                                            class="w-2 h-2 rounded-full {{ $service->is_frequency_service ? 'bg-success' : 'bg-border' }}"></span>
+                                        {{ $service->is_frequency_service ? 'Yes' : 'No' }}
+                                    </span>
+                                </td>
                                 <td>
                                     <div class="flex flex-col gap-1 text-xs">
                                         <span class="inline-flex items-center gap-1">
                                             <span
-                                                class="w-2 h-2 rounded-full {{ $service->direct_service ? 'bg-success' : 'bg-border' }}"></span>
+                                                class="w-2 h-2 rounded-full {{ $service->is_direct_service ? 'bg-success' : 'bg-border' }}"></span>
                                             Direct
                                         </span>
                                         <span class="inline-flex items-center gap-1">
                                             <span
-                                                class="w-2 h-2 rounded-full {{ $service->group_service ? 'bg-primary' : 'bg-border' }}"></span>
+                                                class="w-2 h-2 rounded-full {{ $service->is_group_service ? 'bg-primary' : 'bg-border' }}"></span>
                                             Group
                                         </span>
                                         <span class="inline-flex items-center gap-1">
                                             <span
-                                                class="w-2 h-2 rounded-full {{ $service->is_billable ? 'bg-secondary' : 'bg-border' }}"></span>
+                                                class="w-2 h-2 rounded-full {{ $service->is_billable ? 'bg-success' : 'bg-border' }}"></span>
                                             Billable
                                         </span>
                                     </div>
-                                </td>
-                                <td>{{ $deliveryModes[$service->delivery_mode] ?? \Illuminate\Support\Str::headline($service->delivery_mode ?? '—') }}
                                 </td>
                                 <td>
                                     @if ($service->min_duration_minutes || $service->max_duration_minutes)

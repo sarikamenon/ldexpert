@@ -74,24 +74,20 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             $query->where('status', $filters->status->value);
         }
 
-        if ($filters->frequency) {
-            $query->where('frequency', $filters->frequency->value);
+        if ($filters->isFrequencyService !== null) {
+            $query->where('is_frequency_service', $filters->isFrequencyService);
         }
 
-        if ($filters->directService !== null) {
-            $query->where('direct_service', $filters->directService);
+        if ($filters->isDirectService !== null) {
+            $query->where('is_direct_service', $filters->isDirectService);
         }
 
-        if ($filters->groupService !== null) {
-            $query->where('group_service', $filters->groupService);
+        if ($filters->isGroupService !== null) {
+            $query->where('is_group_service', $filters->isGroupService);
         }
 
         if ($filters->billable !== null) {
             $query->where('is_billable', $filters->billable);
-        }
-
-        if ($filters->deliveryMode) {
-            $query->where('delivery_mode', $filters->deliveryMode);
         }
 
         return $query;

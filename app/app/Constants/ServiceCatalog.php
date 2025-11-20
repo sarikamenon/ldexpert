@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Constants;
 
 use App\Enums\RateType;
-use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use App\Enums\TherapistPosition;
 
@@ -20,9 +19,9 @@ final class ServiceCatalog
             [
                 'name' => 'Individual Speech-Language Therapy (K-5)',
                 'description' => 'Evidence-based articulation and expressive language sessions for elementary students.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'in_person',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,
@@ -35,9 +34,9 @@ final class ServiceCatalog
             [
                 'name' => 'Speech-Language Therapy Small Group',
                 'description' => 'Fluency and pragmatic language groups targeting social communication.',
-                'direct_service' => true,
-                'group_service' => true,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => true,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'hybrid',
                 'is_billable' => true,
                 'min_duration_minutes' => 45,
@@ -50,9 +49,9 @@ final class ServiceCatalog
             [
                 'name' => 'Occupational Therapy - Sensory Integration',
                 'description' => 'Direct OT sessions focused on regulation, postural control, and adaptive responses.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'in_person',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,
@@ -65,9 +64,9 @@ final class ServiceCatalog
             [
                 'name' => 'Occupational Therapy - Handwriting Intensive',
                 'description' => 'Targeted OT intervention for fine-motor coordination and written expression.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'hybrid',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,
@@ -80,9 +79,9 @@ final class ServiceCatalog
             [
                 'name' => 'Physical Therapy - Gross Motor Coaching',
                 'description' => 'PT sessions addressing balance, strength, and mobility goals in school settings.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'in_person',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,
@@ -95,9 +94,9 @@ final class ServiceCatalog
             [
                 'name' => 'Physical Therapy - Adaptive Equipment Training',
                 'description' => 'Consult sessions for positioning plans, wheelchairs, and adaptive equipment trials.',
-                'direct_service' => false,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::MONTHLY->value,
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'hybrid',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,
@@ -110,9 +109,9 @@ final class ServiceCatalog
             [
                 'name' => 'School-Based Counseling Session',
                 'description' => 'Tier III counseling aligned to IEP goals for emotional regulation and coping.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'hybrid',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,
@@ -125,9 +124,9 @@ final class ServiceCatalog
             [
                 'name' => 'Behavioral Health Check-In',
                 'description' => 'Brief solution-focused counseling check-ins for progress monitoring.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::WEEKLY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'virtual',
                 'is_billable' => true,
                 'min_duration_minutes' => 20,
@@ -140,9 +139,9 @@ final class ServiceCatalog
             [
                 'name' => 'Applied Behavior Analysis Consultation',
                 'description' => 'BCBA-led classroom observations, data review, and intervention planning.',
-                'direct_service' => false,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::MONTHLY->value,
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'in_person',
                 'is_billable' => true,
                 'min_duration_minutes' => 60,
@@ -155,9 +154,9 @@ final class ServiceCatalog
             [
                 'name' => 'Behavior Technician Implementation Support',
                 'description' => 'On-campus RBT implementation of BCBA treatment plans with live coaching.',
-                'direct_service' => true,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::DAILY->value,
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'in_person',
                 'is_billable' => true,
                 'min_duration_minutes' => 60,
@@ -170,9 +169,9 @@ final class ServiceCatalog
             [
                 'name' => 'IEP Progress Monitoring & Documentation',
                 'description' => 'Indirect service for data analysis, goal updates, and narrative reporting.',
-                'direct_service' => false,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::MONTHLY->value,
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'virtual',
                 'is_billable' => true,
                 'min_duration_minutes' => 45,
@@ -192,9 +191,9 @@ final class ServiceCatalog
             [
                 'name' => 'Family Coaching & Care Coordination Call',
                 'description' => 'Scheduled coaching with caregivers to reinforce school-based plans.',
-                'direct_service' => false,
-                'group_service' => false,
-                'frequency' => ServiceFrequency::MONTHLY->value,
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
                 'delivery_mode' => 'virtual',
                 'is_billable' => true,
                 'min_duration_minutes' => 30,

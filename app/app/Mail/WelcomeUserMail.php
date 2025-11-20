@@ -20,7 +20,7 @@ class WelcomeUserMail extends Mailable
 
     public function build(): self
     {
-        return $this->subject('Welcome to Bird')
+        return $this->subject('Welcome to NOVA')
             ->view('emails.welcome-user');
     }
 }

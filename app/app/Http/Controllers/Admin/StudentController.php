@@ -19,8 +19,10 @@ use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
 use App\Models\School;
+use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
+use App\Enums\SSAStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -78,6 +80,46 @@ final class StudentController extends Controller
         return view('admin.students.edit', [
             'student' => $student->loadMissing('studentProfile.school'),
         ] + $this->referenceData());
+    }
+
+    public function show(User $student): View
+    {
+        $this->authorize('view', StudentProfile::class);
+
+        $student->load([
+            'studentProfile.school',
+            'studentProfile.parent',
+            'therapists.therapistProfile',
+        ]);
+
+        $ssas = ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+            ->where('student_id', $student->id)
+            ->orderByDesc('start_date')
+            ->get();
+
+        $totalTho = (int) $ssas->sum('tho_minutes');
+        $served = (int) $ssas->sum('served_minutes');
+
+        $chartData = [
+            'served' => $served,
+            'remaining' => max(0, $totalTho - $served),
+            'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
+        ];
+
+        $metrics = [
+            'total_ssas' => $ssas->count(),
+            'active_ssas' => $ssas->where('status', SSAStatus::ACTIVE)->count(),
+            'completed_ssas' => $ssas->where('status', SSAStatus::COMPLETED)->count(),
+            'pending_ssas' => $ssas->where('status', SSAStatus::PENDING)->count(),
+        ];
+
+        return view('admin.students.show', [
+            'student' => $student,
+            'ssas' => $ssas,
+            'therapists' => $student->therapists,
+            'chartData' => $chartData,
+            'metrics' => $metrics,
+        ]);
     }
 
     public function update(UpdateStudentRequest $request, User $student): RedirectResponse

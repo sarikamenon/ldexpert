@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,14 +26,14 @@ final class Service extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'direct_service' => 'boolean',
-        'group_service' => 'boolean',
+        'is_direct_service' => 'boolean',
+        'is_group_service' => 'boolean',
+        'is_frequency_service' => 'boolean',
         'is_billable' => 'boolean',
         'delivery_mode' => 'string',
         'min_duration_minutes' => 'integer',
         'max_duration_minutes' => 'integer',
         'status' => ServiceStatus::class,
-        'frequency' => ServiceFrequency::class,
     ];
 
     public function scopeActive(Builder $query): Builder

@@ -84,6 +84,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 40,
             'dob' => '1990-01-01',
         ];
 
@@ -96,6 +97,7 @@ final class TherapistManagementTest extends TestCase
             'first_name' => 'Jane',
             'last_name' => 'Smith',
             'personal_email' => 'jane.smith@example.com',
+            'max_weekly_hours' => 40,
         ]);
 
         // Verify welcome email was sent
@@ -134,6 +136,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 32,
             'dob' => '1985-05-15',
         ];
 
@@ -150,6 +153,7 @@ final class TherapistManagementTest extends TestCase
             'first_name' => 'Updated',
             'last_name' => 'Name',
             'personal_email' => 'updated@example.com',
+            'max_weekly_hours' => 32,
         ]);
     }
 
@@ -227,6 +231,7 @@ final class TherapistManagementTest extends TestCase
             'state',
             'timezone',
             'manager_id',
+            'max_weekly_hours',
         ]);
     }
 
@@ -243,6 +248,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 35,
         ]);
 
         $response->assertSessionHasErrors(['phone']);
@@ -263,6 +269,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 40,
         ]);
 
         $response->assertSessionHasErrors(['personal_email']);

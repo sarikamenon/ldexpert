@@ -70,7 +70,7 @@ return [
                 ],
             ],
             [
-                'label' => 'Service Support Agreements',
+                'label' => 'SSA',
                 'route' => 'admin.ssas.index',
                 'active' => 'admin.ssas.*',
             ],
