@@ -53,10 +53,18 @@
     </div>
 
     {{-- Tabs Navigation and Content --}}
-    <div x-data="{ activeTab: 'details' }">
+    <div x-data="{ activeTab: 'dashboard' }">
         {{-- Tabs Navigation --}}
         <div class="mb-6 border-b border-border">
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button @click="activeTab = 'dashboard'"
+                    :class="activeTab === 'dashboard'
+                        ?
+                        'border-primary text-primary font-medium' :
+                        'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                    Dashboard
+                </button>
                 <button @click="activeTab = 'details'"
                     :class="activeTab === 'details'
                         ?
@@ -77,8 +85,8 @@
         </div>
 
         {{-- Tab Content --}}
-        {{-- Details Tab --}}
-        <div x-show="activeTab === 'details'" x-transition>
+        {{-- Dashboard Tab --}}
+        <div x-show="activeTab === 'dashboard'" x-transition>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 {{-- Delivery Progress Chart --}}
                 <x-ui::card class="p-6 lg:col-span-1">
@@ -153,6 +161,10 @@
                 </div>
             </div>
 
+        </div>
+
+        {{-- Details Tab --}}
+        <div x-show="activeTab === 'details'" x-transition>
             {{-- Detailed Information Table --}}
             <x-ui::card class="p-6">
                 <h3 class="text-lg font-semibold text-foreground mb-4">SSA Details</h3>

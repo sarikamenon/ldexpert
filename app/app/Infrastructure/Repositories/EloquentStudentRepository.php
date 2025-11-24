@@ -60,6 +60,12 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             $query->where('status', $filters->status);
         }
 
+        if ($filters->schoolId) {
+            $query->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->where('school_id', $filters->schoolId);
+            });
+        }
+
         return $query->latest()->paginate($filters->perPage);
     }
 
@@ -105,6 +111,12 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
 
         if ($filters->status) {
             $query->where('status', $filters->status);
+        }
+
+        if ($filters->schoolId) {
+            $query->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->where('school_id', $filters->schoolId);
+            });
         }
 
         return $query->latest()->get();

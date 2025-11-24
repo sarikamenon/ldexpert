@@ -23,67 +23,15 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Students</p>
-            <p class="text-2xl font-semibold">{{ $metrics['total_students'] }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Therapists</p>
-            <p class="text-2xl font-semibold">{{ $metrics['total_therapists'] }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Total SSAs</p>
-            <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Active SSAs</p>
-            <p class="text-2xl font-semibold text-success">{{ $statusCounts['Active'] ?? 0 }}</p>
-        </x-ui::card>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <x-ui::card class="p-6 lg:col-span-1">
-            <h3 class="text-lg font-semibold text-foreground mb-4">SSA Status Mix</h3>
-            <div class="relative" style="height: 260px;">
-                <canvas id="schoolSsaChart" data-chart='@json($chartData)'></canvas>
-            </div>
-            <div class="mt-4 space-y-2 text-sm">
-                @foreach ($statusCounts as $label => $count)
-                    <div class="flex items-center justify-between">
-                        <span class="text-foreground/70">{{ $label }}</span>
-                        <span class="font-semibold">{{ $count }}</span>
-                    </div>
-                @endforeach
-            </div>
-        </x-ui::card>
-
-        <x-ui::card class="p-6 space-y-4 lg:col-span-2">
-            <h3 class="text-lg font-semibold text-foreground">Primary Contact</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                    <p class="text-foreground/70">Contact Name</p>
-                    <p class="font-semibold">{{ $school->contact_first_name }} {{ $school->contact_last_name }}</p>
-                </div>
-                <div>
-                    <p class="text-foreground/70">Contact Email</p>
-                    <p class="text-primary">{{ $school->contact_email ?? '—' }}</p>
-                </div>
-                <div>
-                    <p class="text-foreground/70">Contact Phone</p>
-                    <p>{{ $school->contact_phone ?? '—' }}</p>
-                </div>
-                <div>
-                    <p class="text-foreground/70">Manager</p>
-                    <p>{{ $school->manager?->name ?? '—' }}</p>
-                </div>
-            </div>
-        </x-ui::card>
-    </div>
-
-    <div x-data="{ activeTab: 'overview' }">
+    <div x-data="{ activeTab: 'dashboard' }">
         <div class="border-b border-border mb-6">
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button @click="activeTab = 'dashboard'"
+                    :class="activeTab === 'dashboard' ? 'border-primary text-primary' :
+                        'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                    Dashboard
+                </button>
                 <button @click="activeTab = 'overview'"
                     :class="activeTab === 'overview' ? 'border-primary text-primary' :
                         'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30'"
@@ -109,6 +57,68 @@
                     SSAs
                 </button>
             </nav>
+        </div>
+
+        <div x-show="activeTab === 'dashboard'" x-transition>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Students</p>
+                    <p class="text-2xl font-semibold">{{ $metrics['total_students'] }}</p>
+                </x-ui::card>
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Therapists</p>
+                    <p class="text-2xl font-semibold">{{ $metrics['total_therapists'] }}</p>
+                </x-ui::card>
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Total SSAs</p>
+                    <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] }}</p>
+                </x-ui::card>
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Active SSAs</p>
+                    <p class="text-2xl font-semibold text-success">{{ $statusCounts['Active'] ?? 0 }}</p>
+                </x-ui::card>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <x-ui::card class="p-6 lg:col-span-1">
+                    <h3 class="text-lg font-semibold text-foreground mb-4">SSA Status Mix</h3>
+                    <div class="relative" style="height: 260px;">
+                        <canvas id="schoolSsaChart" data-chart='@json($chartData)'></canvas>
+                    </div>
+                    <div class="mt-4 space-y-2 text-sm">
+                        @foreach ($statusCounts as $label => $count)
+                            <div class="flex items-center justify-between">
+                                <span class="text-foreground/70">{{ $label }}</span>
+                                <span class="font-semibold">{{ $count }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </x-ui::card>
+
+                <x-ui::card class="p-6 space-y-4 lg:col-span-2">
+                    <h3 class="text-lg font-semibold text-foreground">Primary Contact</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-foreground/70">Contact Name</p>
+                            <p class="font-semibold">{{ $school->contact_first_name }}
+                                {{ $school->contact_last_name }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-foreground/70">Contact Email</p>
+                            <p class="text-primary">{{ $school->contact_email ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-foreground/70">Contact Phone</p>
+                            <p>{{ $school->contact_phone ?? '—' }}</p>
+                        </div>
+                        <div>
+                            <p class="text-foreground/70">Manager</p>
+                            <p>{{ $school->manager?->name ?? '—' }}</p>
+                        </div>
+                    </div>
+                </x-ui::card>
+            </div>
         </div>
 
         <div x-show="activeTab === 'overview'" x-transition>

@@ -44,6 +44,18 @@
                     </select>
                 </div>
 
+                <div class="relative">
+                    <select name="school_id"
+                        class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="">All Schools</option>
+                        @foreach ($schools as $school)
+                            <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
+                                {{ $school->display_name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
                 <button type="submit"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
             </form>

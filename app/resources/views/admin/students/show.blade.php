@@ -23,83 +23,15 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Total SSAs</p>
-            <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Active SSAs</p>
-            <p class="text-2xl font-semibold text-success">{{ $metrics['active_ssas'] }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Completed SSAs</p>
-            <p class="text-2xl font-semibold text-primary">{{ $metrics['completed_ssas'] }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4 space-y-1">
-            <p class="text-sm text-foreground/70">Pending SSAs</p>
-            <p class="text-2xl font-semibold text-warning">{{ $metrics['pending_ssas'] }}</p>
-        </x-ui::card>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <x-ui::card class="p-6 lg:col-span-1">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
-                <span class="text-sm text-foreground/70">{{ $chartData['progress'] }}%</span>
-            </div>
-            <div class="relative" style="height: 260px;">
-                <canvas id="studentProgressChart" data-served="{{ $chartData['served'] }}"
-                    data-tho="{{ $chartData['served'] + $chartData['remaining'] }}"></canvas>
-            </div>
-            <div class="mt-4 space-y-2">
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-foreground/70">Served Minutes</span>
-                    <span class="font-semibold">{{ number_format($chartData['served']) }}</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-foreground/70">Remaining Minutes</span>
-                    <span class="font-semibold">{{ number_format($chartData['remaining']) }}</span>
-                </div>
-            </div>
-        </x-ui::card>
-
-        <x-ui::card class="p-6 space-y-3 lg:col-span-2">
-            <h3 class="text-lg font-semibold text-foreground">School & Guardian</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <p class="text-sm text-foreground/70">School</p>
-                    @if ($student->studentProfile?->school)
-                        <a href="{{ route('admin.schools.show', $student->studentProfile->school) }}"
-                            class="text-lg font-semibold text-primary hover:underline">
-                            {{ $student->studentProfile->school->display_name }}
-                        </a>
-                        <p class="text-sm text-foreground/60">
-                            {{ $student->studentProfile->school->state ?? '—' }}
-                        </p>
-                    @else
-                        <p class="text-lg font-semibold text-foreground/50">Not assigned</p>
-                    @endif
-                </div>
-                <div>
-                    <p class="text-sm text-foreground/70">Guardian</p>
-                    @if ($student->studentProfile?->parent_guardian_name)
-                        <p class="text-lg font-semibold">{{ $student->studentProfile->parent_guardian_name }}</p>
-                        <p class="text-sm text-foreground/60">
-                            {{ $student->studentProfile->parent_guardian_email ?? '—' }} ·
-                            {{ $student->studentProfile->parent_guardian_phone ?? '—' }}
-                        </p>
-                    @else
-                        <p class="text-lg font-semibold text-foreground/50">Not provided</p>
-                    @endif
-                </div>
-            </div>
-        </x-ui::card>
-    </div>
-
-    <div x-data="{ activeTab: 'overview' }">
+    <div x-data="{ activeTab: 'dashboard' }">
         <div class="border-b border-border mb-6">
             <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button @click="activeTab = 'dashboard'"
+                    :class="activeTab === 'dashboard' ? 'border-primary text-primary' :
+                        'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30'"
+                    class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                    Dashboard
+                </button>
                 <button @click="activeTab = 'overview'"
                     :class="activeTab === 'overview' ? 'border-primary text-primary' :
                         'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30'"
@@ -119,6 +51,83 @@
                     Therapists
                 </button>
             </nav>
+        </div>
+
+        <div x-show="activeTab === 'dashboard'" x-transition>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Total SSAs</p>
+                    <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] }}</p>
+                </x-ui::card>
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Active SSAs</p>
+                    <p class="text-2xl font-semibold text-success">{{ $metrics['active_ssas'] }}</p>
+                </x-ui::card>
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Completed SSAs</p>
+                    <p class="text-2xl font-semibold text-primary">{{ $metrics['completed_ssas'] }}</p>
+                </x-ui::card>
+                <x-ui::card class="p-4 space-y-1">
+                    <p class="text-sm text-foreground/70">Pending SSAs</p>
+                    <p class="text-2xl font-semibold text-warning">{{ $metrics['pending_ssas'] }}</p>
+                </x-ui::card>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <x-ui::card class="p-6 lg:col-span-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
+                        <span class="text-sm text-foreground/70">{{ $chartData['progress'] }}%</span>
+                    </div>
+                    <div class="relative" style="height: 260px;">
+                        <canvas id="studentProgressChart" data-served="{{ $chartData['served'] }}"
+                            data-tho="{{ $chartData['served'] + $chartData['remaining'] }}"></canvas>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-foreground/70">Served Minutes</span>
+                            <span class="font-semibold">{{ number_format($chartData['served']) }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-foreground/70">Remaining Minutes</span>
+                            <span class="font-semibold">{{ number_format($chartData['remaining']) }}</span>
+                        </div>
+                    </div>
+                </x-ui::card>
+
+                <x-ui::card class="p-6 space-y-3 lg:col-span-2">
+                    <h3 class="text-lg font-semibold text-foreground">School & Guardian</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm text-foreground/70">School</p>
+                            @if ($student->studentProfile?->school)
+                                <a href="{{ route('admin.schools.show', $student->studentProfile->school) }}"
+                                    class="text-lg font-semibold text-primary hover:underline">
+                                    {{ $student->studentProfile->school->display_name }}
+                                </a>
+                                <p class="text-sm text-foreground/60">
+                                    {{ $student->studentProfile->school->state ?? '—' }}
+                                </p>
+                            @else
+                                <p class="text-lg font-semibold text-foreground/50">Not assigned</p>
+                            @endif
+                        </div>
+                        <div>
+                            <p class="text-sm text-foreground/70">Guardian</p>
+                            @if ($student->studentProfile?->parent_guardian_name)
+                                <p class="text-lg font-semibold">{{ $student->studentProfile->parent_guardian_name }}
+                                </p>
+                                <p class="text-sm text-foreground/60">
+                                    {{ $student->studentProfile->parent_guardian_email ?? '—' }} ·
+                                    {{ $student->studentProfile->parent_guardian_phone ?? '—' }}
+                                </p>
+                            @else
+                                <p class="text-lg font-semibold text-foreground/50">Not provided</p>
+                            @endif
+                        </div>
+                    </div>
+                </x-ui::card>
+            </div>
         </div>
 
         <div x-show="activeTab === 'overview'" x-transition>

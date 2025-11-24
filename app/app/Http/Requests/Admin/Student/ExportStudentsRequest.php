@@ -20,6 +20,7 @@ final class ExportStudentsRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(UserStatus::values())],
+            'school_id' => ['nullable', 'integer', 'exists:schools,id'],
         ];
     }
 }

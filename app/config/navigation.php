@@ -70,14 +70,21 @@ return [
                 ],
             ],
             [
-                'label' => 'SSA',
+                'label' => 'SSAs',
                 'route' => 'admin.ssas.index',
                 'active' => 'admin.ssas.*',
-            ],
-            [
-                'label' => 'Services',
-                'route' => 'admin.services.index',
-                'active' => 'admin.services.*',
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.ssas.index',
+                        'active' => 'admin.ssas.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.ssas.create',
+                        'active' => 'admin.ssas.create',
+                    ],
+                ],
             ],
             [
                 'label' => 'Activity Logs',
@@ -92,7 +99,19 @@ return [
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => 'admin.settings.*',
+                'active' => ['admin.settings.*', 'admin.services.*'],
+                'children' => [
+                    [
+                        'label' => 'System Settings',
+                        'route' => 'admin.settings.index',
+                        'active' => 'admin.settings.*',
+                    ],
+                    [
+                        'label' => 'Services',
+                        'route' => 'admin.services.index',
+                        'active' => 'admin.services.*',
+                    ],
+                ],
             ],
         ],
         'therapist' => [

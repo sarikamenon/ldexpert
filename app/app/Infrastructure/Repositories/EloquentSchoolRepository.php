@@ -66,6 +66,14 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    public function listAllForSelect(): Collection
+    {
+        return School::query()
+            ->select(['id', 'display_name'])
+            ->orderBy('display_name')
+            ->get();
+    }
+
     private function baseQuery(): Builder
     {
         return School::query()->with('manager');

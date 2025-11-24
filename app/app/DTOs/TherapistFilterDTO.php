@@ -10,6 +10,7 @@ final class TherapistFilterDTO
         public readonly ?string $search = null,
         public readonly ?string $status = null,
         public readonly ?string $position = null,
+        public readonly ?int $schoolId = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -18,6 +19,9 @@ final class TherapistFilterDTO
             search: $data['search'] ?? null,
             status: $data['status'] ?? null,
             position: $data['position'] ?? null,
+            schoolId: isset($data['school_id']) && $data['school_id'] !== ''
+                ? (int) $data['school_id']
+                : null,
         );
     }
 
@@ -27,6 +31,7 @@ final class TherapistFilterDTO
             'search' => $this->search,
             'status' => $this->status,
             'position' => $this->position,
+            'school_id' => $this->schoolId,
         ];
     }
 }

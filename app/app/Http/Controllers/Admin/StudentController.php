@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Services\StudentService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
@@ -18,7 +19,6 @@ use App\Http\Requests\Admin\Student\ExportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
-use App\Models\School;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -33,6 +33,7 @@ final class StudentController extends Controller
 {
     public function __construct(
         private readonly StudentService $studentService,
+        private readonly SchoolRepositoryInterface $schoolRepository,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -48,6 +49,7 @@ final class StudentController extends Controller
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'statuses' => UserStatus::cases(),
+            'schools' => $this->schoolRepository->listAllForSelect(),
         ]);
     }
 
@@ -195,10 +197,7 @@ final class StudentController extends Controller
         return [
             'states' => UsStates::getStates(),
             'timezones' => UsTimezones::getTimezones(),
-            'schools' => School::query()
-                ->select(['id', 'display_name'])
-                ->orderBy('display_name')
-                ->get(),
+            'schools' => $this->schoolRepository->listAllForSelect(),
             'statuses' => UserStatus::cases(),
         ];
     }

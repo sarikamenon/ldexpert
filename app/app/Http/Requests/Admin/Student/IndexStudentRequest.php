@@ -20,6 +20,7 @@ final class IndexStudentRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(UserStatus::values())],
+            'school_id' => ['nullable', 'integer', 'exists:schools,id'],
             'per_page' => ['nullable', 'integer', 'min:5', 'max:100'],
         ];
     }
