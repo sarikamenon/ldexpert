@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TherapistProfileFactory extends Factory
 {
+    protected $model = TherapistProfile::class;
+
     /**
      * Define the model's default state.
      *
