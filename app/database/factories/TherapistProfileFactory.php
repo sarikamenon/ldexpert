@@ -24,26 +24,27 @@ class TherapistProfileFactory extends Factory
      */
     public function definition(): array
     {
-        $state = $this->faker->randomElement(array_keys(UsStates::STATES));
-        $timezone = $this->faker->randomElement(array_keys(UsTimezones::TIMEZONES));
+        $faker = fake();
+        $state = $faker->randomElement(array_keys(UsStates::STATES));
+        $timezone = $faker->randomElement(array_keys(UsTimezones::TIMEZONES));
 
         return [
             'user_id' => User::factory()->therapist(),
-            'employee_type' => $this->faker->randomElement(EmployeeType::cases())->value,
-            'title' => $this->faker->randomElement(TherapistTitle::cases())->value,
-            'first_name' => $this->faker->firstName(),
-            'last_name' => $this->faker->lastName(),
-            'personal_email' => $this->faker->unique()->safeEmail(),
-            'phone' => $this->faker->numerify('###-###-####'),
-            'ld_email' => $this->faker->optional(0.3)->safeEmail(),
-            'address' => $this->faker->optional()->address(),
-            'comments' => $this->faker->optional()->sentence(),
-            'position' => $this->faker->randomElement(TherapistPosition::cases())->value,
+            'employee_type' => $faker->randomElement(EmployeeType::cases())->value,
+            'title' => $faker->randomElement(TherapistTitle::cases())->value,
+            'first_name' => $faker->firstName(),
+            'last_name' => $faker->lastName(),
+            'personal_email' => $faker->unique()->safeEmail(),
+            'phone' => $faker->numerify('###-###-####'),
+            'ld_email' => $faker->optional(0.3)->safeEmail(),
+            'address' => $faker->optional()->address(),
+            'comments' => $faker->optional()->sentence(),
+            'position' => $faker->randomElement(TherapistPosition::cases())->value,
             'state' => $state,
             'timezone' => $timezone,
             'manager_id' => User::factory()->admin(),
-            'max_weekly_hours' => $this->faker->numberBetween(10, 60),
-            'dob' => $this->faker->optional()->dateTimeBetween('-60 years', '-22 years'),
+            'max_weekly_hours' => $faker->numberBetween(10, 60),
+            'dob' => $faker->optional()->dateTimeBetween('-60 years', '-22 years'),
         ];
     }
 }

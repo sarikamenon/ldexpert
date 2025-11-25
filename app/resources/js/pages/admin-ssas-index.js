@@ -23,16 +23,21 @@ function setupAssignmentActions() {
     const unassignBtn = document.getElementById('unassignTherapistBtn');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
+    // Only proceed if assignment buttons exist (they're only on SSA show page)
+    if (!assignBtn && !unassignBtn) {
+        return;
+    }
+
+    // Check if therapist select exists
+    const therapistSelect = document.getElementById('therapist_select_for_assignment');
+    if (!therapistSelect) {
+        // Silently return if therapist select doesn't exist
+        return;
+    }
+
     if (assignBtn) {
         assignBtn.addEventListener('click', async () => {
             const ssaId = assignBtn.dataset.ssaId;
-
-            // Get therapists from a hidden select or fetch from page
-            const therapistSelect = document.getElementById('therapist_select_for_assignment');
-            if (!therapistSelect) {
-                errorAlert('Therapist list not available. Please refresh the page.');
-                return;
-            }
 
             // Build options object for SweetAlert2
             const inputOptions = {};
@@ -149,16 +154,21 @@ function setupListAssignmentActions() {
     const assignButtons = document.querySelectorAll('.assign-therapist-btn');
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
+    // Only proceed if there are assignment buttons on the page
+    if (assignButtons.length === 0) {
+        return;
+    }
+
+    // Check if therapist select exists before setting up actions
+    const therapistSelect = document.getElementById('therapist_select_for_assignment');
+    if (!therapistSelect) {
+        // Silently return if therapist select doesn't exist (might be on a different page)
+        return;
+    }
+
     assignButtons.forEach((button) => {
         button.addEventListener('click', async () => {
             const ssaId = button.dataset.ssaId;
-
-            // Get therapists from a hidden select
-            const therapistSelect = document.getElementById('therapist_select_for_assignment');
-            if (!therapistSelect) {
-                errorAlert('Therapist list not available. Please refresh the page.');
-                return;
-            }
 
             // Build options object for SweetAlert2
             const inputOptions = {};
