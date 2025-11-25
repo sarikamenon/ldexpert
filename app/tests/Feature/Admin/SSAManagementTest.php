@@ -61,7 +61,7 @@ function ssaPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('allows admin to view SSAs index', function () {
+test('allows admin to view SSAs index', function () {
     $admin = ssaAdmin();
     ServiceSupportAgreement::factory()->create();
 
@@ -80,7 +80,7 @@ it('allows admin to view SSAs index', function () {
         ->assertViewHas('therapists');
 });
 
-it('prevents non-admin access to SSAs index', function () {
+test('prevents non-admin access to SSAs index', function () {
     $therapist = ssaTherapist();
 
     $this->actingAs($therapist)
@@ -88,7 +88,7 @@ it('prevents non-admin access to SSAs index', function () {
         ->assertForbidden();
 });
 
-it('allows admin to view create SSA form', function () {
+test('allows admin to view create SSA form', function () {
     $admin = ssaAdmin();
     ssaStudent();
     ssaService();
@@ -99,7 +99,7 @@ it('allows admin to view create SSA form', function () {
         ->assertSee('Create SSA');
 });
 
-it('allows admin to create SSA without therapist', function () {
+test('allows admin to create SSA without therapist', function () {
     $admin = ssaAdmin();
     $payload = ssaPayload();
 
@@ -116,7 +116,7 @@ it('allows admin to create SSA without therapist', function () {
     ]);
 });
 
-it('allows admin to create SSA with therapist', function () {
+test('allows admin to create SSA with therapist', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
     $payload = ssaPayload(['assigned_therapist_id' => $therapist->id]);
@@ -141,7 +141,7 @@ it('allows admin to create SSA with therapist', function () {
     ]);
 });
 
-it('prevents activating SSA without therapist', function () {
+test('prevents activating SSA without therapist', function () {
     $admin = ssaAdmin();
     $ssa = ServiceSupportAgreement::factory()->create([
         'assigned_therapist_id' => null,
@@ -155,7 +155,7 @@ it('prevents activating SSA without therapist', function () {
         ->assertStatus(422);
 });
 
-it('allows activating SSA with therapist', function () {
+test('allows activating SSA with therapist', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
     $ssa = ServiceSupportAgreement::factory()->create([
@@ -176,7 +176,7 @@ it('allows activating SSA with therapist', function () {
     ]);
 });
 
-it('allows assigning therapist to SSA', function () {
+test('allows assigning therapist to SSA', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
     $ssa = ServiceSupportAgreement::factory()->create([
@@ -203,7 +203,7 @@ it('allows assigning therapist to SSA', function () {
     ]);
 });
 
-it('allows unassigning therapist from SSA', function () {
+test('allows unassigning therapist from SSA', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
     $ssa = ServiceSupportAgreement::factory()->create([
@@ -231,7 +231,7 @@ it('allows unassigning therapist from SSA', function () {
     ]);
 });
 
-it('prevents changing primary service after creation', function () {
+test('prevents changing primary service after creation', function () {
     $admin = ssaAdmin();
     $ssa = ServiceSupportAgreement::factory()->create();
     $newService = ssaService();
@@ -251,7 +251,7 @@ it('prevents changing primary service after creation', function () {
     ]);
 });
 
-it('allows admin to view SSA show page with dashboard tab', function () {
+test('allows admin to view SSA show page with dashboard tab', function () {
     $admin = ssaAdmin();
     $ssa = ServiceSupportAgreement::factory()->create();
 
@@ -263,7 +263,7 @@ it('allows admin to view SSA show page with dashboard tab', function () {
         ->assertViewHas('activeTab', 'dashboard');
 });
 
-it('allows admin to view SSA show page with assignment tab', function () {
+test('allows admin to view SSA show page with assignment tab', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
     $ssa = ServiceSupportAgreement::factory()->create([
@@ -280,7 +280,7 @@ it('allows admin to view SSA show page with assignment tab', function () {
         ->assertViewHas('therapists');
 });
 
-it('loads assignment history correctly for SSA show page', function () {
+test('loads assignment history correctly for SSA show page', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
     $ssa = ServiceSupportAgreement::factory()->create([
@@ -304,7 +304,7 @@ it('loads assignment history correctly for SSA show page', function () {
     expect($assignmentHistory)->not->toBeEmpty();
 });
 
-it('prevents non-admin from viewing SSA show page', function () {
+test('prevents non-admin from viewing SSA show page', function () {
     $therapist = ssaTherapist();
     $ssa = ServiceSupportAgreement::factory()->create();
 
