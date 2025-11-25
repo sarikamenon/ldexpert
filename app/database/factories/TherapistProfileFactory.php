@@ -24,27 +24,26 @@ class TherapistProfileFactory extends Factory
      */
     public function definition(): array
     {
-        $faker = fake();
-        $state = $faker->randomElement(array_keys(UsStates::STATES));
-        $timezone = $faker->randomElement(array_keys(UsTimezones::TIMEZONES));
+        $state = \fake()->randomElement(array_keys(UsStates::STATES));
+        $timezone = \fake()->randomElement(array_keys(UsTimezones::TIMEZONES));
 
         return [
             'user_id' => User::factory()->therapist(),
-            'employee_type' => $faker->randomElement(EmployeeType::cases())->value,
-            'title' => $faker->randomElement(TherapistTitle::cases())->value,
-            'first_name' => $faker->firstName(),
-            'last_name' => $faker->lastName(),
-            'personal_email' => $faker->unique()->safeEmail(),
-            'phone' => $faker->numerify('###-###-####'),
-            'ld_email' => $faker->optional(0.3)->safeEmail(),
-            'address' => $faker->optional()->address(),
-            'comments' => $faker->optional()->sentence(),
-            'position' => $faker->randomElement(TherapistPosition::cases())->value,
+            'employee_type' => \fake()->randomElement(EmployeeType::cases())->value,
+            'title' => \fake()->randomElement(TherapistTitle::cases())->value,
+            'first_name' => \fake()->firstName(),
+            'last_name' => \fake()->lastName(),
+            'personal_email' => \fake()->unique()->safeEmail(),
+            'phone' => \fake()->numerify('###-###-####'),
+            'ld_email' => \fake()->optional(0.3)->safeEmail(),
+            'address' => \fake()->optional()->address(),
+            'comments' => \fake()->optional()->sentence(),
+            'position' => \fake()->randomElement(TherapistPosition::cases())->value,
             'state' => $state,
             'timezone' => $timezone,
             'manager_id' => User::factory()->admin(),
-            'max_weekly_hours' => $faker->numberBetween(10, 60),
-            'dob' => $faker->optional()->dateTimeBetween('-60 years', '-22 years'),
+            'max_weekly_hours' => \fake()->numberBetween(10, 60),
+            'dob' => \fake()->optional()->dateTimeBetween('-60 years', '-22 years'),
         ];
     }
 }
