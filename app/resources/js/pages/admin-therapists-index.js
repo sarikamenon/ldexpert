@@ -1,5 +1,5 @@
 import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
-import { confirmDialog, successToast, errorAlert } from '../common/sweetalert';
+import { setupStatusToggles } from '../common/status-change';
 
 async function initTherapistsTable() {
     try {
@@ -12,58 +12,6 @@ async function initTherapistsTable() {
     } catch (error) {
         console.error('Failed to init therapists table', error);
     }
-}
-
-function setupStatusToggles() {
-    const buttons = document.querySelectorAll('.toggle-status-button');
-
-    buttons.forEach((button) => {
-        button.addEventListener('click', async () => {
-            const therapistId = button.dataset.therapist;
-            const currentStatus = button.dataset.status;
-            const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            const action = nextStatus === 'active' ? 'activate' : 'deactivate';
-            
-            const result = await confirmDialog({
-                title: `${action.charAt(0).toUpperCase() + action.slice(1)} Therapist?`,
-                text: `You are about to ${action} this therapist.`,
-                icon: 'warning',
-                confirmButtonText: `Yes, ${action}`,
-                showInput: true,
-                inputPlaceholder: `Provide a reason to ${action}...`,
-            });
-
-            if (!result.isConfirmed || !result.value) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/admin/therapists/${therapistId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                    body: JSON.stringify({
-                        status: nextStatus,
-                        reason: result.value,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    await successToast(data.message, 'Success!');
-                    window.location.reload();
-                } else {
-                    errorAlert('Failed to update therapist status');
-                }
-            } catch (error) {
-                console.error('Failed to update status', error);
-                errorAlert('An error occurred while updating therapist status');
-            }
-        });
-    });
 }
 
 function setupExportButton() {
@@ -89,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initTherapistsTable();
-    setupStatusToggles();
+    setupStatusToggles('therapist', '.toggle-status-button', { idAttribute: 'therapist' });
     setupExportButton();
 });
 

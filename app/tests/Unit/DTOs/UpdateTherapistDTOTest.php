@@ -25,6 +25,7 @@ final class UpdateTherapistDTOTest extends TestCase
             'state' => 'FL',
             'timezone' => 'America/New_York',
             'manager_id' => 5,
+            'max_weekly_hours' => 20,
             'dob' => '1988-03-20',
         ];
 
@@ -43,6 +44,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('FL', $dto->state);
         $this->assertSame('America/New_York', $dto->timezone);
         $this->assertSame(5, $dto->managerId);
+        $this->assertSame(20, $dto->maxWeeklyHours);
         $this->assertSame('1988-03-20', $dto->dob);
     }
 
@@ -62,6 +64,7 @@ final class UpdateTherapistDTOTest extends TestCase
             state: 'WA',
             timezone: 'America/Los_Angeles',
             managerId: 7,
+            maxWeeklyHours: 36,
             dob: '1992-07-10'
         );
 
@@ -87,6 +90,7 @@ final class UpdateTherapistDTOTest extends TestCase
             state: 'CA',
             timezone: 'America/Los_Angeles',
             managerId: 1,
+            maxWeeklyHours: 40,
             dob: '1990-01-01'
         );
 
@@ -105,6 +109,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('CA', $array['state']);
         $this->assertSame('America/Los_Angeles', $array['timezone']);
         $this->assertSame(1, $array['manager_id']);
+        $this->assertSame(40, $array['max_weekly_hours']);
         $this->assertSame('1990-01-01', $array['dob']);
     }
 }

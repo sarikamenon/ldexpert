@@ -9,7 +9,8 @@ final class TherapistFilterDTO
     public function __construct(
         public readonly ?string $search = null,
         public readonly ?string $status = null,
-        public readonly int $perPage = 15,
+        public readonly ?string $position = null,
+        public readonly ?int $schoolId = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -17,7 +18,10 @@ final class TherapistFilterDTO
         return new self(
             search: $data['search'] ?? null,
             status: $data['status'] ?? null,
-            perPage: (int) ($data['per_page'] ?? 15),
+            position: $data['position'] ?? null,
+            schoolId: isset($data['school_id']) && $data['school_id'] !== ''
+                ? (int) $data['school_id']
+                : null,
         );
     }
 
@@ -26,7 +30,8 @@ final class TherapistFilterDTO
         return [
             'search' => $this->search,
             'status' => $this->status,
-            'per_page' => $this->perPage,
+            'position' => $this->position,
+            'school_id' => $this->schoolId,
         ];
     }
 }

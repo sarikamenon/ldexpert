@@ -11,27 +11,80 @@ return [
             [
                 'label' => 'Schools',
                 'route' => 'admin.schools.index',
-                'active' => 'admin.schools.*',
+                'active' => ['admin.schools.*', 'admin.contracts.schools.*'],
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.schools.index',
+                        'active' => 'admin.schools.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.schools.create',
+                        'active' => 'admin.schools.create',
+                    ],
+                    [
+                        'label' => 'Contracts',
+                        'route' => 'admin.contracts.schools.index',
+                        'active' => 'admin.contracts.schools.*',
+                    ],
+                ],
             ],
             [
                 'label' => 'Therapists',
                 'route' => 'admin.therapists.index',
-                'active' => 'admin.therapists.*',
+                'active' => ['admin.therapists.*', 'admin.contracts.therapists.*'],
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.therapists.index',
+                        'active' => 'admin.therapists.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.therapists.create',
+                        'active' => 'admin.therapists.create',
+                    ],
+                    [
+                        'label' => 'Contracts',
+                        'route' => 'admin.contracts.therapists.index',
+                        'active' => 'admin.contracts.therapists.*',
+                    ],
+                ],
             ],
             [
                 'label' => 'Students',
                 'route' => 'admin.students.index',
                 'active' => 'admin.students.*',
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.students.index',
+                        'active' => 'admin.students.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.students.create',
+                        'active' => 'admin.students.create',
+                    ],
+                ],
             ],
             [
-                'label' => 'Service Support Agreements',
+                'label' => 'SSAs',
                 'route' => 'admin.ssas.index',
                 'active' => 'admin.ssas.*',
-            ],
-            [
-                'label' => 'Services',
-                'route' => 'admin.services.index',
-                'active' => 'admin.services.*',
+                'children' => [
+                    [
+                        'label' => 'List',
+                        'route' => 'admin.ssas.index',
+                        'active' => 'admin.ssas.index',
+                    ],
+                    [
+                        'label' => 'Create',
+                        'route' => 'admin.ssas.create',
+                        'active' => 'admin.ssas.create',
+                    ],
+                ],
             ],
             [
                 'label' => 'Activity Logs',
@@ -46,7 +99,19 @@ return [
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => 'admin.settings.*',
+                'active' => ['admin.settings.*', 'admin.services.*'],
+                'children' => [
+                    [
+                        'label' => 'System Settings',
+                        'route' => 'admin.settings.index',
+                        'active' => 'admin.settings.*',
+                    ],
+                    [
+                        'label' => 'Services',
+                        'route' => 'admin.services.index',
+                        'active' => 'admin.services.*',
+                    ],
+                ],
             ],
         ],
         'therapist' => [

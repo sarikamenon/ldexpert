@@ -80,25 +80,40 @@
                         @foreach ($schools as $school)
                             <tr>
                                 <td>
-                                    <a href="{{ route('admin.schools.edit', $school) }}"
+                                    <a href="{{ route('admin.schools.show', $school) }}"
                                         class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="Edit School">
+                                        title="View School">
                                         {{ $school->id }}
                                     </a>
                                 </td>
-                                <td>{{ $school->display_name }}</td>
+                                <td>
+                                    <a href="{{ route('admin.schools.show', $school) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $school->display_name }}
+                                    </a>
+                                </td>
                                 <td>{{ $school->manager?->name ?? '—' }}</td>
                                 <td>
                                     {{ $school->state ? \App\Constants\UsStates::getStateName($school->state) : '—' }}
                                 </td>
                                 <td>{{ $school->contact_email ?? '—' }}</td>
                                 <td>
-                                    <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'secondary'">
+                                    <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'danger'">
                                         {{ ucfirst($school->status?->value ?? 'inactive') }}
                                     </x-ui::badge>
                                 </td>
                                 <td>
                                     <div class="flex space-x-1">
+                                        <a href="{{ route('admin.schools.show', $school) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View School">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('admin.schools.edit', $school) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
                                             title="Edit School">

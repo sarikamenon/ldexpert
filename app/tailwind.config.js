@@ -12,7 +12,7 @@ export default {
     theme: {
         extend: {
             colors: {
-                // Minimal, shadcn-like neutrals and brand
+                // NOVA brand colors - blue/purple primary with teal secondary
                 background: {
                     DEFAULT: '#ffffff',
                     muted: '#f6f7f8',
@@ -23,22 +23,53 @@ export default {
                     muted: '#475569',
                 },
                 primary: {
-                    DEFAULT: '#2563eb',
+                    DEFAULT: '#5563b8', // Blue-purple - primary brand color
                     foreground: '#ffffff',
-                    50: '#eff6ff',
-                    100: '#dbeafe',
-                    200: '#bfdbfe',
-                    300: '#93c5fd',
-                    400: '#60a5fa',
-                    500: '#3b82f6',
-                    600: '#2563eb',
-                    700: '#1d4ed8',
-                    800: '#1e40af',
-                    900: '#1e3a8a',
+                    50: '#eef0f9',
+                    100: '#d4d9f0',
+                    200: '#a9b3e1',
+                    300: '#7e8dd2',
+                    400: '#6a7bc9',
+                    500: '#5563b8',
+                    600: '#4a56a0',
+                    700: '#3d4683',
+                    800: '#303766',
+                    900: '#232849',
+                },
+                secondary: {
+                    DEFAULT: '#14b8a6', // Teal - secondary brand color
+                    foreground: '#ffffff',
+                    50: '#f0fdfa',
+                    100: '#ccfbf1',
+                    200: '#99f6e4',
+                    300: '#5eead4',
+                    400: '#2dd4bf',
+                    500: '#14b8a6',
+                    600: '#0d9488',
+                    700: '#0f766e',
+                    800: '#115e59',
+                    900: '#134e4a',
                 },
                 accent: {
-                    DEFAULT: '#0ea5e9',
+                    DEFAULT: '#a855f7', // Purple-500 - accent brand color
                     foreground: '#ffffff',
+                    50: '#faf5ff',
+                    100: '#f3e8ff',
+                    200: '#e9d5ff',
+                    300: '#d8b4fe',
+                    400: '#c084fc',
+                    500: '#a855f7',
+                    600: '#9333ea',
+                    700: '#7e22ce',
+                    800: '#6b21a8',
+                    900: '#581c87',
+                },
+                // Gradient colors for NOVA branding
+                gradient: {
+                    start: '#5563b8', // Primary blue-purple
+                    mid: '#14b8a6', // Secondary teal
+                    end: '#a855f7', // Accent purple
+                    endAlt: '#d946ef', // Fuchsia/Magenta
                 },
                 success: {
                     DEFAULT: '#22c55e',
@@ -54,7 +85,7 @@ export default {
                 },
                 border: '#e5e7eb',
                 input: '#e5e7eb',
-                ring: '#0ea5e9',
+                ring: '#5563b8', // Primary blue-purple ring
             },
             borderRadius: {
                 base: '0.5rem',
@@ -63,6 +94,10 @@ export default {
             },
             fontFamily: {
                 sans: ['Inter', 'Figtree', ...defaultTheme.fontFamily.sans],
+            },
+            backgroundImage: {
+                'gradient-nova': 'linear-gradient(135deg, #5563b8 0%, #14b8a6 50%, #a855f7 100%)',
+                'gradient-nova-primary': 'linear-gradient(135deg, #5563b8 0%, #a855f7 100%)',
             },
         },
     },

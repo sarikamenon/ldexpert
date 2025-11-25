@@ -12,7 +12,6 @@ use App\DTOs\UpdateTherapistDTO;
 use App\Mail\WelcomeUserMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -59,7 +58,7 @@ final class TherapistService
         return $this->repository->changeStatus($user, $dto);
     }
 
-    public function list(TherapistFilterDTO $filters): LengthAwarePaginator
+    public function list(TherapistFilterDTO $filters): Collection
     {
         return $this->repository->list($filters);
     }
@@ -79,4 +78,3 @@ final class TherapistService
         return $this->repository->find($id);
     }
 }
-

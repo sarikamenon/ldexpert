@@ -28,4 +28,6 @@ interface SchoolRepositoryInterface
     public function metrics(): array;
 
     public function export(SchoolFilterDTO $filters): Collection;
+
+    public function listAllForSelect(): Collection;
 }

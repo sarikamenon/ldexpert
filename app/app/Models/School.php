@@ -53,7 +53,7 @@ class School extends Model
     {
         return Attribute::make(
             get: fn(?string $value) => $value ? UsStates::getStateName($value) : null,
-            set: fn(?string $value) => $value ? UsStates::getStateName($value) : null,
+            set: fn(?string $value) => $this->resolveStateCode($value),
         );
     }
 

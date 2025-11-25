@@ -6,7 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function adminUser(): User
+function schoolAdminUser(): User
 {
     return User::factory()->admin()->create();
 }
@@ -33,13 +33,22 @@ function validSchoolPayload(int $managerId): array
 }
 
 it('allows admin to view schools index', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     School::factory()->create();
 
-    $this->actingAs($admin)
-        ->get(route('admin.schools.index'))
-        ->assertOk()
-        ->assertSee('Schools');
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.index'));
+
+    $response->assertOk()
+        ->assertSee('Schools')
+        ->assertViewIs('admin.schools.index')
+        ->assertViewHas('schools')
+        ->assertViewHas('metrics')
+        ->assertViewHas('filters')
+        ->assertViewHas('states')
+        ->assertViewHas('timezones')
+        ->assertViewHas('managers')
+        ->assertViewHas('schoolTypes');
 });
 
 it('prevents non-admin from accessing schools', function () {
@@ -51,7 +60,7 @@ it('prevents non-admin from accessing schools', function () {
 });
 
 it('creates a school', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $payload = validSchoolPayload($admin->id);
 
     $this->actingAs($admin)
@@ -66,7 +75,7 @@ it('creates a school', function () {
 });
 
 it('updates a school', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $school = School::factory()->create();
 
     $payload = validSchoolPayload($admin->id);
@@ -84,7 +93,7 @@ it('updates a school', function () {
 });
 
 it('changes school status with reason', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $school = School::factory()->create(['status' => 'active']);
 
     $this->actingAs($admin)
@@ -103,7 +112,7 @@ it('changes school status with reason', function () {
 });
 
 it('exports schools as csv', function () {
-    $admin = adminUser();
+    $admin = schoolAdminUser();
     $school = School::factory()->create(['display_name' => 'Export School']);
 
     $response = $this->actingAs($admin)->get(route('admin.schools.export'));
@@ -112,4 +121,111 @@ it('exports schools as csv', function () {
     expect($response->headers->get('content-type'))->toContain('text/csv');
     $content = $response->streamedContent();
     expect($content)->toContain('Export School');
+});
+
+it('allows admin to view school show page with dashboard tab', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', $school));
+
+    $response->assertOk()
+        ->assertViewIs('admin.schools.show')
+        ->assertViewHas('school')
+        ->assertViewHas('activeTab', 'dashboard')
+        ->assertViewHas('metrics')
+        ->assertViewHas('statusCounts')
+        ->assertViewHas('chartData');
+});
+
+it('allows admin to view school show page with students tab', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', [$school, 'tab' => 'students']));
+
+    $response->assertOk()
+        ->assertViewIs('admin.schools.show')
+        ->assertViewHas('school')
+        ->assertViewHas('activeTab', 'students')
+        ->assertViewHas('students')
+        ->assertViewHas('studentFilters')
+        ->assertViewHas('schools')
+        ->assertViewHas('statuses');
+});
+
+it('allows admin to view school show page with therapists tab', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', [$school, 'tab' => 'therapists']));
+
+    $response->assertOk()
+        ->assertViewIs('admin.schools.show')
+        ->assertViewHas('school')
+        ->assertViewHas('activeTab', 'therapists')
+        ->assertViewHas('therapists')
+        ->assertViewHas('therapistFilters')
+        ->assertViewHas('positions');
+});
+
+it('allows admin to view school show page with ssas tab', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', [$school, 'tab' => 'ssas']));
+
+    $response->assertOk()
+        ->assertViewIs('admin.schools.show')
+        ->assertViewHas('school')
+        ->assertViewHas('activeTab', 'ssas')
+        ->assertViewHas('ssas')
+        ->assertViewHas('ssaFilters')
+        ->assertViewHas('statuses')
+        ->assertViewHas('students')
+        ->assertViewHas('therapists')
+        ->assertViewHas('services');
+});
+
+it('prevents non-admin from viewing school show page', function () {
+    $therapist = User::factory()->therapist()->create();
+    $school = School::factory()->create();
+
+    $this->actingAs($therapist)
+        ->get(route('admin.schools.show', $school))
+        ->assertForbidden();
+});
+
+it('loads dashboard metrics correctly for school show page', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create();
+    $student = User::factory()->student()->create();
+    $therapist = User::factory()->therapist()->create();
+
+    // Create student profile linked to school
+    \App\Models\StudentProfile::factory()->create([
+        'user_id' => $student->id,
+        'school_id' => $school->id,
+    ]);
+
+    // Create SSA for the student
+    $service = \App\Models\Service::factory()->create();
+    $ssa = \App\Models\ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'primary_service_id' => $service->id,
+        'assigned_therapist_id' => $therapist->id,
+        'status' => \App\Enums\SSAStatus::ACTIVE,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', $school));
+
+    $response->assertOk();
+    $metrics = $response->viewData('metrics');
+    expect($metrics['total_students'])->toBe(1)
+        ->and($metrics['total_ssas'])->toBe(1);
 });

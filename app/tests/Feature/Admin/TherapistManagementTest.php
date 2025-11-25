@@ -42,6 +42,8 @@ final class TherapistManagementTest extends TestCase
         $response->assertViewIs('admin.therapists.index');
         $response->assertViewHas('therapists');
         $response->assertViewHas('metrics');
+        $response->assertViewHas('filters');
+        $response->assertViewHas('positions');
     }
 
     public function test_non_admin_cannot_view_therapists_list(): void
@@ -84,6 +86,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 40,
             'dob' => '1990-01-01',
         ];
 
@@ -96,6 +99,7 @@ final class TherapistManagementTest extends TestCase
             'first_name' => 'Jane',
             'last_name' => 'Smith',
             'personal_email' => 'jane.smith@example.com',
+            'max_weekly_hours' => 40,
         ]);
 
         // Verify welcome email was sent
@@ -134,6 +138,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 32,
             'dob' => '1985-05-15',
         ];
 
@@ -150,6 +155,7 @@ final class TherapistManagementTest extends TestCase
             'first_name' => 'Updated',
             'last_name' => 'Name',
             'personal_email' => 'updated@example.com',
+            'max_weekly_hours' => 32,
         ]);
     }
 
@@ -227,6 +233,7 @@ final class TherapistManagementTest extends TestCase
             'state',
             'timezone',
             'manager_id',
+            'max_weekly_hours',
         ]);
     }
 
@@ -243,6 +250,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 35,
         ]);
 
         $response->assertSessionHasErrors(['phone']);
@@ -263,6 +271,7 @@ final class TherapistManagementTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 40,
         ]);
 
         $response->assertSessionHasErrors(['personal_email']);
@@ -303,6 +312,122 @@ final class TherapistManagementTest extends TestCase
         $student = User::factory()->student()->create();
 
         $response = $this->actingAs($student)->get(route('admin.therapists.export'));
+
+        $response->assertForbidden();
+    }
+
+    public function test_admin_can_view_therapist_show_page_with_dashboard_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('admin.therapists.show', $this->therapist));
+
+        $response->assertOk();
+        $response->assertViewIs('admin.therapists.show');
+        $response->assertViewHas('therapist');
+        $response->assertViewHas('activeTab', 'dashboard');
+        $response->assertViewHas('metrics');
+        $response->assertViewHas('chartData');
+    }
+
+    public function test_admin_can_view_therapist_show_page_with_students_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'students'])
+        );
+
+        $response->assertOk();
+        $response->assertViewIs('admin.therapists.show');
+        $response->assertViewHas('therapist');
+        $response->assertViewHas('activeTab', 'students');
+        $response->assertViewHas('students');
+        $response->assertViewHas('studentFilters');
+        $response->assertViewHas('schools');
+        $response->assertViewHas('statuses');
+    }
+
+    public function test_admin_can_view_therapist_show_page_with_ssas_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'ssas'])
+        );
+
+        $response->assertOk();
+        $response->assertViewIs('admin.therapists.show');
+        $response->assertViewHas('therapist');
+        $response->assertViewHas('activeTab', 'ssas');
+        $response->assertViewHas('ssas');
+        $response->assertViewHas('ssaFilters');
+        $response->assertViewHas('statuses');
+        $response->assertViewHas('students');
+        $response->assertViewHas('therapists');
+        $response->assertViewHas('services');
+    }
+
+    public function test_therapist_show_page_loads_dashboard_metrics_correctly(): void
+    {
+        $student = User::factory()->student()->create();
+        $service = \App\Models\Service::factory()->create();
+        $ssa = \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $this->therapist->id,
+            'status' => \App\Enums\SSAStatus::ACTIVE,
+            'tho_minutes' => 1000,
+            'served_minutes' => 500,
+        ]);
+
+        // Link student to therapist
+        $this->therapist->students()->attach($student->id);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.therapists.show', $this->therapist));
+
+        $response->assertOk();
+        $metrics = $response->viewData('metrics');
+        $this->assertEquals(1, $metrics['total_students']);
+        $this->assertEquals(1, $metrics['active_ssas']);
+
+        $chartData = $response->viewData('chartData');
+        $this->assertArrayHasKey('served', $chartData);
+        $this->assertArrayHasKey('remaining', $chartData);
+        $this->assertArrayHasKey('progress', $chartData);
+    }
+
+    public function test_therapist_show_page_filters_students_by_search(): void
+    {
+        $student1 = User::factory()->student()->create(['name' => 'John Doe']);
+        $student2 = User::factory()->student()->create(['name' => 'Jane Smith']);
+
+        $this->therapist->students()->attach([$student1->id, $student2->id]);
+
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'students', 'search' => 'John'])
+        );
+
+        $response->assertOk();
+        $students = $response->viewData('students');
+        $this->assertTrue($students->contains('name', 'John Doe'));
+    }
+
+    public function test_therapist_show_page_filters_students_by_status(): void
+    {
+        $activeStudent = User::factory()->student()->create(['status' => UserStatus::ACTIVE]);
+        $inactiveStudent = User::factory()->student()->create(['status' => UserStatus::INACTIVE]);
+
+        $this->therapist->students()->attach([$activeStudent->id, $inactiveStudent->id]);
+
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'students', 'status' => 'active'])
+        );
+
+        $response->assertOk();
+        $students = $response->viewData('students');
+        $this->assertTrue($students->every(fn($student) => $student->status === UserStatus::ACTIVE));
+    }
+
+    public function test_non_admin_cannot_view_therapist_show_page(): void
+    {
+        $student = User::factory()->student()->create();
+
+        $response = $this->actingAs($student)->get(route('admin.therapists.show', $this->therapist));
 
         $response->assertForbidden();
     }

@@ -34,6 +34,7 @@ class TherapistProfile extends Model
         'state',
         'timezone',
         'manager_id',
+        'max_weekly_hours',
         'dob',
     ];
 
@@ -43,6 +44,7 @@ class TherapistProfile extends Model
             'employee_type' => EmployeeType::class,
             'title' => TherapistTitle::class,
             'position' => TherapistPosition::class,
+            'max_weekly_hours' => 'integer',
             'dob' => 'date',
         ];
     }

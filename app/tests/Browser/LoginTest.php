@@ -14,7 +14,7 @@ class LoginTest extends DuskTestCase
     public function user_can_login_via_login_form(): void
     {
         $password = 'Secret123!';
-        $user = User::factory()->create([
+        $user = User::factory()->admin()->create([
             'password' => bcrypt($password),
         ]);
 
@@ -26,8 +26,8 @@ class LoginTest extends DuskTestCase
                 ->assertPresent('input[name="password"]')
                 ->type('input[name="email"]', $user->email)
                 ->type('input[name="password"]', $password)
-                ->press('button[type="submit"]')
-                ->assertPathIs('/dashboard')
+                ->press('@login-button')
+                ->waitForLocation('/admin/dashboard')
                 ->assertSee('Welcome back');
         });
     }

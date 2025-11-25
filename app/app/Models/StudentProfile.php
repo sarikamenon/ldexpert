@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Scopes\StudentScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -19,7 +21,7 @@ class StudentProfile extends Model
         'first_name',
         'middle_name',
         'last_name',
-        'school',
+        'school_id',
         'id_number',
         'timezone',
         'gender',
@@ -49,5 +51,25 @@ class StudentProfile extends Model
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_id');
+    }
+
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class);
+    }
+
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        return StudentScope::search($query, $term);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return StudentScope::active($query, $this);
+    }
+
+    public function scopeInactive(Builder $query): Builder
+    {
+        return StudentScope::inactive($query, $this);
     }
 }

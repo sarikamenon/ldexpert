@@ -4,12 +4,16 @@ namespace Tests\Browser;
 
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
 class AdminSchoolsBrowserTest extends DuskTestCase
 {
+    use DatabaseMigrations;
+
     private const PASSWORD = 'Password123!';
 
     public function testAdminCanNavigateSchoolsPages(): void
@@ -44,6 +48,7 @@ class AdminSchoolsBrowserTest extends DuskTestCase
     private function createAdminUser(): User
     {
         return User::factory()->admin()->create([
+            'email' => 'admin+schools-' . Str::uuid() . '@example.com',
             'password' => Hash::make(self::PASSWORD),
         ]);
     }

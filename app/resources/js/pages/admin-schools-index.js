@@ -1,5 +1,5 @@
 import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
-import { confirmDialog } from '../common/sweetalert';
+import { setupStatusToggles } from '../common/status-change';
 
 async function initSchoolsTable() {
     try {
@@ -15,41 +15,6 @@ async function initSchoolsTable() {
     } catch (error) {
         console.error('Failed to init schools table', error);
     }
-}
-
-function setupStatusToggles() {
-    const buttons = document.querySelectorAll('.toggle-status-button');
-    const statusForm = document.getElementById('schoolStatusForm');
-    const statusInput = document.getElementById('statusInput');
-    const statusReasonInput = document.getElementById('statusReasonInput');
-
-    buttons.forEach((button) => {
-        button.addEventListener('click', async () => {
-            const schoolId = button.dataset.school;
-            const currentStatus = button.dataset.status;
-            const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            const action = nextStatus === 'active' ? 'activate' : 'deactivate';
-
-            const result = await confirmDialog({
-                title: `${action.charAt(0).toUpperCase() + action.slice(1)} School?`,
-                text: `You are about to ${action} this school.`,
-                icon: 'warning',
-                confirmButtonText: `Yes, ${action}`,
-                showInput: true,
-                inputPlaceholder: `Provide a reason to ${action}...`,
-            });
-
-            if (!result.isConfirmed || !result.value) {
-                return;
-            }
-
-            statusInput.value = nextStatus;
-            statusReasonInput.value = result.value;
-
-            statusForm.action = `/admin/schools/${schoolId}/status`;
-            statusForm.submit();
-        });
-    });
 }
 
 function setupExportButton() {
@@ -75,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initSchoolsTable();
-    setupStatusToggles();
+    setupStatusToggles('school', '.toggle-status-button', { idAttribute: 'school' });
     setupExportButton();
 });
 

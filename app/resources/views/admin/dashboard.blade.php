@@ -1,6 +1,19 @@
 <x-admin.layouts.app>
     <x-slot name="styles">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            // NOVA Brand Colors for Charts
+            const novaColors = {
+                primary: '#5563b8',
+                secondary: '#14b8a6',
+                accent: '#a855f7',
+                cyan: '#06b6d4',
+                fuchsia: '#d946ef',
+                palette: ['#5563b8', '#14b8a6', '#a855f7', '#06b6d4', '#d946ef', '#2dd4bf', '#c084fc', '#9333ea'],
+                primaryBg: 'rgba(85, 99, 184, 0.1)',
+                accentBg: 'rgba(168, 85, 247, 0.1)',
+            };
+        </script>
     </x-slot>
 
     {{-- 
@@ -8,13 +21,13 @@
         
         LIVE DATA:
         - Schools Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
-        - Therapist Capacity: Total, Active, Available for Assignment, New This Month (clickable - links to therapists index)
-        - Recent Activity: Latest schools and therapists added
-        
-        DUMMY DATA (will be replaced when modules are implemented):
-        - Student Population metrics
-        - Service Delivery (SSAs) metrics
-        - Upcoming Events & Deadlines
+        - Therapist Capacity: Total, Active, Inactive, New This Month (clickable - links to therapists index)
+        - Student Population: Total, Active, Inactive, New This Month (clickable - links to students index)
+        - Service Delivery: Active SSAs, Pending, Completed (clickable - links to SSAs index)
+        - Recent Activity: Latest schools, therapists, students, and SSAs added
+        - Upcoming Events: Real SSA expiration dates and contract expirations
+        - Charts: Real SSA status distribution, therapist positions, utilization trends
+        - Operational Metrics: Real calculated metrics from database
         
         HIDDEN/DISABLED:
         - Needs Attention section (will be implemented later)
@@ -41,7 +54,8 @@
                     </div>
                     <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                         <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                         </svg>
                     </div>
                 </div>
@@ -74,8 +88,10 @@
                     </div>
                     <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
                         <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v4a1 1 0 001 1h4" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 3v4a1 1 0 001 1h4" />
                         </svg>
                     </div>
                 </div>
@@ -85,8 +101,8 @@
                         <span class="font-medium text-success">{{ $metrics['therapists']['active'] }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-foreground/70">Available:</span>
-                        <span class="font-medium text-primary">{{ $metrics['therapists']['available_for_assignment'] }}</span>
+                        <span class="text-foreground/70">Inactive:</span>
+                        <span class="font-medium text-danger">{{ $metrics['therapists']['inactive'] }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-foreground/70">New This Month:</span>
@@ -97,92 +113,101 @@
         </a>
 
         {{-- Student Population --}}
-        <x-ui::card class="p-6 h-full">
-            <div class="flex items-center justify-between mb-2">
-                <p class="text-sm text-foreground/70">Student Population</p>
-            </div>
-            <div class="flex items-start justify-between mb-4">
-                <div>
-                    <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['students']['total'] }}</p>
+        <a href="{{ route('admin.students.index') }}" class="block hover:scale-[1.02] transition-transform">
+            <x-ui::card class="p-6 h-full hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm text-foreground/70">Student Population</p>
                 </div>
-                <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['students']['total'] }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
                 </div>
-            </div>
-            <div class="space-y-1 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Active:</span>
-                    <span class="font-medium text-success">{{ $metrics['students']['active'] }}</span>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Active:</span>
+                        <span class="font-medium text-success">{{ $metrics['students']['active'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Inactive:</span>
+                        <span class="font-medium text-danger">{{ $metrics['students']['inactive'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">New This Month:</span>
+                        <span class="font-medium text-primary">+{{ $metrics['students']['new_this_month'] }}</span>
+                    </div>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Needing SSA:</span>
-                    <span class="font-medium text-warning">{{ $metrics['students']['needing_ssa'] }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">New This Month:</span>
-                    <span class="font-medium text-primary">+{{ $metrics['students']['new_this_month'] }}</span>
-                </div>
-            </div>
-        </x-ui::card>
+            </x-ui::card>
+        </a>
 
         {{-- Service Delivery Status --}}
-        <x-ui::card class="p-6 h-full">
-            <div class="flex items-center justify-between mb-2">
-                <p class="text-sm text-foreground/70">Service Delivery</p>
-            </div>
-            <div class="flex items-start justify-between mb-4">
-                <div>
-                    <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['ssas']['active'] }}</p>
+        <a href="{{ route('admin.ssas.index') }}" class="block hover:scale-[1.02] transition-transform">
+            <x-ui::card class="p-6 h-full hover:shadow-lg transition-shadow">
+                <div class="flex items-center justify-between mb-2">
+                    <p class="text-sm text-foreground/70">Service Delivery</p>
                 </div>
-                <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                    <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['ssas']['active'] }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
                 </div>
-            </div>
-            <div class="space-y-1 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Active SSAs:</span>
-                    <span class="font-medium text-success">{{ $metrics['ssas']['active'] }}</span>
+                <div class="space-y-1 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Active SSAs:</span>
+                        <span class="font-medium text-success">{{ $metrics['ssas']['active'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Pending:</span>
+                        <span class="font-medium text-warning">{{ $metrics['ssas']['pending'] }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-foreground/70">Completed:</span>
+                        <span class="font-medium text-primary">{{ $metrics['ssas']['completed'] }}</span>
+                    </div>
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Pending:</span>
-                    <span class="font-medium text-warning">{{ $metrics['ssas']['pending'] }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-foreground/70">Utilization:</span>
-                    <span class="font-medium text-primary">{{ $metrics['ssas']['avg_utilization'] }}%</span>
-                </div>
-            </div>
-        </x-ui::card>
+            </x-ui::card>
+        </a>
     </div>
 
     {{-- Section 2: Critical Alerts (Hidden for now - will be implemented later) --}}
-    @if(false && count($alerts) > 0)
-    <x-ui::card class="p-6 mb-6 border-l-4 border-warning">
-        <div class="flex items-start gap-3">
-            <div class="flex-shrink-0 mt-1">
-                <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-            </div>
-            <div class="flex-1 min-w-0">
-                <h3 class="text-lg font-semibold text-foreground mb-4">Needs Attention</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    @foreach($alerts as $alert)
-                        <a href="{{ $alert['link'] }}" class="flex items-center gap-3 p-4 rounded-lg bg-{{ $alert['type'] }}/5 border border-{{ $alert['type'] }}/20 hover:border-{{ $alert['type'] }} hover:bg-{{ $alert['type'] }}/10 transition-colors">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-full bg-{{ $alert['type'] }}/10 flex items-center justify-center">
-                                <span class="w-2 h-2 rounded-full bg-{{ $alert['type'] }}"></span>
-                            </div>
-                            <span class="text-sm font-medium text-foreground">{{ $alert['message'] }}</span>
-                        </a>
-                    @endforeach
+    @if (false && count($alerts) > 0)
+        <x-ui::card class="p-6 mb-6 border-l-4 border-warning">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 mt-1">
+                    <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-semibold text-foreground mb-4">Needs Attention</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @foreach ($alerts as $alert)
+                            <a href="{{ $alert['link'] }}"
+                                class="flex items-center gap-3 p-4 rounded-lg bg-{{ $alert['type'] }}/5 border border-{{ $alert['type'] }}/20 hover:border-{{ $alert['type'] }} hover:bg-{{ $alert['type'] }}/10 transition-colors">
+                                <div
+                                    class="flex-shrink-0 w-8 h-8 rounded-full bg-{{ $alert['type'] }}/10 flex items-center justify-center">
+                                    <span class="w-2 h-2 rounded-full bg-{{ $alert['type'] }}"></span>
+                                </div>
+                                <span class="text-sm font-medium text-foreground">{{ $alert['message'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
                 </div>
             </div>
-        </div>
-    </x-ui::card>
+        </x-ui::card>
     @endif
 
     {{-- Section 3: Visual Analytics --}}
@@ -218,20 +243,35 @@
         <x-ui::card class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold text-foreground">Recent Activity</h3>
+                <a href="{{ route('admin.activity-logs.index') }}"
+                    class="text-sm font-medium text-primary hover:underline">
+                    View more
+                </a>
             </div>
-            @if(count($recentActivity) > 0)
+            @if (count($recentActivity) > 0)
                 <div class="space-y-3">
-                    @foreach($recentActivity as $activity)
+                    @foreach ($recentActivity as $activity)
                         <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
                             <div class="flex-shrink-0">
-                                <div class="w-8 h-8 rounded-full bg-{{ $activity['color'] }}/10 flex items-center justify-center">
-                                    @if($activity['icon'] === 'school')
-                                        <svg class="w-4 h-4 text-{{ $activity['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                <div
+                                    class="w-8 h-8 rounded-full bg-{{ $activity['color'] }}/10 flex items-center justify-center">
+                                    @if ($activity['icon'] === 'school')
+                                        <svg class="w-4 h-4 text-{{ $activity['color'] }}" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                         </svg>
                                     @elseif($activity['icon'] === 'user')
-                                        <svg class="w-4 h-4 text-{{ $activity['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        <svg class="w-4 h-4 text-{{ $activity['color'] }}" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                    @elseif($activity['icon'] === 'document')
+                                        <svg class="w-4 h-4 text-{{ $activity['color'] }}" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
                                     @endif
                                 </div>
@@ -247,11 +287,14 @@
                 </div>
             @else
                 <div class="text-center py-8">
-                    <svg class="w-12 h-12 text-foreground/20 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg class="w-12 h-12 text-foreground/20 mx-auto mb-3" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p class="text-sm text-foreground/60">No recent activity yet</p>
-                    <p class="text-xs text-foreground/40 mt-1">Activity will appear here as you add schools and therapists</p>
+                    <p class="text-xs text-foreground/40 mt-1">Activity will appear here as you add schools and
+                        therapists</p>
                 </div>
             @endif
         </x-ui::card>
@@ -260,18 +303,21 @@
         <x-ui::card class="p-6">
             <h3 class="text-lg font-semibold text-foreground mb-4">Upcoming Events & Deadlines</h3>
             <div class="space-y-3">
-                @foreach($upcomingEvents as $event)
+                @foreach ($upcomingEvents as $event)
                     <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
-                                <span class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
+                            <div
+                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
+                                <span
+                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
                             <p class="text-sm font-medium text-foreground">{{ $event['title'] }}</p>
                             <p class="text-xs text-foreground/70 mt-1">{{ $event['entity'] }}</p>
                             <p class="text-xs text-foreground/60 mt-1">
-                                Due: {{ $event['due_date']->format('M d, Y') }} ({{ $event['due_date']->diffForHumans() }})
+                                Due: {{ $event['due_date']->format('M d, Y') }}
+                                ({{ $event['due_date']->diffForHumans() }})
                             </p>
                         </div>
                     </div>
@@ -284,23 +330,31 @@
     <x-ui::card class="p-6 mb-6">
         <h3 class="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            @foreach($quickActions as $action)
-                <a href="{{ $action['route'] === '#' ? 'javascript:void(0)' : route($action['route']) }}" 
-                   class="flex flex-col items-center p-4 rounded-lg border border-border hover:border-{{ $action['color'] }} hover:bg-{{ $action['color'] }}/5 transition-colors {{ $action['route'] === '#' ? 'opacity-50 cursor-not-allowed' : '' }}">
-                    <div class="w-12 h-12 rounded-lg bg-{{ $action['color'] }}/10 flex items-center justify-center mb-3">
-                        <svg class="w-6 h-6 text-{{ $action['color'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            @if($action['icon'] === 'document-add')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            @foreach ($quickActions as $action)
+                <a href="{{ $action['route'] === '#' ? 'javascript:void(0)' : route($action['route']) }}"
+                    class="flex flex-col items-center p-4 rounded-lg border border-border hover:border-{{ $action['color'] }} hover:bg-{{ $action['color'] }}/5 transition-colors {{ $action['route'] === '#' ? 'opacity-50 cursor-not-allowed' : '' }}">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-{{ $action['color'] }}/10 flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6 text-{{ $action['color'] }}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            @if ($action['icon'] === 'document-add')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             @elseif($action['icon'] === 'school')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                             @elseif($action['icon'] === 'user-add')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                             @elseif($action['icon'] === 'user')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             @elseif($action['icon'] === 'chart')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                             @elseif($action['icon'] === 'list')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
                             @endif
                         </svg>
                     </div>
@@ -315,13 +369,15 @@
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold text-foreground mb-4">Key Operational Metrics</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-            @foreach($operationalMetrics as $metric)
+            @foreach ($operationalMetrics as $metric)
                 <div class="text-center">
                     <p class="text-sm text-foreground/70 mb-2">{{ $metric['label'] }}</p>
                     <p class="text-2xl font-bold text-foreground">{{ $metric['value'] }}</p>
-                    @if($metric['trend'] !== '0')
-                        <p class="text-xs mt-1 {{ $metric['trend_direction'] === 'up' ? 'text-success' : ($metric['trend_direction'] === 'down' ? 'text-danger' : 'text-foreground/60') }}">
-                            {{ $metric['trend_direction'] === 'up' ? '↑' : ($metric['trend_direction'] === 'down' ? '↓' : '→') }} {{ $metric['trend'] }}
+                    @if ($metric['trend'] !== '0')
+                        <p
+                            class="text-xs mt-1 {{ $metric['trend_direction'] === 'up' ? 'text-success' : ($metric['trend_direction'] === 'down' ? 'text-danger' : 'text-foreground/60') }}">
+                            {{ $metric['trend_direction'] === 'up' ? '↑' : ($metric['trend_direction'] === 'down' ? '↓' : '→') }}
+                            {{ $metric['trend'] }}
                         </p>
                     @endif
                 </div>
@@ -351,7 +407,12 @@
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { padding: 10, font: { size: 11 } }
+                                labels: {
+                                    padding: 10,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
                             }
                         }
                     }
@@ -372,8 +433,16 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true } }
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
                     }
                 });
 
@@ -383,19 +452,18 @@
                     type: 'line',
                     data: {
                         labels: utilizationData.labels.filter((_, i) => i % 5 === 0), // Show every 5th label
-                        datasets: [
-                            {
+                        datasets: [{
                                 label: 'THO Minutes',
                                 data: utilizationData.tho_minutes.filter((_, i) => i % 5 === 0),
-                                borderColor: '#3b82f6',
-                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderColor: novaColors.primary,
+                                backgroundColor: novaColors.primaryBg,
                                 fill: false,
                             },
                             {
                                 label: 'Served Minutes',
                                 data: utilizationData.served_minutes.filter((_, i) => i % 5 === 0),
-                                borderColor: '#10b981',
-                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderColor: novaColors.accent,
+                                backgroundColor: novaColors.accentBg,
                                 fill: false,
                             }
                         ]
@@ -403,11 +471,20 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true } },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
                         plugins: {
                             legend: {
                                 position: 'bottom',
-                                labels: { padding: 10, font: { size: 11 } }
+                                labels: {
+                                    padding: 10,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
                             }
                         }
                     }

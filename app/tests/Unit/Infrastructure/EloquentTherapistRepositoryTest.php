@@ -12,6 +12,7 @@ use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 final class EloquentTherapistRepositoryTest extends TestCase
@@ -49,6 +50,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $manager->id,
+            'max_weekly_hours' => 40,
         ];
 
         $profile = $this->repository->create($userData, $profileData);
@@ -68,7 +70,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
     public function test_update_updates_user_and_profile(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
         $user = User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
@@ -83,6 +85,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'first_name' => 'Jane',
             'last_name' => 'Smith Updated',
             'phone' => '999-888-7777',
+            'max_weekly_hours' => 30,
         ];
 
         $profile = $this->repository->update($user, $userData, $profileData);
@@ -117,6 +120,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $manager->id,
+            'max_weekly_hours' => 35,
         ];
 
         $profile = $this->repository->update($user, $userData, $profileData);
@@ -132,7 +136,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
     public function test_find_returns_therapist_profile(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
         $user = User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
@@ -151,36 +155,38 @@ final class EloquentTherapistRepositoryTest extends TestCase
         $this->assertNull($profile);
     }
 
-    public function test_list_returns_paginated_therapists(): void
+    public function test_list_returns_all_therapists(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
         $initialCount = User::where('role', 'therapist')->count();
-        
+
         User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
             ->count(5)
             ->create();
 
-        $filters = new TherapistFilterDTO(null, null, 10);
+        $filters = new TherapistFilterDTO();
         $result = $this->repository->list($filters);
 
-        $this->assertCount($initialCount + 5, $result->items());
+        $this->assertCount($initialCount + 5, $result);
     }
 
     public function test_list_filters_by_search_term(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
+        $uniqueFirstName = 'Alice' . Str::random(8);
+
         User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state([
-                'first_name' => 'Alice',
+                'first_name' => $uniqueFirstName,
                 'last_name' => 'Johnson',
                 'manager_id' => $manager->id,
             ]), 'therapistProfile')
-            ->create(['name' => 'Alice Johnson']);
+            ->create(['name' => "{$uniqueFirstName} Johnson"]);
 
         User::factory()
             ->therapist()
@@ -191,19 +197,19 @@ final class EloquentTherapistRepositoryTest extends TestCase
             ]), 'therapistProfile')
             ->create(['name' => 'Bob Smith']);
 
-        $filters = new TherapistFilterDTO('Alice', null, 10);
+        $filters = new TherapistFilterDTO($uniqueFirstName);
         $result = $this->repository->list($filters);
 
-        $this->assertCount(1, $result->items());
-        $this->assertSame('Alice', $result->items()[0]->therapistProfile->first_name);
+        $this->assertCount(1, $result);
+        $this->assertSame($uniqueFirstName, $result->first()->therapistProfile->first_name);
     }
 
     public function test_list_filters_by_status(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
         $initialActiveCount = User::where('role', 'therapist')->where('status', 'active')->count();
-        
+
         User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
@@ -216,16 +222,51 @@ final class EloquentTherapistRepositoryTest extends TestCase
             ->count(2)
             ->create(['status' => UserStatus::INACTIVE]);
 
-        $filters = new TherapistFilterDTO(null, 'active', 10);
+        $filters = new TherapistFilterDTO(status: 'active');
         $result = $this->repository->list($filters);
 
-        $this->assertCount($initialActiveCount + 3, $result->items());
+        $this->assertCount($initialActiveCount + 3, $result);
+    }
+
+    public function test_list_filters_by_position(): void
+    {
+        $manager = User::factory()->admin()->create();
+
+        $initialCount = User::where('role', 'therapist')
+            ->whereHas('therapistProfile', fn($q) => $q->where('position', 'OT'))
+            ->count();
+
+        User::factory()
+            ->therapist()
+            ->has(TherapistProfile::factory()->state([
+                'manager_id' => $manager->id,
+                'position' => 'OT',
+            ]), 'therapistProfile')
+            ->count(2)
+            ->create();
+
+        User::factory()
+            ->therapist()
+            ->has(TherapistProfile::factory()->state([
+                'manager_id' => $manager->id,
+                'position' => 'SLP',
+            ]), 'therapistProfile')
+            ->count(3)
+            ->create();
+
+        $filters = new TherapistFilterDTO(position: 'OT');
+        $result = $this->repository->list($filters);
+
+        $this->assertCount($initialCount + 2, $result);
+        $this->assertTrue($result->every(
+            fn($user) => $user->therapistProfile?->position?->value === 'OT'
+        ));
     }
 
     public function test_change_status_updates_user_status(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
         $user = User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
@@ -243,11 +284,11 @@ final class EloquentTherapistRepositoryTest extends TestCase
     public function test_get_metrics_returns_correct_counts(): void
     {
         $manager = User::factory()->admin()->create();
-        
+
         $initialTotal = User::where('role', 'therapist')->count();
         $initialActive = User::where('role', 'therapist')->where('status', 'active')->count();
         $initialInactive = User::where('role', 'therapist')->where('status', 'inactive')->count();
-        
+
         User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')

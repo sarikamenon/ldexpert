@@ -27,6 +27,8 @@ Project-enforced conventions
 - Always run commands via Docker:
   - Use `docker compose exec -T app bash -lc 'cd app && <command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly.
   - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'cd app && php artisan migrate'`).
+- After any frontend asset changes (`resources/js`, `resources/css`, etc.), run `make assets-build` before QA or deployment so the Vite manifest stays updated.
+- When introducing a new page-specific JS/CSS entry, immediately register it in `vite.config.js` and rerun `make assets-build` so Vite’s manifest includes the chunk before opening the corresponding Blade view.
 
 Quality gates
 

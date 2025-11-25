@@ -1,0 +1,117 @@
+/* NOVA Email Styles - For use in email templates */
+/* Note: Email clients require inline styles, but we define classes here for reference */
+
+.email-container {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.email-body {
+    font-family: ui-sans-serif, system-ui, -apple-system;
+    background: #f6f7f8;
+    padding: 24px;
+}
+
+.email-header {
+    padding: 24px 24px 8px 24px;
+}
+
+.email-title {
+    margin: 0;
+    font-size: 20px;
+    color: #0b1220;
+}
+
+.email-content {
+    padding: 8px 24px 0 24px;
+    color: #0b1220;
+}
+
+.email-text-muted {
+    color: #475569;
+}
+
+.email-button {
+    display: inline-block;
+    background: linear-gradient(135deg, #5563b8 0%, #a855f7 100%);
+    color: #ffffff;
+    text-decoration: none;
+    padding: 10px 14px;
+    border-radius: 8px;
+}
+
+.email-button-large {
+    display: inline-block;
+    background: linear-gradient(135deg, #5563b8 0%, #a855f7 100%);
+    color: #ffffff;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.email-footer {
+    padding: 24px;
+    color: #94a3b8;
+    font-size: 12px;
+}
+
+.email-link-primary {
+    color: #5563b8;
+}
+
+/* Student email specific styles */
+.email-student-container {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.email-student-body {
+    font-family: 'Inter', ui-sans-serif, system-ui;
+    background: #f5f7fb;
+    padding: 24px;
+    color: #0f172a;
+}
+
+.email-student-header {
+    padding: 28px 28px 12px 28px;
+}
+
+.email-student-title {
+    margin: 0;
+    font-size: 22px;
+    color: #0f172a;
+}
+
+.email-student-content {
+    padding: 8px 28px 0 28px;
+    line-height: 1.5;
+    color: #475569;
+}
+
+.email-info-box {
+    margin: 20px 0;
+    padding: 16px;
+    border-radius: 10px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+}
+
+.email-info-text {
+    margin: 0 0 8px;
+    color: #0369a1;
+}
+
+.email-footer-center {
+    padding: 24px 28px;
+    color: #94a3b8;
+    font-size: 12px;
+    text-align: center;
+}
+

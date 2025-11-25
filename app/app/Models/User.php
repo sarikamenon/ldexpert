@@ -140,4 +140,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(StudentProfile::class, 'parent_id');
     }
+
+    /**
+     * Get the SSAs assigned to this therapist.
+     */
+    public function assignedSSAs(): HasMany
+    {
+        return $this->hasMany(ServiceSupportAgreement::class, 'assigned_therapist_id');
+    }
 }
