@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TherapistProfileFactory extends Factory
 {
+    protected $model = TherapistProfile::class;
+
     /**
      * Define the model's default state.
      *
@@ -24,26 +26,26 @@ class TherapistProfileFactory extends Factory
      */
     public function definition(): array
     {
-        $state = fake()->randomElement(array_keys(UsStates::STATES));
-        $timezone = fake()->randomElement(array_keys(UsTimezones::TIMEZONES));
+        $state = $this->faker->randomElement(array_keys(UsStates::STATES));
+        $timezone = $this->faker->randomElement(array_keys(UsTimezones::TIMEZONES));
 
         return [
             'user_id' => User::factory()->therapist(),
-            'employee_type' => fake()->randomElement(EmployeeType::cases())->value,
-            'title' => fake()->randomElement(TherapistTitle::cases())->value,
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
-            'personal_email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->numerify('###-###-####'),
-            'ld_email' => fake()->optional(0.3)->safeEmail(),
-            'address' => fake()->optional()->address(),
-            'comments' => fake()->optional()->sentence(),
-            'position' => fake()->randomElement(TherapistPosition::cases())->value,
+            'employee_type' => $this->faker->randomElement(EmployeeType::cases())->value,
+            'title' => $this->faker->randomElement(TherapistTitle::cases())->value,
+            'first_name' => $this->faker->firstName(),
+            'last_name' => $this->faker->lastName(),
+            'personal_email' => $this->faker->unique()->safeEmail(),
+            'phone' => $this->faker->numerify('###-###-####'),
+            'ld_email' => $this->faker->optional(0.3)->safeEmail(),
+            'address' => $this->faker->optional()->address(),
+            'comments' => $this->faker->optional()->sentence(),
+            'position' => $this->faker->randomElement(TherapistPosition::cases())->value,
             'state' => $state,
             'timezone' => $timezone,
             'manager_id' => User::factory()->admin(),
-            'max_weekly_hours' => fake()->numberBetween(10, 60),
-            'dob' => fake()->optional()->dateTimeBetween('-60 years', '-22 years'),
+            'max_weekly_hours' => $this->faker->numberBetween(10, 60),
+            'dob' => $this->faker->optional()->dateTimeBetween('-60 years', '-22 years'),
         ];
     }
 }
