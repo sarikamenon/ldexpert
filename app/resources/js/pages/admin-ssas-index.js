@@ -1,5 +1,6 @@
 import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
+import { setupStatusChanges } from '../common/status-change';
 import Swal from 'sweetalert2';
 
 async function initSSATable() {
@@ -15,75 +16,7 @@ async function initSSATable() {
     }
 }
 
-function setupStatusChanges() {
-    const buttons = document.querySelectorAll('.change-status-btn');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-
-    buttons.forEach((button) => {
-        button.addEventListener('click', async () => {
-            const ssaId = button.dataset.ssaId;
-            const status = button.dataset.status;
-            const statusLabels = {
-                active: 'Activate',
-                completed: 'Complete',
-                deactivated: 'Deactivate',
-            };
-            const action = statusLabels[status] || 'Update';
-
-            // For Complete and Deactivate, require reason input
-            const requiresReason = status === 'completed' || status === 'deactivated';
-            const reasonText = status === 'completed' 
-                ? 'Service has been completed successfully.'
-                : 'Student has left in between of service.';
-
-            const result = await confirmDialog({
-                title: `${action} SSA?`,
-                text: requiresReason 
-                    ? `You are about to ${action.toLowerCase()} this SSA. Please provide a reason (optional).`
-                    : `You are about to ${action.toLowerCase()} this SSA.`,
-                icon: 'warning',
-                confirmButtonText: `Yes, ${action.toLowerCase()}`,
-                showInput: requiresReason,
-                inputPlaceholder: requiresReason ? `Reason (optional, e.g., ${reasonText})` : '',
-                inputValidator: requiresReason ? () => null : undefined, // Optional reason - return null means valid
-            });
-
-            if (!result.isConfirmed) {
-                return;
-            }
-
-            try {
-                showLoading('Updating SSA status...');
-                const response = await fetch(`/admin/ssas/${ssaId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        Accept: 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        status,
-                        reason: result.value || null,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    await successToast(data.message);
-                    window.location.reload();
-                } else {
-                    errorAlert(data.message || 'Failed to update SSA status.');
-                }
-            } catch (error) {
-                console.error('Failed to update SSA status', error);
-                errorAlert('An unexpected error occurred.');
-            } finally {
-                closeAlert();
-            }
-        });
-    });
-}
+// Status changes are now handled by the common module
 
 function setupAssignmentActions() {
     const assignBtn = document.getElementById('assignTherapistBtn');
@@ -295,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
         initSSATable();
     }
 
-    setupStatusChanges();
+    setupStatusChanges('ssa', '.change-status-btn', { idAttribute: 'ssa-id' });
     setupAssignmentActions();
     setupListAssignmentActions();
 });

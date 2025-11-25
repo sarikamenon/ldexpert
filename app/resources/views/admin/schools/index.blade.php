@@ -98,7 +98,7 @@
                                 </td>
                                 <td>{{ $school->contact_email ?? '—' }}</td>
                                 <td>
-                                    <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'secondary'">
+                                    <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'danger'">
                                         {{ ucfirst($school->status?->value ?? 'inactive') }}
                                     </x-ui::badge>
                                 </td>

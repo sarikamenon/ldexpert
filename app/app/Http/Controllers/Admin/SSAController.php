@@ -29,6 +29,7 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -83,9 +84,11 @@ final class SSAController extends Controller
         }
     }
 
-    public function show(ServiceSupportAgreement $ssa): View
+    public function show(Request $request, ServiceSupportAgreement $ssa): View
     {
         $this->authorize('view', $ssa);
+
+        $activeTab = $request->query('tab', 'dashboard');
 
         $ssa->load([
             'student',
@@ -94,17 +97,24 @@ final class SSAController extends Controller
             'additionalService',
             'assignedTherapist',
             'assignedTherapist.therapistProfile',
-            'assignmentHistory.therapist',
-            'assignmentHistory.assignedBy',
         ]);
 
-        $assignmentHistory = $this->ssaService->getAssignmentHistory($ssa);
-
-        return view('admin.ssas.show', [
+        $viewData = [
             'ssa' => $ssa,
-            'assignmentHistory' => $assignmentHistory,
-            'therapists' => $this->getActiveTherapists(),
-        ]);
+            'activeTab' => $activeTab,
+        ];
+
+        // Load tab-specific data only when needed
+        if ($activeTab === 'assignment') {
+            $ssa->load([
+                'assignmentHistory.therapist',
+                'assignmentHistory.assignedBy',
+            ]);
+            $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa);
+            $viewData['therapists'] = $this->getActiveTherapists();
+        }
+
+        return view('admin.ssas.show', $viewData);
     }
 
     public function edit(ServiceSupportAgreement $ssa): View

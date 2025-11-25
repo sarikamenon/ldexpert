@@ -78,7 +78,7 @@
                             <td>
                                 <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE
                                     ? 'success'
-                                    : 'secondary'">
+                                    : 'danger'">
                                     {{ $contract->status->label() }}
                                 </x-ui::badge>
                             </td>

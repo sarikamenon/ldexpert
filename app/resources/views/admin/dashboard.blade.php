@@ -22,8 +22,8 @@
         LIVE DATA:
         - Schools Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
         - Therapist Capacity: Total, Active, Inactive, New This Month (clickable - links to therapists index)
-        - Student Population: Total, Active, Needing SSA, New This Month (clickable - links to students index)
-        - Service Delivery: Active SSAs, Pending, Utilization (clickable - links to SSAs index)
+        - Student Population: Total, Active, Inactive, New This Month (clickable - links to students index)
+        - Service Delivery: Active SSAs, Pending, Completed (clickable - links to SSAs index)
         - Recent Activity: Latest schools, therapists, students, and SSAs added
         - Upcoming Events: Real SSA expiration dates and contract expirations
         - Charts: Real SSA status distribution, therapist positions, utilization trends
@@ -135,8 +135,8 @@
                         <span class="font-medium text-success">{{ $metrics['students']['active'] }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-foreground/70">Needing SSA:</span>
-                        <span class="font-medium text-warning">{{ $metrics['students']['needing_ssa'] }}</span>
+                        <span class="text-foreground/70">Inactive:</span>
+                        <span class="font-medium text-danger">{{ $metrics['students']['inactive'] }}</span>
                     </div>
                     <div class="flex justify-between">
                         <span class="text-foreground/70">New This Month:</span>
@@ -173,8 +173,8 @@
                         <span class="font-medium text-warning">{{ $metrics['ssas']['pending'] }}</span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-foreground/70">Utilization:</span>
-                        <span class="font-medium text-primary">{{ $metrics['ssas']['avg_utilization'] }}%</span>
+                        <span class="text-foreground/70">Completed:</span>
+                        <span class="font-medium text-primary">{{ $metrics['ssas']['completed'] }}</span>
                     </div>
                 </div>
             </x-ui::card>

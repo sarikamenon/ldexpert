@@ -1,3 +1,5 @@
+import { setupStatusChanges } from '../common/status-change';
+
 function initSchoolSsaChart() {
     const canvas = document.getElementById('schoolSsaChart');
     if (!canvas || typeof Chart === 'undefined') {
@@ -37,5 +39,6 @@ function initSchoolSsaChart() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initSchoolSsaChart();
+    setupStatusChanges('school', '.change-status-btn', { idAttribute: 'school-id' });
 });
 

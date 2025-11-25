@@ -55,20 +55,18 @@ class DashboardService
         $activeStudents = (clone $studentQuery)
             ->where('status', UserStatus::ACTIVE)
             ->count();
+        $inactiveStudents = (clone $studentQuery)
+            ->where('status', UserStatus::INACTIVE)
+            ->count();
         $newStudentsThisMonth = (clone $studentQuery)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Students without active SSAs
-        $studentsWithActiveSSAs = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-            ->distinct('student_id')
-            ->count('student_id');
-        $studentsNeedingSSA = max(0, $activeStudents - $studentsWithActiveSSAs);
-
         // Real data for SSAs
         $activeSSAs = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)->count();
         $pendingSSAs = ServiceSupportAgreement::where('status', SSAStatus::PENDING)->count();
+        $completedSSAs = ServiceSupportAgreement::where('status', SSAStatus::COMPLETED)->count();
         $ssasExpiringSoon = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
             ->whereBetween('end_date', [now(), now()->addDays(7)])
             ->count();
@@ -97,12 +95,13 @@ class DashboardService
             'students' => [
                 'total' => $totalStudents,
                 'active' => $activeStudents,
-                'needing_ssa' => $studentsNeedingSSA,
+                'inactive' => $inactiveStudents,
                 'new_this_month' => $newStudentsThisMonth,
             ],
             'ssas' => [
                 'active' => $activeSSAs,
                 'pending' => $pendingSSAs,
+                'completed' => $completedSSAs,
                 'expiring_soon' => $ssasExpiringSoon,
                 'avg_utilization' => $avgUtilization,
             ],

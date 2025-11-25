@@ -49,7 +49,10 @@ final class StudentManagementTest extends TestCase
         $response->assertOk()
             ->assertViewIs('admin.students.index')
             ->assertViewHas('students')
-            ->assertViewHas('metrics');
+            ->assertViewHas('metrics')
+            ->assertViewHas('filters')
+            ->assertViewHas('statuses')
+            ->assertViewHas('schools');
     }
 
     public function test_non_admin_cannot_view_students_index(): void
@@ -258,5 +261,169 @@ final class StudentManagementTest extends TestCase
 
         $this->actingAs($nonAdmin)->get(route('admin.students.export'))
             ->assertForbidden();
+    }
+
+    public function test_admin_can_view_student_show_page_with_dashboard_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('admin.students.show', $this->student));
+
+        $response->assertOk()
+            ->assertViewIs('admin.students.show')
+            ->assertViewHas('student')
+            ->assertViewHas('activeTab', 'dashboard')
+            ->assertViewHas('metrics')
+            ->assertViewHas('chartData');
+    }
+
+    public function test_admin_can_view_student_show_page_with_ssas_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.show', [$this->student, 'tab' => 'ssas'])
+        );
+
+        $response->assertOk()
+            ->assertViewIs('admin.students.show')
+            ->assertViewHas('student')
+            ->assertViewHas('activeTab', 'ssas')
+            ->assertViewHas('ssas')
+            ->assertViewHas('ssaFilters')
+            ->assertViewHas('statuses')
+            ->assertViewHas('students')
+            ->assertViewHas('therapists')
+            ->assertViewHas('services');
+    }
+
+    public function test_admin_can_view_student_show_page_with_therapists_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.show', [$this->student, 'tab' => 'therapists'])
+        );
+
+        $response->assertOk()
+            ->assertViewIs('admin.students.show')
+            ->assertViewHas('student')
+            ->assertViewHas('activeTab', 'therapists')
+            ->assertViewHas('therapists')
+            ->assertViewHas('therapistFilters')
+            ->assertViewHas('positions');
+    }
+
+    public function test_student_show_page_loads_dashboard_metrics_correctly(): void
+    {
+        $service = \App\Models\Service::factory()->create();
+        $therapist = User::factory()->therapist()->create();
+        $ssa = \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => \App\Enums\SSAStatus::ACTIVE,
+            'tho_minutes' => 2000,
+            'served_minutes' => 1000,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.students.show', $this->student));
+
+        $response->assertOk();
+        $metrics = $response->viewData('metrics');
+        $this->assertEquals(1, $metrics['total_ssas']);
+        $this->assertEquals(1, $metrics['active_ssas']);
+
+        $chartData = $response->viewData('chartData');
+        $this->assertArrayHasKey('served', $chartData);
+        $this->assertArrayHasKey('remaining', $chartData);
+        $this->assertArrayHasKey('progress', $chartData);
+    }
+
+    public function test_student_show_page_filters_therapists_by_search(): void
+    {
+        $therapist1 = User::factory()->therapist()->create(['name' => 'Dr. John']);
+        $therapist2 = User::factory()->therapist()->create(['name' => 'Dr. Jane']);
+
+        $service = \App\Models\Service::factory()->create();
+        \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist1->id,
+        ]);
+        \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist2->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'search' => 'John'])
+        );
+
+        $response->assertOk();
+        $therapists = $response->viewData('therapists');
+        $this->assertTrue($therapists->contains('name', 'Dr. John'));
+    }
+
+    public function test_student_show_page_filters_therapists_by_status(): void
+    {
+        $activeTherapist = User::factory()->therapist()->create(['status' => UserStatus::ACTIVE]);
+        $inactiveTherapist = User::factory()->therapist()->create(['status' => UserStatus::INACTIVE]);
+
+        $service = \App\Models\Service::factory()->create();
+        \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $activeTherapist->id,
+        ]);
+        \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $inactiveTherapist->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'status' => 'active'])
+        );
+
+        $response->assertOk();
+        $therapists = $response->viewData('therapists');
+        $this->assertTrue($therapists->every(fn($therapist) => $therapist->status === UserStatus::ACTIVE));
+    }
+
+    public function test_student_show_page_filters_therapists_by_position(): void
+    {
+        $slpTherapist = User::factory()->therapist()->has(
+            \App\Models\TherapistProfile::factory()->state(['position' => \App\Enums\TherapistPosition::SLP])
+        )->create();
+        $otTherapist = User::factory()->therapist()->has(
+            \App\Models\TherapistProfile::factory()->state(['position' => \App\Enums\TherapistPosition::OT])
+        )->create();
+
+        $service = \App\Models\Service::factory()->create();
+        \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $slpTherapist->id,
+        ]);
+        \App\Models\ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $otTherapist->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position' => \App\Enums\TherapistPosition::SLP->value])
+        );
+
+        $response->assertOk();
+        $therapists = $response->viewData('therapists');
+        $this->assertTrue($therapists->every(function ($therapist) {
+            return $therapist->therapistProfile->position === \App\Enums\TherapistPosition::SLP;
+        }));
+    }
+
+    public function test_non_admin_cannot_view_student_show_page(): void
+    {
+        $nonAdmin = User::factory()->student()->create();
+
+        $response = $this->actingAs($nonAdmin)->get(route('admin.students.show', $this->student));
+
+        $response->assertForbidden();
     }
 }

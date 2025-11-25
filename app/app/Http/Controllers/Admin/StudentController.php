@@ -8,11 +8,19 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Services\TherapistService;
+use App\Domain\SSA\Services\SSAService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\StudentFilterDTO;
+use App\DTOs\TherapistFilterDTO;
+use App\DTOs\SSAFilterDTO;
 use App\DTOs\UpdateStudentDTO;
+use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Enums\SSAStatus;
+use App\Enums\ServiceStatus;
+use App\Enums\TherapistPosition;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
 use App\Http\Requests\Admin\Student\ExportStudentsRequest;
@@ -20,12 +28,13 @@ use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
 use App\Models\ServiceSupportAgreement;
+use App\Models\Service;
 use App\Models\StudentProfile;
 use App\Models\User;
-use App\Enums\SSAStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -34,6 +43,8 @@ final class StudentController extends Controller
     public function __construct(
         private readonly StudentService $studentService,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly TherapistService $therapistService,
+        private readonly SSAService $ssaService,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -84,44 +95,96 @@ final class StudentController extends Controller
         ] + $this->referenceData());
     }
 
-    public function show(User $student): View
+    public function show(Request $request, User $student): View
     {
         $this->authorize('view', StudentProfile::class);
 
-        $student->load([
-            'studentProfile.school',
-            'studentProfile.parent',
-            'therapists.therapistProfile',
-        ]);
+        $student->load(['studentProfile.school', 'studentProfile.parent']);
+        $activeTab = $request->query('tab', 'dashboard');
 
-        $ssas = ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
-            ->where('student_id', $student->id)
-            ->orderByDesc('start_date')
-            ->get();
-
-        $totalTho = (int) $ssas->sum('tho_minutes');
-        $served = (int) $ssas->sum('served_minutes');
-
-        $chartData = [
-            'served' => $served,
-            'remaining' => max(0, $totalTho - $served),
-            'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
-        ];
-
-        $metrics = [
-            'total_ssas' => $ssas->count(),
-            'active_ssas' => $ssas->where('status', SSAStatus::ACTIVE)->count(),
-            'completed_ssas' => $ssas->where('status', SSAStatus::COMPLETED)->count(),
-            'pending_ssas' => $ssas->where('status', SSAStatus::PENDING)->count(),
-        ];
-
-        return view('admin.students.show', [
+        $viewData = [
             'student' => $student,
-            'ssas' => $ssas,
-            'therapists' => $student->therapists,
-            'chartData' => $chartData,
-            'metrics' => $metrics,
-        ]);
+            'activeTab' => $activeTab,
+        ];
+
+        // Load dashboard data (always needed for metrics)
+        if ($activeTab === 'dashboard' || $activeTab === 'overview') {
+            $ssasForMetrics = ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+                ->where('student_id', $student->id)
+                ->get();
+
+            $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
+            $served = (int) $ssasForMetrics->sum('served_minutes');
+
+            $viewData['chartData'] = [
+                'served' => $served,
+                'remaining' => max(0, $totalTho - $served),
+                'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
+            ];
+
+            $viewData['metrics'] = [
+                'total_ssas' => $ssasForMetrics->count(),
+                'active_ssas' => $ssasForMetrics->where('status', SSAStatus::ACTIVE)->count(),
+                'completed_ssas' => $ssasForMetrics->where('status', SSAStatus::COMPLETED)->count(),
+                'pending_ssas' => $ssasForMetrics->where('status', SSAStatus::PENDING)->count(),
+            ];
+        }
+
+        // Load tab-specific data only when needed
+        if ($activeTab === 'ssas') {
+            $filters = SSAFilterDTO::fromArray(
+                array_merge($request->query(), ['student_id' => $student->id])
+            );
+            $viewData['ssas'] = $this->ssaService->paginate($filters);
+            $viewData['ssaFilters'] = $request->query();
+            $viewData['statuses'] = SSAStatus::cases();
+            $viewData['students'] = User::query()
+                ->where('role', Role::STUDENT)
+                ->where('status', UserStatus::ACTIVE)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+            $viewData['therapists'] = User::query()
+                ->where('role', Role::THERAPIST)
+                ->where('status', UserStatus::ACTIVE)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+            $viewData['services'] = Service::query()
+                ->where('status', ServiceStatus::ACTIVE)
+                ->orderBy('name')
+                ->get(['id', 'name', 'is_frequency_service']);
+        } elseif ($activeTab === 'therapists') {
+            // Get therapists assigned to SSAs for this student
+            $therapistsQuery = User::query()
+                ->where('role', Role::THERAPIST)
+                ->whereHas('assignedSSAs', fn($q) => $q->where('student_id', $student->id))
+                ->with('therapistProfile')
+                ->distinct();
+
+            // Apply search filter
+            if ($request->filled('search')) {
+                $search = $request->query('search');
+                $therapistsQuery->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            }
+
+            // Apply status filter
+            if ($request->filled('status')) {
+                $therapistsQuery->where('status', $request->query('status'));
+            }
+
+            // Apply position filter
+            if ($request->filled('position')) {
+                $therapistsQuery->whereHas('therapistProfile', fn($q) => $q->where('position', $request->query('position')));
+            }
+
+            $viewData['therapists'] = $therapistsQuery->paginate($request->integer('per_page', 15));
+            $viewData['therapistFilters'] = $request->query();
+            $viewData['positions'] = TherapistPosition::cases();
+        }
+
+        return view('admin.students.show', $viewData);
     }
 
     public function update(UpdateStudentRequest $request, User $student): RedirectResponse

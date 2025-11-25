@@ -1,3 +1,5 @@
+import { setupStatusChanges } from '../common/status-change';
+
 function initTherapistProgressChart() {
     const canvas = document.getElementById('therapistProgressChart');
     if (!canvas || typeof Chart === 'undefined') {
@@ -50,5 +52,6 @@ function initTherapistProgressChart() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initTherapistProgressChart();
+    setupStatusChanges('therapist', '.change-status-btn', { idAttribute: 'therapist-id' });
 });
 

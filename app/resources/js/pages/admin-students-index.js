@@ -1,5 +1,5 @@
 import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
-import { confirmDialog, successToast, errorAlert } from '../common/sweetalert';
+import { setupStatusToggles } from '../common/status-change';
 
 async function initStudentsTable() {
     try {
@@ -12,56 +12,6 @@ async function initStudentsTable() {
     } catch (error) {
         console.error('Failed to init students table', error);
     }
-}
-
-function setupStatusToggles() {
-    document.querySelectorAll('.toggle-student-status').forEach((button) => {
-        button.addEventListener('click', async () => {
-            const studentId = button.dataset.student;
-            const currentStatus = button.dataset.status;
-            const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            const action = nextStatus === 'active' ? 'activate' : 'deactivate';
-
-            const result = await confirmDialog({
-                title: `${action.charAt(0).toUpperCase() + action.slice(1)} Student?`,
-                text: `You are about to ${action} this student.`,
-                icon: 'warning',
-                confirmButtonText: `Yes, ${action}`,
-                showInput: true,
-                inputPlaceholder: `Provide a reason to ${action}...`,
-            });
-
-            if (!result.isConfirmed || !result.value) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/admin/students/${studentId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    },
-                    body: JSON.stringify({
-                        status: nextStatus,
-                        reason: result.value,
-                    }),
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    await successToast(data.message, 'Success!');
-                    window.location.reload();
-                } else {
-                    errorAlert('Failed to update student status');
-                }
-            } catch (error) {
-                console.error('Failed to update student status', error);
-                errorAlert('An error occurred while updating student status');
-            }
-        });
-    });
 }
 
 function setupExportButton() {
@@ -91,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initStudentsTable();
-    setupStatusToggles();
+    setupStatusToggles('student', '.toggle-student-status', { idAttribute: 'student' });
     setupExportButton();
 });
 

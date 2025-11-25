@@ -1,3 +1,5 @@
+import { setupStatusChanges } from '../common/status-change';
+
 function initStudentProgressChart() {
     const canvas = document.getElementById('studentProgressChart');
     if (!canvas || typeof Chart === 'undefined') {
@@ -50,5 +52,6 @@ function initStudentProgressChart() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initStudentProgressChart();
+    setupStatusChanges('student', '.change-status-btn', { idAttribute: 'student-id' });
 });
 

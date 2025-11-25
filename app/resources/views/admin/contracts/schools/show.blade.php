@@ -9,7 +9,7 @@
 
         <x-ui::card class="p-6 space-y-2">
             <p class="text-sm text-foreground/70">Status</p>
-            <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE ? 'success' : 'secondary'">
+            <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE ? 'success' : 'danger'">
                 {{ $contract->status->label() }}
             </x-ui::badge>
         </x-ui::card>

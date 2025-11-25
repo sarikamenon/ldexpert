@@ -65,10 +65,19 @@ it('allows admin to view SSAs index', function () {
     $admin = ssaAdmin();
     ServiceSupportAgreement::factory()->create();
 
-    $this->actingAs($admin)
-        ->get(route('admin.ssas.index'))
-        ->assertOk()
-        ->assertSee('SSA');
+    $response = $this->actingAs($admin)
+        ->get(route('admin.ssas.index'));
+
+    $response->assertOk()
+        ->assertSee('SSA')
+        ->assertViewIs('admin.ssas.index')
+        ->assertViewHas('ssas')
+        ->assertViewHas('metrics')
+        ->assertViewHas('filters')
+        ->assertViewHas('statuses')
+        ->assertViewHas('students')
+        ->assertViewHas('services')
+        ->assertViewHas('therapists');
 });
 
 it('prevents non-admin access to SSAs index', function () {
@@ -242,3 +251,64 @@ it('prevents changing primary service after creation', function () {
     ]);
 });
 
+it('allows admin to view SSA show page with dashboard tab', function () {
+    $admin = ssaAdmin();
+    $ssa = ServiceSupportAgreement::factory()->create();
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.show', $ssa))
+        ->assertOk()
+        ->assertViewIs('admin.ssas.show')
+        ->assertViewHas('ssa')
+        ->assertViewHas('activeTab', 'dashboard');
+});
+
+it('allows admin to view SSA show page with assignment tab', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.show', [$ssa, 'tab' => 'assignment']))
+        ->assertOk()
+        ->assertViewIs('admin.ssas.show')
+        ->assertViewHas('ssa')
+        ->assertViewHas('activeTab', 'assignment')
+        ->assertViewHas('assignmentHistory')
+        ->assertViewHas('therapists');
+});
+
+it('loads assignment history correctly for SSA show page', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    // Create assignment history manually since we may not have a factory
+    \App\Models\SSAAssignmentHistory::create([
+        'ssa_id' => $ssa->id,
+        'therapist_id' => $therapist->id,
+        'assigned_by' => $admin->id,
+        'action' => 'assigned',
+        'assigned_at' => now(),
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.ssas.show', [$ssa, 'tab' => 'assignment']));
+
+    $response->assertOk();
+    $assignmentHistory = $response->viewData('assignmentHistory');
+    expect($assignmentHistory)->not->toBeEmpty();
+});
+
+it('prevents non-admin from viewing SSA show page', function () {
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create();
+
+    $this->actingAs($therapist)
+        ->get(route('admin.ssas.show', $ssa))
+        ->assertForbidden();
+});

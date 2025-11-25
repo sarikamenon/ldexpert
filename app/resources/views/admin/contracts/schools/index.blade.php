@@ -76,7 +76,7 @@
                             <td>{{ $contract->end_date?->format('M d, Y') }}</td>
                             <td>{{ $contract->services->count() }}</td>
                             <td>
-                                <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE ? 'success' : 'secondary'">
+                                <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE ? 'success' : 'danger'">
                                     {{ $contract->status->label() }}
                                 </x-ui::badge>
                             </td>
