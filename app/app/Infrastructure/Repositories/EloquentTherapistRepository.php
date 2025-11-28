@@ -10,6 +10,7 @@ use App\DTOs\TherapistFilterDTO;
 use App\Enums\UserStatus;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -46,8 +47,10 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
     public function list(TherapistFilterDTO $filters): Collection
     {
         $query = User::query()
+            ->select('users.*')
             ->where('role', 'therapist')
-            ->with(['therapistProfile.manager']);
+            ->with(['therapistProfile.manager'])
+            ->distinct();
 
         if ($filters->search) {
             $query->whereHas('therapistProfile', function ($q) use ($filters) {
@@ -63,6 +66,10 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $query->whereHas('therapistProfile', function ($q) use ($filters) {
                 $q->where('position', $filters->position);
             });
+        }
+
+        if ($filters->schoolId) {
+            $this->applySchoolFilter($query, $filters->schoolId);
         }
 
         return $query->latest()->get();
@@ -99,8 +106,10 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
     public function export(TherapistFilterDTO $filters): Collection
     {
         $query = User::query()
+            ->select('users.*')
             ->where('role', 'therapist')
-            ->with(['therapistProfile.manager']);
+            ->with(['therapistProfile.manager'])
+            ->distinct();
 
         if ($filters->search) {
             $query->whereHas('therapistProfile', function ($q) use ($filters) {
@@ -118,6 +127,21 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             });
         }
 
+        if ($filters->schoolId) {
+            $this->applySchoolFilter($query, $filters->schoolId);
+        }
+
         return $query->latest()->get();
+    }
+
+    private function applySchoolFilter(Builder $query, int $schoolId): void
+    {
+        $query->where(function ($builder) use ($schoolId) {
+            $builder->whereHas('students.studentProfile', function ($studentQuery) use ($schoolId) {
+                $studentQuery->where('school_id', $schoolId);
+            })->orWhereHas('assignedSSAs.student.studentProfile', function ($ssaQuery) use ($schoolId) {
+                $ssaQuery->where('school_id', $schoolId);
+            });
+        });
     }
 }

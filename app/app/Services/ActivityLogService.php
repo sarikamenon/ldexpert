@@ -4,19 +4,25 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Models\ActivityLog;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class ActivityLogService
 {
+    public function __construct(
+        private readonly ActivityLogRepositoryInterface $activityLogs,
+    ) {}
+
     public function log(
         string $action,
         Model $model,
         ?array $changes = null,
         ?string $description = null
     ): ActivityLog {
-        return ActivityLog::create([
+        return $this->activityLogs->create([
             'user_id' => Auth::id(),
             'action' => $action,
             'model_type' => get_class($model),
@@ -62,8 +68,8 @@ class ActivityLogService
     public function logBulkAction(string $action, string $modelType, array $ids, ?array $metadata = null): ActivityLog
     {
         $model = new $modelType();
-        
-        return ActivityLog::create([
+
+        return $this->activityLogs->create([
             'user_id' => Auth::id(),
             'action' => 'bulk_' . $action,
             'model_type' => $modelType,
@@ -82,8 +88,8 @@ class ActivityLogService
     private function generateDescription(string $action, Model $model): string
     {
         $modelName = class_basename($model);
-        $identifier = method_exists($model, 'getIdentifierAttribute') 
-            ? $model->getIdentifierAttribute() 
+        $identifier = method_exists($model, 'getIdentifierAttribute')
+            ? $model->getIdentifierAttribute()
             : ($model->name ?? $model->display_name ?? $model->id ?? 'Unknown');
 
         return match ($action) {
@@ -94,5 +100,9 @@ class ActivityLogService
             default => "{$modelName} '{$identifier}' - {$action}",
         };
     }
-}
 
+    public function recent(int $limit = 5): Collection
+    {
+        return $this->activityLogs->recent($limit);
+    }
+}

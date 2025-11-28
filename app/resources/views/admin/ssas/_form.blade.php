@@ -52,17 +52,30 @@
             </div>
 
             <div>
-                <x-input-label for="additional_service_id" value="Additional Service" />
-                <select id="additional_service_id" name="additional_service_id"
+                <x-input-label for="additional_service_ids" value="Additional Services (Indirect)" />
+                <p class="mt-1 text-xs text-foreground/60">Select one or more indirect services like IEP meetings or
+                    progress reports.</p>
+                @php
+                    $selectedAdditionalServices = collect(
+                        old('additional_service_ids', isset($ssa) ? $ssa->additionalServices->pluck('id')->all() : []),
+                    )
+                        ->map(fn($id) => (int) $id)
+                        ->toArray();
+                    $additionalServiceErrors = array_merge(
+                        $errors->get('additional_service_ids') ?? [],
+                        $errors->get('additional_service_ids.*') ?? [],
+                    );
+                @endphp
+                <select id="additional_service_ids" name="additional_service_ids[]" multiple data-select-box
+                    data-placeholder="Select indirect services"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
-                    <option value="">None</option>
-                    @foreach ($services as $service)
-                        <option value="{{ $service->id }}" @selected(old('additional_service_id', $ssa->additional_service_id ?? '') == $service->id)>
+                    @foreach ($indirectServices as $service)
+                        <option value="{{ $service->id }}" @selected(in_array($service->id, $selectedAdditionalServices, true))>
                             {{ $service->name }}
                         </option>
                     @endforeach
                 </select>
-                <x-input-error :messages="$errors->get('additional_service_id')" class="mt-2" />
+                <x-input-error :messages="$additionalServiceErrors" class="mt-2" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">

@@ -8,7 +8,8 @@
     <x-ui::card class="p-6 space-y-4">
         <!-- Filters -->
         <div class="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
-            <form method="GET" class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" id="activityLogFiltersForm">
+            <form method="GET" class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"
+                id="activityLogFiltersForm">
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">Search</label>
                     <x-text-input type="text" name="search" placeholder="Search description"
@@ -17,41 +18,38 @@
 
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">User</label>
-                    <select name="user_id"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select name="user_id" searchable allow-clear placeholder="All Users">
                         <option value="">All Users</option>
                         @foreach ($users as $user)
                             <option value="{{ $user->id }}" @selected(($filters['user_id'] ?? null) == $user->id)>
                                 {{ $user->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">Action</label>
-                    <select name="action"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select name="action" searchable allow-clear placeholder="All Actions">
                         <option value="">All Actions</option>
                         @foreach ($actions as $action)
                             <option value="{{ $action }}" @selected(($filters['action'] ?? null) === $action)>
                                 {{ ucfirst(str_replace('_', ' ', $action)) }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">Model Type</label>
-                    <select name="model_type"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select name="model_type" searchable allow-clear placeholder="All Models">
                         <option value="">All Models</option>
                         @foreach ($modelTypes as $modelType)
                             <option value="{{ $modelType }}" @selected(($filters['model_type'] ?? null) === $modelType)>
                                 {{ $modelType }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div>
@@ -105,8 +103,10 @@
                                 <td>{{ $log->id }}</td>
                                 <td>{{ $log->user?->name ?? 'System' }}</td>
                                 <td>
-                                    <x-ui::badge variant="secondary">
-                                        {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                                    <x-ui::badge :variant="$log->action_variant"
+                                        class="inline-flex items-center gap-1 text-xs font-medium capitalize">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
+                                        {{ $log->action_label }}
                                     </x-ui::badge>
                                 </td>
                                 <td>{{ class_basename($log->model_type) }}</td>
@@ -146,4 +146,3 @@
         @vite(['resources/js/pages/admin-activity-logs-index.js'])
     </x-slot>
 </x-admin.layouts.app>
-

@@ -37,6 +37,7 @@ use App\Models\Service;
 use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -156,10 +157,8 @@ final class SchoolController extends Controller
                 ->whereHas('studentProfile', fn($q) => $q->where('school_id', $school->id))
                 ->count();
 
-            $therapistsCount = User::query()
-                ->where('role', Role::THERAPIST)
-                ->whereHas('students.studentProfile', fn($q) => $q->where('school_id', $school->id))
-                ->distinct()
+            $therapistsCount = $this->therapistsForSchoolQuery($school->id)
+                ->distinct('users.id')
                 ->count('users.id');
 
             $viewData['statusCounts'] = $statusCounts;
@@ -203,10 +202,8 @@ final class SchoolController extends Controller
                 ->whereHas('studentProfile', fn($q) => $q->where('school_id', $school->id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
-            $viewData['therapists'] = User::query()
-                ->where('role', Role::THERAPIST)
+            $viewData['therapists'] = $this->therapistsForSchoolQuery($school->id)
                 ->where('status', UserStatus::ACTIVE)
-                ->whereHas('students.studentProfile', fn($q) => $q->where('school_id', $school->id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
             $viewData['services'] = Service::query()
@@ -279,5 +276,18 @@ final class SchoolController extends Controller
             'managers' => $this->userService->listByRole(Role::ADMIN),
             'schoolTypes' => SchoolType::values(),
         ];
+    }
+
+    private function therapistsForSchoolQuery(int $schoolId): Builder
+    {
+        return User::query()
+            ->where('role', Role::THERAPIST)
+            ->where(function (Builder $query) use ($schoolId) {
+                $query->whereHas('students.studentProfile', function (Builder $studentQuery) use ($schoolId) {
+                    $studentQuery->where('school_id', $schoolId);
+                })->orWhereHas('assignedSSAs.student.studentProfile', function (Builder $ssaQuery) use ($schoolId) {
+                    $ssaQuery->where('school_id', $schoolId);
+                });
+            });
     }
 }

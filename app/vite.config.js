@@ -9,6 +9,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 // Common files
                 'resources/css/common/datatables.css',
+                'resources/js/common/select-box.js',
                 // Page-specific files
                 'resources/js/pages/admin-schools-index.js',
                 'resources/js/pages/admin-therapists-index.js',
@@ -25,6 +26,9 @@ export default defineConfig({
                 'resources/js/pages/admin-contracts-therapists-index.js',
                 'resources/js/pages/admin-contracts-schools-form.js',
                 'resources/js/pages/admin-contracts-therapists-form.js',
+                'resources/css/therapist-schedule.css',
+                'resources/js/pages/therapist-schedule-calendar.js',
+                'resources/js/pages/therapist-schedule-create.js',
             ],
             refresh: true,
         }),

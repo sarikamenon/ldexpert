@@ -116,22 +116,34 @@ return [
         ],
         'therapist' => [
             [
-                'label' => 'My Dashboard',
+                'label' => 'Dashboard',
                 'route' => 'therapist.dashboard',
                 'active' => 'therapist.dashboard',
             ],
             [
-                'label' => 'My Schedule',
+                'label' => 'Schedule',
                 'route' => 'therapist.schedule.index',
                 'active' => 'therapist.schedule.*',
+                'children' => [
+                    [
+                        'label' => 'Calendar',
+                        'route' => 'therapist.schedule.calendar',
+                        'active' => 'therapist.schedule.calendar',
+                    ],
+                    [
+                        'label' => 'Pending Schedule',
+                        'route' => 'therapist.schedule.pending',
+                        'active' => 'therapist.schedule.pending',
+                    ],
+                ],
             ],
             [
-                'label' => 'My Sessions',
+                'label' => 'Sessions',
                 'route' => 'therapist.sessions.index',
                 'active' => 'therapist.sessions.*',
             ],
             [
-                'label' => 'My Bills',
+                'label' => 'Bills',
                 'route' => 'therapist.billing.index',
                 'active' => 'therapist.billing.*',
             ],

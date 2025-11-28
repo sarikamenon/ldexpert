@@ -94,7 +94,7 @@ final class SSAController extends Controller
             'student',
             'student.studentProfile.school',
             'primaryService',
-            'additionalService',
+            'additionalServices',
             'assignedTherapist',
             'assignedTherapist.therapistProfile',
         ]);
@@ -121,7 +121,7 @@ final class SSAController extends Controller
     {
         $this->authorize('update', $ssa);
 
-        $ssa->load('primaryService');
+        $ssa->load(['primaryService', 'additionalServices']);
 
         return view('admin.ssas.edit', [
             'ssa' => $ssa,
@@ -253,6 +253,7 @@ final class SSAController extends Controller
         return [
             'students' => $this->getActiveStudents(),
             'services' => $this->getActiveServices(),
+            'indirectServices' => $this->getIndirectServices(),
             'therapists' => $this->getActiveTherapists(),
             'frequencies' => ServiceFrequency::cases(),
         ];
@@ -274,6 +275,15 @@ final class SSAController extends Controller
             ->where('status', ServiceStatus::ACTIVE)
             ->orderBy('name')
             ->get(['id', 'name', 'is_frequency_service']);
+    }
+
+    private function getIndirectServices()
+    {
+        return Service::query()
+            ->where('status', ServiceStatus::ACTIVE)
+            ->where('is_direct_service', false)
+            ->orderBy('name')
+            ->get(['id', 'name']);
     }
 
     private function getActiveTherapists()

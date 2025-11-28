@@ -154,12 +154,13 @@
                 </div>
                 <div class="flex items-start justify-between mb-4">
                     <div>
-                        <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['ssas']['active'] }}</p>
+                        <p class="text-3xl font-bold text-foreground mt-2">{{ $metrics['ssas']['total'] }}</p>
+                        <p class="text-xs text-foreground/60">Total SSAs</p>
                     </div>
-                    <div class="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                d="M9 12h6m-6 4h6M9 8h6m2-5H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2z" />
                         </svg>
                     </div>
                 </div>

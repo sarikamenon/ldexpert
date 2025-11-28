@@ -3,7 +3,7 @@ PHP_SHELL=$(DC) exec -T app bash -lc
 ARTISAN=$(DC) exec -T app php /var/www/html/app/artisan
 COMPOSER_CMD=$(PHP_SHELL) 'cd /var/www/html/app && composer'
 
-.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa assets-build
+.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa assets-build cache-clear
 
 build:
 	$(DC) build
@@ -45,10 +45,10 @@ fresh:
 	$(ARTISAN) migrate:fresh --seed
 
 test:
-	$(ARTISAN) test
+	$(PHP_SHELL) 'cd /var/www/html/app && if [ -f ./vendor/bin/pest ]; then ./vendor/bin/pest; elif [ -f ./vendor/bin/phpunit ]; then ./vendor/bin/phpunit; elif php artisan list --raw | grep -q "^test"; then php artisan test; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
 
 coverage:
-	$(ARTISAN) test --coverage
+	$(PHP_SHELL) 'cd /var/www/html/app && if [ -f ./vendor/bin/pest ]; then XDEBUG_MODE=coverage ./vendor/bin/pest --coverage; elif [ -f ./vendor/bin/phpunit ]; then XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage; elif php artisan list --raw | grep -q "^test"; then XDEBUG_MODE=coverage php artisan test --coverage; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
 
 dusk:
 	$(ARTISAN) migrate:fresh --seed
@@ -63,11 +63,14 @@ analyse:
 qa:
 	$(DC) exec -T app bash -lc 'cd /var/www/html/app && vendor/bin/pint --test'
 	$(DC) exec -T app bash -lc 'cd /var/www/html/app && vendor/bin/phpstan analyse --no-progress'
-	$(DC) exec -T app bash -lc 'cd /var/www/html/app && XDEBUG_MODE=coverage php artisan test --min=80'
+	$(DC) exec -T app bash -lc 'cd /var/www/html/app && if [ -f ./vendor/bin/pest ]; then XDEBUG_MODE=coverage ./vendor/bin/pest --min=80; elif [ -f ./vendor/bin/phpunit ]; then XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Feature; elif php artisan list --raw | grep -q "^test"; then XDEBUG_MODE=coverage php artisan test --min=80; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
 
 init: build up install init-env migrate
 
 assets-build:
 	$(PHP_SHELL) 'cd /var/www/html/app && npm install'
 	$(PHP_SHELL) 'cd /var/www/html/app && npm run build'
+
+cache-clear:
+	$(ARTISAN) optimize:clear
 

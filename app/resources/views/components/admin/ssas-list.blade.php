@@ -141,6 +141,16 @@
                                     @endif
                                     <span
                                         class="text-sm text-foreground/70">{{ $ssa->primaryService->name ?? '—' }}</span>
+                                    @if ($ssa->additionalServices->isNotEmpty())
+                                        <div class="mt-1 flex flex-wrap gap-1">
+                                            @foreach ($ssa->additionalServices as $service)
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-[10px] font-medium text-foreground/70">
+                                                    {{ $service->name }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     @if ($ssa->student?->studentProfile?->school)
                                         <a href="{{ route('admin.schools.show', $ssa->student->studentProfile->school) }}"
                                             class="text-xs text-foreground/60 hover:text-primary mt-1">
@@ -216,8 +226,8 @@
                                         class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
                                         title="View SSA">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
+                                            fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
@@ -254,12 +264,10 @@
     @endif
 </x-ui::card>
 
-@if ($context === 'index')
-    {{-- Hidden select for therapist assignment --}}
-    <select id="therapist_select_for_assignment" class="hidden">
-        <option value="">Select a therapist</option>
-        @foreach ($therapists ?? [] as $therapist)
-            <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
-        @endforeach
-    </select>
-@endif
+{{-- Hidden select for therapist assignment (used by admin-ssas-index.js) --}}
+<select id="therapist_select_for_assignment" class="hidden">
+    <option value="">Select a therapist</option>
+    @foreach ($therapists ?? [] as $therapist)
+        <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
+    @endforeach
+</select>

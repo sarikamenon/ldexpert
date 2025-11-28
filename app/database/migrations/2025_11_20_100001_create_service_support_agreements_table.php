@@ -18,11 +18,6 @@ return new class extends Migration
                 ->constrained('services')
                 ->cascadeOnUpdate()
                 ->restrictOnDelete();
-            $table->foreignId('additional_service_id')
-                ->nullable()
-                ->constrained('services')
-                ->cascadeOnUpdate()
-                ->nullOnDelete();
             $table->date('start_date');
             $table->date('end_date');
             $table->unsignedSmallInteger('minutes_per_session');
@@ -52,4 +47,3 @@ return new class extends Migration
         Schema::dropIfExists('service_support_agreements');
     }
 };
-

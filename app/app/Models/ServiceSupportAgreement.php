@@ -6,11 +6,13 @@ namespace App\Models;
 
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
+use App\Models\Pivots\SSAService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,7 +24,6 @@ class ServiceSupportAgreement extends Model
     protected $fillable = [
         'student_id',
         'primary_service_id',
-        'additional_service_id',
         'start_date',
         'end_date',
         'minutes_per_session',
@@ -66,9 +67,18 @@ class ServiceSupportAgreement extends Model
         return $this->belongsTo(Service::class, 'primary_service_id');
     }
 
-    public function additionalService(): BelongsTo
+    public function services(): BelongsToMany
     {
-        return $this->belongsTo(Service::class, 'additional_service_id');
+        return $this->belongsToMany(Service::class, 'ssa_services', 'ssa_id', 'service_id')
+            ->using(SSAService::class)
+            ->withPivot(['is_primary', 'deleted_at'])
+            ->wherePivotNull('deleted_at')
+            ->withTimestamps();
+    }
+
+    public function additionalServices(): BelongsToMany
+    {
+        return $this->services()->wherePivot('is_primary', false);
     }
 
     public function assignedTherapist(): BelongsTo

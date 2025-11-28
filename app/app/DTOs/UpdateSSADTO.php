@@ -9,7 +9,10 @@ use App\Enums\ServiceFrequency;
 final class UpdateSSADTO
 {
     public function __construct(
-        public readonly ?int $additionalServiceId,
+        /**
+         * @var array<int>|null
+         */
+        public readonly ?array $additionalServiceIds,
         public readonly ?string $startDate,
         public readonly ?string $endDate,
         public readonly ?int $minutesPerSession,
@@ -30,20 +33,28 @@ final class UpdateSSADTO
                 : ServiceFrequency::from($data['frequency']);
         }
 
+        $additionalServiceIds = null;
+        if (array_key_exists('additional_service_ids', $data)) {
+            $additionalServiceIds = collect($data['additional_service_ids'] ?? [])
+                ->filter(static fn($value) => $value !== null && $value !== '')
+                ->map(static fn($value) => (int) $value)
+                ->unique()
+                ->values()
+                ->all();
+        }
+
         return new self(
-            additionalServiceId: isset($data['additional_service_id']) && $data['additional_service_id'] !== '' 
-                ? (int) $data['additional_service_id'] 
-                : null,
+            additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'] ?? null,
             endDate: $data['end_date'] ?? null,
             minutesPerSession: isset($data['minutes_per_session']) ? (int) $data['minutes_per_session'] : null,
             frequency: $frequency,
             sessionsPerFrequency: isset($data['sessions_per_frequency']) ? (int) $data['sessions_per_frequency'] : null,
-            calculatedMinutes: isset($data['calculated_minutes']) && $data['calculated_minutes'] !== '' 
-                ? (int) $data['calculated_minutes'] 
+            calculatedMinutes: isset($data['calculated_minutes']) && $data['calculated_minutes'] !== ''
+                ? (int) $data['calculated_minutes']
                 : null,
-            adjustedMinutes: isset($data['adjusted_minutes']) && $data['adjusted_minutes'] !== '' 
-                ? (int) $data['adjusted_minutes'] 
+            adjustedMinutes: isset($data['adjusted_minutes']) && $data['adjusted_minutes'] !== ''
+                ? (int) $data['adjusted_minutes']
                 : null,
             adjustmentNotes: $data['adjustment_notes'] ?? null,
             thoMinutes: isset($data['tho_minutes']) ? (int) $data['tho_minutes'] : null,
@@ -54,9 +65,6 @@ final class UpdateSSADTO
     {
         $array = [];
 
-        if ($this->additionalServiceId !== null) {
-            $array['additional_service_id'] = $this->additionalServiceId;
-        }
         if ($this->startDate !== null) {
             $array['start_date'] = $this->startDate;
         }
@@ -88,4 +96,3 @@ final class UpdateSSADTO
         return $array;
     }
 }
-

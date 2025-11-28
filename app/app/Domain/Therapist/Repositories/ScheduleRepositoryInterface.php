@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Therapist\Repositories;
+
+use App\DTOs\ScheduleFilterDTO;
+use App\Enums\BillingStatus;
+use App\Models\Schedule;
+use App\Models\User;
+use Illuminate\Support\Collection;
+
+interface ScheduleRepositoryInterface
+{
+    public function getSchedulesForTherapist(User $therapist, ScheduleFilterDTO $filters): Collection;
+
+    public function getPendingCount(User $therapist): int;
+
+    public function getSchoolsForTherapist(User $therapist): Collection;
+
+    public function getStudentsForTherapist(User $therapist): Collection;
+
+    public function getStudentServiceMappings(User $therapist): Collection;
+
+    public function validateStudentsShareService(User $therapist, array $studentIds, int $serviceId): bool;
+
+    public function create(array $data): Schedule;
+
+    public function update(Schedule $schedule, array $data): Schedule;
+
+    public function delete(Schedule $schedule): void;
+
+    public function findForTherapist(User $therapist, int $scheduleId): ?Schedule;
+
+    public function getRecurringOccurrences(Schedule $parentSchedule): Collection;
+
+    public function getRecurringOccurrencesByBatch(string $recurringBatchNumber): Collection;
+
+    public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection;
+
+    public function getSchedulesForStudent(User $student, array $filters = []): Collection;
+
+    public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool;
+
+    public function validateTherapistAccessToStudents(User $therapist, array $studentIds): bool;
+
+    public function generateBatchNumber(string $type = 'recurring'): string;
+
+    public function updateBillingStatus(Schedule $schedule, BillingStatus $status): Schedule;
+
+    public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int;
+}
