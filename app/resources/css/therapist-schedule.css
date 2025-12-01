@@ -79,18 +79,20 @@
 }
 
 .calendar-day.selected {
-    background-color: #3b82f6;
+    /* Use NOVA primary brand color for selected dates */
+    background-color: #14b8a6;
     color: white;
     font-weight: 600;
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
 .calendar-day.selected:hover {
-    background-color: #2563eb;
+    /* Slightly darker shade of primary for hover */
+    background-color: #0d9488;
 }
 
 .calendar-day.selected.today {
-    background-color: #3b82f6;
+    background-color: #14b8a6;
     border: none;
 }
 
