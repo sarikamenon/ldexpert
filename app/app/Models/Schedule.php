@@ -39,6 +39,7 @@ class Schedule extends Model
         'status',
         'billing_status',
         'notes',
+        'location_details',
     ];
 
     protected function casts(): array
@@ -188,7 +189,7 @@ class Schedule extends Model
         $start = Carbon::parse($this->start_time);
         $end = Carbon::parse($this->end_time);
 
-        return $start->diffInMinutes($end);
+        return (int) $start->diffInMinutes($end);
     }
 
     /**
@@ -221,4 +222,3 @@ class Schedule extends Model
             ->get();
     }
 }
-

@@ -4,13 +4,13 @@
     'emptyMessage' => null,
     'showAddButton' => true,
     'addButtonUrl' => '#',
-    'addButtonText' => '+ ADD NEW SCHEDULE',
+    'addButtonText' => 'ADD NEW SCHEDULE',
 ])
 
 <div {{ $attributes->merge(['id' => 'scheduleList']) }}>
     @if (count($schedules) > 0)
         @foreach ($schedules as $schedule)
-            <x-schedule.schedule-card :schedule="$schedule" />
+            <x-schedule.schedule-list-item :schedule="$schedule" />
         @endforeach
     @else
         <div class="text-center py-12">

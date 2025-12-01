@@ -29,8 +29,21 @@ export default defineConfig({
                 'resources/css/therapist-schedule.css',
                 'resources/js/pages/therapist-schedule-calendar.js',
                 'resources/js/pages/therapist-schedule-create.js',
+                'resources/js/pages/therapist-schedule-pending.js',
+                'resources/js/pages/therapist-ssas-index.js',
+                'resources/js/pages/therapist-ssas-show.js',
+                'resources/js/pages/therapist-students-index.js',
+                'resources/js/pages/therapist-students-show.js',
             ],
             refresh: true,
         }),
     ],
+    optimizeDeps: {
+        include: ['jquery', 'select2'],
+    },
+    resolve: {
+        alias: {
+            'jquery': 'jquery/dist/jquery.js',
+        },
+    },
 });

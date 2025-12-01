@@ -45,6 +45,7 @@ final class UpdateScheduleRequest extends FormRequest
             'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
+            'location_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'billing_status' => ['nullable', Rule::in($billingStatuses)],
         ];

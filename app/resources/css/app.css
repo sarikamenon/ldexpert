@@ -1,4 +1,5 @@
 @import "./common/select2.css";
+@import "./common/date-time-picker.css";
 
 @tailwind base;
 @tailwind components;

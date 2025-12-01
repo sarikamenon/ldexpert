@@ -26,9 +26,9 @@ final class StoreScheduleRequest extends FormRequest
         );
 
         return [
-            'ssa_id' => ['nullable', 'integer', Rule::exists('service_support_agreements', 'id')],
+            'ssa_id' => ['required', 'integer', Rule::exists('service_support_agreements', 'id')],
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')],
-            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids' => ['required', 'array', 'min:1', 'max:1'], // Single student only for first iteration
             'student_ids.*' => ['required', 'integer', Rule::exists('users', 'id')->where(function ($query) {
                 $query->where('role', 'student');
             })],
@@ -36,9 +36,8 @@ final class StoreScheduleRequest extends FormRequest
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
-            'occurrence_count' => ['nullable', 'integer', 'min:2'],
-            'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
+            'location_details' => ['required', 'string', 'max:2000'],
         ];
     }
 
@@ -68,10 +67,21 @@ final class StoreScheduleRequest extends FormRequest
 
             $repository = app(ScheduleRepositoryInterface::class);
 
-            // Validate therapist has access to SSA if provided
+            // Validate therapist has access to SSA and it's active
             if ($ssaId) {
+                $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
+                if (! $ssa) {
+                    $validator->errors()->add('ssa_id', 'SSA not found.');
+                    return;
+                }
+
                 if (! $repository->validateTherapistAccessToSSA($therapist, (int) $ssaId)) {
                     $validator->errors()->add('ssa_id', 'You do not have access to this SSA.');
+                }
+
+                // Validate SSA is active
+                if ($ssa->status !== \App\Enums\SSAStatus::ACTIVE) {
+                    $validator->errors()->add('ssa_id', 'You can only create schedules for active SSAs.');
                 }
             }
 
@@ -88,19 +98,14 @@ final class StoreScheduleRequest extends FormRequest
                 }
             }
 
-            // Validate service allows multiple students
-            if ($serviceId) {
-                $service = Service::find($serviceId);
-                if ($service) {
-                    if (! $service->is_group_service && $studentCount > 1) {
-                        $validator->errors()->add('student_ids', 'This service does not allow multiple students.');
-                    }
-
-                    if (
-                        $studentCount > 1
-                        && ! $repository->validateStudentsShareService($therapist, $studentIdsArray, (int) $serviceId)
-                    ) {
-                        $validator->errors()->add('service_id', 'Selected students do not share this service via an active SSA.');
+            // Validate service is available for the student via the SSA
+            if ($serviceId && $ssaId && $studentCount > 0) {
+                $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
+                if ($ssa && $ssa->primary_service_id !== (int) $serviceId) {
+                    // Check if it's an additional service
+                    $isAdditionalService = $ssa->additionalServices()->where('services.id', $serviceId)->exists();
+                    if (! $isAdditionalService) {
+                        $validator->errors()->add('service_id', 'This service is not available for the selected SSA.');
                     }
                 }
             }
@@ -111,12 +116,10 @@ final class StoreScheduleRequest extends FormRequest
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
                 }
             }
+            // For first iteration: only single, non-recurring schedules are allowed
             $recurrenceType = $this->input('recurrence_type');
-            $occurrenceCount = (int) $this->input('occurrence_count');
             if ($recurrenceType && $recurrenceType !== RecurrenceType::NONE->value) {
-                if ($occurrenceCount < 2) {
-                    $validator->errors()->add('occurrence_count', 'Provide at least 2 occurrences for repeating schedules.');
-                }
+                $validator->errors()->add('recurrence_type', 'Recurring schedules are not available in this version.');
             }
         });
     }

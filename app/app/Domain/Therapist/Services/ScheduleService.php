@@ -121,6 +121,7 @@ final class ScheduleService
                         'status' => ScheduleStatus::SCHEDULED,
                         'billing_status' => BillingStatus::PENDING,
                         'notes' => $dto->notes,
+                        'location_details' => $dto->locationDetails,
                     ];
 
                     $schedules->push($this->repository->create($data));
@@ -152,6 +153,7 @@ final class ScheduleService
                     'status' => ScheduleStatus::SCHEDULED,
                     'billing_status' => BillingStatus::PENDING,
                     'notes' => $dto->notes,
+                    'location_details' => $dto->locationDetails,
                 ]);
 
                 $schedules->push($parentSchedule);
@@ -315,6 +317,7 @@ final class ScheduleService
                     'status' => ScheduleStatus::SCHEDULED,
                     'billing_status' => BillingStatus::PENDING,
                     'notes' => $parentSchedule->notes,
+                    'location_details' => $parentSchedule->location_details,
                 ]));
             }
 

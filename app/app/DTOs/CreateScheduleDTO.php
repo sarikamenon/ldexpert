@@ -21,6 +21,7 @@ final class CreateScheduleDTO
         public readonly bool $isGroup,
         public readonly ?int $occurrenceCount,
         public readonly ?string $notes,
+        public readonly ?string $locationDetails,
     ) {}
 
     public static function fromArray(array $data): self
@@ -53,6 +54,9 @@ final class CreateScheduleDTO
                 ? (int) $data['occurrence_count']
                 : null,
             notes: $data['notes'] ?? null,
+            locationDetails: isset($data['location_details']) && $data['location_details'] !== ''
+                ? $data['location_details']
+                : null,
         );
     }
 
@@ -71,6 +75,7 @@ final class CreateScheduleDTO
             'is_group' => $this->isGroup,
             'occurrence_count' => $this->occurrenceCount,
             'notes' => $this->notes,
+            'location_details' => $this->locationDetails,
         ];
     }
 }

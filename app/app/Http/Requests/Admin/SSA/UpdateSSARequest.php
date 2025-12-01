@@ -43,7 +43,7 @@ final class UpdateSSARequest extends FormRequest
             'frequency' => ['nullable', Rule::in($frequencies)],
             'sessions_per_frequency' => ['nullable', 'integer', 'min:1', 'max:100'],
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],
-            'adjusted_minutes' => ['nullable', 'integer', 'min:0'],
+            'adjusted_minutes' => ['nullable', 'integer'],
             'adjustment_notes' => ['nullable', 'string', 'max:65535'],
             'tho_minutes' => ['nullable', 'integer', 'min:0'],
         ];

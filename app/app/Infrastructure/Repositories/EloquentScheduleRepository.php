@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
+use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
@@ -23,7 +24,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         $query = Schedule::query()
             ->forTherapist($therapist)
-            ->with(['student', 'service', 'ssa', 'school']);
+            ->with(['student', 'student.studentProfile', 'service', 'ssa', 'school']);
 
         if ($filters->date) {
             $query->whereDate('schedule_date', $filters->date);
@@ -46,8 +47,9 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         return Schedule::query()
             ->forTherapist($therapist)
-            ->scheduled()
-            ->pendingBilling()
+            ->whereDate('schedule_date', '<', now()->toDateString())
+            ->where('billing_status', BillingStatus::PENDING->value)
+            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
             ->count();
     }
 

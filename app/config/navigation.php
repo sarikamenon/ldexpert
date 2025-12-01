@@ -147,6 +147,16 @@ return [
                 'route' => 'therapist.billing.index',
                 'active' => 'therapist.billing.*',
             ],
+            [
+                'label' => 'SSAs',
+                'route' => 'therapist.ssas.index',
+                'active' => 'therapist.ssas.*',
+            ],
+            [
+                'label' => 'Students',
+                'route' => 'therapist.students.index',
+                'active' => 'therapist.students.*',
+            ],
         ],
         'student' => [
             [

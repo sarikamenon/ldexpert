@@ -5,7 +5,13 @@
     'statuses' => [],
     'showMetrics' => false,
     'metrics' => null,
-    'context' => 'index', // 'index' or 'detail'
+    /**
+     * Context controls both layout and routing:
+     * - 'index'  : admin index page
+     * - 'detail' : admin student detail tab
+     * - 'therapist' : therapist-facing students list
+     */
+    'context' => 'index',
 ])
 
 @if ($showMetrics && $metrics)
@@ -65,19 +71,28 @@
 
             <button type="submit"
                 class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
+
+            @if ($context === 'therapist' && !empty($filters))
+                <a href="{{ route('therapist.students.index') }}"
+                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
+                    Clear
+                </a>
+            @endif
         </form>
 
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('admin.students.export', $filters) }}"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
-                id="exportStudentsButton">
-                Export
-            </a>
-            @if ($context === 'index')
-                <a href="{{ route('admin.students.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add Student
+            @if ($context !== 'therapist')
+                <a href="{{ route('admin.students.export', $filters) }}"
+                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
+                    id="exportStudentsButton">
+                    Export
                 </a>
+                @if ($context === 'index')
+                    <a href="{{ route('admin.students.create') }}"
+                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                        Add Student
+                    </a>
+                @endif
             @endif
         </div>
     </div>
@@ -105,25 +120,44 @@
                         @endphp
                         <tr>
                             <td>
-                                <a href="{{ route('admin.students.show', $student) }}"
-                                    class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                    title="View Student">
-                                    {{ $student->id }}
-                                </a>
+                                @if ($context === 'therapist')
+                                    <a href="{{ route('therapist.students.show', $student) }}"
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                        title="View Student">
+                                        {{ $student->id }}
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.students.show', $student) }}"
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                        title="View Student">
+                                        {{ $student->id }}
+                                    </a>
+                                @endif
                             </td>
                             <td>
-                                <a href="{{ route('admin.students.show', $student) }}"
-                                    class="text-primary hover:underline font-medium">
-                                    {{ $student->name }}
-                                </a>
+                                @if ($context === 'therapist')
+                                    <a href="{{ route('therapist.students.show', $student) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $student->name }}
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.students.show', $student) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $student->name }}
+                                    </a>
+                                @endif
                             </td>
                             <td>{{ $student->email }}</td>
                             <td>
                                 @if ($profile?->school)
-                                    <a href="{{ route('admin.schools.show', $profile->school) }}"
-                                        class="text-primary hover:underline">
+                                    @if ($context === 'therapist')
                                         {{ $profile->school->display_name }}
-                                    </a>
+                                    @else
+                                        <a href="{{ route('admin.schools.show', $profile->school) }}"
+                                            class="text-primary hover:underline">
+                                            {{ $profile->school->display_name }}
+                                        </a>
+                                    @endif
                                 @else
                                     —
                                 @endif
@@ -139,51 +173,66 @@
                             </td>
                             <td>
                                 <div class="flex space-x-1">
-                                    <a href="{{ route('admin.students.show', $student) }}"
-                                        class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                        title="View Student">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </a>
-                                    <a href="{{ route('admin.students.edit', $student) }}"
-                                        class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                        title="Edit Student" dusk="edit-student-{{ $student->id }}">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
-                                            </path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
-                                            </path>
-                                        </svg>
-                                    </a>
-
-                                    <button type="button" data-student="{{ $student->id }}"
-                                        data-status="{{ $student->status?->value ?? 'inactive' }}"
-                                        dusk="student-status-toggle-{{ $student->id }}"
-                                        class="toggle-student-status inline-flex items-center justify-center w-8 h-8 rounded transition-colors {{ $isActive ? 'bg-danger text-danger-foreground hover:bg-danger/90' : 'bg-success text-success-foreground hover:bg-success/90' }}"
-                                        title="{{ $isActive ? 'Deactivate Student' : 'Activate Student' }}">
-                                        @if ($isActive)
+                                    @if ($context === 'therapist')
+                                        <a href="{{ route('therapist.students.show', $student) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View Student">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round">
-                                                <line x1="18" y1="6" x2="6" y2="18">
-                                                </line>
-                                                <line x1="6" y1="6" x2="18" y2="18">
-                                                </line>
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
                                             </svg>
-                                        @else
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
-                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('admin.students.show', $student) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View Student">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
                                             </svg>
-                                        @endif
-                                    </button>
+                                        </a>
+                                        <a href="{{ route('admin.students.edit', $student) }}"
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                                            title="Edit Student" dusk="edit-student-{{ $student->id }}">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </a>
+
+                                        <button type="button" data-student="{{ $student->id }}"
+                                            data-status="{{ $student->status?->value ?? 'inactive' }}"
+                                            dusk="student-status-toggle-{{ $student->id }}"
+                                            class="toggle-student-status inline-flex items-center justify-center w-8 h-8 rounded transition-colors {{ $isActive ? 'bg-danger text-danger-foreground hover:bg-danger/90' : 'bg-success text-success-foreground hover:bg-success/90' }}"
+                                            title="{{ $isActive ? 'Deactivate Student' : 'Activate Student' }}">
+                                            @if ($isActive)
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <line x1="18" y1="6" x2="6"
+                                                        y2="18">
+                                                    </line>
+                                                    <line x1="6" y1="6" x2="18"
+                                                        y2="18">
+                                                    </line>
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            @endif
+                                        </button>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

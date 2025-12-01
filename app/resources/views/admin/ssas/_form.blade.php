@@ -154,7 +154,7 @@
             <div id="adjusted-minutes-field">
                 <x-input-label for="adjusted_minutes" value="Adjusted minutes" />
                 <p class="mt-1 text-xs text-foreground/60">Optional adjustment to calculated minutes</p>
-                <x-text-input id="adjusted_minutes" name="adjusted_minutes" type="number" min="0"
+                <x-text-input id="adjusted_minutes" name="adjusted_minutes" type="number"
                     class="mt-1 block w-full"
                     value="{{ old('adjusted_minutes', isset($ssa) ? $ssa->adjusted_minutes : '') }}" />
                 <x-input-error :messages="$errors->get('adjusted_minutes')" class="mt-2" />

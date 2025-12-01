@@ -1,0 +1,92 @@
+/* Date and Time Picker Theme Styling */
+/* Uses theme primary color (#5563b8) instead of default browser blue */
+
+/* Set accent color for calendar popup and time picker dropdown */
+/* This changes the selected date/time highlight color in the popup */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"] {
+    accent-color: #5563b8 !important; /* Theme primary color - force override */
+    color-scheme: light; /* Ensure light theme for better visibility */
+}
+
+/* Additional webkit properties for better popup styling */
+input[type="date"]:focus,
+input[type="time"]:focus,
+input[type="datetime-local"]:focus {
+    accent-color: #5563b8 !important;
+}
+
+/* Webkit browsers (Chrome, Edge, Safari) */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 1;
+    /* Use filter to convert default blue to theme primary color #5563b8 */
+    /* RGB(85, 99, 184) - approximate filter conversion */
+    filter: invert(33%) sepia(95%) saturate(1352%) hue-rotate(218deg) brightness(95%) contrast(88%);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 0.8;
+    /* Slightly darker/more transparent on hover */
+    filter: invert(33%) sepia(95%) saturate(1352%) hue-rotate(218deg) brightness(85%) contrast(88%);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:focus,
+input[type="time"]::-webkit-calendar-picker-indicator:focus {
+    outline: 2px solid #5563b8;
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Style the date/time text fields */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field,
+input[type="time"]::-webkit-datetime-edit-text,
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field,
+input[type="time"]::-webkit-datetime-edit-second-field,
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+    color: #0b1220; /* foreground color */
+    padding: 0 0.1em;
+}
+
+input[type="date"]::-webkit-datetime-edit-text:focus,
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus,
+input[type="time"]::-webkit-datetime-edit-text:focus,
+input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+input[type="time"]::-webkit-datetime-edit-minute-field:focus,
+input[type="time"]::-webkit-datetime-edit-second-field:focus,
+input[type="time"]::-webkit-datetime-edit-ampm-field:focus {
+    background-color: rgba(85, 99, 184, 0.1); /* primary color with opacity */
+    color: #5563b8;
+    outline: none;
+    border-radius: 2px;
+}
+
+/* Firefox specific styling */
+input[type="date"]::-moz-calendar-picker-indicator,
+input[type="time"]::-moz-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 1;
+    /* Use filter to convert default blue to theme primary color #5563b8 */
+    filter: invert(33%) sepia(95%) saturate(1352%) hue-rotate(218deg) brightness(95%) contrast(88%);
+}
+
+input[type="date"]::-moz-calendar-picker-indicator:hover,
+input[type="time"]::-moz-calendar-picker-indicator:hover {
+    opacity: 0.8;
+    filter: invert(33%) sepia(95%) saturate(1352%) hue-rotate(218deg) brightness(85%) contrast(88%);
+}
+
+/* Note: The calendar popup itself (when opened) is controlled by the browser
+   and cannot be fully styled. However, the selected date in the popup will
+   typically use the browser's accent color, which may need to be set at the
+   OS level for full customization. */
+

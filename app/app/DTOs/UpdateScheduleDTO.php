@@ -19,6 +19,7 @@ final class UpdateScheduleDTO
         public readonly ?RecurrenceType $recurrenceType,
         public readonly ?string $recurrenceEndDate,
         public readonly ?bool $isGroup,
+        public readonly ?string $locationDetails,
         public readonly ?string $notes,
         public readonly ?BillingStatus $billingStatus,
     ) {}
@@ -63,6 +64,9 @@ final class UpdateScheduleDTO
                 ? $data['recurrence_end_date']
                 : null,
             isGroup: isset($data['is_group']) ? (bool) $data['is_group'] : null,
+            locationDetails: isset($data['location_details']) && $data['location_details'] !== ''
+                ? $data['location_details']
+                : null,
             notes: $data['notes'] ?? null,
             billingStatus: $billingStatus,
         );
@@ -98,6 +102,9 @@ final class UpdateScheduleDTO
         }
         if ($this->isGroup !== null) {
             $array['is_group'] = $this->isGroup;
+        }
+        if ($this->locationDetails !== null) {
+            $array['location_details'] = $this->locationDetails;
         }
         if ($this->notes !== null) {
             $array['notes'] = $this->notes;

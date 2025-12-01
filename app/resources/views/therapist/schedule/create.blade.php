@@ -10,7 +10,7 @@
                     <p class="text-sm text-foreground/60">Therapist · Schedule</p>
                     <h1 class="text-2xl font-semibold text-foreground">Create New Schedule</h1>
                     <p class="text-sm text-foreground/60 mt-1">
-                        Build single or recurring group sessions linked to student SSAs.
+                        Create a single schedule for a student with an active SSA.
                     </p>
                 </div>
                 <a href="{{ route('therapist.schedule.calendar') }}"
@@ -32,6 +32,91 @@
                         </div>
                         <span class="text-sm text-foreground/60">All times shown in US/Central</span>
                     </div>
+
+                    {{-- SSA and Student Information (when SSA is provided) --}}
+                    @if ($ssa)
+                        <div class="bg-background/subtle rounded-lg p-4 space-y-3 border border-border">
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-sm font-semibold text-foreground">SSA #{{ $ssa->id }} Information
+                                </h3>
+                                <x-ui::badge variant="success">Active</x-ui::badge>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                                {{-- Left Side --}}
+                                <div class="space-y-3">
+                                    <div>
+                                        <span class="text-foreground/70 block mb-1">Student:</span>
+                                        <span
+                                            class="font-medium text-foreground">{{ $ssa->student->name ?? 'N/A' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-foreground/70 block mb-1">School:</span>
+                                        <span class="font-medium text-foreground">
+                                            {{ $ssa->student?->studentProfile?->school?->display_name ?? 'N/A' }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="text-foreground/70 block mb-1">Start Date:</span>
+                                        <span class="font-medium text-foreground">
+                                            {{ $ssa->start_date->format('M d, Y') }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {{-- Right Side --}}
+                                <div class="space-y-3">
+                                    <div>
+                                        <span class="text-foreground/70 block mb-1">Primary Service:</span>
+                                        <span
+                                            class="font-medium text-foreground">{{ $ssa->primaryService->name ?? 'N/A' }}</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-foreground/70 block mb-1">Additional Services:</span>
+                                        @if ($ssa->additionalServices->isNotEmpty())
+                                            <div class="flex flex-wrap gap-2">
+                                                @foreach ($ssa->additionalServices as $service)
+                                                    <x-ui::badge variant="secondary"
+                                                        class="text-xs">{{ $service->name }}</x-ui::badge>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="font-medium text-foreground/60">None</span>
+                                        @endif
+                                    </div>
+                                    <div>
+                                        <span class="text-foreground/70 block mb-1">End Date:</span>
+                                        <span class="font-medium text-foreground">
+                                            {{ $ssa->end_date->format('M d, Y') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Service Dropdown --}}
+                        <div>
+                            <x-input-label for="service_id" value="Service *" />
+                            <select id="service_id" name="service_id" data-select-box class="mt-1 block w-full" required
+                                data-initial-value="{{ old('service_id', $preselectedService?->id) }}">
+                                <option value="">Select a service</option>
+                                @foreach ($serviceOptions as $service)
+                                    <option value="{{ $service['service_id'] }}" @selected(old('service_id', $preselectedService?->id) == $service['service_id'])
+                                        data-is-primary="{{ $service['is_primary'] ? '1' : '0' }}">
+                                        {{ $service['service_name'] }}
+                                        @if ($service['is_primary'])
+                                            (Primary)
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="ssa_id" value="{{ $ssa->id }}">
+                            <input type="hidden" name="student_ids[]" value="{{ $preselectedStudent->id }}">
+                            <p class="text-xs text-foreground/60 mt-1">
+                                Services available for this SSA (primary and additional).
+                            </p>
+                            <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -59,115 +144,42 @@
                     </div>
                 </x-ui::card>
 
-                {{-- Section 2: Participants --}}
+                {{-- Recurrence removed for first iteration --}}
+                <input type="hidden" name="recurrence_type" value="none">
+
+                {{-- Section 2: Location & Meeting Details --}}
                 <x-ui::card class="p-6 space-y-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-foreground">Participants</h2>
-                            <p class="text-sm text-foreground/60">Select students and a service available via their
-                                active SSAs.</p>
-                        </div>
-                        <span class="text-xs text-foreground/60" id="groupBadge" style="display: none;">
-                            Group session enabled
-                        </span>
+                    <div>
+                        <h2 class="text-lg font-semibold text-foreground">Location & Meeting Details</h2>
+                        <p class="text-sm text-foreground/60">Add online meeting details or location information for
+                            this session.</p>
                     </div>
 
-                    <div class="space-y-4">
-                        <div>
-                            <x-input-label for="student_ids" value="Students *" />
-                            @php
-                                $oldStudents = old('student_ids', []);
-                            @endphp
-                            <select id="student_ids" name="student_ids[]" multiple data-select-box
-                                class="mt-1 block w-full" required>
-                                @foreach ($students as $student)
-                                    <option value="{{ $student->user_id }}" @selected(in_array($student->user_id, $oldStudents))>
-                                        {{ $student->first_name }} {{ $student->last_name }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <p class="text-xs text-foreground/60 mt-1">
-                                Only students linked to your active SSAs are shown.
-                            </p>
-                            <x-input-error :messages="$errors->get('student_ids')" class="mt-2" />
-                        </div>
-
-                        <div>
-                            <x-input-label for="service_id" value="Service *" />
-                            <select id="service_id" name="service_id" data-select-box class="mt-1 block w-full" required
-                                data-initial-value="{{ old('service_id') }}" disabled>
-                                <option value="">Select a service after choosing students</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
-                        </div>
+                    <div>
+                        <x-input-label for="location_details" value="Location/Meeting Details *" />
+                        <textarea name="location_details" id="location_details" rows="4"
+                            class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm"
+                            placeholder="Enter meeting link (e.g., Google Meet, Zoom), location address, or other meeting details..." required>{{ old('location_details') }}</textarea>
+                        <p class="text-xs text-foreground/60 mt-1">
+                            Include meeting links for online sessions or address/location for in-person sessions.
+                        </p>
+                        <x-input-error :messages="$errors->get('location_details')" class="mt-2" />
                     </div>
                 </x-ui::card>
 
-                {{-- Section 3: Recurrence --}}
-                <x-ui::card class="p-6 space-y-6">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-foreground">Recurrence</h2>
-                            <p class="text-sm text-foreground/60">Create repeating sessions with an explicit occurrence
-                                count.</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <x-input-label for="recurrence_type" value="Recurrence Type" />
-                            <select id="recurrence_type" name="recurrence_type" class="mt-1 block w-full">
-                                <option value="none" @selected(old('recurrence_type', 'none') === 'none')>Does not repeat</option>
-                                <option value="daily" @selected(old('recurrence_type') === 'daily')>Daily</option>
-                                <option value="weekly" @selected(old('recurrence_type') === 'weekly')>Weekly</option>
-                                <option value="bi_weekly" @selected(old('recurrence_type') === 'bi_weekly')>Bi-weekly</option>
-                                <option value="monthly" @selected(old('recurrence_type') === 'monthly')>Monthly</option>
-                            </select>
-                            <x-input-error :messages="$errors->get('recurrence_type')" class="mt-2" />
-                        </div>
-
-                        <div id="occurrenceCountWrapper" style="display: none;">
-                            <x-input-label for="occurrence_count" value="Number of Occurrences *" />
-                            <x-text-input id="occurrence_count" name="occurrence_count" type="number" min="2"
-                                class="mt-1 block w-full" value="{{ old('occurrence_count') }}" />
-                            <x-input-error :messages="$errors->get('occurrence_count')" class="mt-2" />
-                        </div>
-
-                        <div id="recurrenceEndWrapper" style="display: none;">
-                            <x-input-label value="Projected End Date" />
-                            <p class="text-sm text-foreground/80 mt-2" id="recurrence_end_preview">
-                                Select recurrence type and occurrence count to preview end date.
-                            </p>
-                        </div>
-                    </div>
-                </x-ui::card>
-
-                {{-- Section 4: Notes & Summary --}}
+                {{-- Section 3: Notes --}}
                 <x-ui::card class="p-6 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h2 class="text-lg font-semibold text-foreground">Notes & Review</h2>
-                            <p class="text-sm text-foreground/60">Add optional notes and review selections.</p>
-                        </div>
+                    <div>
+                        <h2 class="text-lg font-semibold text-foreground">Notes</h2>
+                        <p class="text-sm text-foreground/60">Add optional notes for this schedule.</p>
                     </div>
 
                     <textarea name="notes" id="notes" rows="4"
                         class="w-full border border-border rounded-lg px-3 py-2 text-sm" placeholder="Notes (optional)">{{ old('notes') }}</textarea>
                     <x-input-error :messages="$errors->get('notes')" class="mt-2" />
-
-                    <div class="bg-background/subtle rounded-lg p-4 text-sm text-foreground/80" id="summaryPanel">
-                        <p class="font-medium mb-2">Summary:</p>
-                        <ul class="space-y-1 text-foreground/70">
-                            <li id="summaryDate">Date: {{ $selectedDate->format('F j, Y') }}</li>
-                            <li id="summaryStudents">Students: —</li>
-                            <li id="summaryService">Service: —</li>
-                            <li id="summaryRecurrence">Recurrence: Does not repeat</li>
-                        </ul>
-                    </div>
                 </x-ui::card>
 
-                <input type="hidden" id="recurrence_end_date" name="recurrence_end_date"
-                    value="{{ old('recurrence_end_date') }}">
+                <input type="hidden" id="recurrence_end_date" name="recurrence_end_date" value="">
 
                 <div class="flex justify-end gap-3">
                     <a href="{{ route('therapist.schedule.calendar') }}"
@@ -190,12 +202,15 @@
         <script type="application/json" id="service-options-json">
             {!! $serviceOptions->toJson() !!}
         </script>
+        @if ($ssa)
+            <script type="application/json" id="ssa-services-json">
+                {!! $serviceOptions->toJson() !!}
+            </script>
+        @endif
         <script type="application/json" id="schedule-create-state">
             {!! json_encode([
-                'selected_students' => $oldStudents,
-                'selected_service' => old('service_id'),
-                'recurrence_type' => old('recurrence_type', 'none'),
-                'occurrence_count' => old('occurrence_count'),
+                'selected_students' => $preselectedStudent ? [$preselectedStudent->id] : [],
+                'selected_service' => old('service_id', $preselectedService?->id),
             ]) !!}
         </script>
         @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js'])
