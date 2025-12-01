@@ -7,7 +7,8 @@
     'services' => [],
     'showMetrics' => false,
     'metrics' => null,
-    'context' => 'index', // 'index' or 'detail'
+    // context: 'index', 'detail', or 'therapist'
+    'context' => 'index',
 ])
 
 @if ($showMetrics && $metrics)
@@ -51,56 +52,60 @@
                 @endforeach
             </select>
 
-            <select name="student_id"
-                class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                <option value="">All Students</option>
-                @foreach ($students as $student)
-                    <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
-                        {{ $student->name }}
-                    </option>
-                @endforeach
-            </select>
+            @if ($context !== 'therapist')
+                <select name="student_id"
+                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">All Students</option>
+                    @foreach ($students as $student)
+                        <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
+                            {{ $student->name }}
+                        </option>
+                    @endforeach
+                </select>
 
-            <select name="therapist_id"
-                class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                <option value="">All Therapists</option>
-                @foreach ($therapists as $therapist)
-                    <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
-                        {{ $therapist->name }}
-                    </option>
-                @endforeach
-            </select>
+                <select name="therapist_id"
+                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">All Therapists</option>
+                    @foreach ($therapists as $therapist)
+                        <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
+                            {{ $therapist->name }}
+                        </option>
+                    @endforeach
+                </select>
 
-            <select name="service_id"
-                class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                <option value="">All Services</option>
-                @foreach ($services as $service)
-                    <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
-                        {{ $service->name }}
-                    </option>
-                @endforeach
-            </select>
+                <select name="service_id"
+                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                    <option value="">All Services</option>
+                    @foreach ($services as $service)
+                        <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
+                            {{ $service->name }}
+                        </option>
+                    @endforeach
+                </select>
+            @endif
 
             <button type="submit"
                 class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
         </form>
 
         <div class="flex items-center gap-3">
-            @php
-                $exportFilters = $filters;
-                if ($context === 'detail') {
-                    unset($exportFilters['tab']);
-                }
-            @endphp
-            <a href="{{ route('admin.ssas.export', $exportFilters) }}"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                Export
-            </a>
-            @if ($context === 'index')
-                <a href="{{ route('admin.ssas.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add SSA
+            @if ($context !== 'therapist')
+                @php
+                    $exportFilters = $filters;
+                    if ($context === 'detail') {
+                        unset($exportFilters['tab']);
+                    }
+                @endphp
+                <a href="{{ route('admin.ssas.export', $exportFilters) }}"
+                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
+                    Export
                 </a>
+                @if ($context === 'index')
+                    <a href="{{ route('admin.ssas.create') }}"
+                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                        Add SSA
+                    </a>
+                @endif
             @endif
         </div>
     </div>
@@ -123,29 +128,60 @@
                     @foreach ($ssas as $ssa)
                         <tr>
                             <td>
-                                <a href="{{ route('admin.ssas.show', $ssa) }}"
-                                    class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                    title="View SSA Details">
-                                    {{ $ssa->id }}
-                                </a>
+                                @if ($context === 'therapist')
+                                    <a href="{{ route('therapist.ssas.show', $ssa) }}"
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                        title="View SSA Details">
+                                        {{ $ssa->id }}
+                                    </a>
+                                @else
+                                    <a href="{{ route('admin.ssas.show', $ssa) }}"
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                        title="View SSA Details">
+                                        {{ $ssa->id }}
+                                    </a>
+                                @endif
                             </td>
                             <td>
                                 <div class="flex flex-col">
                                     @if ($ssa->student)
-                                        <a href="{{ route('admin.students.show', $ssa->student) }}"
-                                            class="font-medium text-primary hover:underline">
-                                            {{ $ssa->student->name }}
-                                        </a>
+                                        @if ($context === 'therapist')
+                                            <a href="{{ route('therapist.students.show', $ssa->student) }}"
+                                                class="font-medium text-primary hover:underline">
+                                                {{ $ssa->student->name }}
+                                            </a>
+                                        @else
+                                            <a href="{{ route('admin.students.show', $ssa->student) }}"
+                                                class="font-medium text-primary hover:underline">
+                                                {{ $ssa->student->name }}
+                                            </a>
+                                        @endif
                                     @else
                                         <span class="font-medium text-foreground/50">Unknown Student</span>
                                     @endif
                                     <span
                                         class="text-sm text-foreground/70">{{ $ssa->primaryService->name ?? '—' }}</span>
+                                    @if ($ssa->additionalServices->isNotEmpty())
+                                        <div class="mt-1 flex flex-wrap gap-1">
+                                            @foreach ($ssa->additionalServices as $service)
+                                                <span
+                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-[10px] font-medium text-foreground/70">
+                                                    {{ $service->name }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                     @if ($ssa->student?->studentProfile?->school)
-                                        <a href="{{ route('admin.schools.show', $ssa->student->studentProfile->school) }}"
-                                            class="text-xs text-foreground/60 hover:text-primary mt-1">
-                                            {{ $ssa->student->studentProfile->school->display_name }}
-                                        </a>
+                                        @if ($context === 'therapist')
+                                            <span class="text-xs text-foreground/60 mt-1">
+                                                {{ $ssa->student->studentProfile->school->display_name }}
+                                            </span>
+                                        @else
+                                            <a href="{{ route('admin.schools.show', $ssa->student->studentProfile->school) }}"
+                                                class="text-xs text-foreground/60 hover:text-primary mt-1">
+                                                {{ $ssa->student->studentProfile->school->display_name }}
+                                            </a>
+                                        @endif
                                     @endif
                                 </div>
                             </td>
@@ -155,12 +191,14 @@
                                         class="text-primary hover:underline">
                                         {{ $ssa->assignedTherapist->name }}
                                     </a>
-                                @else
+                                @elseif ($context !== 'therapist')
                                     <button type="button"
                                         class="assign-therapist-btn inline-flex items-center justify-center px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
                                         data-ssa-id="{{ $ssa->id }}" title="Assign Therapist">
                                         Assign
                                     </button>
+                                @else
+                                    <span class="text-sm text-foreground/60">Unassigned</span>
                                 @endif
                             </td>
                             <td style="min-width: 180px;">
@@ -212,28 +250,41 @@
                             </td>
                             <td>
                                 <div class="flex items-center gap-2">
-                                    <a href="{{ route('admin.ssas.show', $ssa) }}"
-                                        class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                        title="View SSA">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </a>
-                                    <a href="{{ route('admin.ssas.edit', $ssa) }}"
-                                        class="inline-flex items-center justify-center w-9 h-9 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                        title="Edit SSA">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2"
-                                            stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
-                                            </path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
-                                            </path>
-                                        </svg>
-                                    </a>
+                                    @if ($context === 'therapist')
+                                        <a href="{{ route('therapist.ssas.show', $ssa) }}"
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View SSA">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
+                                    @else
+                                        <a href="{{ route('admin.ssas.show', $ssa) }}"
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View SSA">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
+                                        <a href="{{ route('admin.ssas.edit', $ssa) }}"
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                                            title="Edit SSA">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                </path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                </path>
+                                            </svg>
+                                        </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -254,12 +305,10 @@
     @endif
 </x-ui::card>
 
-@if ($context === 'index')
-    {{-- Hidden select for therapist assignment --}}
-    <select id="therapist_select_for_assignment" class="hidden">
-        <option value="">Select a therapist</option>
-        @foreach ($therapists ?? [] as $therapist)
-            <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
-        @endforeach
-    </select>
-@endif
+{{-- Hidden select for therapist assignment (used by admin-ssas-index.js) --}}
+<select id="therapist_select_for_assignment" class="hidden">
+    <option value="">Select a therapist</option>
+    @foreach ($therapists ?? [] as $therapist)
+        <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
+    @endforeach
+</select>

@@ -1,0 +1,137 @@
+import { initSelectBoxes } from '../common/select-box';
+
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // initSelectBoxes is already called by select-box.js, but we call it again
+        // to ensure selects on this page are initialized (in case they're added dynamically)
+        initSelectBoxes();
+
+        const serviceSelect = document.getElementById('service_id');
+        const scheduleDateInput = document.getElementById('schedule_date');
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const notesInput = document.getElementById('notes');
+
+        if (! serviceSelect) {
+            return;
+        }
+
+        const mappings = JSON.parse(document.getElementById('student-service-mappings')?.textContent || '[]');
+        const serviceOptions = JSON.parse(document.getElementById('service-options-json')?.textContent || '[]');
+        const ssaServicesJson = document.getElementById('ssa-services-json');
+        const ssaServices = ssaServicesJson ? JSON.parse(ssaServicesJson.textContent || '[]') : null;
+        const state = JSON.parse(document.getElementById('schedule-create-state')?.textContent || '{}');
+
+        const mappingByStudent = mappings.reduce((carry, entry) => {
+            carry[entry.student_id] = entry.services ?? [];
+            return carry;
+        }, {});
+
+        const servicesById = serviceOptions.reduce((carry, service) => {
+            const id = Number(service.service_id ?? service.id);
+            carry[id] = service;
+            return carry;
+        }, {});
+
+
+
+
+        function getServiceIdsForStudent(studentId) {
+            if (! studentId) {
+                return new Set();
+            }
+
+            const services = mappingByStudent[studentId] || [];
+            return new Set(services.map((service) => Number(service.service_id)));
+        }
+
+        function renderServiceOptions(serviceIds) {
+            serviceSelect.innerHTML = '';
+
+            // If SSA services are provided, use those directly
+            if (ssaServices && Array.isArray(ssaServices) && ssaServices.length > 0) {
+                serviceSelect.disabled = false;
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Select service';
+                serviceSelect.appendChild(placeholder);
+
+                ssaServices.forEach((service) => {
+                    const option = document.createElement('option');
+                    option.value = String(service.service_id);
+                    const serviceName = service.service_name || service.name || `Service #${service.service_id}`;
+                    option.textContent = service.is_primary ? `${serviceName} (Primary)` : serviceName;
+                    serviceSelect.appendChild(option);
+                });
+                return;
+            }
+
+            // Otherwise, use the serviceIds set
+            if (! serviceIds || ! serviceIds.size) {
+                serviceSelect.disabled = true;
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = 'No services available for selected student';
+                serviceSelect.appendChild(option);
+                return;
+            }
+
+            serviceSelect.disabled = false;
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'Select service';
+            serviceSelect.appendChild(placeholder);
+
+            serviceIds.forEach((id) => {
+                const metadata = servicesById[id] || {};
+                const option = document.createElement('option');
+                option.value = String(id);
+                option.textContent = metadata.service_name || metadata.name || `Service #${id}`;
+                serviceSelect.appendChild(option);
+            });
+        }
+
+        function updateServiceOptions() {
+            // If SSA services are available, render them directly
+            if (ssaServices && Array.isArray(ssaServices) && ssaServices.length > 0) {
+                renderServiceOptions(null);
+                if (serviceSelect.dataset.initialValue) {
+                    serviceSelect.value = serviceSelect.dataset.initialValue;
+                    serviceSelect.dataset.initialValue = '';
+                }
+                return;
+            }
+
+            // Otherwise, get services based on student selection (fallback for non-SSA mode)
+            const selectedStudent = document.querySelector('[name="student_ids[]"]')?.value;
+            const studentId = selectedStudent ? Number(selectedStudent) : null;
+
+            if (! studentId) {
+                serviceSelect.innerHTML = '<option value="">Select a service after choosing student</option>';
+                serviceSelect.disabled = true;
+                return;
+            }
+
+            const serviceIds = getServiceIdsForStudent(studentId);
+            renderServiceOptions(serviceIds);
+
+            if (serviceSelect.dataset.initialValue) {
+                serviceSelect.value = serviceSelect.dataset.initialValue;
+                serviceSelect.dataset.initialValue = '';
+            }
+        }
+
+        // Initialize service options
+        if (ssaServices && Array.isArray(ssaServices) && ssaServices.length > 0) {
+            // SSA mode: services are already available
+            serviceSelect.dataset.initialValue = state.selected_service || '';
+            updateServiceOptions();
+        } else {
+            serviceSelect.dataset.initialValue = state.selected_service || '';
+            updateServiceOptions();
+        }
+    });
+})();
+

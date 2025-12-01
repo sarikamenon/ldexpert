@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Enums\SchoolStatus;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
+use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\SchoolContract;
 use App\Models\ServiceSupportAgreement;
@@ -16,12 +17,18 @@ use App\Models\StudentProfile;
 use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use App\Services\ActivityLogService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class DashboardService
 {
+    public function __construct(
+        private readonly ActivityLogService $activityLogService,
+    ) {}
+
     public function getKeyMetrics(): array
     {
         // Temporarily disabled caching to show real-time data
@@ -64,6 +71,7 @@ class DashboardService
             ->count();
 
         // Real data for SSAs
+        $totalSSAs = ServiceSupportAgreement::count();
         $activeSSAs = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)->count();
         $pendingSSAs = ServiceSupportAgreement::where('status', SSAStatus::PENDING)->count();
         $completedSSAs = ServiceSupportAgreement::where('status', SSAStatus::COMPLETED)->count();
@@ -99,6 +107,7 @@ class DashboardService
                 'new_this_month' => $newStudentsThisMonth,
             ],
             'ssas' => [
+                'total' => $totalSSAs,
                 'active' => $activeSSAs,
                 'pending' => $pendingSSAs,
                 'completed' => $completedSSAs,
@@ -212,76 +221,15 @@ class DashboardService
 
     public function getRecentActivity(int $limit = 10): array
     {
-        $activities = collect();
-
-        // Real data: Recent Schools
-        $recentSchools = School::with('manager')
-            ->latest('created_at')
-            ->take(5)
-            ->get()
-            ->map(fn($school) => [
-                'type' => 'school_created',
-                'description' => "School '{$school->display_name}' was created",
-                'user' => $school->manager?->name ?? 'System',
-                'created_at' => $school->created_at,
-                'icon' => 'school',
-                'color' => 'primary',
-            ]);
-
-        $activities = $activities->concat($recentSchools);
-
-        // Real data: Recent Therapists
-        $recentTherapists = TherapistProfile::with('manager')
-            ->latest('created_at')
-            ->take(5)
-            ->get()
-            ->map(fn($therapist) => [
-                'type' => 'therapist_created',
-                'description' => "Therapist '{$therapist->first_name} {$therapist->last_name}' was added",
-                'user' => $therapist->manager?->name ?? 'System',
-                'created_at' => $therapist->created_at,
-                'icon' => 'user',
-                'color' => 'success',
-            ]);
-
-        $activities = $activities->concat($recentTherapists);
-
-        // Real data: Recent Students
-        $recentStudents = StudentProfile::with(['user', 'school'])
-            ->latest('created_at')
-            ->take(5)
-            ->get()
-            ->map(fn($student) => [
-                'type' => 'student_created',
-                'description' => "Student '{$student->first_name} {$student->last_name}' was added",
-                'user' => 'System',
-                'created_at' => $student->created_at,
-                'icon' => 'user',
-                'color' => 'primary',
-            ]);
-
-        $activities = $activities->concat($recentStudents);
-
-        // Real data: Recent SSAs
-        $recentSSAs = ServiceSupportAgreement::with(['student.studentProfile', 'primaryService'])
-            ->latest('created_at')
-            ->take(5)
-            ->get()
-            ->map(fn($ssa) => [
-                'type' => 'ssa_created',
-                'description' => "SSA created for " . ($ssa->student->studentProfile?->first_name ?? 'Student') . " - " . ($ssa->primaryService?->name ?? 'Service'),
-                'user' => 'System',
-                'created_at' => $ssa->created_at,
-                'icon' => 'document',
-                'color' => 'accent',
-            ]);
-
-        $activities = $activities->concat($recentSSAs);
-
-        return $activities
-            ->sortByDesc('created_at')
-            ->take($limit)
-            ->values()
+        return $this->activityLogService->recent($limit)
+            ->map(fn(ActivityLog $log) => [
+                'type' => $log->action,
+                'description' => $log->description ?? $this->fallbackActivityDescription($log),
+                'user' => $log->user?->name ?? 'System',
+                'created_at' => $log->created_at,
+                'icon' => $this->resolveActivityIcon($log),
+                'color' => $this->resolveActivityColor($log),
+            ])
             ->toArray();
     }
 
@@ -517,5 +465,40 @@ class DashboardService
             'tho_minutes' => $thoMinutes,
             'served_minutes' => $servedMinutes,
         ];
+    }
+
+    private function fallbackActivityDescription(ActivityLog $log): string
+    {
+        $modelName = class_basename($log->model_type ?? 'Record');
+        $action = Str::headline($log->action ?? 'activity');
+
+        return "{$modelName} {$action}";
+    }
+
+    private function resolveActivityIcon(ActivityLog $log): string
+    {
+        $model = strtolower(class_basename($log->model_type ?? 'record'));
+
+        return match ($model) {
+            'school' => 'school',
+            'therapistprofile' => 'user',
+            'studentprofile' => 'user',
+            'servicesupportagreement' => 'document',
+            'service' => 'settings',
+            default => 'activity',
+        };
+    }
+
+    private function resolveActivityColor(ActivityLog $log): string
+    {
+        $action = $log->action ?? '';
+
+        return match (true) {
+            str_contains($action, 'created') => 'primary',
+            str_contains($action, 'updated') => 'secondary',
+            str_contains($action, 'deleted') => 'danger',
+            str_contains($action, 'status') => 'warning',
+            default => 'accent',
+        };
     }
 }

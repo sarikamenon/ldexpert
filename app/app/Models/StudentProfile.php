@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudentProfile extends Model
 {
@@ -56,6 +57,11 @@ class StudentProfile extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
+    }
+
+    public function ssas(): HasMany
+    {
+        return $this->hasMany(ServiceSupportAgreement::class, 'student_id', 'user_id');
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

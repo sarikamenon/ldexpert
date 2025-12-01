@@ -11,3 +11,5 @@ import $ from 'jquery';
 window.$ = $;
 window.jQuery = $;
 
+import './common/select-box';
+

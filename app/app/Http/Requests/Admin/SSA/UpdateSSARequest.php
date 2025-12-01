@@ -15,19 +15,35 @@ final class UpdateSSARequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('additional_service_ids')) {
+            $this->merge([
+                'additional_service_ids' => [],
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         $frequencies = array_map(static fn(ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
 
         return [
-            'additional_service_id' => ['nullable', 'integer', Rule::exists('services', 'id')],
+            'additional_service_ids' => ['nullable', 'array'],
+            'additional_service_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('services', 'id')->where(function ($query) {
+                    $query->where('is_direct_service', false);
+                }),
+            ],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
             'minutes_per_session' => ['nullable', 'integer', 'min:5', 'max:1440'],
             'frequency' => ['nullable', Rule::in($frequencies)],
             'sessions_per_frequency' => ['nullable', 'integer', 'min:1', 'max:100'],
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],
-            'adjusted_minutes' => ['nullable', 'integer', 'min:0'],
+            'adjusted_minutes' => ['nullable', 'integer'],
             'adjustment_notes' => ['nullable', 'string', 'max:65535'],
             'tho_minutes' => ['nullable', 'integer', 'min:0'],
         ];
@@ -41,4 +57,3 @@ final class UpdateSSARequest extends FormRequest
         ];
     }
 }
-

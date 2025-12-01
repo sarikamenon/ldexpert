@@ -14,7 +14,8 @@ class DashboardController extends Controller
 
     public function index(): View
     {
-        $metrics = $this->service->getDashboardMetrics();
+        $therapist = auth()->user();
+        $metrics = $this->service->getDashboardMetrics($therapist);
 
         return view('dashboard', $metrics);
     }

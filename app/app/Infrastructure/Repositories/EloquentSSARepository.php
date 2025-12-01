@@ -31,7 +31,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'student',
                 'student.studentProfile.school',
                 'primaryService',
-                'additionalService',
+                'additionalServices',
                 'assignedTherapist',
             ])
             ->orderBy('created_at', 'desc')
@@ -45,7 +45,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             'student',
             'student.studentProfile.school',
             'primaryService',
-            'additionalService',
+            'additionalServices',
             'assignedTherapist',
             'assignmentHistory.therapist',
             'assignmentHistory.assignedBy',
@@ -64,6 +64,8 @@ final class EloquentSSARepository implements SSARepositoryInterface
 
             $ssa = ServiceSupportAgreement::create($data);
 
+            $this->syncSsaServices($ssa, $dto->additionalServiceIds);
+
             // If therapist is assigned during creation, log it
             if ($dto->assignedTherapistId !== null) {
                 SSAAssignmentHistory::create([
@@ -75,15 +77,19 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 ]);
             }
 
-            return $ssa->fresh();
+            return $ssa->fresh(['services', 'additionalServices']);
         });
     }
 
     public function update(ServiceSupportAgreement $ssa, UpdateSSADTO $dto): ServiceSupportAgreement
     {
-        $ssa->update($dto->toArray());
+        return DB::transaction(function () use ($ssa, $dto) {
+            $ssa->update($dto->toArray());
 
-        return $ssa->fresh();
+            $this->syncSsaServices($ssa, $dto->additionalServiceIds);
+
+            return $ssa->fresh(['services', 'additionalServices']);
+        });
     }
 
     public function changeStatus(ServiceSupportAgreement $ssa, ChangeSSAStatusDTO $dto): ServiceSupportAgreement
@@ -246,6 +252,52 @@ final class EloquentSSARepository implements SSARepositoryInterface
             $query->where('assigned_therapist_id', $filters->therapistId);
         }
 
+        if ($filters->schoolId) {
+            $query->whereHas('student.studentProfile', function (Builder $schoolQuery) use ($filters) {
+                $schoolQuery->where('school_id', $filters->schoolId);
+            });
+        }
+
         return $query;
+    }
+
+    /**
+     * @param array<int>|null $additionalServiceIds
+     */
+    private function syncSsaServices(ServiceSupportAgreement $ssa, ?array $additionalServiceIds = null): void
+    {
+        $primaryServiceId = $ssa->primary_service_id;
+
+        if ($primaryServiceId === null) {
+            $ssa->services()->detach();
+
+            return;
+        }
+
+        $additionalIds = $additionalServiceIds;
+
+        if ($additionalIds === null) {
+            $additionalIds = $ssa->services()
+                ->wherePivot('is_primary', false)
+                ->pluck('services.id')
+                ->all();
+        }
+
+        $additionalIds = array_values(array_unique(
+            array_filter(
+                array_map('intval', $additionalIds),
+                static fn(int $serviceId): bool => $serviceId !== (int) $primaryServiceId
+            )
+        ));
+
+        $payload = [
+            (int) $primaryServiceId => ['is_primary' => true],
+        ];
+
+        foreach ($additionalIds as $serviceId) {
+            $payload[$serviceId] = ['is_primary' => false];
+        }
+
+        $ssa->services()->sync($payload);
     }
 }

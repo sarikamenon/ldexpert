@@ -8,49 +8,99 @@
                         <x-slot name="badge">+{{ $newStudentsThisMonth ?? 0 }} this month</x-slot>
                     </x-dashboard::metric>
                 </div>
-                <x-dashboard::metric :title="'This Week\'s Lessons'" :value="'18'">
-                    <x-slot name="badge"><span class="text-xs text-foreground/60">3 today</span></x-slot>
+                <x-dashboard::metric :title="'This Week\'s Lessons'" :value="$lessonsThisWeek ?? 0">
+                    <x-slot name="badge">
+                        <span class="text-xs text-foreground/60">
+                            {{ $lessonsToday ?? 0 }} today
+                            @if (($pendingScheduleCount ?? 0) > 0)
+                                • {{ $pendingScheduleCount }} pending
+                            @endif
+                        </span>
+                    </x-slot>
                 </x-dashboard::metric>
-                <x-dashboard::metric :title="'Outstanding'" :value="'$2,450'">
-                    <x-slot name="badge"><x-ui::badge variant="danger">5 overdue</x-ui::badge></x-slot>
+                <x-dashboard::metric :title="'SSA'" :value="$activeSSAs ?? 0">
+                    <x-slot name="badge">
+                        <span class="text-xs text-foreground/60">
+                            {{ $completedSSAs ?? 0 }} completed
+                        </span>
+                    </x-slot>
                 </x-dashboard::metric>
                 <x-dashboard::metric :title="'This Month'" :value="'$8,920'">
                     <x-slot name="badge">+12% vs last month</x-slot>
                 </x-dashboard::metric>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Schedule -->
-                <x-dashboard::schedule class="lg:col-span-2" title="Today's Schedule">
-                    @foreach ([['title' => 'Algebra II - Emily Rodriguez', 'desc' => 'Quadratic equations review', 'time' => '2:00 PM', 'mode' => 'Online', 'dur' => '60 min'], ['title' => 'SAT Prep - James Chen', 'desc' => 'Math section practice test', 'time' => '4:30 PM', 'mode' => 'In-home', 'dur' => '90 min'], ['title' => 'Chemistry - Michael Park', 'desc' => 'Stoichiometry problems', 'time' => '6:00 PM', 'mode' => 'Online', 'dur' => '60 min']] as $item)
-                        <div
-                            class="rounded-lg border border-border p-4 flex items-center justify-between bg-background">
-                            <div>
-                                <div class="font-medium text-foreground">{{ $item['title'] }}</div>
-                                <div class="text-sm text-foreground/70 mt-1">{{ $item['desc'] }}</div>
-                                <div class="mt-2 space-x-2">
-                                    <x-ui::badge variant="muted">{{ $item['mode'] }}</x-ui::badge>
-                                    <x-ui::badge variant="muted">{{ $item['dur'] }}</x-ui::badge>
-                                </div>
-                            </div>
-                            <div class="text-sm text-foreground/70">{{ $item['time'] }}</div>
+                <x-dashboard::schedule title="Today's Schedule">
+                    @forelse($todaySchedules ?? [] as $schedule)
+                        <x-schedule.schedule-list-item :schedule="$schedule" class="mb-3" />
+                    @empty
+                        <div class="text-sm text-foreground/60">
+                            No schedules for today.
                         </div>
-                    @endforeach
+                    @endforelse
                 </x-dashboard::schedule>
 
-                <!-- Menu Bar removed from side column -->
-
-                <!-- Quick Actions -->
-                <x-dashboard::quick-actions>
-                    <x-ui::button class="w-full">+ Schedule New Lesson</x-ui::button>
-                    <x-ui::button variant="secondary" class="w-full">Create Invoice</x-ui::button>
-                    <x-slot name="footer">
-                        <div class="text-sm font-medium text-foreground">Recent Activity</div>
-                        <div class="text-sm text-foreground/70">Payment received <b>$150</b> from Sarah Kim</div>
-                        <div class="text-xs text-foreground/60">2 hours ago</div>
-                        <div class="text-sm text-foreground/70">New student added <b>Alex Thompson</b></div>
-                    </x-slot>
-                </x-dashboard::quick-actions>
+                <!-- My SSAs -->
+                <x-ui::card>
+                    <div class="p-5 border-b border-border flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-foreground">My SSAs</h3>
+                        <a href="{{ route('therapist.ssas.index') }}" class="text-sm text-accent hover:underline">View
+                            All</a>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        @forelse($ssasList ?? [] as $ssa)
+                            <div class="rounded-lg border border-border p-4 bg-background">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div class="flex-1">
+                                        <div class="flex items-center justify-between gap-3">
+                                            <div class="font-medium text-foreground">
+                                                <a href="{{ route('therapist.students.show', $ssa->student_id) }}"
+                                                    class="hover:underline text-foreground">
+                                                    {{ $ssa->student->name ?? 'N/A' }}
+                                                </a>
+                                            </div>
+                                            <x-ui::badge
+                                                variant="{{ $ssa->status->value === 'active' ? 'primary' : ($ssa->status->value === 'completed' ? 'success' : 'muted') }}"
+                                                class="shrink-0">
+                                                {{ $ssa->status->label() }}
+                                            </x-ui::badge>
+                                        </div>
+                                        <div class="text-sm text-foreground/70 mt-1">
+                                            {{ $ssa->primaryService->name ?? 'N/A' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2">
+                                    <a href="{{ route('therapist.ssas.show', $ssa->id) }}" class="flex-1">
+                                        <x-ui::button variant="secondary" class="w-full" size="sm">
+                                            View Detail
+                                        </x-ui::button>
+                                    </a>
+                                    @if ($ssa->status === \App\Enums\SSAStatus::ACTIVE)
+                                        <a href="{{ route('therapist.schedule.create', ['ssa_id' => $ssa->id]) }}"
+                                            class="flex-1">
+                                            <x-ui::button class="w-full" size="sm">
+                                                Create Schedule
+                                            </x-ui::button>
+                                        </a>
+                                    @else
+                                        <div class="flex-1">
+                                            <x-ui::button class="w-full" size="sm" disabled>
+                                                Create Schedule
+                                            </x-ui::button>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-8 text-foreground/60">
+                                <p>No SSAs assigned yet</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </x-ui::card>
             </div>
         </div>
     </div>

@@ -134,8 +134,16 @@
                         </p>
                     </x-ui::card>
                     <x-ui::card class="p-6 space-y-2">
-                        <p class="text-sm text-foreground/70">Additional Service</p>
-                        <p class="text-lg font-semibold">{{ $ssa->additionalService->name ?? 'None' }}</p>
+                        <p class="text-sm text-foreground/70">Additional Services</p>
+                        @if ($ssa->additionalServices->isNotEmpty())
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($ssa->additionalServices as $service)
+                                    <x-ui::badge variant="secondary">{{ $service->name }}</x-ui::badge>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-lg font-semibold text-foreground/50">None</p>
+                        @endif
                     </x-ui::card>
                     @if ($ssa->student?->studentProfile?->school)
                         <x-ui::card class="p-6 space-y-2">
@@ -194,9 +202,18 @@
                         </tr>
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">Additional
-                                Service</td>
+                                Services</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                {{ $ssa->additionalService->name ?? 'None' }}</td>
+                                @if ($ssa->additionalServices->isEmpty())
+                                    None
+                                @else
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($ssa->additionalServices as $service)
+                                            <x-ui::badge variant="secondary">{{ $service->name }}</x-ui::badge>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </td>
                         </tr>
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">Assigned
@@ -233,12 +250,14 @@
                                 {{ $ssa->start_date->format('M d, Y') }}</td>
                         </tr>
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">End Date</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">End Date
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                                 {{ $ssa->end_date->format('M d, Y') }}</td>
                         </tr>
                         <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">Duration</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">Duration
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
                                 {{ $ssa->start_date->diffInDays($ssa->end_date) + 1 }} days
                             </td>

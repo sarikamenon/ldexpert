@@ -18,6 +18,15 @@ abstract class SSAFormRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('additional_service_ids')) {
+            $this->merge([
+                'additional_service_ids' => [],
+            ]);
+        }
+    }
+
     protected function baseRules(): array
     {
         $frequencies = array_map(static fn(ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
@@ -27,14 +36,21 @@ abstract class SSAFormRequest extends FormRequest
                 $query->where('role', 'student');
             })],
             'primary_service_id' => ['required', 'integer', Rule::exists('services', 'id')],
-            'additional_service_id' => ['nullable', 'integer', Rule::exists('services', 'id')],
+            'additional_service_ids' => ['nullable', 'array'],
+            'additional_service_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('services', 'id')->where(function ($query) {
+                    $query->where('is_direct_service', false);
+                }),
+            ],
             'start_date' => ['required', 'date', 'after_or_equal:today'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
             'frequency' => ['nullable', Rule::in($frequencies)],
             'sessions_per_frequency' => ['nullable', 'integer', 'min:1', 'max:100'],
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],
-            'adjusted_minutes' => ['nullable', 'integer', 'min:0'],
+            'adjusted_minutes' => ['nullable', 'integer'],
             'adjustment_notes' => ['nullable', 'string', 'max:65535'],
             'tho_minutes' => ['required', 'integer', 'min:0'],
             'assigned_therapist_id' => [
@@ -54,6 +70,8 @@ abstract class SSAFormRequest extends FormRequest
             'start_date.after_or_equal' => 'Start date cannot be in the past.',
             'minutes_per_session.min' => 'Minutes per session must be at least 5 minutes.',
             'assigned_therapist_id.exists' => 'Selected therapist must be an active therapist.',
+            'additional_service_ids.*.distinct' => 'Duplicate additional services are not allowed.',
+            'additional_service_ids.*.exists' => 'Additional services must be indirect services from the catalog.',
         ];
     }
 
@@ -61,10 +79,10 @@ abstract class SSAFormRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $primaryServiceId = $this->input('primary_service_id');
-            
+
             if ($primaryServiceId) {
                 $service = Service::find($primaryServiceId);
-                
+
                 if ($service && $service->is_frequency_service) {
                     // Service supports frequency, so frequency and sessions_per_frequency are required
                     if (!$this->filled('frequency')) {
@@ -78,4 +96,3 @@ abstract class SSAFormRequest extends FormRequest
         });
     }
 }
-

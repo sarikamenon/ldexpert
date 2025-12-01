@@ -35,14 +35,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const calculatedMinutesField = document.getElementById('calculated-minutes-field');
     const adjustedMinutesField = document.getElementById('adjusted-minutes-field');
 
+    const frequencyMultipliers = {
+        weekly: 52 / 365,
+        bi_weekly: 26 / 365,
+        monthly: 12 / 365,
+        quarterly: 4 / 365,
+    };
+
+    function supportsFrequencyBasedScheduling() {
+        if (!primaryServiceId?.value) {
+            return false;
+        }
+
+        const serviceId = parseInt(primaryServiceId.value, 10);
+        return servicesData[serviceId] === true || servicesData[serviceId] === 1;
+    }
+
+    function getNumberOfFrequencies() {
+        if (!frequency?.value || !startDate?.value || !endDate?.value) {
+            return null;
+        }
+
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+
+        if (!(start instanceof Date && !Number.isNaN(start.valueOf())) ||
+            !(end instanceof Date && !Number.isNaN(end.valueOf())) ||
+            start >= end) {
+            return null;
+        }
+
+        const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+        const multiplier = frequencyMultipliers[frequency.value] || 0;
+
+        if (multiplier <= 0) {
+            return null;
+        }
+
+        const numberOfFrequencies = Math.ceil(daysDiff * multiplier);
+        return numberOfFrequencies > 0 ? numberOfFrequencies : null;
+    }
+
     // Check if service supports frequency and toggle fields
     function toggleFrequencyFields() {
         if (!primaryServiceId?.value) {
             return;
         }
 
-        const serviceId = parseInt(primaryServiceId.value, 10);
-        const supportsFrequency = servicesData[serviceId] === true || servicesData[serviceId] === 1;
+        const supportsFrequency = supportsFrequencyBasedScheduling();
 
         if (supportsFrequency) {
             // Show all frequency-related fields
@@ -107,6 +147,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Calculate calculated minutes based on sessions per frequency
     function calculateCalculatedMinutes() {
+        if (!supportsFrequencyBasedScheduling()) {
+            if (calculatedMinutes) {
+                calculatedMinutes.value = '';
+            }
+            return;
+        }
+
         if (!minutesPerSession?.value || !sessionsPerFrequency?.value) {
             if (calculatedMinutes) {
                 calculatedMinutes.value = '';
@@ -116,16 +163,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const mins = parseInt(minutesPerSession.value, 10);
         const sessions = parseInt(sessionsPerFrequency.value, 10);
+        const numberOfFrequencies = getNumberOfFrequencies();
 
-        if (calculatedMinutes && mins > 0 && sessions > 0) {
-            calculatedMinutes.value = mins * sessions;
+        if (calculatedMinutes && mins > 0 && sessions > 0 && numberOfFrequencies) {
+            const totalSessions = sessions * numberOfFrequencies;
+            calculatedMinutes.value = totalSessions * mins;
+        } else if (calculatedMinutes) {
+            calculatedMinutes.value = '';
         }
     }
 
     // Calculate THO minutes
     function calculateThoMinutes() {
-        const serviceId = primaryServiceId?.value ? parseInt(primaryServiceId.value, 10) : null;
-        const supportsFrequency = serviceId && (servicesData[serviceId] === true || servicesData[serviceId] === 1);
+        const supportsFrequency = supportsFrequencyBasedScheduling();
 
         if (supportsFrequency) {
             // For frequency-based services, use the existing calculation
@@ -134,28 +184,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const mins = parseInt(minutesPerSession.value, 10);
-            const freq = frequency.value;
             const sessions = parseInt(sessionsPerFrequency.value, 10);
-            const start = new Date(startDate.value);
-            const end = new Date(endDate.value);
+            const numberOfFrequencies = getNumberOfFrequencies();
 
-            if (start >= end) {
+            if (!numberOfFrequencies) {
                 return;
             }
 
-            // Calculate days difference
-            const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-
-            // Frequency multipliers (per year)
-            const frequencyMultipliers = {
-                weekly: 52 / 365,
-                bi_weekly: 26 / 365,
-                monthly: 12 / 365,
-                quarterly: 4 / 365,
-            };
-
-            const multiplier = frequencyMultipliers[freq] || 0;
-            const numberOfFrequencies = Math.ceil(daysDiff * multiplier);
             const totalSessions = numberOfFrequencies * sessions;
             let calculatedTho = totalSessions * mins;
 
@@ -178,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (primaryServiceId) {
         primaryServiceId.addEventListener('change', () => {
             toggleFrequencyFields();
+            calculateCalculatedMinutes();
             calculateThoMinutes();
         });
     }
@@ -195,10 +231,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    [frequency, startDate, endDate, adjustedMinutes].forEach((field) => {
+    [frequency, startDate, endDate].forEach((field) => {
         if (field) {
-            field.addEventListener('change', calculateThoMinutes);
-            field.addEventListener('input', calculateThoMinutes);
+            field.addEventListener('change', () => {
+                calculateCalculatedMinutes();
+                calculateThoMinutes();
+            });
+            field.addEventListener('input', () => {
+                calculateCalculatedMinutes();
+                calculateThoMinutes();
+            });
+        }
+    });
+
+    if (adjustedMinutes) {
+        adjustedMinutes.addEventListener('change', calculateThoMinutes);
+        adjustedMinutes.addEventListener('input', calculateThoMinutes);
+    }
+
+    [frequency, startDate, endDate, minutesPerSession, sessionsPerFrequency].forEach((field) => {
+        if (field) {
+            field.addEventListener('blur', () => {
+                calculateCalculatedMinutes();
+                calculateThoMinutes();
+            });
         }
     });
 

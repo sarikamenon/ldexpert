@@ -18,6 +18,17 @@ final class ServiceSupportAgreementFactory extends Factory
 {
     protected $model = ServiceSupportAgreement::class;
 
+    public function configure(): self
+    {
+        return $this->afterCreating(function (ServiceSupportAgreement $ssa): void {
+            if ($ssa->primary_service_id) {
+                $ssa->services()->sync([
+                    $ssa->primary_service_id => ['is_primary' => true],
+                ]);
+            }
+        });
+    }
+
     public function definition(): array
     {
         $startDate = now()->addDays(1);
@@ -26,7 +37,6 @@ final class ServiceSupportAgreementFactory extends Factory
         return [
             'student_id' => User::factory()->create(['role' => 'student'])->id,
             'primary_service_id' => Service::factory()->create()->id,
-            'additional_service_id' => null,
             'start_date' => $startDate,
             'end_date' => $endDate,
             'minutes_per_session' => $this->faker->randomElement([30, 45, 60]),
@@ -61,4 +71,3 @@ final class ServiceSupportAgreementFactory extends Factory
         ]);
     }
 }
-

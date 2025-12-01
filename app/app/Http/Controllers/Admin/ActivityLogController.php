@@ -4,104 +4,62 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ActivityLog\ExportActivityLogsRequest;
 use App\Http\Requests\Admin\ActivityLog\IndexActivityLogRequest;
-use App\Models\ActivityLog;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Contracts\View\View;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ActivityLogController extends Controller
 {
+    public function __construct(
+        private readonly ActivityLogRepositoryInterface $activityLogs,
+    ) {}
+
     public function index(IndexActivityLogRequest $request): View
     {
-        $query = ActivityLog::with('user')
-            ->latest('created_at');
-
-        // Apply filters
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->input('user_id'));
-        }
-
-        if ($request->filled('action')) {
-            $query->where('action', $request->input('action'));
-        }
-
-        if ($request->filled('model_type')) {
-            $query->where('model_type', $request->input('model_type'));
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->input('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->input('date_to'));
-        }
-
-        if ($request->filled('search')) {
-            $query->where('description', 'like', '%' . $request->input('search') . '%');
-        }
-
+        $filters = $request->validated();
         $perPage = $request->integer('per_page', 25);
-        $logs = $query->paginate($perPage)->withQueryString();
+        /** @var LengthAwarePaginator $logs */
+        $logs = $this->activityLogs->paginate($filters, $perPage);
 
         $users = User::where('role', 'admin')
             ->orderBy('name')
             ->get();
 
-        $actions = ActivityLog::distinct()
-            ->pluck('action')
-            ->sort()
-            ->values();
+        $actions = $this->activityLogs->distinctActions();
+        $modelTypes = $this->activityLogs->distinctModelTypes();
 
-        $modelTypes = ActivityLog::distinct()
-            ->pluck('model_type')
-            ->map(fn($type) => class_basename($type))
-            ->sort()
-            ->values();
+        $logs->getCollection()->transform(function ($log) {
+            $actionKey = $log->action ?? 'activity';
+            $log->action_label = Str::headline($actionKey);
+            $log->action_variant = match (true) {
+                str_contains($actionKey, 'created') => 'success',
+                str_contains($actionKey, 'updated') => 'primary',
+                str_contains($actionKey, 'deleted') => 'danger',
+                str_contains($actionKey, 'status') => 'warning',
+                default => 'secondary',
+            };
+
+            return $log;
+        });
 
         return view('admin.activity-logs.index', [
             'logs' => $logs,
             'users' => $users,
             'actions' => $actions,
             'modelTypes' => $modelTypes,
-            'filters' => $request->validated(),
+            'filters' => $filters,
         ]);
     }
 
     public function export(ExportActivityLogsRequest $request): StreamedResponse
     {
-        $query = ActivityLog::with('user')
-            ->latest('created_at');
-
-        // Apply same filters as index
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->input('user_id'));
-        }
-
-        if ($request->filled('action')) {
-            $query->where('action', $request->input('action'));
-        }
-
-        if ($request->filled('model_type')) {
-            $query->where('model_type', $request->input('model_type'));
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->input('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->input('date_to'));
-        }
-
-        if ($request->filled('search')) {
-            $query->where('description', 'like', '%' . $request->input('search') . '%');
-        }
-
-        $logs = $query->get();
+        $logs = $this->activityLogs->all($request->validated());
         $filename = sprintf('activity-logs-%s.csv', now()->format('Ymd_His'));
 
         return response()->streamDownload(function () use ($logs): void {
@@ -134,4 +92,3 @@ final class ActivityLogController extends Controller
         ]);
     }
 }
-

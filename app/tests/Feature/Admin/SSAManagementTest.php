@@ -10,9 +10,14 @@ use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+use function Pest\expect;
+use function Pest\test;
+use function Pest\uses;
 
-uses(RefreshDatabase::class);
+uses(TestCase::class, RefreshDatabase::class);
 
 function ssaAdmin(): User
 {
@@ -38,7 +43,16 @@ function ssaTherapist(): User
 function ssaService(): Service
 {
     return Service::factory()->create([
-        'status' => ServiceStatus::ACTIVE,
+        'status' => ServiceStatus::ACTIVE->value,
+        'is_direct_service' => true,
+    ]);
+}
+
+function ssaIndirectService(): Service
+{
+    return Service::factory()->create([
+        'status' => ServiceStatus::ACTIVE->value,
+        'is_direct_service' => false,
     ]);
 }
 
@@ -50,7 +64,7 @@ function ssaPayload(array $overrides = []): array
     return array_merge([
         'student_id' => $student->id,
         'primary_service_id' => $service->id,
-        'additional_service_id' => null,
+        'additional_service_ids' => [],
         'start_date' => now()->addDays(1)->format('Y-m-d'),
         'end_date' => now()->addDays(365)->format('Y-m-d'),
         'minutes_per_session' => 30,
@@ -114,6 +128,43 @@ test('allows admin to create SSA without therapist', function () {
         'status' => SSAStatus::PENDING->value,
         'assigned_therapist_id' => null,
     ]);
+});
+
+test('stores indirect additional services for SSA', function () {
+    $admin = ssaAdmin();
+    $indirectA = ssaIndirectService();
+    $indirectB = ssaIndirectService();
+    $payload = ssaPayload([
+        'additional_service_ids' => [$indirectA->id, $indirectB->id],
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.store'), $payload)
+        ->assertRedirect(route('admin.ssas.index'));
+
+    $ssa = ServiceSupportAgreement::with('additionalServices')->first();
+    expect($ssa)->not->toBeNull();
+    expect($ssa->additionalServices->pluck('id')->sort()->values()->all())
+        ->toEqual(collect([$indirectA->id, $indirectB->id])->sort()->values()->all());
+
+    $primaryServiceId = DB::table('ssa_services')
+        ->where('ssa_id', $ssa->id)
+        ->where('is_primary', true)
+        ->value('service_id');
+
+    expect($primaryServiceId)->toBe($payload['primary_service_id']);
+
+    $storedIndirects = DB::table('ssa_services')
+        ->where('ssa_id', $ssa->id)
+        ->where('is_primary', false)
+        ->pluck('service_id')
+        ->sort()
+        ->values()
+        ->all();
+
+    expect($storedIndirects)->toEqual(
+        collect([$indirectA->id, $indirectB->id])->sort()->values()->all()
+    );
 });
 
 test('allows admin to create SSA with therapist', function () {
