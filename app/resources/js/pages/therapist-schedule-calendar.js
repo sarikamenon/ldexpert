@@ -544,8 +544,14 @@ import { initSelectBoxes } from '../common/select-box';
                                     <span class="text-sm font-medium text-foreground">${schedule.start_time || ''}</span>
                                     ${schedule.end_time ? `<span class="text-sm text-foreground/70">-</span><span class="text-sm font-medium text-foreground">${schedule.end_time}</span>` : ''}
                                 </div>
-                                ${schedule.school ? `<div class="mb-2"><span class="text-primary text-sm">${schedule.school}</span></div>` : ''}
-                                ${schedule.student ? `<div class="mb-2"><span class="font-semibold text-foreground text-sm">${schedule.student}</span></div>` : ''}
+                                ${schedule.student ? `
+                                    <div class="mb-1">
+                                        ${schedule.student_url
+                                            ? `<a href="${schedule.student_url}" class="font-semibold text-foreground text-sm hover:underline">${schedule.student}</a>`
+                                            : `<span class="font-semibold text-foreground text-sm">${schedule.student}</span>`
+                                        }
+                                    </div>
+                                ` : ''}
                                 ${schedule.service ? `<div class="text-sm text-foreground/70 mb-2">${schedule.service}</div>` : ''}
                             </div>
                             <div class="flex items-center gap-2 ml-4">

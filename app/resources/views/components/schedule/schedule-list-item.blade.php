@@ -24,23 +24,27 @@
                 @endif
             </div>
 
-            @if (isset($schedule['school']))
-                <div class="mb-2">
-                    @if (isset($schedule['school_url']))
-                        <a href="{{ $schedule['school_url'] }}"
-                            class="text-primary hover:underline text-sm">{{ $schedule['school'] }}</a>
+            @if (isset($schedule['student']) || isset($schedule['therapist']))
+                <div class="mb-1">
+                    @if (isset($schedule['student']))
+                        @if (isset($schedule['student_url']))
+                            <a href="{{ $schedule['student_url'] }}"
+                                class="font-semibold text-foreground text-sm hover:underline">
+                                {{ $schedule['student'] }}
+                            </a>
+                        @else
+                            <span class="font-semibold text-foreground text-sm">
+                                {{ $schedule['student'] }}
+                            </span>
+                        @endif
                     @else
-                        <span class="text-primary text-sm">{{ $schedule['school'] }}</span>
+                        <span class="font-semibold text-foreground text-sm">
+                            {{ $schedule['therapist'] ?? '' }}
+                        </span>
                     @endif
                 </div>
             @endif
 
-            @if (isset($schedule['student']) || isset($schedule['therapist']))
-                <div class="mb-2">
-                    <span
-                        class="font-semibold text-foreground text-sm">{{ $schedule['student'] ?? ($schedule['therapist'] ?? '') }}</span>
-                </div>
-            @endif
 
             @if (isset($schedule['service']))
                 <div class="text-sm text-foreground/70 mb-2">{{ $schedule['service'] }}</div>
@@ -121,5 +125,3 @@
         @endif
     </div>
 </div>
-
-

@@ -124,6 +124,9 @@ class DashboardService
                 'end_time' => $schedule->end_time?->format('H:i'),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
+                'student_url' => $schedule->student?->id
+                    ? route('therapist.students.show', $schedule->student->id)
+                    : null,
                 'service' => $schedule->service?->name,
                 'status' => $schedule->status?->value,
                 'billing_status' => $schedule->billing_status?->value,
