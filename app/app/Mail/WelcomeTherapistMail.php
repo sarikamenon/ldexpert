@@ -8,7 +8,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
-class WelcomeUserMail extends Mailable
+class WelcomeTherapistMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -21,6 +21,6 @@ class WelcomeUserMail extends Mailable
     public function build(): self
     {
         return $this->subject('Welcome to NOVA')
-            ->view('emails.welcome-user');
+            ->view('emails.welcome-therapist');
     }
 }

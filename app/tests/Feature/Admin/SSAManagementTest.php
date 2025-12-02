@@ -13,11 +13,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
-use function Pest\expect;
-use function Pest\test;
-use function Pest\uses;
 
-uses(TestCase::class, RefreshDatabase::class);
+// uses(TestCase::class, RefreshDatabase::class);
 
 function ssaAdmin(): User
 {

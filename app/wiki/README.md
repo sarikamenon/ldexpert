@@ -12,8 +12,8 @@ NOVA is LD Expert's bird-care platform that coordinates schools, therapists, stu
 ### Admin Operations (`app/wiki/admin`)
 - [Manage Schools](./admin/schools.md) — onboard, edit, activate/deactivate schools plus contracted services/rates.
 - [Manage Therapists](./admin/therapists.md) — lifecycle of therapist providers, credentials, compensation rates, availability sync.
-- [Manage Students](./admin/students.md) — student master data and guardians; managed exclusively by admins via SSA workflow.
-- [Manage SSA](./admin/ssa.md) — service agreements per student outlining services, duration, frequency, therapist assignments. **Primary entry point for student creation.**
+- [Manage Students](./admin/students.md) — admin-only student master data and guardians; powers SSA creation, scheduling, and billing.
+- [Manage SSA](./admin/ssa.md) — service agreements per student outlining services, duration, frequency, therapist assignments. **Currently links existing students to services/therapists; future iterations may embed student intake directly into the SSA flow.**
 - [Manage Services](./admin/services.md) — catalog definitions (SLP, OT, PT, Progress Reports, IEP meetings, etc.) with billing metadata.
 
 ### Financial Operations (`app/wiki/finance`)
@@ -22,7 +22,7 @@ NOVA is LD Expert's bird-care platform that coordinates schools, therapists, stu
 - [RSM/CAVA Sync](./finance/sync.md) — import canonical records (students, sessions, rates) to eliminate double entry.
 
 ### Therapist Experience (`app/wiki/therapist`)
-- [Therapist Workspace](./therapist/workspace.md) — dashboard, caseload management, scheduling, session notes, billing visibility.
+- [Therapist Workspace](./therapist/workspace.md) — dashboard plus implemented schedule calendar and read-only caseload/SSA views, with planned extensions for session notes and billing visibility.
 
 ### Student Experience (`app/wiki/student`)
 - [Student Portal](./student/portal.md) — schedules, past sessions, progress reporting aligned to SSA goals.

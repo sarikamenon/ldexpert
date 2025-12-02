@@ -291,4 +291,24 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->whereIn('id', $scheduleIds)
             ->update(['billing_status' => $status->value]);
     }
+
+    public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool
+    {
+        return Schedule::query()
+            ->where(function ($query) use ($user) {
+                $query->where('therapist_id', $user->id)
+                    ->orWhere('student_id', $user->id);
+            })
+            ->whereDate('schedule_date', $date)
+            ->where('status', '!=', ScheduleStatus::CANCELLED)
+            ->where(function ($query) use ($startTime, $endTime) {
+                // Standard overlap logic: start < newEnd AND end > newStart
+                $query->where('start_time', '<', $endTime)
+                    ->where('end_time', '>', $startTime);
+            })
+            ->when($excludeScheduleId, function ($query) use ($excludeScheduleId) {
+                $query->where('id', '!=', $excludeScheduleId);
+            })
+            ->exists();
+    }
 }

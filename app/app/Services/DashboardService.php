@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\Time\UserTimezoneService;
 use App\Enums\ContractStatus;
 use App\Enums\Role;
 use App\Enums\SchoolStatus;
@@ -27,6 +28,7 @@ class DashboardService
 {
     public function __construct(
         private readonly ActivityLogService $activityLogService,
+        private readonly UserTimezoneService $userTimezoneService,
     ) {}
 
     public function getKeyMetrics(): array
@@ -221,15 +223,22 @@ class DashboardService
 
     public function getRecentActivity(int $limit = 10): array
     {
-        return $this->activityLogService->recent($limit)
-            ->map(fn(ActivityLog $log) => [
-                'type' => $log->action,
-                'description' => $log->description ?? $this->fallbackActivityDescription($log),
-                'user' => $log->user?->name ?? 'System',
-                'created_at' => $log->created_at,
-                'icon' => $this->resolveActivityIcon($log),
-                'color' => $this->resolveActivityColor($log),
-            ])
+        $logs = $this->activityLogService
+            ->recent($limit)
+            ->withUserTimezone(auth()->user());
+
+        return $logs
+            ->map(function (ActivityLog $log): array {
+                return [
+                    'type' => $log->action,
+                    'description' => $log->description ?? $this->fallbackActivityDescription($log),
+                    'user' => $log->user?->name ?? 'System',
+                    'created_at' => $log->created_at,
+                    'created_at_local' => $log->getAttribute('created_at_local') ?? $log->created_at,
+                    'icon' => $this->resolveActivityIcon($log),
+                    'color' => $this->resolveActivityColor($log),
+                ];
+            })
             ->toArray();
     }
 
@@ -258,6 +267,7 @@ class DashboardService
                 'title' => 'SSA Expiring',
                 'entity' => "{$studentName} - {$serviceName}",
                 'due_date' => $ssa->end_date,
+                'due_date_local' => $this->userTimezoneService->toUserTimezone($ssa->end_date, auth()->user()),
                 'priority' => $priority,
             ];
         }
@@ -279,6 +289,7 @@ class DashboardService
                     'title' => 'Contract Expiring',
                     'entity' => "School Contract - {$contract->school->display_name}",
                     'due_date' => $contract->end_date,
+                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, auth()->user()),
                     'priority' => $priority,
                 ];
             }

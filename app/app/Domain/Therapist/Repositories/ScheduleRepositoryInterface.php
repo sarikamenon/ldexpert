@@ -49,4 +49,6 @@ interface ScheduleRepositoryInterface
     public function updateBillingStatus(Schedule $schedule, BillingStatus $status): Schedule;
 
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int;
+
+    public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool;
 }

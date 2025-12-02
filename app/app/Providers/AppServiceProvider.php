@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
@@ -25,6 +26,7 @@ use App\Infrastructure\Repositories\EloquentStudentRepository;
 use App\Infrastructure\Repositories\EloquentScheduleRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
+use App\Models\User;
 use App\Models\School;
 use App\Models\Schedule;
 use App\Models\SchoolContract;
@@ -41,8 +43,14 @@ use App\Policies\SSAPolicy;
 use App\Policies\StudentProfilePolicy;
 use App\Policies\TherapistContractPolicy;
 use App\Policies\TherapistProfilePolicy;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Blade;
+use App\Events\ScheduleCreated;
+use App\Events\ScheduleUpdated;
+use App\Listeners\SendScheduleNotification;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -60,6 +68,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
         $this->app->bind(ActivityLogRepositoryInterface::class, EloquentActivityLogRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
+
+        $this->app->singleton(UserTimezoneService::class, static function (): UserTimezoneService {
+            return new UserTimezoneService(config('app.timezone', 'UTC'));
+        });
     }
 
     public function boot(Router $router): void
@@ -76,5 +88,32 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TherapistContract::class, TherapistContractPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
         Gate::policy(ServiceSupportAgreement::class, SSAPolicy::class);
+
+        Event::listen(ScheduleCreated::class, SendScheduleNotification::class);
+        Event::listen(ScheduleUpdated::class, SendScheduleNotification::class);
+
+        Collection::macro('withUserTimezone', function (?User $user = null, array $fields = ['created_at', 'updated_at']) {
+            /** @var \Illuminate\Support\Collection $this */
+            /** @var UserTimezoneService $tzService */
+            $tzService = app(UserTimezoneService::class);
+            $user = $user ?? auth()->user();
+
+            return $this->map(function ($item) use ($tzService, $user, $fields) {
+                if (! $item instanceof Model) {
+                    return $item;
+                }
+
+                foreach ($fields as $field) {
+                    $value = $item->getAttribute($field);
+
+                    if ($value instanceof \Carbon\CarbonInterface) {
+                        $local = $tzService->toUserTimezone($value, $user);
+                        $item->setAttribute($field . '_local', $local);
+                    }
+                }
+
+                return $item;
+            });
+        });
     }
 }

@@ -135,16 +135,21 @@ class AnalyticsService
 
     private function getRecentSchoolAdditions(int $limit): array
     {
+        $user = auth()->user();
+
         return School::with('manager')
             ->latest('created_at')
             ->limit($limit)
             ->get()
-            ->map(fn($school) => [
-                'id' => $school->id,
-                'name' => $school->display_name,
-                'manager' => $school->manager?->name,
-                'created_at' => $school->created_at->format('Y-m-d'),
-            ])
+            ->withUserTimezone($user)
+            ->map(function ($school) {
+                return [
+                    'id' => $school->id,
+                    'name' => $school->display_name,
+                    'manager' => $school->manager?->name,
+                    'created_at' => $school->created_at_local->format('Y-m-d'),
+                ];
+            })
             ->toArray();
     }
 
@@ -213,16 +218,21 @@ class AnalyticsService
 
     private function getRecentTherapistAdditions(int $limit): array
     {
+        $user = auth()->user();
+
         return TherapistProfile::with('user')
             ->latest('created_at')
             ->limit($limit)
             ->get()
-            ->map(fn($therapist) => [
-                'id' => $therapist->id,
-                'name' => "{$therapist->first_name} {$therapist->last_name}",
-                'position' => $therapist->position?->value ?? 'N/A',
-                'created_at' => $therapist->created_at->format('Y-m-d'),
-            ])
+            ->withUserTimezone($user)
+            ->map(function ($therapist) {
+                return [
+                    'id' => $therapist->id,
+                    'name' => "{$therapist->first_name} {$therapist->last_name}",
+                    'position' => $therapist->position?->value ?? 'N/A',
+                    'created_at' => $therapist->created_at_local->format('Y-m-d'),
+                ];
+            })
             ->toArray();
     }
 

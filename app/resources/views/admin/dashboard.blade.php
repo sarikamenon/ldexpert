@@ -280,7 +280,7 @@
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm text-foreground">{{ $activity['description'] }}</p>
                                 <p class="text-xs text-foreground/60 mt-1">
-                                    By {{ $activity['user'] }} • {{ $activity['created_at']->diffForHumans() }}
+                                    By {{ $activity['user'] }} • {{ $activity['created_at_local']->diffForHumans() }}
                                 </p>
                             </div>
                         </div>
@@ -318,7 +318,7 @@
                             <p class="text-xs text-foreground/70 mt-1">{{ $event['entity'] }}</p>
                             <p class="text-xs text-foreground/60 mt-1">
                                 Due: {{ $event['due_date']->format('M d, Y') }}
-                                ({{ $event['due_date']->diffForHumans() }})
+                                ({{ $event['due_date_local']->diffForHumans() }})
                             </p>
                         </div>
                     </div>

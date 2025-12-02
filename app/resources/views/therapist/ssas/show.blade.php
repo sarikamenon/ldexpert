@@ -313,7 +313,7 @@
                                                 @endif
                                             </span>
                                             <span class="text-sm text-foreground/60">
-                                                {{ $history->created_at->format('M d, Y g:i A') }}
+                                                {{ ($history->created_at_local ?? $history->created_at)->format('M d, Y g:i A') }}
                                             </span>
                                         </div>
                                         @if ($history->reason)

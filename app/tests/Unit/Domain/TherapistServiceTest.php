@@ -10,7 +10,7 @@ use App\DTOs\CreateTherapistDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
-use App\Mail\WelcomeUserMail;
+use App\Mail\WelcomeTherapistMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,7 +61,7 @@ final class TherapistServiceTest extends TestCase
         $this->assertSame('Doe', $profile->last_name);
 
         // Assert welcome email was sent
-        Mail::assertSent(WelcomeUserMail::class, function ($mail) use ($dto) {
+        Mail::assertSent(WelcomeTherapistMail::class, function ($mail) use ($dto) {
             return $mail->hasTo($dto->personalEmail);
         });
     }

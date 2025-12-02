@@ -1,0 +1,277 @@
+
+   FAIL  Tests\Unit\Services\ScheduleServiceTest
+  ⨯ create single non recurring schedule creates one record              0.68s  
+  ⨯ create group schedule validates shared service                       0.02s  
+  ! generate batch number delegates to repository → file_get_contents(/… 0.02s  
+  ! update schedule updates single record → file_get_contents(/Volumes/… 0.09s  
+  ! update schedule regenerates occurrences when recurrence type change… 0.03s  
+  ! delete schedule removes single record → file_get_contents(/Volumes/… 0.02s  
+  ! delete schedule removes series if recurring → file_get_contents(/Vo… 0.02s  
+
+   FAIL  Tests\Feature\Therapist\ScheduleTest
+  ! therapist can view schedule calendar → file_get_contents(/Volumes/W… 0.12s  
+  ! non therapist cannot view schedule calendar → file_get_contents(/Vo… 0.03s  
+  ! therapist can get schedules via ajax → file_get_contents(/Volumes/W… 0.02s  
+  ! schedule filters validation → file_get_contents(/Volumes/Work/tul/L… 0.02s  
+  ⨯ therapist can create single schedule with valid ssa                  0.06s  
+  ⨯ therapist can create group schedule with multiple students           0.03s  
+  ⨯ group schedule requires students to share service via ssa            0.04s  
+  ⨯ group schedule allows shared additional services                     0.04s  
+  ! therapist can update schedule billing status → file_get_contents(/V… 0.03s  
+  ! therapist can view schedule create page → file_get_contents(/Volume… 0.04s  
+  ⨯ therapist can submit schedule form                                   0.04s  
+  ⨯ therapist can create recurring schedule with occurrence count        0.04s  
+  ! therapist can view edit page → file_get_contents(/Volumes/Work/tul/… 0.04s  
+  ! therapist cannot edit others schedule → file_get_contents(/Volumes/… 0.03s  
+  ⨯ therapist can update schedule details                                0.04s  
+  ! therapist can delete schedule → file_get_contents(/Volumes/Work/tul… 0.02s  
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest >…  ModelNotFoundException   
+  No query results for model [App\Models\Schedule].
+
+  at vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:780
+    776▕         if (! is_null($model = $this->first($columns))) {
+    777▕             return $model;
+    778▕         }
+    779▕ 
+  ➜ 780▕         throw (new ModelNotFoundException)->setModel(get_class($this->model));
+    781▕     }
+    782▕ 
+    783▕     /**
+    784▕      * Execute the query and get the first result or call a callback.
+
+      [2m+21 vendor frames [22m
+  22  app/Domain/Therapist/Services/ScheduleService.php:173
+      [2m+3 vendor frames [22m
+  26  app/Domain/Therapist/Services/ScheduleService.php:57
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest >…  ModelNotFoundException   
+  No query results for model [App\Models\Schedule].
+
+  at vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:780
+    776▕         if (! is_null($model = $this->first($columns))) {
+    777▕             return $model;
+    778▕         }
+    779▕ 
+  ➜ 780▕         throw (new ModelNotFoundException)->setModel(get_class($this->model));
+    781▕     }
+    782▕ 
+    783▕     /**
+    784▕      * Execute the query and get the first result or call a callback.
+
+      [2m+21 vendor frames [22m
+  22  app/Domain/Therapist/Services/ScheduleService.php:173
+      [2m+3 vendor frames [22m
+  26  app/Domain/Therapist/Services/ScheduleService.php:57
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist can create singl…   
+  Failed asserting that a row in the table [schedules] matches the attributes {
+    "therapist_id": 33,
+    "student_id": 34,
+    "service_id": 1,
+    "schedule_date": "2025-12-03"
+}.
+
+Found similar results: [
+    {
+        "therapist_id": 33,
+        "student_id": 34,
+        "service_id": 1,
+        "schedule_date": "2025-12-03 00:00:00"
+    }
+].
+
+  at tests/Feature/Therapist/ScheduleTest.php:119
+    115▕         $response = $this->actingAs($therapist)
+    116▕             ->postJson(route('therapist.schedule.store'), $payload);
+    117▕ 
+    118▕         $response->assertStatus(201);
+  ➜ 119▕         $this->assertDatabaseHas('schedules', [
+    120▕             'therapist_id' => $therapist->id,
+    121▕             'student_id' => $studentUser->id,
+    122▕             'service_id' => $service->id,
+    123▕             'schedule_date' => $payload['schedule_date'],
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist can create group…   
+  Expected response status code [201] but received 422.
+Failed asserting that 422 is identical to 201.
+
+The following errors occurred during the last request:
+
+{
+    "message": "The student ids field must not have more than 1 items. (and 1 more error)",
+    "errors": {
+        "student_ids": [
+            "The student ids field must not have more than 1 items.",
+            "All students must belong to the selected SSA."
+        ]
+    }
+}
+
+  at tests/Feature/Therapist/ScheduleTest.php:173
+    169▕ 
+    170▕         $response = $this->actingAs($therapist)
+    171▕             ->postJson(route('therapist.schedule.store'), $payload);
+    172▕ 
+  ➜ 173▕         $response->assertStatus(201);
+    174▕ 
+    175▕         $this->assertDatabaseCount('schedules', 2);
+    176▕ 
+    177▕         $firstSchedule = Schedule::query()->first();
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > group schedule requires st…   
+  Failed to find a validation error in the response for key: 'service_id'
+
+Response has the following JSON validation errors:
+
+{
+    "student_ids": [
+        "The student ids field must not have more than 1 items.",
+        "All students must belong to the selected SSA.",
+        "One or more students are not assigned to you."
+    ]
+}
+
+Failed asserting that an array has the key 'service_id'.
+
+The following errors occurred during the last request:
+
+{
+    "message": "The student ids field must not have more than 1 items. (and 2 more errors)",
+    "errors": {
+        "student_ids": [
+            "The student ids field must not have more than 1 items.",
+            "All students must belong to the selected SSA.",
+            "One or more students are not assigned to you."
+        ]
+    }
+}
+
+  at tests/Feature/Therapist/ScheduleTest.php:236
+    232▕         $response = $this->actingAs($therapist)
+    233▕             ->postJson(route('therapist.schedule.store'), $payload);
+    234▕ 
+    235▕         $response->assertStatus(422)
+  ➜ 236▕             ->assertJsonValidationErrors(['service_id']);
+    237▕     }
+    238▕ 
+    239▕     public function test_group_schedule_allows_shared_additional_services(): void
+    240▕     {
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > group schedule allows shar…   
+  Expected response status code [201] but received 422.
+Failed asserting that 422 is identical to 201.
+
+The following errors occurred during the last request:
+
+{
+    "message": "The student ids field must not have more than 1 items. (and 1 more error)",
+    "errors": {
+        "student_ids": [
+            "The student ids field must not have more than 1 items.",
+            "All students must belong to the selected SSA."
+        ]
+    }
+}
+
+  at tests/Feature/Therapist/ScheduleTest.php:289
+    285▕ 
+    286▕         $response = $this->actingAs($therapist)
+    287▕             ->postJson(route('therapist.schedule.store'), $payload);
+    288▕ 
+  ➜ 289▕         $response->assertStatus(201);
+    290▕         $this->assertDatabaseHas('schedules', [
+    291▕             'therapist_id' => $therapist->id,
+    292▕             'student_id' => $studentUser1->id,
+    293▕             'service_id' => $indirectService->id,
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist can submit sched…   
+  Failed asserting that a row in the table [schedules] matches the attributes {
+    "therapist_id": 33,
+    "student_id": 34,
+    "service_id": 1,
+    "schedule_date": "2025-12-03"
+}.
+
+Found similar results: [
+    {
+        "therapist_id": 33,
+        "student_id": 34,
+        "service_id": 1,
+        "schedule_date": "2025-12-03 00:00:00"
+    }
+].
+
+  at tests/Feature/Therapist/ScheduleTest.php:387
+    383▕             ->post(route('therapist.schedule.store'), $payload);
+    384▕ 
+    385▕         $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+    386▕ 
+  ➜ 387▕         $this->assertDatabaseHas('schedules', [
+    388▕             'therapist_id' => $therapist->id,
+    389▕             'student_id' => $student->id,
+    390▕             'service_id' => $service->id,
+    391▕             'schedule_date' => $payload['schedule_date'],
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist can create recur…   
+  Failed asserting that two strings are equal.
+
+The following errors occurred during the last request:
+
+Recurring schedules are not available in this version.
+
+  -'http://localhost/therapist/schedule/calendar?date=2025-12-09'
+  +'http://localhost'
+  
+
+  at tests/Feature/Therapist/ScheduleTest.php:427
+    423▕ 
+    424▕         $response = $this->actingAs($therapist)
+    425▕             ->post(route('therapist.schedule.store'), $payload);
+    426▕ 
+  ➜ 427▕         $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+    428▕ 
+    429▕         $this->assertDatabaseHas('schedules', [
+    430▕             'therapist_id' => $therapist->id,
+    431▕             'student_id' => $student->id,
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist can update sched…   
+  Failed asserting that a row in the table [schedules] matches the attributes {
+    "id": 1,
+    "schedule_date": "2025-12-04",
+    "start_time": "10:00",
+    "notes": "Updated notes"
+}.
+
+Found similar results: [
+    {
+        "id": 1,
+        "schedule_date": "2025-12-04 00:00:00",
+        "start_time": "10:00",
+        "notes": "Updated notes"
+    }
+].
+
+  at tests/Feature/Therapist/ScheduleTest.php:494
+    490▕ 
+    491▕         $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+    492▕         $response->assertSessionHas('status', 'Schedule updated successfully.');
+    493▕ 
+  ➜ 494▕         $this->assertDatabaseHas('schedules', [
+    495▕             'id' => $schedule->id,
+    496▕             'schedule_date' => $payload['schedule_date'],
+    497▕             'start_time' => $payload['start_time'],
+    498▕             'notes' => 'Updated notes',
+
+
+  Tests:    9 failed, 14 warnings (55 assertions)
+  Duration: 1.72s
+

@@ -547,8 +547,8 @@ import { initSelectBoxes } from '../common/select-box';
                                 ${schedule.student ? `
                                     <div class="mb-1">
                                         ${schedule.student_url
-                                            ? `<a href="${schedule.student_url}" class="font-semibold text-foreground text-sm hover:underline">${schedule.student}</a>`
-                                            : `<span class="font-semibold text-foreground text-sm">${schedule.student}</span>`
+                                            ? `<a href="${schedule.student_url}" class="font-semibold text-accent text-sm hover:underline">${schedule.student}</a>`
+                                            : `<span class="font-semibold text-accent text-sm">${schedule.student}</span>`
                                         }
                                     </div>
                                 ` : ''}

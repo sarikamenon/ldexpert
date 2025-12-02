@@ -10,8 +10,10 @@ Give therapists a unified workspace to manage caseloads, schedules, documentatio
 ## Current Implementation
 - Auth & routing: therapists authenticate via standard Laravel auth and are routed through `routes/therapist.php` with middleware `role:therapist`.
 - Dashboard: `Therapist\DashboardController@index` uses `DashboardService` + `UserRepositoryInterface` to show metrics. View: `resources/views/dashboard.blade.php`.
-- **Student management has been removed** — Students are now created and managed by admins through the SSA (Student Service Agreement) workflow. Therapists will receive read-only access to assigned students.
-- No scheduling, session notes, SSA view, or billing surfaces exist yet.
+- **Student management is admin-only** — Students are created and managed by admins through the SSA-backed student workflow. Therapists have read-only access to assigned students via `/therapist/students` and `/therapist/students/{student}`.
+- Scheduling: `Therapist\ScheduleController` exposes a calendar-based schedule UI under `/therapist/schedule` (and `/therapist/schedule/calendar`) backed by the `schedules` table and `ScheduleService`. Schedules are created against active SSAs and include billing status fields.
+- SSA view: therapists can view assigned SSAs read-only via `/therapist/ssas` and `/therapist/ssas/{ssa}`.
+- No session notes or billing surfaces exist yet; those remain in the planned scope.
 
 ## Planned Scope
 - Extend dashboard with actionable widgets: upcoming sessions, pending notes, expiring SSAs, billing reminders.

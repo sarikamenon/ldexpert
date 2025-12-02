@@ -56,6 +56,7 @@ final class UpdateScheduleDTOTest extends TestCase
             recurrenceType: RecurrenceType::NONE,
             recurrenceEndDate: null,
             isGroup: null,
+            locationDetails: null,
             notes: null,
             billingStatus: BillingStatus::PENDING,
         );
@@ -74,5 +75,3 @@ final class UpdateScheduleDTOTest extends TestCase
         $this->assertSame('pending', $array['billing_status']);
     }
 }
-
-

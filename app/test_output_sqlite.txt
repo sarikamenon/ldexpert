@@ -1,0 +1,468 @@
+
+   FAIL  Tests\Unit\Services\ScheduleServiceTest
+  ⨯ create single non recurring schedule creates one record
+  ⨯ create group schedule validates shared service
+  ⨯ generate batch number delegates to repository
+  ⨯ update schedule updates single record
+  ⨯ update schedule regenerates occurrences when recurrence type changes
+  ⨯ delete schedule removes single record
+  ⨯ delete schedule removes series if recurring
+
+   FAIL  Tests\Feature\Therapist\ScheduleTest
+  ⨯ therapist can view schedule calendar
+  ⨯ non therapist cannot view schedule calendar
+  ⨯ therapist can get schedules via ajax
+  ⨯ schedule filters validation
+  ⨯ therapist can create single schedule without ssa
+  ⨯ therapist can create group schedule with multiple students
+  ⨯ group schedule requires students to share service via ssa
+  ⨯ group schedule allows shared additional services
+  ⨯ therapist can update schedule billing status
+  ⨯ therapist can view schedule create page
+  ⨯ therapist can submit schedule form
+  ⨯ therapist can create recurring schedule with occurrence count
+  ⨯ therapist can view edit page
+  ⨯ therapist cannot edit others schedule
+  ⨯ therapist can update schedule details
+  ⨯ therapist can delete schedule
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > create…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > create…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > generat…  QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > update…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > update…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > delete…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Unit\Services\ScheduleServiceTest > delete…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > non therap…  QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > schedule f…  QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > group sche…  QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > group sche…  QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+  ────────────────────────────────────────────────────────────────────────────  
+   FAILED  Tests\Feature\Therapist\ScheduleTest > therapist…   QueryException   
+  SQLSTATE[HY000]: General error: 1 near "SHOW": syntax error (Connection: sqlite, SQL: SHOW INDEX FROM therapist_profiles)
+
+  at vendor/laravel/framework/src/Illuminate/Database/Connection.php:406
+    402▕             // For select statements, we'll simply execute the query and return an array
+    403▕             // of the database result set. Each element in the array will be a single
+    404▕             // row from the database table, and will either be an array or objects.
+    405▕             $statement = $this->prepared(
+  ➜ 406▕                 $this->getPdoForSelect($useReadPdo)->prepare($query)
+    407▕             );
+    408▕ 
+    409▕             $this->bindValues($statement, $this->prepareBindings($bindings));
+    410▕
+
+      [2m+6 vendor frames [22m
+  7   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:106
+  8   database/migrations/2025_11_17_073428_alter_therapist_profiles_table_for_prd_fields.php:92
+
+
+  Tests:    23 failed (0 assertions)
+  Duration: 2.34s
+

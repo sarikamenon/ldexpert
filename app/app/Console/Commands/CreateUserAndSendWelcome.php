@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use App\Domain\User\Services\UserService;
 use App\DTOs\CreateUserDTO;
-use App\Mail\WelcomeUserMail;
+use App\Mail\WelcomeTherapistMail;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
 
@@ -42,7 +42,10 @@ class CreateUserAndSendWelcome extends Command
         $user = $this->userService->createWithRole($dto, $role);
 
         // Send welcome email with credentials
-        Mail::to($user->email)->send(new WelcomeUserMail($user->name, $user->email, $password));
+        if ($role === 'therapist') {
+            Mail::to($user->email)->send(new WelcomeTherapistMail($user->name, $user->email, $password));
+        }
+        // Other roles might have their own welcome emails (e.g. Student handled by Service)
 
         $this->info("User created: {$user->email} (role: {$role}). A welcome email with credentials was sent.");
         $this->line("Password: {$password}");

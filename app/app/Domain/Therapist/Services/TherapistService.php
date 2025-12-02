@@ -9,7 +9,7 @@ use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
-use App\Mail\WelcomeUserMail;
+use App\Mail\WelcomeTherapistMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -34,7 +34,7 @@ final class TherapistService
 
         // Send welcome email
         Mail::to($dto->personalEmail)->send(
-            new WelcomeUserMail(
+            new WelcomeTherapistMail(
                 name: $dto->firstName . ' ' . $dto->lastName,
                 email: $dto->personalEmail,
                 plainPassword: $dto->password
