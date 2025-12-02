@@ -140,37 +140,7 @@
             </x-ui::card>
         </div>
     @elseif (($activeTab ?? 'dashboard') === 'overview')
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Therapist Details</h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-border">
-                    <tbody class="divide-y divide-border text-sm">
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70 w-1/3">Name</td>
-                            <td class="px-6 py-4">{{ $therapist->name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Address</td>
-                            <td class="px-6 py-4">{{ $therapist->therapistProfile?->address ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Max Weekly Hours</td>
-                            <td class="px-6 py-4">{{ $therapist->therapistProfile?->max_weekly_hours ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Date of Birth</td>
-                            <td class="px-6 py-4">
-                                {{ optional($therapist->therapistProfile?->dob)->format('M d, Y') ?? '—' }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Notes</td>
-                            <td class="px-6 py-4">{{ $therapist->therapistProfile?->comments ?? '—' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </x-ui::card>
+        <x-therapist.overview-details :therapist="$therapist" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
             :services="$services ?? []" context="detail" />

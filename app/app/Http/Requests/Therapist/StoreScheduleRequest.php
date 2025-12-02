@@ -46,6 +46,8 @@ final class StoreScheduleRequest extends FormRequest
         return [
             'end_time.after' => 'End time must be after start time.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
+            'location_details.required' => 'Please enter the location or meeting details for this session.',
+            'location_details.max' => 'Location/meeting details may not be greater than :max characters.',
             'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
             'recurrence_end_date.required_if' => 'Recurrence end date is required when recurrence type is not none.',
         ];

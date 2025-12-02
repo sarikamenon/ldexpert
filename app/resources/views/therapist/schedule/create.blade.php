@@ -14,7 +14,7 @@
                     </p>
                 </div>
                 <a href="{{ route('therapist.schedule.calendar') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg hover:bg-background/subtle">
+                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                     Back to Calendar
                 </a>
             </div>
@@ -36,18 +36,27 @@
                     {{-- SSA and Student Information (when SSA is provided) --}}
                     @if ($ssa)
                         <div class="bg-background/subtle rounded-lg p-4 space-y-3 border border-border">
-                            <div class="flex items-center justify-between">
-                                <h3 class="text-sm font-semibold text-foreground">SSA #{{ $ssa->id }} Information
-                                </h3>
-                                <x-ui::badge variant="success">Active</x-ui::badge>
-                            </div>
+                            <h3 class="text-sm font-semibold text-foreground">SSA #{{ $ssa->id }} Information
+                            </h3>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                                 {{-- Left Side --}}
                                 <div class="space-y-3">
                                     <div>
                                         <span class="text-foreground/70 block mb-1">Student:</span>
-                                        <span
-                                            class="font-medium text-foreground">{{ $ssa->student->name ?? 'N/A' }}</span>
+                                        <span class="font-medium text-foreground">
+                                            @if($ssa->student)
+                                                <a href="{{ route('therapist.students.show', $ssa->student) }}" class="text-primary hover:underline">
+                                                    {{ $ssa->student->name }}
+                                                </a>
+                                            @else
+                                                N/A
+                                            @endif
+                                            @if ($ssa->student?->studentProfile?->timezone)
+                                                <span class="text-foreground/70">
+                                                    · {{ $ssa->student->studentProfile->timezone }}
+                                                </span>
+                                            @endif
+                                        </span>
                                     </div>
                                     <div>
                                         <span class="text-foreground/70 block mb-1">School:</span>
@@ -73,12 +82,11 @@
                                     <div>
                                         <span class="text-foreground/70 block mb-1">Additional Services:</span>
                                         @if ($ssa->additionalServices->isNotEmpty())
-                                            <div class="flex flex-wrap gap-2">
+                                            <span class="font-medium text-foreground">
                                                 @foreach ($ssa->additionalServices as $service)
-                                                    <x-ui::badge variant="secondary"
-                                                        class="text-xs">{{ $service->name }}</x-ui::badge>
+                                                    {{ $loop->first ? '' : ', ' }}{{ $service->name }}
                                                 @endforeach
-                                            </div>
+                                            </span>
                                         @else
                                             <span class="font-medium text-foreground/60">None</span>
                                         @endif
@@ -123,7 +131,8 @@
                             <x-input-label for="schedule_date" value="Schedule Date *" />
                             <x-text-input id="schedule_date" name="schedule_date" type="date"
                                 class="mt-1 block w-full"
-                                value="{{ old('schedule_date', $selectedDate->format('Y-m-d')) }}" required />
+                                value="{{ old('schedule_date', $selectedDate->format('Y-m-d')) }}"
+                                min="{{ now()->format('Y-m-d') }}" required />
                             <x-input-error :messages="$errors->get('schedule_date')" class="mt-2" />
                         </div>
 
@@ -142,6 +151,11 @@
                             </div>
                         </div>
                     </div>
+
+                    <p class="text-xs text-foreground/60 mt-1">
+                        Enter the schedule date and time in <span class="font-medium">your</span> timezone.
+                        If the student is in a different timezone, the system will handle the conversion for them.
+                    </p>
                 </x-ui::card>
 
                 {{-- Recurrence removed for first iteration --}}
@@ -159,7 +173,7 @@
                         <x-input-label for="location_details" value="Location/Meeting Details *" />
                         <textarea name="location_details" id="location_details" rows="4"
                             class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm"
-                            placeholder="Enter meeting link (e.g., Google Meet, Zoom), location address, or other meeting details..." required>{{ old('location_details') }}</textarea>
+                            placeholder="Enter meeting link (e.g., Google Meet, Zoom), location address, or other meeting details...">{{ old('location_details') }}</textarea>
                         <p class="text-xs text-foreground/60 mt-1">
                             Include meeting links for online sessions or address/location for in-person sessions.
                         </p>

@@ -8,6 +8,7 @@ use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Models\Schedule;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 interface ScheduleRepositoryInterface
@@ -51,4 +52,9 @@ interface ScheduleRepositoryInterface
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int;
 
     public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool;
+
+    /**
+     * @return Collection<int, Schedule>
+     */
+    public function getSchedulesInWindow(Carbon $start, Carbon $end): Collection;
 }

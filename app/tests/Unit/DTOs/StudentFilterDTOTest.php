@@ -39,6 +39,6 @@ final class StudentFilterDTOTest extends TestCase
 
         $this->assertSame('Mia', $array['search']);
         $this->assertSame('active', $array['status']);
-        $this->assertSame(25, $array['per_page']);
+        $this->assertSame(25, $array['perPage']);
     }
 }

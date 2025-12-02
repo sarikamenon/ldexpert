@@ -13,6 +13,7 @@ use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Http\Controllers\Controller;
+use App\Exceptions\ScheduleOverlapException;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
 use App\Http\Requests\Therapist\StoreScheduleRequest;
 use App\Http\Requests\Therapist\UpdateScheduleRequest;
@@ -100,7 +101,7 @@ final class ScheduleController extends Controller
         ]);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
         $therapist = $request->user();
 
@@ -109,79 +110,56 @@ final class ScheduleController extends Controller
             : CarbonImmutable::today();
 
         $ssaId = $request->query('ssa_id');
-        $ssa = null;
-        $student = null;
-        $service = null;
-
-        // If ssa_id is provided, validate and load the SSA
-        if ($ssaId) {
-            $ssa = ServiceSupportAgreement::query()
-                ->where('id', $ssaId)
-                ->where('assigned_therapist_id', $therapist->id)
-                ->where('status', SSAStatus::ACTIVE)
-                ->with(['student', 'student.studentProfile.school', 'primaryService', 'services'])
-                ->firstOrFail();
-
-            $student = $ssa->student;
-            $service = $ssa->primaryService;
+        // SSA is now required to create a schedule. If we don't have a valid SSA,
+        // redirect back to the calendar with a message instructing the user to
+        // start from the "Add New Schedule" flow.
+        if (! $ssaId) {
+            return redirect()
+                ->route('therapist.schedule.calendar')
+                ->with('status', 'Please click the "Add New Schedule" button and select an SSA to create a schedule.');
         }
 
-        // For first iteration: only single student, single schedule
-        // Get students and services based on active SSAs only
-        $activeSSAs = ServiceSupportAgreement::query()
+        $ssa = ServiceSupportAgreement::query()
+            ->where('id', $ssaId)
             ->where('assigned_therapist_id', $therapist->id)
             ->where('status', SSAStatus::ACTIVE)
-            ->with(['student', 'primaryService'])
-            ->get();
+            ->with(['student', 'student.studentProfile.school', 'primaryService', 'services'])
+            ->first();
 
-        // Build student list from active SSAs
-        $students = $activeSSAs->map(function ($ssa) {
-            return (object) [
-                'user_id' => $ssa->student_id,
-                'first_name' => $ssa->student->name ?? '',
-                'last_name' => '',
-            ];
-        })->unique('user_id')->values();
-
-        // If SSA is provided, use its services; otherwise build from all active SSAs
-        if ($ssa) {
-            // Get all services from this SSA (primary + additional)
-            $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
-            $serviceOptions = $ssaServices->map(function ($service) use ($ssa) {
-                return [
-                    'service_id' => $service->id,
-                    'service_name' => $service->name,
-                    'is_primary' => (bool) $service->pivot?->is_primary,
-                ];
-            })->values();
-
-            $studentServiceMappings = collect([
-                [
-                    'student_id' => $ssa->student_id,
-                    'services' => $serviceOptions->toArray(),
-                ],
-            ]);
-        } else {
-            // Build service mappings from active SSAs
-            $studentServiceMappings = $activeSSAs->map(function ($ssa) {
-                $services = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
-                return [
-                    'student_id' => $ssa->student_id,
-                    'services' => $services->map(function ($service) {
-                        return [
-                            'service_id' => $service->id,
-                            'service_name' => $service->name,
-                            'is_primary' => (bool) $service->pivot?->is_primary,
-                        ];
-                    })->toArray(),
-                ];
-            })->toArray();
-
-            $serviceOptions = collect($studentServiceMappings)
-                ->flatMap(fn(array $entry) => $entry['services'])
-                ->unique('service_id')
-                ->values();
+        if (! $ssa) {
+            return redirect()
+                ->route('therapist.schedule.calendar')
+                ->with('status', 'Please click the "Add New Schedule" button and select an SSA to create a schedule.');
         }
+
+        $student = $ssa->student;
+        $service = $ssa->primaryService;
+
+        // Build student list and service mappings using the selected SSA only
+        $students = collect([
+            (object) [
+                'user_id' => $student?->id,
+                'first_name' => $student?->name ?? '',
+                'last_name' => '',
+            ],
+        ])->filter(static fn($studentInfo) => $studentInfo->user_id !== null)->values();
+
+        // Get all services from this SSA (primary + additional)
+        $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
+        $serviceOptions = $ssaServices->map(function ($service) {
+            return [
+                'service_id' => $service->id,
+                'service_name' => $service->name,
+                'is_primary' => (bool) $service->pivot?->is_primary,
+            ];
+        })->values();
+
+        $studentServiceMappings = collect([
+            [
+                'student_id' => $ssa->student_id,
+                'services' => $serviceOptions->toArray(),
+            ],
+        ]);
 
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
@@ -283,8 +261,21 @@ final class ScheduleController extends Controller
 
         $dto = CreateScheduleDTO::fromArray($data);
 
-        $schedule = $this->scheduleService->createSchedule($therapist, $dto)
-            ->load(['student', 'service', 'ssa', 'school']);
+        try {
+            $schedule = $this->scheduleService->createSchedule($therapist, $dto)
+                ->load(['student', 'service', 'ssa', 'school']);
+        } catch (ScheduleOverlapException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'The selected time overlaps with another schedule.',
+                    'errors' => [
+                        'start_time' => [$e->getMessage()],
+                    ],
+                ], 422);
+            }
+
+            return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
+        }
 
         if ($request->expectsJson()) {
             return response()->json([

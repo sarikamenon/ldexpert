@@ -120,7 +120,7 @@ final class ScheduleTest extends TestCase
             'therapist_id' => $therapist->id,
             'student_id' => $studentUser->id,
             'service_id' => $service->id,
-            // 'schedule_date' => $payload['schedule_date'], // Skip strict date format check for SQLite
+            'schedule_date' => $payload['schedule_date'],
         ]);
     }
 
@@ -350,11 +350,11 @@ final class ScheduleTest extends TestCase
 
         $this->assertDatabaseHas('schedules', [
             'id' => $schedule->id,
-            // 'schedule_date' => $payload['schedule_date'], // Skip precise date format check for SQLite
-            // 'start_time' => $payload['start_time'],
+            'schedule_date' => $payload['schedule_date'],
+            'start_time' => $payload['start_time'] . ':00',
             'notes' => 'Updated notes',
         ]);
-        
+
         $updatedSchedule = Schedule::find($schedule->id);
         $this->assertEquals($payload['schedule_date'], $updatedSchedule->schedule_date->format('Y-m-d'));
         $this->assertEquals($payload['start_time'], $updatedSchedule->start_time->format('H:i'));
@@ -378,4 +378,3 @@ final class ScheduleTest extends TestCase
         ]);
     }
 }
-

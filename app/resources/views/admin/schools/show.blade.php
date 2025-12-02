@@ -131,52 +131,7 @@
             </x-ui::card>
         </div>
     @elseif (($activeTab ?? 'dashboard') === 'overview')
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">School Details</h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-border text-sm">
-                    <tbody class="divide-y divide-border">
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70 w-1/3">Full Name</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->full_name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Display Name</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->display_name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">State</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->state ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Timezone</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->timezone ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">School Type</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->school_type ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Invoice Email</td>
-                            <td class="px-6 py-4 text-primary">{{ $school->invoice_email ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">External EMR Name</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->external_emr_name ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Private Student?</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->is_private_student ? 'Yes' : 'No' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 font-medium text-foreground/70">Non-billable Scheduling?</td>
-                            <td class="px-6 py-4 text-foreground">{{ $school->non_billable_scheduling ? 'Yes' : 'No' }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </x-ui::card>
+        <x-school.overview-details :school="$school" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'students' && isset($students))
         <x-admin.students-list :students="$students" :filters="$studentFilters ?? []" :schools="$schools ?? []" :statuses="$statuses ?? []"
             context="detail" />
