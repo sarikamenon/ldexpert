@@ -1,0 +1,29 @@
+
+   WARN  Tests\Unit\Services\ScheduleServiceTest
+  ! create single non recurring schedule creates one record → file_get_… 0.49s  
+  ! create group schedule validates shared service → file_get_contents(… 0.03s  
+  ! generate batch number delegates to repository → file_get_contents(/… 0.02s  
+  ! update schedule updates single record → file_get_contents(/Volumes/… 0.03s  
+  ! update schedule regenerates occurrences when recurrence type change… 0.03s  
+  ! delete schedule removes single record → file_get_contents(/Volumes/… 0.02s  
+  ! delete schedule removes series if recurring → file_get_contents(/Vo… 0.03s  
+
+   WARN  Tests\Feature\Therapist\ScheduleTest
+  ! therapist can view schedule calendar → file_get_contents(/Volumes/W… 0.08s  
+  ! non therapist cannot view schedule calendar → file_get_contents(/Vo… 0.02s  
+  ! therapist can get schedules via ajax → file_get_contents(/Volumes/W… 0.02s  
+  ! schedule filters validation → file_get_contents(/Volumes/Work/tul/L… 0.02s  
+  ! therapist can create single schedule with valid ssa → file_get_cont… 0.07s  
+  ! multiple students selection is disabled → file_get_contents(/Volume… 0.03s  
+  ! therapist can update schedule billing status → file_get_contents(/V… 0.03s  
+  ! therapist can view schedule create page → file_get_contents(/Volume… 0.04s  
+  ! therapist can submit schedule form → file_get_contents(/Volumes/Wor… 0.04s  
+  ! recurring schedules are disabled → file_get_contents(/Volumes/Work/… 0.03s  
+  ! therapist can view edit page → file_get_contents(/Volumes/Work/tul/… 0.04s  
+  ! therapist cannot edit others schedule → file_get_contents(/Volumes/… 0.03s  
+  ! therapist can update schedule details → file_get_contents(/Volumes/… 0.04s  
+  ! therapist can delete schedule → file_get_contents(/Volumes/Work/tul… 0.03s  
+
+  Tests:    21 warnings (64 assertions)
+  Duration: 1.25s
+

@@ -14,6 +14,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         // Change adjusted_minutes from unsigned integer to signed integer
         // Using raw SQL to ensure proper conversion
         DB::statement('ALTER TABLE `service_support_agreements` MODIFY COLUMN `adjusted_minutes` INT NULL');
@@ -24,6 +27,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() === 'sqlite') {
+            return;
+        }
         // Revert back to unsigned integer
         DB::statement('ALTER TABLE `service_support_agreements` MODIFY COLUMN `adjusted_minutes` INT UNSIGNED NULL');
     }

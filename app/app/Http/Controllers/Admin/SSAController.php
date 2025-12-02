@@ -110,7 +110,7 @@ final class SSAController extends Controller
                 'assignmentHistory.therapist',
                 'assignmentHistory.assignedBy',
             ]);
-            $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa);
+            $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
             $viewData['therapists'] = $this->getActiveTherapists();
         }
 

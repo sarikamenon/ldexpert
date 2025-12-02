@@ -27,6 +27,11 @@ final class ActivityLogController extends Controller
         /** @var LengthAwarePaginator $logs */
         $logs = $this->activityLogs->paginate($filters, $perPage);
 
+        $logs->setCollection(
+            $logs->getCollection()
+                ->withUserTimezone($request->user())
+        );
+
         $users = User::where('role', 'admin')
             ->orderBy('name')
             ->get();
@@ -59,7 +64,9 @@ final class ActivityLogController extends Controller
 
     public function export(ExportActivityLogsRequest $request): StreamedResponse
     {
-        $logs = $this->activityLogs->all($request->validated());
+        $logs = $this->activityLogs
+            ->all($request->validated())
+            ->withUserTimezone($request->user());
         $filename = sprintf('activity-logs-%s.csv', now()->format('Ymd_His'));
 
         return response()->streamDownload(function () use ($logs): void {
@@ -82,7 +89,7 @@ final class ActivityLogController extends Controller
                     class_basename($log->model_type),
                     $log->description,
                     $log->ip_address,
-                    $log->created_at->format('Y-m-d H:i:s'),
+                    $log->created_at_local?->format('Y-m-d H:i:s'),
                 ]);
             }
 

@@ -1,6 +1,6 @@
 <?php
 
-use App\Mail\WelcomeUserMail;
+use App\Mail\WelcomeTherapistMail;
 use Illuminate\Support\Facades\Mail;
 
 it('creates user via command and sends welcome mail', function () {
@@ -18,7 +18,7 @@ it('creates user via command and sends welcome mail', function () {
         'role' => 'therapist',
     ]);
 
-    Mail::assertSent(WelcomeUserMail::class, function ($mailable) {
+    Mail::assertSent(WelcomeTherapistMail::class, function ($mailable) {
         return $mailable->email === 'cmd@example.com';
     });
 });

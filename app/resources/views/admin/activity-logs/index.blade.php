@@ -122,8 +122,8 @@
                                 </td>
                                 <td>{{ $log->ip_address }}</td>
                                 <td>
-                                    <span title="{{ $log->created_at->format('Y-m-d H:i:s') }}">
-                                        {{ $log->created_at->diffForHumans() }}
+                                    <span title="{{ $log->created_at_local?->format('Y-m-d H:i:s') }}">
+                                        {{ $log->created_at_local?->diffForHumans() }}
                                     </span>
                                 </td>
                             </tr>

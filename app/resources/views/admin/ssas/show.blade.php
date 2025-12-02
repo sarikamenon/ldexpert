@@ -326,13 +326,15 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">Created At
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                {{ $ssa->created_at->format('M d, Y g:i A') }}</td>
+                                {{ app(\App\Domain\Time\UserTimezoneService::class)->toUserTimezone($ssa->created_at)->format('M d, Y g:i A') }}
+                            </td>
                         </tr>
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground/70">Last Updated
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">
-                                {{ $ssa->updated_at->format('M d, Y g:i A') }}</td>
+                                {{ app(\App\Domain\Time\UserTimezoneService::class)->toUserTimezone($ssa->updated_at)->format('M d, Y g:i A') }}
+                            </td>
                         </tr>
                     </tbody>
                 </table>
@@ -399,7 +401,7 @@
                                         @endif
                                     </span>
                                     <span class="text-sm text-foreground/60">
-                                        {{ $history->created_at->format('M d, Y g:i A') }}
+                                        {{ ($history->created_at_local ?? $history->created_at)->format('M d, Y g:i A') }}
                                     </span>
                                 </div>
                                 @if ($history->reason)

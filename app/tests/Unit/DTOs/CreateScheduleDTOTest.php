@@ -57,7 +57,9 @@ final class CreateScheduleDTOTest extends TestCase
             recurrenceType: RecurrenceType::NONE,
             recurrenceEndDate: null,
             isGroup: false,
+            occurrenceCount: null,
             notes: null,
+            locationDetails: null,
         );
 
         $array = $dto->toArray();

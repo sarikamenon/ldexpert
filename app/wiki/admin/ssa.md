@@ -50,8 +50,8 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • Table supports keyboard navigation, column sorting, and clearly labeled action buttons.
 
 6. DATA MODEL
-   Table: service_support_agreements (new) – `id`, `student_id`, `primary_service_id`, `additional_service_id`, `start_date`, `end_date`, `minutes_per_session`, `frequency`, `sessions_per_frequency`, `tho_minutes`, `assigned_therapist_id`, `status`, `served_minutes`, timestamps, `deleted_at`.
-   Table: ssa_services (future optional) – to support multiple additional services if required.
+   Table: service_support_agreements – `id`, `student_id`, `primary_service_id`, `start_date`, `end_date`, `minutes_per_session`, `frequency`, `sessions_per_frequency`, `tho_minutes`, `assigned_therapist_id`, `status`, `served_minutes`, timestamps, `deleted_at`.
+   Table: ssa_additional_services – `id`, `ssa_id`, `service_id`, timestamps, `deleted_at`; unique per (`ssa_id`, `service_id`) to support multiple additional services.
    Table: students, services, therapists – referenced via foreign keys.
 
 7. ROUTES (INTERNAL WEB APP)

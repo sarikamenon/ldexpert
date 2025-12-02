@@ -29,11 +29,11 @@
                     @if (isset($schedule['student']))
                         @if (isset($schedule['student_url']))
                             <a href="{{ $schedule['student_url'] }}"
-                                class="font-semibold text-foreground text-sm hover:underline">
+                                class="font-semibold text-accent text-sm hover:underline">
                                 {{ $schedule['student'] }}
                             </a>
                         @else
-                            <span class="font-semibold text-foreground text-sm">
+                            <span class="font-semibold text-accent text-sm">
                                 {{ $schedule['student'] }}
                             </span>
                         @endif

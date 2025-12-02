@@ -26,21 +26,23 @@ return new class extends Migration
         });
 
         // migrate existing single additional service values into pivot
-        $existing = DB::table('service_support_agreements')
-            ->select('id as ssa_id', 'additional_service_id as service_id')
-            ->whereNotNull('additional_service_id')
-            ->get();
+        if (Schema::hasColumn('service_support_agreements', 'additional_service_id')) {
+            $existing = DB::table('service_support_agreements')
+                ->select('id as ssa_id', 'additional_service_id as service_id')
+                ->whereNotNull('additional_service_id')
+                ->get();
 
-        if ($existing->isNotEmpty()) {
-            $timestamp = now();
-            $rows = $existing->map(static fn($row) => [
-                'ssa_id' => $row->ssa_id,
-                'service_id' => $row->service_id,
-                'created_at' => $timestamp,
-                'updated_at' => $timestamp,
-            ])->all();
+            if ($existing->isNotEmpty()) {
+                $timestamp = now();
+                $rows = $existing->map(static fn($row) => [
+                    'ssa_id' => $row->ssa_id,
+                    'service_id' => $row->service_id,
+                    'created_at' => $timestamp,
+                    'updated_at' => $timestamp,
+                ])->all();
 
-            DB::table('ssa_additional_services')->insert($rows);
+                DB::table('ssa_additional_services')->insert($rows);
+            }
         }
 
         if (Schema::hasColumn('service_support_agreements', 'additional_service_id')) {

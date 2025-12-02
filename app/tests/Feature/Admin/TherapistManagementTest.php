@@ -6,7 +6,7 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
-use App\Mail\WelcomeUserMail;
+use App\Mail\WelcomeTherapistMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -103,7 +103,7 @@ final class TherapistManagementTest extends TestCase
         ]);
 
         // Verify welcome email was sent
-        Mail::assertSent(WelcomeUserMail::class, function ($mail) use ($therapistData) {
+        Mail::assertSent(WelcomeTherapistMail::class, function ($mail) use ($therapistData) {
             return $mail->hasTo($therapistData['personal_email']);
         });
     }
