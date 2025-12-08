@@ -37,5 +37,5 @@ jobs:
         ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
         # Run deployment script
-        ssh -i ~/.ssh/id_rsa $SSH_USER@$SERVER_IP ./deploy_ld_expert_bird.sh
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SERVER_IP 'bash -l -c "./deploy_ld_expert_bird.sh"'
         pwd
