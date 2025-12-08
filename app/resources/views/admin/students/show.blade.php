@@ -142,52 +142,7 @@
             </x-ui::card>
         </div>
     @elseif (($activeTab ?? 'dashboard') === 'overview')
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Student Details</h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-border">
-                    <tbody class="divide-y divide-border">
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70 w-1/3">Name</td>
-                            <td class="px-6 py-4 text-sm text-foreground">{{ $student->name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70">Email</td>
-                            <td class="px-6 py-4 text-sm text-primary">{{ $student->email }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70">Grade Level</td>
-                            <td class="px-6 py-4 text-sm text-foreground">
-                                {{ $student->studentProfile?->grade_level ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70">Student ID Number</td>
-                            <td class="px-6 py-4 text-sm text-foreground">
-                                {{ $student->studentProfile?->id_number ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70">Timezone</td>
-                            <td class="px-6 py-4 text-sm text-foreground">
-                                {{ $student->studentProfile?->timezone ?? '—' }}</td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70">Date of Birth</td>
-                            <td class="px-6 py-4 text-sm text-foreground">
-                                {{ optional($student->studentProfile?->date_of_birth)->format('M d, Y') ?? '—' }}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="px-6 py-4 text-sm font-medium text-foreground/70">Address</td>
-                            <td class="px-6 py-4 text-sm text-foreground">
-                                {{ $student->studentProfile?->address ?? '—' }}<br>
-                                {{ $student->studentProfile?->city }} {{ $student->studentProfile?->state }}
-                                {{ $student->studentProfile?->zip_code }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </x-ui::card>
+        <x-student.overview-details :student="$student" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
             :services="$services ?? []" context="detail" />

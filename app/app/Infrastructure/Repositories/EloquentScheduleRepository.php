@@ -15,6 +15,7 @@ use App\Models\School;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -56,31 +57,30 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function getSchoolsForTherapist(User $therapist): Collection
     {
         return School::query()
-            ->whereHas('studentProfiles.user.therapists', function ($query) use ($therapist) {
-                $query->where('users.id', $therapist->id);
+            ->whereHas('studentProfiles.ssas', function ($query) use ($therapist) {
+                $query->where('assigned_therapist_id', $therapist->id)
+                    ->where('status', SSAStatus::ACTIVE);
             })
-            ->orWhereHas('studentProfiles.ssas', function ($query) use ($therapist) {
-                $query->where('assigned_therapist_id', $therapist->id);
+            ->orWhereHas('studentProfiles.user', function ($query) use ($therapist) {
+                $query->whereHas('therapists', function ($q) use ($therapist) {
+                    $q->where('therapist_id', $therapist->id);
+                });
             })
-            ->distinct()
             ->orderBy('display_name')
-            ->orderBy('full_name')
             ->get();
     }
 
     public function getStudentsForTherapist(User $therapist): Collection
     {
-        return StudentProfile::query()
-            ->whereHas('user.therapists', function ($query) use ($therapist) {
-                $query->where('users.id', $therapist->id);
-            })
-            ->orWhereHas('ssas', function ($query) use ($therapist) {
-                $query->where('assigned_therapist_id', $therapist->id);
-            })
-            ->with('user')
-            ->distinct()
-            ->orderBy('first_name')
-            ->orderBy('last_name')
+        $studentIds = ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapist->id)
+            ->where('status', SSAStatus::ACTIVE)
+            ->pluck('student_id');
+
+        return User::query()
+            ->whereIn('id', $studentIds)
+            ->with(['studentProfile'])
+            ->orderBy('name')
             ->get();
     }
 
@@ -218,59 +218,45 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool
     {
         return ServiceSupportAgreement::query()
-            ->whereKey($ssaId)
+            ->where('id', $ssaId)
             ->where('assigned_therapist_id', $therapist->id)
             ->exists();
     }
 
     public function validateTherapistAccessToStudents(User $therapist, array $studentIds): bool
     {
-        if ($studentIds === []) {
-            return true;
-        }
-
-        $count = StudentProfile::query()
-            ->whereIn('user_id', $studentIds)
-            ->where(function ($query) use ($therapist) {
-                $query->whereHas('user.therapists', function ($q) use ($therapist) {
-                    $q->where('users.id', $therapist->id);
-                })
-                    ->orWhereHas('ssas', function ($q) use ($therapist) {
-                        $q->where('assigned_therapist_id', $therapist->id);
-                    });
-            })
-            ->count();
+        // Check if therapist has access to all students via active SSAs
+        $count = ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapist->id)
+            ->whereIn('student_id', $studentIds)
+            ->where('status', SSAStatus::ACTIVE)
+            ->distinct('student_id')
+            ->count('student_id');
 
         return $count === count(array_unique($studentIds));
     }
 
     public function validateStudentsShareService(User $therapist, array $studentIds, int $serviceId): bool
     {
-        if ($studentIds === []) {
-            return false;
-        }
-
-        $studentsWithService = ServiceSupportAgreement::query()
+        // Check if all students have an active SSA with this service assigned to this therapist
+        $count = ServiceSupportAgreement::query()
             ->where('assigned_therapist_id', $therapist->id)
-            ->where('status', SSAStatus::ACTIVE)
             ->whereIn('student_id', $studentIds)
-            ->where(function ($query) use ($serviceId) {
-                $query->where('primary_service_id', $serviceId)
-                    ->orWhereHas('services', function ($relation) use ($serviceId) {
-                        $relation->where('services.id', $serviceId);
-                    });
+            ->where('status', SSAStatus::ACTIVE)
+            ->whereHas('services', function ($query) use ($serviceId) {
+                $query->where('services.id', $serviceId)
+                    ->where('services.status', ServiceStatus::ACTIVE);
             })
             ->distinct('student_id')
-            ->pluck('student_id');
+            ->count('student_id');
 
-        return $studentsWithService->count() === count(array_unique($studentIds));
+        return $count === count(array_unique($studentIds));
     }
 
     public function generateBatchNumber(string $type = 'recurring'): string
     {
-        $prefix = $type === 'group' ? 'GRP' : 'REC';
-
-        return sprintf('%s-%s', $prefix, Str::uuid()->toString());
+        $prefix = $type === 'recurring' ? 'REC' : 'GRP';
+        return $prefix . '-' . Str::random(10) . '-' . time();
     }
 
     public function updateBillingStatus(Schedule $schedule, BillingStatus $status): Schedule
@@ -283,32 +269,64 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int
     {
-        if ($scheduleIds === []) {
-            return 0;
-        }
-
         return Schedule::query()
             ->whereIn('id', $scheduleIds)
-            ->update(['billing_status' => $status->value]);
+            ->update(['billing_status' => $status]);
     }
 
     public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool
     {
+        $query = Schedule::query()
+            ->where('schedule_date', $date)
+            ->where(function ($q) use ($startTime, $endTime) {
+                $q->where(function ($query) use ($startTime, $endTime) {
+                    $query->where('start_time', '<', $endTime)
+                        ->where('end_time', '>', $startTime);
+                });
+            })
+            ->where('status', '!=', ScheduleStatus::CANCELLED->value);
+
+        // Check for therapist or student overlap
+        $query->where(function ($q) use ($user) {
+            $q->where('therapist_id', $user->id)
+                ->orWhere('student_id', $user->id);
+        });
+
+        if ($excludeScheduleId) {
+            $query->where('id', '!=', $excludeScheduleId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * @return Collection<int, Schedule>
+     */
+    public function getSchedulesInWindow(Carbon $start, Carbon $end): Collection
+    {
+        $dates = array_unique([
+            $start->toDateString(),
+            $end->toDateString(),
+        ]);
+
         return Schedule::query()
-            ->where(function ($query) use ($user) {
-                $query->where('therapist_id', $user->id)
-                    ->orWhere('student_id', $user->id);
-            })
-            ->whereDate('schedule_date', $date)
-            ->where('status', '!=', ScheduleStatus::CANCELLED)
-            ->where(function ($query) use ($startTime, $endTime) {
-                // Standard overlap logic: start < newEnd AND end > newStart
-                $query->where('start_time', '<', $endTime)
-                    ->where('end_time', '>', $startTime);
-            })
-            ->when($excludeScheduleId, function ($query) use ($excludeScheduleId) {
-                $query->where('id', '!=', $excludeScheduleId);
-            })
-            ->exists();
+            ->with(['therapist', 'therapist.therapistProfile', 'student.studentProfile.parent', 'service'])
+            ->whereIn('schedule_date', $dates)
+            ->where('status', ScheduleStatus::SCHEDULED->value)
+            ->get()
+            ->filter(function (Schedule $schedule) use ($start, $end) {
+                $scheduleDateTime = $schedule->schedule_date->copy()->setTime(
+                    $schedule->start_time->hour,
+                    $schedule->start_time->minute,
+                    0
+                );
+
+                return $scheduleDateTime->between($start, $end);
+            });
+    }
+
+    public function getSchedulesForReminder(Carbon $start, Carbon $end): Collection
+    {
+        return $this->getSchedulesInWindow($start, $end);
     }
 }

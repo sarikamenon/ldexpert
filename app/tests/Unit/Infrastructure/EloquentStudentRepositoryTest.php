@@ -126,7 +126,7 @@ final class EloquentStudentRepositoryTest extends TestCase
 
         $result = $this->repository->list(new StudentFilterDTO(null, null, 25));
 
-        $this->assertCount($initialCount + 4, $result->items());
+        $this->assertEquals($initialCount + 4, $result->total());
     }
 
     public function test_list_filters_by_search(): void
@@ -144,6 +144,7 @@ final class EloquentStudentRepositoryTest extends TestCase
     {
         $activeStudents = collect();
 
+        // Create some active students
         for ($i = 0; $i < 2; $i++) {
             $user = User::factory()->create([
                 'role' => Role::STUDENT->value,
@@ -154,6 +155,7 @@ final class EloquentStudentRepositoryTest extends TestCase
             );
         }
 
+        // Create some inactive students
         for ($i = 0; $i < 3; $i++) {
             $user = User::factory()->create([
                 'role' => Role::STUDENT->value,
@@ -162,13 +164,20 @@ final class EloquentStudentRepositoryTest extends TestCase
             StudentProfile::factory()->state(['user_id' => $user->id])->create();
         }
 
+        // There might be other active students from other tests or database state
+        $expectedCount = User::where('role', Role::STUDENT->value)
+            ->where('status', UserStatus::ACTIVE->value)
+            ->count();
+
         $result = $this->repository->list(new StudentFilterDTO(null, 'active', 25));
 
-        $this->assertCount(2, $result->items());
-        $this->assertEqualsCanonicalizing(
-            $activeStudents->pluck('user_id')->all(),
-            collect($result->items())->pluck('id')->all()
-        );
+        $this->assertEquals($expectedCount, $result->total());
+
+        // Check if our created students are in the result
+        $resultIds = collect($result->items())->pluck('id')->all();
+        foreach ($activeStudents as $student) {
+            $this->assertContains($student->user_id, $resultIds);
+        }
     }
 
     public function test_change_status_updates_user(): void
@@ -211,10 +220,11 @@ final class EloquentStudentRepositoryTest extends TestCase
 
     public function test_export_returns_collection(): void
     {
+        $initialCount = User::where('role', Role::STUDENT->value)->count();
         StudentProfile::factory()->count(2)->create();
 
         $result = $this->repository->export(new StudentFilterDTO(null, null, 100));
 
-        $this->assertGreaterThanOrEqual(2, $result->count());
+        $this->assertEquals($initialCount + 2, $result->count());
     }
 }

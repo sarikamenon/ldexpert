@@ -27,6 +27,7 @@ final class CreateTherapistDTOTest extends TestCase
             'manager_id' => 1,
             'max_weekly_hours' => 30,
             'dob' => '1990-01-01',
+            'default_meeting_location' => 'https://meet.google.com/abc-defg-hij',
             'password' => 'SecurePass123!',
         ];
 
@@ -47,6 +48,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame(1, $dto->managerId);
         $this->assertSame(30, $dto->maxWeeklyHours);
         $this->assertSame('1990-01-01', $dto->dob);
+        $this->assertSame('https://meet.google.com/abc-defg-hij', $dto->defaultMeetingLocation);
         $this->assertSame('SecurePass123!', $dto->password);
     }
 
@@ -73,6 +75,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertNull($dto->address);
         $this->assertNull($dto->comments);
         $this->assertNull($dto->dob);
+        $this->assertNull($dto->defaultMeetingLocation);
     }
 
     public function test_to_user_array_returns_correct_format(): void
@@ -93,6 +96,7 @@ final class CreateTherapistDTOTest extends TestCase
             managerId: 2,
             maxWeeklyHours: 32,
             dob: '1985-05-15',
+            defaultMeetingLocation: null,
             password: 'TestPass456!'
         );
 
@@ -123,6 +127,7 @@ final class CreateTherapistDTOTest extends TestCase
             managerId: 3,
             maxWeeklyHours: 28,
             dob: null,
+            defaultMeetingLocation: 'https://zoom.us/j/123456789',
             password: 'Pass789!'
         );
 
@@ -144,5 +149,6 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame(3, $array['manager_id']);
         $this->assertSame(28, $array['max_weekly_hours']);
         $this->assertNull($array['dob']);
+        $this->assertSame('https://zoom.us/j/123456789', $array['default_meeting_location']);
     }
 }

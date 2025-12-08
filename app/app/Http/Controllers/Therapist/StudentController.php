@@ -49,7 +49,7 @@ final class StudentController extends Controller
             $studentsQuery->where('status', $request->query('status'));
         }
 
-        $students = $studentsQuery->distinct()->paginate($request->integer('per_page', 15));
+        $students = $studentsQuery->distinct()->orderBy('name')->paginate($request->integer('per_page', 15));
 
         // Load SSAs for each student
         $students->load([

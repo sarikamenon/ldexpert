@@ -139,6 +139,7 @@ final class TherapistContractController extends Controller
     {
         $therapists = TherapistProfile::query()
             ->active()
+            ->orderBy('first_name')
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name']);
 

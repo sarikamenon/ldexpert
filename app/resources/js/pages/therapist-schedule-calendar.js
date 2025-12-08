@@ -43,6 +43,10 @@ import { initSelectBoxes } from '../common/select-box';
                     return;
                 }
                 if (ssaSelectionModal) {
+                    const date = getSelectedDate() || new Date();
+                    // Store the date the user is creating the schedule for so we can use it
+                    // after SSA selection (works for both top button and empty-state button)
+                    ssaSelectionModal.dataset.scheduleDate = formatDate(date);
                     ssaSelectionModal.classList.remove('hidden');
                     // Initialize select box for SSA dropdown
                     initSelectBoxes();
@@ -68,7 +72,16 @@ import { initSelectBoxes } from '../common/select-box';
                     return;
                 }
 
-                const date = getSelectedDate() || new Date();
+                // Prefer the date explicitly stored on the modal (set when opening it),
+                // otherwise fall back to the currently selected calendar date or today.
+                let date;
+                const modalDateStr = ssaSelectionModal?.dataset.scheduleDate;
+                if (modalDateStr) {
+                    date = new Date(`${modalDateStr}T00:00:00`);
+                } else {
+                    date = getSelectedDate() || new Date();
+                }
+
                 const baseUrl = addScheduleButton?.dataset.createBase || '/therapist/schedule/create';
                 const url = new URL(baseUrl, window.location.origin);
                 url.searchParams.set('date', formatDate(date));
@@ -513,20 +526,40 @@ import { initSelectBoxes } from '../common/select-box';
                 const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                     'July', 'August', 'September', 'October', 'November', 'December'];
                 const dateStr = `${monthNames[selectedDate.getMonth()]} ${selectedDate.getDate()}${getOrdinalSuffix(selectedDate.getDate())}`;
-                const createUrl = $scheduleList.data('create-url') || '/therapist/schedule/create';
-
                 $scheduleList.html(`
                     <div class="text-center py-12">
                         <p class="text-foreground/70 mb-4">You don't have any schedule for ${dateStr}.</p>
-                        <a href="${createUrl}?date=${formatDate(selectedDate)}"
-                            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                        <button type="button"
+                            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium js-add-schedule-inline"
+                            data-date="${formatDate(selectedDate)}">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
                             ADD NEW SCHEDULE
-                        </a>
+                        </button>
                     </div>
                 `);
+
+                // Wire up the inline "Add New Schedule" button to use the same SSA selection flow
+                // as the top-right "Add New Schedule" button.
+                const inlineButton = document.querySelector('.js-add-schedule-inline');
+                if (inlineButton && ssaSelectionModal) {
+                    inlineButton.addEventListener('click', (event) => {
+                        event.preventDefault();
+                        const dateStrAttr = inlineButton.getAttribute('data-date');
+                        let dateForSchedule;
+                        if (dateStrAttr) {
+                            dateForSchedule = new Date(`${dateStrAttr}T00:00:00`);
+                        } else {
+                            dateForSchedule = getSelectedDate() || selectedDate || new Date();
+                        }
+
+                        ssaSelectionModal.dataset.scheduleDate = formatDate(dateForSchedule);
+                        ssaSelectionModal.classList.remove('hidden');
+                        initSelectBoxes();
+                    });
+                }
+
                 return;
             }
 

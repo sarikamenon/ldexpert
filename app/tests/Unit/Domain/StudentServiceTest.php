@@ -107,11 +107,12 @@ final class StudentServiceTest extends TestCase
 
     public function test_list_returns_paginated_students(): void
     {
+        $initialCount = User::where('role', 'student')->count();
         StudentProfile::factory()->count(3)->create();
 
         $paginator = $this->service->list(new StudentFilterDTO(null, null, 25));
 
-        $this->assertGreaterThanOrEqual(3, $paginator->total());
+        $this->assertEquals($initialCount + 3, $paginator->total());
     }
 
     public function test_get_metrics_returns_counts(): void
@@ -127,11 +128,12 @@ final class StudentServiceTest extends TestCase
 
     public function test_export_returns_collection(): void
     {
+        $initialCount = User::where('role', 'student')->count();
         StudentProfile::factory()->count(2)->create();
 
         $collection = $this->service->export(new StudentFilterDTO(null, null, 100));
 
-        $this->assertGreaterThanOrEqual(2, $collection->count());
+        $this->assertEquals($initialCount + 2, $collection->count());
     }
 
     public function test_find_returns_profile(): void

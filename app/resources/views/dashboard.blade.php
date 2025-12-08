@@ -8,7 +8,7 @@
                         <x-slot name="badge">+{{ $newStudentsThisMonth ?? 0 }} this month</x-slot>
                     </x-dashboard::metric>
                 </div>
-                <x-dashboard::metric :title="'This Week\'s Lessons'" :value="$lessonsThisWeek ?? 0">
+                <x-dashboard::metric :title="'This Week\'s Schedules'" :value="$lessonsThisWeek ?? 0">
                     <x-slot name="badge">
                         <span class="text-xs text-foreground/60">
                             {{ $lessonsToday ?? 0 }} today
@@ -32,7 +32,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Schedule -->
-                <x-dashboard::schedule title="Today's Schedule">
+                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule.calendar', ['date' => now()->format('Y-m-d')])">
                     @forelse($todaySchedules ?? [] as $schedule)
                         <x-schedule.schedule-list-item :schedule="$schedule" class="mb-3" />
                     @empty

@@ -11,6 +11,7 @@ final class TherapistContractFilterDTO
     public function __construct(
         public readonly ?ContractStatus $status,
         public readonly ?string $search,
+        public readonly ?int $therapistId = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -22,6 +23,7 @@ final class TherapistContractFilterDTO
                     : ContractStatus::from($data['status']))
                 : null,
             search: $data['search'] ?? null,
+            therapistId: isset($data['therapist_id']) ? (int) $data['therapist_id'] : null,
         );
     }
 }

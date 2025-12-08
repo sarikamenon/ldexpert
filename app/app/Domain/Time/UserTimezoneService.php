@@ -8,12 +8,11 @@ use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 
-final class UserTimezoneService
+class UserTimezoneService
 {
     public function __construct(
         private readonly string $defaultTimezone = 'UTC',
-    ) {
-    }
+    ) {}
 
     private function resolveTimezone(?User $user, ?string $overrideTz = null): string
     {
@@ -73,5 +72,3 @@ final class UserTimezoneService
         ];
     }
 }
-
-

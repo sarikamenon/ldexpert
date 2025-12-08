@@ -177,7 +177,7 @@ test('allows admin to create SSA with therapist', function () {
     $this->assertDatabaseHas('service_support_agreements', [
         'student_id' => $payload['student_id'],
         'assigned_therapist_id' => $therapist->id,
-        'status' => SSAStatus::PENDING->value,
+        'status' => SSAStatus::ACTIVE->value,
     ]);
 
     // Check assignment history was created

@@ -72,7 +72,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $this->applySchoolFilter($query, $filters->schoolId);
         }
 
-        return $query->latest()->get();
+        return $query->orderBy('name')->get();
     }
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User
@@ -131,7 +131,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $this->applySchoolFilter($query, $filters->schoolId);
         }
 
-        return $query->latest()->get();
+        return $query->orderBy('name')->get();
     }
 
     private function applySchoolFilter(Builder $query, int $schoolId): void

@@ -138,11 +138,8 @@ final class StudentController extends Controller
             $viewData['ssas'] = $this->ssaService->paginate($filters);
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
-            $viewData['students'] = User::query()
-                ->where('role', Role::STUDENT)
-                ->where('status', UserStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
+            // Don't show student filter in student detail view as it's redundant
+            $viewData['students'] = [];
             $viewData['therapists'] = User::query()
                 ->where('role', Role::THERAPIST)
                 ->where('status', UserStatus::ACTIVE)

@@ -1,4 +1,5 @@
 import { initSelectBoxes } from '../common/select-box';
+import { errorAlert } from '../common/sweetalert';
 
 (function () {
     'use strict';
@@ -13,6 +14,37 @@ import { initSelectBoxes } from '../common/select-box';
         const startTimeInput = document.getElementById('start_time');
         const endTimeInput = document.getElementById('end_time');
         const notesInput = document.getElementById('notes');
+        const form = document.getElementById('scheduleCreateForm');
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const startTime = startTimeInput.value;
+                const endTime = endTimeInput.value;
+                const scheduleDate = scheduleDateInput.value;
+
+                // Validate times
+                if (startTime && endTime) {
+                    if (endTime <= startTime) {
+                        e.preventDefault();
+                        errorAlert('End time must be after start time.');
+                        return;
+                    }
+                }
+
+                // Validate future date (basic check against today in local time)
+                if (scheduleDate) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const selectedDate = new Date(scheduleDate + 'T00:00:00'); // Append time to avoid timezone shift
+                    
+                    if (selectedDate < today) {
+                         e.preventDefault();
+                         errorAlert('Schedule date cannot be in the past.');
+                         return;
+                    }
+                }
+            });
+        }
 
         if (! serviceSelect) {
             return;

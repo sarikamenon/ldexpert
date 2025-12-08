@@ -3,7 +3,7 @@ PHP_SHELL=$(DC) exec -T app bash -lc
 ARTISAN=$(DC) exec -T app php /var/www/html/app/artisan
 COMPOSER_CMD=$(PHP_SHELL) 'cd /var/www/html/app && composer'
 
-.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa assets-build cache-clear
+.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa assets-build cache-clear send-reminders
 
 build:
 	$(DC) build
@@ -74,3 +74,5 @@ assets-build:
 cache-clear:
 	$(ARTISAN) optimize:clear
 
+send-reminders:
+	$(ARTISAN) schedule:send-reminders

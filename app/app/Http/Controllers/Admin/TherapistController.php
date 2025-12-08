@@ -9,6 +9,7 @@ use App\Constants\UsTimezones;
 use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeTherapistStatusDTO;
@@ -16,6 +17,7 @@ use App\DTOs\CreateTherapistDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Enums\EmployeeType;
 use App\Enums\Role;
@@ -48,6 +50,7 @@ final class TherapistController extends Controller
         private readonly UserService $userService,
         private readonly StudentService $studentService,
         private readonly SSAService $ssaService,
+        private readonly TherapistContractService $therapistContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
     ) {}
 
@@ -160,7 +163,7 @@ final class TherapistController extends Controller
                 $studentsQuery->where('status', $request->query('status'));
             }
 
-            $viewData['students'] = $studentsQuery->paginate($request->integer('per_page', 15));
+            $viewData['students'] = $studentsQuery->orderBy('name')->paginate($request->integer('per_page', 15));
             $viewData['studentFilters'] = $request->query();
             $viewData['schools'] = $this->schoolRepository->listAllForSelect();
             $viewData['statuses'] = UserStatus::cases();
@@ -177,15 +180,19 @@ final class TherapistController extends Controller
                 ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
-            $viewData['therapists'] = User::query()
-                ->where('role', Role::THERAPIST)
-                ->where('status', UserStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
+            // Don't show therapist filter in therapist detail view as it's redundant
+            $viewData['therapists'] = [];
             $viewData['services'] = Service::query()
                 ->where('status', ServiceStatus::ACTIVE)
                 ->orderBy('name')
                 ->get(['id', 'name', 'is_frequency_service']);
+        } elseif ($activeTab === 'contracts') {
+            $filters = TherapistContractFilterDTO::fromArray(
+                array_merge($request->query(), ['therapist_id' => $therapist->id])
+            );
+            $viewData['contracts'] = $this->therapistContractService->paginate($filters);
+            $viewData['contractFilters'] = $request->query();
+            $viewData['statuses'] = \App\Enums\ContractStatus::cases();
         }
 
         return view('admin.therapists.show', $viewData);
