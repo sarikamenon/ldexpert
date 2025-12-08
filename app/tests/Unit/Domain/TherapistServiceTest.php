@@ -51,6 +51,7 @@ final class TherapistServiceTest extends TestCase
             managerId: $manager->id,
             maxWeeklyHours: 40,
             dob: null,
+            defaultMeetingLocation: null,
             password: 'SecurePass123!'
         );
 
@@ -90,7 +91,8 @@ final class TherapistServiceTest extends TestCase
             timezone: 'America/New_York',
             managerId: $manager->id,
             maxWeeklyHours: 25,
-            dob: '1990-01-01'
+            dob: '1990-01-01',
+            defaultMeetingLocation: 'https://meet.google.com/test'
         );
 
         $profile = $this->service->update($user, $dto);

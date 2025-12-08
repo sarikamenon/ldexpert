@@ -44,8 +44,9 @@
                                     <div>
                                         <span class="text-foreground/70 block mb-1">Student:</span>
                                         <span class="font-medium text-foreground">
-                                            @if($ssa->student)
-                                                <a href="{{ route('therapist.students.show', $ssa->student) }}" class="text-primary hover:underline">
+                                            @if ($ssa->student)
+                                                <a href="{{ route('therapist.students.show', $ssa->student) }}"
+                                                    class="text-primary hover:underline">
                                                     {{ $ssa->student->name }}
                                                 </a>
                                             @else
@@ -173,7 +174,7 @@
                         <x-input-label for="location_details" value="Location/Meeting Details *" />
                         <textarea name="location_details" id="location_details" rows="4"
                             class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm"
-                            placeholder="Enter meeting link (e.g., Google Meet, Zoom), location address, or other meeting details...">{{ old('location_details') }}</textarea>
+                            placeholder="Enter meeting link (e.g., Google Meet, Zoom), location address, or other meeting details...">{{ old('location_details', Auth::user()->therapistProfile?->default_meeting_location) }}</textarea>
                         <p class="text-xs text-foreground/60 mt-1">
                             Include meeting links for online sessions or address/location for in-person sessions.
                         </p>

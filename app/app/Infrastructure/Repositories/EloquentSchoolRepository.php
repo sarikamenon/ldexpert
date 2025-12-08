@@ -20,7 +20,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery(), $filters)
-            ->orderByDesc('created_at')
+            ->orderBy('display_name')
             ->paginate($perPage);
     }
 

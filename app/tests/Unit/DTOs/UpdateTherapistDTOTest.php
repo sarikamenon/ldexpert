@@ -27,6 +27,7 @@ final class UpdateTherapistDTOTest extends TestCase
             'manager_id' => 5,
             'max_weekly_hours' => 20,
             'dob' => '1988-03-20',
+            'default_meeting_location' => 'https://meet.google.com/xyz',
         ];
 
         $dto = UpdateTherapistDTO::fromArray($data);
@@ -46,6 +47,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame(5, $dto->managerId);
         $this->assertSame(20, $dto->maxWeeklyHours);
         $this->assertSame('1988-03-20', $dto->dob);
+        $this->assertSame('https://meet.google.com/xyz', $dto->defaultMeetingLocation);
     }
 
     public function test_to_user_array_returns_correct_format(): void
@@ -65,7 +67,8 @@ final class UpdateTherapistDTOTest extends TestCase
             timezone: 'America/Los_Angeles',
             managerId: 7,
             maxWeeklyHours: 36,
-            dob: '1992-07-10'
+            dob: '1992-07-10',
+            defaultMeetingLocation: null,
         );
 
         $array = $dto->toUserArray();
@@ -91,7 +94,8 @@ final class UpdateTherapistDTOTest extends TestCase
             timezone: 'America/Los_Angeles',
             managerId: 1,
             maxWeeklyHours: 40,
-            dob: '1990-01-01'
+            dob: '1990-01-01',
+            defaultMeetingLocation: 'https://meet.google.com/test'
         );
 
         $array = $dto->toProfileArray();
@@ -111,5 +115,6 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame(1, $array['manager_id']);
         $this->assertSame(40, $array['max_weekly_hours']);
         $this->assertSame('1990-01-01', $array['dob']);
+        $this->assertSame('https://meet.google.com/test', $array['default_meeting_location']);
     }
 }

@@ -11,6 +11,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
@@ -18,6 +19,7 @@ use App\DTOs\SchoolFilterDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\Role;
 use App\Enums\SchoolType;
@@ -50,6 +52,7 @@ final class SchoolController extends Controller
         private readonly StudentService $studentService,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
+        private readonly SchoolContractService $schoolContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
     ) {}
 
@@ -180,7 +183,8 @@ final class SchoolController extends Controller
             );
             $viewData['students'] = $this->studentService->list($filters);
             $viewData['studentFilters'] = $request->query();
-            $viewData['schools'] = $this->schoolRepository->listAllForSelect();
+            // Don't show school filter in school detail view as it's redundant
+            $viewData['schools'] = [];
             $viewData['statuses'] = UserStatus::cases();
         } elseif ($activeTab === 'therapists') {
             $filters = TherapistFilterDTO::fromRequest(
@@ -210,6 +214,13 @@ final class SchoolController extends Controller
                 ->where('status', ServiceStatus::ACTIVE)
                 ->orderBy('name')
                 ->get(['id', 'name', 'is_frequency_service']);
+        } elseif ($activeTab === 'contracts') {
+            $filters = SchoolContractFilterDTO::fromArray(
+                array_merge($request->query(), ['school_id' => $school->id])
+            );
+            $viewData['contracts'] = $this->schoolContractService->paginate($filters);
+            $viewData['contractFilters'] = $request->query();
+            $viewData['statuses'] = \App\Enums\ContractStatus::cases();
         }
 
         return view('admin.schools.show', $viewData);

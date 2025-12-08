@@ -1,7 +1,7 @@
 <x-admin.layouts.app>
     <x-slot name="styles">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-        @if (in_array($activeTab ?? 'dashboard', ['students', 'ssas']))
+        @if (in_array($activeTab ?? 'dashboard', ['students', 'ssas', 'contracts']))
             @vite(['resources/css/common/datatables.css'])
         @endif
     </x-slot>
@@ -54,6 +54,10 @@
             <a href="{{ route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'overview']) }}"
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'overview' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                 Overview
+            </a>
+            <a href="{{ route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'contracts']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'contracts' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Contracts
             </a>
             <a href="{{ route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'ssas']) }}"
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
@@ -141,6 +145,8 @@
         </div>
     @elseif (($activeTab ?? 'dashboard') === 'overview')
         <x-therapist.overview-details :therapist="$therapist" context="admin" />
+    @elseif (($activeTab ?? 'dashboard') === 'contracts' && isset($contracts))
+        <x-admin.therapist-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
             :services="$services ?? []" context="detail" />
@@ -154,6 +160,8 @@
             @vite(['resources/js/pages/admin-therapists-show.js'])
         @elseif (($activeTab ?? 'dashboard') === 'students')
             @vite(['resources/js/pages/admin-students-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'contracts')
+            @vite(['resources/js/pages/admin-contracts-therapists-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'ssas')
             @vite(['resources/js/pages/admin-ssas-index.js'])
         @endif

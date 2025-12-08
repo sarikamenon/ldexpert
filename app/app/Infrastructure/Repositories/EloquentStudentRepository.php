@@ -66,7 +66,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             });
         }
 
-        return $query->latest()->paginate($filters->perPage);
+        return $query->orderBy('name')->paginate($filters->perPage);
     }
 
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User
@@ -119,6 +119,6 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             });
         }
 
-        return $query->latest()->get();
+        return $query->orderBy('name')->get();
     }
 }

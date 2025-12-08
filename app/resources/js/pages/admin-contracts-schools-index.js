@@ -5,6 +5,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadDataTablesLibrary();
     await initDataTable('#schoolContractsTable', {
         order: [[0, 'desc']],
+        searching: false,
+        lengthChange: false,
+        paging: false,
+        info: false,
     });
 
     document.querySelectorAll('.contract-status-toggle').forEach((button) => {

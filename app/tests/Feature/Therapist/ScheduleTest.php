@@ -206,7 +206,7 @@ final class ScheduleTest extends TestCase
         StudentProfile::factory()->create(['user_id' => $student->id]);
         $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
 
-        ServiceSupportAgreement::factory()->create([
+        $ssa = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
@@ -214,7 +214,7 @@ final class ScheduleTest extends TestCase
         ]);
 
         $response = $this->actingAs($therapist)
-            ->get(route('therapist.schedule.create'));
+            ->get(route('therapist.schedule.create', ['ssa_id' => $ssa->id]));
 
         $response->assertStatus(200);
         $response->assertSee('Create New Schedule');

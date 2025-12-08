@@ -28,7 +28,7 @@ final class ScheduleOverlapTest extends TestCase
         // 2. Setup Existing Schedule (9:00 - 10:00)
         Schedule::factory()->create([
             'therapist_id' => $therapist->id,
-            'schedule_date' => '2025-01-10',
+            'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:00',
             'end_time' => '10:00',
         ]);
@@ -52,10 +52,11 @@ final class ScheduleOverlapTest extends TestCase
             'ssa_id' => $ssa->id,
             'service_id' => $service->id,
             'student_ids' => [$studentUser->id],
-            'schedule_date' => '2025-01-10',
+            'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:30',
             'end_time' => '10:30',
             'recurrence_type' => 'none',
+            'location_details' => 'Office A',
         ];
 
         $response = $this->actingAs($therapist)
@@ -77,7 +78,7 @@ final class ScheduleOverlapTest extends TestCase
         Schedule::factory()->create([
             'therapist_id' => $otherTherapist->id,
             'student_id' => $studentUser->id,
-            'schedule_date' => '2025-01-10',
+            'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:00',
             'end_time' => '10:00',
         ]);
@@ -97,10 +98,11 @@ final class ScheduleOverlapTest extends TestCase
             'ssa_id' => $ssa->id,
             'service_id' => $service->id,
             'student_ids' => [$studentUser->id],
-            'schedule_date' => '2025-01-10',
+            'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:30',
             'end_time' => '10:30',
             'recurrence_type' => 'none',
+            'location_details' => 'Office A',
         ];
 
         $response = $this->actingAs($therapist)
@@ -128,14 +130,16 @@ final class ScheduleOverlapTest extends TestCase
         $therapist->students()->attach($studentUser->id, ['assigned_at' => now(), 'status' => 'active']);
 
         // Schedule at 9:00 AM EST -> 14:00 UTC
+        $date = now()->addWeek()->format('Y-m-d');
         $payload = [
             'ssa_id' => $ssa->id,
             'service_id' => $service->id,
             'student_ids' => [$studentUser->id],
-            'schedule_date' => '2025-01-10',
+            'schedule_date' => $date,
             'start_time' => '09:00',
             'end_time' => '10:00',
             'recurrence_type' => 'none',
+            'location_details' => 'Office A',
         ];
 
         $response = $this->actingAs($therapist)
@@ -145,7 +149,7 @@ final class ScheduleOverlapTest extends TestCase
 
         $this->assertDatabaseHas('schedules', [
             'therapist_id' => $therapist->id,
-            'schedule_date' => '2025-01-10',
+            'schedule_date' => $date,
             'start_time' => '14:00:00', // 9 AM EST is 14:00 UTC
             'end_time' => '15:00:00',
         ]);

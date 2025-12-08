@@ -50,6 +50,7 @@ abstract class TherapistFormRequest extends FormRequest
             ],
             'max_weekly_hours' => ['required', 'integer', 'min:1', 'max:168'],
             'dob' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
+            'default_meeting_location' => ['nullable', 'string'],
         ];
     }
 

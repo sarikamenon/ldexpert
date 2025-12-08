@@ -99,6 +99,16 @@
                 <x-input-error :messages="$errors->get('address')" class="mt-2" />
             </div>
 
+            {{-- Default Meeting Location --}}
+            <div>
+                <x-input-label for="default_meeting_location" value="Default Meeting Location/Link" />
+                <textarea id="default_meeting_location" name="default_meeting_location" rows="3"
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    placeholder="Enter default meeting link (e.g., Google Meet, Zoom) or address for schedules">{{ old('default_meeting_location', $profile?->default_meeting_location) }}</textarea>
+                <x-input-error :messages="$errors->get('default_meeting_location')" class="mt-2" />
+                <p class="text-xs text-gray-500 mt-1">This will be auto-populated when creating a new schedule.</p>
+            </div>
+
             {{-- Comments --}}
             <div>
                 <x-input-label for="comments" value="Internal Comments" />

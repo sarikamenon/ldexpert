@@ -88,6 +88,7 @@ final class TherapistManagementTest extends TestCase
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 40,
             'dob' => '1990-01-01',
+            'default_meeting_location' => 'https://meet.google.com/new',
         ];
 
         $response = $this->actingAs($this->admin)->post(route('admin.therapists.store'), $therapistData);
@@ -100,6 +101,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane.smith@example.com',
             'max_weekly_hours' => 40,
+            'default_meeting_location' => 'https://meet.google.com/new',
         ]);
 
         // Verify welcome email was sent
@@ -140,6 +142,7 @@ final class TherapistManagementTest extends TestCase
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 32,
             'dob' => '1985-05-15',
+            'default_meeting_location' => 'https://meet.google.com/updated',
         ];
 
         $response = $this->actingAs($this->admin)->put(
@@ -156,6 +159,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Name',
             'personal_email' => 'updated@example.com',
             'max_weekly_hours' => 32,
+            'default_meeting_location' => 'https://meet.google.com/updated',
         ]);
     }
 

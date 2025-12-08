@@ -72,10 +72,10 @@ function setupAssignmentActions() {
             }
 
             // Build options object for SweetAlert2
-            const inputOptions = {};
+            const inputOptions = new Map();
             Array.from(therapistSelect.options).forEach((option) => {
                 if (option.value) {
-                    inputOptions[option.value] = option.text;
+                    inputOptions.set(option.value, option.text);
                 }
             });
 

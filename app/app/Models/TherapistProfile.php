@@ -36,6 +36,7 @@ class TherapistProfile extends Model
         'manager_id',
         'max_weekly_hours',
         'dob',
+        'default_meeting_location',
     ];
 
     protected function casts(): array
