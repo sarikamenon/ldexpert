@@ -22,6 +22,7 @@ import { initSelectBoxes } from '../common/select-box';
             return;
         }
 
+        const therapistTimezoneLabel = $calendarEl.data('therapist-timezone-label') || 'Central Time (CT)';
         const selectedDateStr = $calendarEl.data('selected-date');
         let selectedDate = selectedDateStr
             ? new Date(`${selectedDateStr}T00:00:00`)
@@ -478,7 +479,7 @@ import { initSelectBoxes } from '../common/select-box';
             const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
             if ($selectedDateHeader.length) {
-                $selectedDateHeader.text(`${date.getDate()} ${monthNames[date.getMonth()]}, ${date.getFullYear()} - ${timeStr} (US/Central)`);
+                $selectedDateHeader.text(`${date.getDate()} ${monthNames[date.getMonth()]}, ${date.getFullYear()} - ${timeStr} (${therapistTimezoneLabel})`);
             }
 
             const url = new URL(window.location);

@@ -21,6 +21,7 @@ class DashboardRedirectController extends Controller
         $destination = match ($role) {
             Role::ADMIN => 'admin.dashboard',
             Role::THERAPIST => 'therapist.dashboard',
+            Role::STUDENT => 'student.dashboard',
             default => null,
         };
 
