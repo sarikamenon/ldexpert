@@ -12,4 +12,5 @@ window.$ = $;
 window.jQuery = $;
 
 import './common/select-box';
+import './common/phone-input';
 
