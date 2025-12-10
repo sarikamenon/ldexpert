@@ -9,6 +9,8 @@ use Illuminate\Validation\Rules\Password;
 
 class UpdatePasswordRequest extends FormRequest
 {
+    protected $errorBag = 'updatePassword';
+
     public function authorize(): bool
     {
         return $this->user() !== null;

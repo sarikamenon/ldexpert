@@ -40,9 +40,9 @@ final class UpdateScheduleRequest extends FormRequest
             'student_ids.*' => ['required', 'integer', Rule::exists('users', 'id')->where(function ($query) {
                 $query->where('role', 'student');
             })],
-            'schedule_date' => ['nullable', 'date', 'after_or_equal:today'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
+            'schedule_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'duration_minutes' => ['required', 'integer', 'between:5,400', 'multiple_of:5'],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
             'location_details' => ['nullable', 'string', 'max:1000'],
@@ -54,7 +54,9 @@ final class UpdateScheduleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'end_time.after' => 'End time must be after start time.',
+            'duration_minutes.required' => 'Duration is required.',
+            'duration_minutes.between' => 'Duration must be between :min and :max minutes.',
+            'duration_minutes.multiple_of' => 'Duration must be in 5-minute increments.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
         ];

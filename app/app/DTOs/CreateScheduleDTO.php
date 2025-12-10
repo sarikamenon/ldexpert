@@ -15,7 +15,7 @@ final class CreateScheduleDTO
         public readonly array $studentIds,
         public readonly string $scheduleDate,
         public readonly string $startTime,
-        public readonly string $endTime,
+        public readonly int $durationMinutes,
         public readonly RecurrenceType $recurrenceType,
         public readonly ?string $recurrenceEndDate,
         public readonly bool $isGroup,
@@ -44,7 +44,7 @@ final class CreateScheduleDTO
             studentIds: $studentIds,
             scheduleDate: $data['schedule_date'],
             startTime: $data['start_time'],
-            endTime: $data['end_time'],
+            durationMinutes: (int) $data['duration_minutes'],
             recurrenceType: $recurrenceType,
             recurrenceEndDate: isset($data['recurrence_end_date']) && $data['recurrence_end_date'] !== ''
                 ? $data['recurrence_end_date']
@@ -69,7 +69,7 @@ final class CreateScheduleDTO
             'student_ids' => $this->studentIds,
             'schedule_date' => $this->scheduleDate,
             'start_time' => $this->startTime,
-            'end_time' => $this->endTime,
+            'duration_minutes' => $this->durationMinutes,
             'recurrence_type' => $this->recurrenceType->value,
             'recurrence_end_date' => $this->recurrenceEndDate,
             'is_group' => $this->isGroup,

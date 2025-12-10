@@ -54,7 +54,8 @@
                                             @endif
                                             @if ($ssa->student?->studentProfile?->timezone)
                                                 <span class="text-foreground/70">
-                                                    · {{ $ssa->student->studentProfile->timezone }}
+                                                    ·
+                                                    {{ \App\Constants\UsTimezones::getTimezoneLabel($ssa->student->studentProfile->timezone) }}
                                                 </span>
                                             @endif
                                         </span>
@@ -137,7 +138,7 @@
                             <x-input-error :messages="$errors->get('schedule_date')" class="mt-2" />
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <x-input-label for="start_time" value="Start Time *" />
                                 <x-text-input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
@@ -145,10 +146,23 @@
                                 <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
                             </div>
                             <div>
-                                <x-input-label for="end_time" value="End Time *" />
-                                <x-text-input id="end_time" name="end_time" type="time" class="mt-1 block w-full"
-                                    value="{{ old('end_time', '10:00') }}" required />
-                                <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
+                                <x-input-label for="duration_minutes" value="Duration (minutes) *" />
+                                <select id="duration_minutes" name="duration_minutes" class="mt-1 block w-full"
+                                    required>
+                                    @foreach (range(5, 400, 5) as $minutesOption)
+                                        <option value="{{ $minutesOption }}" @selected(old('duration_minutes', $ssa?->minutes_per_session ?? 60) == $minutesOption)>
+                                            {{ $minutesOption }} minutes
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <x-input-error :messages="$errors->get('duration_minutes')" class="mt-2" />
+                            </div>
+                            <div>
+                                <x-input-label for="end_time_display" value="End Time (auto-calculated)" />
+                                <x-text-input id="end_time_display" type="text"
+                                    class="mt-1 block w-full bg-background/subtle" value="" readonly />
+                                <p class="text-xs text-foreground/60 mt-1">End time is calculated from start time and
+                                    duration.</p>
                             </div>
                         </div>
                     </div>
@@ -228,6 +242,6 @@
                 'selected_service' => old('service_id', $preselectedService?->id),
             ]) !!}
         </script>
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js'])
+        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js'])
     </x-slot>
 </x-app-layout>

@@ -7,16 +7,20 @@ namespace App\Http\Controllers\Admin;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\SSA\Services\SSAService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
+use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\UpdateStudentDTO;
+use App\Enums\BillingStatus;
 use App\Enums\Role;
+use App\Enums\ScheduleStatus;
 use App\Enums\UserStatus;
 use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
@@ -45,6 +49,7 @@ final class StudentController extends Controller
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
+        private readonly ScheduleService $scheduleService,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -179,6 +184,25 @@ final class StudentController extends Controller
             $viewData['therapists'] = $therapistsQuery->paginate($request->integer('per_page', 15));
             $viewData['therapistFilters'] = $request->query();
             $viewData['positions'] = TherapistPosition::cases();
+        } elseif ($activeTab === 'schedule') {
+            $filters = ScheduleFilterDTO::fromRequest(
+                array_merge($request->query(), ['student_id' => $student->id])
+            );
+            $perPage = $request->integer('per_page', 15);
+
+            $viewData['schedules'] = $this->scheduleService->paginateForStudent($student, $filters, $perPage);
+            $viewData['scheduleFilters'] = $request->query();
+            $viewData['scheduleStatuses'] = ScheduleStatus::cases();
+            $viewData['billingStatuses'] = BillingStatus::cases();
+            $viewData['ssas'] = ServiceSupportAgreement::query()
+                ->where('student_id', $student->id)
+                ->with(['primaryService', 'assignedTherapist'])
+                ->get(['id', 'student_id', 'assigned_therapist_id', 'primary_service_id', 'status']);
+            $viewData['therapists'] = User::query()
+                ->where('role', Role::THERAPIST)
+                ->whereHas('assignedSSAs', fn($q) => $q->where('student_id', $student->id))
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
         }
 
         return view('admin.students.show', $viewData);
