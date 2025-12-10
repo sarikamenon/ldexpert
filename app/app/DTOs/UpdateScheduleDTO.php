@@ -15,7 +15,7 @@ final class UpdateScheduleDTO
         public readonly ?array $studentIds,
         public readonly ?string $scheduleDate,
         public readonly ?string $startTime,
-        public readonly ?string $endTime,
+        public readonly ?int $durationMinutes,
         public readonly ?RecurrenceType $recurrenceType,
         public readonly ?string $recurrenceEndDate,
         public readonly ?bool $isGroup,
@@ -58,7 +58,9 @@ final class UpdateScheduleDTO
             studentIds: $studentIds,
             scheduleDate: $data['schedule_date'] ?? null,
             startTime: $data['start_time'] ?? null,
-            endTime: $data['end_time'] ?? null,
+            durationMinutes: isset($data['duration_minutes']) && $data['duration_minutes'] !== ''
+                ? (int) $data['duration_minutes']
+                : null,
             recurrenceType: $recurrenceType,
             recurrenceEndDate: isset($data['recurrence_end_date']) && $data['recurrence_end_date'] !== ''
                 ? $data['recurrence_end_date']
@@ -91,8 +93,8 @@ final class UpdateScheduleDTO
         if ($this->startTime !== null) {
             $array['start_time'] = $this->startTime;
         }
-        if ($this->endTime !== null) {
-            $array['end_time'] = $this->endTime;
+        if ($this->durationMinutes !== null) {
+            $array['duration_minutes'] = $this->durationMinutes;
         }
         if ($this->recurrenceType !== null) {
             $array['recurrence_type'] = $this->recurrenceType->value;

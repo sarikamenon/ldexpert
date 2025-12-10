@@ -8,10 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Artisan::call('db:seed', [
-            '--class' => TherapistSeeder::class,
-            '--force' => true,
-        ]);
+        if (!app()->environment('production')) {
+            Artisan::call('db:seed', [
+                '--class' => TherapistSeeder::class,
+                '--force' => true,
+            ]);
+        }
     }
 
     public function down(): void

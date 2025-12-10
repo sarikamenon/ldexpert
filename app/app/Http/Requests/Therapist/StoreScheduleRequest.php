@@ -34,7 +34,7 @@ final class StoreScheduleRequest extends FormRequest
             })],
             'schedule_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'duration_minutes' => ['required', 'integer', 'between:5,400', 'multiple_of:5'],
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
@@ -44,7 +44,9 @@ final class StoreScheduleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'end_time.after' => 'End time must be after start time.',
+            'duration_minutes.required' => 'Duration is required.',
+            'duration_minutes.between' => 'Duration must be between :min and :max minutes.',
+            'duration_minutes.multiple_of' => 'Duration must be in 5-minute increments.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'location_details.required' => 'Please enter the location or meeting details for this session.',
             'location_details.max' => 'Location/meeting details may not be greater than :max characters.',

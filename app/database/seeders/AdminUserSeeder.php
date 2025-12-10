@@ -18,7 +18,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = 'admin@example.com';
+        $email = 'develop.ldexpert@gmail.com';
         $password = 'Password123!';
         $name = 'System Admin';
 

@@ -86,10 +86,7 @@
                     </x-slot>
 
                     <x-slot name="content">
-                        <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
-                        </x-dropdown-link>
-                        <x-dropdown-link :href="route('profile.edit') . '#change-password'">
+                        <x-dropdown-link :href="route('password.edit')">
                             {{ __('Change Password') }}
                         </x-dropdown-link>
 
@@ -166,10 +163,7 @@
             </div>
 
             <div class="mt-3 space-y-1 px-4">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
-                </x-responsive-nav-link>
-                <x-responsive-nav-link :href="route('profile.edit') . '#change-password'">
+                <x-responsive-nav-link :href="route('password.edit')">
                     {{ __('Change Password') }}
                 </x-responsive-nav-link>
 

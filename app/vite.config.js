@@ -19,6 +19,7 @@ export default defineConfig({
                 'resources/js/pages/admin-ssas-form.js',
                 'resources/js/pages/admin-ssas-show.js',
                 'resources/js/pages/admin-students-show.js',
+                'resources/js/pages/admin-students-schedule.js',
                 'resources/js/pages/admin-therapists-show.js',
                 'resources/js/pages/admin-schools-show.js',
                 'resources/js/pages/admin-activity-logs-index.js',

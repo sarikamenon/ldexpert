@@ -42,7 +42,8 @@
                 <dt class="text-sm font-medium text-foreground/70">School</dt>
                 <dd class="mt-1 text-sm text-foreground">
                     @if ($context === 'admin' && $student->studentProfile?->school)
-                        <a href="{{ route('admin.schools.show', $student->studentProfile->school) }}" class="text-primary hover:underline">
+                        <a href="{{ route('admin.schools.show', $student->studentProfile->school) }}"
+                            class="text-primary hover:underline">
                             {{ $student->studentProfile->school->display_name }}
                         </a>
                     @else
@@ -56,7 +57,9 @@
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Timezone</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->timezone ?? '—' }}</dd>
+                <dd class="mt-1 text-sm text-foreground">
+                    {{ $student->studentProfile?->timezone ? \App\Constants\UsTimezones::getTimezoneLabel($student->studentProfile->timezone) : '—' }}
+                </dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Grade Level</dt>
@@ -71,15 +74,18 @@
         <dl class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-6">
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Name</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_name ?? '—' }}</dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_name ?? '—' }}
+                </dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Email</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_email ?? '—' }}</dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_email ?? '—' }}
+                </dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Phone</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_phone ?? '—' }}</dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_phone ?? '—' }}
+                </dd>
             </div>
         </dl>
     </x-ui::card>
@@ -88,9 +94,10 @@
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold text-foreground mb-4">Address Information</h3>
         <dl class="grid grid-cols-1 gap-y-6">
-                <div>
+            <div>
                 <dt class="text-sm font-medium text-foreground/70">Address</dt>
-                <dd class="mt-1 text-sm text-foreground whitespace-pre-line">{{ $student->studentProfile?->address ?? '—' }}</dd>
+                <dd class="mt-1 text-sm text-foreground whitespace-pre-line">
+                    {{ $student->studentProfile?->address ?? '—' }}</dd>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -111,4 +118,3 @@
         </dl>
     </x-ui::card>
 </div>
-

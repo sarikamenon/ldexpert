@@ -102,11 +102,6 @@ return [
                 'active' => ['admin.settings.*', 'admin.services.*'],
                 'children' => [
                     [
-                        'label' => 'System Settings',
-                        'route' => 'admin.settings.index',
-                        'active' => 'admin.settings.*',
-                    ],
-                    [
                         'label' => 'Services',
                         'route' => 'admin.services.index',
                         'active' => 'admin.services.*',

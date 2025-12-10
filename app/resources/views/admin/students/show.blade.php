@@ -1,7 +1,7 @@
 <x-admin.layouts.app>
     <x-slot name="styles">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-        @if (in_array($activeTab ?? 'dashboard', ['ssas', 'therapists']))
+        @if (in_array($activeTab ?? 'dashboard', ['ssas', 'therapists', 'schedule']))
             @vite(['resources/css/common/datatables.css'])
         @endif
     </x-slot>
@@ -62,6 +62,10 @@
             <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'therapists']) }}"
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'therapists' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                 Therapists
+            </a>
+            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'schedule']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'schedule' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Schedule
             </a>
         </nav>
     </div>
@@ -148,6 +152,9 @@
             :services="$services ?? []" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'therapists' && isset($therapists))
         <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($schedules))
+        <x-admin.schedules-list :schedules="$schedules" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []"
+            :billingStatuses="$billingStatuses ?? []" :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail" />
     @endif
 
     <x-slot name="scripts">
@@ -157,6 +164,8 @@
             @vite(['resources/js/pages/admin-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'therapists')
             @vite(['resources/js/pages/admin-therapists-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'schedule')
+            @vite(['resources/js/pages/admin-students-schedule.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

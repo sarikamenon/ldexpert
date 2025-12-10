@@ -9,6 +9,7 @@ use App\Enums\BillingStatus;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 interface ScheduleRepositoryInterface
@@ -40,6 +41,8 @@ interface ScheduleRepositoryInterface
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection;
 
     public function getSchedulesForStudent(User $student, array $filters = []): Collection;
+
+    public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool;
 
