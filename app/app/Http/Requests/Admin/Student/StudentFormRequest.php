@@ -36,7 +36,7 @@ abstract class StudentFormRequest extends FormRequest
             'grade_level' => ['nullable', 'string', 'max:50'],
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
-            'parent_guardian_phone' => ['nullable', 'regex:/^\\d{3}-\\d{3}-\\d{4}$/'],
+            'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', Rule::in(array_keys(UsStates::STATES))],
@@ -48,7 +48,7 @@ abstract class StudentFormRequest extends FormRequest
     {
         return [
             'email.unique' => 'This email is already registered in the system',
-            'parent_guardian_phone.regex' => 'Phone must be in format 123-456-7890',
+            'parent_guardian_phone.regex' => 'Phone number can only contain digits and dashes.',
             'date_of_birth.before' => 'Date of birth must be in the past',
             'date_of_birth.after' => 'Date of birth must be after 1900-01-01',
         ];

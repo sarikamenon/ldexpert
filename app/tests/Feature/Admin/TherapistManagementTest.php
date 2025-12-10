@@ -249,7 +249,7 @@ final class TherapistManagementTest extends TestCase
             'first_name' => 'Jane',
             'last_name' => 'Smith',
             'personal_email' => 'jane@example.com',
-            'phone' => '1234567890', // Invalid format
+            'phone' => '123-456-7890abc', // Invalid: contains letters
             'position' => 'SLP',
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
@@ -258,6 +258,25 @@ final class TherapistManagementTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['phone']);
+    }
+
+    public function test_create_therapist_accepts_phone_with_digits_and_dashes(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('admin.therapists.store'), [
+            'employee_type' => 'W2',
+            'title' => 'Dr.',
+            'first_name' => 'Jane',
+            'last_name' => 'Smith',
+            'personal_email' => 'jane@example.com',
+            'phone' => '123-456-7890', // Valid: digits and dashes
+            'position' => 'SLP',
+            'state' => 'CA',
+            'timezone' => 'America/Los_Angeles',
+            'manager_id' => $this->manager->id,
+            'max_weekly_hours' => 35,
+        ]);
+
+        $response->assertSessionDoesntHaveErrors(['phone']);
     }
 
     public function test_create_therapist_validates_unique_email(): void

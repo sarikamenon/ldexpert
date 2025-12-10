@@ -38,13 +38,20 @@ abstract class SchoolFormRequest extends FormRequest
             ],
             'contact_first_name' => ['nullable', 'string', 'max:255'],
             'contact_last_name' => ['nullable', 'string', 'max:255'],
-            'contact_phone' => ['nullable', 'regex:/^\d{3}-\d{3}-\d{4}$/'],
+            'contact_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'contact_email' => ['nullable', 'email:rfc,dns'],
             'invoice_email' => ['nullable', 'email:rfc,dns'],
             'school_type' => ['required', Rule::in(SchoolType::values())],
             'is_private_student' => ['sometimes', 'boolean'],
             'non_billable_scheduling' => ['sometimes', 'boolean'],
             'external_emr_name' => ['nullable', 'string', 'max:255'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'contact_phone.regex' => 'Phone number can only contain digits and dashes.',
         ];
     }
 }

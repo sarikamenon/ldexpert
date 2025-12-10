@@ -36,7 +36,7 @@ abstract class TherapistFormRequest extends FormRequest
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'personal_email' => ['required', 'email:rfc', $personalEmailRule],
-            'phone' => ['required', 'regex:/^\d{3}-\d{3}-\d{4}$/'],
+            'phone' => ['required', 'regex:/^[\d-]+$/'],
             'ld_email' => ['nullable', 'email:rfc'],
             'address' => ['nullable', 'string'],
             'comments' => ['nullable', 'string'],
@@ -57,7 +57,7 @@ abstract class TherapistFormRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone.regex' => 'Phone must be in format 123-456-7890',
+            'phone.regex' => 'Phone number can only contain digits and dashes.',
             'personal_email.unique' => 'This email is already registered in the system',
             'manager_id.exists' => 'Selected manager must be an admin user',
             'max_weekly_hours.min' => 'Max weekly hours must be at least 1 hour',
