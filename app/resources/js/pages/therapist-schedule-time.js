@@ -15,7 +15,14 @@ import { errorAlert } from '../common/sweetalert';
 
         const updateEndTime = () => {
             const startTime = startTimeInput.value;
-            const durationValue = parseInt(durationSelect.value, 10);
+            // Get value from Select2 if available, otherwise use native value
+            let durationValue;
+            if (window.jQuery && window.jQuery(durationSelect).data('select2')) {
+                durationValue = parseInt(window.jQuery(durationSelect).val(), 10);
+            } else {
+                durationValue = parseInt(durationSelect.value, 10);
+            }
+            
             const computed = computeEndTime(startTime, durationValue);
 
             if (!computed) {
@@ -29,12 +36,29 @@ import { errorAlert } from '../common/sweetalert';
         };
 
         startTimeInput.addEventListener('change', updateEndTime);
+        
+        // Listen to both native change and Select2 change events
         durationSelect.addEventListener('change', updateEndTime);
-        updateEndTime();
+        
+        // If Select2 is available, also listen to its change event
+        if (window.jQuery) {
+            window.jQuery(durationSelect).on('select2:select select2:change', updateEndTime);
+        }
+        
+        // Initial calculation - wait a bit for Select2 to initialize
+        setTimeout(updateEndTime, 100);
 
         if (form) {
             form.addEventListener('submit', (event) => {
-                if (!startTimeInput.value || !durationSelect.value) {
+                // Get value from Select2 if available, otherwise use native value
+                let durationValue;
+                if (window.jQuery && window.jQuery(durationSelect).data('select2')) {
+                    durationValue = window.jQuery(durationSelect).val();
+                } else {
+                    durationValue = durationSelect.value;
+                }
+                
+                if (!startTimeInput.value || !durationValue) {
                     event.preventDefault();
                     errorAlert('Start time and duration are required.');
                     return;

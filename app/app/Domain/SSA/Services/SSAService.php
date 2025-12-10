@@ -80,6 +80,13 @@ final class SSAService
 
     public function changeStatus(ServiceSupportAgreement $ssa, ChangeSSAStatusDTO $dto): ServiceSupportAgreement
     {
+        // Cannot change status if already completed or deactivated
+        if (in_array($ssa->status, [SSAStatus::COMPLETED, SSAStatus::DEACTIVATED], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'Cannot change status of a completed or deactivated SSA.',
+            ]);
+        }
+
         // Cannot activate without assigned therapist
         if ($dto->status === SSAStatus::ACTIVE && $ssa->assigned_therapist_id === null) {
             throw ValidationException::withMessages([

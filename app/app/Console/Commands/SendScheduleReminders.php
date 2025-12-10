@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Mail\ScheduleReminderMail;
 use App\Models\Schedule;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
@@ -18,7 +20,8 @@ class SendScheduleReminders extends Command
     protected $description = 'Send email reminders for upcoming schedules (24h and 1h before)';
 
     public function __construct(
-        private readonly ScheduleRepositoryInterface $scheduleRepository
+        private readonly ScheduleRepositoryInterface $scheduleRepository,
+        private readonly UserTimezoneService $timezoneService
     ) {
         parent::__construct();
     }
@@ -63,13 +66,32 @@ class SendScheduleReminders extends Command
         }
     }
 
+    /**
+     * Resolve timezone for a user using UserTimezoneService.
+     * Checks profile timezone first, then user timezone, then defaults to UTC.
+     */
+    private function resolveUserTimezone(?User $user, ?string $profileTimezone = null): string
+    {
+        return $this->timezoneService->toUserTimezone(
+            Carbon::now('UTC'),
+            $user,
+            $profileTimezone
+        )->timezoneName;
+    }
+
     private function sendRemindersForSchedule(Schedule $schedule, string $type): void
     {
         $recipients = [];
 
         // Therapist
         if ($schedule->therapist && $schedule->therapist->email) {
-            $timezone = $schedule->therapist->therapistProfile?->timezone ?? 'UTC';
+            // Use UserTimezoneService to resolve timezone with proper fallback:
+            // 1. Profile timezone (overrideTz)
+            // 2. User timezone
+            // 3. Default UTC
+            $profileTimezone = $schedule->therapist->therapistProfile?->timezone;
+            $timezone = $this->resolveUserTimezone($schedule->therapist, $profileTimezone);
+
             $recipients[] = [
                 'email' => $schedule->therapist->email,
                 'name' => $schedule->therapist->name,
@@ -79,7 +101,10 @@ class SendScheduleReminders extends Command
 
         // Student
         if ($schedule->student && $schedule->student->email) {
-            $timezone = $schedule->student->studentProfile?->timezone ?? 'UTC';
+            // Use UserTimezoneService to resolve timezone with proper fallback
+            $profileTimezone = $schedule->student->studentProfile?->timezone;
+            $timezone = $this->resolveUserTimezone($schedule->student, $profileTimezone);
+
             $recipients[] = [
                 'email' => $schedule->student->email,
                 'name' => $schedule->student->name,
@@ -90,10 +115,24 @@ class SendScheduleReminders extends Command
         // Guardian/Parent
         if ($schedule->student && $schedule->student->studentProfile) {
             $profile = $schedule->student->studentProfile;
-            $timezone = $profile->timezone ?? 'UTC'; // Assume guardian is in same timezone as student
+            // Assume guardian is in same timezone as student
+            $studentTimezone = $this->resolveUserTimezone(
+                $schedule->student,
+                $profile->timezone
+            );
 
             // Check linked parent user
             if ($profile->parent && $profile->parent->email) {
+                // Try to get parent's timezone, fallback to student's timezone
+                $parentProfileTimezone = $profile->parent->therapistProfile?->timezone
+                    ?? $profile->parent->studentProfile?->timezone
+                    ?? $profile->parent->parentProfile?->timezone;
+
+                $timezone = $this->resolveUserTimezone(
+                    $profile->parent,
+                    $parentProfileTimezone ?? $studentTimezone
+                );
+
                 $recipients[] = [
                     'email' => $profile->parent->email,
                     'name' => $profile->parent->name,
@@ -101,12 +140,12 @@ class SendScheduleReminders extends Command
                 ];
             }
 
-            // Check manually entered guardian email
+            // Check manually entered guardian email (use student's timezone)
             if ($profile->parent_guardian_email) {
                 $recipients[] = [
                     'email' => $profile->parent_guardian_email,
                     'name' => $profile->parent_guardian_name ?? 'Guardian',
-                    'timezone' => $timezone,
+                    'timezone' => $studentTimezone,
                 ];
             }
         }

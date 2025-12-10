@@ -30,6 +30,7 @@ export default defineConfig({
                 'resources/css/therapist-schedule.css',
                 'resources/js/pages/therapist-schedule-calendar.js',
                 'resources/js/pages/therapist-schedule-create.js',
+                'resources/js/pages/therapist-schedule-time.js',
                 'resources/js/pages/therapist-schedule-pending.js',
                 'resources/js/pages/therapist-ssas-index.js',
                 'resources/js/pages/therapist-ssas-show.js',

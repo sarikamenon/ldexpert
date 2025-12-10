@@ -44,7 +44,7 @@ abstract class SSAFormRequest extends FormRequest
                     $query->where('is_direct_service', false);
                 }),
             ],
-            'start_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
             'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
             'frequency' => ['nullable', Rule::in($frequencies)],
@@ -67,7 +67,6 @@ abstract class SSAFormRequest extends FormRequest
     {
         return [
             'end_date.after' => 'End date must be after start date.',
-            'start_date.after_or_equal' => 'Start date cannot be in the past.',
             'minutes_per_session.min' => 'Minutes per session must be at least 5 minutes.',
             'assigned_therapist_id.exists' => 'Selected therapist must be an active therapist.',
             'additional_service_ids.*.distinct' => 'Duplicate additional services are not allowed.',

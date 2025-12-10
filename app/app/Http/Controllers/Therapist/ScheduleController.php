@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\Constants\UsTimezones;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\DTOs\CreateScheduleDTO;
 use App\DTOs\ScheduleFilterDTO;
@@ -88,6 +89,9 @@ final class ScheduleController extends Controller
             ];
         });
 
+        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
+
         return view('therapist.schedule.calendar', [
             'selectedDate' => $selectedDate,
             'selectedDateFormatted' => $selectedDate->format('Y-m-d'),
@@ -98,6 +102,8 @@ final class ScheduleController extends Controller
             'selectedSchoolId' => $filters->schoolId,
             'selectedStudentId' => $filters->studentId,
             'activeSSAs' => $activeSSAs,
+            'therapistTimezone' => $therapistTimezone,
+            'therapistTimezoneLabel' => $therapistTimezoneLabel,
         ]);
     }
 
@@ -161,6 +167,9 @@ final class ScheduleController extends Controller
             ],
         ]);
 
+        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
+
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
             'students' => $students,
@@ -170,6 +179,8 @@ final class ScheduleController extends Controller
             'ssa' => $ssa,
             'preselectedStudent' => $student,
             'preselectedService' => $service,
+            'therapistTimezone' => $therapistTimezone,
+            'therapistTimezoneLabel' => $therapistTimezoneLabel,
         ]);
     }
 
@@ -179,13 +190,30 @@ final class ScheduleController extends Controller
         $schedule = Schedule::query()
             ->where('id', $id)
             ->where('therapist_id', $therapist->id)
-            ->with(['student', 'student.studentProfile', 'service', 'ssa', 'school'])
+            ->with([
+                'student',
+                'student.studentProfile',
+                'student.studentProfile.school',
+                'service',
+                'ssa',
+                'ssa.primaryService',
+                'ssa.additionalServices',
+                'ssa.student',
+                'ssa.student.studentProfile',
+                'ssa.student.studentProfile.school',
+                'school'
+            ])
             ->firstOrFail();
 
         $this->authorize('update', $schedule);
 
+        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
+            'therapistTimezone' => $therapistTimezone,
+            'therapistTimezoneLabel' => $therapistTimezoneLabel,
         ]);
     }
 
