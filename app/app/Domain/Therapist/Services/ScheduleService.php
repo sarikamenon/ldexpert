@@ -20,6 +20,7 @@ use App\Models\Service;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -38,6 +39,11 @@ final class ScheduleService
     public function getPendingCount(User $therapist): int
     {
         return $this->repository->getPendingCount($therapist);
+    }
+
+    public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repository->paginateForStudent($student, $filters, $perPage);
     }
 
     public function getSchools(User $therapist): Collection
@@ -73,15 +79,8 @@ final class ScheduleService
 
             // Timezone Conversion & Overlap Check
             $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
-            $localEndStr = $dto->scheduleDate . ' ' . $dto->endTime;
-
-            // Handle potential day crossing for end time in local input
-            if ($dto->endTime < $dto->startTime) {
-                $localEndStr = Carbon::parse($dto->scheduleDate)->addDay()->toDateString() . ' ' . $dto->endTime;
-            }
-
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
-            $utcEnd = $this->timezoneService->parseUserLocalToUtc($localEndStr, $therapist);
+            $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
             // Validate Therapist Overlap
             $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString());
@@ -215,20 +214,16 @@ final class ScheduleService
             }
 
             $data = $dto->toArray();
+            unset($data['duration_minutes']);
             
             // Timezone Conversion & Overlap Check for Updates
             // Need to check if date/time are present in DTO, otherwise use existing schedule values?
             // DTO fromArray sets all fields.
             
+            $durationMinutes = $dto->durationMinutes ?? $schedule->durationMinutes();
             $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
-            $localEndStr = $dto->scheduleDate . ' ' . $dto->endTime;
-
-            if ($dto->endTime < $dto->startTime) {
-                $localEndStr = Carbon::parse($dto->scheduleDate)->addDay()->toDateString() . ' ' . $dto->endTime;
-            }
-
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
-            $utcEnd = $this->timezoneService->parseUserLocalToUtc($localEndStr, $therapist);
+            $utcEnd = $utcStart->copy()->addMinutes($durationMinutes);
 
             // Validate Therapist Overlap (exclude current schedule)
             $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId);

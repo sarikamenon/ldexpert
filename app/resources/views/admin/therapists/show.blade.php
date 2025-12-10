@@ -126,7 +126,8 @@
                         <p class="text-foreground/70">Manager</p>
                         <p>{{ $therapist->therapistProfile?->manager?->name ?? '—' }}</p>
                         <p class="text-foreground/70">Timezone</p>
-                        <p>{{ $therapist->therapistProfile?->timezone ?? '—' }}</p>
+                        <p>{{ $therapist->therapistProfile?->timezone ? \App\Constants\UsTimezones::getTimezoneLabel($therapist->therapistProfile->timezone) : '—' }}
+                        </p>
                     </div>
                     <div class="space-y-1">
                         <p class="text-foreground/70">Email</p>

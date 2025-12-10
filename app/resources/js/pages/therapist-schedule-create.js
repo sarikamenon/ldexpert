@@ -12,23 +12,27 @@ import { errorAlert } from '../common/sweetalert';
         const serviceSelect = document.getElementById('service_id');
         const scheduleDateInput = document.getElementById('schedule_date');
         const startTimeInput = document.getElementById('start_time');
-        const endTimeInput = document.getElementById('end_time');
+        const durationSelect = document.getElementById('duration_minutes');
         const notesInput = document.getElementById('notes');
         const form = document.getElementById('scheduleCreateForm');
 
         if (form) {
             form.addEventListener('submit', function(e) {
                 const startTime = startTimeInput.value;
-                const endTime = endTimeInput.value;
+                const duration = durationSelect?.value;
                 const scheduleDate = scheduleDateInput.value;
 
-                // Validate times
-                if (startTime && endTime) {
-                    if (endTime <= startTime) {
-                        e.preventDefault();
-                        errorAlert('End time must be after start time.');
-                        return;
-                    }
+                if (! startTime) {
+                    e.preventDefault();
+                    errorAlert('Start time is required.');
+                    return;
+                }
+
+                // Validate duration presence
+                if (! duration) {
+                    e.preventDefault();
+                    errorAlert('Duration is required.');
+                    return;
                 }
 
                 // Validate future date (basic check against today in local time)

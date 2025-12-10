@@ -16,6 +16,7 @@ use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -194,25 +195,29 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 
     public function getSchedulesForStudent(User $student, array $filters = []): Collection
     {
-        $query = Schedule::query()
-            ->forStudent($student)
-            ->with(['therapist', 'service', 'ssa', 'school']);
+        $dto = new ScheduleFilterDTO(
+            date: $filters['date'] ?? null,
+            schoolId: isset($filters['school_id']) ? (int) $filters['school_id'] : null,
+            studentId: isset($filters['student_id']) ? (int) $filters['student_id'] : null,
+            status: $filters['status'] ?? null,
+            billingStatus: $filters['billing_status'] ?? null,
+            ssaId: isset($filters['ssa_id']) ? (int) $filters['ssa_id'] : null,
+            therapistId: isset($filters['therapist_id']) ? (int) $filters['therapist_id'] : null,
+        );
 
-        if (! empty($filters['date'])) {
-            $query->whereDate('schedule_date', $filters['date']);
-        }
-
-        if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
-        }
-
-        if (! empty($filters['billing_status'])) {
-            $query->where('billing_status', $filters['billing_status']);
-        }
-
-        return $query->orderBy('schedule_date')
+        return $this->buildStudentScheduleQuery($student, $dto)
+            ->orderBy('schedule_date')
             ->orderBy('start_time')
             ->get();
+    }
+
+    public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->buildStudentScheduleQuery($student, $filters)
+            ->orderBy('schedule_date')
+            ->orderBy('start_time')
+            ->paginate($perPage)
+            ->withQueryString();
     }
 
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool
@@ -328,5 +333,42 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function getSchedulesForReminder(Carbon $start, Carbon $end): Collection
     {
         return $this->getSchedulesInWindow($start, $end);
+    }
+
+    private function buildStudentScheduleQuery(User $student, ScheduleFilterDTO $filters)
+    {
+        $query = Schedule::query()
+            ->forStudent($student)
+            ->with(['therapist', 'service', 'ssa', 'school']);
+
+        if ($filters->date) {
+            $query->whereDate('schedule_date', $filters->date);
+        }
+
+        if ($filters->status) {
+            $query->where('status', $filters->status);
+        }
+
+        if ($filters->billingStatus) {
+            $query->where('billing_status', $filters->billingStatus);
+        }
+
+        if ($filters->ssaId) {
+            $query->where('ssa_id', $filters->ssaId);
+        }
+
+        if ($filters->therapistId) {
+            $query->where('therapist_id', $filters->therapistId);
+        }
+
+        if ($filters->schoolId) {
+            $query->where('school_id', $filters->schoolId);
+        }
+
+        if ($filters->studentId) {
+            $query->where('student_id', $filters->studentId);
+        }
+
+        return $query;
     }
 }
