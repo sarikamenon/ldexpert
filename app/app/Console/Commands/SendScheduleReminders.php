@@ -17,7 +17,7 @@ class SendScheduleReminders extends Command
 {
     protected $signature = 'schedule:send-reminders';
 
-    protected $description = 'Send email reminders for upcoming schedules (24h and 1h before)';
+    protected $description = 'Send email reminders for upcoming schedules (48h and 2h before)';
 
     public function __construct(
         private readonly ScheduleRepositoryInterface $scheduleRepository,
@@ -28,41 +28,41 @@ class SendScheduleReminders extends Command
 
     public function handle(): int
     {
-        $this->send24HourReminders();
-        $this->send1HourReminders();
+        $this->send48HourReminders();
+        $this->send2HourReminders();
 
         return self::SUCCESS;
     }
 
-    private function send24HourReminders(): void
+    private function send48HourReminders(): void
     {
-        $startWindow = Carbon::now()->addHours(24);
-        $endWindow = Carbon::now()->addHours(24)->addMinutes(30);
+        $startWindow = Carbon::now()->addHours(48);
+        $endWindow = Carbon::now()->addHours(48)->addMinutes(30);
 
         $schedules = $this->scheduleRepository->getSchedulesInWindow($startWindow, $endWindow);
 
         foreach ($schedules as $schedule) {
-            $this->sendRemindersForSchedule($schedule, '24h');
+            $this->sendRemindersForSchedule($schedule, '48h');
         }
 
         if ($schedules->isNotEmpty()) {
-            $this->info("Sent 24h reminders for {$schedules->count()} schedules.");
+            $this->info("Sent 48h reminders for {$schedules->count()} schedules.");
         }
     }
 
-    private function send1HourReminders(): void
+    private function send2HourReminders(): void
     {
-        $startWindow = Carbon::now()->addHour();
-        $endWindow = Carbon::now()->addHour()->addMinutes(30);
+        $startWindow = Carbon::now()->addHours(2);
+        $endWindow = Carbon::now()->addHours(2)->addMinutes(30);
 
         $schedules = $this->scheduleRepository->getSchedulesInWindow($startWindow, $endWindow);
 
         foreach ($schedules as $schedule) {
-            $this->sendRemindersForSchedule($schedule, '1h');
+            $this->sendRemindersForSchedule($schedule, '2h');
         }
 
         if ($schedules->isNotEmpty()) {
-            $this->info("Sent 1h reminders for {$schedules->count()} schedules.");
+            $this->info("Sent 2h reminders for {$schedules->count()} schedules.");
         }
     }
 

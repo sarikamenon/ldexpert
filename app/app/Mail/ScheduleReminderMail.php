@@ -19,7 +19,7 @@ class ScheduleReminderMail extends Mailable
 
     public function __construct(
         public readonly Schedule $schedule,
-        public readonly string $type, // '24h' or '1h'
+        public readonly string $type, // '48h' or '2h'
         public readonly string $recipientName,
         public readonly string $timezone
     ) {}
@@ -27,7 +27,11 @@ class ScheduleReminderMail extends Mailable
     public function envelope(): Envelope
     {
         $therapistName = $this->schedule->therapist->name;
-        $timeUntil = $this->type === '24h' ? '24 hours' : '1 hour';
+        $timeUntil = match ($this->type) {
+            '48h' => '48 hours',
+            '2h' => '2 hours',
+            default => 'upcoming',
+        };
 
         return new Envelope(
             subject: "Reminder: Upcoming Session with {$therapistName} in {$timeUntil}",

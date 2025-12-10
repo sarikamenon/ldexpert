@@ -159,16 +159,6 @@ return [
                 'route' => 'student.dashboard',
                 'active' => 'student.dashboard',
             ],
-            [
-                'label' => 'Schedule Calendar',
-                'route' => 'student.schedule.index',
-                'active' => 'student.schedule.*',
-            ],
-            [
-                'label' => 'Progress & Goals',
-                'route' => 'student.goals.index',
-                'active' => 'student.goals.*',
-            ],
         ],
         'default' => [
             [
