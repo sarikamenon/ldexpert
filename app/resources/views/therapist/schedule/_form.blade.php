@@ -1,0 +1,255 @@
+@props([
+    'schedule' => null,
+    'ssa' => null,
+    'selectedDate' => null,
+    'serviceOptions' => collect(),
+    'preselectedService' => null,
+    'preselectedStudent' => null,
+    'studentServiceMappings' => collect(),
+    'isEdit' => false,
+])
+
+<form method="POST"
+    action="{{ $isEdit ? route('therapist.schedule.update', $schedule->id) : route('therapist.schedule.store') }}"
+    id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6">
+    @csrf
+    @if ($isEdit)
+        @method('PUT')
+    @endif
+
+    {{-- Section 1: Schedule Details --}}
+    <x-ui::card class="p-6 space-y-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-semibold text-foreground">Schedule Details</h2>
+                <p class="text-sm text-foreground/60">
+                    {{ $isEdit ? 'Update date and time.' : 'Choose date, time, and timezone.' }}</p>
+            </div>
+            <span class="text-sm text-foreground/60">All times shown in
+                {{ $therapistTimezoneLabel ?? 'US/Central' }}</span>
+        </div>
+
+        {{-- SSA and Student Information (for both create and edit) --}}
+        @php
+            $currentSsa = $isEdit ? $schedule->ssa : $ssa;
+        @endphp
+        @if ($currentSsa)
+            <div class="bg-background/subtle rounded-lg p-4 space-y-3 border border-border">
+                <h3 class="text-sm font-semibold text-foreground">SSA #{{ $currentSsa->id }} Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                    {{-- Left Side --}}
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-foreground/70 block mb-1">Student:</span>
+                            <span class="font-medium text-foreground">
+                                @if ($currentSsa->student)
+                                    <a href="{{ route('therapist.students.show', $currentSsa->student) }}"
+                                        class="text-primary hover:underline">
+                                        {{ $currentSsa->student->name }}
+                                    </a>
+                                @else
+                                    N/A
+                                @endif
+                                @if ($currentSsa->student?->studentProfile?->timezone)
+                                    <span class="text-foreground/70">
+                                        ·
+                                        {{ \App\Constants\UsTimezones::getTimezoneLabel($currentSsa->student->studentProfile->timezone) }}
+                                    </span>
+                                @endif
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-foreground/70 block mb-1">School:</span>
+                            <span class="font-medium text-foreground">
+                                {{ $currentSsa->student?->studentProfile?->school?->display_name ?? 'N/A' }}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-foreground/70 block mb-1">Start Date:</span>
+                            <span class="font-medium text-foreground">
+                                {{ $currentSsa->start_date->format('M d, Y') }}
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Right Side --}}
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-foreground/70 block mb-1">Primary Service:</span>
+                            <span
+                                class="font-medium text-foreground">{{ $currentSsa->primaryService->name ?? 'N/A' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-foreground/70 block mb-1">Additional Services:</span>
+                            @if ($currentSsa->additionalServices->isNotEmpty())
+                                <span class="font-medium text-foreground">
+                                    @foreach ($currentSsa->additionalServices as $service)
+                                        {{ $loop->first ? '' : ', ' }}{{ $service->name }}
+                                    @endforeach
+                                </span>
+                            @else
+                                <span class="font-medium text-foreground/60">None</span>
+                            @endif
+                        </div>
+                        <div>
+                            <span class="text-foreground/70 block mb-1">End Date:</span>
+                            <span class="font-medium text-foreground">
+                                {{ $currentSsa->end_date->format('M d, Y') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Service and Duration Dropdowns (for both create and edit) --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="service_id" value="Service *" />
+                    @if ($isEdit)
+                        {{-- Edit mode: Show service as disabled/read-only --}}
+                        <x-text-input id="service_id" type="text"
+                            class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75"
+                            value="{{ $schedule->service?->name ?? 'N/A' }}" disabled readonly />
+                        <input type="hidden" name="service_id" value="{{ $schedule->service_id }}">
+                        <p class="text-xs text-foreground/60 mt-1">
+                            Service cannot be changed after schedule creation.
+                        </p>
+                    @else
+                        {{-- Create mode: Editable dropdown --}}
+                        <select id="service_id" name="service_id" data-select-box class="mt-1 block w-full" required
+                            data-initial-value="{{ old('service_id', $preselectedService?->id) }}">
+                            <option value="">Select a service</option>
+                            @foreach ($serviceOptions as $service)
+                                <option value="{{ $service['service_id'] }}" @selected(old('service_id', $preselectedService?->id) == $service['service_id'])
+                                    data-is-primary="{{ $service['is_primary'] ? '1' : '0' }}">
+                                    {{ $service['service_name'] }}
+                                    @if ($service['is_primary'])
+                                        (Primary)
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+                        <input type="hidden" name="ssa_id" value="{{ $currentSsa->id }}">
+                        <input type="hidden" name="student_ids[]" value="{{ $preselectedStudent->id }}">
+                        <p class="text-xs text-foreground/60 mt-1">
+                            Services available for this SSA (primary and additional).
+                        </p>
+                    @endif
+                    <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
+                </div>
+                <div>
+                    <x-input-label for="duration_minutes" value="Duration (minutes) *" />
+                    <select id="duration_minutes" name="duration_minutes" data-select-box class="mt-1 block w-full"
+                        required>
+                        @foreach (range(5, 400, 5) as $minutesOption)
+                            <option value="{{ $minutesOption }}" @selected(old('duration_minutes', $isEdit ? $schedule->durationMinutes() : $currentSsa?->minutes_per_session ?? 60) == $minutesOption)>
+                                {{ $minutesOption }} minutes
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-foreground/60 mt-1">
+                        @if ($currentSsa)
+                            This is the default duration from the SSA. You can change it as needed.
+                        @else
+                            Select the duration for this schedule.
+                        @endif
+                    </p>
+                    <x-input-error :messages="$errors->get('duration_minutes')" class="mt-2" />
+                </div>
+            </div>
+        @endif
+
+        {{-- Schedule Date and Time Fields (common for both create and edit) --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <x-input-label for="schedule_date" value="Schedule Date *" />
+                @if ($isEdit)
+                    <x-text-input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
+                        value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}" required />
+                @else
+                    <x-text-input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
+                        value="{{ old('schedule_date', $selectedDate?->format('Y-m-d')) }}"
+                        min="{{ now()->format('Y-m-d') }}" required />
+                @endif
+                <x-input-error :messages="$errors->get('schedule_date')" class="mt-2" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="start_time" value="Start Time *" />
+                    <x-text-input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
+                        value="{{ old('start_time', $isEdit ? $schedule->start_time?->format('H:i') : '09:00') }}"
+                        required />
+                    <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
+                </div>
+                <div>
+                    <x-input-label for="end_time_display" value="End Time (auto-calculated)" />
+                    <x-text-input id="end_time_display" type="text"
+                        class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75" value=""
+                        disabled readonly />
+                    <p class="text-xs text-foreground/60 mt-1">End time is calculated from start time and
+                        duration.</p>
+                </div>
+            </div>
+        </div>
+
+        @if (!$isEdit)
+            <p class="text-xs text-foreground/60 mt-1">
+                Enter the schedule date and time in <span class="font-medium">your</span> timezone.
+                If the student is in a different timezone, the system will handle the conversion for them.
+            </p>
+        @endif
+    </x-ui::card>
+
+    {{-- Recurrence removed for first iteration --}}
+    @if (!$isEdit)
+        <input type="hidden" name="recurrence_type" value="none">
+        <input type="hidden" id="recurrence_end_date" name="recurrence_end_date" value="">
+    @endif
+
+    {{-- Section 2: Location & Meeting Details --}}
+    <x-ui::card class="p-6 space-y-6">
+        <div>
+            <h2 class="text-lg font-semibold text-foreground">Location & Meeting Details</h2>
+            <p class="text-sm text-foreground/60">
+                {{ $isEdit ? 'Update online meeting details or location information for this session.' : 'Add online meeting details or location information for this session.' }}
+            </p>
+        </div>
+
+        <div>
+            <x-input-label for="location_details" value="Location/Meeting Details *" />
+            <textarea name="location_details" id="location_details" rows="4"
+                class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm"
+                placeholder="Enter meeting link (e.g., Google Meet, Zoom), location address, or other meeting details..." required>{{ old('location_details', $isEdit ? $schedule->location_details : Auth::user()->therapistProfile?->default_meeting_location) }}</textarea>
+            <p class="text-xs text-foreground/60 mt-1">
+                Include meeting links for online sessions or address/location for in-person sessions.
+            </p>
+            <x-input-error :messages="$errors->get('location_details')" class="mt-2" />
+        </div>
+    </x-ui::card>
+
+    {{-- Section 3: Notes --}}
+    <x-ui::card class="p-6 space-y-4">
+        <div>
+            <h2 class="text-lg font-semibold text-foreground">Notes</h2>
+            <p class="text-sm text-foreground/60">
+                {{ $isEdit ? 'Update optional notes for this schedule.' : 'Add optional notes for this schedule.' }}
+            </p>
+        </div>
+
+        <textarea name="notes" id="notes" rows="4"
+            class="w-full border border-border rounded-lg px-3 py-2 text-sm" placeholder="Notes (optional)">{{ old('notes', $isEdit ? $schedule->notes : '') }}</textarea>
+        <x-input-error :messages="$errors->get('notes')" class="mt-2" />
+    </x-ui::card>
+
+    <div class="flex justify-end gap-3">
+        <a href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}"
+            class="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg hover:bg-background/subtle">
+            Cancel
+        </a>
+        <button type="submit"
+            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+            {{ $isEdit ? 'Update Schedule' : 'Create Schedule' }}
+        </button>
+    </div>
+</form>

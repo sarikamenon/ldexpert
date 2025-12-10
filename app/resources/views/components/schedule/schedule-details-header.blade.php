@@ -1,6 +1,7 @@
 @props([
     'selectedDate' => null,
-    'timezone' => 'US/Central',
+    'timezone' => 'America/Chicago',
+    'timezoneLabel' => 'Central Time (CT)',
     'showDropdown' => false,
 ])
 
@@ -8,9 +9,9 @@
     <div class="flex items-center gap-2">
         <h2 class="text-lg font-semibold text-foreground" id="selectedDateHeader">
             @if ($selectedDate)
-                {{ $selectedDate->format('d F, Y') }} - {{ now()->format('h:i A') }} ({{ $timezone }})
+                {{ $selectedDate->format('d F, Y') }} - {{ now()->format('h:i A') }} ({{ $timezoneLabel }})
             @else
-                {{ now()->format('d F, Y') }} - {{ now()->format('h:i A') }} ({{ $timezone }})
+                {{ now()->format('d F, Y') }} - {{ now()->format('h:i A') }} ({{ $timezoneLabel }})
             @endif
         </h2>
         @if ($showDropdown)
