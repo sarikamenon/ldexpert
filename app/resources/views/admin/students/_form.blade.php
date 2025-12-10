@@ -142,7 +142,7 @@
             <div>
                 <x-input-label for="parent_guardian_phone" value="Phone" />
                 <x-text-input id="parent_guardian_phone" name="parent_guardian_phone" type="text"
-                    class="mt-1 block w-full" placeholder="123-456-7890" :value="old('parent_guardian_phone', $profile?->parent_guardian_phone)" />
+                    class="mt-1 block w-full" placeholder="123-456-7890" :value="old('parent_guardian_phone', $profile?->parent_guardian_phone)" data-phone-input />
                 <x-input-error :messages="$errors->get('parent_guardian_phone')" class="mt-2" />
             </div>
         </div>

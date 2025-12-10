@@ -226,10 +226,24 @@ final class StudentManagementTest extends TestCase
             'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/Chicago',
-            'parent_guardian_phone' => '1234567890',
+            'parent_guardian_phone' => '123-456-7890abc', // Invalid: contains letters
         ]);
 
         $response->assertSessionHasErrors(['parent_guardian_phone']);
+    }
+
+    public function test_create_student_accepts_phone_with_digits_and_dashes(): void
+    {
+        $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
+            'first_name' => 'Test',
+            'last_name' => 'Student',
+            'email' => 'test@example.com',
+            'date_of_birth' => '2013-01-01',
+            'timezone' => 'America/Chicago',
+            'parent_guardian_phone' => '123-456-7890', // Valid: digits and dashes
+        ]);
+
+        $response->assertSessionDoesntHaveErrors(['parent_guardian_phone']);
     }
 
     public function test_create_student_validates_unique_email(): void

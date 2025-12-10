@@ -7,8 +7,8 @@ The system includes an automated email reminder feature for upcoming therapy ses
 -   **Frequency:** Checks every 30 minutes.
 -   **Recipients:** Therapist, Student, and Guardian (Parent).
 -   **Triggers:**
-    -   **24 Hours Before:** Sends a reminder 24 hours before the session start time.
-    -   **1 Hour Before:** Sends a reminder 1 hour before the session start time.
+    -   **48 Hours Before:** Sends a reminder 48 hours before the session start time.
+    -   **2 Hours Before:** Sends a reminder 2 hours before the session start time.
 
 ## Email Content
 
@@ -28,14 +28,14 @@ The email includes:
 `App\Console\Commands\SendScheduleReminders`
 
 -   Runs `everyThirtyMinutes`.
--   Queries for schedules starting within a specific window (e.g., 24h to 24.5h from now) to avoid duplicate emails.
+-   Queries for schedules starting within a specific window (e.g., 48h to 48.5h from now) to avoid duplicate emails.
 -   Uses `ScheduleRepositoryInterface` to fetch relevant schedules.
 
 ### Mailable
 
 `App\Mail\ScheduleReminderMail`
 
--   Accepts the `Schedule`, `type` (24h/1h), `recipientName`, and `timezone`.
+-   Accepts the `Schedule`, `type` (48h/2h), `recipientName`, and `timezone`.
 -   Uses `UserTimezoneService` to format dates and times according to the recipient's preference.
 
 ### Repository

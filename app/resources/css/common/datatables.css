@@ -188,5 +188,5 @@ table.dataTable tbody tr:last-child td {
 
 /* Remove default DataTables borders */
 table.dataTable.no-footer {
-    border-bottom: none;
+    border-bottom: 1px solid #e5e7eb;
 }

@@ -78,7 +78,7 @@
                 <div>
                     <x-input-label for="phone" value="Phone *" />
                     <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full"
-                        placeholder="123-456-7890" :value="old('phone', $profile?->phone)" dusk="therapist-phone" />
+                        placeholder="123-456-7890" :value="old('phone', $profile?->phone)" dusk="therapist-phone" data-phone-input />
                     <x-input-error :messages="$errors->get('phone')" class="mt-2" />
                 </div>
 
