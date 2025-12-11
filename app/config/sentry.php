@@ -25,55 +25,6 @@ return [
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#max-breadcrumbs
     'max_breadcrumbs' => env('SENTRY_MAX_BREADCRUMBS', 50),
 
-    // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#before-send
-    'before_send' => function (\Sentry\Event $event, ?\Sentry\EventHint $hint): ?\Sentry\Event {
-        // Only send critical errors and custom business exceptions
-        $exception = $hint->exception ?? null;
-
-        if ($exception === null) {
-            // For non-exception events, only send if level is critical
-            if ($event->getLevel() !== \Sentry\Severity::fatal()) {
-                return null;
-            }
-            return $event;
-        }
-
-        // Check if it's a custom business exception (always send)
-        $customExceptions = [
-            \App\Exceptions\ScheduleOverlapException::class,
-            \App\Exceptions\ContractOverlapException::class,
-        ];
-
-        foreach ($customExceptions as $customException) {
-            if ($exception instanceof $customException) {
-                return $event;
-            }
-        }
-
-        // For other exceptions, only send if they're critical/fatal
-        // Filter out common non-critical errors
-        $ignoredMessages = [
-            'Route [',
-            'View [',
-            'The page you are looking for',
-            'Too Many Attempts',
-        ];
-
-        $message = $exception->getMessage();
-        foreach ($ignoredMessages as $ignored) {
-            if (str_contains($message, $ignored)) {
-                return null;
-            }
-        }
-
-        // Only send fatal/critical errors
-        if ($event->getLevel() !== \Sentry\Severity::fatal()) {
-            return null;
-        }
-
-        return $event;
-    },
-
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore-exceptions
     'ignore_exceptions' => [
         \Illuminate\Auth\AuthenticationException::class,
