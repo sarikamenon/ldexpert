@@ -11,19 +11,19 @@ final class CreateStudentDTO
         public readonly ?string $middleName,
         public readonly string $lastName,
         public readonly string $email,
-        public readonly ?string $gender,
+        public readonly string $gender,
         public readonly string $dateOfBirth,
-        public readonly ?int $schoolId,
-        public readonly ?string $idNumber,
+        public readonly int $schoolId,
+        public readonly string $idNumber,
         public readonly string $timezone,
-        public readonly ?string $gradeLevel,
+        public readonly string $gradeLevel,
         public readonly ?string $parentGuardianName,
         public readonly ?string $parentGuardianEmail,
         public readonly ?string $parentGuardianPhone,
         public readonly ?string $address,
-        public readonly ?string $city,
-        public readonly ?string $state,
-        public readonly ?string $zipCode,
+        public readonly string $city,
+        public readonly string $state,
+        public readonly string $zipCode,
         public readonly string $password,
     ) {}
 
@@ -34,19 +34,19 @@ final class CreateStudentDTO
             middleName: $data['middle_name'] ?? null,
             lastName: $data['last_name'],
             email: $data['email'],
-            gender: $data['gender'] ?? null,
+            gender: $data['gender'],
             dateOfBirth: $data['date_of_birth'],
-            schoolId: isset($data['school_id']) ? (int) $data['school_id'] : null,
-            idNumber: $data['id_number'] ?? null,
+            schoolId: (int) $data['school_id'],
+            idNumber: $data['id_number'],
             timezone: $data['timezone'],
-            gradeLevel: $data['grade_level'] ?? null,
+            gradeLevel: $data['grade_level'],
             parentGuardianName: $data['parent_guardian_name'] ?? null,
             parentGuardianEmail: $data['parent_guardian_email'] ?? null,
             parentGuardianPhone: $data['parent_guardian_phone'] ?? null,
             address: $data['address'] ?? null,
-            city: $data['city'] ?? null,
-            state: $data['state'] ?? null,
-            zipCode: $data['zip_code'] ?? null,
+            city: $data['city'],
+            state: $data['state'],
+            zipCode: $data['zip_code'],
             password: $data['password'],
         );
     }
@@ -85,4 +85,3 @@ final class CreateStudentDTO
         ];
     }
 }
-

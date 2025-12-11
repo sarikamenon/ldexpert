@@ -3,7 +3,7 @@ PHP_SHELL=$(DC) exec -T app bash -lc
 ARTISAN=$(DC) exec -T app php /var/www/html/app/artisan
 COMPOSER_CMD=$(PHP_SHELL) 'cd /var/www/html/app && composer'
 
-.PHONY: build up down restart logs sh install migrate seed test coverage dusk cs-fix analyse fresh qa assets-build cache-clear send-reminders queue-work
+.PHONY: build up down restart logs sh install composer-install composer-update composer-require migrate seed test coverage dusk cs-fix analyse fresh qa assets-build cache-clear send-reminders queue-work
 
 build:
 	$(DC) build
@@ -22,6 +22,16 @@ logs:
 
 sh:
 	$(DC) exec app bash -lc "cd /var/www/html/app && bash || sh"
+
+composer-install:
+	$(PHP_SHELL) 'cd /var/www/html/app && composer install --no-interaction'
+
+composer-update:
+	$(PHP_SHELL) 'cd /var/www/html/app && composer update --no-interaction'
+
+composer-require:
+	@echo "Usage: make composer-require PACKAGE=sentry/sentry-laravel"
+	$(PHP_SHELL) 'cd /var/www/html/app && composer require $(PACKAGE) --no-interaction'
 
 install:
 	$(COMPOSER_CMD) install --no-interaction

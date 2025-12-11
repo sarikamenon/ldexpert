@@ -36,7 +36,7 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                        <x-application-logo class="block h-12 w-auto fill-current text-gray-800" />
                     </a>
                 </div>
             </div>
@@ -181,3 +181,9 @@
         </div>
     </div>
 </nav>
+
+@if (app()->environment(['local', 'dev', 'stage']))
+    <div class="w-full bg-yellow-400 text-center py-1 text-sm font-semibold text-gray-900">
+        {{ strtoupper(config('app.env')) }} ENVIRONMENT
+    </div>
+@endif

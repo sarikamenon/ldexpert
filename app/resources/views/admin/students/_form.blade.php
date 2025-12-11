@@ -47,7 +47,7 @@
             </div>
 
             <div>
-                <x-input-label for="gender" value="Gender" />
+                <x-input-label for="gender" value="Gender *" />
                 <select id="gender" name="gender"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                     <option value="">Select Gender</option>
@@ -75,7 +75,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <x-input-label for="school_id" value="School" />
+                <x-input-label for="school_id" value="School *" />
                 <select name="school_id" id="school_id"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                     <option value="">Select School</option>
@@ -89,7 +89,7 @@
             </div>
 
             <div>
-                <x-input-label for="id_number" value="Student ID" />
+                <x-input-label for="id_number" value="Student ID *" />
                 <x-text-input id="id_number" name="id_number" type="text" class="mt-1 block w-full"
                     :value="old('id_number', $profile?->id_number)" />
                 <x-input-error :messages="$errors->get('id_number')" class="mt-2" />
@@ -112,7 +112,7 @@
             </div>
 
             <div>
-                <x-input-label for="grade_level" value="Grade Level" />
+                <x-input-label for="grade_level" value="Grade Level *" />
                 <x-text-input id="grade_level" name="grade_level" type="text" class="mt-1 block w-full"
                     :value="old('grade_level', $profile?->grade_level)" />
                 <x-input-error :messages="$errors->get('grade_level')" class="mt-2" />
@@ -161,14 +161,14 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <x-input-label for="city" value="City" />
+                <x-input-label for="city" value="City *" />
                 <x-text-input id="city" name="city" type="text" class="mt-1 block w-full"
                     :value="old('city', $profile?->city)" />
                 <x-input-error :messages="$errors->get('city')" class="mt-2" />
             </div>
 
             <div>
-                <x-input-label for="state" value="State" />
+                <x-input-label for="state" value="State *" />
                 <select name="state" id="state"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                     <option value="">Select State</option>
@@ -182,7 +182,7 @@
             </div>
 
             <div>
-                <x-input-label for="zip_code" value="ZIP Code" />
+                <x-input-label for="zip_code" value="ZIP Code *" />
                 <x-text-input id="zip_code" name="zip_code" type="text" class="mt-1 block w-full"
                     :value="old('zip_code', $profile?->zip_code)" />
                 <x-input-error :messages="$errors->get('zip_code')" class="mt-2" />
