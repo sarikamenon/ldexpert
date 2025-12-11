@@ -50,6 +50,7 @@ use App\Events\ScheduleCreated;
 use App\Events\ScheduleUpdated;
 use App\Listeners\SendScheduleNotification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -96,7 +97,7 @@ class AppServiceProvider extends ServiceProvider
             /** @var \Illuminate\Support\Collection $this */
             /** @var UserTimezoneService $tzService */
             $tzService = app(UserTimezoneService::class);
-            $user = $user ?? auth()->user();
+            $user = $user ?? Auth::user();
 
             return $this->map(function ($item) use ($tzService, $user, $fields) {
                 if (! $item instanceof Model) {
