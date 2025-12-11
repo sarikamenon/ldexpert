@@ -1,8 +1,8 @@
-name: LD-Expert Bird Staging Deployment
+name: LD-Expert Nova Production Deployment
 
 on:
   push:
-    branches: [ staging ]
+    branches: [ main ]
 
 jobs:
   deploy:
@@ -24,18 +24,18 @@ jobs:
 
     - name: Deploy Code to Server
       env:
-        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-        SSH_USER: ${{ secrets.SSH_USER }}
-        SERVER_IP: ${{ secrets.SERVER_IP }}
+        SSH_PRIVATE_KEY: ${{ secrets.PROD_SSH_PRIVATE_KEY }}
+        SSH_USER: ${{ secrets.PROD_SSH_USER }}
+        SERVER_IP: ${{ secrets.PROD_SERVER_IP }}
       run: |
         # Configure SSH
         mkdir -p ~/.ssh
         touch ~/.ssh/known_hosts
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "${{ secrets.PROD_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         ssh-keygen -R $SERVER_IP
         ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
 
         # Run deployment script
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SERVER_IP 'bash -l -c "./deploy_ld_expert_bird.sh"'
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SERVER_IP 'bash -l -c "./deploy_prod_nova.sh"'
         pwd
