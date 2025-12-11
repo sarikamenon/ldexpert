@@ -181,3 +181,9 @@
         </div>
     </div>
 </nav>
+
+@if (app()->environment(['local', 'dev', 'stage']))
+    <div class="w-full bg-yellow-400 text-center py-1 text-sm font-semibold text-gray-900">
+        {{ strtoupper(config('app.env')) }} ENVIRONMENT
+    </div>
+@endif

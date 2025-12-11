@@ -18,25 +18,40 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = 'develop.ldexpert@gmail.com';
         $password = 'Password123!';
-        $name = 'System Admin';
 
-        $user = User::withTrashed()->firstOrNew(['email' => $email]);
-        $user->name = $name;
-        $user->role = Role::ADMIN->value;
-        $user->status = UserStatus::ACTIVE->value;
-        $user->password = Hash::make($password);
-        $user->email_verified_at = $user->email_verified_at ?? now();
-        $user->deleted_at = null;
-        $user->save();
-
-        AdminProfile::updateOrCreate(
-            ['user_id' => $user->id],
+        $admins = [
             [
-                'department' => 'Operations',
-                'phone' => null,
-            ]
-        );
+                'email' => 'develop.ldexpert@gmail.com',
+                'name' => 'System Admin',
+            ],
+            [
+                'email' => 'info@ldexpert.org',
+                'name' => 'Chelsea DiMarzio',
+            ],
+            [
+                'email' => 'stephanie@ldexpert.org',
+                'name' => 'Stephanie Tsapakis',
+            ],
+        ];
+
+        foreach ($admins as $admin) {
+            $user = User::withTrashed()->firstOrNew(['email' => $admin['email']]);
+            $user->name = $admin['name'];
+            $user->role = Role::ADMIN->value;
+            $user->status = UserStatus::ACTIVE->value;
+            $user->password = Hash::make($password);
+            $user->email_verified_at = $user->email_verified_at ?? now();
+            $user->deleted_at = null;
+            $user->save();
+
+            AdminProfile::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'department' => 'Administration',
+                    'phone' => null,
+                ]
+            );
+        }
     }
 }
