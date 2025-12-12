@@ -13,6 +13,7 @@ use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Repositories\TherapistRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Http\Middleware\RoleMiddleware;
@@ -24,6 +25,7 @@ use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Infrastructure\Repositories\EloquentTherapistContractRepository;
 use App\Infrastructure\Repositories\EloquentStudentRepository;
 use App\Infrastructure\Repositories\EloquentScheduleRepository;
+use App\Infrastructure\Repositories\EloquentSessionLogRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Models\User;
@@ -33,11 +35,13 @@ use App\Models\SchoolContract;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
+use App\Models\SessionLog;
 use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Policies\SchoolPolicy;
 use App\Policies\SchoolContractPolicy;
 use App\Policies\SchedulePolicy;
+use App\Policies\SessionLogPolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\SSAPolicy;
 use App\Policies\StudentProfilePolicy;
@@ -69,6 +73,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
         $this->app->bind(ActivityLogRepositoryInterface::class, EloquentActivityLogRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
+        $this->app->bind(SessionLogRepositoryInterface::class, EloquentSessionLogRepository::class);
 
         $this->app->singleton(UserTimezoneService::class, static function (): UserTimezoneService {
             return new UserTimezoneService(config('app.timezone', 'UTC'));
@@ -85,6 +90,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TherapistProfile::class, TherapistProfilePolicy::class);
         Gate::policy(StudentProfile::class, StudentProfilePolicy::class);
         Gate::policy(Schedule::class, SchedulePolicy::class);
+        Gate::policy(SessionLog::class, SessionLogPolicy::class);
         Gate::policy(SchoolContract::class, SchoolContractPolicy::class);
         Gate::policy(TherapistContract::class, TherapistContractPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);

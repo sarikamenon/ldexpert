@@ -37,4 +37,17 @@ Route::middleware('role:therapist')
         // Student routes
         Route::get('students', [StudentController::class, 'index'])->name('students.index');
         Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
+
+        // Session Log routes
+        Route::prefix('session-logs')->name('session-logs.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Therapist\SessionLogController::class, 'index'])->name('index');
+            Route::get('create', [\App\Http\Controllers\Therapist\SessionLogController::class, 'create'])->name('create');
+            Route::get('create/schedule/{schedule}', [\App\Http\Controllers\Therapist\SessionLogController::class, 'create'])->name('create.from-schedule');
+            Route::post('/', [\App\Http\Controllers\Therapist\SessionLogController::class, 'store'])->name('store');
+            Route::get('{sessionLog}', [\App\Http\Controllers\Therapist\SessionLogController::class, 'show'])->name('show');
+            Route::get('{sessionLog}/edit', [\App\Http\Controllers\Therapist\SessionLogController::class, 'edit'])->name('edit');
+            Route::put('{sessionLog}', [\App\Http\Controllers\Therapist\SessionLogController::class, 'update'])->name('update');
+            Route::post('{sessionLog}/submit', [\App\Http\Controllers\Therapist\SessionLogController::class, 'submit'])->name('submit');
+            Route::post('{sessionLog}/cancel', [\App\Http\Controllers\Therapist\SessionLogController::class, 'cancel'])->name('cancel');
+        });
     });

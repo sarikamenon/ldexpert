@@ -73,6 +73,16 @@ Route::middleware('role:admin')
         Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
         Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
+        // Session Logs
+        Route::prefix('session-logs')->name('session-logs.')->group(function () {
+            Route::get('/', [\\App\\Http\\Controllers\\Admin\\SessionLogController::class, 'index'])->name('index');
+            Route::get('{sessionLog}', [\\App\\Http\\Controllers\\Admin\\SessionLogController::class, 'show'])->name('show');
+            Route::get('{sessionLog}/edit', [\\App\\Http\\Controllers\\Admin\\SessionLogController::class, 'edit'])->name('edit');
+            Route::put('{sessionLog}', [\\App\\Http\\Controllers\\Admin\\SessionLogController::class, 'update'])->name('update');
+            Route::post('{sessionLog}/finalize', [\\App\\Http\\Controllers\\Admin\\SessionLogController::class, 'finalize'])->name('finalize');
+            Route::post('{sessionLog}/cancel', [\\App\\Http\\Controllers\\Admin\\SessionLogController::class, 'cancel'])->name('cancel');
+        });
+
         // Settings
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
