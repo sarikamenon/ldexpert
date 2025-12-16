@@ -78,7 +78,7 @@ final class ScheduleService
             }
 
             // Timezone Conversion & Overlap Check
-            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
+            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
@@ -215,19 +215,19 @@ final class ScheduleService
 
             $data = $dto->toArray();
             unset($data['duration_minutes']);
-            
+
             // Timezone Conversion & Overlap Check for Updates
             // Need to check if date/time are present in DTO, otherwise use existing schedule values?
             // DTO fromArray sets all fields.
-            
+
             $durationMinutes = $dto->durationMinutes ?? $schedule->durationMinutes();
-            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
+            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($durationMinutes);
 
             // Validate Therapist Overlap (exclude current schedule)
             $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId);
-            
+
             // Validate Student Overlap (need to know which students are involved)
             // Use existing student_id for single, or if group?
             // UpdateScheduleDTO doesn't have studentIds, it updates a single schedule.
@@ -249,7 +249,6 @@ final class ScheduleService
             $data['schedule_date'] = $utcStart->toDateString();
             $data['start_time'] = $utcStart->toTimeString();
             $data['end_time'] = $utcEnd->toTimeString();
-
 
             // If recurrence type or end date changed, regenerate occurrences
             $recurrenceTypeChanged = array_key_exists('recurrence_type', $data)
@@ -323,7 +322,7 @@ final class ScheduleService
             // If this is the parent of a recurring series, delete all in the batch
             if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
                 $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                    ->each(fn(Schedule $occurrence) => $this->repository->delete($occurrence));
+                    ->each(fn (Schedule $occurrence) => $this->repository->delete($occurrence));
             }
 
             $this->repository->delete($schedule);
@@ -344,7 +343,7 @@ final class ScheduleService
     }
 
     /**
-     * @param array<int, int> $studentIds
+     * @param  array<int, int>  $studentIds
      * @return Collection<int, Schedule>
      */
     public function generateRecurringOccurrences(Schedule $parentSchedule, array $studentIds, bool $isGroup): Collection
@@ -352,22 +351,32 @@ final class ScheduleService
         if ($parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
             return collect([]);
         }
-        
+
         $therapist = User::find($parentSchedule->therapist_id);
         $students = User::whereIn('id', $studentIds)->get();
 
         $occurrences = collect();
-        
+
         // Parent stores UTC. Convert to Local for calculation.
         // Assuming end date is end of the recurrence period (date only)
         $endDate = $parentSchedule->recurrence_end_date;
 
-        $utcStart = Carbon::parse($parentSchedule->schedule_date . ' ' . $parentSchedule->start_time);
-        $utcEnd = Carbon::parse($parentSchedule->schedule_date . ' ' . $parentSchedule->end_time);
+        $scheduleDate = $parentSchedule->schedule_date instanceof \Carbon\Carbon
+            ? $parentSchedule->schedule_date->format('Y-m-d')
+            : $parentSchedule->schedule_date;
+        $startTime = $parentSchedule->start_time instanceof \Carbon\Carbon
+            ? $parentSchedule->start_time->format('H:i:s')
+            : $parentSchedule->start_time;
+        $endTime = $parentSchedule->end_time instanceof \Carbon\Carbon
+            ? $parentSchedule->end_time->format('H:i:s')
+            : $parentSchedule->end_time;
+
+        $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
+        $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
         if ($utcEnd->lt($utcStart)) {
             $utcEnd->addDay();
         }
-        
+
         $localStart = $this->timezoneService->toUserTimezone($utcStart, $therapist);
         $localEnd = $this->timezoneService->toUserTimezone($utcEnd, $therapist);
 
@@ -382,12 +391,12 @@ final class ScheduleService
             // Convert current Local occurrence to UTC for storage/validation
             $occurrenceUtcStart = $this->timezoneService->parseUserLocalToUtc($currentStart->toDateTimeString(), $therapist);
             $occurrenceUtcEnd = $this->timezoneService->parseUserLocalToUtc($currentEnd->toDateTimeString(), $therapist);
-            
+
             // Check Overlap
-             $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString());
-             foreach ($students as $student) {
-                 $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString());
-             }
+            $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString());
+            foreach ($students as $student) {
+                $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString());
+            }
 
             $groupBatchNumber = $isGroup
                 ? $this->repository->generateBatchNumber('group')

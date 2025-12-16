@@ -197,6 +197,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $query->where('service_id', $filters['service_id']);
         }
 
+        if (! empty($filters['ssa_id'])) {
+            $query->where('ssa_id', $filters['ssa_id']);
+        }
+
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }

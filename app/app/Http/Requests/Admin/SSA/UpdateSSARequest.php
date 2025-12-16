@@ -26,7 +26,7 @@ final class UpdateSSARequest extends FormRequest
 
     public function rules(): array
     {
-        $frequencies = array_map(static fn(ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
+        $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
 
         return [
             'additional_service_ids' => ['nullable', 'array'],

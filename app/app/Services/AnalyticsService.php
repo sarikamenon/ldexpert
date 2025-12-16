@@ -9,8 +9,8 @@ use App\Enums\UserStatus;
 use App\Models\School;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class AnalyticsService
 {
@@ -112,7 +112,7 @@ class AnalyticsService
             ->get();
 
         return [
-            'labels' => $schools->pluck('date')->map(fn($date) => Carbon::parse($date)->format('M d'))->toArray(),
+            'labels' => $schools->pluck('date')->map(fn ($date) => Carbon::parse($date)->format('M d'))->toArray(),
             'data' => $schools->pluck('count')->toArray(),
         ];
     }
@@ -211,7 +211,7 @@ class AnalyticsService
             ->get();
 
         return [
-            'labels' => $therapists->pluck('date')->map(fn($date) => Carbon::parse($date)->format('M d'))->toArray(),
+            'labels' => $therapists->pluck('date')->map(fn ($date) => Carbon::parse($date)->format('M d'))->toArray(),
             'data' => $therapists->pluck('count')->toArray(),
         ];
     }
@@ -261,9 +261,8 @@ class AnalyticsService
             ->get();
 
         return [
-            'labels' => $activities->pluck('action')->map(fn($action) => ucfirst(str_replace('_', ' ', $action)))->toArray(),
+            'labels' => $activities->pluck('action')->map(fn ($action) => ucfirst(str_replace('_', ' ', $action)))->toArray(),
             'data' => $activities->pluck('count')->toArray(),
         ];
     }
 }
-

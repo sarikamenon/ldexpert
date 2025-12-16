@@ -45,7 +45,7 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
     }
@@ -59,7 +59,7 @@ class UserFactory extends Factory
             TherapistProfile::factory()->create([
                 'user_id' => $user->id,
             ]);
-        })->state(fn(array $attributes) => [
+        })->state(fn (array $attributes) => [
             'role' => Role::THERAPIST->value,
         ]);
     }
@@ -73,7 +73,7 @@ class UserFactory extends Factory
             StudentProfile::factory()->create([
                 'user_id' => $user->id,
             ]);
-        })->state(fn(array $attributes) => [
+        })->state(fn (array $attributes) => [
             'role' => Role::STUDENT->value,
         ]);
     }
@@ -87,7 +87,7 @@ class UserFactory extends Factory
             ParentProfile::factory()->create([
                 'user_id' => $user->id,
             ]);
-        })->state(fn(array $attributes) => [
+        })->state(fn (array $attributes) => [
             'role' => Role::PARENT->value,
         ]);
     }
@@ -101,7 +101,7 @@ class UserFactory extends Factory
             AdminProfile::factory()->create([
                 'user_id' => $user->id,
             ]);
-        })->state(fn(array $attributes) => [
+        })->state(fn (array $attributes) => [
             'role' => Role::ADMIN->value,
         ]);
     }

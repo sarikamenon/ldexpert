@@ -225,13 +225,13 @@ final class EloquentSSARepository implements SSARepositoryInterface
         if ($filters->search) {
             $query->where(function (Builder $q) use ($filters) {
                 $q->whereHas('student', function (Builder $studentQuery) use ($filters) {
-                    $studentQuery->where('name', 'like', '%' . $filters->search . '%');
+                    $studentQuery->where('name', 'like', '%'.$filters->search.'%');
                 })
                     ->orWhereHas('primaryService', function (Builder $serviceQuery) use ($filters) {
-                        $serviceQuery->where('name', 'like', '%' . $filters->search . '%');
+                        $serviceQuery->where('name', 'like', '%'.$filters->search.'%');
                     })
                     ->orWhereHas('assignedTherapist', function (Builder $therapistQuery) use ($filters) {
-                        $therapistQuery->where('name', 'like', '%' . $filters->search . '%');
+                        $therapistQuery->where('name', 'like', '%'.$filters->search.'%');
                     });
             });
         }
@@ -262,7 +262,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     }
 
     /**
-     * @param array<int>|null $additionalServiceIds
+     * @param  array<int>|null  $additionalServiceIds
      */
     private function syncSsaServices(ServiceSupportAgreement $ssa, ?array $additionalServiceIds = null): void
     {
@@ -286,7 +286,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         $additionalIds = array_values(array_unique(
             array_filter(
                 array_map('intval', $additionalIds),
-                static fn(int $serviceId): bool => $serviceId !== (int) $primaryServiceId
+                static fn (int $serviceId): bool => $serviceId !== (int) $primaryServiceId
             )
         ));
 

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogService;
-use App\Enums\SessionLogStatus;
+use App\DTOs\SessionLogIndexDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSessionLogRequest;
+use App\Http\Requests\SessionLog\SessionLogIndexRequest;
 use App\Models\SessionLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,27 +21,15 @@ final class SessionLogController extends Controller
     public function __construct(
         private readonly SessionLogRepositoryInterface $repository,
         private readonly SessionLogService $service,
+        private readonly SessionLogIndexService $indexService,
     ) {}
 
-    public function index(Request $request): View
+    public function index(SessionLogIndexRequest $request): View
     {
-        $filters = $request->validate([
-            'school_id' => ['nullable', 'integer'],
-            'student_id' => ['nullable', 'integer'],
-            'therapist_id' => ['nullable', 'integer'],
-            'service_id' => ['nullable', 'integer'],
-            'status' => ['nullable', 'string'],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date'],
-        ]);
+        $dto = SessionLogIndexDTO::fromArray($request->validated());
+        $viewData = $this->indexService->getAdminIndex($dto);
 
-        $sessionLogs = $this->repository->paginateForAdmin($filters, 15);
-
-        return view('admin.session-logs.index', [
-            'sessionLogs' => $sessionLogs,
-            'filters' => $filters,
-            'statuses' => SessionLogStatus::values(),
-        ]);
+        return view('admin.session-logs.index', $viewData);
     }
 
     public function show(SessionLog $sessionLog): View

@@ -35,7 +35,7 @@ final class TherapistService
         // Send welcome email
         Mail::to($dto->personalEmail)->send(
             new WelcomeTherapistMail(
-                name: $dto->firstName . ' ' . $dto->lastName,
+                name: $dto->firstName.' '.$dto->lastName,
                 email: $dto->personalEmail,
                 plainPassword: $dto->password
             )

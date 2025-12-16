@@ -7,32 +7,31 @@ namespace App\Http\Controllers\Admin;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\Domain\Therapist\Services\ScheduleService;
-use App\Domain\Student\Services\StudentService;
-use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Services\ScheduleService;
+use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
-use App\DTOs\StudentFilterDTO;
-use App\DTOs\TherapistFilterDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
 use App\Enums\Role;
 use App\Enums\ScheduleStatus;
-use App\Enums\UserStatus;
-use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\TherapistPosition;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
 use App\Http\Requests\Admin\Student\ExportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
-use App\Models\ServiceSupportAgreement;
 use App\Models\Service;
+use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -158,7 +157,7 @@ final class StudentController extends Controller
             // Get therapists assigned to SSAs for this student
             $therapistsQuery = User::query()
                 ->where('role', Role::THERAPIST)
-                ->whereHas('assignedSSAs', fn($q) => $q->where('student_id', $student->id))
+                ->whereHas('assignedSSAs', fn ($q) => $q->where('student_id', $student->id))
                 ->with('therapistProfile')
                 ->distinct();
 
@@ -178,7 +177,7 @@ final class StudentController extends Controller
 
             // Apply position filter
             if ($request->filled('position')) {
-                $therapistsQuery->whereHas('therapistProfile', fn($q) => $q->where('position', $request->query('position')));
+                $therapistsQuery->whereHas('therapistProfile', fn ($q) => $q->where('position', $request->query('position')));
             }
 
             $viewData['therapists'] = $therapistsQuery->paginate($request->integer('per_page', 15));
@@ -200,7 +199,7 @@ final class StudentController extends Controller
                 ->get(['id', 'student_id', 'assigned_therapist_id', 'primary_service_id', 'status']);
             $viewData['therapists'] = User::query()
                 ->where('role', Role::THERAPIST)
-                ->whereHas('assignedSSAs', fn($q) => $q->where('student_id', $student->id))
+                ->whereHas('assignedSSAs', fn ($q) => $q->where('student_id', $student->id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
         }

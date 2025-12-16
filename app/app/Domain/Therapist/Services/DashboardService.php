@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\DTOs\ScheduleFilterDTO;
 use App\Enums\Role;
 use App\Enums\ScheduleStatus;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
-use App\DTOs\ScheduleFilterDTO;
 use App\Models\Schedule;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
@@ -109,7 +109,7 @@ class DashboardService
     }
 
     /**
-     * @param Collection<int, Schedule> $schedules
+     * @param  Collection<int, Schedule>  $schedules
      * @return Collection<int, array<string, mixed>>
      */
     private function formatSchedulesForDashboard(Collection $schedules): Collection

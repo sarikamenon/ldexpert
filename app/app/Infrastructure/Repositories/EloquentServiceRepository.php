@@ -67,7 +67,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
     private function applyFilters(Builder $query, ServiceFilterDTO $filters): Builder
     {
         if ($filters->search) {
-            $query->where('name', 'like', '%' . $filters->search . '%');
+            $query->where('name', 'like', '%'.$filters->search.'%');
         }
 
         if ($filters->status) {

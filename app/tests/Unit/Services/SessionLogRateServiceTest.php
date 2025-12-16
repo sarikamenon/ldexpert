@@ -12,7 +12,7 @@ final class SessionLogRateServiceTest extends TestCase
 {
     public function test_calculate_billable_amount_hourly(): void
     {
-        $service = new SessionLogRateService();
+        $service = new SessionLogRateService;
         $amount = $service->calculateBillableAmount(RateType::HOURLY, 120.0, 90);
 
         $this->assertSame(180.0, $amount);
@@ -20,7 +20,7 @@ final class SessionLogRateServiceTest extends TestCase
 
     public function test_calculate_billable_amount_flat(): void
     {
-        $service = new SessionLogRateService();
+        $service = new SessionLogRateService;
         $amount = $service->calculateBillableAmount(RateType::FLAT, 150.0, 45);
 
         $this->assertSame(150.0, $amount);

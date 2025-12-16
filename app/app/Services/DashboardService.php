@@ -14,12 +14,9 @@ use App\Models\ActivityLog;
 use App\Models\School;
 use App\Models\SchoolContract;
 use App\Models\ServiceSupportAgreement;
-use App\Models\StudentProfile;
 use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use App\Services\ActivityLogService;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -129,7 +126,7 @@ class DashboardService
         if ($schoolsWithoutManagers > 0) {
             $alerts[] = [
                 'type' => 'danger',
-                'message' => "{$schoolsWithoutManagers} " . ($schoolsWithoutManagers === 1 ? 'School' : 'Schools') . " without assigned managers",
+                'message' => "{$schoolsWithoutManagers} ".($schoolsWithoutManagers === 1 ? 'School' : 'Schools').' without assigned managers',
                 'link' => route('admin.schools.index'),
                 'icon' => 'alert',
             ];
@@ -143,7 +140,7 @@ class DashboardService
         if ($inactiveTherapists > 0) {
             $alerts[] = [
                 'type' => 'info',
-                'message' => "{$inactiveTherapists} Inactive " . ($inactiveTherapists === 1 ? 'therapist' : 'therapists'),
+                'message' => "{$inactiveTherapists} Inactive ".($inactiveTherapists === 1 ? 'therapist' : 'therapists'),
                 'link' => route('admin.therapists.index', ['show_deactivated' => 1]),
                 'icon' => 'user',
             ];
@@ -156,7 +153,7 @@ class DashboardService
         if ($ssasExpiringSoon > 0) {
             $alerts[] = [
                 'type' => 'warning',
-                'message' => "{$ssasExpiringSoon} " . ($ssasExpiringSoon === 1 ? 'SSA' : 'SSAs') . " expiring in next 7 days",
+                'message' => "{$ssasExpiringSoon} ".($ssasExpiringSoon === 1 ? 'SSA' : 'SSAs').' expiring in next 7 days',
                 'link' => route('admin.ssas.index'),
                 'icon' => 'calendar',
             ];
@@ -173,7 +170,7 @@ class DashboardService
         if ($studentsNeedingSSA > 0) {
             $alerts[] = [
                 'type' => 'warning',
-                'message' => "{$studentsNeedingSSA} " . ($studentsNeedingSSA === 1 ? 'Student' : 'Students') . " without active SSAs",
+                'message' => "{$studentsNeedingSSA} ".($studentsNeedingSSA === 1 ? 'Student' : 'Students').' without active SSAs',
                 'link' => route('admin.students.index'),
                 'icon' => 'user',
             ];
@@ -186,7 +183,7 @@ class DashboardService
         if ($unassignedSSAs > 0) {
             $alerts[] = [
                 'type' => 'info',
-                'message' => "{$unassignedSSAs} " . ($unassignedSSAs === 1 ? 'SSA' : 'SSAs') . " pending therapist assignment",
+                'message' => "{$unassignedSSAs} ".($unassignedSSAs === 1 ? 'SSA' : 'SSAs').' pending therapist assignment',
                 'link' => route('admin.ssas.index', ['status' => 'pending']),
                 'icon' => 'document',
             ];
@@ -296,7 +293,7 @@ class DashboardService
         }
 
         // Sort by due date and return top 4
-        usort($events, fn($a, $b) => $a['due_date'] <=> $b['due_date']);
+        usort($events, fn ($a, $b) => $a['due_date'] <=> $b['due_date']);
 
         return array_slice($events, 0, 4);
     }
@@ -333,7 +330,7 @@ class DashboardService
         return [
             [
                 'label' => 'School-Therapist Ratio',
-                'value' => $activeTherapists > 0 ? number_format($activeSchools / $activeTherapists, 1) . ':1' : 'N/A',
+                'value' => $activeTherapists > 0 ? number_format($activeSchools / $activeTherapists, 1).':1' : 'N/A',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
@@ -436,6 +433,7 @@ class DashboardService
         for ($i = 29; $i >= 0; $i--) {
             $labels[] = now()->subDays($i)->format('M d');
         }
+
         return $labels;
     }
 

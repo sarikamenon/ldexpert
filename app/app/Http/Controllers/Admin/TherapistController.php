@@ -6,36 +6,35 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
-use App\Domain\Therapist\Services\TherapistService;
-use App\Domain\Student\Services\StudentService;
-use App\Domain\SSA\Services\SSAService;
 use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
-use App\DTOs\TherapistFilterDTO;
-use App\DTOs\StudentFilterDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\TherapistContractFilterDTO;
+use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Enums\EmployeeType;
 use App\Enums\Role;
+use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Enums\UserStatus;
-use App\Enums\SSAStatus;
-use App\Enums\ServiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Therapist\ChangeTherapistStatusRequest;
 use App\Http\Requests\Admin\Therapist\ExportTherapistsRequest;
 use App\Http\Requests\Admin\Therapist\IndexTherapistRequest;
 use App\Http\Requests\Admin\Therapist\StoreTherapistRequest;
 use App\Http\Requests\Admin\Therapist\UpdateTherapistRequest;
+use App\Models\Service;
+use App\Models\ServiceSupportAgreement;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use App\Models\ServiceSupportAgreement;
-use App\Models\Service;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -130,7 +129,7 @@ final class TherapistController extends Controller
 
             $studentsCount = User::query()
                 ->where('role', Role::STUDENT)
-                ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
+                ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapist->id))
                 ->count();
 
             $viewData['metrics'] = [
@@ -146,7 +145,7 @@ final class TherapistController extends Controller
             // Filter students by therapist relationship
             $studentsQuery = User::query()
                 ->where('role', Role::STUDENT)
-                ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
+                ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapist->id))
                 ->with('studentProfile.school');
 
             // Apply search filter
@@ -177,7 +176,7 @@ final class TherapistController extends Controller
             $viewData['students'] = User::query()
                 ->where('role', Role::STUDENT)
                 ->where('status', UserStatus::ACTIVE)
-                ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
+                ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapist->id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
             // Don't show therapist filter in therapist detail view as it's redundant

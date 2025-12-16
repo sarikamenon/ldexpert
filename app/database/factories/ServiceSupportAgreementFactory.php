@@ -51,14 +51,14 @@ final class ServiceSupportAgreementFactory extends Factory
 
     public function withTherapist(): self
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'assigned_therapist_id' => User::factory()->create(['role' => 'therapist'])->id,
         ]);
     }
 
     public function active(): self
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => SSAStatus::ACTIVE->value,
             'assigned_therapist_id' => User::factory()->create(['role' => 'therapist'])->id,
         ]);
@@ -66,7 +66,7 @@ final class ServiceSupportAgreementFactory extends Factory
 
     public function completed(): self
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => SSAStatus::COMPLETED->value,
         ]);
     }

@@ -61,11 +61,13 @@ final class SessionLogPolicy
 
     public function submit(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role === Role::THERAPIST) {
-            return $sessionLog->therapist_id === $user->id && $sessionLog->canEdit();
+        $role = $user->role instanceof Role ? $user->role->value : $user->role;
+        if ($role !== Role::THERAPIST->value) {
+            return false;
         }
 
-        return false;
+        // Therapist can submit own log unless finalized; service enforces draft/submitted transitions.
+        return (int) $sessionLog->therapist_id === (int) $user->id && ! $sessionLog->isFinalized();
     }
 
     public function finalize(User $user, SessionLog $sessionLog): bool

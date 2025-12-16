@@ -4,37 +4,42 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\SessionLog\SessionLogIndexRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
 use App\Http\Requests\Therapist\UpdateSessionLogRequest;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class SessionLogController extends Controller
 {
     public function __construct(
         private readonly SessionLogService $sessionLogService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
     ) {}
 
-    public function index(): View
+    public function index(SessionLogIndexRequest $request): View
     {
-        $therapist = auth()->user();
-        $sessionLogs = $this->sessionLogService->getSessionLogs($therapist);
+        $therapist = $request->user();
 
-        return view('therapist.session-logs.index', [
-            'sessionLogs' => $sessionLogs,
-        ]);
+        $dto = SessionLogIndexDTO::fromArray($request->validated());
+        $viewData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
+
+        return view('therapist.session-logs.index', $viewData);
     }
 
-    public function create(?Schedule $schedule = null): View
+    public function create(Request $request, ?Schedule $schedule = null): View
     {
-        $therapist = auth()->user();
+        $therapist = $request->user();
 
         // If schedule provided, validate access
         if ($schedule && $schedule->therapist_id !== $therapist->id) {
@@ -133,17 +138,25 @@ final class SessionLogController extends Controller
         }
     }
 
-    public function submit(SessionLog $sessionLog): RedirectResponse
+    public function submit(Request $request, SessionLog $sessionLog): RedirectResponse
     {
-        $this->authorize('submit', $sessionLog);
+        $therapist = $request->user();
 
-        $therapist = auth()->user();
+        // Ownership guard: therapists may only submit their own logs
+        if ((int) $sessionLog->therapist_id !== (int) $therapist->id) {
+            abort(403, 'Therapist does not have access to this session log.');
+        }
+
+        // Finalization guard: finalized logs cannot be resubmitted
+        if ($sessionLog->isFinalized()) {
+            abort(403, 'Session log cannot be submitted in its current status.');
+        }
 
         try {
             $this->sessionLogService->submit($therapist, $sessionLog);
 
             return redirect()
-                ->route('therapist.session-logs.show', $sessionLog)
+                ->route('therapist.session-logs.show', ['sessionLog' => $sessionLog->id])
                 ->with('success', 'Session log submitted successfully.');
         } catch (\Exception $e) {
             return redirect()
@@ -152,17 +165,17 @@ final class SessionLogController extends Controller
         }
     }
 
-    public function cancel(SessionLog $sessionLog): JsonResponse|RedirectResponse
+    public function cancel(Request $request, SessionLog $sessionLog): JsonResponse|RedirectResponse
     {
         $this->authorize('cancel', $sessionLog);
 
-        $therapist = auth()->user();
-        $reason = request()->input('cancellation_reason', 'Cancelled by therapist');
+        $therapist = $request->user();
+        $reason = $request->input('cancellation_reason', 'Cancelled by therapist');
 
         try {
             $this->sessionLogService->cancel($therapist, $sessionLog, $reason);
 
-            if (request()->expectsJson()) {
+            if ($request->expectsJson()) {
                 return response()->json(['message' => 'Session log cancelled successfully.']);
             }
 
@@ -170,7 +183,7 @@ final class SessionLogController extends Controller
                 ->route('therapist.session-logs.index')
                 ->with('success', 'Session log cancelled successfully.');
         } catch (\Exception $e) {
-            if (request()->expectsJson()) {
+            if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 422);
             }
 

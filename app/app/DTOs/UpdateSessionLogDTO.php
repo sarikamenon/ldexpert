@@ -80,7 +80,7 @@ final class UpdateSessionLogDTO
             therapistBillableAmount: isset($data['therapist_billable_amount']) && $data['therapist_billable_amount'] !== ''
                 ? (float) $data['therapist_billable_amount']
                 : null,
-            isBillableSchool: isset($data['is_billable_school']) !== null
+            isBillableSchool: array_key_exists('is_billable_school', $data)
                 ? (bool) $data['is_billable_school']
                 : null,
             schoolContractId: isset($data['school_contract_id']) && $data['school_contract_id'] !== ''

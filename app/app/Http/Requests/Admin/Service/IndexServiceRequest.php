@@ -17,7 +17,7 @@ final class IndexServiceRequest extends FormRequest
 
     public function rules(): array
     {
-        $statuses = array_map(static fn(ServiceStatus $status) => $status->value, ServiceStatus::cases());
+        $statuses = array_map(static fn (ServiceStatus $status) => $status->value, ServiceStatus::cases());
 
         return [
             'search' => ['nullable', 'string', 'max:255'],

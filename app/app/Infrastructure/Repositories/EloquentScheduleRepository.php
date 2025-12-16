@@ -13,7 +13,6 @@ use App\Enums\SSAStatus;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\ServiceSupportAgreement;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -104,7 +103,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             $studentId = $ssa->student_id;
             $studentProfile = $ssa->student?->studentProfile;
             $studentName = $studentProfile
-                ? trim($studentProfile->first_name . ' ' . $studentProfile->last_name)
+                ? trim($studentProfile->first_name.' '.$studentProfile->last_name)
                 : $ssa->student?->name;
 
             if (! isset($mappings[$studentId])) {
@@ -132,7 +131,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 
         return collect($mappings)->map(function (array $entry) {
             $entry['services'] = collect($entry['services'])
-                ->unique(fn($service) => $service['service_id'] . '-' . $service['ssa_id'])
+                ->unique(fn ($service) => $service['service_id'].'-'.$service['ssa_id'])
                 ->values()
                 ->all();
 
@@ -261,7 +260,8 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function generateBatchNumber(string $type = 'recurring'): string
     {
         $prefix = $type === 'recurring' ? 'REC' : 'GRP';
-        return $prefix . '-' . Str::random(10) . '-' . time();
+
+        return $prefix.'-'.Str::random(10).'-'.time();
     }
 
     public function updateBillingStatus(Schedule $schedule, BillingStatus $status): Schedule

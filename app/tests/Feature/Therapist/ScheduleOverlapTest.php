@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature\Therapist;
 
 use App\Enums\Role;
-use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -55,6 +54,7 @@ final class ScheduleOverlapTest extends TestCase
             'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:30',
             'end_time' => '10:30',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'location_details' => 'Office A',
         ];
@@ -101,6 +101,7 @@ final class ScheduleOverlapTest extends TestCase
             'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:30',
             'end_time' => '10:30',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'location_details' => 'Office A',
         ];
@@ -138,6 +139,7 @@ final class ScheduleOverlapTest extends TestCase
             'schedule_date' => $date,
             'start_time' => '09:00',
             'end_time' => '10:00',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'location_details' => 'Office A',
         ];

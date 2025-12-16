@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Repositories;
 
-use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

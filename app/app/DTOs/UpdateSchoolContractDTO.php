@@ -10,7 +10,7 @@ use Carbon\CarbonImmutable;
 final class UpdateSchoolContractDTO
 {
     /**
-     * @param array<int, ContractServiceRateDTO> $services
+     * @param  array<int, ContractServiceRateDTO>  $services
      */
     public function __construct(
         public readonly CarbonImmutable $startDate,
@@ -30,7 +30,7 @@ final class UpdateSchoolContractDTO
                 ? $data['status']
                 : ContractStatus::from($data['status']),
             services: array_map(
-                static fn(array $row) => ContractServiceRateDTO::fromArray($row),
+                static fn (array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
         );

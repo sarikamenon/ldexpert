@@ -21,7 +21,7 @@ interface TherapistContractRepositoryInterface
     public function update(TherapistContract $contract, UpdateTherapistContractDTO $dto): TherapistContract;
 
     /**
-     * @param array<int, ContractServiceRateDTO> $services
+     * @param  array<int, ContractServiceRateDTO>  $services
      */
     public function syncServices(TherapistContract $contract, array $services): void;
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Therapist\DashboardController;
 use App\Http\Controllers\Therapist\ScheduleController;
+use App\Http\Controllers\Therapist\SessionLogController;
 use App\Http\Controllers\Therapist\SSAController;
 use App\Http\Controllers\Therapist\StudentController;
 use Illuminate\Support\Facades\Route;
@@ -40,14 +41,14 @@ Route::middleware('role:therapist')
 
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Therapist\SessionLogController::class, 'index'])->name('index');
-            Route::get('create', [\App\Http\Controllers\Therapist\SessionLogController::class, 'create'])->name('create');
-            Route::get('create/schedule/{schedule}', [\App\Http\Controllers\Therapist\SessionLogController::class, 'create'])->name('create.from-schedule');
-            Route::post('/', [\App\Http\Controllers\Therapist\SessionLogController::class, 'store'])->name('store');
-            Route::get('{sessionLog}', [\App\Http\Controllers\Therapist\SessionLogController::class, 'show'])->name('show');
-            Route::get('{sessionLog}/edit', [\App\Http\Controllers\Therapist\SessionLogController::class, 'edit'])->name('edit');
-            Route::put('{sessionLog}', [\App\Http\Controllers\Therapist\SessionLogController::class, 'update'])->name('update');
-            Route::post('{sessionLog}/submit', [\App\Http\Controllers\Therapist\SessionLogController::class, 'submit'])->name('submit');
-            Route::post('{sessionLog}/cancel', [\App\Http\Controllers\Therapist\SessionLogController::class, 'cancel'])->name('cancel');
+            Route::get('/', [SessionLogController::class, 'index'])->name('index');
+            Route::get('create', [SessionLogController::class, 'create'])->name('create');
+            Route::get('create/schedule/{schedule}', [SessionLogController::class, 'create'])->name('create.from-schedule');
+            Route::post('/', [SessionLogController::class, 'store'])->name('store');
+            Route::get('{sessionLog}', [SessionLogController::class, 'show'])->name('show');
+            Route::get('{sessionLog}/edit', [SessionLogController::class, 'edit'])->name('edit');
+            Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
+            Route::post('{sessionLog}/submit', [SessionLogController::class, 'submit'])->name('submit');
+            Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
         });
     });

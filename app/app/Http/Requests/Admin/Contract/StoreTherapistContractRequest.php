@@ -20,4 +20,3 @@ final class StoreTherapistContractRequest extends TherapistContractFormRequest
         ] + $this->baseRules();
     }
 }
-

@@ -7,12 +7,30 @@ namespace App\Http\Requests\Therapist;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Enums\RateType;
 use App\Enums\SSAStatus;
+use App\Models\Service;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 final class StoreSessionLogRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $start = $this->input('start_time');
+        $end = $this->input('end_time');
+
+        if ($start && $end) {
+            $startTime = Carbon::parse($start);
+            $endTime = Carbon::parse($end);
+            $durationMinutes = (int) round($startTime->diffInMinutes($endTime) / 5) * 5;
+
+            $this->merge([
+                'duration_minutes' => $durationMinutes,
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->role?->value === 'therapist';
@@ -25,9 +43,11 @@ final class StoreSessionLogRequest extends FormRequest
             'ssa_id' => ['required', 'integer', Rule::exists('service_support_agreements', 'id')],
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')],
             'schedule_id' => ['nullable', 'integer', Rule::exists('schedules', 'id')],
+            'school_id' => ['nullable', 'integer', Rule::exists('schools', 'id')],
             'session_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:Y-m-d H:i:s'],
             'end_time' => ['required', 'date_format:Y-m-d H:i:s', 'after:start_time'],
+            'duration_minutes' => ['required', 'integer', 'min:1'],
             'notes' => ['required', 'string', 'min:50', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],
             'is_billable_school' => ['nullable', 'boolean'],
@@ -88,6 +108,7 @@ final class StoreSessionLogRequest extends FormRequest
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
+
                     return;
                 }
 
@@ -98,6 +119,15 @@ final class StoreSessionLogRequest extends FormRequest
                 // Validate SSA is active
                 if ($ssa->status !== SSAStatus::ACTIVE) {
                     $validator->errors()->add('ssa_id', 'You can only create session logs for active SSAs.');
+                }
+
+                // Validate session date is within SSA range
+                $sessionDate = $this->input('session_date');
+                if ($sessionDate) {
+                    $session = Carbon::parse($sessionDate);
+                    if ($session->lt($ssa->start_date) || $session->gt($ssa->end_date)) {
+                        $validator->errors()->add('session_date', 'Session date must fall within the SSA start and end dates.');
+                    }
                 }
 
                 // Validate student belongs to SSA
@@ -112,6 +142,28 @@ final class StoreSessionLogRequest extends FormRequest
                 $schedule = \App\Models\Schedule::find($scheduleId);
                 if ($schedule && $schedule->therapist_id !== $therapist->id) {
                     $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
+                }
+            }
+
+            // Validate duration within service limits (if available)
+            $serviceId = $this->input('service_id');
+            $durationMinutes = (int) $this->input('duration_minutes', 0);
+            if ($serviceId && $durationMinutes > 0) {
+                $service = Service::find($serviceId);
+                if ($service) {
+                    if ($service->min_duration_minutes !== null && $durationMinutes < $service->min_duration_minutes) {
+                        $message = 'Duration is below the minimum allowed for this service.';
+                        $validator->errors()->add('duration_minutes', $message);
+                        // Surface business-rule style validation on a generic key for feature tests
+                        $validator->errors()->add('error', $message);
+                    }
+
+                    if ($service->max_duration_minutes !== null && $durationMinutes > $service->max_duration_minutes) {
+                        $message = 'Duration exceeds the maximum allowed for this service.';
+                        $validator->errors()->add('duration_minutes', $message);
+                        // Surface business-rule style validation on a generic key for feature tests
+                        $validator->errors()->add('error', $message);
+                    }
                 }
             }
         });

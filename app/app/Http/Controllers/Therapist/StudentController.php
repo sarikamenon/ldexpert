@@ -74,7 +74,7 @@ final class StudentController extends Controller
             ->where('assigned_therapist_id', $therapist->id)
             ->exists();
 
-        if (!$hasAssignedSSA) {
+        if (! $hasAssignedSSA) {
             abort(403, 'You do not have access to this student.');
         }
 

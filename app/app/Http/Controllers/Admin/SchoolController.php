@@ -6,23 +6,25 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
-use App\Domain\School\Services\SchoolService;
+use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\School\Services\SchoolService;
+use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
-use App\Domain\SSA\Services\SSAService;
-use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
+use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\SchoolFilterDTO;
+use App\DTOs\SSAFilterDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\TherapistFilterDTO;
-use App\DTOs\SSAFilterDTO;
-use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\Role;
 use App\Enums\SchoolType;
+use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -33,11 +35,9 @@ use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
 use App\Http\Requests\Admin\School\UpdateSchoolRequest;
 use App\Models\School;
-use App\Models\User;
-use App\Models\ServiceSupportAgreement;
 use App\Models\Service;
-use App\Enums\SSAStatus;
-use App\Enums\ServiceStatus;
+use App\Models\ServiceSupportAgreement;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -145,7 +145,7 @@ final class SchoolController extends Controller
         // Load dashboard data (always needed for metrics)
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
             $ssasForMetrics = ServiceSupportAgreement::with(['student', 'primaryService', 'assignedTherapist'])
-                ->whereHas('student.studentProfile', fn($q) => $q->where('school_id', $school->id))
+                ->whereHas('student.studentProfile', fn ($q) => $q->where('school_id', $school->id))
                 ->get();
 
             $statusCounts = [
@@ -157,7 +157,7 @@ final class SchoolController extends Controller
 
             $studentsCount = User::query()
                 ->where('role', Role::STUDENT)
-                ->whereHas('studentProfile', fn($q) => $q->where('school_id', $school->id))
+                ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $school->id))
                 ->count();
 
             $therapistsCount = $this->therapistsForSchoolQuery($school->id)
@@ -203,7 +203,7 @@ final class SchoolController extends Controller
             $viewData['students'] = User::query()
                 ->where('role', Role::STUDENT)
                 ->where('status', UserStatus::ACTIVE)
-                ->whereHas('studentProfile', fn($q) => $q->where('school_id', $school->id))
+                ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $school->id))
                 ->orderBy('name')
                 ->get(['id', 'name', 'email']);
             $viewData['therapists'] = $this->therapistsForSchoolQuery($school->id)

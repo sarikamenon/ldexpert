@@ -38,4 +38,3 @@ interface SSARepositoryInterface
 
     public function checkOverlappingSSAs(int $studentId, int $serviceId, string $startDate, string $endDate, ?int $excludeSsaId = null): Collection;
 }
-

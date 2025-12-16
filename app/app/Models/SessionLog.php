@@ -10,7 +10,6 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SessionLog extends Model
@@ -174,6 +173,7 @@ class SessionLog extends Model
 
         // Round to nearest 5 minutes
         $minutes = (int) $start->diffInMinutes($end);
+
         return (int) round($minutes / 5) * 5;
     }
 }

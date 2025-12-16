@@ -26,4 +26,3 @@ class IndexActivityLogRequest extends FormRequest
         ];
     }
 }
-

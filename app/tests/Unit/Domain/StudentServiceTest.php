@@ -27,7 +27,7 @@ final class StudentServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new StudentService(new EloquentStudentRepository());
+        $this->service = new StudentService(new EloquentStudentRepository);
     }
 
     public function test_create_creates_student_and_sends_welcome_email(): void

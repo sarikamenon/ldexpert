@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Enums\ServiceFrequency;
-use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 // uses(TestCase::class, RefreshDatabase::class);

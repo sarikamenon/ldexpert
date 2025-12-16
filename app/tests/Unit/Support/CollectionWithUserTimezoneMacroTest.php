@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Support;
 
-use App\Domain\Time\UserTimezoneService;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
@@ -13,13 +12,13 @@ use Tests\TestCase;
 
 final class CollectionWithUserTimezoneMacroTest extends TestCase
 {
-
     public function test_macro_converts_created_at_and_updated_at_to_local_attributes(): void
     {
-        $user = new User();
+        $user = new User;
         $user->timezone = 'America/New_York';
 
-        $model = new class extends Model {
+        $model = new class extends Model
+        {
             protected $guarded = [];
         };
 

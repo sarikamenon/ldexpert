@@ -17,7 +17,7 @@ final class ChangeSSAStatusRequest extends FormRequest
 
     public function rules(): array
     {
-        $statuses = array_map(static fn(SSAStatus $status) => $status->value, SSAStatus::cases());
+        $statuses = array_map(static fn (SSAStatus $status) => $status->value, SSAStatus::cases());
 
         return [
             'status' => ['required', Rule::in($statuses)],
@@ -25,4 +25,3 @@ final class ChangeSSAStatusRequest extends FormRequest
         ];
     }
 }
-

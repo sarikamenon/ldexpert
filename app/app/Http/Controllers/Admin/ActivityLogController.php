@@ -9,9 +9,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ActivityLog\ExportActivityLogsRequest;
 use App\Http\Requests\Admin\ActivityLog\IndexActivityLogRequest;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ActivityLogController extends Controller

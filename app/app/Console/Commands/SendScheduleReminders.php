@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Domain\Time\UserTimezoneService;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\Mail\ScheduleReminderMail;
 use App\Models\Schedule;
 use App\Models\User;
@@ -153,7 +153,7 @@ class SendScheduleReminders extends Command
         // Unique recipients by email to avoid duplicates
         $uniqueRecipients = [];
         foreach ($recipients as $recipient) {
-            if (!isset($uniqueRecipients[$recipient['email']])) {
+            if (! isset($uniqueRecipients[$recipient['email']])) {
                 $uniqueRecipients[$recipient['email']] = $recipient;
             }
         }

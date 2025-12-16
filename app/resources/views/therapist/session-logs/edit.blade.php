@@ -10,3 +10,4 @@
         ])
     </x-ui-card>
 @endsection
+

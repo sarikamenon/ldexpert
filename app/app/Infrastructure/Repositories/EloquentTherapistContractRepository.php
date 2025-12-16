@@ -51,7 +51,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         $contract->services()->delete();
         $contract->services()->createMany(
             array_map(
-                static fn(ContractServiceRateDTO $dto) => [
+                static fn (ContractServiceRateDTO $dto) => [
                     'service_id' => $dto->serviceId,
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
@@ -75,7 +75,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         return TherapistContract::query()
             ->where('therapist_id', $therapistId)
             ->where('status', ContractStatus::ACTIVE->value)
-            ->when($ignoreId, fn(Builder $query) => $query->whereKeyNot($ignoreId))
+            ->when($ignoreId, fn (Builder $query) => $query->whereKeyNot($ignoreId))
             ->where(function (Builder $query) use ($startDate, $endDate) {
                 $query->whereDate('start_date', '<=', $endDate)
                     ->whereDate('end_date', '>=', $startDate);
@@ -113,8 +113,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                 $builder->where('id', $filters->search)
                     ->orWhereHas('therapist', function (Builder $therapistQuery) use ($filters) {
                         $therapistQuery
-                            ->where('first_name', 'like', '%' . $filters->search . '%')
-                            ->orWhere('last_name', 'like', '%' . $filters->search . '%');
+                            ->where('first_name', 'like', '%'.$filters->search.'%')
+                            ->orWhere('last_name', 'like', '%'.$filters->search.'%');
                     });
             });
         }

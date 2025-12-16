@@ -25,4 +25,3 @@ final class SSAService extends Pivot
         'is_primary' => 'bool',
     ];
 }
-

@@ -21,7 +21,7 @@ final class StoreScheduleRequest extends FormRequest
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn(RecurrenceType $type): string => $type->value,
+            static fn (RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
@@ -76,6 +76,7 @@ final class StoreScheduleRequest extends FormRequest
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
+
                     return;
                 }
 

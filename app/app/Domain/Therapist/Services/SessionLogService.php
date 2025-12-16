@@ -7,11 +7,13 @@ namespace App\Domain\Therapist\Services;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
-use App\Enums\SessionLogStatus;
+use App\Enums\BillingStatus;
 use App\Models\Schedule;
+use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -52,10 +54,17 @@ final class SessionLogService
 
             // Get SSA for tho_minutes and school_id
             $ssa = ServiceSupportAgreement::with(['student.studentProfile'])->findOrFail($dto->ssaId);
+            $service = Service::findOrFail($dto->serviceId);
+            $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
+            $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
             $schoolId = $schedule->school_id ?? $ssa->student->studentProfile?->school_id ?? null;
+            $this->assertSchoolIdPresent($schoolId);
 
-            // Calculate billing amounts
+            $this->assertScheduleNotBilled($schedule);
+            $this->assertScheduleHasNoLogs($schedule);
+
+            // Calculate billing amounts and validate contracts
             $billing = $this->rateService->calculateDualBilling(
                 $therapist->id,
                 $schoolId,
@@ -63,6 +72,7 @@ final class SessionLogService
                 $dto->sessionDate,
                 $dto->durationMinutes
             );
+            $this->assertContractsPresent($billing);
 
             // Prepare data
             $data = $dto->toArray();
@@ -84,7 +94,11 @@ final class SessionLogService
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
             }
 
-            return $this->repository->create($data);
+            $sessionLog = $this->repository->create($data);
+
+            $schedule->update(['billing_status' => BillingStatus::BILLED]);
+
+            return $sessionLog;
         });
     }
 
@@ -103,10 +117,14 @@ final class SessionLogService
 
             // Get SSA for school_id and tho_minutes
             $ssa = ServiceSupportAgreement::with(['student.studentProfile'])->findOrFail($dto->ssaId);
+            $service = Service::findOrFail($dto->serviceId);
+            $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
+            $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $schoolId = $dto->schoolId ?? $ssa->student->studentProfile?->school_id ?? null;
+            $this->assertSchoolIdPresent($schoolId);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
 
-            // Calculate billing amounts
+            // Calculate billing amounts and validate contracts
             $billing = $this->rateService->calculateDualBilling(
                 $therapist->id,
                 $schoolId,
@@ -114,6 +132,7 @@ final class SessionLogService
                 $dto->sessionDate,
                 $dto->durationMinutes
             );
+            $this->assertContractsPresent($billing);
 
             // Prepare data
             $data = $dto->toArray();
@@ -202,15 +221,18 @@ final class SessionLogService
 
     public function submit(User $therapist, SessionLog $sessionLog): SessionLog
     {
-        if ($sessionLog->therapist_id !== $therapist->id) {
-            throw new \InvalidArgumentException('Therapist does not have access to this session log.');
+        // Draft -> ok to submit
+        if ($sessionLog->isDraft() || $sessionLog->status === null) {
+            return $this->repository->submit($sessionLog, $therapist);
         }
 
-        if (! $sessionLog->canEdit()) {
-            throw new \InvalidArgumentException('Session log cannot be submitted in its current status.');
+        // Already submitted -> validation-style error
+        if ($sessionLog->isSubmitted()) {
+            throw new \InvalidArgumentException('Session log has already been submitted.');
         }
 
-        return $this->repository->submit($sessionLog, $therapist);
+        // Finalized / cancelled -> not allowed
+        throw new \InvalidArgumentException('Session log cannot be submitted in its current status.');
     }
 
     public function finalize(User $admin, SessionLog $sessionLog): SessionLog
@@ -233,5 +255,57 @@ final class SessionLogService
         }
 
         return $this->repository->cancel($sessionLog, $reason);
+    }
+
+    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, \DateTimeInterface $ssaEnd): void
+    {
+        $date = Carbon::parse($sessionDate);
+
+        if ($date->lt(Carbon::parse($ssaStart)) || $date->gt(Carbon::parse($ssaEnd))) {
+            throw new \InvalidArgumentException('Session date must be within the SSA start and end dates.');
+        }
+    }
+
+    private function assertDurationWithinServiceBounds(int $durationMinutes, ?int $minDuration, ?int $maxDuration): void
+    {
+        if ($minDuration !== null && $durationMinutes < $minDuration) {
+            throw new \InvalidArgumentException('Session duration is below the service minimum.');
+        }
+
+        if ($maxDuration !== null && $durationMinutes > $maxDuration) {
+            throw new \InvalidArgumentException('Session duration exceeds the service maximum.');
+        }
+    }
+
+    private function assertContractsPresent(array $billing): void
+    {
+        if (! $billing['therapist']['contract_id']) {
+            throw new \InvalidArgumentException('Active therapist contract is required for this service and date.');
+        }
+
+        if (! $billing['school']['contract_id']) {
+            throw new \InvalidArgumentException('Active school contract is required for this service and date.');
+        }
+    }
+
+    private function assertScheduleNotBilled(Schedule $schedule): void
+    {
+        if ($schedule->billing_status === BillingStatus::BILLED) {
+            throw new \InvalidArgumentException('Session logs cannot be added to a billed schedule.');
+        }
+    }
+
+    private function assertScheduleHasNoLogs(Schedule $schedule): void
+    {
+        if ($this->repository->getSessionLogsForSchedule($schedule->id)->isNotEmpty()) {
+            throw new \InvalidArgumentException('Only one session log can be created per schedule.');
+        }
+    }
+
+    private function assertSchoolIdPresent(?int $schoolId): void
+    {
+        if (! $schoolId) {
+            throw new \InvalidArgumentException('A school must be associated before creating a session log.');
+        }
     }
 }

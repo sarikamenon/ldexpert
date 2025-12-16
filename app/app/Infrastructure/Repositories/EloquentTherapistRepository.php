@@ -20,6 +20,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
     {
         return DB::transaction(function () use ($userData, $profileData) {
             $user = User::create($userData);
+
             return TherapistProfile::create(array_merge($profileData, ['user_id' => $user->id]));
         });
     }
@@ -32,6 +33,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             // Create profile if it doesn't exist, otherwise update it
             if ($user->therapistProfile) {
                 $user->therapistProfile->update($profileData);
+
                 return $user->therapistProfile->fresh();
             } else {
                 return $user->therapistProfile()->create($profileData);

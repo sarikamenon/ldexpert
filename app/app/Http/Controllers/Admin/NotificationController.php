@@ -77,4 +77,3 @@ final class NotificationController extends Controller
         return redirect()->back()->with('status', 'Notification deleted.');
     }
 }
-

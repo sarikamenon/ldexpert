@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Policies;
 
-use App\Enums\Role;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

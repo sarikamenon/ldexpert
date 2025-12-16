@@ -24,7 +24,7 @@ final class EloquentStudentRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentStudentRepository();
+        $this->repository = new EloquentStudentRepository;
     }
 
     public function test_create_persists_user_and_profile(): void
@@ -208,8 +208,8 @@ final class EloquentStudentRepositoryTest extends TestCase
             'status' => UserStatus::INACTIVE->value,
         ]);
 
-        $activeUsers->each(fn(User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
-        $inactiveUsers->each(fn(User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
+        $activeUsers->each(fn (User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
+        $inactiveUsers->each(fn (User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
 
         $metrics = $this->repository->getMetrics();
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,5 +23,8 @@ final class SessionLogAdminTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Session Logs');
+        $response->assertSee('School Amount');
+        $response->assertSee('Therapist Amount');
+        $response->assertSee('Duration');
     }
 }

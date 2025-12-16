@@ -8,17 +8,18 @@ use App\Constants\UsStates;
 use App\Enums\SchoolStatus;
 use App\Models\Scopes\SchoolScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class School extends Model
 {
     /** @use HasFactory<\Database\Factories\SchoolFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -53,15 +54,15 @@ class School extends Model
     protected function state(): Attribute
     {
         return Attribute::make(
-            get: fn(?string $value) => $value ? UsStates::getStateName($value) : null,
-            set: fn(?string $value) => $this->resolveStateCode($value),
+            get: fn (?string $value) => $value ? UsStates::getStateName($value) : null,
+            set: fn (?string $value) => $this->resolveStateCode($value),
         );
     }
 
     protected function stateCode(): Attribute
     {
         return Attribute::make(
-            get: fn($value, array $attributes) => $this->resolveStateCode($attributes['state'] ?? null),
+            get: fn ($value, array $attributes) => $this->resolveStateCode($attributes['state'] ?? null),
         );
     }
 

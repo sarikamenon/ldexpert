@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DTOs;
 
 use App\Enums\RecurrenceType;
+use Carbon\Carbon;
 
 final class CreateScheduleDTO
 {
@@ -15,13 +16,14 @@ final class CreateScheduleDTO
         public readonly array $studentIds,
         public readonly string $scheduleDate,
         public readonly string $startTime,
-        public readonly int $durationMinutes,
+        public readonly string $endTime,
         public readonly RecurrenceType $recurrenceType,
         public readonly ?string $recurrenceEndDate,
         public readonly bool $isGroup,
         public readonly ?int $occurrenceCount,
         public readonly ?string $notes,
         public readonly ?string $locationDetails,
+        public readonly int $durationMinutes = 0,
     ) {}
 
     public static function fromArray(array $data): self
@@ -31,9 +33,15 @@ final class CreateScheduleDTO
             : RecurrenceType::from($data['recurrence_type']);
 
         $studentIds = array_map(
-            static fn($id): int => (int) $id,
+            static fn ($id): int => (int) $id,
             $data['student_ids']
         );
+
+        $startTime = $data['start_time'];
+        $endTime = $data['end_time'] ?? null;
+        $durationMinutes = isset($data['duration_minutes'])
+            ? (int) $data['duration_minutes']
+            : ($endTime ? (int) Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime)) : 0);
 
         return new self(
             therapistId: (int) $data['therapist_id'],
@@ -43,8 +51,8 @@ final class CreateScheduleDTO
             serviceId: (int) $data['service_id'],
             studentIds: $studentIds,
             scheduleDate: $data['schedule_date'],
-            startTime: $data['start_time'],
-            durationMinutes: (int) $data['duration_minutes'],
+            startTime: $startTime,
+            endTime: $endTime ?? Carbon::parse($startTime)->addMinutes($durationMinutes)->toTimeString(),
             recurrenceType: $recurrenceType,
             recurrenceEndDate: isset($data['recurrence_end_date']) && $data['recurrence_end_date'] !== ''
                 ? $data['recurrence_end_date']
@@ -57,6 +65,7 @@ final class CreateScheduleDTO
             locationDetails: isset($data['location_details']) && $data['location_details'] !== ''
                 ? $data['location_details']
                 : null,
+            durationMinutes: $durationMinutes,
         );
     }
 
@@ -69,6 +78,7 @@ final class CreateScheduleDTO
             'student_ids' => $this->studentIds,
             'schedule_date' => $this->scheduleDate,
             'start_time' => $this->startTime,
+            'end_time' => $this->endTime,
             'duration_minutes' => $this->durationMinutes,
             'recurrence_type' => $this->recurrenceType->value,
             'recurrence_end_date' => $this->recurrenceEndDate,

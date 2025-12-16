@@ -26,7 +26,7 @@ final class TherapistServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new TherapistService(new EloquentTherapistRepository());
+        $this->service = new TherapistService(new EloquentTherapistRepository);
     }
 
     public function test_create_creates_therapist_and_sends_welcome_email(): void
@@ -134,7 +134,7 @@ final class TherapistServiceTest extends TestCase
             ->count(3)
             ->create();
 
-        $dto = new TherapistFilterDTO();
+        $dto = new TherapistFilterDTO;
 
         $result = $this->service->list($dto);
 
@@ -180,7 +180,7 @@ final class TherapistServiceTest extends TestCase
             ->count(2)
             ->create();
 
-        $dto = new TherapistFilterDTO();
+        $dto = new TherapistFilterDTO;
 
         $result = $this->service->export($dto);
 

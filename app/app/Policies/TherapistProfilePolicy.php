@@ -47,4 +47,3 @@ class TherapistProfilePolicy
         return $role === Role::ADMIN;
     }
 }
-

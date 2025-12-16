@@ -7,8 +7,6 @@ namespace Tests\Unit\Services;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
 use App\Domain\Therapist\Services\SessionLogService;
-use App\DTOs\UpdateSessionLogDTO;
-use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -10,7 +10,7 @@ use Carbon\CarbonImmutable;
 final class CreateSchoolContractDTO
 {
     /**
-     * @param array<int, ContractServiceRateDTO> $services
+     * @param  array<int, ContractServiceRateDTO>  $services
      */
     public function __construct(
         public readonly int $schoolId,
@@ -32,7 +32,7 @@ final class CreateSchoolContractDTO
                 ? $data['status']
                 : ContractStatus::from($data['status']),
             services: array_map(
-                static fn(array $row) => ContractServiceRateDTO::fromArray($row),
+                static fn (array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
         );

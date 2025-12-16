@@ -42,3 +42,4 @@
         </div>
     </x-ui-card>
 @endsection
+

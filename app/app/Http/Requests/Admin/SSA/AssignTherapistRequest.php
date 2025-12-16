@@ -35,4 +35,3 @@ final class AssignTherapistRequest extends FormRequest
         ];
     }
 }
-

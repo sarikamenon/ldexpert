@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Enums\RateType;
-use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;

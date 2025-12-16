@@ -1,5 +1,9 @@
 @extends('layouts.app')
 
+@push('scripts')
+    @vite('resources/js/pages/session-logs/index.js')
+@endpush
+
 @section('content')
     <x-ui-card title="Session Logs">
         <div class="flex justify-between items-center mb-4">
@@ -8,48 +12,47 @@
             </div>
         </div>
 
-        <div class="overflow-x-auto">
-            <table id="session-logs-table" class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Service</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Therapist Amt</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($sessionLogs as $log)
-                        <tr>
-                            <td class="px-4 py-2 text-sm text-gray-900">{{ $log->session_date?->format('Y-m-d') }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-900">{{ $log->student?->name }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-900">{{ $log->service?->name }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-900">{{ $log->status?->label() }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-900">{{ $log->therapist_billable_amount }}</td>
-                            <td class="px-4 py-2 text-sm text-gray-900 space-x-2">
-                                <a href="{{ route('therapist.session-logs.show', $log) }}"
-                                    class="text-indigo-600 hover:text-indigo-900">View</a>
-                                @if ($log->canEdit())
-                                    <a href="{{ route('therapist.session-logs.edit', $log) }}"
-                                        class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                    <form action="{{ route('therapist.session-logs.submit', $log) }}" method="POST"
-                                        class="inline">
-                                        @csrf
-                                        <button type="submit" class="text-green-600 hover:text-green-800">Submit</button>
-                                    </form>
-                                @endif
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-4 py-4 text-center text-sm text-gray-500">No session logs found.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="flex flex-wrap gap-2 mb-4">
+            @foreach ($statuses as $status)
+                <a href="{{ request()->fullUrlWithQuery(['status' => $status->value]) }}"
+                    class="px-3 py-1 rounded-full text-sm {{ request('status') === $status->value ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700' }}">
+                    {{ $status->label() }}
+                </a>
+            @endforeach
+            <a href="{{ request()->url() }}"
+                class="px-3 py-1 rounded-full text-sm bg-gray-100 text-gray-700">
+                All
+            </a>
+        </div>
+
+        <form method="GET" class="mb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+            <select name="status" class="border-gray-300 rounded">
+                <option value="">All Statuses</option>
+                @foreach ($statuses as $status)
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                        {{ $status->label() }}
+                    </option>
+                @endforeach
+            </select>
+            <input type="number" name="service_id" placeholder="Service ID" value="{{ $filters['service_id'] ?? '' }}"
+                class="border-gray-300 rounded" />
+            <input type="number" name="student_id" placeholder="Student ID" value="{{ $filters['student_id'] ?? '' }}"
+                class="border-gray-300 rounded" />
+            <input type="number" name="ssa_id" placeholder="SSA ID" value="{{ $filters['ssa_id'] ?? '' }}"
+                class="border-gray-300 rounded" />
+            <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
+                class="border-gray-300 rounded" />
+            <input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
+                class="border-gray-300 rounded" />
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </form>
+
+        <x-ui.session-log-table :columns="$columns" :rows="$rows" />
+
+        <div class="mt-4">
+            {{ $sessionLogs->withQueryString()->links() }}
         </div>
     </x-ui-card>
 @endsection
+
+

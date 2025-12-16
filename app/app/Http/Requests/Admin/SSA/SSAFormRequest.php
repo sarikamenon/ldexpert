@@ -6,7 +6,6 @@ namespace App\Http\Requests\Admin\SSA;
 
 use App\Enums\ServiceFrequency;
 use App\Models\Service;
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -29,7 +28,7 @@ abstract class SSAFormRequest extends FormRequest
 
     protected function baseRules(): array
     {
-        $frequencies = array_map(static fn(ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
+        $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
 
         return [
             'student_id' => ['required', 'integer', Rule::exists('users', 'id')->where(function ($query) {
@@ -84,10 +83,10 @@ abstract class SSAFormRequest extends FormRequest
 
                 if ($service && $service->is_frequency_service) {
                     // Service supports frequency, so frequency and sessions_per_frequency are required
-                    if (!$this->filled('frequency')) {
+                    if (! $this->filled('frequency')) {
                         $validator->errors()->add('frequency', 'The frequency field is required when the service supports frequency.');
                     }
-                    if (!$this->filled('sessions_per_frequency')) {
+                    if (! $this->filled('sessions_per_frequency')) {
                         $validator->errors()->add('sessions_per_frequency', 'The sessions per frequency field is required when the service supports frequency.');
                     }
                 }

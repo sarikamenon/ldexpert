@@ -20,6 +20,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
     {
         return DB::transaction(function () use ($userData, $profileData) {
             $user = User::create($userData);
+
             return StudentProfile::create(array_merge($profileData, ['user_id' => $user->id]));
         });
     }
@@ -32,6 +33,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             // Create profile if it doesn't exist, otherwise update it
             if ($user->studentProfile) {
                 $user->studentProfile->update($profileData);
+
                 return $user->studentProfile->fresh();
             } else {
                 return $user->studentProfile()->create($profileData);

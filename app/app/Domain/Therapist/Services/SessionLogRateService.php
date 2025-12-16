@@ -14,12 +14,12 @@ use App\Models\TherapistProfile;
 use App\Models\User;
 use Carbon\Carbon;
 
-final class SessionLogRateService
+class SessionLogRateService
 {
     /**
      * Get therapist rate for a service on a specific date
      *
-     * @param int $therapistUserId User ID of the therapist
+     * @param  int  $therapistUserId  User ID of the therapist
      * @return array{contract_id: int|null, rate_type: RateType|null, rate_amount: float|null}
      */
     public function getTherapistRate(int $therapistUserId, int $serviceId, string $sessionDate): array
@@ -137,7 +137,7 @@ final class SessionLogRateService
     /**
      * Calculate both therapist and school billing amounts
      *
-     * @param int $therapistUserId User ID of the therapist
+     * @param  int  $therapistUserId  User ID of the therapist
      * @return array{
      *     therapist: array{contract_id: int|null, rate_type: RateType|null, rate_amount: float|null, billable_amount: float|null},
      *     school: array{contract_id: int|null, rate_type: RateType|null, rate_amount: float|null, invoice_amount: float|null}

@@ -51,7 +51,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         $contract->services()->delete();
         $contract->services()->createMany(
             array_map(
-                static fn(ContractServiceRateDTO $dto) => [
+                static fn (ContractServiceRateDTO $dto) => [
                     'service_id' => $dto->serviceId,
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
@@ -75,7 +75,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         return SchoolContract::query()
             ->where('school_id', $schoolId)
             ->where('status', ContractStatus::ACTIVE->value)
-            ->when($ignoreId, fn(Builder $query) => $query->whereKeyNot($ignoreId))
+            ->when($ignoreId, fn (Builder $query) => $query->whereKeyNot($ignoreId))
             ->where(function (Builder $query) use ($startDate, $endDate) {
                 $query->whereDate('start_date', '<=', $endDate)
                     ->whereDate('end_date', '>=', $startDate);
@@ -112,8 +112,8 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $query->where(function (Builder $builder) use ($filters) {
                 $builder->where('id', $filters->search)
                     ->orWhereHas('school', function (Builder $schoolQuery) use ($filters) {
-                        $schoolQuery->where('full_name', 'like', '%' . $filters->search . '%')
-                            ->orWhere('display_name', 'like', '%' . $filters->search . '%');
+                        $schoolQuery->where('full_name', 'like', '%'.$filters->search.'%')
+                            ->orWhere('display_name', 'like', '%'.$filters->search.'%');
                     });
             });
         }

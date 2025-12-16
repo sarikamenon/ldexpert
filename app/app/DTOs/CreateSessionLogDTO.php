@@ -51,6 +51,10 @@ final class CreateSessionLogDTO
                 : RateType::from($data['school_rate_type']))
             : null;
 
+        $thoMinutes = isset($data['tho_minutes']) && $data['tho_minutes'] !== ''
+            ? (int) $data['tho_minutes']
+            : 0;
+
         return new self(
             therapistId: (int) $data['therapist_id'],
             studentId: (int) $data['student_id'],
@@ -66,7 +70,7 @@ final class CreateSessionLogDTO
             startTime: $data['start_time'],
             endTime: $data['end_time'],
             durationMinutes: (int) $data['duration_minutes'],
-            thoMinutes: (int) $data['tho_minutes'],
+            thoMinutes: $thoMinutes,
             notes: $data['notes'],
             isBillableTherapist: isset($data['is_billable_therapist'])
                 ? (bool) $data['is_billable_therapist']

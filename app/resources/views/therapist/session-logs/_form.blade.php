@@ -114,3 +114,4 @@
             class="btn btn-primary">{{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}</button>
     </div>
 </form>
+

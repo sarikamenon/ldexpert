@@ -34,6 +34,7 @@ class SchoolService
         return $this->wrapWrite(function () use ($dto) {
             $school = $this->schools->create($dto);
             $this->activityLog->logCreated($school);
+
             return $school;
         });
     }
@@ -43,7 +44,7 @@ class SchoolService
         return $this->wrapWrite(function () use ($school, $dto) {
             $originalAttributes = $school->getOriginal();
             $updatedSchool = $this->schools->update($school, $dto);
-            
+
             $changes = [];
             foreach ($updatedSchool->getChanges() as $key => $newValue) {
                 if (isset($originalAttributes[$key])) {
@@ -53,11 +54,11 @@ class SchoolService
                     ];
                 }
             }
-            
-            if (!empty($changes)) {
+
+            if (! empty($changes)) {
                 $this->activityLog->logUpdated($updatedSchool, $changes);
             }
-            
+
             return $updatedSchool;
         });
     }
@@ -67,14 +68,14 @@ class SchoolService
         return $this->wrapWrite(function () use ($school, $dto) {
             $oldStatus = $school->status?->value ?? 'unknown';
             $updatedSchool = $this->schools->changeStatus($school, $dto);
-            
+
             $this->activityLog->logStatusChanged(
                 $updatedSchool,
                 $oldStatus,
                 $dto->status->value,
                 $dto->reason
             );
-            
+
             return $updatedSchool;
         });
     }
@@ -92,7 +93,7 @@ class SchoolService
     private function wrapWrite(callable $callback): mixed
     {
         try {
-            return DB::transaction(static fn() => $callback());
+            return DB::transaction(static fn () => $callback());
         } catch (Throwable $exception) {
             Log::error('School write operation failed', [
                 'message' => $exception->getMessage(),

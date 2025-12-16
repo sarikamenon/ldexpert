@@ -14,9 +14,7 @@ final class SessionLogAccessTest extends TestCase
 
     public function test_therapist_can_view_session_logs_index(): void
     {
-        $therapist = User::factory()->therapist()->create([
-            'email' => 'therapist@example.com',
-        ]);
+        $therapist = User::factory()->therapist()->create();
 
         $response = $this->actingAs($therapist)
             ->get(route('therapist.session-logs.index'));

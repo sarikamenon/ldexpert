@@ -29,6 +29,7 @@ final class ScheduleServiceTest extends TestCase
     use RefreshDatabase;
 
     private MockInterface $repository;
+
     private MockInterface $timezoneService;
 
     protected function setUp(): void
@@ -62,7 +63,7 @@ final class ScheduleServiceTest extends TestCase
             ->andReturnTrue();
 
         $this->timezoneService->shouldReceive('parseUserLocalToUtc')
-            ->times(2)
+            ->once()
             ->andReturnUsing(function ($dateTimeStr) {
                 return Carbon::parse($dateTimeStr);
             });
@@ -96,6 +97,7 @@ final class ScheduleServiceTest extends TestCase
             occurrenceCount: null,
             notes: null,
             locationDetails: null,
+            durationMinutes: 60,
         );
 
         $schedule = $serviceLayer->createSchedule($therapist, $dto);
@@ -133,7 +135,7 @@ final class ScheduleServiceTest extends TestCase
             ->andReturnTrue();
 
         $this->timezoneService->shouldReceive('parseUserLocalToUtc')
-            ->times(2)
+            ->once()
             ->andReturnUsing(function ($dateTimeStr) {
                 return Carbon::parse($dateTimeStr);
             });
@@ -172,6 +174,7 @@ final class ScheduleServiceTest extends TestCase
             occurrenceCount: null,
             notes: null,
             locationDetails: null,
+            durationMinutes: 60,
         );
 
         $schedule = $serviceLayer->createSchedule($therapist, $dto);
@@ -215,7 +218,7 @@ final class ScheduleServiceTest extends TestCase
             ->andReturn($schedule);
 
         $this->timezoneService->shouldReceive('parseUserLocalToUtc')
-            ->times(2)
+            ->once()
             ->andReturnUsing(function ($dateTimeStr) {
                 return Carbon::parse($dateTimeStr);
             });
@@ -243,6 +246,7 @@ final class ScheduleServiceTest extends TestCase
             locationDetails: null,
             notes: 'Updated notes',
             billingStatus: null,
+            durationMinutes: 60,
         );
 
         $updatedSchedule = $serviceLayer->updateSchedule($therapist, $schedule->id, $dto);
@@ -291,13 +295,14 @@ final class ScheduleServiceTest extends TestCase
             ->once()
             ->andReturnUsing(function ($schedule, $data) {
                 $schedule->fill($data);
+
                 return $schedule;
             });
 
         // Create 2 new occurrences (weekly for 3 weeks total)
         $this->repository->shouldReceive('create')
             ->twice()
-            ->andReturn(new Schedule());
+            ->andReturn(new Schedule);
 
         $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
 
@@ -397,8 +402,8 @@ final class ScheduleServiceTest extends TestCase
         $this->repository->shouldReceive('validateStudentsShareService')->andReturnTrue();
 
         $this->timezoneService->shouldReceive('parseUserLocalToUtc')
-            ->times(2)
-            ->andReturnUsing(fn($dt) => Carbon::parse($dt));
+            ->once()
+            ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
 
         // Simulate overlap for therapist
         $this->repository->shouldReceive('hasOverlap')
@@ -422,6 +427,7 @@ final class ScheduleServiceTest extends TestCase
             occurrenceCount: null,
             notes: null,
             locationDetails: null,
+            durationMinutes: 60,
         );
 
         $this->expectException(ScheduleOverlapException::class);
@@ -441,7 +447,11 @@ final class ScheduleServiceTest extends TestCase
 
         $this->timezoneService->shouldReceive('parseUserLocalToUtc')
             ->times(2)
-            ->andReturnUsing(fn($dt) => Carbon::parse($dt));
+            ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
+
+        $this->timezoneService->shouldReceive('parseUserLocalToUtc')
+            ->once()
+            ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
 
         // No overlap for therapist
         $this->repository->shouldReceive('hasOverlap')
@@ -452,7 +462,7 @@ final class ScheduleServiceTest extends TestCase
         // Overlap for student
         $this->repository->shouldReceive('hasOverlap')
             ->once()
-            ->with(Mockery::on(fn($arg) => $arg->id === $studentUser->id), '2025-01-01', '09:00:00', '10:00:00', null)
+            ->with(Mockery::on(fn ($arg) => $arg->id === $studentUser->id), '2025-01-01', '09:00:00', '10:00:00', null)
             ->andReturnTrue();
 
         $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
@@ -471,6 +481,7 @@ final class ScheduleServiceTest extends TestCase
             occurrenceCount: null,
             notes: null,
             locationDetails: null,
+            durationMinutes: 60,
         );
 
         $this->expectException(ScheduleOverlapException::class);
