@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
-use App\Enums\RateType;
 use App\Enums\SSAStatus;
+use App\Enums\SessionOutcome;
+use App\Models\ServiceSupportAgreement;
 use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,8 +18,47 @@ final class StoreSessionLogRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
-        $start = $this->input('start_time');
-        $end = $this->input('end_time');
+        // Normalize notes by trimming leading/trailing whitespace
+        if ($this->has('notes')) {
+            $this->merge([
+                'notes' => trim((string) $this->input('notes')),
+            ]);
+        }
+
+        // When SSA is selected but student is not explicitly provided, infer student from SSA.
+        $ssaId = $this->input('ssa_id');
+        if ($ssaId && ! $this->filled('student_id')) {
+            $ssa = ServiceSupportAgreement::find($ssaId);
+
+            if ($ssa) {
+                $this->merge([
+                    'student_id' => $ssa->student_id,
+                ]);
+            }
+        }
+
+        $sessionDate = $this->input('session_date');
+        $startTimeInput = $this->input('start_time');
+        $endTimeInput = $this->input('end_time');
+        $durationInput = $this->input('duration_minutes');
+
+        // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
+        if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
+            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
+            $end = (clone $start)->addMinutes((int) $durationInput);
+
+            $this->merge([
+                'start_time' => $start->format('Y-m-d H:i:s'),
+                'end_time' => $end->format('Y-m-d H:i:s'),
+            ]);
+
+            $startTimeInput = $this->input('start_time');
+            $endTimeInput = $this->input('end_time');
+        }
+
+        // Fallback: if we already have full start/end datetimes, compute duration.
+        $start = $startTimeInput;
+        $end = $endTimeInput;
 
         if ($start && $end) {
             $startTime = Carbon::parse($start);
@@ -48,21 +88,13 @@ final class StoreSessionLogRequest extends FormRequest
             'start_time' => ['required', 'date_format:Y-m-d H:i:s'],
             'end_time' => ['required', 'date_format:Y-m-d H:i:s', 'after:start_time'],
             'duration_minutes' => ['required', 'integer', 'min:1'],
+            'outcome' => ['string', Rule::in(SessionOutcome::values())],
             'notes' => ['required', 'string', 'min:50', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],
             'is_billable_school' => ['nullable', 'boolean'],
-            'is_rate_override' => ['nullable', 'boolean'],
-            'override_reason' => ['nullable', 'string', 'min:20', 'max:500'],
+            // Therapists cannot override rates; this is reserved for admins.
+            'is_rate_override' => ['prohibited'],
         ];
-
-        // Conditional validation for rate override
-        if ($this->boolean('is_rate_override')) {
-            $rules['override_reason'][] = 'required';
-            // Therapist override only in therapist UI; school-side override is reserved for admins.
-            $rules['therapist_rate_type'] = ['required', 'string', Rule::in(RateType::values())];
-            $rules['therapist_rate_amount'] = ['required', 'numeric', 'min:0'];
-            $rules['therapist_billable_amount'] = ['required', 'numeric', 'min:0'];
-        }
 
         return $rules;
     }
@@ -80,8 +112,7 @@ final class StoreSessionLogRequest extends FormRequest
             'start_time.required' => 'Start time is required.',
             'end_time.required' => 'End time is required.',
             'end_time.after' => 'End time must be after start time.',
-            'override_reason.required' => 'Override reason is required when rate is overridden.',
-            'override_reason.min' => 'Override reason must be at least :min characters.',
+            'is_rate_override.prohibited' => 'Rate overrides are only allowed for admin users.',
         ];
     }
 

@@ -96,6 +96,35 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         ];
     }
 
+    public function findActiveContractForDate(int $therapistId, string $date): ?TherapistContract
+    {
+        $dateObj = \Carbon\Carbon::parse($date);
+
+        return TherapistContract::query()
+            ->where('therapist_id', $therapistId)
+            ->where('status', ContractStatus::ACTIVE)
+            ->whereDate('start_date', '<=', $dateObj)
+            ->whereDate('end_date', '>=', $dateObj)
+            ->first();
+    }
+
+    public function getServiceRate(int $contractId, int $serviceId): ?array
+    {
+        $contractService = \App\Models\TherapistContractService::query()
+            ->where('therapist_contract_id', $contractId)
+            ->where('service_id', $serviceId)
+            ->first();
+
+        if (! $contractService) {
+            return null;
+        }
+
+        return [
+            'rate_type' => $contractService->rate_type,
+            'rate_amount' => (float) $contractService->rate,
+        ];
+    }
+
     private function baseQuery(): Builder
     {
         return TherapistContract::query()

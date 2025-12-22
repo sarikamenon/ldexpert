@@ -617,21 +617,41 @@ import { initSelectBoxes } from '../common/select-box';
                                         `
                                 ) : ''}
 
-                                ${isPast && isPendingBilling ? `
-                                    <button type="button" class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" data-schedule-id="${schedule.id}" title="Bill Your Session">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </button>
-                                ` : ''}
+                                ${isPast && isPendingBilling ? (
+                                    schedule.bill_url
+                                        ? `
+                                            <a href="${schedule.bill_url}" class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" title="Bill Your Session">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </a>
+                                        `
+                                        : `
+                                            <button type="button" class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" data-schedule-id="${schedule.id}" title="Bill Your Session">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        `
+                                ) : ''}
 
-                                ${isPast && isBilled ? `
-                                    <button type="button" class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" data-schedule-id="${schedule.id}" title="View Session">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </button>
-                                ` : ''}
+                                ${isPast && isBilled ? (
+                                    schedule.session_log_url
+                                        ? `
+                                            <a href="${schedule.session_log_url}" class="schedule-view-session-link p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="View Session Log">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </a>
+                                        `
+                                        : `
+                                            <button type="button" class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" data-schedule-id="${schedule.id}" title="View Session">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        `
+                                ) : ''}
                             </div>
                         </div>
                     </div>

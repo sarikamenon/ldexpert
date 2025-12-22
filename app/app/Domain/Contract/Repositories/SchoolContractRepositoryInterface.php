@@ -30,4 +30,8 @@ interface SchoolContractRepositoryInterface
     public function hasOverlap(int $schoolId, string $startDate, string $endDate, ?int $ignoreId = null): bool;
 
     public function metrics(): array;
+
+    public function findActiveContractForDate(int $schoolId, string $date): ?SchoolContract;
+
+    public function getServiceRate(int $contractId, int $serviceId): ?array;
 }

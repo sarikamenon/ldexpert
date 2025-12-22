@@ -37,6 +37,7 @@ export default defineConfig({
                 'resources/js/pages/therapist-ssas-show.js',
                 'resources/js/pages/therapist-students-index.js',
                 'resources/js/pages/therapist-students-show.js',
+                'resources/js/pages/therapist-session-log-form.js',
             ],
             refresh: true,
         }),

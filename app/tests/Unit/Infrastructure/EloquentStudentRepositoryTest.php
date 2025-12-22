@@ -227,4 +227,34 @@ final class EloquentStudentRepositoryTest extends TestCase
 
         $this->assertEquals($initialCount + 2, $result->count());
     }
+
+    public function test_get_school_id_by_user_id_returns_school_id(): void
+    {
+        $school = School::factory()->create();
+        $user = User::factory()->create(['role' => Role::STUDENT->value]);
+        StudentProfile::factory()->create([
+            'user_id' => $user->id,
+            'school_id' => $school->id,
+        ]);
+
+        $result = $this->repository->getSchoolIdByUserId($user->id);
+
+        $this->assertSame($school->id, $result);
+    }
+
+    public function test_get_school_id_by_user_id_returns_null_when_no_profile(): void
+    {
+        $user = User::factory()->create(['role' => Role::STUDENT->value]);
+
+        $result = $this->repository->getSchoolIdByUserId($user->id);
+
+        $this->assertNull($result);
+    }
+
+    public function test_get_school_id_by_user_id_returns_null_for_invalid_user(): void
+    {
+        $result = $this->repository->getSchoolIdByUserId(999999);
+
+        $this->assertNull($result);
+    }
 }

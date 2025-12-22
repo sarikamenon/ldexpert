@@ -54,6 +54,42 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->count();
     }
 
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
+    {
+        $query = Schedule::query()
+            ->forTherapist($therapist)
+            ->whereDate('schedule_date', '<', now()->toDateString())
+            ->where('billing_status', BillingStatus::PENDING->value)
+            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
+            ->with(['student', 'service', 'ssa', 'school']);
+
+        if ($filters) {
+            if ($filters->studentId) {
+                $query->where('student_id', $filters->studentId);
+            }
+
+            if ($filters->ssaId) {
+                $query->where('ssa_id', $filters->ssaId);
+            }
+
+            if ($filters->serviceId) {
+                $query->where('service_id', $filters->serviceId);
+            }
+
+            if ($filters->dateFrom) {
+                $query->whereDate('schedule_date', '>=', $filters->dateFrom);
+            }
+
+            if ($filters->dateTo) {
+                $query->whereDate('schedule_date', '<=', $filters->dateTo);
+            }
+        }
+
+        return $query->orderBy('schedule_date', 'desc')
+            ->orderBy('start_time', 'desc')
+            ->get();
+    }
+
     public function getSchoolsForTherapist(User $therapist): Collection
     {
         return School::query()
@@ -370,5 +406,17 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         }
 
         return $query;
+    }
+
+    public function countLessonsThisWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): int
+    {
+        return Schedule::query()
+            ->forTherapist($therapist)
+            ->whereBetween('schedule_date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->whereIn('status', [
+                ScheduleStatus::SCHEDULED->value,
+                ScheduleStatus::COMPLETED->value,
+            ])
+            ->count();
     }
 }

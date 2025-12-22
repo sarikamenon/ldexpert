@@ -4,17 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\UpdateSSADTO;
-use App\Enums\Role;
 use App\Enums\ServiceFrequency;
-use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
-use App\Enums\UserStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SSA\AssignTherapistRequest;
@@ -23,19 +22,20 @@ use App\Http\Requests\Admin\SSA\IndexSSARequest;
 use App\Http\Requests\Admin\SSA\StoreSSARequest;
 use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
-use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
-use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Collection;
 
 final class SSAController extends Controller
 {
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly UserService $userService,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function index(IndexSSARequest $request): View
@@ -247,51 +247,29 @@ final class SSAController extends Controller
         ]);
     }
 
+    private function getActiveStudents(): Collection
+    {
+        return $this->userService->listActiveStudentsForSelect();
+    }
+
+    private function getActiveServices(): Collection
+    {
+        return $this->serviceCatalogService->listActiveWithFrequencyFlag();
+    }
+
+    private function getActiveTherapists(): Collection
+    {
+        return $this->userService->listActiveTherapistsForSelect();
+    }
+
     private function formData(): array
     {
         return [
-            'students' => $this->getActiveStudents(),
-            'services' => $this->getActiveServices(),
-            'indirectServices' => $this->getIndirectServices(),
-            'therapists' => $this->getActiveTherapists(),
+            'students' => $this->userService->listActiveStudentsForSelect(),
+            'services' => $this->serviceCatalogService->listActiveWithFrequencyFlag(),
+            'indirectServices' => $this->serviceCatalogService->listIndirectServices(),
+            'therapists' => $this->userService->listActiveTherapistsForSelect(),
             'frequencies' => ServiceFrequency::cases(),
         ];
-    }
-
-    private function getActiveStudents()
-    {
-        return User::query()
-            ->where('role', Role::STUDENT)
-            ->where('status', UserStatus::ACTIVE)
-            ->with('studentProfile')
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
-    }
-
-    private function getActiveServices()
-    {
-        return Service::query()
-            ->where('status', ServiceStatus::ACTIVE)
-            ->orderBy('name')
-            ->get(['id', 'name', 'is_frequency_service']);
-    }
-
-    private function getIndirectServices()
-    {
-        return Service::query()
-            ->where('status', ServiceStatus::ACTIVE)
-            ->where('is_direct_service', false)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-    }
-
-    private function getActiveTherapists()
-    {
-        return User::query()
-            ->where('role', Role::THERAPIST)
-            ->where('status', UserStatus::ACTIVE)
-            ->with('therapistProfile')
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
     }
 }

@@ -42,6 +42,12 @@ final class SessionLogIndexService
     public function getTherapistIndex(User $therapist, SessionLogIndexDTO $dto): array
     {
         $filters = $dto->toArray();
+
+        if ($dto->dateFrom === null && $dto->dateTo === null) {
+            $filters['date_from'] = now()->startOfMonth()->toDateString();
+            $filters['date_to'] = now()->endOfMonth()->toDateString();
+        }
+
         $filters['therapist_id'] = $therapist->id;
 
         $paginator = $this->repository->paginateForTherapist(
@@ -55,7 +61,7 @@ final class SessionLogIndexService
             'columns' => $this->therapistColumns(),
             'rows' => $this->therapistRows($paginator),
             'statuses' => SessionLogStatus::cases(),
-            'filters' => $dto->toArray(),
+            'filters' => $filters,
         ];
     }
 
@@ -65,12 +71,9 @@ final class SessionLogIndexService
     private function adminColumns(): array
     {
         return [
-            ['key' => 'date', 'label' => 'Date'],
-            ['key' => 'student', 'label' => 'Student'],
-            ['key' => 'school', 'label' => 'School'],
-            ['key' => 'service', 'label' => 'Service'],
+            ['key' => 'date_time', 'label' => 'Date & Time'],
+            ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
             ['key' => 'therapist', 'label' => 'Therapist'],
-            ['key' => 'duration', 'label' => 'Duration'],
             ['key' => 'school_amount', 'label' => 'School Amount'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],
             ['key' => 'status', 'label' => 'Status'],
@@ -84,56 +87,80 @@ final class SessionLogIndexService
     private function therapistColumns(): array
     {
         return [
-            ['key' => 'date', 'label' => 'Date'],
-            ['key' => 'student', 'label' => 'Student'],
-            ['key' => 'school', 'label' => 'School'],
-            ['key' => 'service', 'label' => 'Service'],
-            ['key' => 'therapist', 'label' => 'Therapist'],
-            ['key' => 'duration', 'label' => 'Duration'],
-            ['key' => 'status', 'label' => 'Status'],
+            ['key' => 'date_time', 'label' => 'Date & Time'],
+            ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],
+            ['key' => 'status', 'label' => 'Status'],
             ['key' => 'actions', 'label' => 'Actions'],
         ];
     }
 
     /**
+     * @param  LengthAwarePaginator<int, SessionLog>  $paginator
      * @return array<int, array<string, mixed>>
      */
     private function adminRows(LengthAwarePaginator $paginator): array
     {
+        /** @var \Illuminate\Pagination\LengthAwarePaginator<int, SessionLog> $paginator */
         return $paginator->getCollection()
-            ->map(fn (SessionLog $log): array => [
-                'date' => $log->session_date?->format('Y-m-d') ?? '-',
-                'student' => $log->student?->name ?? '-',
-                'school' => $log->school?->display_name ?? '-',
-                'service' => $log->service?->name ?? '-',
-                'therapist' => $log->therapist?->name ?? '-',
-                'duration' => $log->duration_minutes ? "{$log->duration_minutes} mins" : '-',
-                'school_amount' => $this->formatCurrency($log->school_invoice_amount),
-                'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
-                'status' => $log->status?->label() ?? '-',
-                'actions' => $this->adminActions($log),
-            ])
+            ->map(function (SessionLog $log): array {
+                /** @var \Carbon\Carbon|null $sessionDate */
+                $sessionDate = $log->session_date;
+
+                return [
+                    'date_time' => [
+                        'date' => $sessionDate?->format('M d, Y') ?? null,
+                        'time' => null,
+                        'duration' => $log->duration_minutes ? "{$log->duration_minutes} mins" : null,
+                    ],
+                    'student_service_school' => [
+                        'student' => $log->student?->name ?? null,
+                        'service' => $log->service?->name ?? null,
+                        'school' => $log->school?->display_name ?? null,
+                    ],
+                    'therapist' => $log->therapist?->name ?? '-',
+                    'school_amount' => $this->formatCurrency($log->school_invoice_amount),
+                    'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
+                    'status' => $log->status?->label() ?? '-',
+                    'actions' => $this->adminActions($log),
+                ];
+            })
             ->all();
     }
 
     /**
+     * @param  LengthAwarePaginator<int, SessionLog>  $paginator
      * @return array<int, array<string, mixed>>
      */
     private function therapistRows(LengthAwarePaginator $paginator): array
     {
+        /** @var \Illuminate\Pagination\LengthAwarePaginator<int, SessionLog> $paginator */
         return $paginator->getCollection()
-            ->map(fn (SessionLog $log): array => [
-                'date' => $log->session_date?->format('Y-m-d') ?? '-',
-                'student' => $log->student?->name ?? '-',
-                'school' => $log->school?->display_name ?? '-',
-                'service' => $log->service?->name ?? '-',
-                'therapist' => $log->therapist?->name ?? '-',
-                'duration' => $log->duration_minutes ? "{$log->duration_minutes} mins" : '-',
-                'status' => $log->status?->label() ?? '-',
-                'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
-                'actions' => $this->therapistActions($log),
-            ])
+            ->map(function (SessionLog $log): array {
+                /** @var \Carbon\Carbon|null $sessionDate */
+                $sessionDate = $log->session_date;
+
+                $startTime = $log->start_time?->format('g:i A');
+                $endTime = $log->end_time?->format('g:i A');
+                $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
+                $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
+
+                return [
+                    'date_time' => [
+                        'date' => $sessionDate?->format('M d, Y') ?? null,
+                        'time' => $timeRange,
+                        'duration' => $duration,
+                    ],
+                    'student_service_school' => [
+                        'student' => $log->student?->name ?? null,
+                        'service' => $log->service?->name ?? null,
+                        'school' => $log->school?->display_name ?? null,
+                    ],
+                    'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
+                    'status' => $log->status?->label() ?? '-',
+                    'actions' => $this->therapistActions($log),
+                ];
+            })
             ->all();
     }
 
@@ -146,8 +173,10 @@ final class SessionLogIndexService
             [
                 'type' => 'link',
                 'label' => 'View',
+                'icon' => 'eye',
                 'method' => 'get',
                 'url' => route('admin.session-logs.show', $log),
+                'variant' => 'secondary',
             ],
         ];
 
@@ -155,8 +184,10 @@ final class SessionLogIndexService
             $actions[] = [
                 'type' => 'form',
                 'label' => 'Approve',
+                'icon' => 'check',
                 'method' => 'post',
                 'url' => route('admin.session-logs.finalize', $log),
+                'variant' => 'primary',
                 'confirm' => [
                     'title' => 'Approve session?',
                     'text' => 'This will mark the session as approved.',
@@ -167,8 +198,10 @@ final class SessionLogIndexService
             $actions[] = [
                 'type' => 'form',
                 'label' => 'Cancel',
+                'icon' => 'x',
                 'method' => 'post',
                 'url' => route('admin.session-logs.cancel', $log),
+                'variant' => 'primary-outline',
                 'confirm' => [
                     'title' => 'Cancel session?',
                     'text' => 'This will cancel the submitted session.',
@@ -185,13 +218,15 @@ final class SessionLogIndexService
      */
     private function therapistActions(SessionLog $log): array
     {
-        $actions = [
-            [
-                'type' => 'link',
-                'label' => 'View',
-                'method' => 'get',
-                'url' => route('therapist.session-logs.show', $log),
-            ],
+        $actions = [];
+
+        $actions[] = [
+            'type' => 'link',
+            'label' => 'View',
+            'icon' => 'eye',
+            'method' => 'get',
+            'url' => route('therapist.session-logs.show', $log),
+            'variant' => 'secondary',
         ];
 
         if ($log->status?->canEdit()) {
@@ -199,7 +234,9 @@ final class SessionLogIndexService
                 'type' => 'link',
                 'label' => 'Edit',
                 'method' => 'get',
+                'icon' => 'edit',
                 'url' => route('therapist.session-logs.edit', $log),
+                'variant' => 'primary',
             ];
 
             $actions[] = [
@@ -207,24 +244,12 @@ final class SessionLogIndexService
                 'label' => 'Submit',
                 'method' => 'post',
                 'url' => route('therapist.session-logs.submit', $log),
+                'icon' => 'send',
+                'variant' => 'primary-outline',
                 'confirm' => [
                     'title' => 'Submit session?',
                     'text' => 'Submit this session for approval.',
                     'icon' => 'question',
-                ],
-            ];
-        }
-
-        if ($log->status?->canCancel()) {
-            $actions[] = [
-                'type' => 'form',
-                'label' => 'Cancel',
-                'method' => 'post',
-                'url' => route('therapist.session-logs.cancel', $log),
-                'confirm' => [
-                    'title' => 'Cancel session?',
-                    'text' => 'This will cancel the session.',
-                    'icon' => 'warning',
                 ],
             ];
         }
@@ -244,6 +269,6 @@ final class SessionLogIndexService
 
         $value = (float) $amount;
 
-        return '$'.number_format($value, 2);
+        return '$' . number_format($value, 2);
     }
 }

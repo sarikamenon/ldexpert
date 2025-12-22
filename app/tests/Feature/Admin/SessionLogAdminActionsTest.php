@@ -36,7 +36,7 @@ final class SessionLogAdminActionsTest extends TestCase
         $response = $this->actingAs($admin)
             ->post(route('admin.session-logs.finalize', $sessionLog));
 
-        $response->assertSessionHasErrors();
+        $response->assertForbidden();
     }
 
     public function test_admin_can_cancel_draft_session_log(): void

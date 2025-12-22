@@ -18,6 +18,8 @@ interface ScheduleRepositoryInterface
 
     public function getPendingCount(User $therapist): int;
 
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection;
+
     public function getSchoolsForTherapist(User $therapist): Collection;
 
     public function getStudentsForTherapist(User $therapist): Collection;
@@ -60,4 +62,6 @@ interface ScheduleRepositoryInterface
      * @return Collection<int, Schedule>
      */
     public function getSchedulesInWindow(Carbon $start, Carbon $end): Collection;
+
+    public function countLessonsThisWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): int;
 }

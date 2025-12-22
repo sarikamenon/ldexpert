@@ -8,6 +8,7 @@ use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
 interface TherapistRepositoryInterface
@@ -25,4 +26,18 @@ interface TherapistRepositoryInterface
     public function getMetrics(?string $status = null): array;
 
     public function export(TherapistFilterDTO $filters): Collection;
+
+    public function listActiveProfilesForSelect(): Collection;
+
+    public function countTherapistsBySchool(int $schoolId): int;
+
+    public function listActiveTherapistsBySchool(int $schoolId): Collection;
+
+    public function listActiveTherapists(): Collection;
+
+    public function listTherapistsByStudent(int $studentId): Collection;
+
+    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?string $position = null, int $perPage = 15): LengthAwarePaginator;
+
+    public function findProfileByUserId(int $userId): ?TherapistProfile;
 }

@@ -90,6 +90,11 @@ class SchoolService
         return $this->schools->export($filters);
     }
 
+    public function listActiveForSelect(): Collection
+    {
+        return $this->schools->listActiveForSelect();
+    }
+
     private function wrapWrite(callable $callback): mixed
     {
         try {

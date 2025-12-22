@@ -4,21 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
-use App\Enums\ContractStatus;
-use App\Enums\Role;
-use App\Enums\SchoolStatus;
 use App\Enums\SSAStatus;
-use App\Enums\UserStatus;
 use App\Models\ActivityLog;
-use App\Models\School;
-use App\Models\SchoolContract;
-use App\Models\ServiceSupportAgreement;
-use App\Models\TherapistContract;
-use App\Models\TherapistProfile;
-use App\Models\User;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DashboardService
@@ -26,103 +15,46 @@ class DashboardService
     public function __construct(
         private readonly ActivityLogService $activityLogService,
         private readonly UserTimezoneService $userTimezoneService,
+        private readonly DashboardRepositoryInterface $repository,
     ) {}
 
     public function getKeyMetrics(): array
     {
-        // Temporarily disabled caching to show real-time data
-        // return Cache::remember('dashboard.key.metrics', now()->addSeconds(30), function () {
-
-        // Real data for Schools
-        $totalSchools = School::count();
-        $activeSchools = School::where('status', SchoolStatus::ACTIVE)->count();
-        $inactiveSchools = School::where('status', SchoolStatus::INACTIVE)->count();
-        $newSchoolsThisMonth = School::whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-
-        // Real data for Therapists (align with therapist listing)
-        $therapistQuery = User::query()->where('role', Role::THERAPIST);
-        $totalTherapists = (clone $therapistQuery)->count();
-        $activeTherapists = (clone $therapistQuery)
-            ->where('status', UserStatus::ACTIVE)
-            ->count();
-        $inactiveTherapists = (clone $therapistQuery)
-            ->where('status', UserStatus::INACTIVE)
-            ->count();
-        $newTherapistsThisMonth = (clone $therapistQuery)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-
-        // Real data for Students
-        $studentQuery = User::query()->where('role', Role::STUDENT);
-        $totalStudents = (clone $studentQuery)->count();
-        $activeStudents = (clone $studentQuery)
-            ->where('status', UserStatus::ACTIVE)
-            ->count();
-        $inactiveStudents = (clone $studentQuery)
-            ->where('status', UserStatus::INACTIVE)
-            ->count();
-        $newStudentsThisMonth = (clone $studentQuery)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-
-        // Real data for SSAs
-        $totalSSAs = ServiceSupportAgreement::count();
-        $activeSSAs = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)->count();
-        $pendingSSAs = ServiceSupportAgreement::where('status', SSAStatus::PENDING)->count();
-        $completedSSAs = ServiceSupportAgreement::where('status', SSAStatus::COMPLETED)->count();
-        $ssasExpiringSoon = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-            ->whereBetween('end_date', [now(), now()->addDays(7)])
-            ->count();
-
-        // Calculate average utilization (served_minutes / tho_minutes)
-        // Both are already in minutes, so we just calculate the percentage
-        $ssaUtilization = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-            ->where('tho_minutes', '>', 0)
-            ->selectRaw('AVG(CASE WHEN tho_minutes > 0 THEN (CAST(served_minutes AS DECIMAL(10,2)) / CAST(tho_minutes AS DECIMAL(10,2))) * 100 ELSE 0 END) as avg_utilization')
-            ->value('avg_utilization');
-        $avgUtilization = $ssaUtilization ? (int) round((float) $ssaUtilization) : 0;
-
         return [
             'schools' => [
-                'total' => $totalSchools,
-                'active' => $activeSchools,
-                'inactive' => $inactiveSchools,
-                'new_this_month' => $newSchoolsThisMonth,
+                'total' => $this->repository->getSchoolCount(),
+                'active' => $this->repository->getActiveSchoolCount(),
+                'inactive' => $this->repository->getInactiveSchoolCount(),
+                'new_this_month' => $this->repository->getNewSchoolsThisMonth(),
             ],
             'therapists' => [
-                'total' => $totalTherapists,
-                'active' => $activeTherapists,
-                'inactive' => $inactiveTherapists,
-                'new_this_month' => $newTherapistsThisMonth,
+                'total' => $this->repository->getTherapistCount(),
+                'active' => $this->repository->getActiveTherapistCount(),
+                'inactive' => $this->repository->getInactiveTherapistCount(),
+                'new_this_month' => $this->repository->getNewTherapistsThisMonth(),
             ],
             'students' => [
-                'total' => $totalStudents,
-                'active' => $activeStudents,
-                'inactive' => $inactiveStudents,
-                'new_this_month' => $newStudentsThisMonth,
+                'total' => $this->repository->getStudentCount(),
+                'active' => $this->repository->getActiveStudentCount(),
+                'inactive' => $this->repository->getInactiveStudentCount(),
+                'new_this_month' => $this->repository->getNewStudentsThisMonth(),
             ],
             'ssas' => [
-                'total' => $totalSSAs,
-                'active' => $activeSSAs,
-                'pending' => $pendingSSAs,
-                'completed' => $completedSSAs,
-                'expiring_soon' => $ssasExpiringSoon,
-                'avg_utilization' => $avgUtilization,
+                'total' => $this->repository->getSSACount(),
+                'active' => $this->repository->getActiveSSACount(),
+                'pending' => $this->repository->getPendingSSACount(),
+                'completed' => $this->repository->getCompletedSSACount(),
+                'expiring_soon' => $this->repository->getSSAsExpiringSoon(7),
+                'avg_utilization' => $this->repository->getAverageSSAUtilization(),
             ],
         ];
-        // });
     }
 
     public function getCriticalAlerts(): array
     {
         $alerts = [];
 
-        // Real alert: Schools without managers
-        $schoolsWithoutManagers = School::whereNull('manager_id')->count();
+        $schoolsWithoutManagers = $this->repository->getSchoolsWithoutManagers();
         if ($schoolsWithoutManagers > 0) {
             $alerts[] = [
                 'type' => 'danger',
@@ -132,11 +64,7 @@ class DashboardService
             ];
         }
 
-        // Real alert: Inactive therapists that might need attention
-        $inactiveTherapists = TherapistProfile::whereHas('user', function ($query) {
-            $query->where('status', '!=', UserStatus::ACTIVE);
-        })->count();
-
+        $inactiveTherapists = $this->repository->getInactiveTherapistsCount();
         if ($inactiveTherapists > 0) {
             $alerts[] = [
                 'type' => 'info',
@@ -146,10 +74,7 @@ class DashboardService
             ];
         }
 
-        // Real alert: SSAs expiring soon
-        $ssasExpiringSoon = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-            ->whereBetween('end_date', [now(), now()->addDays(7)])
-            ->count();
+        $ssasExpiringSoon = $this->repository->getSSAsExpiringSoon(7);
         if ($ssasExpiringSoon > 0) {
             $alerts[] = [
                 'type' => 'warning',
@@ -159,13 +84,8 @@ class DashboardService
             ];
         }
 
-        // Real alert: Students without active SSAs
-        $activeStudents = User::where('role', Role::STUDENT)
-            ->where('status', UserStatus::ACTIVE)
-            ->count();
-        $studentsWithActiveSSAs = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-            ->distinct('student_id')
-            ->count('student_id');
+        $activeStudents = $this->repository->getActiveStudentsCount();
+        $studentsWithActiveSSAs = $this->repository->getStudentsWithActiveSSAsCount();
         $studentsNeedingSSA = max(0, $activeStudents - $studentsWithActiveSSAs);
         if ($studentsNeedingSSA > 0) {
             $alerts[] = [
@@ -176,10 +96,7 @@ class DashboardService
             ];
         }
 
-        // Real alert: Unassigned SSAs
-        $unassignedSSAs = ServiceSupportAgreement::where('status', SSAStatus::PENDING)
-            ->whereNull('assigned_therapist_id')
-            ->count();
+        $unassignedSSAs = $this->repository->getUnassignedSSAsCount();
         if ($unassignedSSAs > 0) {
             $alerts[] = [
                 'type' => 'info',
@@ -194,11 +111,7 @@ class DashboardService
 
     public function getChartData(): array
     {
-        // Real SSA status distribution
-        $ssaDistribution = ServiceSupportAgreement::select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get()
-            ->keyBy('status');
+        $ssaDistribution = $this->repository->getSSAStatusDistribution();
 
         $ssaDistributionData = [
             'Pending' => $ssaDistribution->get(SSAStatus::PENDING->value)?->count ?? 0,
@@ -213,8 +126,8 @@ class DashboardService
                 'data' => array_values($ssaDistributionData),
                 'colors' => ['#f59e0b', '#10b981', '#3b82f6', '#6b7280'],
             ],
-            'therapist_by_position' => $this->getTherapistByPosition(),
-            'utilization_trend' => $this->getUtilizationTrend(),
+            'therapist_by_position' => $this->repository->getTherapistsByPosition(),
+            'utilization_trend' => $this->repository->getUtilizationTrendData(),
         ];
     }
 
@@ -243,13 +156,7 @@ class DashboardService
     {
         $events = [];
 
-        // Real data: SSAs expiring in next 30 days
-        $expiringSSAs = ServiceSupportAgreement::with(['student.studentProfile', 'primaryService'])
-            ->where('status', SSAStatus::ACTIVE)
-            ->whereBetween('end_date', [now(), now()->addDays(30)])
-            ->orderBy('end_date', 'asc')
-            ->take(4)
-            ->get();
+        $expiringSSAs = $this->repository->getExpiringSSAs(30, 4);
 
         foreach ($expiringSSAs as $ssa) {
             $daysUntilExpiry = now()->diffInDays($ssa->end_date);
@@ -269,14 +176,8 @@ class DashboardService
             ];
         }
 
-        // If we have fewer than 4 events, pad with contract expiration events
         if (count($events) < 4) {
-            $expiringContracts = SchoolContract::with('school')
-                ->where('status', ContractStatus::ACTIVE)
-                ->whereBetween('end_date', [now(), now()->addDays(30)])
-                ->orderBy('end_date', 'asc')
-                ->take(4 - count($events))
-                ->get();
+            $expiringContracts = $this->repository->getExpiringSchoolContracts(30, 4 - count($events));
 
             foreach ($expiringContracts as $contract) {
                 $daysUntilExpiry = now()->diffInDays($contract->end_date);
@@ -292,7 +193,6 @@ class DashboardService
             }
         }
 
-        // Sort by due date and return top 4
         usort($events, fn ($a, $b) => $a['due_date'] <=> $b['due_date']);
 
         return array_slice($events, 0, 4);
@@ -300,30 +200,14 @@ class DashboardService
 
     public function getOperationalMetrics(): array
     {
-        $totalSchools = School::count();
-        $totalTherapists = TherapistProfile::count();
-        $activeSchools = School::where('status', SchoolStatus::ACTIVE)->count();
-        $activeTherapists = User::where('role', Role::THERAPIST)
-            ->where('status', UserStatus::ACTIVE)
-            ->count();
+        $activeSchools = $this->repository->getActiveSchoolsCount();
+        $activeTherapists = $this->repository->getActiveTherapistsByUserStatusCount();
+        $avgSSADurationMonths = $this->repository->getAverageSSADurationMonths();
+        $completionRate = $this->repository->getServiceCompletionRate();
 
-        // Calculate average SSA duration in months
-        // Using MySQL TIMESTAMPDIFF to get difference in months
-        $avgSSADuration = ServiceSupportAgreement::whereNotNull('end_date')
-            ->whereNotNull('start_date')
-            ->selectRaw('AVG(TIMESTAMPDIFF(MONTH, start_date, end_date)) as avg_months')
-            ->value('avg_months');
-        $avgSSADurationMonths = $avgSSADuration ? number_format((float) $avgSSADuration, 1) : '0.0';
-
-        // Calculate service completion rate (completed SSAs / total SSAs)
-        $totalSSAs = ServiceSupportAgreement::count();
-        $completedSSAs = ServiceSupportAgreement::where('status', SSAStatus::COMPLETED)->count();
-        $completionRate = $totalSSAs > 0 ? round(($completedSSAs / $totalSSAs) * 100) : 0;
-
-        // Calculate active contract ratio
-        $activeSchoolContracts = SchoolContract::where('status', ContractStatus::ACTIVE)->count();
-        $activeTherapistContracts = TherapistContract::where('status', ContractStatus::ACTIVE)->count();
-        $totalContracts = SchoolContract::count() + TherapistContract::count();
+        $activeSchoolContracts = $this->repository->getActiveSchoolContractsCount();
+        $activeTherapistContracts = $this->repository->getActiveTherapistContractsCount();
+        $totalContracts = $this->repository->getTotalContractsCount();
         $activeContracts = $activeSchoolContracts + $activeTherapistContracts;
         $contractActivationRate = $totalContracts > 0 ? round(($activeContracts / $totalContracts) * 100) : 0;
 
@@ -400,79 +284,6 @@ class DashboardService
                 'icon' => 'list',
                 'color' => 'secondary',
             ],
-        ];
-    }
-
-    private function getTherapistByPosition(): array
-    {
-        $therapistsByPosition = DB::table('therapist_profiles')
-            ->select('position', DB::raw('count(*) as count'))
-            ->whereNull('deleted_at')
-            ->groupBy('position')
-            ->get();
-
-        if ($therapistsByPosition->isEmpty()) {
-            // Return dummy data if no therapists yet
-            return [
-                'labels' => ['SLP', 'OT', 'PT', 'LCSW'],
-                'data' => [45, 32, 28, 15],
-                'colors' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-            ];
-        }
-
-        return [
-            'labels' => $therapistsByPosition->pluck('position')->toArray(),
-            'data' => $therapistsByPosition->pluck('count')->toArray(),
-            'colors' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-        ];
-    }
-
-    private function getLast30DaysLabels(): array
-    {
-        $labels = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $labels[] = now()->subDays($i)->format('M d');
-        }
-
-        return $labels;
-    }
-
-    private function getUtilizationTrend(): array
-    {
-        $labels = $this->getLast30DaysLabels();
-        $thoMinutes = [];
-        $servedMinutes = [];
-
-        // Get SSA data for the last 30 days
-        for ($i = 29; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-
-            // Sum THO minutes for SSAs active on this date
-            $thoSum = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-                ->whereDate('start_date', '<=', $date)
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('end_date')
-                        ->orWhereDate('end_date', '>=', $date);
-                })
-                ->sum('tho_minutes');
-
-            // Sum served minutes for SSAs active on this date
-            $servedSum = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-                ->whereDate('start_date', '<=', $date)
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('end_date')
-                        ->orWhereDate('end_date', '>=', $date);
-                })
-                ->sum('served_minutes');
-
-            $thoMinutes[] = (int) ($thoSum ?? 0);
-            $servedMinutes[] = (int) ($servedSum ?? 0);
-        }
-
-        return [
-            'labels' => $labels,
-            'tho_minutes' => $thoMinutes,
-            'served_minutes' => $servedMinutes,
         ];
     }
 

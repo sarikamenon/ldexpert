@@ -9,11 +9,13 @@ use App\Constants\UsTimezones;
 use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\School\Services\SchoolService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSchoolStatusDTO;
+use App\Enums\Role;
 use App\DTOs\CreateSchoolDTO;
 use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\SchoolFilterDTO;
@@ -21,9 +23,7 @@ use App\DTOs\SSAFilterDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
-use App\Enums\Role;
 use App\Enums\SchoolType;
-use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
@@ -35,11 +35,7 @@ use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
 use App\Http\Requests\Admin\School\UpdateSchoolRequest;
 use App\Models\School;
-use App\Models\Service;
-use App\Models\ServiceSupportAgreement;
-use App\Models\User;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -54,6 +50,7 @@ final class SchoolController extends Controller
         private readonly SSAService $ssaService,
         private readonly SchoolContractService $schoolContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function index(IndexSchoolRequest $request): View
@@ -144,9 +141,7 @@ final class SchoolController extends Controller
 
         // Load dashboard data (always needed for metrics)
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
-            $ssasForMetrics = ServiceSupportAgreement::with(['student', 'primaryService', 'assignedTherapist'])
-                ->whereHas('student.studentProfile', fn ($q) => $q->where('school_id', $school->id))
-                ->get();
+            $ssasForMetrics = $this->ssaService->getSSAsForSchoolMetrics($school->id);
 
             $statusCounts = [
                 'Active' => $ssasForMetrics->where('status', SSAStatus::ACTIVE)->count(),
@@ -155,14 +150,8 @@ final class SchoolController extends Controller
                 'Deactivated' => $ssasForMetrics->where('status', SSAStatus::DEACTIVATED)->count(),
             ];
 
-            $studentsCount = User::query()
-                ->where('role', Role::STUDENT)
-                ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $school->id))
-                ->count();
-
-            $therapistsCount = $this->therapistsForSchoolQuery($school->id)
-                ->distinct('users.id')
-                ->count('users.id');
+            $studentsCount = $this->studentService->countStudentsBySchool($school->id);
+            $therapistsCount = $this->therapistService->countTherapistsBySchool($school->id);
 
             $viewData['statusCounts'] = $statusCounts;
             $viewData['metrics'] = [
@@ -200,20 +189,9 @@ final class SchoolController extends Controller
             $viewData['ssas'] = $this->ssaService->paginate($filters);
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
-            $viewData['students'] = User::query()
-                ->where('role', Role::STUDENT)
-                ->where('status', UserStatus::ACTIVE)
-                ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $school->id))
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
-            $viewData['therapists'] = $this->therapistsForSchoolQuery($school->id)
-                ->where('status', UserStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
-            $viewData['services'] = Service::query()
-                ->where('status', ServiceStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'is_frequency_service']);
+            $viewData['students'] = $this->studentService->listActiveStudentsBySchool($school->id);
+            $viewData['therapists'] = $this->therapistService->listActiveTherapistsBySchool($school->id);
+            $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
         } elseif ($activeTab === 'contracts') {
             $filters = SchoolContractFilterDTO::fromArray(
                 array_merge($request->query(), ['school_id' => $school->id])
@@ -287,18 +265,5 @@ final class SchoolController extends Controller
             'managers' => $this->userService->listByRole(Role::ADMIN),
             'schoolTypes' => SchoolType::values(),
         ];
-    }
-
-    private function therapistsForSchoolQuery(int $schoolId): Builder
-    {
-        return User::query()
-            ->where('role', Role::THERAPIST)
-            ->where(function (Builder $query) use ($schoolId) {
-                $query->whereHas('students.studentProfile', function (Builder $studentQuery) use ($schoolId) {
-                    $studentQuery->where('school_id', $schoolId);
-                })->orWhereHas('assignedSSAs.student.studentProfile', function (Builder $ssaQuery) use ($schoolId) {
-                    $ssaQuery->where('school_id', $schoolId);
-                });
-            });
     }
 }

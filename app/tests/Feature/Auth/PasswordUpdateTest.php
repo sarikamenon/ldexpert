@@ -35,6 +35,6 @@ test('correct password must be provided to update password', function () {
         ]);
 
     $response
-        ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('password.edit', absolute: false));
+        ->assertSessionHasErrors('current_password', null, 'updatePassword')
+        ->assertRedirect('/profile');
 });

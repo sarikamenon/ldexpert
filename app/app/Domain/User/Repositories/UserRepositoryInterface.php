@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\User\Repositories;
 
+use App\DTOs\CreateAdminProfileDTO;
+use App\DTOs\CreateParentProfileDTO;
+use App\DTOs\CreateTherapistProfileDTO;
 use App\DTOs\CreateUserDTO;
+use App\Models\AdminProfile;
+use App\Models\ParentProfile;
+use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -19,4 +25,24 @@ interface UserRepositoryInterface
     public function countNewStudentsThisMonth(): int;
 
     public function listByRole(string $role): Collection;
+
+    public function updateProfile(User $user, array $data): User;
+
+    public function listAdmins(): Collection;
+
+    public function listActiveStudentsForSelect(): Collection;
+
+    public function listActiveTherapistsForSelect(): Collection;
+
+    public function findByIds(array $ids): Collection;
+
+    public function findById(int $id): ?User;
+
+    public function countActiveStudentsByIds(array $studentIds): int;
+
+    public function createTherapistProfile(CreateTherapistProfileDTO $dto): TherapistProfile;
+
+    public function createParentProfile(CreateParentProfileDTO $dto): ParentProfile;
+
+    public function createAdminProfile(CreateAdminProfileDTO $dto): AdminProfile;
 }

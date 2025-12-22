@@ -3,7 +3,8 @@
 @endphp
 
 <form method="POST"
-    action="{{ $isEdit ? route('therapist.session-logs.update', $sessionLog) : route('therapist.session-logs.store') }}">
+    action="{{ $isEdit ? route('therapist.session-logs.update', $sessionLog) : route('therapist.session-logs.store') }}"
+    class="space-y-6">
     @csrf
     @if ($isEdit)
         @method('PUT')
@@ -13,105 +14,144 @@
         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}" />
     @endif
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Student</label>
-            <select name="student_id" class="mt-1 block w-full border-gray-300 rounded" required>
-                <option value="">Select student</option>
-                @foreach ($students ?? [] as $student)
-                    <option value="{{ $student->id }}" @selected(old('student_id', $sessionLog->student_id ?? '') == $student->id)>{{ $student->name }}</option>
-                @endforeach
-            </select>
+    {{-- Session Details --}}
+    <x-ui::card class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Session Details</h3>
+
+        {{-- Row 1: Student + SSA (always read-only to keep aligned with SSA) --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Student</label>
+                <input type="hidden" name="student_id"
+                    value="{{ old('student_id', $sessionLog->student_id ?? ($schedule->student_id ?? ($selectedSsa->student_id ?? ''))) }}" />
+                <input type="text" id="session-log-student-name" readonly
+                    value="{{ $sessionLog->student->name ?? ($schedule->student?->name ?? ($selectedSsa->student?->name ?? '')) }}"
+                    class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 rounded-md shadow-sm" />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">SSA</label>
+                <input type="hidden" name="ssa_id"
+                    value="{{ old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) }}" />
+                <select id="session-log-ssa"
+                    class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 rounded-md shadow-sm" disabled>
+                    <option value="">Select SSA</option>
+                    @foreach ($ssas ?? [] as $ssa)
+                        <option value="{{ $ssa->id }}" @selected(old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) == $ssa->id)
+                            data-student-id="{{ $ssa->student_id }}" data-student-name="{{ $ssa->student?->name }}"
+                            data-start-date="{{ $ssa->start_date?->format('Y-m-d') }}"
+                            data-end-date="{{ $ssa->end_date?->format('Y-m-d') }}">
+                            {{ $ssa->student?->name }} (SSA #{{ $ssa->id }} - {{ $ssa->primaryService?->name }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        {{-- Row 2: Service + Session Date --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Service</label>
+                @if (isset($schedule))
+                    {{-- From schedule: service is read-only --}}
+                    <input type="hidden" name="service_id"
+                        value="{{ old('service_id', $sessionLog->service_id ?? ($schedule->service_id ?? '')) }}" />
+                    <input type="text" readonly
+                        value="{{ $schedule->service?->name ?? ($services->firstWhere('id', $schedule->service_id)->name ?? '') }}"
+                        class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 rounded-md shadow-sm" />
+                @else
+                    {{-- Standalone: service selectable based on SSA --}}
+                    <select name="service_id" id="session-log-service"
+                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                        required>
+                        @if (isset($sessionLog) || isset($selectedSsa))
+                            <option value="">Select service</option>
+                            @foreach ($services ?? [] as $service)
+                                <option value="{{ $service->id }}" @selected(old('service_id', $sessionLog->service_id ?? ($selectedSsa->primary_service_id ?? '')) == $service->id)>
+                                    {{ $service->name }}
+                                </option>
+                            @endforeach
+                        @else
+                            <option value="">Select SSA first</option>
+                        @endif
+                    </select>
+                @endif
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Session Date</label>
+                <input type="date" name="session_date" id="session-log-date"
+                    value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
+                    @if (isset($selectedSsa) && $selectedSsa?->start_date) min="{{ $selectedSsa->start_date->format('Y-m-d') }}" @endif
+                    @if (isset($selectedSsa) && $selectedSsa?->end_date) max="{{ $selectedSsa->end_date->format('Y-m-d') }}" @endif
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    required />
+            </div>
+        </div>
+
+        {{-- Row 3: Start Time + Duration + End Time --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Start Time</label>
+                <input type="time" name="start_time" id="session-log-start-time"
+                    value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    required />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                <input type="number" name="duration_minutes" id="session-log-duration"
+                    value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
+                    min="5" step="5"
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    required />
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">End Time</label>
+                <input type="time" name="end_time" id="session-log-end-time" readonly
+                    value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
+                    class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    required />
+            </div>
         </div>
 
         <div>
-            <label class="block text-sm font-medium text-gray-700">SSA</label>
-            <select name="ssa_id" class="mt-1 block w-full border-gray-300 rounded" required>
-                <option value="">Select SSA</option>
-                @foreach ($ssas ?? [] as $ssa)
-                    <option value="{{ $ssa->id }}" @selected(old('ssa_id', $sessionLog->ssa_id ?? '') == $ssa->id)>
-                        SSA #{{ $ssa->id }} - {{ $ssa->primaryService?->name }}
+            <label class="block text-sm font-medium text-gray-700">Notes</label>
+            <textarea name="notes" rows="4"
+                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
+            <p class="mt-1 text-xs text-gray-500">
+                Session notes must be at least 50 characters.
+            </p>
+            @error('notes')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700">Session Outcome</label>
+            <select name="outcome"
+                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                @foreach ($sessionOutcomes ?? [] as $outcome)
+                    <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
+                        {{ $outcome->label() }}
                     </option>
                 @endforeach
             </select>
+            @error('outcome')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
+            {{-- Always billable flags are handled automatically; keep default as billable --}}
+            <input type="hidden" name="is_billable_therapist"
+                value="{{ old('is_billable_therapist', $sessionLog->is_billable_therapist ?? 1) }}">
+            <input type="hidden" name="is_billable_school" value="1">
         </div>
+    </x-ui::card>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Service ID</label>
-            <input type="number" name="service_id"
-                value="{{ old('service_id', $sessionLog->service_id ?? ($schedule->service_id ?? '')) }}"
-                class="mt-1 block w-full border-gray-300 rounded" required />
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Session Date</label>
-            <input type="date" name="session_date"
-                value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : now()->format('Y-m-d')) }}"
-                class="mt-1 block w-full border-gray-300 rounded" required />
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Start Time</label>
-            <input type="datetime-local" name="start_time"
-                value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('Y-m-d\TH:i') : '') }}"
-                class="mt-1 block w-full border-gray-300 rounded" required />
-        </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700">End Time</label>
-            <input type="datetime-local" name="end_time"
-                value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('Y-m-d\TH:i') : '') }}"
-                class="mt-1 block w-full border-gray-300 rounded" required />
-        </div>
-    </div>
-
-    <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700">Notes</label>
-        <textarea name="notes" rows="4" class="mt-1 block w-full border-gray-300 rounded" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
-    </div>
-
-    <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700">Billable to Therapist</label>
-        <input type="checkbox" name="is_billable_therapist" value="1" @checked(old('is_billable_therapist', $sessionLog->is_billable_therapist ?? true)) />
-        <input type="hidden" name="is_billable_school" value="1" />
-    </div>
-
-    <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700">Override Rates</label>
-        <input type="checkbox" name="is_rate_override" value="1" @checked(old('is_rate_override', $sessionLog->is_rate_override ?? false)) />
-    </div>
-
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Therapist Rate Type</label>
-            <select name="therapist_rate_type" class="mt-1 block w-full border-gray-300 rounded">
-                <option value="">Select</option>
-                <option value="H" @selected(old('therapist_rate_type', $sessionLog->therapist_rate_type?->value ?? '') === 'H')>Hourly</option>
-                <option value="F" @selected(old('therapist_rate_type', $sessionLog->therapist_rate_type?->value ?? '') === 'F')>Flat</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Therapist Rate Amount</label>
-            <input type="number" step="0.01" name="therapist_rate_amount"
-                value="{{ old('therapist_rate_amount', $sessionLog->therapist_rate_amount ?? '') }}"
-                class="mt-1 block w-full border-gray-300 rounded" />
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Therapist Billable Amount</label>
-            <input type="number" step="0.01" name="therapist_billable_amount"
-                value="{{ old('therapist_billable_amount', $sessionLog->therapist_billable_amount ?? '') }}"
-                class="mt-1 block w-full border-gray-300 rounded" />
-        </div>
-    </div>
-
-    <div class="mt-4">
-        <label class="block text-sm font-medium text-gray-700">Override Reason</label>
-        <textarea name="override_reason" rows="3" class="mt-1 block w-full border-gray-300 rounded">{{ old('override_reason', $sessionLog->override_reason ?? '') }}</textarea>
-    </div>
-
-    <div class="mt-6">
+    <div class="flex justify-end gap-3">
         <button type="submit"
-            class="btn btn-primary">{{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}</button>
+            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+            {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
+        </button>
     </div>
 </form>
-

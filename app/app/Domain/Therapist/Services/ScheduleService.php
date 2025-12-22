@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\Domain\Service\Repositories\ServiceRepositoryInterface;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
+use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateScheduleDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
@@ -16,8 +19,6 @@ use App\Events\ScheduleCreated;
 use App\Events\ScheduleUpdated;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
-use App\Models\Service;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -29,6 +30,9 @@ final class ScheduleService
     public function __construct(
         private readonly ScheduleRepositoryInterface $repository,
         private readonly UserTimezoneService $timezoneService,
+        private readonly UserRepositoryInterface $userRepository,
+        private readonly ServiceRepositoryInterface $serviceRepository,
+        private readonly StudentRepositoryInterface $studentRepository,
     ) {}
 
     public function getSchedules(User $therapist, ScheduleFilterDTO $filters): Collection
@@ -36,9 +40,30 @@ final class ScheduleService
         return $this->repository->getSchedulesForTherapist($therapist, $filters);
     }
 
+    public function findForTherapist(User $therapist, int $scheduleId): ?Schedule
+    {
+        return $this->repository->findForTherapist($therapist, $scheduleId);
+    }
+
+    public function findForTherapistWithRelations(User $therapist, int $scheduleId, array $relations = []): ?Schedule
+    {
+        $schedule = $this->repository->findForTherapist($therapist, $scheduleId);
+
+        if ($schedule && ! empty($relations)) {
+            $schedule->load($relations);
+        }
+
+        return $schedule;
+    }
+
     public function getPendingCount(User $therapist): int
     {
         return $this->repository->getPendingCount($therapist);
+    }
+
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
+    {
+        return $this->repository->getPendingSchedules($therapist, $filters);
     }
 
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
@@ -78,20 +103,20 @@ final class ScheduleService
             }
 
             // Timezone Conversion & Overlap Check
-            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
+            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
             // Validate Therapist Overlap
-            $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString());
+            $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, true);
 
             // Validate Student Overlap
-            $students = User::whereIn('id', $dto->studentIds)->get();
+            $students = $this->userRepository->findByIds($dto->studentIds);
             foreach ($students as $student) {
-                $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString());
+                $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, false);
             }
 
-            $service = Service::query()->findOrFail($dto->serviceId);
+            $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $isGroup = $dto->isGroup || $service->is_group_service || count($dto->studentIds) > 1;
 
             $recurringBatchNumber = $dto->recurrenceType !== RecurrenceType::NONE
@@ -124,9 +149,7 @@ final class ScheduleService
                     : null;
 
                 foreach ($dto->studentIds as $studentId) {
-                    $schoolId = StudentProfile::query()
-                        ->where('user_id', $studentId)
-                        ->value('school_id');
+                    $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId);
 
                     $data = [
                         'therapist_id' => $therapist->id,
@@ -155,9 +178,7 @@ final class ScheduleService
                 // Recurring schedule: create parent + occurrences
                 // Parent schedule (per first student, used to store rules)
                 $firstStudentId = $dto->studentIds[0];
-                $firstSchoolId = StudentProfile::query()
-                    ->where('user_id', $firstStudentId)
-                    ->value('school_id');
+                $firstSchoolId = $this->studentRepository->getSchoolIdByUserId($firstStudentId);
 
                 /** @var Schedule $parentSchedule */
                 $parentSchedule = $this->repository->create([
@@ -221,12 +242,12 @@ final class ScheduleService
             // DTO fromArray sets all fields.
 
             $durationMinutes = $dto->durationMinutes ?? $schedule->durationMinutes();
-            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
+            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($durationMinutes);
 
             // Validate Therapist Overlap (exclude current schedule)
-            $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId);
+            $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId, true);
 
             // Validate Student Overlap (need to know which students are involved)
             // Use existing student_id for single, or if group?
@@ -240,9 +261,9 @@ final class ScheduleService
             // Regenerate occurrences for recurring schedules...
             */
             // If it updates one schedule, we check overlap for that schedule's student.
-            $student = User::find($schedule->student_id);
+            $student = $this->userRepository->findById($schedule->student_id);
             if ($student) {
-                $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId);
+                $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId, false);
             }
 
             // Update data with UTC values
@@ -322,7 +343,7 @@ final class ScheduleService
             // If this is the parent of a recurring series, delete all in the batch
             if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
                 $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                    ->each(fn (Schedule $occurrence) => $this->repository->delete($occurrence));
+                    ->each(fn(Schedule $occurrence) => $this->repository->delete($occurrence));
             }
 
             $this->repository->delete($schedule);
@@ -352,8 +373,8 @@ final class ScheduleService
             return collect([]);
         }
 
-        $therapist = User::find($parentSchedule->therapist_id);
-        $students = User::whereIn('id', $studentIds)->get();
+        $therapist = $this->userRepository->findById($parentSchedule->therapist_id);
+        $students = $this->userRepository->findByIds($studentIds);
 
         $occurrences = collect();
 
@@ -371,8 +392,8 @@ final class ScheduleService
             ? $parentSchedule->end_time->format('H:i:s')
             : $parentSchedule->end_time;
 
-        $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
-        $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
+        $utcStart = Carbon::parse($scheduleDate . ' ' . $startTime);
+        $utcEnd = Carbon::parse($scheduleDate . ' ' . $endTime);
         if ($utcEnd->lt($utcStart)) {
             $utcEnd->addDay();
         }
@@ -393,9 +414,9 @@ final class ScheduleService
             $occurrenceUtcEnd = $this->timezoneService->parseUserLocalToUtc($currentEnd->toDateTimeString(), $therapist);
 
             // Check Overlap
-            $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString());
+            $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, true);
             foreach ($students as $student) {
-                $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString());
+                $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, false);
             }
 
             $groupBatchNumber = $isGroup
@@ -403,9 +424,7 @@ final class ScheduleService
                 : null;
 
             foreach ($studentIds as $studentId) {
-                $schoolId = StudentProfile::query()
-                    ->where('user_id', $studentId)
-                    ->value('school_id');
+                $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId);
 
                 $occurrences->push($this->repository->create([
                     'therapist_id' => $parentSchedule->therapist_id,
@@ -498,12 +517,14 @@ final class ScheduleService
         });
     }
 
-    private function validateOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): void
+    private function validateOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null, bool $isTherapist = false): void
     {
         if ($this->repository->hasOverlap($user, $date, $startTime, $endTime, $excludeScheduleId)) {
-            throw new ScheduleOverlapException(
-                sprintf('Schedule overlap detected for user %s on %s.', $user->id, $date)
-            );
+            $message = $isTherapist
+                ? 'You already have another schedule at this time. Please choose a different time.'
+                : sprintf('The student already has another schedule at this time. Please choose a different time.', $user->name ?? 'Student');
+
+            throw new ScheduleOverlapException($message);
         }
     }
 }

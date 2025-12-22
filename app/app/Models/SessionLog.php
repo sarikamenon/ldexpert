@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\RateType;
 use App\Enums\SessionLogStatus;
+use App\Enums\SessionOutcome;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,6 +31,7 @@ class SessionLog extends Model
         'tho_minutes',
         'notes',
         'delivery_mode',
+        'outcome',
         'is_group',
         'is_billable_therapist',
         'therapist_contract_id',
@@ -62,6 +64,7 @@ class SessionLog extends Model
             'duration_minutes' => 'integer',
             'tho_minutes' => 'integer',
             'delivery_mode' => 'string',
+            'outcome' => SessionOutcome::class,
             'is_group' => 'boolean',
             'is_billable_therapist' => 'boolean',
             'therapist_rate_type' => RateType::class,

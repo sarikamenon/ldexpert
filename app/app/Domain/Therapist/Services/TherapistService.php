@@ -12,6 +12,7 @@ use App\DTOs\UpdateTherapistDTO;
 use App\Mail\WelcomeTherapistMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -76,5 +77,40 @@ final class TherapistService
     public function find(int $id): ?TherapistProfile
     {
         return $this->repository->find($id);
+    }
+
+    public function listActiveProfilesForSelect(): Collection
+    {
+        return $this->repository->listActiveProfilesForSelect();
+    }
+
+    public function countTherapistsBySchool(int $schoolId): int
+    {
+        return $this->repository->countTherapistsBySchool($schoolId);
+    }
+
+    public function listActiveTherapistsBySchool(int $schoolId): Collection
+    {
+        return $this->repository->listActiveTherapistsBySchool($schoolId);
+    }
+
+    public function listActiveTherapists(): Collection
+    {
+        return $this->repository->listActiveTherapists();
+    }
+
+    public function listTherapistsByStudent(int $studentId): Collection
+    {
+        return $this->repository->listTherapistsByStudent($studentId);
+    }
+
+    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?string $position = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repository->paginateTherapistsByStudent($studentId, $search, $status, $position, $perPage);
+    }
+
+    public function findProfileByUserId(int $userId): ?TherapistProfile
+    {
+        return $this->repository->findProfileByUserId($userId);
     }
 }

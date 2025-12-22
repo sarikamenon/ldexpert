@@ -5,12 +5,57 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Enums\RateType;
+use App\Enums\SessionOutcome;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 final class UpdateSessionLogRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        // Normalize notes by trimming leading/trailing whitespace
+        if ($this->has('notes')) {
+            $this->merge([
+                'notes' => trim((string) $this->input('notes')),
+            ]);
+        }
+
+        $sessionDate = $this->input('session_date');
+        $startTimeInput = $this->input('start_time');
+        $endTimeInput = $this->input('end_time');
+        $durationInput = $this->input('duration_minutes');
+
+        // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
+        if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
+            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
+            $end = (clone $start)->addMinutes((int) $durationInput);
+
+            $this->merge([
+                'start_time' => $start->format('Y-m-d H:i:s'),
+                'end_time' => $end->format('Y-m-d H:i:s'),
+            ]);
+
+            $startTimeInput = $this->input('start_time');
+            $endTimeInput = $this->input('end_time');
+        }
+
+        // Fallback: if we already have full start/end datetimes, compute duration.
+        $start = $startTimeInput;
+        $end = $endTimeInput;
+
+        if ($start && $end) {
+            $startTime = Carbon::parse($start);
+            $endTime = Carbon::parse($end);
+            $durationMinutes = (int) round($startTime->diffInMinutes($endTime) / 5) * 5;
+
+            $this->merge([
+                'duration_minutes' => $durationMinutes,
+            ]);
+        }
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->role?->value === 'therapist';
@@ -25,6 +70,7 @@ final class UpdateSessionLogRequest extends FormRequest
             'session_date' => ['sometimes', 'date'],
             'start_time' => ['sometimes', 'date_format:Y-m-d H:i:s'],
             'end_time' => ['sometimes', 'date_format:Y-m-d H:i:s', 'after:start_time'],
+            'outcome' => ['sometimes', 'string', Rule::in(SessionOutcome::values())],
             'notes' => ['sometimes', 'string', 'min:50', 'max:5000'],
             'is_billable_therapist' => ['sometimes', 'boolean'],
             'is_billable_school' => ['sometimes', 'boolean'],

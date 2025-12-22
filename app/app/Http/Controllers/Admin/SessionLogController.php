@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogService;
+use App\Domain\User\Services\UserService;
 use App\DTOs\SessionLogIndexDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSessionLogRequest;
@@ -22,6 +25,9 @@ final class SessionLogController extends Controller
         private readonly SessionLogRepositoryInterface $repository,
         private readonly SessionLogService $service,
         private readonly SessionLogIndexService $indexService,
+        private readonly UserService $userService,
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly SSAService $ssaService,
     ) {}
 
     public function index(SessionLogIndexRequest $request): View
@@ -29,7 +35,29 @@ final class SessionLogController extends Controller
         $dto = SessionLogIndexDTO::fromArray($request->validated());
         $viewData = $this->indexService->getAdminIndex($dto);
 
-        return view('admin.session-logs.index', $viewData);
+        return view('admin.session-logs.index', $viewData + [
+            'schools' => \App\Models\School::query()
+                ->active()
+                ->orderBy('display_name')
+                ->get(['id', 'display_name']),
+            'students' => $this->userService
+                ->listActiveStudentsForSelect()
+                ->sortBy('name')
+                ->values(),
+            'therapists' => $this->userService
+                ->listActiveTherapistsForSelect()
+                ->sortBy('name')
+                ->values(),
+            'services' => $this->serviceCatalogService
+                ->listActiveForSelect()
+                ->sortBy('name')
+                ->values(),
+            'ssas' => \App\Models\ServiceSupportAgreement::query()
+                ->with(['student', 'primaryService'])
+                ->orderBy('created_at', 'desc')
+                ->limit(500)
+                ->get(),
+        ]);
     }
 
     public function show(SessionLog $sessionLog): View
@@ -52,29 +80,39 @@ final class SessionLogController extends Controller
 
     public function update(UpdateSessionLogRequest $request, SessionLog $sessionLog): RedirectResponse
     {
-        $this->authorize('update', $sessionLog);
+        $this->authorize('view', $sessionLog);
 
         $data = $request->validated();
+        $dto = \App\DTOs\UpdateSessionLogDTO::fromArray($data);
 
-        $dtoArray = array_merge($sessionLog->toArray(), $data);
+        try {
+            $this->service->update($request->user(), $sessionLog, $dto);
 
-        $dto = \App\DTOs\UpdateSessionLogDTO::fromArray($dtoArray);
-        $this->service->update($request->user(), $sessionLog, $dto);
-
-        return redirect()
-            ->route('admin.session-logs.show', $sessionLog)
-            ->with('success', 'Session log updated successfully.');
+            return redirect()
+                ->route('admin.session-logs.show', $sessionLog)
+                ->with('success', 'Session log updated successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
-    public function finalize(SessionLog $sessionLog): RedirectResponse
+    public function finalize(Request $request, SessionLog $sessionLog): RedirectResponse
     {
         $this->authorize('finalize', $sessionLog);
 
-        $this->service->finalize(auth()->user(), $sessionLog);
+        try {
+            $this->service->finalize($request->user(), $sessionLog);
 
-        return redirect()
-            ->route('admin.session-logs.show', $sessionLog)
-            ->with('success', 'Session log finalized.');
+            return redirect()
+                ->route('admin.session-logs.show', $sessionLog)
+                ->with('success', 'Session log finalized.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     public function cancel(SessionLog $sessionLog, Request $request): RedirectResponse
@@ -82,10 +120,17 @@ final class SessionLogController extends Controller
         $this->authorize('cancel', $sessionLog);
 
         $reason = $request->input('cancellation_reason', 'Cancelled by admin');
-        $this->service->cancel(auth()->user(), $sessionLog, $reason);
 
-        return redirect()
-            ->route('admin.session-logs.show', $sessionLog)
-            ->with('success', 'Session log cancelled.');
+        try {
+            $this->service->cancel($request->user(), $sessionLog, $reason);
+
+            return redirect()
+                ->route('admin.session-logs.show', $sessionLog)
+                ->with('success', 'Session log cancelled.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
     }
 }

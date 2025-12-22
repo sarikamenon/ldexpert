@@ -92,4 +92,37 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
 
         return $query;
     }
+
+    public function listActiveForSelect(): Collection
+    {
+        return Service::query()
+            ->where('status', ServiceStatus::ACTIVE)
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function listActiveWithFrequencyFlag(): Collection
+    {
+        return Service::query()
+            ->where('status', ServiceStatus::ACTIVE)
+            ->select(['id', 'name', 'is_frequency_service'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function listIndirectServices(): Collection
+    {
+        return Service::query()
+            ->where('status', ServiceStatus::ACTIVE)
+            ->where('is_direct_service', false)
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function findOrFail(int $id): Service
+    {
+        return Service::findOrFail($id);
+    }
 }

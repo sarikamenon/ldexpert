@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use App\Domain\Service\Repositories\ServiceRepositoryInterface;
+use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
 use App\Domain\Therapist\Services\SessionLogService;
@@ -31,7 +33,9 @@ final class SessionLogServiceTest extends TestCase
             ->andReturn($sessionLog->fresh());
 
         $rateService = Mockery::mock(SessionLogRateService::class);
-        $service = new SessionLogService($repository, $rateService);
+        $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
+        $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
 
         $result = $service->submit($therapist, $sessionLog);
 
@@ -48,7 +52,9 @@ final class SessionLogServiceTest extends TestCase
 
         $repository = Mockery::mock(SessionLogRepositoryInterface::class);
         $rateService = Mockery::mock(SessionLogRateService::class);
-        $service = new SessionLogService($repository, $rateService);
+        $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
+        $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Therapist does not have access to this session log.');
@@ -82,7 +88,9 @@ final class SessionLogServiceTest extends TestCase
 
         $repository = Mockery::mock(SessionLogRepositoryInterface::class);
         $rateService = Mockery::mock(SessionLogRateService::class);
-        $service = new SessionLogService($repository, $rateService);
+        $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
+        $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Session log must be submitted before finalization.');

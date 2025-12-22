@@ -9,6 +9,7 @@ use App\DTOs\SessionLogIndexDTO;
 use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -42,9 +43,17 @@ final class SessionLogIndexServiceTest extends TestCase
 
     public function test_therapist_actions_for_draft_and_finalized(): void
     {
+        Carbon::setTestNow('2025-01-15 10:00:00');
+
         $therapist = User::factory()->therapist()->create();
-        SessionLog::factory()->draft()->create(['therapist_id' => $therapist->id]);
-        SessionLog::factory()->finalized()->create(['therapist_id' => $therapist->id]);
+        SessionLog::factory()->draft()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->startOfMonth(),
+        ]);
+        SessionLog::factory()->finalized()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->startOfMonth(),
+        ]);
 
         $service = app(SessionLogIndexService::class);
         $result = $service->getTherapistIndex(
@@ -65,5 +74,82 @@ final class SessionLogIndexServiceTest extends TestCase
         $this->assertNotNull($finalRow);
         $finalActions = collect($finalRow['actions'])->pluck('label')->all();
         $this->assertSame(['View'], $finalActions);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_therapist_index_applies_current_month_default_filters_when_dates_missing(): void
+    {
+        Carbon::setTestNow('2025-01-15 10:00:00');
+
+        $therapist = User::factory()->therapist()->create();
+
+        // Outside current month
+        SessionLog::factory()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->copy()->subMonth()->startOfMonth(),
+        ]);
+
+        // Inside current month
+        $insideFirst = SessionLog::factory()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->startOfMonth(),
+        ]);
+        $insideLast = SessionLog::factory()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->endOfMonth(),
+        ]);
+
+        // Outside current month (future)
+        SessionLog::factory()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->copy()->addMonth()->startOfMonth(),
+        ]);
+
+        $service = app(SessionLogIndexService::class);
+        $result = $service->getTherapistIndex(
+            $therapist,
+            SessionLogIndexDTO::fromArray([])
+        );
+
+        $filters = $result['filters'];
+
+        $this->assertSame(Carbon::now()->startOfMonth()->toDateString(), $filters['date_from']);
+        $this->assertSame(Carbon::now()->endOfMonth()->toDateString(), $filters['date_to']);
+        $this->assertSame($therapist->id, $filters['therapist_id']);
+
+        $this->assertCount(2, $result['rows']);
+        $dates = collect($result['rows'])->pluck('date')->all();
+        $this->assertContains($insideFirst->session_date?->format('Y-m-d'), $dates);
+        $this->assertContains($insideLast->session_date?->format('Y-m-d'), $dates);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_therapist_index_respects_explicit_date_filters(): void
+    {
+        Carbon::setTestNow('2025-01-15 10:00:00');
+
+        $therapist = User::factory()->therapist()->create();
+
+        $from = Carbon::now()->copy()->subMonths(2)->startOfMonth()->toDateString();
+        $to = Carbon::now()->copy()->subMonth()->endOfMonth()->toDateString();
+
+        $service = app(SessionLogIndexService::class);
+        $result = $service->getTherapistIndex(
+            $therapist,
+            SessionLogIndexDTO::fromArray([
+                'date_from' => $from,
+                'date_to' => $to,
+            ])
+        );
+
+        $filters = $result['filters'];
+
+        $this->assertSame($from, $filters['date_from']);
+        $this->assertSame($to, $filters['date_to']);
+        $this->assertSame($therapist->id, $filters['therapist_id']);
+
+        Carbon::setTestNow();
     }
 }

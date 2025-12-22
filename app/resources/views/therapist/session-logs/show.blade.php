@@ -1,45 +1,66 @@
-@extends('layouts.app')
+<x-app-layout>
+    <div class="py-8">
+        <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-6">
+            @if (session('success'))
+                <x-ui::alert variant="success">
+                    {{ session('success') }}
+                </x-ui::alert>
+            @endif
 
-@section('content')
-    <x-ui-card title="Session Log Details">
-        <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Session Date</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->session_date?->format('Y-m-d') }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Student</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->student?->name }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Service</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->service?->name }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Status</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->status?->label() }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Therapist Amount</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->therapist_billable_amount }}</dd>
-            </div>
-            <div class="md:col-span-2">
-                <dt class="text-sm font-medium text-gray-500">Notes</dt>
-                <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ $sessionLog->notes }}</dd>
-            </div>
-        </dl>
+            {{-- Header Card --}}
+            <x-ui::card class="p-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h1 class="text-2xl font-semibold text-foreground">
+                            Session Log – {{ $sessionLog->student?->name ?? 'Unknown student' }}
+                        </h1>
+                        <p class="text-sm text-foreground/60 mt-1">
+                            {{ $sessionLog->service?->name ?? 'No service' }}
+                            · {{ $sessionLog->session_date?->format('M d, Y') ?? 'No date' }}
+                        </p>
+                    </div>
 
-        <div class="mt-6 flex space-x-3">
-            @can('update', $sessionLog)
-                <a href="{{ route('therapist.session-logs.edit', $sessionLog) }}" class="btn btn-primary">Edit</a>
-            @endcan
-            @can('submit', $sessionLog)
-                <form action="{{ route('therapist.session-logs.submit', $sessionLog) }}" method="POST">
-                    @csrf
-                    <button type="submit" class="btn btn-success">Submit</button>
-                </form>
-            @endcan
+                    <div class="flex items-center gap-3 flex-wrap">
+                        @if ($sessionLog->status)
+                            <x-ui::badge :variant="match ($sessionLog->status) {
+                                \App\Enums\SessionLogStatus::FINALIZED => 'success',
+                                \App\Enums\SessionLogStatus::SUBMITTED => 'warning',
+                                \App\Enums\SessionLogStatus::CANCELLED => 'danger',
+                                default => 'secondary',
+                            }">
+                                {{ $sessionLog->status->label() }}
+                            </x-ui::badge>
+                        @endif
+
+                        @can('update', $sessionLog)
+                            <a href="{{ route('therapist.session-logs.edit', $sessionLog) }}"
+                                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                                Edit
+                            </a>
+                        @endcan
+
+                        @can('submit', $sessionLog)
+                            @if ($sessionLog->status?->canSubmit() ?? true)
+                                <form action="{{ route('therapist.session-logs.submit', $sessionLog) }}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                                        Submit
+                                    </button>
+                                </form>
+                            @endif
+                        @endcan
+
+                        <a href="{{ route('therapist.session-logs.index') }}"
+                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                            Back to list
+                        </a>
+                    </div>
+                </div>
+            </x-ui::card>
+
+            {{-- Details Card --}}
+            <x-session-log.details :session-log="$sessionLog" />
         </div>
-    </x-ui-card>
-@endsection
-
+    </div>
+</x-app-layout>

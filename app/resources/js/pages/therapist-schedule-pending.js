@@ -10,7 +10,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             return;
         }
 
-        // Handle billing status update
+        // Handle billing status update (legacy support for schedule cards)
         $pendingScheduleList.on('click', '.schedule-bill-btn', async function () {
             const $btn = $(this);
             const scheduleId = $btn.data('schedule-id') || 
@@ -82,19 +82,53 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             }
         });
 
-        // Handle edit schedule button
-        $pendingScheduleList.on('click', '.schedule-edit-btn', function () {
+        // Handle delete schedule from list view
+        $pendingScheduleList.on('click', '.schedule-delete-btn', async function () {
             const $btn = $(this);
-            const scheduleId = $btn.data('schedule-id');
+            const $row = $btn.closest('tr');
+            const scheduleId = $row.data('schedule-id');
 
             if (!scheduleId) {
                 errorAlert('Schedule ID not found.');
                 return;
             }
 
-            // For now, redirect to calendar with the schedule date
-            // In the future, this could open an edit modal
-            window.location.href = '/therapist/schedule/calendar';
+            const result = await confirmDialog({
+                title: 'Delete Schedule?',
+                text: 'This will remove the schedule from your calendar. This action cannot be undone.',
+                icon: 'warning',
+                confirmButtonText: 'Yes, delete it',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            showLoading('Deleting schedule...');
+
+            try {
+                const response = await fetch(`/therapist/schedule/${scheduleId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                closeAlert();
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ message: 'Failed to delete schedule' }));
+                    throw new Error(error.message || 'Failed to delete schedule');
+                }
+
+                $row.remove();
+                successToast('Schedule deleted successfully.');
+            } catch (error) {
+                errorAlert(error.message || 'An error occurred while deleting the schedule');
+            }
         });
     });
 })(window.jQuery);

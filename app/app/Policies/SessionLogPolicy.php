@@ -72,7 +72,12 @@ final class SessionLogPolicy
 
     public function finalize(User $user, SessionLog $sessionLog): bool
     {
-        return $user->role === Role::ADMIN && $sessionLog->isSubmitted();
+        if ($user->role !== Role::ADMIN) {
+            return false;
+        }
+
+        // Admins can only finalize logs that are currently submitted.
+        return $sessionLog->isSubmitted();
     }
 
     public function cancel(User $user, SessionLog $sessionLog): bool

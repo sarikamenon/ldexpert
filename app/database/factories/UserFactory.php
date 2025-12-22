@@ -6,7 +6,6 @@ use App\Enums\Role;
 use App\Models\AdminProfile;
 use App\Models\ParentProfile;
 use App\Models\StudentProfile;
-use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -55,11 +54,7 @@ class UserFactory extends Factory
      */
     public function therapist(): static
     {
-        return $this->afterCreating(function ($user) {
-            TherapistProfile::factory()->create([
-                'user_id' => $user->id,
-            ]);
-        })->state(fn (array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'role' => Role::THERAPIST->value,
         ]);
     }

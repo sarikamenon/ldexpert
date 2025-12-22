@@ -1,54 +1,65 @@
-@extends('layouts.app')
+<x-admin.layouts.app>
+    <div class="space-y-6">
+        {{-- Header Card --}}
+        <x-ui::card class="p-6">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-2xl font-semibold text-foreground">
+                        Session Log – {{ $sessionLog->student?->name ?? 'Unknown student' }}
+                    </h1>
+                    <p class="text-sm text-foreground/60 mt-1">
+                        {{ $sessionLog->service?->name ?? 'No service' }}
+                        · {{ $sessionLog->session_date?->format('M d, Y') ?? 'No date' }}
+                    </p>
+                </div>
 
-@section('content')
-    <x-ui-card title="Session Log Details">
-        <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Session Date</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->session_date?->format('Y-m-d') }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Student</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->student?->name }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Therapist</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->therapist?->name }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Service</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->service?->name }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Status</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->status?->label() }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">Therapist Amount</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->therapist_billable_amount }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-gray-500">School Amount</dt>
-                <dd class="mt-1 text-sm text-gray-900">{{ $sessionLog->school_invoice_amount }}</dd>
-            </div>
-            <div class="md:col-span-2">
-                <dt class="text-sm font-medium text-gray-500">Notes</dt>
-                <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ $sessionLog->notes }}</dd>
-            </div>
-        </dl>
+                <div class="flex items-center gap-3 flex-wrap">
+                    @if ($sessionLog->status)
+                        <x-ui::badge :variant="match ($sessionLog->status) {
+                            \App\Enums\SessionLogStatus::FINALIZED => 'success',
+                            \App\Enums\SessionLogStatus::SUBMITTED => 'warning',
+                            \App\Enums\SessionLogStatus::CANCELLED => 'danger',
+                            default => 'secondary',
+                        }">
+                            {{ $sessionLog->status->label() }}
+                        </x-ui::badge>
+                    @endif
 
-        <div class="mt-6 flex space-x-3">
-            <a href="{{ route('admin.session-logs.edit', $sessionLog) }}" class="btn btn-primary">Override Rates</a>
-            <form action="{{ route('admin.session-logs.finalize', $sessionLog) }}" method="POST">
-                @csrf
-                <button type="submit" class="btn btn-success">Finalize</button>
-            </form>
-            <form action="{{ route('admin.session-logs.cancel', $sessionLog) }}" method="POST">
-                @csrf
-                <input type="hidden" name="cancellation_reason" value="Cancelled by admin" />
-                <button type="submit" class="btn btn-danger">Cancel</button>
-            </form>
-        </div>
-    </x-ui-card>
-@endsection
+                    <a href="{{ route('admin.session-logs.index') }}"
+                        class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                        Back to list
+                    </a>
 
+                    <a href="{{ route('admin.session-logs.edit', $sessionLog) }}"
+                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                        Override Rates
+                    </a>
+
+                    @if ($sessionLog->status?->canFinalize())
+                        <form action="{{ route('admin.session-logs.finalize', $sessionLog) }}" method="POST">
+                            @csrf
+                            <button type="submit"
+                                class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
+                                Finalize
+                            </button>
+                        </form>
+                    @endif
+
+                    @if ($sessionLog->status?->canCancel())
+                        <form action="{{ route('admin.session-logs.cancel', $sessionLog) }}" method="POST">
+                            @csrf
+                            <input type="hidden" name="cancellation_reason" value="Cancelled by admin" />
+                            <button type="submit"
+                                class="inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium">
+                                Cancel
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        </x-ui::card>
+
+        {{-- Shared details component --}}
+        <x-session-log.details :session-log="$sessionLog" />
+    </div>
+</x-admin.layouts.app>

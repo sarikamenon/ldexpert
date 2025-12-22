@@ -6,6 +6,7 @@ namespace App\DTOs;
 
 use App\Enums\RateType;
 use App\Enums\SessionLogStatus;
+use App\Enums\SessionOutcome;
 
 final class CreateSessionLogDTO
 {
@@ -22,6 +23,7 @@ final class CreateSessionLogDTO
         public readonly int $durationMinutes,
         public readonly int $thoMinutes,
         public readonly string $notes,
+        public readonly string $outcome,
         public readonly bool $isBillableTherapist,
         public readonly ?int $therapistContractId,
         public readonly ?RateType $therapistRateType,
@@ -55,6 +57,8 @@ final class CreateSessionLogDTO
             ? (int) $data['tho_minutes']
             : 0;
 
+        $outcome = $data['outcome'] ?? SessionOutcome::SERVICE_DELIVERED->value;
+
         return new self(
             therapistId: (int) $data['therapist_id'],
             studentId: (int) $data['student_id'],
@@ -72,6 +76,7 @@ final class CreateSessionLogDTO
             durationMinutes: (int) $data['duration_minutes'],
             thoMinutes: $thoMinutes,
             notes: $data['notes'],
+            outcome: $outcome,
             isBillableTherapist: isset($data['is_billable_therapist'])
                 ? (bool) $data['is_billable_therapist']
                 : true,
@@ -123,6 +128,7 @@ final class CreateSessionLogDTO
             'duration_minutes' => $this->durationMinutes,
             'tho_minutes' => $this->thoMinutes,
             'notes' => $this->notes,
+            'outcome' => $this->outcome,
             'delivery_mode' => 'virtual',
             'is_group' => false,
             'is_billable_therapist' => $this->isBillableTherapist,

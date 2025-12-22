@@ -29,6 +29,7 @@ final class Service extends Model
         'is_direct_service' => 'boolean',
         'is_group_service' => 'boolean',
         'is_frequency_service' => 'boolean',
+        'include_in_tho' => 'boolean',
         'is_billable' => 'boolean',
         'delivery_mode' => 'string',
         'min_duration_minutes' => 'integer',

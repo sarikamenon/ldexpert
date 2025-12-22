@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\Enums\SessionOutcome;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\SessionLogIndexDTO;
@@ -13,6 +15,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
 use App\Http\Requests\Therapist\UpdateSessionLogRequest;
+use Illuminate\Support\Collection;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +28,21 @@ final class SessionLogController extends Controller
     public function __construct(
         private readonly SessionLogService $sessionLogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly SSAService $ssaService,
     ) {}
+
+    public function selectSSA(Request $request): View
+    {
+        $therapist = $request->user();
+
+        $ssas = $this->ssaService
+            ->getActiveSSAsForTherapist($therapist->id)
+            ->loadMissing(['student', 'primaryService']);
+
+        return view('therapist.session-logs.select-ssa', [
+            'ssas' => $ssas,
+        ]);
+    }
 
     public function index(SessionLogIndexRequest $request): View
     {
@@ -34,7 +51,32 @@ final class SessionLogController extends Controller
         $dto = SessionLogIndexDTO::fromArray($request->validated());
         $viewData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
 
-        return view('therapist.session-logs.index', $viewData);
+        // Reference data for filters
+        $ssas = $this->ssaService
+            ->getActiveSSAsForTherapist($therapist->id)
+            ->loadMissing(['student.studentProfile', 'services']);
+
+        /** @var Collection<int, \App\Models\User> $students */
+        $students = $ssas
+            ->pluck('student')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        /** @var Collection<int, \App\Models\Service> $services */
+        $services = $ssas
+            ->flatMap(fn($ssa) => $ssa->services)
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return view('therapist.session-logs.index', $viewData + [
+            'students' => $students,
+            'ssas' => $ssas,
+            'services' => $services,
+        ]);
     }
 
     public function create(Request $request, ?Schedule $schedule = null): View
@@ -46,21 +88,58 @@ final class SessionLogController extends Controller
             abort(403, 'You do not have access to this schedule.');
         }
 
-        // Get students and SSAs for dropdowns
-        $students = $this->sessionLogService->getSessionLogs($therapist)
+        // Get active SSAs assigned to the therapist
+        $ssas = $this->ssaService
+            ->getActiveSSAsForTherapist($therapist->id)
+            ->loadMissing(['student', 'primaryService', 'services']);
+
+        // When coming from the standalone flow, an SSA must be selected first.
+        $selectedSsaId = (int) $request->query('ssa_id', 0);
+        $selectedSsa = $selectedSsaId > 0 ? $ssas->firstWhere('id', $selectedSsaId) : null;
+
+        // When coming from a schedule, default the SSA from the schedule if not explicitly selected.
+        if (! $selectedSsa && $schedule && $schedule->ssa_id) {
+            $selectedSsa = $ssas->firstWhere('id', $schedule->ssa_id);
+        }
+
+        // Derive unique students from active SSAs
+        $students = $ssas
             ->pluck('student')
+            ->filter()
             ->unique('id')
             ->values();
 
-        $ssas = collect();
-        if ($schedule) {
-            $ssas = $this->sessionLogService->getActiveSSAsForStudent($schedule->student_id);
+        // Build SSA -> services mapping for front-end
+        $ssaServiceMappings = $ssas->map(function ($ssa) {
+            return [
+                'ssa_id' => $ssa->id,
+                'services' => $ssa->services->map(function ($service) {
+                    return [
+                        'id' => $service->id,
+                        'name' => $service->name,
+                    ];
+                })->values()->all(),
+            ];
+        })->values();
+
+        $services = collect();
+        if ($selectedSsa) {
+            $services = $selectedSsa->services->map(function ($service) {
+                return (object) [
+                    'id' => $service->id,
+                    'name' => $service->name,
+                ];
+            });
         }
 
         return view('therapist.session-logs.create', [
             'schedule' => $schedule,
             'students' => $students,
             'ssas' => $ssas,
+            'services' => $services,
+            'ssaServiceMappings' => $ssaServiceMappings,
+            'selectedSsa' => $selectedSsa,
+            'sessionOutcomes' => SessionOutcome::cases(),
         ]);
     }
 
@@ -113,6 +192,7 @@ final class SessionLogController extends Controller
 
         return view('therapist.session-logs.edit', [
             'sessionLog' => $sessionLog,
+            'sessionOutcomes' => SessionOutcome::cases(),
         ]);
     }
 
@@ -140,17 +220,9 @@ final class SessionLogController extends Controller
 
     public function submit(Request $request, SessionLog $sessionLog): RedirectResponse
     {
+        $this->authorize('submit', $sessionLog);
+
         $therapist = $request->user();
-
-        // Ownership guard: therapists may only submit their own logs
-        if ((int) $sessionLog->therapist_id !== (int) $therapist->id) {
-            abort(403, 'Therapist does not have access to this session log.');
-        }
-
-        // Finalization guard: finalized logs cannot be resubmitted
-        if ($sessionLog->isFinalized()) {
-            abort(403, 'Session log cannot be submitted in its current status.');
-        }
 
         try {
             $this->sessionLogService->submit($therapist, $sessionLog);

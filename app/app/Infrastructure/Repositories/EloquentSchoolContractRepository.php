@@ -96,6 +96,35 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         ];
     }
 
+    public function findActiveContractForDate(int $schoolId, string $date): ?SchoolContract
+    {
+        $dateObj = \Carbon\Carbon::parse($date);
+
+        return SchoolContract::query()
+            ->where('school_id', $schoolId)
+            ->where('status', ContractStatus::ACTIVE)
+            ->whereDate('start_date', '<=', $dateObj)
+            ->whereDate('end_date', '>=', $dateObj)
+            ->first();
+    }
+
+    public function getServiceRate(int $contractId, int $serviceId): ?array
+    {
+        $contractService = \App\Models\SchoolContractService::query()
+            ->where('school_contract_id', $contractId)
+            ->where('service_id', $serviceId)
+            ->first();
+
+        if (! $contractService) {
+            return null;
+        }
+
+        return [
+            'rate_type' => $contractService->rate_type,
+            'rate_amount' => (float) $contractService->rate,
+        ];
+    }
+
     private function baseQuery(): Builder
     {
         return SchoolContract::query()

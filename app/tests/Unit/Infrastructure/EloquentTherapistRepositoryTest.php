@@ -307,4 +307,35 @@ final class EloquentTherapistRepositoryTest extends TestCase
         $this->assertSame($initialActive + 5, $metrics['active']);
         $this->assertSame($initialInactive + 3, $metrics['inactive']);
     }
+
+    public function test_find_profile_by_user_id_returns_profile(): void
+    {
+        $manager = User::factory()->admin()->create();
+
+        $user = User::factory()
+            ->therapist()
+            ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
+            ->create();
+
+        $profile = $this->repository->findProfileByUserId($user->id);
+
+        $this->assertInstanceOf(TherapistProfile::class, $profile);
+        $this->assertSame($user->id, $profile->user_id);
+    }
+
+    public function test_find_profile_by_user_id_returns_null_when_not_found(): void
+    {
+        $profile = $this->repository->findProfileByUserId(999999);
+
+        $this->assertNull($profile);
+    }
+
+    public function test_find_profile_by_user_id_returns_null_for_user_without_profile(): void
+    {
+        $user = User::factory()->therapist()->create();
+
+        $profile = $this->repository->findProfileByUserId($user->id);
+
+        $this->assertNull($profile);
+    }
 }

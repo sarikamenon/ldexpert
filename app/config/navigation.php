@@ -87,24 +87,49 @@ return [
                 ],
             ],
             [
-                'label' => 'Activity Logs',
-                'route' => 'admin.activity-logs.index',
-                'active' => 'admin.activity-logs.*',
-            ],
-            [
-                'label' => 'Analytics',
-                'route' => 'admin.analytics.index',
-                'active' => 'admin.analytics.*',
+                'label' => 'Session Logs',
+                'route' => 'admin.session-logs.index',
+                'active' => 'admin.session-logs.*',
+                'children' => [
+                    [
+                        'label' => 'Submitted',
+                        'route' => 'admin.session-logs.index',
+                        'query' => ['status' => 'submitted'],
+                        'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
+                    ],
+                    [
+                        'label' => 'Approved',
+                        'route' => 'admin.session-logs.index',
+                        'query' => ['status' => 'finalized'],
+                        'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
+                    ],
+                    [
+                        'label' => 'Cancelled',
+                        'route' => 'admin.session-logs.index',
+                        'query' => ['status' => 'cancelled'],
+                        'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
+                    ],
+                ],
             ],
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => ['admin.settings.*', 'admin.services.*'],
+                'active' => ['admin.settings.*', 'admin.services.*', 'admin.activity-logs.*', 'admin.analytics.*'],
                 'children' => [
                     [
                         'label' => 'Services',
                         'route' => 'admin.services.index',
                         'active' => 'admin.services.*',
+                    ],
+                    [
+                        'label' => 'Activity Logs',
+                        'route' => 'admin.activity-logs.index',
+                        'active' => 'admin.activity-logs.*',
+                    ],
+                    [
+                        'label' => 'Analytics',
+                        'route' => 'admin.analytics.index',
+                        'active' => 'admin.analytics.*',
                     ],
                 ],
             ],
@@ -133,9 +158,21 @@ return [
                 ],
             ],
             [
-                'label' => 'Sessions',
-                'route' => 'therapist.sessions.index',
-                'active' => 'therapist.sessions.*',
+                'label' => 'Session Logs',
+                'route' => 'therapist.session-logs.index',
+                'active' => 'therapist.session-logs.*',
+                'children' => [
+                    [
+                        'label' => 'My Session Logs',
+                        'route' => 'therapist.session-logs.index',
+                        'active' => 'therapist.session-logs.index',
+                    ],
+                    [
+                        'label' => 'Add Non-Schedule Log',
+                        'route' => 'therapist.session-logs.create',
+                        'active' => 'therapist.session-logs.create',
+                    ],
+                ],
             ],
             [
                 'label' => 'Bills',

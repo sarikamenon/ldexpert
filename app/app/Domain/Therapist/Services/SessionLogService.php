@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\Domain\Service\Repositories\ServiceRepositoryInterface;
+use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
+use App\Enums\Role;
+use App\Enums\SessionOutcome;
 use App\Models\Schedule;
-use App\Models\Service;
-use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
@@ -22,6 +24,8 @@ final class SessionLogService
     public function __construct(
         private readonly SessionLogRepositoryInterface $repository,
         private readonly SessionLogRateService $rateService,
+        private readonly SSARepositoryInterface $ssaRepository,
+        private readonly ServiceRepositoryInterface $serviceRepository,
     ) {}
 
     public function getSessionLogs(User $therapist, array $filters = []): Collection
@@ -39,6 +43,11 @@ final class SessionLogService
         return $this->repository->getActiveSSAsForStudent($studentId);
     }
 
+    public function getSessionLogsByScheduleIds(array $scheduleIds): Collection
+    {
+        return $this->repository->getSessionLogsByScheduleIds($scheduleIds);
+    }
+
     public function createFromSchedule(User $therapist, Schedule $schedule, CreateSessionLogDTO $dto): SessionLog
     {
         return DB::transaction(function () use ($therapist, $schedule, $dto): SessionLog {
@@ -53,8 +62,11 @@ final class SessionLogService
             }
 
             // Get SSA for tho_minutes and school_id
-            $ssa = ServiceSupportAgreement::with(['student.studentProfile'])->findOrFail($dto->ssaId);
-            $service = Service::findOrFail($dto->serviceId);
+            $ssa = $this->ssaRepository->findWithRelations($dto->ssaId, ['student.studentProfile']);
+            if (! $ssa) {
+                throw new \InvalidArgumentException('SSA not found.');
+            }
+            $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
@@ -72,7 +84,7 @@ final class SessionLogService
                 $dto->sessionDate,
                 $dto->durationMinutes
             );
-            $this->assertContractsPresent($billing);
+            $this->assertBillingDataComplete($billing);
 
             // Prepare data
             $data = $dto->toArray();
@@ -80,6 +92,9 @@ final class SessionLogService
             $data['schedule_id'] = $schedule->id;
             $data['school_id'] = $schoolId;
             $data['tho_minutes'] = $thoMinutes;
+
+            // Apply billing flags based on outcome
+            $this->applyOutcomeBillingFlags($data);
 
             // Override with calculated billing if not manually set
             if (! $dto->isRateOverride) {
@@ -116,8 +131,11 @@ final class SessionLogService
             }
 
             // Get SSA for school_id and tho_minutes
-            $ssa = ServiceSupportAgreement::with(['student.studentProfile'])->findOrFail($dto->ssaId);
-            $service = Service::findOrFail($dto->serviceId);
+            $ssa = $this->ssaRepository->findWithRelations($dto->ssaId, ['student.studentProfile']);
+            if (! $ssa) {
+                throw new \InvalidArgumentException('SSA not found.');
+            }
+            $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $schoolId = $dto->schoolId ?? $ssa->student->studentProfile?->school_id ?? null;
@@ -132,13 +150,16 @@ final class SessionLogService
                 $dto->sessionDate,
                 $dto->durationMinutes
             );
-            $this->assertContractsPresent($billing);
+            $this->assertBillingDataComplete($billing);
 
             // Prepare data
             $data = $dto->toArray();
             $data['therapist_id'] = $therapist->id;
             $data['school_id'] = $schoolId;
             $data['tho_minutes'] = $thoMinutes;
+
+            // Apply billing flags based on outcome
+            $this->applyOutcomeBillingFlags($data);
 
             // Override with calculated billing if not manually set
             if (! $dto->isRateOverride) {
@@ -174,8 +195,14 @@ final class SessionLogService
                 throw new \InvalidArgumentException('Finalized session logs cannot be edited.');
             }
 
-            // If duration changed, recalculate billing
             $data = $dto->toArray();
+
+            // If outcome is provided, update billing flags accordingly
+            if (isset($data['outcome'])) {
+                $this->applyOutcomeBillingFlags($data);
+            }
+
+            // If duration changed, recalculate billing
             if (isset($data['duration_minutes']) || isset($data['start_time']) || isset($data['end_time'])) {
                 // Recalculate duration if times changed
                 if (isset($data['start_time']) && isset($data['end_time'])) {
@@ -221,6 +248,10 @@ final class SessionLogService
 
     public function submit(User $therapist, SessionLog $sessionLog): SessionLog
     {
+        if ((int) $sessionLog->therapist_id !== (int) $therapist->id) {
+            throw new \InvalidArgumentException('Therapist does not have access to this session log.');
+        }
+
         // Draft -> ok to submit
         if ($sessionLog->isDraft() || $sessionLog->status === null) {
             return $this->repository->submit($sessionLog, $therapist);
@@ -244,9 +275,12 @@ final class SessionLogService
         return $this->repository->finalize($sessionLog, $admin);
     }
 
-    public function cancel(User $therapist, SessionLog $sessionLog, string $reason): SessionLog
+    public function cancel(User $user, SessionLog $sessionLog, string $reason): SessionLog
     {
-        if ($sessionLog->therapist_id !== $therapist->id) {
+        $role = $user->role instanceof Role ? $user->role->value : $user->role;
+        $isAdmin = $role === Role::ADMIN->value;
+
+        if (! $isAdmin && $sessionLog->therapist_id !== $user->id) {
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
@@ -277,14 +311,26 @@ final class SessionLogService
         }
     }
 
-    private function assertContractsPresent(array $billing): void
+    private function assertBillingDataComplete(array $billing): void
     {
+        // Validate therapist contract exists
         if (! $billing['therapist']['contract_id']) {
             throw new \InvalidArgumentException('Active therapist contract is required for this service and date.');
         }
 
+        // Validate therapist service rate is configured
+        if (! $billing['therapist']['rate_type'] || $billing['therapist']['rate_amount'] === null) {
+            throw new \InvalidArgumentException('Therapist service rate is not configured for this service in the active contract.');
+        }
+
+        // Validate school contract exists
         if (! $billing['school']['contract_id']) {
             throw new \InvalidArgumentException('Active school contract is required for this service and date.');
+        }
+
+        // Validate school service rate is configured
+        if (! $billing['school']['rate_type'] || $billing['school']['rate_amount'] === null) {
+            throw new \InvalidArgumentException('School service rate is not configured for this service in the active contract.');
         }
     }
 
@@ -307,5 +353,20 @@ final class SessionLogService
         if (! $schoolId) {
             throw new \InvalidArgumentException('A school must be associated before creating a session log.');
         }
+    }
+
+    /**
+     * Set is_billable_* flags on the payload based on the selected SessionOutcome.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function applyOutcomeBillingFlags(array &$data): void
+    {
+        $outcomeValue = $data['outcome'] ?? SessionOutcome::SERVICE_DELIVERED->value;
+
+        $outcome = SessionOutcome::from($outcomeValue);
+
+        $data['is_billable_therapist'] = $outcome->isBillableForTherapist();
+        $data['is_billable_school'] = $outcome->isBillableForSchool();
     }
 }

@@ -18,6 +18,7 @@ final class UpdateSessionLogDTO
         public readonly ?int $durationMinutes,
         public readonly ?int $thoMinutes,
         public readonly ?string $notes,
+        public readonly ?string $outcome,
         public readonly ?bool $isBillableTherapist,
         public readonly ?int $therapistContractId,
         public readonly ?RateType $therapistRateType,
@@ -67,6 +68,7 @@ final class UpdateSessionLogDTO
                 ? (int) $data['tho_minutes']
                 : null,
             notes: $data['notes'] ?? null,
+            outcome: $data['outcome'] ?? null,
             isBillableTherapist: isset($data['is_billable_therapist'])
                 ? (bool) $data['is_billable_therapist']
                 : null,
@@ -135,6 +137,9 @@ final class UpdateSessionLogDTO
         }
         if ($this->notes !== null) {
             $array['notes'] = $this->notes;
+        }
+        if ($this->outcome !== null) {
+            $array['outcome'] = $this->outcome;
         }
         if ($this->isBillableTherapist !== null) {
             $array['is_billable_therapist'] = $this->isBillableTherapist;

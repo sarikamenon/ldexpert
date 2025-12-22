@@ -150,6 +150,60 @@ final class SessionLogCreateTest extends TestCase
         ]);
     }
 
+    public function test_student_is_inferred_from_ssa_when_not_provided(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $school = School::factory()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+        $service = Service::factory()->create([
+            'min_duration_minutes' => 30,
+            'max_duration_minutes' => 120,
+        ]);
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $this->seedContracts($therapist, $school, $service, now());
+
+        $sessionDate = now()->format('Y-m-d');
+        $startTime = now()->setTime(10, 0, 0);
+        $endTime = $startTime->copy()->addHour();
+
+        $response = $this->actingAs($therapist)
+            ->post(route('therapist.session-logs.store'), [
+                // intentionally omit student_id to ensure it is inferred from SSA
+                'ssa_id' => $ssa->id,
+                'service_id' => $service->id,
+                'school_id' => $school->id,
+                'session_date' => $sessionDate,
+                'start_time' => $startTime->format('Y-m-d H:i:s'),
+                'end_time' => $endTime->format('Y-m-d H:i:s'),
+                'notes' => str_repeat('a', 50),
+                'is_billable_therapist' => true,
+                'is_billable_school' => true,
+                '_token' => csrf_token(),
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('session_logs', [
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'ssa_id' => $ssa->id,
+            'schedule_id' => null,
+        ]);
+    }
+
     public function test_session_log_requires_minimum_notes_length(): void
     {
         $therapist = User::factory()->therapist()->create();
@@ -381,6 +435,66 @@ final class SessionLogCreateTest extends TestCase
                 'session_date' => now()->format('Y-m-d'),
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
+                'notes' => str_repeat('a', 60),
+                'is_billable_therapist' => true,
+                '_token' => csrf_token(),
+            ]);
+
+        $response->assertSessionHasErrors(['error']);
+    }
+
+    public function test_rejects_when_service_rates_missing(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $school = School::factory()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+        $service = Service::factory()->create([
+            'min_duration_minutes' => 30,
+            'max_duration_minutes' => 120,
+        ]);
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $sessionDate = now();
+
+        // Create active contracts but WITHOUT service rates
+        $therapistProfile = $therapist->therapistProfile
+            ?? TherapistProfile::factory()->create([
+                'user_id' => $therapist->id,
+            ]);
+
+        TherapistContract::create([
+            'therapist_id' => $therapistProfile->id,
+            'start_date' => $sessionDate->copy()->subDay()->toDateString(),
+            'end_date' => $sessionDate->copy()->addMonth()->toDateString(),
+            'status' => ContractStatus::ACTIVE->value,
+        ]);
+
+        SchoolContract::create([
+            'school_id' => $school->id,
+            'start_date' => $sessionDate->copy()->subDay()->toDateString(),
+            'end_date' => $sessionDate->copy()->addMonth()->toDateString(),
+            'status' => ContractStatus::ACTIVE->value,
+        ]);
+
+        $response = $this->actingAs($therapist)
+            ->post(route('therapist.session-logs.store'), [
+                'student_id' => $student->id,
+                'ssa_id' => $ssa->id,
+                'service_id' => $service->id,
+                'session_date' => $sessionDate->format('Y-m-d'),
+                'start_time' => $sessionDate->format('Y-m-d H:i:s'),
+                'end_time' => $sessionDate->copy()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),

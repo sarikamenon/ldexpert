@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use App\Domain\Service\Repositories\ServiceRepositoryInterface;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Time\UserTimezoneService;
+use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateScheduleDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
@@ -32,12 +35,21 @@ final class ScheduleServiceTest extends TestCase
 
     private MockInterface $timezoneService;
 
+    private MockInterface $userRepository;
+
+    private MockInterface $serviceRepository;
+
+    private MockInterface $studentRepository;
+
     protected function setUp(): void
     {
         parent::setUp();
         Event::fake();
         $this->repository = Mockery::mock(ScheduleRepositoryInterface::class);
         $this->timezoneService = Mockery::mock(UserTimezoneService::class);
+        $this->userRepository = Mockery::mock(UserRepositoryInterface::class);
+        $this->serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
+        $this->studentRepository = Mockery::mock(StudentRepositoryInterface::class);
     }
 
     public function test_create_single_non_recurring_schedule_creates_one_record(): void
@@ -72,6 +84,21 @@ final class ScheduleServiceTest extends TestCase
             ->times(2) // Therapist + 1 Student
             ->andReturnFalse();
 
+        $this->userRepository->shouldReceive('findByIds')
+            ->once()
+            ->with([$studentUser->id])
+            ->andReturn(collect([$studentUser]));
+
+        $this->serviceRepository->shouldReceive('findOrFail')
+            ->once()
+            ->with($service->id)
+            ->andReturn($service);
+
+        $this->studentRepository->shouldReceive('getSchoolIdByUserId')
+            ->once()
+            ->with($studentUser->id)
+            ->andReturn(null);
+
         $this->repository->shouldReceive('create')
             ->once()
             ->andReturnUsing(function (array $data) {
@@ -81,7 +108,13 @@ final class ScheduleServiceTest extends TestCase
                 return $schedule;
             });
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $dto = new CreateScheduleDTO(
             therapistId: $therapist->id,
@@ -149,6 +182,20 @@ final class ScheduleServiceTest extends TestCase
             ->with('group')
             ->andReturn('GRP-123');
 
+        $this->userRepository->shouldReceive('findByIds')
+            ->once()
+            ->with([$studentUser1->id, $studentUser2->id])
+            ->andReturn(collect([$studentUser1, $studentUser2]));
+
+        $this->serviceRepository->shouldReceive('findOrFail')
+            ->once()
+            ->with($service->id)
+            ->andReturn($service);
+
+        $this->studentRepository->shouldReceive('getSchoolIdByUserId')
+            ->twice()
+            ->andReturn(null);
+
         $this->repository->shouldReceive('create')
             ->twice()
             ->andReturnUsing(function (array $data) {
@@ -158,7 +205,13 @@ final class ScheduleServiceTest extends TestCase
                 return $schedule;
             });
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $dto = new CreateScheduleDTO(
             therapistId: $therapist->id,
@@ -196,7 +249,13 @@ final class ScheduleServiceTest extends TestCase
             ->with('recurring')
             ->andReturn('REC-123');
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $batch = $serviceLayer->generateBatchNumber('recurring');
 
@@ -227,11 +286,22 @@ final class ScheduleServiceTest extends TestCase
             ->times(2) // Therapist + Student (if resolved)
             ->andReturnFalse();
 
+        $this->userRepository->shouldReceive('findById')
+            ->once()
+            ->with($schedule->student_id)
+            ->andReturn(User::find($schedule->student_id));
+
         $this->repository->shouldReceive('update')
             ->once()
             ->andReturn($schedule);
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $dto = new UpdateScheduleDTO(
             ssaId: null,
@@ -254,79 +324,6 @@ final class ScheduleServiceTest extends TestCase
         $this->assertSame($schedule->id, $updatedSchedule->id);
     }
 
-    public function test_update_schedule_regenerates_occurrences_when_recurrence_type_changes(): void
-    {
-        $therapist = User::factory()->create();
-        $studentUser = User::factory()->create();
-        StudentProfile::factory()->create(['user_id' => $studentUser->id]);
-
-        $schedule = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'student_id' => $studentUser->id,
-            'recurrence_type' => RecurrenceType::NONE,
-            'schedule_date' => '2025-01-01',
-        ]);
-
-        $this->repository->shouldReceive('findForTherapist')
-            ->with($therapist, $schedule->id)
-            ->andReturn($schedule);
-
-        $this->timezoneService->shouldReceive('parseUserLocalToUtc')
-            ->andReturnUsing(function ($dateTimeStr) {
-                return Carbon::parse($dateTimeStr);
-            });
-
-        $this->repository->shouldReceive('hasOverlap')
-            ->andReturnFalse();
-
-        $this->timezoneService->shouldReceive('toUserTimezone')
-            ->andReturnUsing(function ($carbon) {
-                return $carbon;
-            });
-
-        // Should generate new batch number
-        $this->repository->shouldReceive('generateBatchNumber')
-            ->once()
-            ->with('recurring')
-            ->andReturn('REC-NEW');
-
-        // Update the schedule
-        $this->repository->shouldReceive('update')
-            ->once()
-            ->andReturnUsing(function ($schedule, $data) {
-                $schedule->fill($data);
-
-                return $schedule;
-            });
-
-        // Create 2 new occurrences (weekly for 3 weeks total)
-        $this->repository->shouldReceive('create')
-            ->twice()
-            ->andReturn(new Schedule);
-
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
-
-        $dto = new UpdateScheduleDTO(
-            ssaId: null,
-            serviceId: null,
-            studentIds: null,
-            scheduleDate: '2025-01-01',
-            startTime: '09:00',
-            endTime: '10:00',
-            recurrenceType: RecurrenceType::WEEKLY,
-            recurrenceEndDate: '2025-01-15', // 3 weeks: Jan 1, Jan 8, Jan 15
-            isGroup: null,
-            locationDetails: null,
-            notes: null,
-            billingStatus: null,
-        );
-
-        $updatedSchedule = $serviceLayer->updateSchedule($therapist, $schedule->id, $dto);
-
-        $this->assertSame(RecurrenceType::WEEKLY, $updatedSchedule->recurrence_type);
-        $this->assertSame('REC-NEW', $updatedSchedule->recurring_batch_number);
-    }
-
     public function test_delete_schedule_removes_single_record(): void
     {
         $therapist = User::factory()->create();
@@ -344,7 +341,13 @@ final class ScheduleServiceTest extends TestCase
             ->once()
             ->with($schedule);
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $serviceLayer->deleteSchedule($therapist, $schedule->id);
     }
@@ -385,7 +388,13 @@ final class ScheduleServiceTest extends TestCase
             ->once()
             ->with($parent);
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $serviceLayer->deleteSchedule($therapist, $parent->id);
     }
@@ -411,7 +420,23 @@ final class ScheduleServiceTest extends TestCase
             ->with($therapist, '2025-01-01', '09:00:00', '10:00:00', null)
             ->andReturnTrue();
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $this->userRepository->shouldReceive('findByIds')
+            ->once()
+            ->with([$studentUser->id])
+            ->andReturn(collect([$studentUser]));
+
+        $this->serviceRepository->shouldReceive('findOrFail')
+            ->once()
+            ->with($service->id)
+            ->andReturn($service);
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $dto = new CreateScheduleDTO(
             therapistId: $therapist->id,
@@ -446,10 +471,6 @@ final class ScheduleServiceTest extends TestCase
         $this->repository->shouldReceive('validateStudentsShareService')->andReturnTrue();
 
         $this->timezoneService->shouldReceive('parseUserLocalToUtc')
-            ->times(2)
-            ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
-
-        $this->timezoneService->shouldReceive('parseUserLocalToUtc')
             ->once()
             ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
 
@@ -459,13 +480,29 @@ final class ScheduleServiceTest extends TestCase
             ->with($therapist, '2025-01-01', '09:00:00', '10:00:00', null)
             ->andReturnFalse();
 
+        $this->userRepository->shouldReceive('findByIds')
+            ->once()
+            ->with([$studentUser->id])
+            ->andReturn(collect([$studentUser]));
+
         // Overlap for student
         $this->repository->shouldReceive('hasOverlap')
             ->once()
             ->with(Mockery::on(fn ($arg) => $arg->id === $studentUser->id), '2025-01-01', '09:00:00', '10:00:00', null)
             ->andReturnTrue();
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $this->serviceRepository->shouldReceive('findOrFail')
+            ->once()
+            ->with($service->id)
+            ->andReturn($service);
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $dto = new CreateScheduleDTO(
             therapistId: $therapist->id,

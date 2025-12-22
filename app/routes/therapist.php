@@ -42,6 +42,7 @@ Route::middleware('role:therapist')
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
             Route::get('/', [SessionLogController::class, 'index'])->name('index');
+            Route::get('select-ssa', [SessionLogController::class, 'selectSSA'])->name('select-ssa');
             Route::get('create', [SessionLogController::class, 'create'])->name('create');
             Route::get('create/schedule/{schedule}', [SessionLogController::class, 'create'])->name('create.from-schedule');
             Route::post('/', [SessionLogController::class, 'store'])->name('store');

@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
-use App\Enums\ContractStatus;
+use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
+use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
+use App\Domain\Therapist\Repositories\TherapistRepositoryInterface;
 use App\Enums\RateType;
-use App\Models\SchoolContract;
-use App\Models\SchoolContractService;
-use App\Models\TherapistContract;
-use App\Models\TherapistContractService;
-use App\Models\TherapistProfile;
-use App\Models\User;
-use Carbon\Carbon;
 
 class SessionLogRateService
 {
+    public function __construct(
+        private readonly TherapistRepositoryInterface $therapistRepository,
+        private readonly TherapistContractRepositoryInterface $therapistContractRepository,
+        private readonly SchoolContractRepositoryInterface $schoolContractRepository,
+    ) {}
+
     /**
      * Get therapist rate for a service on a specific date
      *
@@ -24,12 +25,7 @@ class SessionLogRateService
      */
     public function getTherapistRate(int $therapistUserId, int $serviceId, string $sessionDate): array
     {
-        $date = Carbon::parse($sessionDate);
-
-        // Get therapist profile ID from user ID
-        $therapistProfile = TherapistProfile::query()
-            ->where('user_id', $therapistUserId)
-            ->first();
+        $therapistProfile = $this->therapistRepository->findProfileByUserId($therapistUserId);
 
         if (! $therapistProfile) {
             return [
@@ -39,14 +35,7 @@ class SessionLogRateService
             ];
         }
 
-        // Find active therapist contract that covers the session date
-        // Note: therapist_contracts.therapist_id references therapist_profiles.id, not users.id
-        $contract = TherapistContract::query()
-            ->where('therapist_id', $therapistProfile->id)
-            ->where('status', ContractStatus::ACTIVE)
-            ->whereDate('start_date', '<=', $date)
-            ->whereDate('end_date', '>=', $date)
-            ->first();
+        $contract = $this->therapistContractRepository->findActiveContractForDate($therapistProfile->id, $sessionDate);
 
         if (! $contract) {
             return [
@@ -56,13 +45,9 @@ class SessionLogRateService
             ];
         }
 
-        // Find service rate in contract
-        $contractService = TherapistContractService::query()
-            ->where('therapist_contract_id', $contract->id)
-            ->where('service_id', $serviceId)
-            ->first();
+        $serviceRate = $this->therapistContractRepository->getServiceRate($contract->id, $serviceId);
 
-        if (! $contractService) {
+        if (! $serviceRate) {
             return [
                 'contract_id' => $contract->id,
                 'rate_type' => null,
@@ -72,8 +57,8 @@ class SessionLogRateService
 
         return [
             'contract_id' => $contract->id,
-            'rate_type' => $contractService->rate_type,
-            'rate_amount' => (float) $contractService->rate,
+            'rate_type' => $serviceRate['rate_type'],
+            'rate_amount' => $serviceRate['rate_amount'],
         ];
     }
 
@@ -84,15 +69,7 @@ class SessionLogRateService
      */
     public function getSchoolRate(int $schoolId, int $serviceId, string $sessionDate): array
     {
-        $date = Carbon::parse($sessionDate);
-
-        // Find active school contract that covers the session date
-        $contract = SchoolContract::query()
-            ->where('school_id', $schoolId)
-            ->where('status', ContractStatus::ACTIVE)
-            ->whereDate('start_date', '<=', $date)
-            ->whereDate('end_date', '>=', $date)
-            ->first();
+        $contract = $this->schoolContractRepository->findActiveContractForDate($schoolId, $sessionDate);
 
         if (! $contract) {
             return [
@@ -102,13 +79,9 @@ class SessionLogRateService
             ];
         }
 
-        // Find service rate in contract
-        $contractService = SchoolContractService::query()
-            ->where('school_contract_id', $contract->id)
-            ->where('service_id', $serviceId)
-            ->first();
+        $serviceRate = $this->schoolContractRepository->getServiceRate($contract->id, $serviceId);
 
-        if (! $contractService) {
+        if (! $serviceRate) {
             return [
                 'contract_id' => $contract->id,
                 'rate_type' => null,
@@ -118,8 +91,8 @@ class SessionLogRateService
 
         return [
             'contract_id' => $contract->id,
-            'rate_type' => $contractService->rate_type,
-            'rate_amount' => (float) $contractService->rate,
+            'rate_type' => $serviceRate['rate_type'],
+            'rate_amount' => $serviceRate['rate_amount'],
         ];
     }
 

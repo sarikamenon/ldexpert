@@ -6,12 +6,14 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Enums\SessionLogStatus;
+use App\Enums\SessionOutcome;
 use App\Enums\SSAStatus;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class EloquentSessionLogRepository implements SessionLogRepositoryInterface
 {
@@ -118,14 +120,50 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
 
     public function finalize(SessionLog $sessionLog, User $finalizedBy): SessionLog
     {
-        $sessionLog->update([
-            'status' => SessionLogStatus::FINALIZED,
-            'finalized_at' => now(),
-            'finalized_by_id' => $finalizedBy->id,
-        ]);
-        $sessionLog->refresh();
+        return DB::transaction(function () use ($sessionLog, $finalizedBy): SessionLog {
+            // Load service relationship if not already loaded
+            if (! $sessionLog->relationLoaded('service')) {
+                $sessionLog->load('service');
+            }
 
-        return $sessionLog;
+            // Load SSA if not already loaded
+            if (! $sessionLog->relationLoaded('ssa')) {
+                $sessionLog->load('ssa');
+            }
+
+            // Determine THO minutes based on service and outcome
+            $thoMinutes = 0;
+            if ($sessionLog->service && $sessionLog->outcome) {
+                $service = $sessionLog->service;
+                $outcome = $sessionLog->outcome instanceof SessionOutcome
+                    ? $sessionLog->outcome
+                    : SessionOutcome::from($sessionLog->outcome);
+
+                // Check if service allows THO inclusion and outcome should include THO
+                if ($service->include_in_tho && $outcome->shouldIncludeInTho()) {
+                    $thoMinutes = $sessionLog->duration_minutes ?? 0;
+                }
+            }
+
+            // Update session log with status and THO minutes
+            $sessionLog->update([
+                'status' => SessionLogStatus::FINALIZED,
+                'finalized_at' => now(),
+                'finalized_by_id' => $finalizedBy->id,
+                'tho_minutes' => $thoMinutes,
+            ]);
+            $sessionLog->refresh();
+
+            // Update SSA served_minutes if THO minutes > 0
+            if ($thoMinutes > 0 && $sessionLog->ssa_id) {
+                $ssa = ServiceSupportAgreement::find($sessionLog->ssa_id);
+                if ($ssa) {
+                    $ssa->increment('served_minutes', $thoMinutes);
+                }
+            }
+
+            return $sessionLog;
+        });
     }
 
     public function cancel(SessionLog $sessionLog, string $reason): SessionLog
@@ -173,6 +211,14 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->where('schedule_id', $scheduleId)
             ->with(['student', 'ssa', 'service'])
             ->get();
+    }
+
+    public function getSessionLogsByScheduleIds(array $scheduleIds): Collection
+    {
+        return SessionLog::query()
+            ->whereIn('schedule_id', $scheduleIds)
+            ->get()
+            ->groupBy('schedule_id');
     }
 
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator
