@@ -20,7 +20,7 @@ function servicePayload(): array
         'name' => 'Speech Therapy',
         'description' => 'Weekly individual session.',
         'is_direct_service' => true,
-        'is_group_service' => false,
+        'include_in_tho' => true,
         'is_frequency_service' => true,
         'delivery_mode' => 'virtual',
         'is_billable' => true,
@@ -64,6 +64,7 @@ it('creates a service', function () {
         'name' => 'Speech Therapy',
         'is_frequency_service' => true,
         'is_direct_service' => true,
+        'include_in_tho' => true,
         'is_group_service' => false,
     ]);
 });
@@ -83,6 +84,7 @@ it('updates a service', function () {
     $this->assertDatabaseHas('services', [
         'id' => $service->id,
         'name' => 'Updated Service Name',
+        'include_in_tho' => true,
     ]);
 });
 

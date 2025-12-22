@@ -52,6 +52,17 @@ final class EloquentSSARepository implements SSARepositoryInterface
         ])->find($id);
     }
 
+    public function findWithRelations(int $id, array $relations = []): ?ServiceSupportAgreement
+    {
+        $query = ServiceSupportAgreement::query();
+
+        if (! empty($relations)) {
+            $query->with($relations);
+        }
+
+        return $query->find($id);
+    }
+
     public function create(CreateSSADTO $dto): ServiceSupportAgreement
     {
         return DB::transaction(function () use ($dto) {
@@ -220,18 +231,82 @@ final class EloquentSSARepository implements SSARepositoryInterface
         return $query->get();
     }
 
+    public function hasStudentAssignedToTherapist(int $studentId, int $therapistId): bool
+    {
+        return ServiceSupportAgreement::where('student_id', $studentId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->exists();
+    }
+
+    public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+            ->where('student_id', $studentId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->get();
+    }
+
+    public function getActiveSSAsForTherapist(int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->where('status', SSAStatus::ACTIVE)
+            ->with(['student', 'primaryService'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    public function findSSAForSchedule(int $ssaId, int $therapistId): ?ServiceSupportAgreement
+    {
+        return ServiceSupportAgreement::query()
+            ->where('id', $ssaId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->where('status', SSAStatus::ACTIVE)
+            ->with(['student', 'student.studentProfile.school', 'primaryService', 'services'])
+            ->first();
+    }
+
+    public function getSSAsForSchoolMetrics(int $schoolId): Collection
+    {
+        return ServiceSupportAgreement::with(['student', 'primaryService', 'assignedTherapist'])
+            ->whereHas('student.studentProfile', fn ($q) => $q->where('school_id', $schoolId))
+            ->get();
+    }
+
+    public function getSSAsForStudentMetrics(int $studentId): Collection
+    {
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+            ->where('student_id', $studentId)
+            ->get();
+    }
+
+    public function getSSAsForStudentSchedule(int $studentId): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('student_id', $studentId)
+            ->with(['primaryService', 'assignedTherapist'])
+            ->get(['id', 'student_id', 'assigned_therapist_id', 'primary_service_id', 'status']);
+    }
+
+    public function getSSAsForTherapistMetrics(int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::with(['student', 'primaryService'])
+            ->where('assigned_therapist_id', $therapistId)
+            ->get();
+    }
+
     private function applyFilters(Builder $query, SSAFilterDTO $filters): Builder
     {
         if ($filters->search) {
             $query->where(function (Builder $q) use ($filters) {
                 $q->whereHas('student', function (Builder $studentQuery) use ($filters) {
-                    $studentQuery->where('name', 'like', '%' . $filters->search . '%');
+                    $studentQuery->where('name', 'like', '%'.$filters->search.'%');
                 })
                     ->orWhereHas('primaryService', function (Builder $serviceQuery) use ($filters) {
-                        $serviceQuery->where('name', 'like', '%' . $filters->search . '%');
+                        $serviceQuery->where('name', 'like', '%'.$filters->search.'%');
                     })
                     ->orWhereHas('assignedTherapist', function (Builder $therapistQuery) use ($filters) {
-                        $therapistQuery->where('name', 'like', '%' . $filters->search . '%');
+                        $therapistQuery->where('name', 'like', '%'.$filters->search.'%');
                     });
             });
         }
@@ -262,7 +337,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     }
 
     /**
-     * @param array<int>|null $additionalServiceIds
+     * @param  array<int>|null  $additionalServiceIds
      */
     private function syncSsaServices(ServiceSupportAgreement $ssa, ?array $additionalServiceIds = null): void
     {
@@ -286,7 +361,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         $additionalIds = array_values(array_unique(
             array_filter(
                 array_map('intval', $additionalIds),
-                static fn(int $serviceId): bool => $serviceId !== (int) $primaryServiceId
+                static fn (int $serviceId): bool => $serviceId !== (int) $primaryServiceId
             )
         ));
 
@@ -299,5 +374,32 @@ final class EloquentSSARepository implements SSARepositoryInterface
         }
 
         $ssa->services()->sync($payload);
+    }
+
+    public function getAssignedSSAsForTherapist(int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->get();
+    }
+
+    public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->with(['student', 'student.studentProfile.school', 'primaryService'])
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function countNewStudentsThisMonth(int $therapistId): int
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->distinct('student_id')
+            ->count('student_id');
     }
 }

@@ -52,4 +52,3 @@ final class SSAPolicy
         return $role === Role::ADMIN;
     }
 }
-

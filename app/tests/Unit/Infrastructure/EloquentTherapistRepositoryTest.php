@@ -24,7 +24,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentTherapistRepository();
+        $this->repository = new EloquentTherapistRepository;
     }
 
     public function test_create_creates_user_and_profile(): void
@@ -167,7 +167,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             ->count(5)
             ->create();
 
-        $filters = new TherapistFilterDTO();
+        $filters = new TherapistFilterDTO;
         $result = $this->repository->list($filters);
 
         $this->assertCount($initialCount + 5, $result);
@@ -177,7 +177,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
     {
         $manager = User::factory()->admin()->create();
 
-        $uniqueFirstName = 'Alice' . Str::random(8);
+        $uniqueFirstName = 'Alice'.Str::random(8);
 
         User::factory()
             ->therapist()
@@ -233,7 +233,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
         $manager = User::factory()->admin()->create();
 
         $initialCount = User::where('role', 'therapist')
-            ->whereHas('therapistProfile', fn($q) => $q->where('position', 'OT'))
+            ->whereHas('therapistProfile', fn ($q) => $q->where('position', 'OT'))
             ->count();
 
         User::factory()
@@ -259,7 +259,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
 
         $this->assertCount($initialCount + 2, $result);
         $this->assertTrue($result->every(
-            fn($user) => $user->therapistProfile?->position?->value === 'OT'
+            fn ($user) => $user->therapistProfile?->position?->value === 'OT'
         ));
     }
 
@@ -306,5 +306,36 @@ final class EloquentTherapistRepositoryTest extends TestCase
         $this->assertSame($initialTotal + 8, $metrics['total']);
         $this->assertSame($initialActive + 5, $metrics['active']);
         $this->assertSame($initialInactive + 3, $metrics['inactive']);
+    }
+
+    public function test_find_profile_by_user_id_returns_profile(): void
+    {
+        $manager = User::factory()->admin()->create();
+
+        $user = User::factory()
+            ->therapist()
+            ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
+            ->create();
+
+        $profile = $this->repository->findProfileByUserId($user->id);
+
+        $this->assertInstanceOf(TherapistProfile::class, $profile);
+        $this->assertSame($user->id, $profile->user_id);
+    }
+
+    public function test_find_profile_by_user_id_returns_null_when_not_found(): void
+    {
+        $profile = $this->repository->findProfileByUserId(999999);
+
+        $this->assertNull($profile);
+    }
+
+    public function test_find_profile_by_user_id_returns_null_for_user_without_profile(): void
+    {
+        $user = User::factory()->therapist()->create();
+
+        $profile = $this->repository->findProfileByUserId($user->id);
+
+        $this->assertNull($profile);
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\SessionLogController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SSAController;
 use App\Http\Controllers\Admin\StudentController;
@@ -72,6 +73,16 @@ Route::middleware('role:admin')
         Route::post('notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
         Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
         Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+        // Session Logs
+        Route::prefix('session-logs')->name('session-logs.')->group(function () {
+            Route::get('/', [SessionLogController::class, 'index'])->name('index');
+            Route::get('{sessionLog}', [SessionLogController::class, 'show'])->name('show');
+            Route::get('{sessionLog}/edit', [SessionLogController::class, 'edit'])->name('edit');
+            Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
+            Route::post('{sessionLog}/finalize', [SessionLogController::class, 'finalize'])->name('finalize');
+            Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
+        });
 
         // Settings
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

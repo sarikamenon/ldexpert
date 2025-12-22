@@ -46,7 +46,7 @@ abstract class TherapistFormRequest extends FormRequest
             'manager_id' => [
                 'required',
                 'integer',
-                Rule::exists('users', 'id')->where(fn($query) => $query->where('role', Role::ADMIN->value)),
+                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', Role::ADMIN->value)),
             ],
             'max_weekly_hours' => ['required', 'integer', 'min:1', 'max:168'],
             'dob' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],

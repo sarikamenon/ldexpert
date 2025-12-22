@@ -48,4 +48,19 @@ final class ServiceCatalogService
     {
         return $this->repository->metrics();
     }
+
+    public function listActiveForSelect(): Collection
+    {
+        return $this->repository->listActiveForSelect();
+    }
+
+    public function listActiveWithFrequencyFlag(): Collection
+    {
+        return $this->repository->listActiveWithFrequencyFlag();
+    }
+
+    public function listIndirectServices(): Collection
+    {
+        return $this->repository->listIndirectServices();
+    }
 }

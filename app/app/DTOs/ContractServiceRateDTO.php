@@ -18,7 +18,7 @@ final class ContractServiceRateDTO
     {
         return new self(
             serviceId: (int) $data['service_id'],
-            rate: static::normalizeRate($data['rate']),
+            rate: self::normalizeRate($data['rate']),
             rateType: $data['rate_type'] instanceof RateType
                 ? $data['rate_type']
                 : RateType::from($data['rate_type']),

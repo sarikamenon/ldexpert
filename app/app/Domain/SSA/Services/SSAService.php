@@ -150,4 +150,59 @@ final class SSAService
 
         return $totalSessions * $minutesPerSession;
     }
+
+    public function hasStudentAssignedToTherapist(int $studentId, int $therapistId): bool
+    {
+        return $this->repository->hasStudentAssignedToTherapist($studentId, $therapistId);
+    }
+
+    public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
+    {
+        return $this->repository->getSSAsForMetrics($studentId, $therapistId);
+    }
+
+    public function getActiveSSAsForTherapist(int $therapistId): Collection
+    {
+        return $this->repository->getActiveSSAsForTherapist($therapistId);
+    }
+
+    public function findSSAForSchedule(int $ssaId, int $therapistId): ?ServiceSupportAgreement
+    {
+        return $this->repository->findSSAForSchedule($ssaId, $therapistId);
+    }
+
+    public function getSSAsForSchoolMetrics(int $schoolId): Collection
+    {
+        return $this->repository->getSSAsForSchoolMetrics($schoolId);
+    }
+
+    public function getSSAsForStudentMetrics(int $studentId): Collection
+    {
+        return $this->repository->getSSAsForStudentMetrics($studentId);
+    }
+
+    public function getSSAsForStudentSchedule(int $studentId): Collection
+    {
+        return $this->repository->getSSAsForStudentSchedule($studentId);
+    }
+
+    public function getSSAsForTherapistMetrics(int $therapistId): Collection
+    {
+        return $this->repository->getSSAsForTherapistMetrics($therapistId);
+    }
+
+    public function getAssignedSSAsForTherapist(int $therapistId): Collection
+    {
+        return $this->repository->getAssignedSSAsForTherapist($therapistId);
+    }
+
+    public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection
+    {
+        return $this->repository->getSSAsForTherapistDashboard($therapistId, $limit);
+    }
+
+    public function countNewStudentsThisMonth(int $therapistId): int
+    {
+        return $this->repository->countNewStudentsThisMonth($therapistId);
+    }
 }

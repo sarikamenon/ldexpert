@@ -34,7 +34,7 @@ abstract class SchoolFormRequest extends FormRequest
             'manager_id' => [
                 'required',
                 'integer',
-                Rule::exists('users', 'id')->where(fn($query) => $query->where('role', Role::ADMIN->value)),
+                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', Role::ADMIN->value)),
             ],
             'contact_first_name' => ['nullable', 'string', 'max:255'],
             'contact_last_name' => ['nullable', 'string', 'max:255'],

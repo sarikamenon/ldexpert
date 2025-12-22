@@ -31,6 +31,6 @@ final class SchoolScope extends BaseModelScope
             return $builder;
         }
 
-        return static::applyStatus($builder, $builder->getModel(), 'status', $status->value);
+        return self::applyStatus($builder, $builder->getModel(), 'status', $status->value);
     }
 }

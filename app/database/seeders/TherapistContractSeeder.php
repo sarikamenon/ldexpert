@@ -33,7 +33,7 @@ final class TherapistContractSeeder extends Seeder
 
             $servicesForPosition = array_values(array_filter(
                 $catalog,
-                static fn(array $service): bool => in_array($position, $service['positions'], true)
+                static fn (array $service): bool => in_array($position, $service['positions'], true)
             ));
 
             if ($servicesForPosition === []) {

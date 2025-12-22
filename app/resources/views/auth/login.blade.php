@@ -1,3 +1,8 @@
+@php
+    /** @var \Illuminate\Support\ViewErrorBag $errors */
+    $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
+@endphp
+
 <x-guest-layout>
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />

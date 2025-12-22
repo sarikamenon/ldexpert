@@ -24,12 +24,12 @@ final class UpdateScheduleRequest extends FormRequest
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn(RecurrenceType $type): string => $type->value,
+            static fn (RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 

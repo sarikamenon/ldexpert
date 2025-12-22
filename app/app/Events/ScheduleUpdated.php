@@ -17,4 +17,3 @@ class ScheduleUpdated
         public readonly Schedule $schedule
     ) {}
 }
-

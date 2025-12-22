@@ -24,7 +24,7 @@ class SchoolFactory extends Factory
         $timezone = $this->faker->randomElement(array_keys(UsTimezones::TIMEZONES));
 
         return [
-            'full_name' => $this->faker->company() . ' School',
+            'full_name' => $this->faker->company().' School',
             'display_name' => $this->faker->unique()->company(),
             'address' => $this->faker->address(),
             'state' => $state,

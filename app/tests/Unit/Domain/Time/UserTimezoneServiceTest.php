@@ -11,7 +11,6 @@ use Tests\TestCase;
 
 final class UserTimezoneServiceTest extends TestCase
 {
-
     private UserTimezoneService $service;
 
     protected function setUp(): void
@@ -23,7 +22,7 @@ final class UserTimezoneServiceTest extends TestCase
 
     public function test_parse_user_local_to_utc_uses_user_timezone(): void
     {
-        $user = new User();
+        $user = new User;
         $user->timezone = 'America/New_York';
 
         $localString = '2025-01-15 10:00:00';
@@ -36,7 +35,7 @@ final class UserTimezoneServiceTest extends TestCase
 
     public function test_to_user_timezone_converts_from_utc(): void
     {
-        $user = new User();
+        $user = new User;
         $user->timezone = 'America/Los_Angeles';
 
         $utc = Carbon::create(2025, 1, 15, 18, 0, 0, 'UTC');
@@ -49,7 +48,7 @@ final class UserTimezoneServiceTest extends TestCase
 
     public function test_user_day_utc_range_for_user_timezone(): void
     {
-        $user = new User();
+        $user = new User;
         $user->timezone = 'America/New_York';
 
         [$startUtc, $endUtc] = $this->service->userDayUtcRange('2025-03-10', $user);

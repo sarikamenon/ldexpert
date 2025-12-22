@@ -15,10 +15,10 @@ Version 1.0 · Last Updated: 14 Nov 2025
 
 4. FUNCTIONAL SCOPE
    4.1 Create Student
-   Form Section A – Basic Information - First Name* (text) - Middle Name (text) - Last Name* (text) - Email* (text, email validation) - Gender (dropdown/optional) - Date of Birth* (date picker, dd/mm/yyyy)
-   Form Section B – School Information - School Name (dropdown/select existing) - Student ID (text) - Timezone\* (dropdown; required to power localized reminders) - Grade Level (text/dropdown)
-   Form Section C – Parent/Guardian Information - Parent/Guardian Name (text) - Parent/Guardian Email (text, email validation) - Parent/Guardian Contact Phone (text, format validation)
-   Form Section D – Address Information - Address (textarea) - City (text) - State (dropdown, US states) - Zip Code (text)
+   Form Section A – Basic Information - First Name* (text) - Middle Name (text) - Last Name* (text) - Email* (user email, unique) - Gender* (dropdown) - Date of Birth* (date picker, before today, after 1900-01-01)
+   Form Section B – School Information - School* (dropdown of active schools) - Student ID* (`id_number`) - Timezone* (dropdown; required for reminders) - Grade Level* (text/dropdown)
+   Form Section C – Parent/Guardian Information - Parent/Guardian Name (text) - Parent/Guardian Email (email validation) - Parent/Guardian Contact Phone (digits/dashes) - (Optional) Parent account link via `parent_id` when present
+   Form Section D – Address Information - Address (textarea, optional) - City* (text) - State* (US states) - Zip Code* (text)
    Actions - Create Student (primary submit; validates and persists) - Cancel (secondary; returns to list)
 
     4.2 List Students
@@ -38,9 +38,9 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • Student view page includes a read-only “Timeline” panel listing key events (created, edited, activated/deactivated, SSA linked) to aid troubleshooting.
 
 6. DATA MODEL
-   Table: users (existing) – `role=student`, `status`, base authentication data, timestamps, soft deletes.
-   Table: student_profiles (existing/extended) – `user_id`, `first_name`, `middle_name`, `last_name`, `email`, `gender`, `date_of_birth`, `school_id`, `student_id`, `timezone`, `grade_level`, `parent_guardian_name`, `parent_guardian_email`, `parent_guardian_phone`, `address`, `city`, `state`, `zip_code`, timestamps, `deleted_at`.
-   Table: schools – referenced via `school_id` for association.
+   Table: users – `id`, `name` (composed from first/last), `email` (unique), `role=student`, `status`, timestamps, soft deletes.
+   Table: student_profiles – `user_id`, `parent_id` (optional linked parent user), `first_name`, `middle_name`, `last_name`, `school_id`, `id_number`, `timezone`, `gender`, `address`, `city`, `state`, `zip_code`, `parent_guardian_name`, `parent_guardian_email`, `parent_guardian_phone`, `date_of_birth`, `grade_level`, timestamps, `deleted_at`.
+   Table: schools – referenced via `school_id`.
 
 7. ROUTES (INTERNAL WEB APP)
    • GET /admin/students – list view with filters.
@@ -51,11 +51,9 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • GET /admin/students/export (optional) – export filtered dataset.
 
 8. VALIDATION RULES
-   • First Name, Last Name, Email, Date of Birth, and Timezone are required.
-   • Email fields validated via Laravel email rules; enforce uniqueness across students.
-   • Date of Birth validated as a real date and optionally must be before current date.
-   • Phone numbers follow regex such as ^\d{3}-\d{3}-\d{4}$ (or apply masking component).
-   • Zip Code validation ensures numeric/length compliance (e.g., US ZIP 5 or 9 digits).
+   • Required: first_name, last_name, email (unique on users), gender, date_of_birth (past, after 1900-01-01), school_id (active school), id_number, timezone (from constants), grade_level, city, state (US list), zip_code.
+   • Optional: middle_name, address, parent_guardian_name/email/phone (digits/dashes regex), parent_id link.
+   • Date of Birth must be before today; timezone/state constrained to enumerations.
 
 9. SECURITY & PERMISSIONS
    • Routes protected by `auth` + `role:admin` middleware.

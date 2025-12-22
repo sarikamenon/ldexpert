@@ -107,6 +107,7 @@ final class ScheduleTest extends TestCase
             'schedule_date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '10:00',
             'end_time' => '11:00',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'notes' => 'Test session',
             'location_details' => 'Office A',
@@ -241,6 +242,7 @@ final class ScheduleTest extends TestCase
             'schedule_date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '09:00',
             'end_time' => '10:00',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'notes' => 'Via form submission',
             'location_details' => 'Office',
@@ -338,6 +340,7 @@ final class ScheduleTest extends TestCase
             'schedule_date' => now()->addDays(2)->format('Y-m-d'),
             'start_time' => '10:00',
             'end_time' => '11:00',
+            'duration_minutes' => 60,
             'notes' => 'Updated notes',
             'recurrence_type' => 'none',
         ];
@@ -351,7 +354,7 @@ final class ScheduleTest extends TestCase
         $this->assertDatabaseHas('schedules', [
             'id' => $schedule->id,
             'schedule_date' => $payload['schedule_date'],
-            'start_time' => $payload['start_time'] . ':00',
+            'start_time' => $payload['start_time'].':00',
             'notes' => 'Updated notes',
         ]);
 

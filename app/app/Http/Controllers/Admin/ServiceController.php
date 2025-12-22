@@ -98,5 +98,4 @@ final class ServiceController extends Controller
             'message' => $message,
         ]);
     }
-
 }

@@ -36,7 +36,7 @@ final class StudentService
         // Send welcome email to student's user email
         Mail::to($dto->email)->send(
             new WelcomeStudentMail(
-                name: $dto->firstName . ' ' . $dto->lastName,
+                name: $dto->firstName.' '.$dto->lastName,
                 email: $dto->email,
                 plainPassword: $dto->password
             )
@@ -69,6 +69,21 @@ final class StudentService
         return $this->repository->getMetrics($status);
     }
 
+    public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repository->listByTherapist($therapistId, $search, $status, $perPage);
+    }
+
+    public function countStudentsBySchool(int $schoolId): int
+    {
+        return $this->repository->countStudentsBySchool($schoolId);
+    }
+
+    public function listActiveStudentsBySchool(int $schoolId): Collection
+    {
+        return $this->repository->listActiveStudentsBySchool($schoolId);
+    }
+
     public function export(StudentFilterDTO $filters): Collection
     {
         return $this->repository->export($filters);
@@ -77,5 +92,25 @@ final class StudentService
     public function find(int $id): ?StudentProfile
     {
         return $this->repository->find($id);
+    }
+
+    public function countStudentsByTherapist(int $therapistId): int
+    {
+        return $this->repository->countStudentsByTherapist($therapistId);
+    }
+
+    public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
+    {
+        return $this->repository->listStudentsByTherapist($therapistId, $search, $status, $perPage);
+    }
+
+    public function listActiveStudentsByTherapist(int $therapistId): Collection
+    {
+        return $this->repository->listActiveStudentsByTherapist($therapistId);
+    }
+
+    public function getSchoolIdByUserId(int $userId): ?int
+    {
+        return $this->repository->getSchoolIdByUserId($userId);
     }
 }

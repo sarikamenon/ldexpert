@@ -6,8 +6,8 @@ namespace Database\Seeders;
 
 use App\Enums\Role;
 use App\Enums\ServiceFrequency;
-use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
@@ -33,6 +33,7 @@ final class SSASeeder extends Seeder
 
         if ($students->isEmpty() || $services->isEmpty()) {
             $this->command->warn('No active students or services found. Skipping SSA seeding.');
+
             return;
         }
 
@@ -145,6 +146,6 @@ final class SSASeeder extends Seeder
             $ssa->services()->sync($servicePayload);
         }
 
-        $this->command->info('SSA seeder completed. Created ' . $studentsToSeed->count() . ' SSAs.');
+        $this->command->info('SSA seeder completed. Created '.$studentsToSeed->count().' SSAs.');
     }
 }

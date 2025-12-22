@@ -9,6 +9,11 @@
     'isEdit' => false,
 ])
 
+@php
+    /** @var \Illuminate\Support\ViewErrorBag $errors */
+    $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
+@endphp
+
 <form method="POST"
     action="{{ $isEdit ? route('therapist.schedule.update', $schedule->id) : route('therapist.schedule.store') }}"
     id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6">

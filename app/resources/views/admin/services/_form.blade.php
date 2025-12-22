@@ -39,6 +39,8 @@
         </div>
     </x-ui::card>
 
+    <input type="hidden" name="is_group_service" value="0">
+
     {{-- Service Configuration Section --}}
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold mb-4">Service Configuration</h3>
@@ -78,19 +80,19 @@
             </div>
 
             <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <x-input-label value="Group Service?" />
-                <p class="mt-1 text-xs text-foreground/60 mb-3">Enable when this service is normally delivered to
-                    multiple students simultaneously.</p>
+                <x-input-label value="Include in THO minutes?" />
+                <p class="mt-1 text-xs text-foreground/60 mb-3">Approved session minutes for this service will count
+                    toward the student’s SSA THO minutes (based on session outcome).</p>
                 <div class="flex items-center gap-2">
-                    <input type="hidden" name="is_group_service" value="0">
-                    <input id="is_group_service" name="is_group_service" type="checkbox" value="1"
+                    <input type="hidden" name="include_in_tho" value="0">
+                    <input id="include_in_tho" name="include_in_tho" type="checkbox" value="1"
                         class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        @checked(old('is_group_service', $service->is_group_service ?? false))>
-                    <label for="is_group_service" class="text-sm font-medium text-foreground/80 cursor-pointer">
-                        Supports group delivery
+                        @checked(old('include_in_tho', $service->include_in_tho ?? false))>
+                    <label for="include_in_tho" class="text-sm font-medium text-foreground/80 cursor-pointer">
+                        Count approved minutes toward SSA THO
                     </label>
                 </div>
-                <x-input-error :messages="$errors->get('is_group_service')" class="mt-2" />
+                <x-input-error :messages="$errors->get('include_in_tho')" class="mt-2" />
             </div>
         </div>
     </x-ui::card>

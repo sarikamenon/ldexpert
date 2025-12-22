@@ -18,7 +18,11 @@ final class ScheduleFilterRequest extends FormRequest
         return [
             'date' => ['nullable', 'date'],
             'school_id' => ['nullable', 'integer', 'exists:schools,id'],
-            'student_id' => ['nullable', 'integer', 'exists:student_profiles,id'],
+            'student_id' => ['nullable', 'integer', 'exists:users,id'],
+            'ssa_id' => ['nullable', 'integer', 'exists:service_support_agreements,id'],
+            'service_id' => ['nullable', 'integer', 'exists:services,id'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ];
     }
 }

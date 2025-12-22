@@ -16,8 +16,8 @@ Version 1.0 · Last Updated: 14 Nov 2025
 4. FUNCTIONAL SCOPE
    4.1 Create Therapist (Add New Therapist)
    Form Section A – Employment & Identity - Employee Type* (radio: W2, 1099) - Title* (dropdown: Select Title, Mr., Mrs., Ms., Dr., etc.) - First Name* (text) - Last Name* (text)
-   Form Section B – Contact & Account Details - Personal Email* (text input, email validation) - Phone* (text, format validation such as XXX-XXX-XXXX) - LD Expert Email (text, optional) - Address (textarea, optional) - Comment (textarea, optional internal notes)
-   Form Section C – Professional Details - Position* (dropdown: SLP, OT, PT, LCSW, SW, etc.) - State Residing* (dropdown, US states) - Timezone* (dropdown, US timezones) - Therapist Manager* (dropdown of admin users) - Date of Birth (date picker, optional)
+   Form Section B – Contact & Account Details - Personal Email* (unique in therapist_profiles) - Phone* (digits/dashes regex) - LD Expert Email (optional) - Address (optional) - Comment (optional internal notes) - Default Meeting Location (optional URL/text)
+   Form Section C – Professional Details - Position* (dropdown: SLP, OT, PT, LCSW, SW, etc.) - State Residing* (dropdown, US states) - Timezone* (dropdown, US timezones) - Therapist Manager* (admin user) - Max Weekly Hours\* (integer 1–168) - Date of Birth (optional, before today, after 1900-01-01)
    Form Section D – Service Rates Configuration (repeat per service) - Service (select from services catalog) - Rate (decimal 0.00) - Rate Type (radio: H hourly, F flat)
    Actions - Create Therapist (primary submit) - Cancel (secondary, returns to list)
 
@@ -49,9 +49,9 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • Tables and forms support full keyboard navigation and visible focus states.
 
 6. DATA MODEL
-   Table: users (existing) – `role=therapist`, `status`, authentication basics.
-   Table: therapist_profiles (existing/extended) – `user_id`, `employee_type`, `title`, `position`, `state`, `timezone`, `manager_id`, `address`, `comments`, `dob`, `ld_email`, timestamps, `deleted_at`.
-   Table: therapist_service_rates (new) – `id`, `therapist_id`, `service_id`, `rate`, `rate_type`, `effective_on`, `expires_on`, timestamps, `deleted_at`.
+   Table: users – `role=therapist`, `status`, authentication basics, timestamps, soft deletes.
+   Table: therapist_profiles – `user_id`, `employee_type`, `title`, `first_name`, `last_name`, `personal_email` (unique per profile), `phone`, `ld_email`, `address`, `comments`, `position`, `state`, `timezone`, `manager_id` (admin), `max_weekly_hours`, `dob`, `default_meeting_location`, timestamps, `deleted_at`.
+   Table: therapist_service_rates – `id`, `therapist_id`, `service_id`, `rate`, `rate_type`, `effective_on`, `expires_on`, timestamps, `deleted_at`.
 
 7. ROUTES (INTERNAL WEB APP)
    • GET /admin/therapists – list and metrics.
@@ -63,10 +63,8 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • GET /admin/therapists/export – export filtered results.
 
 8. VALIDATION RULES
-   • Employee Type, Title, First Name, Last Name, Personal Email, Phone, Position, State, Timezone, Therapist Manager are required.
-   • Email fields use Laravel email validation; enforce uniqueness if necessary.
-   • Phone uses regex such as ^\d{3}-\d{3}-\d{4}$ (or equivalent mask).
-   • Date of Birth validated as a valid date (and optional >1900 constraint).
+   • Required: employee_type, title, first_name, last_name, personal_email (unique per profile), phone (digits/dashes), position, state, timezone, manager_id (admin), max_weekly_hours (1–168).
+   • Optional: ld_email, address, comments, dob (date, before today, after 1900), default_meeting_location.
    • Service rate rows require numeric rate ≥ 0 and rate type ∈ {H, F}; enforce unique therapist+service pair.
 
 9. SECURITY & PERMISSIONS

@@ -5,22 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Contract\Services\TherapistContractService;
+use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeContractStatusDTO;
 use App\DTOs\CreateTherapistContractDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
 use App\Enums\RateType;
-use App\Enums\ServiceStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Contract\ChangeTherapistContractStatusRequest;
 use App\Http\Requests\Admin\Contract\IndexTherapistContractRequest;
 use App\Http\Requests\Admin\Contract\StoreTherapistContractRequest;
 use App\Http\Requests\Admin\Contract\UpdateTherapistContractRequest;
-use App\Models\Service;
 use App\Models\TherapistContract;
-use App\Models\TherapistProfile;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,6 +28,8 @@ final class TherapistContractController extends Controller
 {
     public function __construct(
         private readonly TherapistContractService $service,
+        private readonly TherapistService $therapistService,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function index(IndexTherapistContractRequest $request): View
@@ -137,20 +138,9 @@ final class TherapistContractController extends Controller
 
     private function formData(): array
     {
-        $therapists = TherapistProfile::query()
-            ->active()
-            ->orderBy('first_name')
-            ->orderBy('last_name')
-            ->get(['id', 'first_name', 'last_name']);
-
-        $services = Service::query()
-            ->where('status', ServiceStatus::ACTIVE->value)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
         return [
-            'therapists' => $therapists,
-            'services' => $services,
+            'therapists' => $this->therapistService->listActiveProfilesForSelect(),
+            'services' => $this->serviceCatalogService->listActiveForSelect(),
             'statuses' => ContractStatus::cases(),
             'rateTypes' => RateType::cases(),
         ];

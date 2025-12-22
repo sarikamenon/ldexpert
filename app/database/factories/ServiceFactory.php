@@ -38,7 +38,7 @@ final class ServiceFactory extends Factory
 
     public function inactive(): self
     {
-        return $this->state(fn() => [
+        return $this->state(fn () => [
             'status' => ServiceStatus::INACTIVE->value,
         ]);
     }

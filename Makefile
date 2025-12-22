@@ -72,7 +72,7 @@ analyse:
 
 qa:
 	$(DC) exec -T app bash -lc 'cd /var/www/html/app && vendor/bin/pint --test'
-	$(DC) exec -T app bash -lc 'cd /var/www/html/app && vendor/bin/phpstan analyse --no-progress'
+	$(DC) exec -T app bash -lc 'cd /var/www/html/app && vendor/bin/phpstan analyse --no-progress --memory-limit=512M'
 	$(DC) exec -T app bash -lc 'cd /var/www/html/app && if [ -f ./vendor/bin/pest ]; then XDEBUG_MODE=coverage ./vendor/bin/pest --min=80; elif [ -f ./vendor/bin/phpunit ]; then XDEBUG_MODE=coverage ./vendor/bin/phpunit --testsuite=Feature; elif php artisan list --raw | grep -q "^test"; then XDEBUG_MODE=coverage php artisan test --min=80; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
 
 init: build up install init-env migrate

@@ -30,4 +30,6 @@ interface SchoolRepositoryInterface
     public function export(SchoolFilterDTO $filters): Collection;
 
     public function listAllForSelect(): Collection;
+
+    public function listActiveForSelect(): Collection;
 }

@@ -24,7 +24,7 @@ final class EloquentStudentRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentStudentRepository();
+        $this->repository = new EloquentStudentRepository;
     }
 
     public function test_create_persists_user_and_profile(): void
@@ -208,8 +208,8 @@ final class EloquentStudentRepositoryTest extends TestCase
             'status' => UserStatus::INACTIVE->value,
         ]);
 
-        $activeUsers->each(fn(User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
-        $inactiveUsers->each(fn(User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
+        $activeUsers->each(fn (User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
+        $inactiveUsers->each(fn (User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
 
         $metrics = $this->repository->getMetrics();
 
@@ -226,5 +226,35 @@ final class EloquentStudentRepositoryTest extends TestCase
         $result = $this->repository->export(new StudentFilterDTO(null, null, 100));
 
         $this->assertEquals($initialCount + 2, $result->count());
+    }
+
+    public function test_get_school_id_by_user_id_returns_school_id(): void
+    {
+        $school = School::factory()->create();
+        $user = User::factory()->create(['role' => Role::STUDENT->value]);
+        StudentProfile::factory()->create([
+            'user_id' => $user->id,
+            'school_id' => $school->id,
+        ]);
+
+        $result = $this->repository->getSchoolIdByUserId($user->id);
+
+        $this->assertSame($school->id, $result);
+    }
+
+    public function test_get_school_id_by_user_id_returns_null_when_no_profile(): void
+    {
+        $user = User::factory()->create(['role' => Role::STUDENT->value]);
+
+        $result = $this->repository->getSchoolIdByUserId($user->id);
+
+        $this->assertNull($result);
+    }
+
+    public function test_get_school_id_by_user_id_returns_null_for_invalid_user(): void
+    {
+        $result = $this->repository->getSchoolIdByUserId(999999);
+
+        $this->assertNull($result);
     }
 }
