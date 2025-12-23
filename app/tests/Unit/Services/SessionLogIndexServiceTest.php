@@ -171,4 +171,32 @@ final class SessionLogIndexServiceTest extends TestCase
         $statuses = collect($result['rows'])->pluck('status')->all();
         $this->assertContains('-', $statuses);
     }
+
+    public function test_rows_include_created_date_and_entry_difference(): void
+    {
+        Carbon::setTestNow('2025-01-10 10:00:00');
+
+        $therapist = User::factory()->therapist()->create();
+
+        $log = SessionLog::factory()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::parse('2025-01-08'),
+            'created_at' => Carbon::parse('2025-01-10 08:00:00'),
+        ]);
+
+        $service = app(SessionLogIndexService::class);
+        $result = $service->getTherapistIndex(
+            $therapist,
+            SessionLogIndexDTO::fromArray([])
+        );
+
+        $row = $result['rows'][0] ?? null;
+
+        $this->assertNotNull($row);
+        $this->assertSame('Jan 10, 2025', $row['entry_info']['created_date']);
+        $this->assertSame('2 days later', $row['entry_info']['entry_difference']);
+        $this->assertStringNotContainsString('-', $row['entry_info']['entry_difference']);
+
+        Carbon::setTestNow();
+    }
 }

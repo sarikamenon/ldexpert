@@ -9,6 +9,8 @@ use App\DTOs\SessionLogIndexDTO;
 use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
+use App\Support\DateHelper;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class SessionLogIndexService
@@ -72,6 +74,7 @@ final class SessionLogIndexService
     {
         return [
             ['key' => 'date_time', 'label' => 'Date & Time'],
+            ['key' => 'entry_info', 'label' => 'Entry'],
             ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
             ['key' => 'therapist', 'label' => 'Therapist'],
             ['key' => 'school_amount', 'label' => 'School Amount'],
@@ -89,6 +92,7 @@ final class SessionLogIndexService
         return [
             ['key' => 'date_time', 'label' => 'Date & Time'],
             ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
+            ['key' => 'entry_info', 'label' => 'Entry'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'actions', 'label' => 'Actions'],
@@ -106,12 +110,17 @@ final class SessionLogIndexService
             ->map(function (SessionLog $log): array {
                 /** @var \Carbon\Carbon|null $sessionDate */
                 $sessionDate = $log->session_date;
+                $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
 
                 return [
                     'date_time' => [
                         'date' => $sessionDate?->format('M d, Y') ?? null,
                         'time' => null,
                         'duration' => $log->duration_minutes ? "{$log->duration_minutes} mins" : null,
+                    ],
+                    'entry_info' => [
+                        'created_date' => $createdAt?->format('M d, Y'),
+                        'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
                     ],
                     'student_service_school' => [
                         'student' => $log->student?->name ?? null,
@@ -139,6 +148,7 @@ final class SessionLogIndexService
             ->map(function (SessionLog $log): array {
                 /** @var \Carbon\Carbon|null $sessionDate */
                 $sessionDate = $log->session_date;
+                $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
 
                 $startTime = $log->start_time?->format('g:i A');
                 $endTime = $log->end_time?->format('g:i A');
@@ -150,6 +160,10 @@ final class SessionLogIndexService
                         'date' => $sessionDate?->format('M d, Y') ?? null,
                         'time' => $timeRange,
                         'duration' => $duration,
+                    ],
+                    'entry_info' => [
+                        'created_date' => $createdAt?->format('M d, Y'),
+                        'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
                     ],
                     'student_service_school' => [
                         'student' => $log->student?->name ?? null,

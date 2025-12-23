@@ -172,6 +172,27 @@
                                     @endif
                                 </div>
                             </td>
+                        @elseif ($key === 'entry_info' && is_array($row[$key] ?? null))
+                            <td class="px-4 py-2 text-sm">
+                                @php
+                                    $entryInfo = $row[$key];
+                                @endphp
+                                <div class="flex flex-col space-y-1">
+                                    @if (!empty($entryInfo['created_date']))
+                                        <span class="text-xs text-foreground/60">
+                                            Entered on {{ $entryInfo['created_date'] }}
+                                        </span>
+                                    @endif
+                                    @if (!empty($entryInfo['entry_difference']))
+                                        <x-ui::badge variant="warning" class="w-fit">
+                                            {{ $entryInfo['entry_difference'] }}
+                                        </x-ui::badge>
+                                    @endif
+                                    @if (empty(array_filter($entryInfo)))
+                                        <span class="text-gray-500">-</span>
+                                    @endif
+                                </div>
+                            </td>
                         @elseif ($key === 'student_service_school' && is_array($row[$key] ?? null))
                             <td class="px-4 py-2 text-sm">
                                 @php
