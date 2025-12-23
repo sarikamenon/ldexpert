@@ -14,7 +14,7 @@
                 <x-ui::alert variant="danger" class="mb-4">
                     <p class="font-semibold mb-2">Please fix the highlighted errors and try again.</p>
                     <ul class="list-disc pl-5 space-y-1 text-sm">
-                        @foreach ($errors->all() as $error)
+                        @foreach (array_unique($errors->all()) as $error)
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
