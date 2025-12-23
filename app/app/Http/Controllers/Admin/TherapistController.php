@@ -9,12 +9,14 @@ use App\Constants\UsTimezones;
 use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\TherapistFilterDTO;
@@ -50,6 +52,7 @@ final class TherapistController extends Controller
         private readonly TherapistContractService $therapistContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
     ) {}
 
     public function index(IndexTherapistRequest $request): View
@@ -168,6 +171,17 @@ final class TherapistController extends Controller
             $viewData['contracts'] = $this->therapistContractService->paginate($filters);
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), ['therapist_id' => $therapist->id])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
         }
 
         return view('admin.therapists.show', $viewData);

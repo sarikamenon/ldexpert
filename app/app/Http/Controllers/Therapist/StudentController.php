@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
@@ -18,6 +20,7 @@ final class StudentController extends Controller
     public function __construct(
         private readonly SSAService $ssaService,
         private readonly StudentService $studentService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
     ) {}
 
     public function index(Request $request): View
@@ -87,6 +90,20 @@ final class StudentController extends Controller
             $viewData['ssas'] = $this->ssaService->paginate($filters);
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), [
+                    'student_id' => $student->id,
+                    'therapist_id' => $therapist->id,
+                ])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
         }
 
         return view('therapist.students.show', $viewData);

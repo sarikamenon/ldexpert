@@ -71,6 +71,10 @@
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'assignment' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                 Assignment
             </a>
+            <a href="{{ route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Session Logs
+            </a>
         </nav>
     </div>
 
@@ -185,9 +189,16 @@
                 <p class="text-foreground/70 text-center py-4">No assignment history available.</p>
             @endif
         </x-ui::card>
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
+        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
+            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
     @endif
 
     <x-slot name="scripts">
-        @vite(['resources/js/pages/admin-ssas-show.js'])
+        @if (($activeTab ?? 'dashboard') === 'session_logs')
+            @vite(['resources/js/pages/admin-session-logs-index.js'])
+        @else
+            @vite(['resources/js/pages/admin-ssas-show.js'])
+        @endif
     </x-slot>
 </x-admin.layouts.app>
