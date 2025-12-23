@@ -75,7 +75,6 @@ class SessionLog extends Model
             'school_rate_amount' => 'decimal:2',
             'school_invoice_amount' => 'decimal:2',
             'is_rate_override' => 'boolean',
-            'status' => SessionLogStatus::class,
             'submitted_at' => 'datetime',
             'finalized_at' => 'datetime',
             'created_at' => 'datetime',
@@ -158,6 +157,11 @@ class SessionLog extends Model
     public function isCancelled(): bool
     {
         return $this->status === SessionLogStatus::CANCELLED;
+    }
+
+    public function getStatusAttribute(mixed $value): ?SessionLogStatus
+    {
+        return SessionLogStatus::tryFrom((string) $value);
     }
 
     public function canEdit(): bool

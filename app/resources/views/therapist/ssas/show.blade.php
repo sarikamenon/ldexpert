@@ -31,6 +31,10 @@
                                 class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                                 + Add New Schedule
                             </a>
+                            <a href="{{ route('therapist.session-logs.create', ['ssa_id' => $ssa->id]) }}"
+                                class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
+                                + Add Session Log
+                            </a>
                         @endif
 
                         {{-- Back Button --}}
