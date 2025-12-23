@@ -57,12 +57,16 @@
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'details' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                         Details
                     </a>
-                    <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'assignment' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Assignment History
-                    </a>
-                </nav>
-            </div>
+            <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'assignment' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Assignment History
+            </a>
+            <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Session Logs
+            </a>
+        </nav>
+    </div>
 
             {{-- Tab Content --}}
             @if (($activeTab ?? 'dashboard') === 'dashboard')
@@ -152,15 +156,22 @@
                                 </div>
                             @endforeach
                         </div>
-                    @else
-                        <p class="text-foreground/70 text-center py-4">No assignment history available.</p>
-                    @endif
-                </x-ui::card>
+            @else
+                <p class="text-foreground/70 text-center py-4">No assignment history available.</p>
             @endif
-        </div>
-    </div>
+        </x-ui::card>
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
+        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
+            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+    @endif
+</div>
+</div>
 
-    <x-slot name="scripts">
+<x-slot name="scripts">
+    @if (($activeTab ?? 'dashboard') === 'session_logs')
+        @vite(['resources/js/pages/therapist-session-logs-index.js'])
+    @else
         @vite(['resources/js/pages/therapist-ssas-show.js'])
-    </x-slot>
+    @endif
+</x-slot>
 </x-app-layout>
