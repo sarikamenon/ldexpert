@@ -37,5 +37,3 @@ final class DateHelper
         return "{$diffInDays} {$dayLabel} later";
     }
 }
-
-
