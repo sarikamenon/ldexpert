@@ -169,8 +169,8 @@ return [
                     ],
                     [
                         'label' => 'Add Non-Schedule Log',
-                        'route' => 'therapist.session-logs.create',
-                        'active' => 'therapist.session-logs.create',
+                        'route' => 'therapist.session-logs.select-ssa',
+                        'active' => ['therapist.session-logs.select-ssa', 'therapist.session-logs.create'],
                     ],
                 ],
             ],
