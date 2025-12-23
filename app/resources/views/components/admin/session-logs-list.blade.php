@@ -9,22 +9,29 @@
 ])
 
 <x-ui::card class="p-6 space-y-6">
-    <div class="flex flex-col md:flex-row md:flex-wrap gap-4 items-start md:items-center justify-between">
-        <form method="GET" class="flex flex-wrap gap-3 w-full md:flex-1 md:max-w-3xl" id="sessionLogsFiltersForm">
-            @if ($context === 'detail')
-                <input type="hidden" name="tab" value="session_logs">
-            @endif
+    <form method="GET" class="flex flex-wrap gap-3 items-end w-full" id="sessionLogsFiltersForm">
+        @if ($context === 'detail')
+            <input type="hidden" name="tab" value="session_logs">
+        @endif
 
+        <div class="flex-1 min-w-[180px]">
+            <label class="block text-sm font-medium text-foreground/70 mb-1">From Date</label>
             <input type="date" name="date_from"
-                class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                value="{{ $filters['date_from'] ?? '' }}" placeholder="From Date">
+                class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                value="{{ $filters['date_from'] ?? '' }}">
+        </div>
 
+        <div class="flex-1 min-w-[180px]">
+            <label class="block text-sm font-medium text-foreground/70 mb-1">To Date</label>
             <input type="date" name="date_to"
-                class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                value="{{ $filters['date_to'] ?? '' }}" placeholder="To Date">
+                class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
+                value="{{ $filters['date_to'] ?? '' }}">
+        </div>
 
+        <div class="flex-1 min-w-[180px]">
+            <label class="block text-sm font-medium text-foreground/70 mb-1">Status</label>
             <select name="status"
-                class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                class="w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
                 <option value="">All Statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -32,28 +39,20 @@
                     </option>
                 @endforeach
             </select>
+        </div>
 
-            <select name="per_page"
-                class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                <option value="15" @selected(($filters['per_page'] ?? 15) == 15)>15 per page</option>
-                <option value="30" @selected(($filters['per_page'] ?? 15) == 30)>30 per page</option>
-                <option value="50" @selected(($filters['per_page'] ?? 15) == 50)>50 per page</option>
-                <option value="100" @selected(($filters['per_page'] ?? 15) == 100)>100 per page</option>
-            </select>
+        <button type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium whitespace-nowrap">
+            Apply Filters
+        </button>
 
-            <button type="submit"
-                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                Apply Filters
-            </button>
-
-            @if (!empty(array_filter($filters)))
-                <a href="{{ $context === 'detail' ? request()->url() . '?tab=session_logs' : route(Route::currentRouteName()) }}"
-                    class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                    Clear
-                </a>
-            @endif
-        </form>
-    </div>
+        @if (!empty(array_filter($filters)))
+            <a href="{{ $context === 'detail' ? request()->url() . '?tab=session_logs' : route(Route::currentRouteName()) }}"
+                class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle whitespace-nowrap">
+                Clear
+            </a>
+        @endif
+    </form>
 
     @if ($sessionLogs->total() > 0)
         <div class="overflow-x-auto">
