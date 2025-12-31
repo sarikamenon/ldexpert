@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Invoice\Services;
+
+use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
+use App\DTOs\CreateInvoiceDTO;
+use App\DTOs\SendInvoiceDTO;
+use App\Enums\InvoiceStatus;
+use App\Mail\InvoiceMail;
+use App\Models\Invoice;
+use App\Models\School;
+use App\Models\SessionLog;
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+
+final class InvoiceService
+{
+    public function __construct(
+        private readonly InvoiceRepositoryInterface $repository,
+        private readonly CompanyInfoService $companyInfoService,
+    ) {}
+
+    public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
+    {
+        return DB::transaction(function () use ($user, $dto): Invoice {
+            // Get finalized session logs
+            $sessionLogs = $this->repository->getFinalizedSessionLogsForInvoice($dto->sessionLogIds);
+
+            if ($sessionLogs->isEmpty()) {
+                throw new \InvalidArgumentException('No eligible session logs found for invoice generation.');
+            }
+
+            // Determine school from first session log
+            $firstSessionLog = $sessionLogs->first();
+            $schoolId = $dto->schoolId ?? $firstSessionLog->school_id;
+
+            if (! $schoolId) {
+                throw new \InvalidArgumentException('School ID is required for invoice generation.');
+            }
+
+            // Get school for snapshot
+            $school = School::findOrFail($schoolId);
+
+            // Calculate totals
+            $totals = $this->calculateTotals($sessionLogs);
+
+            // Generate invoice number
+            $invoiceNumber = $this->repository->generateInvoiceNumber();
+
+            // Copy snapshots
+            $schoolSnapshot = $this->copySchoolSnapshot($school);
+            $companySnapshot = $this->copyCompanySnapshot();
+
+            // Create invoice
+            $invoice = $this->repository->create([
+                'school_id' => $schoolId,
+                'invoice_number' => $invoiceNumber,
+                'billing_period_start' => $dto->billingPeriodStart,
+                'billing_period_end' => $dto->billingPeriodEnd,
+                'status' => InvoiceStatus::DRAFT->value,
+                'subtotal' => $totals['subtotal'],
+                'tax_total' => $totals['tax_total'],
+                'total' => $totals['total'],
+                'due_date' => now()->addDays(30)->toDateString(),
+                'notes' => $dto->notes,
+                ...$schoolSnapshot,
+                ...$companySnapshot,
+            ]);
+
+            // Link session logs to invoice
+            $this->repository->linkSessionLogs($invoice, $sessionLogs->pluck('id')->toArray());
+
+            return $invoice->load(['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist']);
+        });
+    }
+
+    /**
+     * @param Collection<SessionLog> $sessionLogs
+     * @return array<string, float>
+     */
+    public function calculateTotals(Collection $sessionLogs): array
+    {
+        $subtotal = $sessionLogs->sum('school_invoice_amount');
+        $taxTotal = 0; // Tax calculation can be extended later
+        $total = $subtotal + $taxTotal;
+
+        return [
+            'subtotal' => round($subtotal, 2),
+            'tax_total' => round($taxTotal, 2),
+            'total' => round($total, 2),
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function copySchoolSnapshot(School $school): array
+    {
+        return [
+            'school_name' => $school->full_name,
+            'school_display_name' => $school->display_name,
+            'school_address' => $school->address,
+            'school_state' => $school->getRawOriginal('state') ?? $school->stateCode,
+            'school_contact_first_name' => $school->contact_first_name,
+            'school_contact_last_name' => $school->contact_last_name,
+            'school_contact_phone' => $school->contact_phone,
+            'school_contact_email' => $school->contact_email,
+            'school_invoice_email' => $school->invoice_email,
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function copyCompanySnapshot(): array
+    {
+        $companyInfo = $this->companyInfoService->getCompanyInfo();
+
+        return [
+            'company_name' => $companyInfo['name'],
+            'company_address' => $companyInfo['address'],
+            'company_phone' => $companyInfo['phone'],
+            'company_email' => $companyInfo['email'],
+            'company_tax_id' => $companyInfo['tax_id'],
+        ];
+    }
+
+    public function sendInvoice(User $user, Invoice $invoice, SendInvoiceDTO $dto): Invoice
+    {
+        if ($invoice->isSent() || $invoice->isPaid() || $invoice->isVoided()) {
+            throw new \InvalidArgumentException('Invoice cannot be sent in its current status.');
+        }
+
+        // Determine recipient email
+        $recipientEmail = $dto->email
+            ?? $invoice->school_invoice_email
+            ?? $invoice->school_contact_email;
+
+        if (! $recipientEmail) {
+            throw new \InvalidArgumentException('No email address available for sending invoice.');
+        }
+
+        // Send email with PDF attachment
+        Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message));
+
+        // Mark invoice as sent
+        return $this->repository->markAsSent($invoice, $user->id);
+    }
+
+    public function find(int $id): ?Invoice
+    {
+        return $this->repository->find($id);
+    }
+}

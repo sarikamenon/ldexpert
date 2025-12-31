@@ -18,7 +18,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
 use App\Http\Requests\Therapist\StoreScheduleRequest;
 use App\Http\Requests\Therapist\UpdateScheduleRequest;
-use App\Listeners\SendScheduleNotification;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -350,28 +349,17 @@ final class ScheduleController extends Controller
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
         }
 
-        // Check if email notification failed
-        $emailFailed = SendScheduleNotification::hasEmailFailure($schedule->id);
-        $statusMessage = 'Schedule created successfully.';
-        if ($emailFailed) {
-            $statusMessage .= ' However, notification emails could not be sent due to email service issues.';
-        }
-
         if ($request->expectsJson()) {
-            $response = [
+            return response()->json([
                 'schedule' => $schedule,
-            ];
-            if ($emailFailed) {
-                $response['warning'] = 'Notification emails could not be sent due to email service issues.';
-            }
-            return response()->json($response, 201);
+            ], 201);
         }
 
         return redirect()
             ->route('therapist.schedule.calendar', [
                 'date' => $schedule->schedule_date?->format('Y-m-d') ?? $request->input('schedule_date'),
             ])
-            ->with('status', $statusMessage);
+            ->with('status', 'Schedule created successfully.');
     }
 
     public function update(UpdateScheduleRequest $request, int $id): JsonResponse|RedirectResponse
@@ -404,28 +392,17 @@ final class ScheduleController extends Controller
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
         }
 
-        // Check if email notification failed
-        $emailFailed = SendScheduleNotification::hasEmailFailure($updated->id);
-        $statusMessage = 'Schedule updated successfully.';
-        if ($emailFailed) {
-            $statusMessage .= ' However, notification emails could not be sent due to email service issues.';
-        }
-
         if ($request->expectsJson()) {
-            $response = [
+            return response()->json([
                 'schedule' => $updated,
-            ];
-            if ($emailFailed) {
-                $response['warning'] = 'Notification emails could not be sent due to email service issues.';
-            }
-            return response()->json($response);
+            ]);
         }
 
         return redirect()
             ->route('therapist.schedule.calendar', [
                 'date' => $updated->schedule_date?->format('Y-m-d') ?? $request->input('schedule_date'),
             ])
-            ->with('status', $statusMessage);
+            ->with('status', 'Schedule updated successfully.');
     }
 
     public function destroy(Request $request, int $id): JsonResponse

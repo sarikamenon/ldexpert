@@ -112,6 +112,23 @@ return [
                 ],
             ],
             [
+                'label' => 'Finance',
+                'route' => 'admin.invoices.index',
+                'active' => 'admin.invoices.*',
+                'children' => [
+                    [
+                        'label' => 'Invoices',
+                        'route' => 'admin.invoices.index',
+                        'active' => ['admin.invoices.index', 'admin.invoices.show'],
+                    ],
+                    [
+                        'label' => 'Create Invoice',
+                        'route' => 'admin.invoices.create',
+                        'active' => 'admin.invoices.create',
+                    ],
+                ],
+            ],
+            [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
                 'active' => ['admin.settings.*', 'admin.services.*', 'admin.activity-logs.*', 'admin.analytics.*'],

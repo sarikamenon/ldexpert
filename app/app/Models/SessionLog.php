@@ -133,6 +133,11 @@ class SessionLog extends Model
         return $this->belongsTo(User::class, 'finalized_by_id');
     }
 
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
     // Documents relationship can be added later when document storage is implemented
     // public function documents(): MorphMany
     // {

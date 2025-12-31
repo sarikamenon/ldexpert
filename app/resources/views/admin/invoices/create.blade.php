@@ -1,0 +1,141 @@
+<x-admin.layouts.app>
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-invoices-create.js'])
+    </x-slot>
+
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-foreground">Create Invoice</h1>
+                <p class="text-sm text-foreground/60 mt-1">Select finalized session logs to include in the invoice</p>
+            </div>
+            <a href="{{ route('admin.invoices.index') }}"
+                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                Back to Invoices
+            </a>
+        </div>
+    </div>
+
+    @if ($errors->any())
+        <x-ui::alert variant="danger" class="mb-4">
+            <ul class="list-disc list-inside">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </x-ui::alert>
+    @endif
+
+    <form method="POST" action="{{ route('admin.invoices.store') }}" id="createInvoiceForm">
+        @csrf
+
+        <x-ui::card class="p-6 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-1">
+                    <label for="school_id" class="text-sm font-medium text-foreground">School</label>
+                    <select id="school_id" name="school_id"
+                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        <option value="">Select School</option>
+                        @foreach ($schools ?? [] as $school)
+                            <option value="{{ $school->id }}">{{ $school->display_name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-foreground/60 mt-1">Optional - will be determined from session logs if not
+                        selected</p>
+                </div>
+
+                <div class="space-y-1">
+                    <label for="billing_period_start" class="text-sm font-medium text-foreground">Billing Period
+                        Start</label>
+                    <input type="date" id="billing_period_start" name="billing_period_start" required
+                        value="{{ old('billing_period_start', now()->startOfMonth()->format('Y-m-d')) }}"
+                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+
+                <div class="space-y-1">
+                    <label for="billing_period_end" class="text-sm font-medium text-foreground">Billing Period
+                        End</label>
+                    <input type="date" id="billing_period_end" name="billing_period_end" required
+                        value="{{ old('billing_period_end', now()->endOfMonth()->format('Y-m-d')) }}"
+                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                </div>
+
+                <div class="space-y-1 md:col-span-2">
+                    <label for="notes" class="text-sm font-medium text-foreground">Notes (Optional)</label>
+                    <textarea id="notes" name="notes" rows="3"
+                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">{{ old('notes') }}</textarea>
+                </div>
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6 mt-6">
+            <div class="mb-4 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-foreground">Select Session Logs</h2>
+                <div class="flex items-center gap-4">
+                    <button type="button" id="selectAllBtn" class="text-sm text-primary hover:underline">Select
+                        All</button>
+                    <button type="button" id="deselectAllBtn" class="text-sm text-primary hover:underline">Deselect
+                        All</button>
+                </div>
+            </div>
+
+            <div id="sessionLogsSummary" class="mb-4 p-4 bg-background/subtle rounded-lg hidden">
+                <p class="text-sm font-medium">
+                    <span id="selectedCount">0</span> session(s) selected |
+                    Total: $<span id="selectedTotal">0.00</span>
+                </p>
+            </div>
+
+            @if ($sessionLogs->count() > 0)
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">
+                                    <input type="checkbox" id="selectAllCheckbox" class="rounded">
+                                </th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Student</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Service</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Duration</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($sessionLogs as $log)
+                                <tr class="border-b border-border hover:bg-background/subtle">
+                                    <td class="py-3 px-4">
+                                        <input type="checkbox" name="session_log_ids[]" value="{{ $log->id }}"
+                                            class="session-log-checkbox rounded"
+                                            data-amount="{{ $log->school_invoice_amount ?? 0 }}">
+                                    </td>
+                                    <td class="py-3 px-4 text-sm">{{ $log->session_date->format('M d, Y') }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $log->student->name ?? '—' }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $log->service->name ?? '—' }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $log->duration_minutes }} min</td>
+                                    <td class="py-3 px-4 text-sm font-medium">
+                                        ${{ number_format($log->school_invoice_amount ?? 0, 2) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @else
+                <div class="text-center py-12 text-foreground/60">
+                    <p>No finalized session logs available for invoicing.</p>
+                </div>
+            @endif
+        </x-ui::card>
+
+        <div class="mt-6 flex items-center justify-end gap-4">
+            <a href="{{ route('admin.invoices.index') }}"
+                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                Cancel
+            </a>
+            <button type="submit"
+                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                Create Invoice
+            </button>
+        </div>
+    </form>
+</x-admin.layouts.app>

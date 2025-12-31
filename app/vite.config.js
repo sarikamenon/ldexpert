@@ -28,6 +28,8 @@ export default defineConfig({
                 'resources/js/pages/admin-contracts-schools-form.js',
                 'resources/js/pages/admin-contracts-therapists-form.js',
                 'resources/js/pages/admin-session-logs-index.js',
+                'resources/js/pages/admin-invoices-create.js',
+                'resources/js/pages/admin-invoices-show.js',
                 'resources/js/pages/session-logs/index.js',
                 'resources/css/therapist-schedule.css',
                 'resources/js/pages/therapist-schedule-calendar.js',
