@@ -200,7 +200,7 @@ final class SessionLogIndexService
                 'label' => 'Approve',
                 'icon' => 'check',
                 'method' => 'post',
-                'url' => route('admin.session-logs.finalize', $log),
+                'url' => route('admin.session-logs.approve', $log),
                 'variant' => 'primary',
                 'confirm' => [
                     'title' => 'Approve session?',

@@ -9,7 +9,6 @@ enum InvoiceStatus: string
     case DRAFT = 'draft';
     case SENT = 'sent';
     case PAID = 'paid';
-    case VOIDED = 'voided';
 
     public function label(): string
     {
@@ -17,7 +16,6 @@ enum InvoiceStatus: string
             self::DRAFT => 'Draft',
             self::SENT => 'Sent',
             self::PAID => 'Paid',
-            self::VOIDED => 'Voided',
         };
     }
 

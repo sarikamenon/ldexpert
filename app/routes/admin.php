@@ -81,7 +81,7 @@ Route::middleware('role:admin')
             Route::get('{sessionLog}', [SessionLogController::class, 'show'])->name('show');
             Route::get('{sessionLog}/edit', [SessionLogController::class, 'edit'])->name('edit');
             Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
-            Route::post('{sessionLog}/finalize', [SessionLogController::class, 'finalize'])->name('finalize');
+            Route::post('{sessionLog}/approve', [SessionLogController::class, 'approve'])->name('approve');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
         });
 

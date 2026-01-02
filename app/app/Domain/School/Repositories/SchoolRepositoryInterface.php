@@ -32,4 +32,6 @@ interface SchoolRepositoryInterface
     public function listAllForSelect(): Collection;
 
     public function listActiveForSelect(): Collection;
+
+    public function find(int $id): ?School;
 }

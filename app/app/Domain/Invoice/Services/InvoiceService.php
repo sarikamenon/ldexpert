@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Invoice\Services;
 
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
@@ -22,34 +23,36 @@ final class InvoiceService
     public function __construct(
         private readonly InvoiceRepositoryInterface $repository,
         private readonly CompanyInfoService $companyInfoService,
+        private readonly SchoolRepositoryInterface $schoolRepository,
     ) {}
 
     public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
     {
         return DB::transaction(function () use ($user, $dto): Invoice {
-            // Get finalized session logs
-            $sessionLogs = $this->repository->getFinalizedSessionLogsForInvoice($dto->sessionLogIds);
+            // Get approved session logs
+            $sessionLogs = $this->repository->getApprovedSessionLogsForInvoice($dto->sessionLogIds);
 
             if ($sessionLogs->isEmpty()) {
                 throw new \InvalidArgumentException('No eligible session logs found for invoice generation.');
             }
 
-            // Determine school from first session log
-            $firstSessionLog = $sessionLogs->first();
-            $schoolId = $dto->schoolId ?? $firstSessionLog->school_id;
-
-            if (! $schoolId) {
-                throw new \InvalidArgumentException('School ID is required for invoice generation.');
+            // Validate all session logs belong to the selected school
+            $invalidSessions = $sessionLogs->filter(fn($log) => $log->school_id !== $dto->schoolId);
+            if ($invalidSessions->isNotEmpty()) {
+                throw new \InvalidArgumentException('All selected session logs must belong to the selected school.');
             }
 
             // Get school for snapshot
-            $school = School::findOrFail($schoolId);
+            $school = $this->schoolRepository->find($dto->schoolId);
+            if (! $school) {
+                throw new \InvalidArgumentException('School not found.');
+            }
 
             // Calculate totals
             $totals = $this->calculateTotals($sessionLogs);
 
-            // Generate invoice number
-            $invoiceNumber = $this->repository->generateInvoiceNumber();
+            // Generate invoice number if not provided or empty
+            $invoiceNumber = !empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
 
             // Copy snapshots
             $schoolSnapshot = $this->copySchoolSnapshot($school);
@@ -57,8 +60,9 @@ final class InvoiceService
 
             // Create invoice
             $invoice = $this->repository->create([
-                'school_id' => $schoolId,
+                'school_id' => $dto->schoolId,
                 'invoice_number' => $invoiceNumber,
+                'invoice_date' => $dto->invoiceDate,
                 'billing_period_start' => $dto->billingPeriodStart,
                 'billing_period_end' => $dto->billingPeriodEnd,
                 'status' => InvoiceStatus::DRAFT->value,
@@ -131,7 +135,7 @@ final class InvoiceService
 
     public function sendInvoice(User $user, Invoice $invoice, SendInvoiceDTO $dto): Invoice
     {
-        if ($invoice->isSent() || $invoice->isPaid() || $invoice->isVoided()) {
+        if ($invoice->isSent() || $invoice->isPaid()) {
             throw new \InvalidArgumentException('Invoice cannot be sent in its current status.');
         }
 

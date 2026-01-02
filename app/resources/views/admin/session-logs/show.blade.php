@@ -16,7 +16,7 @@
                 <div class="flex items-center gap-3 flex-wrap">
                     @if ($sessionLog->status)
                         <x-ui::badge :variant="match ($sessionLog->status) {
-                            \App\Enums\SessionLogStatus::FINALIZED => 'success',
+                            \App\Enums\SessionLogStatus::APPROVED => 'success',
                             \App\Enums\SessionLogStatus::SUBMITTED => 'warning',
                             \App\Enums\SessionLogStatus::CANCELLED => 'danger',
                             default => 'secondary',
@@ -35,12 +35,12 @@
                         Override Rates
                     </a>
 
-                    @if ($sessionLog->status?->canFinalize())
-                        <form action="{{ route('admin.session-logs.finalize', $sessionLog) }}" method="POST">
+                    @if ($sessionLog->status?->canApprove())
+                        <form action="{{ route('admin.session-logs.approve', $sessionLog) }}" method="POST">
                             @csrf
                             <button type="submit"
                                 class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
-                                Finalize
+                                Approve
                             </button>
                         </form>
                     @endif

@@ -14,26 +14,25 @@
             <div class="flex items-center gap-3">
                 <x-ui::badge :variant="match ($invoice->status) {
                     \App\Enums\InvoiceStatus::DRAFT => 'secondary',
-                    \App\Enums\InvoiceStatus::SENT => 'info',
+                    \App\Enums\InvoiceStatus::SENT => 'primary',
                     \App\Enums\InvoiceStatus::PAID => 'success',
-                    \App\Enums\InvoiceStatus::VOIDED => 'danger',
                     default => 'secondary',
                 }">
                     {{ $invoice->status?->label() }}
                 </x-ui::badge>
                 <a href="{{ route('admin.invoices.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
                     Back to List
                 </a>
                 <a href="{{ route('admin.invoices.download', $invoice) }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                    class="inline-flex items-center px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 text-sm font-medium">
                     Download PDF
                 </a>
                 @if ($invoice->isDraft())
                     <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline">
                         @csrf
                         <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                            class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
                             Send Invoice
                         </button>
                     </form>

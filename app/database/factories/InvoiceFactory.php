@@ -25,6 +25,7 @@ class InvoiceFactory extends Factory
         return [
             'school_id' => School::factory(),
             'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad((string) $this->faker->numberBetween(1, 999), 3, '0', STR_PAD_LEFT),
+            'invoice_date' => now(),
             'billing_period_start' => $startDate,
             'billing_period_end' => $endDate,
             'status' => InvoiceStatus::DRAFT->value,

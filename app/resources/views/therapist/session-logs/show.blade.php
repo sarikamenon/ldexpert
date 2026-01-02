@@ -23,7 +23,7 @@
                     <div class="flex items-center gap-3 flex-wrap">
                         @if ($sessionLog->status)
                             <x-ui::badge :variant="match ($sessionLog->status) {
-                                \App\Enums\SessionLogStatus::FINALIZED => 'success',
+                                \App\Enums\SessionLogStatus::APPROVED => 'success',
                                 \App\Enums\SessionLogStatus::SUBMITTED => 'warning',
                                 \App\Enums\SessionLogStatus::CANCELLED => 'danger',
                                 default => 'secondary',

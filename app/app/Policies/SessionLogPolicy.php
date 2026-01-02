@@ -66,17 +66,17 @@ final class SessionLogPolicy
             return false;
         }
 
-        // Therapist can submit own log unless finalized; service enforces draft/submitted transitions.
-        return (int) $sessionLog->therapist_id === (int) $user->id && ! $sessionLog->isFinalized();
+        // Therapist can submit own log unless approved; service enforces draft/submitted transitions.
+        return (int) $sessionLog->therapist_id === (int) $user->id && ! $sessionLog->isApproved();
     }
 
-    public function finalize(User $user, SessionLog $sessionLog): bool
+    public function approve(User $user, SessionLog $sessionLog): bool
     {
         if ($user->role !== Role::ADMIN) {
             return false;
         }
 
-        // Admins can only finalize logs that are currently submitted.
+        // Admins can only approve logs that are currently submitted.
         return $sessionLog->isSubmitted();
     }
 

@@ -73,28 +73,28 @@ final class SessionLogPolicyTest extends TestCase
         $this->assertTrue($admin->can('update', $sessionLog));
     }
 
-    public function test_admin_cannot_update_finalized_session_log(): void
+    public function test_admin_cannot_update_approved_session_log(): void
     {
         $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->finalized()->create();
+        $sessionLog = SessionLog::factory()->approved()->create();
 
         $this->assertFalse($admin->can('update', $sessionLog));
     }
 
-    public function test_admin_can_finalize_submitted_session_log(): void
+    public function test_admin_can_approve_submitted_session_log(): void
     {
         $admin = User::factory()->admin()->create();
         $sessionLog = SessionLog::factory()->submitted()->create();
 
-        $this->assertTrue($admin->can('finalize', $sessionLog));
+        $this->assertTrue($admin->can('approve', $sessionLog));
     }
 
-    public function test_admin_cannot_finalize_draft_session_log(): void
+    public function test_admin_cannot_approve_draft_session_log(): void
     {
         $admin = User::factory()->admin()->create();
         $sessionLog = SessionLog::factory()->draft()->create();
 
-        $this->assertFalse($admin->can('finalize', $sessionLog));
+        $this->assertFalse($admin->can('approve', $sessionLog));
     }
 
     public function test_therapist_can_submit_own_draft_session_log(): void

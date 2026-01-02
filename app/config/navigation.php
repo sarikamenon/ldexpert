@@ -100,7 +100,7 @@ return [
                     [
                         'label' => 'Approved',
                         'route' => 'admin.session-logs.index',
-                        'query' => ['status' => 'finalized'],
+                        'query' => ['status' => 'approved'],
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
                     ],
                     [

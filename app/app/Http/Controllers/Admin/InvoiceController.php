@@ -7,19 +7,20 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoicePdfService;
 use App\Domain\Invoice\Services\InvoiceService;
-use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\DTOs\SendInvoiceDTO;
-use App\Enums\SessionLogStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Invoice\CreateInvoiceRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceIndexRequest;
 use App\Http\Requests\Admin\Invoice\SendInvoiceRequest;
 use App\Models\Invoice;
-use App\Models\School;
-use App\Models\SessionLog;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
@@ -29,7 +30,10 @@ final class InvoiceController extends Controller
         private readonly InvoiceService $invoiceService,
         private readonly InvoicePdfService $pdfService,
         private readonly InvoiceRepositoryInterface $invoiceRepository,
-        private readonly SessionLogRepositoryInterface $sessionLogRepository,
+        private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly TherapistService $therapistService,
+        private readonly StudentService $studentService,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function index(InvoiceIndexRequest $request): View
@@ -44,32 +48,68 @@ final class InvoiceController extends Controller
         return view('admin.invoices.index', [
             'invoices' => $invoices,
             'filters' => $request->validated(),
-            'schools' => School::query()
-                ->active()
-                ->orderBy('display_name')
-                ->get(['id', 'display_name']),
+            'schools' => $this->schoolRepository->listActiveForSelect(),
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', Invoice::class);
 
-        // Get finalized session logs that are billable and not already invoiced
-        $sessionLogs = SessionLog::query()
-            ->where('status', SessionLogStatus::FINALIZED->value)
-            ->where('is_billable_school', true)
-            ->whereNull('invoice_id')
-            ->with(['student', 'service', 'therapist', 'school'])
-            ->orderBy('session_date', 'desc')
-            ->get();
+        // Default to last 30 days
+        $selectedSchoolId = $request->input('school_id');
+        $filters = [
+            'date_from' => $request->input('date_from', now()->subDays(30)->format('Y-m-d')),
+            'date_to' => $request->input('date_to', now()->format('Y-m-d')),
+            'school_id' => $selectedSchoolId,
+            'therapist_id' => $request->input('therapist_id'),
+            'student_id' => $request->input('student_id'),
+            'service_id' => $request->input('service_id'),
+            'search' => $request->input('search'),
+        ];
+
+        $sessionLogs = $this->invoiceRepository->getAvailableSessionLogsForInvoiceCreation($filters);
+
+        // Get schools that have available session logs (only filter by date, not by selected school)
+        $schoolFilterForDropdown = [
+            'date_from' => $filters['date_from'],
+            'date_to' => $filters['date_to'],
+        ];
+        $availableSchoolIds = $this->invoiceRepository->getAvailableSchoolIdsForInvoiceCreation($schoolFilterForDropdown);
+
+        // Get filter options based on selected school
+        $therapists = collect();
+        $students = collect();
+        $services = collect();
+
+        if ($selectedSchoolId) {
+            $therapists = $this->therapistService->listActiveTherapistsBySchool((int) $selectedSchoolId);
+            $students = $this->studentService->listActiveStudentsBySchool((int) $selectedSchoolId);
+
+            // Get unique services from session logs for this school
+            $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool((int) $selectedSchoolId);
+
+            if ($serviceIds->isNotEmpty()) {
+                $services = $this->serviceCatalogService->listActiveForSelect()
+                    ->whereIn('id', $serviceIds->toArray());
+            }
+        }
+
+        // Generate invoice number for display
+        $invoiceNumber = $this->invoiceRepository->generateInvoiceNumber();
+
+        // Get schools that have available session logs (filtered by date range only)
+        $schools = $this->schoolRepository->listAllForSelect()
+            ->whereIn('id', $availableSchoolIds->toArray());
 
         return view('admin.invoices.create', [
             'sessionLogs' => $sessionLogs,
-            'schools' => School::query()
-                ->active()
-                ->orderBy('display_name')
-                ->get(['id', 'display_name']),
+            'schools' => $schools,
+            'therapists' => $therapists,
+            'students' => $students,
+            'services' => $services,
+            'filters' => $filters,
+            'invoiceNumber' => $invoiceNumber,
         ]);
     }
 

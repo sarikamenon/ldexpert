@@ -118,9 +118,9 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         return $sessionLog;
     }
 
-    public function finalize(SessionLog $sessionLog, User $finalizedBy): SessionLog
+    public function approve(SessionLog $sessionLog, User $approvedBy): SessionLog
     {
-        return DB::transaction(function () use ($sessionLog, $finalizedBy): SessionLog {
+        return DB::transaction(function () use ($sessionLog, $approvedBy): SessionLog {
             // Load service relationship if not already loaded
             if (! $sessionLog->relationLoaded('service')) {
                 $sessionLog->load('service');
@@ -147,9 +147,9 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
 
             // Update session log with status and THO minutes
             $sessionLog->update([
-                'status' => SessionLogStatus::FINALIZED,
-                'finalized_at' => now(),
-                'finalized_by_id' => $finalizedBy->id,
+                'status' => SessionLogStatus::APPROVED,
+                'approved_at' => now(),
+                'approved_by_id' => $approvedBy->id,
                 'tho_minutes' => $thoMinutes,
             ]);
             $sessionLog->refresh();

@@ -68,11 +68,11 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
      * @param array<int> $sessionLogIds
      * @return Collection<SessionLog>
      */
-    public function getFinalizedSessionLogsForInvoice(array $sessionLogIds): Collection
+    public function getApprovedSessionLogsForInvoice(array $sessionLogIds): Collection
     {
         return SessionLog::query()
             ->whereIn('id', $sessionLogIds)
-            ->where('status', SessionLogStatus::FINALIZED->value)
+            ->where('status', SessionLogStatus::APPROVED->value)
             ->where('is_billable_school', true)
             ->whereNull('invoice_id')
             ->with(['student', 'service', 'therapist', 'school'])
@@ -113,5 +113,81 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
         }
 
         return sprintf('INV-%s-%03d', $date, $sequence);
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return Collection<SessionLog>
+     */
+    public function getAvailableSessionLogsForInvoiceCreation(array $filters): Collection
+    {
+        $query = SessionLog::query()
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->where('is_billable_school', true)
+            ->whereNull('invoice_id')
+            ->with(['student', 'service', 'therapist', 'school']);
+
+        if (isset($filters['date_from']) && isset($filters['date_to'])) {
+            $query->whereBetween('session_date', [$filters['date_from'], $filters['date_to']]);
+        }
+
+        if (isset($filters['school_id']) && $filters['school_id']) {
+            $query->where('school_id', $filters['school_id']);
+        }
+
+        if (isset($filters['therapist_id']) && $filters['therapist_id']) {
+            $query->where('therapist_id', $filters['therapist_id']);
+        }
+
+        if (isset($filters['student_id']) && $filters['student_id']) {
+            $query->where('student_id', $filters['student_id']);
+        }
+
+        if (isset($filters['service_id']) && $filters['service_id']) {
+            $query->where('service_id', $filters['service_id']);
+        }
+
+        if (isset($filters['search']) && $filters['search']) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('student', function ($subQ) use ($search) {
+                    $subQ->where('name', 'like', "%{$search}%");
+                })
+                    ->orWhereHas('service', function ($subQ) use ($search) {
+                        $subQ->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('school', function ($subQ) use ($search) {
+                        $subQ->where('display_name', 'like', "%{$search}%")
+                            ->orWhere('full_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        return $query->orderBy('session_date', 'desc')->get();
+    }
+
+    public function getAvailableServiceIdsForSchool(int $schoolId): Collection
+    {
+        return SessionLog::query()
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->where('is_billable_school', true)
+            ->whereNull('invoice_id')
+            ->where('school_id', $schoolId)
+            ->distinct()
+            ->pluck('service_id');
+    }
+
+    public function getAvailableSchoolIdsForInvoiceCreation(array $filters): Collection
+    {
+        $query = SessionLog::query()
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->where('is_billable_school', true)
+            ->whereNull('invoice_id');
+
+        if (isset($filters['date_from']) && isset($filters['date_to'])) {
+            $query->whereBetween('session_date', [$filters['date_from'], $filters['date_to']]);
+        }
+
+        return $query->distinct()->pluck('school_id');
     }
 }

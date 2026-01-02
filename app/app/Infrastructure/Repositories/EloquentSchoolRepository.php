@@ -83,6 +83,11 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    public function find(int $id): ?School
+    {
+        return School::find($id);
+    }
+
     private function baseQuery(): Builder
     {
         return School::query()->with('manager');

@@ -101,18 +101,19 @@ test('invoice service generates invoice with snapshots', function () {
         'display_name' => 'Test School',
     ]);
 
-    $sessionLog1 = SessionLog::factory()->make(['id' => 1, 'school_invoice_amount' => 100.00]);
-    $sessionLog2 = SessionLog::factory()->make(['id' => 2, 'school_invoice_amount' => 150.00]);
+    $sessionLog1 = SessionLog::factory()->make(['id' => 1, 'school_id' => $school->id, 'school_invoice_amount' => 100.00]);
+    $sessionLog2 = SessionLog::factory()->make(['id' => 2, 'school_id' => $school->id, 'school_invoice_amount' => 150.00]);
     $sessionLogs = Collection::make([$sessionLog1, $sessionLog2]);
 
     $dto = CreateInvoiceDTO::fromArray([
         'school_id' => $school->id,
+        'invoice_date' => now()->format('Y-m-d'),
         'billing_period_start' => now()->startOfMonth()->format('Y-m-d'),
         'billing_period_end' => now()->endOfMonth()->format('Y-m-d'),
         'session_log_ids' => [1, 2],
     ]);
 
-    $this->repository->shouldReceive('getFinalizedSessionLogsForInvoice')
+    $this->repository->shouldReceive('getApprovedSessionLogsForInvoice')
         ->once()
         ->with([1, 2])
         ->andReturn($sessionLogs);

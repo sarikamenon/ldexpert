@@ -62,26 +62,28 @@ final class SessionLogServiceTest extends TestCase
         $service->submit($therapist2, $sessionLog);
     }
 
-    public function test_finalize_updates_status_to_finalized(): void
+    public function test_approve_updates_status_to_approved(): void
     {
         $admin = User::factory()->admin()->create();
         $sessionLog = SessionLog::factory()->submitted()->create();
 
         $repository = Mockery::mock(SessionLogRepositoryInterface::class);
-        $repository->shouldReceive('finalize')
+        $repository->shouldReceive('approve')
             ->once()
             ->with($sessionLog, $admin)
             ->andReturn($sessionLog->fresh());
 
         $rateService = Mockery::mock(SessionLogRateService::class);
-        $service = new SessionLogService($repository, $rateService);
+        $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
+        $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
 
-        $result = $service->finalize($admin, $sessionLog);
+        $result = $service->approve($admin, $sessionLog);
 
         $this->assertInstanceOf(SessionLog::class, $result);
     }
 
-    public function test_finalize_throws_exception_for_non_submitted(): void
+    public function test_approve_throws_exception_for_non_submitted(): void
     {
         $admin = User::factory()->admin()->create();
         $sessionLog = SessionLog::factory()->draft()->create();
@@ -93,9 +95,9 @@ final class SessionLogServiceTest extends TestCase
         $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
 
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Session log must be submitted before finalization.');
+        $this->expectExceptionMessage('Session log must be submitted before approval.');
 
-        $service->finalize($admin, $sessionLog);
+        $service->approve($admin, $sessionLog);
     }
 
     protected function tearDown(): void

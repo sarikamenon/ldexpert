@@ -25,7 +25,7 @@ interface SessionLogRepositoryInterface
 
     public function submit(SessionLog $sessionLog, User $submittedBy): SessionLog;
 
-    public function finalize(SessionLog $sessionLog, User $finalizedBy): SessionLog;
+    public function approve(SessionLog $sessionLog, User $approvedBy): SessionLog;
 
     public function cancel(SessionLog $sessionLog, string $reason): SessionLog;
 

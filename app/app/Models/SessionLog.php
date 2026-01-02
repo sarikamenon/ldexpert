@@ -50,8 +50,8 @@ class SessionLog extends Model
         'status',
         'submitted_at',
         'submitted_by_id',
-        'finalized_at',
-        'finalized_by_id',
+        'approved_at',
+        'approved_by_id',
         'cancellation_reason',
     ];
 
@@ -76,7 +76,7 @@ class SessionLog extends Model
             'school_invoice_amount' => 'decimal:2',
             'is_rate_override' => 'boolean',
             'submitted_at' => 'datetime',
-            'finalized_at' => 'datetime',
+            'approved_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -128,9 +128,9 @@ class SessionLog extends Model
         return $this->belongsTo(User::class, 'submitted_by_id');
     }
 
-    public function finalizedBy(): BelongsTo
+    public function approvedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'finalized_by_id');
+        return $this->belongsTo(User::class, 'approved_by_id');
     }
 
     public function invoice(): BelongsTo
@@ -154,9 +154,9 @@ class SessionLog extends Model
         return $this->status === SessionLogStatus::SUBMITTED;
     }
 
-    public function isFinalized(): bool
+    public function isApproved(): bool
     {
-        return $this->status === SessionLogStatus::FINALIZED;
+        return $this->status === SessionLogStatus::APPROVED;
     }
 
     public function isCancelled(): bool

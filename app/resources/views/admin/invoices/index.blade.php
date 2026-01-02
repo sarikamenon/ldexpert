@@ -114,9 +114,8 @@
                                 <td class="py-3 px-4">
                                     <x-ui::badge :variant="match ($invoice->status) {
                                         \App\Enums\InvoiceStatus::DRAFT => 'secondary',
-                                        \App\Enums\InvoiceStatus::SENT => 'info',
+                                        \App\Enums\InvoiceStatus::SENT => 'primary',
                                         \App\Enums\InvoiceStatus::PAID => 'success',
-                                        \App\Enums\InvoiceStatus::VOIDED => 'danger',
                                         default => 'secondary',
                                     }">
                                         {{ $invoice->status?->label() }}
@@ -128,9 +127,26 @@
                                 <td class="py-3 px-4">
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('admin.invoices.show', $invoice) }}"
-                                            class="text-primary hover:underline text-sm">View</a>
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                            title="View Invoice">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </a>
                                         <a href="{{ route('admin.invoices.download', $invoice) }}"
-                                            class="text-primary hover:underline text-sm">Download</a>
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                                            title="Download PDF">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path
+                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
+                                                </path>
+                                            </svg>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

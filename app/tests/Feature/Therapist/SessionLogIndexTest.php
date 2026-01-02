@@ -26,9 +26,9 @@ final class SessionLogIndexTest extends TestCase
             'status' => SessionLogStatus::DRAFT,
             'session_date' => Carbon::now()->startOfMonth(),
         ]);
-        SessionLog::factory()->finalized()->create([
+        SessionLog::factory()->approved()->create([
             'therapist_id' => $therapist->id,
-            'status' => SessionLogStatus::FINALIZED,
+            'status' => SessionLogStatus::APPROVED,
             'session_date' => Carbon::now()->startOfMonth(),
         ]);
 
@@ -77,8 +77,8 @@ final class SessionLogIndexTest extends TestCase
         $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
         $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
 
-        $response->assertSee('value="'.$startOfMonth.'"', false);
-        $response->assertSee('value="'.$endOfMonth.'"', false);
+        $response->assertSee('value="' . $startOfMonth . '"', false);
+        $response->assertSee('value="' . $endOfMonth . '"', false);
         $response->assertSee($inside->session_date?->format('Y-m-d'));
 
         Carbon::setTestNow();

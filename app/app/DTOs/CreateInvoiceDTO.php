@@ -10,7 +10,9 @@ final class CreateInvoiceDTO
      * @param array<int> $sessionLogIds
      */
     public function __construct(
-        public readonly ?int $schoolId,
+        public readonly int $schoolId,
+        public readonly string $invoiceDate,
+        public readonly ?string $invoiceNumber,
         public readonly string $billingPeriodStart,
         public readonly string $billingPeriodEnd,
         public readonly array $sessionLogIds,
@@ -23,7 +25,9 @@ final class CreateInvoiceDTO
     public static function fromArray(array $data): self
     {
         return new self(
-            schoolId: isset($data['school_id']) ? (int) $data['school_id'] : null,
+            schoolId: (int) $data['school_id'],
+            invoiceDate: $data['invoice_date'],
+            invoiceNumber: $data['invoice_number'] ?? null,
             billingPeriodStart: $data['billing_period_start'],
             billingPeriodEnd: $data['billing_period_end'],
             sessionLogIds: isset($data['session_log_ids']) && is_array($data['session_log_ids'])
@@ -40,6 +44,8 @@ final class CreateInvoiceDTO
     {
         return [
             'school_id' => $this->schoolId,
+            'invoice_date' => $this->invoiceDate,
+            'invoice_number' => $this->invoiceNumber,
             'billing_period_start' => $this->billingPeriodStart,
             'billing_period_end' => $this->billingPeriodEnd,
             'session_log_ids' => $this->sessionLogIds,

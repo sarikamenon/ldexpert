@@ -19,7 +19,7 @@ function invoiceAdminUser(): User
     return User::factory()->admin()->create();
 }
 
-function createFinalizedSessionLog(User $therapist, User $student, School $school, Service $service, ServiceSupportAgreement $ssa): SessionLog
+function createApprovedSessionLog(User $therapist, User $student, School $school, Service $service, ServiceSupportAgreement $ssa): SessionLog
 {
     return SessionLog::factory()->create([
         'therapist_id' => $therapist->id,
@@ -27,7 +27,7 @@ function createFinalizedSessionLog(User $therapist, User $student, School $schoo
         'school_id' => $school->id,
         'service_id' => $service->id,
         'ssa_id' => $ssa->id,
-        'status' => SessionLogStatus::FINALIZED->value,
+        'status' => SessionLogStatus::APPROVED->value,
         'is_billable_school' => true,
         'school_invoice_amount' => 100.00,
         'invoice_id' => null,
@@ -74,7 +74,7 @@ it('allows admin to view invoice create page', function () {
         'assigned_therapist_id' => $therapist->id,
     ]);
 
-    createFinalizedSessionLog($therapist, $student, $school, $service, $ssa);
+    createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
 
     $response = $this->actingAs($admin)
         ->get(route('admin.invoices.create'));
@@ -101,15 +101,15 @@ it('creates an invoice from selected session logs', function () {
         'assigned_therapist_id' => $therapist->id,
     ]);
 
-    $log1 = createFinalizedSessionLog($therapist, $student, $school, $service, $ssa);
-    $log2 = createFinalizedSessionLog($therapist, $student, $school, $service, $ssa);
+    $log1 = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+    $log2 = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
 
     $payload = [
         'school_id' => $school->id,
+        'invoice_date' => now()->format('Y-m-d'),
         'billing_period_start' => now()->startOfMonth()->format('Y-m-d'),
         'billing_period_end' => now()->endOfMonth()->format('Y-m-d'),
         'session_log_ids' => [$log1->id, $log2->id],
-        'notes' => 'Test invoice notes',
     ];
 
     $response = $this->actingAs($admin)
@@ -149,7 +149,7 @@ it('verifies snapshot data persists even if school changes', function () {
         'assigned_therapist_id' => $therapist->id,
     ]);
 
-    $log = createFinalizedSessionLog($therapist, $student, $school, $service, $ssa);
+    $log = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
 
     $payload = [
         'school_id' => $school->id,
@@ -248,13 +248,14 @@ it('prevents creating invoice with already invoiced session logs', function () {
         'school_id' => $school->id,
         'service_id' => $service->id,
         'ssa_id' => $ssa->id,
-        'status' => SessionLogStatus::FINALIZED->value,
+        'status' => SessionLogStatus::APPROVED->value,
         'is_billable_school' => true,
         'invoice_id' => $existingInvoice->id, // Already invoiced
     ]);
 
     $payload = [
         'school_id' => $school->id,
+        'invoice_date' => now()->format('Y-m-d'),
         'billing_period_start' => now()->startOfMonth()->format('Y-m-d'),
         'billing_period_end' => now()->endOfMonth()->format('Y-m-d'),
         'session_log_ids' => [$log->id],

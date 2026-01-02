@@ -7,9 +7,10 @@
         'success' => 'bg-success/10 text-success border border-success/20',
         'warning' => 'bg-warning/10 text-warning border border-warning/20',
         'danger' => 'bg-danger/10 text-danger border border-danger/20',
+        'info' => 'bg-blue-100 text-blue-700 border border-blue-200',
     ];
 @endphp
 <span
-    {{ $attributes->merge(['class' => 'inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium ' . $variants[$variant]]) }}>
+    {{ $attributes->merge(['class' => 'inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium ' . ($variants[$variant] ?? $variants['secondary'])]) }}>
     {{ $slot }}
 </span>

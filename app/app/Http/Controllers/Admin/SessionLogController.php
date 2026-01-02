@@ -98,16 +98,16 @@ final class SessionLogController extends Controller
         }
     }
 
-    public function finalize(Request $request, SessionLog $sessionLog): RedirectResponse
+    public function approve(Request $request, SessionLog $sessionLog): RedirectResponse
     {
-        $this->authorize('finalize', $sessionLog);
+        $this->authorize('approve', $sessionLog);
 
         try {
-            $this->service->finalize($request->user(), $sessionLog);
+            $this->service->approve($request->user(), $sessionLog);
 
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)
-                ->with('success', 'Session log finalized.');
+                ->with('success', 'Session log approved.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()

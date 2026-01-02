@@ -137,7 +137,7 @@
                             @php
                                 $statusLabel = $row[$key] ?? null;
                                 $variant = match ($statusLabel) {
-                                    SessionLogStatus::FINALIZED->label() => 'success',
+                                    SessionLogStatus::APPROVED->label() => 'success',
                                     SessionLogStatus::SUBMITTED->label() => 'warning',
                                     SessionLogStatus::CANCELLED->label() => 'danger',
                                     default => 'secondary',

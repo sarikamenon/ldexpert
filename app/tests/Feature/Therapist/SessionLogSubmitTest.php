@@ -57,10 +57,10 @@ final class SessionLogSubmitTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_therapist_cannot_submit_finalized_session_log(): void
+    public function test_therapist_cannot_submit_approved_session_log(): void
     {
         $therapist = User::factory()->therapist()->create();
-        $sessionLog = SessionLog::factory()->finalized()->create([
+        $sessionLog = SessionLog::factory()->approved()->create([
             'therapist_id' => $therapist->id,
         ]);
 

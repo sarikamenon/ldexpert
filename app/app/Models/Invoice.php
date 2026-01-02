@@ -18,6 +18,7 @@ class Invoice extends Model
     protected $fillable = [
         'school_id',
         'invoice_number',
+        'invoice_date',
         'billing_period_start',
         'billing_period_end',
         'status',
@@ -47,6 +48,7 @@ class Invoice extends Model
     protected function casts(): array
     {
         return [
+            'invoice_date' => 'date',
             'billing_period_start' => 'date',
             'billing_period_end' => 'date',
             'due_date' => 'date',
@@ -89,15 +91,5 @@ class Invoice extends Model
     public function isPaid(): bool
     {
         return $this->status === InvoiceStatus::PAID;
-    }
-
-    public function isVoided(): bool
-    {
-        return $this->status === InvoiceStatus::VOIDED;
-    }
-
-    public function getStatusAttribute(mixed $value): ?InvoiceStatus
-    {
-        return InvoiceStatus::tryFrom((string) $value);
     }
 }

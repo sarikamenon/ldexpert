@@ -38,10 +38,10 @@ final class SessionLogAdminOverrideTest extends TestCase
         $this->assertSame(250.00, (float) $sessionLog->school_invoice_amount);
     }
 
-    public function test_admin_cannot_override_finalized_session_log(): void
+    public function test_admin_cannot_override_approved_session_log(): void
     {
         $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->finalized()->create();
+        $sessionLog = SessionLog::factory()->approved()->create();
 
         $response = $this->actingAs($admin)
             ->put(route('admin.session-logs.update', $sessionLog), [
