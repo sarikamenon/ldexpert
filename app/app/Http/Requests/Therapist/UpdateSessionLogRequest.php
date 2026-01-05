@@ -29,7 +29,7 @@ final class UpdateSessionLogRequest extends FormRequest
 
         // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
         if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
-            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
+            $start = Carbon::parse($sessionDate.' '.$startTimeInput.':00');
             $end = (clone $start)->addMinutes((int) $durationInput);
 
             $this->merge([

@@ -28,7 +28,7 @@ final class InvoiceService
 
     public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
     {
-        return DB::transaction(function () use ($user, $dto): Invoice {
+        return DB::transaction(function () use ($dto): Invoice {
             // Get approved session logs
             $sessionLogs = $this->repository->getApprovedSessionLogsForInvoice($dto->sessionLogIds);
 
@@ -37,7 +37,7 @@ final class InvoiceService
             }
 
             // Validate all session logs belong to the selected school
-            $invalidSessions = $sessionLogs->filter(fn($log) => $log->school_id !== $dto->schoolId);
+            $invalidSessions = $sessionLogs->filter(fn ($log) => $log->school_id !== $dto->schoolId);
             if ($invalidSessions->isNotEmpty()) {
                 throw new \InvalidArgumentException('All selected session logs must belong to the selected school.');
             }
@@ -52,7 +52,7 @@ final class InvoiceService
             $totals = $this->calculateTotals($sessionLogs);
 
             // Generate invoice number if not provided or empty
-            $invoiceNumber = !empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
+            $invoiceNumber = ! empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
 
             // Copy snapshots
             $schoolSnapshot = $this->copySchoolSnapshot($school);
@@ -83,7 +83,7 @@ final class InvoiceService
     }
 
     /**
-     * @param Collection<SessionLog> $sessionLogs
+     * @param  Collection<SessionLog>  $sessionLogs
      * @return array<string, float>
      */
     public function calculateTotals(Collection $sessionLogs): array

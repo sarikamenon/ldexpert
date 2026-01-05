@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
 use App\Http\Controllers\Therapist\ScheduleController;
 use App\Http\Controllers\Therapist\SessionLogController;
@@ -52,4 +53,9 @@ Route::middleware('role:therapist')
             Route::post('{sessionLog}/submit', [SessionLogController::class, 'submit'])->name('submit');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
         });
+
+        // Billing routes
+        Route::get('billing/{bill}/download', [TherapistBillController::class, 'download'])->name('billing.download');
+        Route::get('billing/{bill}', [TherapistBillController::class, 'show'])->name('billing.show');
+        Route::get('billing', [TherapistBillController::class, 'index'])->name('billing.index');
     });

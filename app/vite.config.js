@@ -30,6 +30,8 @@ export default defineConfig({
                 'resources/js/pages/admin-session-logs-index.js',
                 'resources/js/pages/admin-invoices-create.js',
                 'resources/js/pages/admin-invoices-show.js',
+                'resources/js/pages/admin-therapist-bills-create.js',
+                'resources/js/pages/admin-therapist-bills-show.js',
                 'resources/js/pages/session-logs/index.js',
                 'resources/css/therapist-schedule.css',
                 'resources/js/pages/therapist-schedule-calendar.js',

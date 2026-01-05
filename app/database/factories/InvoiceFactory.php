@@ -24,19 +24,19 @@ class InvoiceFactory extends Factory
 
         return [
             'school_id' => School::factory(),
-            'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad((string) $this->faker->numberBetween(1, 999), 3, '0', STR_PAD_LEFT),
+            'invoice_number' => 'INV-'.now()->format('Ymd').'-'.str_pad((string) $this->faker->numberBetween(1, 999), 3, '0', STR_PAD_LEFT),
             'invoice_date' => now(),
             'billing_period_start' => $startDate,
             'billing_period_end' => $endDate,
             'status' => InvoiceStatus::DRAFT->value,
             'subtotal' => $this->faker->randomFloat(2, 100, 10000),
             'tax_total' => 0.00,
-            'total' => fn(array $attributes) => $attributes['subtotal'] + $attributes['tax_total'],
+            'total' => fn (array $attributes) => $attributes['subtotal'] + $attributes['tax_total'],
             'due_date' => $this->faker->dateTimeBetween('now', '+30 days'),
             'sent_at' => null,
             'sent_by_id' => null,
             'notes' => $this->faker->optional()->sentence(),
-            'school_name' => $this->faker->company() . ' School',
+            'school_name' => $this->faker->company().' School',
             'school_display_name' => $this->faker->company(),
             'school_address' => $this->faker->address(),
             'school_state' => $this->faker->randomElement(['CA', 'NY', 'TX', 'FL']),
@@ -56,9 +56,9 @@ class InvoiceFactory extends Factory
     /**
      * Indicate that the invoice is sent.
      */
-    public function sent(User $sentBy = null): static
+    public function sent(?User $sentBy = null): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => InvoiceStatus::SENT->value,
             'sent_at' => now(),
             'sent_by_id' => $sentBy?->id ?? User::factory(),
@@ -70,7 +70,7 @@ class InvoiceFactory extends Factory
      */
     public function paid(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => InvoiceStatus::PAID->value,
         ]);
     }

@@ -54,7 +54,7 @@ final class CreateInvoiceRequest extends FormRequest
                 $schoolId = (int) $this->input('school_id');
                 $sessionLogIds = $this->input('session_log_ids', []);
 
-                if (!empty($sessionLogIds)) {
+                if (! empty($sessionLogIds)) {
                     $invalidCount = SessionLog::query()
                         ->whereIn('id', $sessionLogIds)
                         ->where('school_id', '!=', $schoolId)

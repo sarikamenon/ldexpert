@@ -2,17 +2,16 @@
 
 use App\Domain\Invoice\Services\InvoicePdfService;
 use App\Models\Invoice;
-use App\Models\SessionLog;
 use App\Models\Service;
+use App\Models\SessionLog;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\View;
 
 uses(RefreshDatabase::class);
 
 test('invoice pdf service generates pdf', function () {
-    $service = new InvoicePdfService();
+    $service = new InvoicePdfService;
 
     $invoice = Invoice::factory()->create([
         'invoice_number' => 'INV-20250101-001',

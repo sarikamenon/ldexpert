@@ -21,13 +21,13 @@ interface InvoiceRepositoryInterface
     public function list(InvoiceFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 
     /**
-     * @param array<int> $sessionLogIds
+     * @param  array<int>  $sessionLogIds
      * @return Collection<SessionLog>
      */
     public function getApprovedSessionLogsForInvoice(array $sessionLogIds): Collection;
 
     /**
-     * @param array<int> $sessionLogIds
+     * @param  array<int>  $sessionLogIds
      */
     public function linkSessionLogs(Invoice $invoice, array $sessionLogIds): void;
 
@@ -37,21 +37,23 @@ interface InvoiceRepositoryInterface
 
     /**
      * Get available session logs for invoice creation with filters
-     * @param array<string, mixed> $filters
+     *
+     * @param  array<string, mixed>  $filters
      * @return Collection<SessionLog>
      */
     public function getAvailableSessionLogsForInvoiceCreation(array $filters): Collection;
 
     /**
      * Get unique service IDs for a school from available session logs
-     * @param int $schoolId
+     *
      * @return Collection<int>
      */
     public function getAvailableServiceIdsForSchool(int $schoolId): Collection;
 
     /**
      * Get unique school IDs from available session logs
-     * @param array<string, mixed> $filters
+     *
+     * @param  array<string, mixed>  $filters
      * @return Collection<int>
      */
     public function getAvailableSchoolIdsForInvoiceCreation(array $filters): Collection;

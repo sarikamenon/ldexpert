@@ -304,7 +304,7 @@ final class ScheduleController extends Controller
 
         /** @var \Illuminate\Support\Collection<int, \App\Models\Service> $services */
         $services = $ssas
-            ->flatMap(fn($ssa) => $ssa->services)
+            ->flatMap(fn ($ssa) => $ssa->services)
             ->filter()
             ->unique('id')
             ->sortBy('name')
