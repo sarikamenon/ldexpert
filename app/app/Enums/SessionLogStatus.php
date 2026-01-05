@@ -8,7 +8,7 @@ enum SessionLogStatus: string
 {
     case DRAFT = 'draft';
     case SUBMITTED = 'submitted';
-    case FINALIZED = 'finalized';
+    case APPROVED = 'approved';
     case CANCELLED = 'cancelled';
 
     public function label(): string
@@ -16,7 +16,7 @@ enum SessionLogStatus: string
         return match ($this) {
             self::DRAFT => 'Draft',
             self::SUBMITTED => 'Submitted',
-            self::FINALIZED => 'Finalized',
+            self::APPROVED => 'Approved',
             self::CANCELLED => 'Cancelled',
         };
     }
@@ -27,7 +27,7 @@ enum SessionLogStatus: string
     public static function values(): array
     {
         return array_map(
-            static fn (self $status): string => $status->value,
+            static fn(self $status): string => $status->value,
             self::cases()
         );
     }
@@ -42,7 +42,7 @@ enum SessionLogStatus: string
         return $this === self::DRAFT;
     }
 
-    public function canFinalize(): bool
+    public function canApprove(): bool
     {
         return $this === self::SUBMITTED;
     }

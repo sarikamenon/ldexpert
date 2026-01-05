@@ -10,6 +10,7 @@ use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
+use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Settings\Repositories\SettingsRepositoryInterface;
@@ -26,6 +27,8 @@ use App\Http\Middleware\RoleMiddleware;
 use App\Infrastructure\Repositories\EloquentActivityLogRepository;
 use App\Infrastructure\Repositories\EloquentAnalyticsRepository;
 use App\Infrastructure\Repositories\EloquentDashboardRepository;
+use App\Infrastructure\Repositories\EloquentInvoiceRepository;
+use App\Infrastructure\Repositories\EloquentNotificationRepository;
 use App\Infrastructure\Repositories\EloquentScheduleRepository;
 use App\Infrastructure\Repositories\EloquentSchoolContractRepository;
 use App\Infrastructure\Repositories\EloquentSchoolRepository;
@@ -38,6 +41,7 @@ use App\Infrastructure\Repositories\EloquentTherapistContractRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Listeners\SendScheduleNotification;
+use App\Models\Invoice;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\SchoolContract;
@@ -48,6 +52,7 @@ use App\Models\StudentProfile;
 use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use App\Policies\InvoicePolicy;
 use App\Policies\SchedulePolicy;
 use App\Policies\SchoolContractPolicy;
 use App\Policies\SchoolPolicy;
@@ -81,6 +86,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ActivityLogRepositoryInterface::class, EloquentActivityLogRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
         $this->app->bind(SessionLogRepositoryInterface::class, EloquentSessionLogRepository::class);
+        $this->app->bind(InvoiceRepositoryInterface::class, EloquentInvoiceRepository::class);
         $this->app->bind(AnalyticsRepositoryInterface::class, EloquentAnalyticsRepository::class);
         $this->app->bind(DashboardRepositoryInterface::class, EloquentDashboardRepository::class);
         $this->app->bind(SettingsRepositoryInterface::class, EloquentSettingsRepository::class);
@@ -102,6 +108,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(StudentProfile::class, StudentProfilePolicy::class);
         Gate::policy(Schedule::class, SchedulePolicy::class);
         Gate::policy(SessionLog::class, SessionLogPolicy::class);
+        Gate::policy(Invoice::class, InvoicePolicy::class);
         Gate::policy(SchoolContract::class, SchoolContractPolicy::class);
         Gate::policy(TherapistContract::class, TherapistContractPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
@@ -126,7 +133,7 @@ class AppServiceProvider extends ServiceProvider
 
                     if ($value instanceof \Carbon\CarbonInterface) {
                         $local = $tzService->toUserTimezone($value, $user);
-                        $item->setAttribute($field.'_local', $local);
+                        $item->setAttribute($field . '_local', $local);
                     }
                 }
 

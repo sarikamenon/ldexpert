@@ -13,28 +13,28 @@ final class SessionLogAdminActionsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_finalize_submitted_session_log(): void
+    public function test_admin_can_approve_submitted_session_log(): void
     {
         $admin = User::factory()->admin()->create();
         $sessionLog = SessionLog::factory()->submitted()->create();
 
         $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.finalize', $sessionLog));
+            ->post(route('admin.session-logs.approve', $sessionLog));
 
         $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
         $sessionLog->refresh();
-        $this->assertTrue($sessionLog->isFinalized());
-        $this->assertNotNull($sessionLog->finalized_at);
-        $this->assertSame($admin->id, $sessionLog->finalized_by_id);
+        $this->assertTrue($sessionLog->isApproved());
+        $this->assertNotNull($sessionLog->approved_at);
+        $this->assertSame($admin->id, $sessionLog->approved_by_id);
     }
 
-    public function test_admin_cannot_finalize_draft_session_log(): void
+    public function test_admin_cannot_approve_draft_session_log(): void
     {
         $admin = User::factory()->admin()->create();
         $sessionLog = SessionLog::factory()->draft()->create();
 
         $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.finalize', $sessionLog));
+            ->post(route('admin.session-logs.approve', $sessionLog));
 
         $response->assertForbidden();
     }
@@ -70,10 +70,10 @@ final class SessionLogAdminActionsTest extends TestCase
         $this->assertTrue($sessionLog->isCancelled());
     }
 
-    public function test_admin_cannot_cancel_finalized_session_log(): void
+    public function test_admin_cannot_cancel_approved_session_log(): void
     {
         $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->finalized()->create();
+        $sessionLog = SessionLog::factory()->approved()->create();
 
         $response = $this->actingAs($admin)
             ->post(route('admin.session-logs.cancel', $sessionLog), [

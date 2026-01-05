@@ -17,13 +17,13 @@ final class SessionLogIndexServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_actions_for_submitted_and_finalized(): void
+    public function test_admin_actions_for_submitted_and_approved(): void
     {
         $admin = User::factory()->admin()->create();
         $submitted = SessionLog::factory()->submitted()->create([
             'therapist_id' => User::factory()->therapist()->create()->id,
         ]);
-        SessionLog::factory()->finalized()->create([
+        SessionLog::factory()->approved()->create([
             'therapist_id' => $submitted->therapist_id,
         ]);
 
@@ -41,7 +41,7 @@ final class SessionLogIndexServiceTest extends TestCase
         $this->assertContains('View', $actionLabels);
     }
 
-    public function test_therapist_actions_for_draft_and_finalized(): void
+    public function test_therapist_actions_for_draft_and_approved(): void
     {
         Carbon::setTestNow('2025-01-15 10:00:00');
 
@@ -50,7 +50,7 @@ final class SessionLogIndexServiceTest extends TestCase
             'therapist_id' => $therapist->id,
             'session_date' => Carbon::now()->startOfMonth(),
         ]);
-        SessionLog::factory()->finalized()->create([
+        SessionLog::factory()->approved()->create([
             'therapist_id' => $therapist->id,
             'session_date' => Carbon::now()->startOfMonth(),
         ]);
@@ -70,7 +70,7 @@ final class SessionLogIndexServiceTest extends TestCase
         $this->assertContains('Cancel', $draftActions);
 
         $finalRow = collect($result['rows'])
-            ->first(fn(array $row) => $row['status'] === SessionLogStatus::FINALIZED->label());
+            ->first(fn(array $row) => $row['status'] === SessionLogStatus::APPROVED->label());
         $this->assertNotNull($finalRow);
         $finalActions = collect($finalRow['actions'])->pluck('label')->all();
         $this->assertSame(['View'], $finalActions);

@@ -191,8 +191,8 @@ final class SessionLogService
                 throw new \InvalidArgumentException('Session log cannot be edited in its current status.');
             }
 
-            if ($isAdmin && $sessionLog->isFinalized()) {
-                throw new \InvalidArgumentException('Finalized session logs cannot be edited.');
+            if ($isAdmin && $sessionLog->isApproved()) {
+                throw new \InvalidArgumentException('Approved session logs cannot be edited.');
             }
 
             $data = $dto->toArray();
@@ -262,17 +262,17 @@ final class SessionLogService
             throw new \InvalidArgumentException('Session log has already been submitted.');
         }
 
-        // Finalized / cancelled -> not allowed
+        // Approved / cancelled -> not allowed
         throw new \InvalidArgumentException('Session log cannot be submitted in its current status.');
     }
 
-    public function finalize(User $admin, SessionLog $sessionLog): SessionLog
+    public function approve(User $admin, SessionLog $sessionLog): SessionLog
     {
         if (! $sessionLog->isSubmitted()) {
-            throw new \InvalidArgumentException('Session log must be submitted before finalization.');
+            throw new \InvalidArgumentException('Session log must be submitted before approval.');
         }
 
-        return $this->repository->finalize($sessionLog, $admin);
+        return $this->repository->approve($sessionLog, $admin);
     }
 
     public function cancel(User $user, SessionLog $sessionLog, string $reason): SessionLog

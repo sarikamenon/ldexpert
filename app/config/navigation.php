@@ -100,7 +100,7 @@ return [
                     [
                         'label' => 'Approved',
                         'route' => 'admin.session-logs.index',
-                        'query' => ['status' => 'finalized'],
+                        'query' => ['status' => 'approved'],
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
                     ],
                     [
@@ -108,6 +108,23 @@ return [
                         'route' => 'admin.session-logs.index',
                         'query' => ['status' => 'cancelled'],
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
+                    ],
+                ],
+            ],
+            [
+                'label' => 'Finance',
+                'route' => 'admin.invoices.index',
+                'active' => 'admin.invoices.*',
+                'children' => [
+                    [
+                        'label' => 'Invoices',
+                        'route' => 'admin.invoices.index',
+                        'active' => ['admin.invoices.index', 'admin.invoices.show'],
+                    ],
+                    [
+                        'label' => 'Create Invoice',
+                        'route' => 'admin.invoices.create',
+                        'active' => 'admin.invoices.create',
                     ],
                 ],
             ],

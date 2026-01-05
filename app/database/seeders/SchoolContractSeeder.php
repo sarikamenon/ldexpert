@@ -6,7 +6,6 @@ namespace Database\Seeders;
 
 use App\Constants\ServiceCatalog;
 use App\Enums\ContractStatus;
-use App\Enums\TherapistPosition;
 use App\Models\School;
 use App\Models\SchoolContract;
 use App\Models\SchoolContractService;
@@ -31,16 +30,14 @@ final class SchoolContractSeeder extends Seeder
             ->get()
             ->keyBy('name');
 
-        $priorityServices = $this->schoolServiceNames($catalog);
-
-        School::query()->each(function (School $school) use ($catalogByName, $priorityServices, $schoolYear, $serviceModels): void {
+        School::query()->each(function (School $school) use ($catalogByName, $schoolYear, $serviceModels): void {
             $contract = $this->findOrCreateContract($school, $schoolYear['start'], $schoolYear['end']);
 
-            foreach ($priorityServices as $serviceName) {
-                $definition = $catalogByName[$serviceName] ?? null;
+            // Add all services from catalog to each school contract
+            foreach ($catalogByName as $serviceName => $definition) {
                 $serviceModel = $serviceModels->get($serviceName);
 
-                if (! $definition || ! $serviceModel) {
+                if (! $serviceModel) {
                     continue;
                 }
 
@@ -67,28 +64,6 @@ final class SchoolContractSeeder extends Seeder
             'start' => Carbon::create($startYear, 7, 1)->startOfDay(),
             'end' => Carbon::create($startYear + 1, 6, 30)->endOfDay(),
         ];
-    }
-
-    private function schoolServiceNames(array $catalog): array
-    {
-        $names = [];
-        $priorityPositions = [
-            TherapistPosition::SLP->value,
-            TherapistPosition::OT->value,
-            TherapistPosition::LCSW->value,
-            TherapistPosition::BCBA->value,
-        ];
-
-        foreach ($priorityPositions as $position) {
-            foreach ($catalog as $service) {
-                if (in_array($position, $service['positions'], true)) {
-                    $names[] = $service['name'];
-                    break;
-                }
-            }
-        }
-
-        return array_values(array_unique($names));
     }
 
     private function findOrCreateContract(School $school, Carbon $start, Carbon $end): SchoolContract

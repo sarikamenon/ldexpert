@@ -9,7 +9,7 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 -   **Therapist (primary)** — creates, edits, and submits session logs with notes and billing details.
 -   **Accounts Payable (AP)** — reviews submitted sessions for therapist billing.
 -   **Accounts Receivable (AR)** — uses session logs to generate school invoices.
--   **Program Admin** — reviews and finalizes session logs before billing cycles.
+-   **Program Admin** — reviews and approves session logs before billing cycles.
 
 ## Current Implementation
 
@@ -20,7 +20,7 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 -   Therapists can create session logs tied to existing schedules or as standalone entries.
 -   All session logs require an SSA link (from schedule or manual selection).
 -   Dual billing calculation: therapist rates (from therapist contracts) and school rates (from school contracts).
--   Session status workflow: draft → submitted → finalized.
+-   Session status workflow: draft → submitted → approved.
 -   Document attachments for session notes, consent forms, progress reports.
 -   Integration with billing module (therapist bills) and invoicing module (school invoices).
 
@@ -30,7 +30,7 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 
 | Table          | Fields                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session_logs` | `id`, `therapist_id`, `student_id`, `ssa_id` (NOT NULL), `schedule_id` (nullable), `service_id`, `school_id` (nullable), `session_date`, `start_time`, `end_time`, `duration_minutes`, `tho_minutes`, `notes` (text, required), `delivery_mode` (always 'virtual'), `is_group` (always false), `is_billable_therapist`, `therapist_contract_id` (nullable), `therapist_rate_type` (H/F), `therapist_rate_amount`, `therapist_billable_amount`, `therapist_bill_id` (nullable), `is_billable_school`, `school_contract_id` (nullable), `school_rate_type` (H/F), `school_rate_amount`, `school_invoice_amount`, `invoice_id` (nullable), `is_rate_override`, `override_reason` (nullable), `status` (draft/submitted/finalized/cancelled), `submitted_at`, `submitted_by_id`, `finalized_at`, `finalized_by_id`, `cancellation_reason` (nullable), timestamps, `deleted_at` |
+| `session_logs` | `id`, `therapist_id`, `student_id`, `ssa_id` (NOT NULL), `schedule_id` (nullable), `service_id`, `school_id` (nullable), `session_date`, `start_time`, `end_time`, `duration_minutes`, `tho_minutes`, `notes` (text, required), `delivery_mode` (always 'virtual'), `is_group` (always false), `is_billable_therapist`, `therapist_contract_id` (nullable), `therapist_rate_type` (H/F), `therapist_rate_amount`, `therapist_billable_amount`, `therapist_bill_id` (nullable), `is_billable_school`, `school_contract_id` (nullable), `school_rate_type` (H/F), `school_rate_amount`, `school_invoice_amount`, `invoice_id` (nullable), `is_rate_override`, `override_reason` (nullable), `status` (draft/submitted/approved/cancelled), `submitted_at`, `submitted_by_id`, `approved_at`, `approved_by_id`, `cancellation_reason` (nullable), timestamps, `deleted_at` |
 
 ### Relationships
 
@@ -45,12 +45,12 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 -   `session_logs.therapist_bill_id` → `therapist_bills.id` (nullable, set when bill created)
 -   `session_logs.invoice_id` → `invoices.id` (nullable, set when invoice created)
 -   `session_logs.submitted_by_id` → `users.id` (nullable)
--   `session_logs.finalized_by_id` → `users.id` (nullable)
+-   `session_logs.approved_by_id` → `users.id` (nullable)
 -   Polymorphic: `session_log_documents` → `documentable_type` = 'App\Models\SessionLog`, `documentable_id`
 
 ### Enums
 
--   `SessionLogStatus`: `DRAFT`, `SUBMITTED`, `FINALIZED`, `CANCELLED`
+-   `SessionLogStatus`: `DRAFT`, `SUBMITTED`, `APPROVED`, `CANCELLED`
 
 ### Rules
 
@@ -67,8 +67,8 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
     -   Amount calculation: `hourly = rate * (duration_minutes / 60)`, `flat = rate`.
 -   If `is_rate_override = true`, require `override_reason` (min 20 chars).
 -   `notes` field required with minimum 50 characters.
--   Status transitions: `draft` → `submitted` (locks most edits) → `finalized` (locks all edits).
--   Only therapist who created the log can edit until submitted; admins can finalize.
+-   Status transitions: `draft` → `submitted` (locks most edits) → `approved` (locks all edits).
+-   Only therapist who created the log can edit until submitted; admins can approve.
 
 ## UI / Routes
 
@@ -85,7 +85,7 @@ PUT    /therapist/session-logs/{id}             (update draft only)
 POST   /therapist/session-logs/{id}/submit      (submit, locks edits)
 POST   /therapist/session-logs/{id}/cancel      (cancel with reason)
 GET    /admin/session-logs                       (admin view, all therapists)
-POST   /admin/session-logs/{id}/finalize         (finalize, locks all edits)
+POST   /admin/session-logs/{id}/approve         (approve, locks all edits)
 ```
 
 Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Controllers\Admin\SessionLogController`
@@ -118,7 +118,7 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 
 ### 3. Billing Integration
 
-1. When session log is `finalized`, it becomes available for billing cycles.
+1. When session log is `approved`, it becomes available for billing cycles.
 2. Therapist billing: AP runs billing process, creates `therapist_bill`, links session logs via `therapist_bill_id`.
 3. School invoicing: AR runs invoicing process, creates `invoice`, links session logs via `invoice_id`.
 4. Both processes reference the stored `therapist_billable_amount` and `school_invoice_amount`.
@@ -127,10 +127,10 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 
 -   Use `SessionLogPolicy` to restrict access:
     -   Therapists can only view/edit their own session logs.
-    -   Admins can view all and finalize any session log.
+    -   Admins can view all and approve any session log.
 -   All routes protected by `auth` + `role:therapist` or `role:admin` middleware.
 -   CSRF protection on all POST/PUT routes.
--   Audit log: track status transitions with `submitted_by_id`, `finalized_by_id`, timestamps.
+-   Audit log: track status transitions with `submitted_by_id`, `approved_by_id`, timestamps.
 
 ## Dependencies
 
@@ -146,10 +146,10 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 -   Average time from session delivery to log submission.
 -   Percentage of sessions submitted within 24 hours.
 -   Billing accuracy (rate overrides per session).
--   Sessions finalized and ready for billing cycles.
+-   Sessions approved and ready for billing cycles.
 
 ## Risks & Open Questions
 
 -   How to handle sessions where student has multiple active SSAs? (Resolved: therapist selects SSA at log creation.)
--   Should there be a time limit for editing submitted sessions? (Future: consider auto-finalization after billing cycle.)
+-   Should there be a time limit for editing submitted sessions? (Future: consider auto-approval after billing cycle.)
 -   How to handle rate changes mid-contract? (Resolved: use contract effective dates for rate lookup.)

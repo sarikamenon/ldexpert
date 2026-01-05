@@ -83,7 +83,7 @@ All controllers updated to:
 
 ### Filtering Options
 - **Date Range**: Filter by session date (from/to)
-- **Status**: Filter by session log status (draft, submitted, finalized, cancelled)
+- **Status**: Filter by session log status (draft, submitted, approved, cancelled)
 - **Pagination**: Handled by DataTables built-in functionality
 
 ### Security

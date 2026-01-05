@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
@@ -80,11 +81,16 @@ Route::middleware('role:admin')
             Route::get('{sessionLog}', [SessionLogController::class, 'show'])->name('show');
             Route::get('{sessionLog}/edit', [SessionLogController::class, 'edit'])->name('edit');
             Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
-            Route::post('{sessionLog}/finalize', [SessionLogController::class, 'finalize'])->name('finalize');
+            Route::post('{sessionLog}/approve', [SessionLogController::class, 'approve'])->name('approve');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
         });
 
         // Settings
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+
+        // Invoices
+        Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
+        Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+        Route::resource('invoices', InvoiceController::class);
     });
