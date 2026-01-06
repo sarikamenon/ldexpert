@@ -25,7 +25,7 @@
                     Back to List
                 </a>
                 <a href="{{ route('admin.invoices.download', $invoice) }}"
-                    class="inline-flex items-center px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/10 text-sm font-medium">
+                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                     Download PDF
                 </a>
                 @if ($invoice->isDraft())
