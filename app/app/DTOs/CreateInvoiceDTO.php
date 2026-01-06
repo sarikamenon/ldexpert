@@ -7,7 +7,7 @@ namespace App\DTOs;
 final class CreateInvoiceDTO
 {
     /**
-     * @param array<int> $sessionLogIds
+     * @param  array<int>  $sessionLogIds
      */
     public function __construct(
         public readonly int $schoolId,
@@ -20,7 +20,7 @@ final class CreateInvoiceDTO
     ) {}
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -31,7 +31,7 @@ final class CreateInvoiceDTO
             billingPeriodStart: $data['billing_period_start'],
             billingPeriodEnd: $data['billing_period_end'],
             sessionLogIds: isset($data['session_log_ids']) && is_array($data['session_log_ids'])
-                ? array_map(fn($id) => (int) $id, $data['session_log_ids'])
+                ? array_map(fn ($id) => (int) $id, $data['session_log_ids'])
                 : [],
             notes: $data['notes'] ?? null,
         );

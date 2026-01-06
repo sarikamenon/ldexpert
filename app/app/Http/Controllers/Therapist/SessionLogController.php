@@ -4,23 +4,23 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
-use App\Enums\SessionOutcome;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\UpdateSessionLogDTO;
+use App\Enums\SessionOutcome;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
 use App\Http\Requests\Therapist\UpdateSessionLogRequest;
-use Illuminate\Support\Collection;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 final class SessionLogController extends Controller
@@ -66,7 +66,7 @@ final class SessionLogController extends Controller
 
         /** @var Collection<int, \App\Models\Service> $services */
         $services = $ssas
-            ->flatMap(fn($ssa) => $ssa->services)
+            ->flatMap(fn ($ssa) => $ssa->services)
             ->filter()
             ->unique('id')
             ->sortBy('name')

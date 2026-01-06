@@ -63,14 +63,14 @@ class SessionLogFactory extends Factory
 
     public function draft(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => SessionLogStatus::DRAFT,
         ]);
     }
 
     public function submitted(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => SessionLogStatus::SUBMITTED,
             'submitted_at' => now(),
             'submitted_by_id' => $attributes['therapist_id'],
@@ -79,7 +79,7 @@ class SessionLogFactory extends Factory
 
     public function approved(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => SessionLogStatus::APPROVED,
             'submitted_at' => now()->subDay(),
             'submitted_by_id' => $attributes['therapist_id'],
@@ -90,7 +90,7 @@ class SessionLogFactory extends Factory
 
     public function cancelled(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => SessionLogStatus::CANCELLED,
             'cancellation_reason' => 'Test cancellation',
         ]);
@@ -98,7 +98,7 @@ class SessionLogFactory extends Factory
 
     public function withSchedule(Schedule $schedule): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'schedule_id' => $schedule->id,
             'therapist_id' => $schedule->therapist_id,
             'student_id' => $schedule->student_id,

@@ -146,6 +146,6 @@ final class SSASeeder extends Seeder
             $ssa->services()->sync($servicePayload);
         }
 
-        $this->command->info('SSA seeder completed. Created ' . $studentsToSeed->count() . ' SSAs.');
+        $this->command->info('SSA seeder completed. Created '.$studentsToSeed->count().' SSAs.');
     }
 }

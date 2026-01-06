@@ -138,6 +138,11 @@ class SessionLog extends Model
         return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
+    public function therapistBill(): BelongsTo
+    {
+        return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
+    }
+
     // Documents relationship can be added later when document storage is implemented
     // public function documents(): MorphMany
     // {

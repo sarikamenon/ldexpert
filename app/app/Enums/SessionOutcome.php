@@ -27,7 +27,7 @@ enum SessionOutcome: string
     public static function values(): array
     {
         return array_map(
-            static fn(self $outcome): string => $outcome->value,
+            static fn (self $outcome): string => $outcome->value,
             self::cases()
         );
     }

@@ -47,7 +47,7 @@ class InvoiceMail extends Mailable
 
         return [
             \Illuminate\Mail\Mailables\Attachment::fromData(
-                fn() => $pdf->output(),
+                fn () => $pdf->output(),
                 "invoice-{$this->invoice->invoice_number}.pdf"
             )->withMime('application/pdf'),
         ];

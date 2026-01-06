@@ -95,10 +95,10 @@ final class SchedulePendingListTest extends TestCase
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student1 = User::factory()->create(['role' => Role::STUDENT, 'name' => 'Student One']);
         $student2 = User::factory()->create(['role' => Role::STUDENT, 'name' => 'Student Two']);
-        
+
         StudentProfile::factory()->create(['user_id' => $student1->id]);
         StudentProfile::factory()->create(['user_id' => $student2->id]);
-        
+
         $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
         $ssa1 = ServiceSupportAgreement::factory()->create([
             'student_id' => $student1->id,
@@ -146,7 +146,7 @@ final class SchedulePendingListTest extends TestCase
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
         StudentProfile::factory()->create(['user_id' => $student->id]);
-        
+
         $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
         $ssa1 = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
@@ -195,10 +195,10 @@ final class SchedulePendingListTest extends TestCase
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
         StudentProfile::factory()->create(['user_id' => $student->id]);
-        
+
         $service1 = Service::factory()->create(['status' => ServiceStatus::ACTIVE, 'name' => 'Service One']);
         $service2 = Service::factory()->create(['status' => ServiceStatus::ACTIVE, 'name' => 'Service Two']);
-        
+
         $ssa1 = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
             'primary_service_id' => $service1->id,
@@ -246,7 +246,7 @@ final class SchedulePendingListTest extends TestCase
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
         StudentProfile::factory()->create(['user_id' => $student->id]);
-        
+
         $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
         $ssa = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
@@ -295,7 +295,7 @@ final class SchedulePendingListTest extends TestCase
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
         StudentProfile::factory()->create(['user_id' => $student->id]);
-        
+
         $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
         $ssa = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
@@ -308,13 +308,13 @@ final class SchedulePendingListTest extends TestCase
             ->get(route('therapist.schedule.pending'));
 
         $response->assertStatus(200);
-        
+
         $viewData = $response->viewData();
         $this->assertArrayHasKey('students', $viewData);
         $this->assertArrayHasKey('ssas', $viewData);
         $this->assertArrayHasKey('services', $viewData);
         $this->assertArrayHasKey('filters', $viewData);
-        
+
         $this->assertTrue($viewData['students']->pluck('id')->contains($student->id));
         $this->assertTrue($viewData['ssas']->pluck('id')->contains($ssa->id));
         $this->assertTrue($viewData['services']->pluck('id')->contains($service->id));
@@ -325,7 +325,7 @@ final class SchedulePendingListTest extends TestCase
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
         StudentProfile::factory()->create(['user_id' => $student->id]);
-        
+
         $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
         $ssa = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
@@ -342,5 +342,3 @@ final class SchedulePendingListTest extends TestCase
         $response->assertSee(route('therapist.schedule.pending'), false);
     }
 }
-
-

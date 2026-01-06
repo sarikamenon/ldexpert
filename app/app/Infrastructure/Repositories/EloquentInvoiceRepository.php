@@ -12,7 +12,6 @@ use App\Models\Invoice;
 use App\Models\SessionLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 {
@@ -57,7 +56,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
         }
 
         if ($filters->invoiceNumber !== null) {
-            $query->where('invoice_number', 'like', '%' . $filters->invoiceNumber . '%');
+            $query->where('invoice_number', 'like', '%'.$filters->invoiceNumber.'%');
         }
 
         return $query->orderBy('created_at', 'desc')
@@ -65,7 +64,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
     }
 
     /**
-     * @param array<int> $sessionLogIds
+     * @param  array<int>  $sessionLogIds
      * @return Collection<SessionLog>
      */
     public function getApprovedSessionLogsForInvoice(array $sessionLogIds): Collection
@@ -80,7 +79,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
     }
 
     /**
-     * @param array<int> $sessionLogIds
+     * @param  array<int>  $sessionLogIds
      */
     public function linkSessionLogs(Invoice $invoice, array $sessionLogIds): void
     {
@@ -116,7 +115,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
     }
 
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      * @return Collection<SessionLog>
      */
     public function getAvailableSessionLogsForInvoiceCreation(array $filters): Collection

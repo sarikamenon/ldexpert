@@ -31,7 +31,7 @@ final class SessionLogIndexServiceTest extends TestCase
         $result = $service->getAdminIndex(SessionLogIndexDTO::fromArray([]));
 
         $submittedRow = collect($result['rows'])
-            ->first(fn(array $row) => $row['status'] === SessionLogStatus::SUBMITTED->label());
+            ->first(fn (array $row) => $row['status'] === SessionLogStatus::SUBMITTED->label());
 
         $this->assertNotNull($submittedRow);
 
@@ -62,7 +62,7 @@ final class SessionLogIndexServiceTest extends TestCase
         );
 
         $draftRow = collect($result['rows'])
-            ->first(fn(array $row) => $row['status'] === SessionLogStatus::DRAFT->label());
+            ->first(fn (array $row) => $row['status'] === SessionLogStatus::DRAFT->label());
         $this->assertNotNull($draftRow);
         $draftActions = collect($draftRow['actions'])->pluck('label')->all();
         $this->assertContains('Edit', $draftActions);
@@ -70,7 +70,7 @@ final class SessionLogIndexServiceTest extends TestCase
         $this->assertContains('Cancel', $draftActions);
 
         $finalRow = collect($result['rows'])
-            ->first(fn(array $row) => $row['status'] === SessionLogStatus::APPROVED->label());
+            ->first(fn (array $row) => $row['status'] === SessionLogStatus::APPROVED->label());
         $this->assertNotNull($finalRow);
         $finalActions = collect($finalRow['actions'])->pluck('label')->all();
         $this->assertSame(['View'], $finalActions);

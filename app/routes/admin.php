@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\Billing\TherapistBillController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\NotificationController;
@@ -93,4 +94,14 @@ Route::middleware('role:admin')
         Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
         Route::resource('invoices', InvoiceController::class);
+
+        // Therapist Billing
+        Route::prefix('billing/therapist-bills')->name('billing.therapist-bills.')->group(function () {
+            Route::get('/', [TherapistBillController::class, 'index'])->name('index');
+            Route::get('create', [TherapistBillController::class, 'create'])->name('create');
+            Route::post('/', [TherapistBillController::class, 'store'])->name('store');
+            Route::get('{bill}', [TherapistBillController::class, 'show'])->name('show');
+            Route::get('{bill}/download', [TherapistBillController::class, 'download'])->name('download');
+            Route::post('{bill}/send', [TherapistBillController::class, 'send'])->name('send');
+        });
     });

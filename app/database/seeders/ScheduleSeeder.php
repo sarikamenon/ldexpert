@@ -186,4 +186,3 @@ final class ScheduleSeeder extends Seeder
         };
     }
 }
-

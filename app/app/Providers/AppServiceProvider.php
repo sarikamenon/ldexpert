@@ -6,11 +6,12 @@ namespace App\Providers;
 
 use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Domain\Analytics\Repositories\AnalyticsRepositoryInterface;
+use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
-use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
+use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Settings\Repositories\SettingsRepositoryInterface;
@@ -37,6 +38,7 @@ use App\Infrastructure\Repositories\EloquentSessionLogRepository;
 use App\Infrastructure\Repositories\EloquentSettingsRepository;
 use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Infrastructure\Repositories\EloquentStudentRepository;
+use App\Infrastructure\Repositories\EloquentTherapistBillRepository;
 use App\Infrastructure\Repositories\EloquentTherapistContractRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
@@ -49,6 +51,7 @@ use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\StudentProfile;
+use App\Models\TherapistBill;
 use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
@@ -60,6 +63,7 @@ use App\Policies\ServicePolicy;
 use App\Policies\SessionLogPolicy;
 use App\Policies\SSAPolicy;
 use App\Policies\StudentProfilePolicy;
+use App\Policies\TherapistBillPolicy;
 use App\Policies\TherapistContractPolicy;
 use App\Policies\TherapistProfilePolicy;
 use Illuminate\Database\Eloquent\Model;
@@ -87,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
         $this->app->bind(SessionLogRepositoryInterface::class, EloquentSessionLogRepository::class);
         $this->app->bind(InvoiceRepositoryInterface::class, EloquentInvoiceRepository::class);
+        $this->app->bind(TherapistBillRepositoryInterface::class, EloquentTherapistBillRepository::class);
         $this->app->bind(AnalyticsRepositoryInterface::class, EloquentAnalyticsRepository::class);
         $this->app->bind(DashboardRepositoryInterface::class, EloquentDashboardRepository::class);
         $this->app->bind(SettingsRepositoryInterface::class, EloquentSettingsRepository::class);
@@ -109,6 +114,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Schedule::class, SchedulePolicy::class);
         Gate::policy(SessionLog::class, SessionLogPolicy::class);
         Gate::policy(Invoice::class, InvoicePolicy::class);
+        Gate::policy(TherapistBill::class, TherapistBillPolicy::class);
         Gate::policy(SchoolContract::class, SchoolContractPolicy::class);
         Gate::policy(TherapistContract::class, TherapistContractPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
@@ -133,7 +139,7 @@ class AppServiceProvider extends ServiceProvider
 
                     if ($value instanceof \Carbon\CarbonInterface) {
                         $local = $tzService->toUserTimezone($value, $user);
-                        $item->setAttribute($field . '_local', $local);
+                        $item->setAttribute($field.'_local', $local);
                     }
                 }
 

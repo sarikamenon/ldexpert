@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
-use App\Enums\SSAStatus;
 use App\Enums\SessionOutcome;
-use App\Models\ServiceSupportAgreement;
+use App\Enums\SSAStatus;
 use App\Models\Service;
+use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -44,7 +44,7 @@ final class StoreSessionLogRequest extends FormRequest
 
         // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
         if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
-            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
+            $start = Carbon::parse($sessionDate.' '.$startTimeInput.':00');
             $end = (clone $start)->addMinutes((int) $durationInput);
 
             $this->merge([

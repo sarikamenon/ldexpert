@@ -46,6 +46,7 @@ final class SessionLogSeeder extends Seeder
             // Skip if schedule doesn't have SSA or required relationships
             if (! $schedule->ssa || ! $schedule->therapist || ! $schedule->student || ! $schedule->school_id) {
                 $skippedLogs++;
+
                 continue;
             }
 
@@ -98,16 +99,19 @@ final class SessionLogSeeder extends Seeder
             // Skip if billing data is incomplete (no contracts or service rates)
             if (! $billing['therapist']['contract_id'] || ! $billing['school']['contract_id']) {
                 $skippedLogs++;
+
                 continue;
             }
 
             if (! $billing['therapist']['rate_type'] || $billing['therapist']['rate_amount'] === null) {
                 $skippedLogs++;
+
                 continue;
             }
 
             if (! $billing['school']['rate_type'] || $billing['school']['rate_amount'] === null) {
                 $skippedLogs++;
+
                 continue;
             }
 

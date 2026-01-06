@@ -103,7 +103,7 @@ final class ScheduleService
             }
 
             // Timezone Conversion & Overlap Check
-            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
+            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
@@ -242,7 +242,7 @@ final class ScheduleService
             // DTO fromArray sets all fields.
 
             $durationMinutes = $dto->durationMinutes ?? $schedule->durationMinutes();
-            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
+            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($durationMinutes);
 
@@ -343,7 +343,7 @@ final class ScheduleService
             // If this is the parent of a recurring series, delete all in the batch
             if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
                 $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                    ->each(fn(Schedule $occurrence) => $this->repository->delete($occurrence));
+                    ->each(fn (Schedule $occurrence) => $this->repository->delete($occurrence));
             }
 
             $this->repository->delete($schedule);
@@ -392,8 +392,8 @@ final class ScheduleService
             ? $parentSchedule->end_time->format('H:i:s')
             : $parentSchedule->end_time;
 
-        $utcStart = Carbon::parse($scheduleDate . ' ' . $startTime);
-        $utcEnd = Carbon::parse($scheduleDate . ' ' . $endTime);
+        $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
+        $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
         if ($utcEnd->lt($utcStart)) {
             $utcEnd->addDay();
         }

@@ -114,7 +114,7 @@ return [
             [
                 'label' => 'Finance',
                 'route' => 'admin.invoices.index',
-                'active' => 'admin.invoices.*',
+                'active' => ['admin.invoices.*', 'admin.billing.therapist-bills.*'],
                 'children' => [
                     [
                         'label' => 'Invoices',
@@ -125,6 +125,11 @@ return [
                         'label' => 'Create Invoice',
                         'route' => 'admin.invoices.create',
                         'active' => 'admin.invoices.create',
+                    ],
+                    [
+                        'label' => 'Therapist Billing',
+                        'route' => 'admin.billing.therapist-bills.index',
+                        'active' => 'admin.billing.therapist-bills.*',
                     ],
                 ],
             ],
@@ -192,9 +197,16 @@ return [
                 ],
             ],
             [
-                'label' => 'Bills',
+                'label' => 'Billing',
                 'route' => 'therapist.billing.index',
                 'active' => 'therapist.billing.*',
+                'children' => [
+                    [
+                        'label' => 'My Bills',
+                        'route' => 'therapist.billing.index',
+                        'active' => 'therapist.billing.index',
+                    ],
+                ],
             ],
             [
                 'label' => 'SSAs',

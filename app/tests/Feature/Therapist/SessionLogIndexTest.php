@@ -77,8 +77,8 @@ final class SessionLogIndexTest extends TestCase
         $startOfMonth = Carbon::now()->startOfMonth()->toDateString();
         $endOfMonth = Carbon::now()->endOfMonth()->toDateString();
 
-        $response->assertSee('value="' . $startOfMonth . '"', false);
-        $response->assertSee('value="' . $endOfMonth . '"', false);
+        $response->assertSee('value="'.$startOfMonth.'"', false);
+        $response->assertSee('value="'.$endOfMonth.'"', false);
         $response->assertSee($inside->session_date?->format('Y-m-d'));
 
         Carbon::setTestNow();

@@ -20,7 +20,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->repository = Mockery::mock(InvoiceRepositoryInterface::class);
-    $this->companyInfoService = new CompanyInfoService();
+    $this->companyInfoService = new CompanyInfoService;
     $this->service = new InvoiceService($this->repository, $this->companyInfoService);
 
     // Set up company settings

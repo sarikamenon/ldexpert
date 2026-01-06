@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Therapist;
 
-use App\Enums\Role;
 use App\Enums\SSAStatus;
-use App\Models\SessionLog;
 use App\Models\ServiceSupportAgreement;
+use App\Models\SessionLog;
 use App\Models\User;
 use Tests\TestCase;
 
