@@ -165,7 +165,7 @@
                                         <div class="mt-1 flex flex-wrap gap-1">
                                             @foreach ($ssa->additionalServices as $service)
                                                 <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-[10px] font-medium text-foreground/70">
+                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-xs font-medium text-foreground/70">
                                                     {{ $service->name }}
                                                 </span>
                                             @endforeach
@@ -252,8 +252,9 @@
                                 <div class="flex items-center gap-2">
                                     @if ($context === 'therapist')
                                         <a href="{{ route('therapist.ssas.show', $ssa) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                            title="View SSA">
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="View SSA"
+                                            aria-label="View SSA {{ $ssa->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -263,8 +264,9 @@
                                         </a>
                                     @else
                                         <a href="{{ route('admin.ssas.show', $ssa) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                            title="View SSA">
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="View SSA"
+                                            aria-label="View SSA {{ $ssa->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -273,8 +275,9 @@
                                             </svg>
                                         </a>
                                         <a href="{{ route('admin.ssas.edit', $ssa) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                            title="Edit SSA">
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="Edit SSA"
+                                            aria-label="Edit SSA {{ $ssa->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -293,15 +296,10 @@
             </table>
         </div>
     @else
-        <div class="text-center py-10">
-            <p class="text-foreground/70 mb-4">No SSAs found.</p>
-            @if ($context === 'index')
-                <a href="{{ route('admin.ssas.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add SSA
-                </a>
-            @endif
-        </div>
+        <x-ui::empty-state title="No SSAs found."
+            :description="$context === 'index' ? 'Create a new SSA to define services and scheduling for a student.' : null"
+            :action-label="$context === 'index' ? 'Add SSA' : null"
+            :action-href="$context === 'index' ? route('admin.ssas.create') : null" />
     @endif
 </x-ui::card>
 

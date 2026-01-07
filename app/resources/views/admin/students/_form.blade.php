@@ -71,7 +71,7 @@
 
     {{-- Section B: School & Academic Info --}}
     <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-lg font-semibold">School & Academic Information</h3>
+        <h3 class="text-lg font-semibold text-foreground">School & Academic Information</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -120,9 +120,19 @@
         </div>
     </x-ui::card>
 
-    {{-- Section C: Parent / Guardian --}}
-    <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-lg font-semibold">Parent / Guardian Information</h3>
+    {{-- Section C: Parent / Guardian (advanced) --}}
+    <x-ui::card class="p-6 space-y-4" x-data="{ open: false }">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-foreground">Parent / Guardian Information</h3>
+            <button type="button"
+                class="text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
+                @click="open = !open" x-bind:aria-expanded="open.toString()">
+                <span x-show="!open">Show</span>
+                <span x-show="open">Hide</span>
+            </button>
+        </div>
+
+        <div x-show="open" x-cloak class="space-y-4">
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -148,9 +158,19 @@
         </div>
     </x-ui::card>
 
-    {{-- Section D: Address --}}
-    <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-lg font-semibold">Address Information</h3>
+    {{-- Section D: Address (advanced) --}}
+    <x-ui::card class="p-6 space-y-4" x-data="{ open: true }">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-foreground">Address Information</h3>
+            <button type="button"
+                class="text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
+                @click="open = !open" x-bind:aria-expanded="open.toString()">
+                <span x-show="!open">Show</span>
+                <span x-show="open">Hide</span>
+            </button>
+        </div>
+
+        <div x-show="open" x-cloak class="space-y-4">
 
         <div>
             <x-input-label for="address" value="Address" />

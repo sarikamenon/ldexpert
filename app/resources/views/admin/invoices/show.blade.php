@@ -29,11 +29,23 @@
                     Download PDF
                 </a>
                 @if ($invoice->isDraft())
-                    <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline">
+                    <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
+                        x-data="{ loading: false }" x-on:submit="loading = true">
                         @csrf
                         <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
-                            Send Invoice
+                            class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            x-bind:disabled="loading">
+                            <span data-label x-show="!loading">Send Invoice</span>
+                            <span data-loading x-show="loading" class="inline-flex items-center gap-2 hidden">
+                                <svg class="animate-spin h-4 w-4 text-success-foreground"
+                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
+                                Sending...
+                            </span>
                         </button>
                     </form>
                 @endif
@@ -156,7 +168,8 @@
                 </table>
             </div>
         @else
-            <p class="text-foreground/60">No line items found.</p>
+            <x-ui::empty-state title="No line items found."
+                description="This invoice does not currently include any session logs. Add session logs to see billing details here." />
         @endif
 
         @if ($invoice->notes)

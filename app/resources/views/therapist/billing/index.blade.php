@@ -103,8 +103,9 @@
                                         <td class="py-3 px-4">
                                             <div class="flex items-center gap-2">
                                                 <a href="{{ route('therapist.billing.show', $bill) }}"
-                                                    class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                                    title="View Bill">
+                                                    class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                                    title="View Bill"
+                                                    aria-label="View bill {{ $bill->bill_number }}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -113,8 +114,9 @@
                                                     </svg>
                                                 </a>
                                                 <a href="{{ route('therapist.billing.download', $bill) }}"
-                                                    class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                                    title="Download PDF">
+                                                    class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                                    title="Download PDF"
+                                                    aria-label="Download bill {{ $bill->bill_number }} as PDF">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -135,9 +137,8 @@
                         {{ $bills->links() }}
                     </div>
                 @else
-                    <div class="text-center py-12 text-foreground/60">
-                        <p>No bills found.</p>
-                    </div>
+                    <x-ui::empty-state title="No bills found."
+                        description="Adjust your filters or check back later once bills are generated." />
                 @endif
             </x-ui::card>
         </div>

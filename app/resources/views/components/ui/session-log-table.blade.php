@@ -8,17 +8,17 @@
 @endphp
 
 <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200 session-log-table">
-        <thead class="bg-gray-50">
+    <table class="min-w-full divide-y divide-border session-log-table">
+        <thead class="bg-background/subtle">
             <tr>
                 @foreach ($columns as $column)
-                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                    <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">
                         {{ $column['label'] }}
                     </th>
                 @endforeach
             </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="bg-white divide-y divide-border">
             @foreach ($rows as $row)
                 <tr>
                     @foreach ($columns as $column)

@@ -135,10 +135,11 @@
             <div class="mt-4">
                 {{ $logs->links() }}
             </div>
+
+            <div id="activityLogsStatus" class="sr-only" role="status" aria-live="polite"></div>
         @else
-            <div class="text-center py-10">
-                <p class="text-foreground/70">No activity logs found.</p>
-            </div>
+            <x-ui::empty-state title="No activity logs found."
+                description="Try broadening your filters or date range to see more activity." />
         @endif
     </x-ui::card>
 
