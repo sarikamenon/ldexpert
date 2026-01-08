@@ -116,8 +116,9 @@
                 <div class="space-y-1">
                     <label for="therapist_id" class="text-sm font-medium text-foreground">Therapist <span
                             class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">Therapist to bill for the selected session logs</p>
                     <select id="therapist_id" name="therapist_id" required
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                         <option value="">Select Therapist</option>
                         @foreach ($therapists ?? [] as $therapist)
                             <option value="{{ $therapist->id }}" @selected(old('therapist_id', $filters['therapist_id'] ?? null) == $therapist->id)>
@@ -133,9 +134,10 @@
                 <div class="space-y-1">
                     <label for="bill_date" class="text-sm font-medium text-foreground">Bill Date <span
                             class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">Date when the bill is issued</p>
                     <input type="date" id="bill_date" name="bill_date" required
                         value="{{ old('bill_date', now()->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('bill_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -143,11 +145,11 @@
 
                 <div class="space-y-1">
                     <label for="bill_number" class="text-sm font-medium text-foreground">Bill Number</label>
+                    <p class="mt-1 text-xs text-foreground/60">Auto-generated number is shown. You can edit if needed.
+                    </p>
                     <input type="text" id="bill_number" name="bill_number"
                         value="{{ old('bill_number', $billNumber ?? '') }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                    <p class="text-xs text-foreground/60 mt-1">Auto-generated number is shown. You can edit if needed.
-                    </p>
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('bill_number')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -156,9 +158,11 @@
                 <div class="space-y-1">
                     <label for="billing_period_start" class="text-sm font-medium text-foreground">Billing Period Start
                         <span class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">Start date of the billing period covered by this bill
+                    </p>
                     <input type="date" id="billing_period_start" name="billing_period_start" required
                         value="{{ old('billing_period_start', $filters['date_from'] ?? now()->subDays(30)->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('billing_period_start')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -167,9 +171,10 @@
                 <div class="space-y-1">
                     <label for="billing_period_end" class="text-sm font-medium text-foreground">Billing Period End
                         <span class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">End date of the billing period covered by this bill</p>
                     <input type="date" id="billing_period_end" name="billing_period_end" required
                         value="{{ old('billing_period_end', $filters['date_to'] ?? now()->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('billing_period_end')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -177,9 +182,11 @@
 
                 <div class="space-y-1">
                     <label for="due_date" class="text-sm font-medium text-foreground">Due Date</label>
+                    <p class="mt-1 text-xs text-foreground/60">Date when payment is due (default: 30 days from bill
+                        date)</p>
                     <input type="date" id="due_date" name="due_date"
                         value="{{ old('due_date', now()->addDays(30)->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('due_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -187,8 +194,9 @@
 
                 <div class="space-y-1 md:col-span-2">
                     <label for="notes" class="text-sm font-medium text-foreground">Notes (Optional)</label>
+                    <p class="mt-1 text-xs text-foreground/60">Additional notes or comments for this bill</p>
                     <textarea id="notes" name="notes" rows="3"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">{{ old('notes') }}</textarea>
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">{{ old('notes') }}</textarea>
                     @error('notes')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror

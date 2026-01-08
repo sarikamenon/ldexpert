@@ -22,6 +22,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Student</label>
+                <p class="mt-1 text-xs text-foreground/60">Student associated with this session log</p>
                 <input type="hidden" name="student_id"
                     value="{{ old('student_id', $sessionLog->student_id ?? ($schedule->student_id ?? ($selectedSsa->student_id ?? ''))) }}" />
                 <input type="text" id="session-log-student-name" readonly
@@ -31,6 +32,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">SSA</label>
+                <p class="mt-1 text-xs text-foreground/60">Service Support Agreement for this session</p>
                 <input type="hidden" name="ssa_id"
                     value="{{ old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) }}" />
                 <select id="session-log-ssa"
@@ -52,6 +54,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Service</label>
+                <p class="mt-1 text-xs text-foreground/60">Service provided during this session</p>
                 @if (isset($schedule))
                     {{-- From schedule: service is read-only --}}
                     <input type="hidden" name="service_id"
@@ -80,6 +83,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Session Date</label>
+                <p class="mt-1 text-xs text-foreground/60">Date when the session occurred</p>
                 <input type="date" name="session_date" id="session-log-date"
                     value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
                     @if (isset($selectedSsa) && $selectedSsa?->start_date) min="{{ $selectedSsa->start_date->format('Y-m-d') }}" @endif
@@ -93,6 +97,7 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Start Time</label>
+                <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
                 <input type="time" name="start_time" id="session-log-start-time"
                     value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
@@ -101,6 +106,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                <p class="mt-1 text-xs text-foreground/60">Session duration in minutes (minimum 5, increments of 5)</p>
                 <input type="number" name="duration_minutes" id="session-log-duration"
                     value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
                     min="5" step="5"
@@ -110,6 +116,7 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">End Time</label>
+                <p class="mt-1 text-xs text-foreground/60">Automatically calculated based on start time and duration</p>
                 <input type="time" name="end_time" id="session-log-end-time" readonly
                     value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
                     class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 focus:border-primary focus:ring-primary rounded-md shadow-sm"
@@ -131,18 +138,19 @@
             <div x-show="open" x-cloak class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-foreground">Notes</label>
+                    <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
+                        Session notes must be at least 50 characters. Describe what occurred during the session.
+                    </p>
                     <textarea name="notes" rows="4"
                         class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
                         aria-describedby="session-notes-help" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
-                    <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
-                        Session notes must be at least 50 characters.
-                    </p>
                     @error('notes')
                         <p class="mt-1 text-sm text-danger">{{ $message }}</p>
                     @enderror
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-foreground">Session Outcome</label>
+                    <p class="mt-1 text-xs text-foreground/60">Select the outcome of this session</p>
                     <select name="outcome"
                         class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm">
                         @foreach ($sessionOutcomes ?? [] as $outcome)

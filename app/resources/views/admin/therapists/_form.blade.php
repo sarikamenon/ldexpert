@@ -28,6 +28,7 @@
                 {{-- Title --}}
                 <div>
                     <x-input-label for="title" value="Title *" />
+                    <p class="mt-1 text-xs text-foreground/60">Professional title (e.g., BCBA, RBT)</p>
                     <select name="title" id="title"
                         class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                         <option value="">Select Title</option>
@@ -44,6 +45,7 @@
                 {{-- First Name --}}
                 <div>
                     <x-input-label for="first_name" value="First Name *" />
+                    <p class="mt-1 text-xs text-foreground/60">Therapist's first name</p>
                     <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
                         :value="old('first_name', $profile?->first_name)" dusk="therapist-first-name" />
                     <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
@@ -53,6 +55,7 @@
             {{-- Last Name --}}
             <div>
                 <x-input-label for="last_name" value="Last Name *" />
+                <p class="mt-1 text-xs text-foreground/60">Therapist's last name</p>
                 <x-text-input id="last_name" name="last_name" type="text" class="mt-1 block w-full" :value="old('last_name', $profile?->last_name)"
                     dusk="therapist-last-name" />
                 <x-input-error :messages="$errors->get('last_name')" class="mt-2" />
@@ -68,6 +71,8 @@
             {{-- Personal Email --}}
             <div>
                 <x-input-label for="personal_email" value="Personal Email *" />
+                <p class="mt-1 text-xs text-foreground/60">Primary email address for account access and communications
+                </p>
                 <x-text-input id="personal_email" name="personal_email" type="email" class="mt-1 block w-full"
                     :value="old('personal_email', $profile?->personal_email ?? ($isEdit ? $therapist->email : ''))" dusk="therapist-personal-email" />
                 <x-input-error :messages="$errors->get('personal_email')" class="mt-2" />
@@ -77,6 +82,7 @@
                 {{-- Phone --}}
                 <div>
                     <x-input-label for="phone" value="Phone *" />
+                    <p class="mt-1 text-xs text-foreground/60">Contact phone number (format: 123-456-7890)</p>
                     <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full"
                         placeholder="123-456-7890" :value="old('phone', $profile?->phone)" dusk="therapist-phone" data-phone-input />
                     <x-input-error :messages="$errors->get('phone')" class="mt-2" />
@@ -85,6 +91,7 @@
                 {{-- NOVA Email --}}
                 <div>
                     <x-input-label for="ld_email" value="NOVA Email" />
+                    <p class="mt-1 text-xs text-foreground/60">Optional NOVA organization email address</p>
                     <x-text-input id="ld_email" name="ld_email" type="email" class="mt-1 block w-full"
                         :value="old('ld_email', $profile?->ld_email)" dusk="therapist-ld-email" />
                     <x-input-error :messages="$errors->get('ld_email')" class="mt-2" />
@@ -94,6 +101,7 @@
             {{-- Address --}}
             <div>
                 <x-input-label for="address" value="Address" />
+                <p class="mt-1 text-xs text-foreground/60">Physical address (optional)</p>
                 <textarea id="address" name="address" rows="3"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('address', $profile?->address) }}</textarea>
                 <x-input-error :messages="$errors->get('address')" class="mt-2" />
@@ -102,16 +110,18 @@
             {{-- Default Meeting Location --}}
             <div>
                 <x-input-label for="default_meeting_location" value="Default Meeting Location/Link" />
+                <p class="mt-1 text-xs text-foreground/60">This will be auto-populated when creating a new schedule.
+                    Enter default meeting link (e.g., Google Meet, Zoom) or address for schedules.</p>
                 <textarea id="default_meeting_location" name="default_meeting_location" rows="3"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
                     placeholder="Enter default meeting link (e.g., Google Meet, Zoom) or address for schedules">{{ old('default_meeting_location', $profile?->default_meeting_location) }}</textarea>
                 <x-input-error :messages="$errors->get('default_meeting_location')" class="mt-2" />
-                <p class="text-xs text-gray-500 mt-1">This will be auto-populated when creating a new schedule.</p>
             </div>
 
             {{-- Comments --}}
             <div>
                 <x-input-label for="comments" value="Internal Comments" />
+                <p class="mt-1 text-xs text-foreground/60">Internal notes visible only to administrators</p>
                 <textarea id="comments" name="comments" rows="3"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('comments', $profile?->comments) }}</textarea>
                 <x-input-error :messages="$errors->get('comments')" class="mt-2" />
@@ -128,6 +138,7 @@
                 {{-- Position --}}
                 <div>
                     <x-input-label for="position" value="Position *" />
+                    <p class="mt-1 text-xs text-foreground/60">Therapist's professional position</p>
                     <select name="position" id="position"
                         class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                         <option value="">Select Position</option>
@@ -144,6 +155,7 @@
                 {{-- State --}}
                 <div>
                     <x-input-label for="state" value="State Residing *" />
+                    <p class="mt-1 text-xs text-foreground/60">US state where the therapist resides</p>
                     <select name="state" id="state"
                         class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                         <option value="">Select State</option>
@@ -162,6 +174,7 @@
                 {{-- Timezone --}}
                 <div>
                     <x-input-label for="timezone" value="Timezone *" />
+                    <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
                     <select name="timezone" id="timezone"
                         class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                         <option value="">Select Timezone</option>
@@ -178,6 +191,7 @@
                 {{-- Manager --}}
                 <div>
                     <x-input-label for="manager_id" value="Therapist Manager *" />
+                    <p class="mt-1 text-xs text-foreground/60">Assigned manager for this therapist</p>
                     <select name="manager_id" id="manager_id"
                         class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
                         <option value="">Select Manager</option>
@@ -196,6 +210,8 @@
                 {{-- Max Weekly Hours --}}
                 <div>
                     <x-input-label for="max_weekly_hours" value="Max Weekly Hours *" />
+                    <p class="mt-1 text-xs text-foreground/60">Maximum hours per week this therapist can work (default:
+                        40)</p>
                     <x-text-input id="max_weekly_hours" name="max_weekly_hours" type="number" min="1"
                         max="168" step="1" class="mt-1 block w-full" :value="old('max_weekly_hours', $profile?->max_weekly_hours ?? 40)"
                         placeholder="e.g. 40" dusk="therapist-max-weekly-hours" />
@@ -205,6 +221,7 @@
                 {{-- Date of Birth --}}
                 <div>
                     <x-input-label for="dob" value="Date of Birth" />
+                    <p class="mt-1 text-xs text-foreground/60">Optional date of birth</p>
                     <x-text-input id="dob" name="dob" type="date" class="mt-1 block w-full"
                         :value="old('dob', $profile?->dob?->format('Y-m-d'))" />
                     <x-input-error :messages="$errors->get('dob')" class="mt-2" />
