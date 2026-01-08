@@ -206,13 +206,60 @@
         @endif
     </x-ui::card>
 
-    {{-- Recurrence removed for first iteration --}}
+    {{-- Section 2: Recurrence Options (only for create) --}}
     @if (!$isEdit)
-        <input type="hidden" name="recurrence_type" value="none">
-        <input type="hidden" id="recurrence_end_date" name="recurrence_end_date" value="">
+        <x-ui::card class="p-6 space-y-6">
+            <div>
+                <h2 class="text-lg font-semibold text-foreground">Recurrence Options</h2>
+                <p class="text-sm text-foreground/60">
+                    Create a recurring schedule that repeats at regular intervals.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <x-input-label for="recurrence_type" value="Recurrence Type *" />
+                    <select id="recurrence_type" name="recurrence_type" data-select-box class="mt-1 block w-full"
+                        required>
+                        @foreach (\App\Enums\RecurrenceType::cases() as $recurrenceType)
+                            <option value="{{ $recurrenceType->value }}" @selected(old('recurrence_type', 'none') === $recurrenceType->value)>
+                                {{ $recurrenceType->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-foreground/60 mt-1">
+                        Select how often this schedule should repeat. Choose "None" for a single occurrence.
+                    </p>
+                    <x-input-error :messages="$errors->get('recurrence_type')" class="mt-2" />
+                </div>
+
+                <div id="recurrence_end_date_container" class="hidden">
+                    <x-input-label for="recurrence_end_date" value="Recurrence End Date *" />
+                    <x-text-input id="recurrence_end_date" name="recurrence_end_date" type="date"
+                        class="mt-1 block w-full" value="{{ old('recurrence_end_date', '') }}"
+                        min="{{ old('schedule_date', $selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" />
+                    <p class="text-xs text-foreground/60 mt-1">
+                        The last occurrence will be created on or before this date. Must be after the schedule start
+                        date.
+                    </p>
+                    <x-input-error :messages="$errors->get('recurrence_end_date')" class="mt-2" />
+                </div>
+
+                <div id="occurrence_dates_container" class="hidden mt-4">
+                    <x-input-label value="Occurrence Dates *" />
+                    <p class="text-xs text-foreground/60 mt-1 mb-3">
+                        Review and adjust the occurrence dates below. Dates falling on weekends are highlighted in
+                        yellow.
+                        You can modify any date if needed (e.g., if a monthly occurrence falls on a weekend).
+                    </p>
+                    <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
+                    <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
+                </div>
+            </div>
+        </x-ui::card>
     @endif
 
-    {{-- Section 2: Location & Meeting Details --}}
+    {{-- Section 3: Location & Meeting Details --}}
     <x-ui::card class="p-6 space-y-6">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Location & Meeting Details</h2>
@@ -233,7 +280,7 @@
         </div>
     </x-ui::card>
 
-    {{-- Section 3: Notes --}}
+    {{-- Section 4: Notes --}}
     <x-ui::card class="p-6 space-y-4">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Notes</h2>

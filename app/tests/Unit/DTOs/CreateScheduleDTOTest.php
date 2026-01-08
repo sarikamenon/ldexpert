@@ -23,6 +23,7 @@ final class CreateScheduleDTOTest extends TestCase
             'recurrence_type' => 'weekly',
             'recurrence_end_date' => '2025-12-31',
             'occurrence_count' => 5,
+            'occurrence_dates' => ['2025-12-01', '2025-12-08', '2025-12-15'],
             'is_group' => '1',
             'notes' => 'Test notes',
         ];
@@ -40,6 +41,7 @@ final class CreateScheduleDTOTest extends TestCase
         $this->assertSame(RecurrenceType::WEEKLY, $dto->recurrenceType);
         $this->assertSame('2025-12-31', $dto->recurrenceEndDate);
         $this->assertSame(5, $dto->occurrenceCount);
+        $this->assertSame(['2025-12-01', '2025-12-08', '2025-12-15'], $dto->occurrenceDates);
         $this->assertTrue($dto->isGroup);
         $this->assertSame('Test notes', $dto->notes);
     }
@@ -58,6 +60,7 @@ final class CreateScheduleDTOTest extends TestCase
             recurrenceEndDate: null,
             isGroup: false,
             occurrenceCount: null,
+            occurrenceDates: null,
             notes: null,
             locationDetails: null,
         );
@@ -76,5 +79,114 @@ final class CreateScheduleDTOTest extends TestCase
         $this->assertFalse($array['is_group']);
         $this->assertNull($array['notes']);
         $this->assertNull($array['occurrence_count']);
+        $this->assertNull($array['occurrence_dates']);
+    }
+
+    public function test_from_array_calculates_end_time_from_duration_minutes(): void
+    {
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'none',
+        ];
+
+        $dto = CreateScheduleDTO::fromArray($data);
+
+        $this->assertSame('10:00', $dto->endTime);
+        $this->assertSame(60, $dto->durationMinutes);
+    }
+
+    public function test_from_array_calculates_duration_minutes_from_end_time(): void
+    {
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '09:00',
+            'end_time' => '10:30',
+            'recurrence_type' => 'none',
+        ];
+
+        $dto = CreateScheduleDTO::fromArray($data);
+
+        $this->assertSame('10:30', $dto->endTime);
+        $this->assertSame(90, $dto->durationMinutes);
+    }
+
+    public function test_from_array_throws_exception_when_neither_end_time_nor_duration_provided(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Either end_time or duration_minutes must be provided.');
+
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '09:00',
+            'recurrence_type' => 'none',
+        ];
+
+        CreateScheduleDTO::fromArray($data);
+    }
+
+    public function test_from_array_throws_exception_when_duration_minutes_is_zero(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('duration_minutes must be greater than 0.');
+
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '09:00',
+            'duration_minutes' => 0,
+            'recurrence_type' => 'none',
+        ];
+
+        CreateScheduleDTO::fromArray($data);
+    }
+
+    public function test_from_array_throws_exception_when_end_time_is_before_start_time(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('end_time must be after start_time.');
+
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '10:00',
+            'end_time' => '09:00',
+            'recurrence_type' => 'none',
+        ];
+
+        CreateScheduleDTO::fromArray($data);
+    }
+
+    public function test_from_array_uses_both_when_both_provided(): void
+    {
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'none',
+        ];
+
+        $dto = CreateScheduleDTO::fromArray($data);
+
+        $this->assertSame('10:00', $dto->endTime);
+        $this->assertSame(60, $dto->durationMinutes);
     }
 }
