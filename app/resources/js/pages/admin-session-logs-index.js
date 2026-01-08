@@ -29,10 +29,20 @@ const bindConfirmations = () => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadDataTablesLibrary();
-    initDataTable('.session-log-table', {
+    const table = await initDataTable('.session-log-table', {
         order: [[0, 'desc']],
         pageLength: 15,
     });
+
+    try {
+        const info = table ? table.page.info() : null;
+        const statusEl = document.getElementById('sessionLogsStatus');
+        if (info && statusEl) {
+            statusEl.textContent = `Showing ${info.recordsDisplay} session logs.`;
+        }
+    } catch (e) {
+        console.debug('Unable to update session logs status region', e);
+    }
 
     bindConfirmations();
 });

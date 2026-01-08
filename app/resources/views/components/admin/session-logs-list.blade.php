@@ -42,17 +42,19 @@
         </div>
 
         <button type="submit"
-            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium whitespace-nowrap">
+            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Apply Filters
         </button>
 
         @if (!empty(array_filter($filters)))
             <a href="{{ $context === 'detail' ? request()->url() . '?tab=session_logs' : route(Route::currentRouteName()) }}"
-                class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle whitespace-nowrap">
+                class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 Clear
             </a>
         @endif
     </form>
+
+    <div id="sessionLogsStatus" class="sr-only" role="status" aria-live="polite"></div>
 
     @if ($sessionLogs->total() > 0)
         <div class="overflow-x-auto">
@@ -63,13 +65,16 @@
             {{ $sessionLogs->links() }}
         </div>
     @else
-        <div class="text-center py-8">
-            <svg class="mx-auto h-12 w-12 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
-                </path>
-            </svg>
-            <p class="mt-2 text-sm text-foreground/70">No session logs found matching your criteria.</p>
-        </div>
+        <x-ui::empty-state title="No session logs found."
+            description="Try adjusting your filters or expanding your date range to see more results.">
+            <x-slot:icon>
+                <svg class="mx-auto h-12 w-12 text-foreground/40" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                    </path>
+                </svg>
+            </x-slot:icon>
+        </x-ui::empty-state>
     @endif
 </x-ui::card>

@@ -124,8 +124,9 @@
                             <td>
                                 <div class="flex space-x-1">
                                     <a href="{{ route('admin.therapists.show', $therapist) }}"
-                                        class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                        title="View Therapist" dusk="view-therapist-{{ $therapist->id }}">
+                                        class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        title="View Therapist" dusk="view-therapist-{{ $therapist->id }}"
+                                        aria-label="View therapist {{ $therapist->name }}">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
                                             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                             stroke-linejoin="round">
@@ -179,14 +180,9 @@
             </table>
         </div>
     @else
-        <div class="text-center py-10">
-            <p class="text-foreground/70 mb-4">No therapists found.</p>
-            @if ($context === 'index')
-                <a href="{{ route('admin.therapists.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add Therapist
-                </a>
-            @endif
-        </div>
+        <x-ui::empty-state title="No therapists found."
+            :description="$context === 'index' ? 'Try adjusting your filters or add a new therapist.' : null"
+            :action-label="$context === 'index' ? 'Add Therapist' : null"
+            :action-href="$context === 'index' ? route('admin.therapists.create') : null" />
     @endif
 </x-ui::card>

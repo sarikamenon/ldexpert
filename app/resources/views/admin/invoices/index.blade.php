@@ -127,8 +127,9 @@
                                 <td class="py-3 px-4">
                                     <div class="flex items-center gap-2">
                                         <a href="{{ route('admin.invoices.show', $invoice) }}"
-                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                            title="View Invoice">
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="View Invoice"
+                                            aria-label="View invoice {{ $invoice->invoice_number }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round">
@@ -137,8 +138,9 @@
                                             </svg>
                                         </a>
                                         <a href="{{ route('admin.invoices.download', $invoice) }}"
-                                            class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                            title="Download PDF">
+                                            class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="Download PDF"
+                                            aria-label="Download invoice {{ $invoice->invoice_number }} as PDF">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round">

@@ -16,7 +16,7 @@
 
     {{-- Session Details --}}
     <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-lg font-semibold">Session Details</h3>
+        <h3 class="text-lg font-semibold text-foreground">Session Details</h3>
 
         {{-- Row 1: Student + SSA (always read-only to keep aligned with SSA) --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -117,41 +117,68 @@
             </div>
         </div>
 
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Notes</label>
-            <textarea name="notes" rows="4"
-                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
-            <p class="mt-1 text-xs text-gray-500">
-                Session notes must be at least 50 characters.
-            </p>
-            @error('notes')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700">Session Outcome</label>
-            <select name="outcome"
-                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
-                @foreach ($sessionOutcomes ?? [] as $outcome)
-                    <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
-                        {{ $outcome->label() }}
-                    </option>
-                @endforeach
-            </select>
-            @error('outcome')
-                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-            @enderror
-            {{-- Always billable flags are handled automatically; keep default as billable --}}
-            <input type="hidden" name="is_billable_therapist"
-                value="{{ old('is_billable_therapist', $sessionLog->is_billable_therapist ?? 1) }}">
-            <input type="hidden" name="is_billable_school" value="1">
+        <div x-data="{ open: true }" class="space-y-4 mt-4">
+            <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium text-foreground/70">Notes & Outcome</h4>
+                <button type="button"
+                    class="text-xs text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
+                    @click="open = !open" x-bind:aria-expanded="open.toString()">
+                    <span x-show="!open">Show</span>
+                    <span x-show="open">Hide</span>
+                </button>
+            </div>
+
+            <div x-show="open" x-cloak class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-foreground">Notes</label>
+                    <textarea name="notes" rows="4"
+                        class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                        aria-describedby="session-notes-help" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
+                    <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
+                        Session notes must be at least 50 characters.
+                    </p>
+                    @error('notes')
+                        <p class="mt-1 text-sm text-danger">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-foreground">Session Outcome</label>
+                    <select name="outcome"
+                        class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                        @foreach ($sessionOutcomes ?? [] as $outcome)
+                            <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
+                                {{ $outcome->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('outcome')
+                        <p class="mt-1 text-sm text-danger">{{ $message }}</p>
+                    @enderror
+                    {{-- Always billable flags are handled automatically; keep default as billable --}}
+                    <input type="hidden" name="is_billable_therapist"
+                        value="{{ old('is_billable_therapist', $sessionLog->is_billable_therapist ?? 1) }}">
+                    <input type="hidden" name="is_billable_school" value="1">
+                </div>
+            </div>
         </div>
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
         <button type="submit"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-            {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
+            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            x-data="{ loading: false }" x-on:click="loading = true" x-bind:disabled="loading">
+            <span x-show="!loading">
+                {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
+            </span>
+            <span x-show="loading" class="inline-flex items-center gap-2">
+                <svg class="animate-spin h-4 w-4 text-primary-foreground" xmlns="http://www.w3.org/2000/svg"
+                    fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                        stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                Saving...
+            </span>
         </button>
     </div>
 </form>

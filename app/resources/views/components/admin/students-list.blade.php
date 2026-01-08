@@ -122,14 +122,16 @@
                             <td>
                                 @if ($context === 'therapist')
                                     <a href="{{ route('therapist.students.show', $student) }}"
-                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="View Student">
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        title="View Student"
+                                        aria-label="View student {{ $student->name }}">
                                         {{ $student->id }}
                                     </a>
                                 @else
                                     <a href="{{ route('admin.students.show', $student) }}"
-                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="View Student">
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                        title="View Student"
+                                        aria-label="View student {{ $student->name }}">
                                         {{ $student->id }}
                                     </a>
                                 @endif
@@ -241,14 +243,9 @@
             </table>
         </div>
     @else
-        <div class="text-center py-10">
-            <p class="text-foreground/70 mb-4">No students found.</p>
-            @if ($context === 'index')
-                <a href="{{ route('admin.students.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add Student
-                </a>
-            @endif
-        </div>
+        <x-ui::empty-state title="No students found."
+            :description="$context === 'index' ? 'Try adjusting your filters or add a new student to get started.' : null"
+            :action-label="$context === 'index' ? 'Add Student' : null"
+            :action-href="$context === 'index' ? route('admin.students.create') : null" />
     @endif
 </x-ui::card>

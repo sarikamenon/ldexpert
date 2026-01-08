@@ -524,9 +524,9 @@ The spacing system uses Tailwind's default spacing scale (4px base unit):
 #### ARIA Labels
 
 - **Menubar Components**: Uses `role="menubar"` and `role="menuitem"` - **Good**
-- **Other Interactive Elements**: **Missing** - most buttons, links, and interactive elements lack ARIA labels
-- **Form Fields**: **Missing** - no `aria-describedby` for field descriptions
-- **Dynamic Content**: **Missing** - no `aria-live` regions for updates
+- **Icon-only Buttons/Links**: Core actions now use `aria-label` (invoices, students, therapists, SSAs, therapist/admin billing, schedule actions).
+- **Form Fields**: In progress – some helper texts still need `aria-describedby`.
+- **Dynamic Content**: Session logs list exposes a `role="status" aria-live="polite"` region for DataTables updates.
 
 #### Keyboard Navigation
 
@@ -557,12 +557,11 @@ The spacing system uses Tailwind's default spacing scale (4px base unit):
 
 ### Current Gaps
 
-- Missing ARIA labels on interactive elements (buttons, links, icons)
-- No `aria-describedby` for form field descriptions
-- No `aria-live` regions for dynamic content updates
-- Missing `focus-visible:` styles for better keyboard navigation UX
-- Color contrast not verified
-- Some error states rely on color alone (should include icons or text)
+- Remaining icon-only controls should adopt the same `aria-label` pattern when introduced.
+- Some helper texts still lack `aria-describedby` references.
+- Additional `aria-live` regions may be needed for other dynamic lists/modals.
+- `focus-visible:` should be added to any new custom interactive elements.
+- Color contrast should be verified when adding new brand colors or backgrounds.
 
 ---
 
@@ -572,44 +571,38 @@ The spacing system uses Tailwind's default spacing scale (4px base unit):
 
 #### Empty States
 
-**Pattern 1: Simple Message with Action Button**
-```blade
-<div class="text-center py-10">
-    <p class="text-foreground/70 mb-4">No items found.</p>
-    <a href="{{ route('items.create') }}"
-        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-        Add Item
-    </a>
-</div>
-```
+**Component: `x-ui::empty-state`**
 
-**Pattern 2: Message with Icon**
-```blade
-<div class="text-center py-8">
-    <svg class="mx-auto h-12 w-12 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <!-- Icon path -->
-    </svg>
-    <p class="mt-2 text-sm text-foreground/70">No items found matching your criteria.</p>
-</div>
-```
+- Location: `resources/views/components/ui/empty-state.blade.php`
+- Responsibilities:
+  - Standardize empty state layout, spacing, and typography
+  - Provide optional description text and primary action
+  - Allow optional icon slot
 
-**Pattern 3: Contextual Message**
+**Props:**
+- `title` (string, required): Primary empty state message
+- `description` (string|null): Optional supporting text
+- `actionLabel` (string|null): Optional button label
+- `actionHref` (string|null): Optional button URL (used with `actionLabel`)
+
+**Markup:**
 ```blade
-<div class="text-center py-12">
-    <p class="text-foreground/70 mb-4">
-        You don't have any schedule for {{ $date->format('F jS') }}.
-    </p>
-    <button type="button" class="...">
-        ADD NEW SCHEDULE
-    </button>
-</div>
+<x-ui::empty-state
+    title="No students found."
+    description="Try adjusting your filters or add a new student to get started."
+    action-label="Add Student"
+    :action-href="route('admin.students.create')">
+    <x-slot:icon>
+        <svg class="mx-auto h-12 w-12 text-foreground/40" ...>
+            <!-- Icon -->
+        </svg>
+    </x-slot:icon>
+</x-ui::empty-state>
 ```
 
 **Current Usage:**
-- Empty states exist in: students list, therapists list, SSAs list, session logs list, schedules list
-- Spacing: `py-10`, `py-12`, `py-8` - inconsistent
-- Some have action buttons, others don't
-- Some have icons, others don't
+- Used in: students list, therapists list, SSAs list, session logs list, invoices show (no line items), therapist/admin billing lists, activity logs.
+- Spacing: `py-12` by default
 
 #### Loading States
 
@@ -618,28 +611,35 @@ The spacing system uses Tailwind's default spacing scale (4px base unit):
 - Used for async operations (AJAX calls, form submissions)
 - Pattern: Show loading dialog, perform operation, close dialog
 
-**Missing Loading States:**
-- **Button Loading**: No spinner in button during submission
-- **Table Row Loading**: No loading indicators for AJAX table updates
-- **Skeleton Loaders**: No placeholder content while loading
-- **Form Submission**: Only SweetAlert2, no inline button loading
+**Loading States**
 
-**Current Implementation:**
-```javascript
-showLoading("Processing your request...");
-// Perform async operation
-await longRunningOperation();
-closeAlert();
+**SweetAlert2 Loading:**
+- Implemented via `showLoading()` function in `resources/js/common/sweetalert.js`
+- Used for async operations (AJAX calls, long-running tasks)
+
+**Inline Button Loading Pattern:**
+
+- Used on key form submissions (e.g., therapist session logs form, invoice send button).
+- Pattern:
+  - Disable button on submit
+  - Swap label with spinner + \"Saving...\" / \"Sending...\"
+
+```blade
+<button type="submit"
+    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    x-data="{ loading: false }"
+    x-on:click="loading = true"
+    x-bind:disabled="loading">
+    <span x-show="!loading">Save</span>
+    <span x-show="loading" class="inline-flex items-center gap-2">
+        <svg class="animate-spin h-4 w-4 text-primary-foreground" ...></svg>
+        Saving...
+    </span>
+</button>
 ```
 
-### Current Gaps
-
-- Inconsistent empty state spacing (`py-8`, `py-10`, `py-12`)
-- Some empty states lack action buttons
-- Some empty states lack icons/visual elements
-- Missing button loading states
-- Missing table row loading states
-- Missing skeleton loaders for content loading
+**Table / List Loading (Planned):**
+- Prefer SweetAlert2 loading or lightweight skeleton rows for heavy async tables.
 
 ---
 
