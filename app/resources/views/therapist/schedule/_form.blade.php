@@ -192,14 +192,11 @@
                     <x-text-input id="end_time_display" type="text"
                         class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75" value=""
                         disabled readonly />
-                    <p class="text-xs text-foreground/60 mt-1">End time is calculated from start time and
-                        duration.</p>
                 </div>
             </div>
         </div>
-
         @if (!$isEdit)
-            <p class="text-xs text-foreground/60 mt-1">
+            <p class="text-xs text-foreground/60" style="margin-top: 0;">
                 Enter the schedule date and time in <span class="font-medium">your</span> timezone.
                 If the student is in a different timezone, the system will handle the conversion for them.
             </p>
