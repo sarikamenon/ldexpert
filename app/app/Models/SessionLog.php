@@ -75,6 +75,7 @@ class SessionLog extends Model
             'school_rate_amount' => 'decimal:2',
             'school_invoice_amount' => 'decimal:2',
             'is_rate_override' => 'boolean',
+            'status' => SessionLogStatus::class,
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
             'created_at' => 'datetime',
@@ -171,7 +172,32 @@ class SessionLog extends Model
 
     public function getStatusAttribute(mixed $value): ?SessionLogStatus
     {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value instanceof SessionLogStatus) {
+            return $value;
+        }
+
         return SessionLogStatus::tryFrom((string) $value);
+    }
+
+    public function setStatusAttribute(mixed $value): void
+    {
+        if ($value === null) {
+            $this->attributes['status'] = null;
+            return;
+        }
+
+        if ($value instanceof SessionLogStatus) {
+            $this->attributes['status'] = $value->value;
+            return;
+        }
+
+        // Try to convert string to enum
+        $enum = SessionLogStatus::tryFrom((string) $value);
+        $this->attributes['status'] = $enum?->value ?? $value;
     }
 
     public function canEdit(): bool

@@ -480,7 +480,7 @@ final class ScheduleTest extends TestCase
         $this->assertDatabaseHas('schedules', [
             'id' => $schedule->id,
             'schedule_date' => $payload['schedule_date'],
-            'start_time' => $payload['start_time'].':00',
+            'start_time' => $payload['start_time'] . ':00',
             'notes' => 'Updated notes',
         ]);
 

@@ -24,7 +24,7 @@ final class CreateScheduleDTO
         public readonly ?array $occurrenceDates,
         public readonly ?string $notes,
         public readonly ?string $locationDetails,
-        public readonly int $durationMinutes = 0,
+        public readonly int $durationMinutes,
     ) {}
 
     public static function fromArray(array $data): self
@@ -91,6 +91,12 @@ final class CreateScheduleDTO
         }
         if (!is_int($durationMinutes) || $durationMinutes <= 0) {
             throw new \InvalidArgumentException('duration_minutes must be a positive integer.');
+        }
+
+        // Final validation: ensure endTime is always a string (non-null)
+        // This provides explicit type safety guarantee before passing to constructor
+        if ($endTime === null || !is_string($endTime)) {
+            throw new \InvalidArgumentException('end_time must be provided or calculated.');
         }
 
         return new self(

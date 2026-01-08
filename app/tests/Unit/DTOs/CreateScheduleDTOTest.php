@@ -63,6 +63,7 @@ final class CreateScheduleDTOTest extends TestCase
             occurrenceDates: null,
             notes: null,
             locationDetails: null,
+            durationMinutes: 60,
         );
 
         $array = $dto->toArray();
