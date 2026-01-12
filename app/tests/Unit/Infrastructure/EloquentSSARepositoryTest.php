@@ -128,9 +128,13 @@ final class EloquentSSARepositoryTest extends TestCase
         $result = $this->repository->getSSAsForTherapistDashboard($therapist->id, 5);
 
         $this->assertCount(5, $result);
-        $this->assertTrue($result->first()->relationLoaded('student'));
-        $this->assertTrue($result->first()->relationLoaded('student.studentProfile.school'));
-        $this->assertTrue($result->first()->relationLoaded('primaryService'));
+        $first = $result->first();
+        $this->assertTrue($first->relationLoaded('student'));
+        $this->assertNotNull($first->student);
+        $this->assertTrue($first->student->relationLoaded('studentProfile'));
+        $this->assertNotNull($first->student->studentProfile);
+        $this->assertTrue($first->student->studentProfile->relationLoaded('school'));
+        $this->assertTrue($first->relationLoaded('primaryService'));
     }
 
     public function test_get_ssas_for_therapist_dashboard_orders_by_created_at_desc(): void

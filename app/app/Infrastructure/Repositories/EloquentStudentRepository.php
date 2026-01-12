@@ -82,7 +82,9 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
 
     public function getMetrics(?string $status = null): array
     {
-        $query = User::query()->where('role', 'student');
+        $query = User::query()
+            ->where('role', 'student')
+            ->whereHas('studentProfile');
 
         if ($status) {
             $query->where('status', $status);

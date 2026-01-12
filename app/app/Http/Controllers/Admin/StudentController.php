@@ -22,11 +22,10 @@ use App\DTOs\SSAFilterDTO;
 use App\DTOs\StoreStudentImportDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
-use App\Enums\StudentImportType;
-use App\Models\StudentImport;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Enums\SSAStatus;
+use App\Enums\StudentImportType;
 use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -36,6 +35,7 @@ use App\Http\Requests\Admin\Student\ImportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
+use App\Models\StudentImport;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -363,7 +363,7 @@ final class StudentController extends Controller
             $exampleRow = [];
             foreach ($allColumns as $column) {
                 if (in_array($column, $requiredColumns, true)) {
-                    $exampleRow[] = '[' . str_replace('_', ' ', ucwords($column, '_')) . ']';
+                    $exampleRow[] = '['.str_replace('_', ' ', ucwords($column, '_')).']';
                 } else {
                     $exampleRow[] = '';
                 }

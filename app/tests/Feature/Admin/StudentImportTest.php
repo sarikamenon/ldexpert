@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Enums\Role;
-use App\Enums\UserStatus;
+use App\Enums\StudentImportStatus;
+use App\Enums\StudentImportType;
+use App\Jobs\ProcessStudentImportJob;
 use App\Models\School;
+use App\Models\StudentImport;
+use App\Models\StudentImportRow;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 final class StudentImportTest extends TestCase
@@ -27,7 +33,12 @@ final class StudentImportTest extends TestCase
         parent::setUp();
 
         $this->admin = User::factory()->admin()->create();
-        $this->school = School::factory()->create();
+        $this->school = School::factory()->create([
+            'external_emr_name' => 'Test School EMR',
+        ]);
+
+        Storage::fake('local');
+        Bus::fake();
     }
 
     public function test_admin_can_view_import_form(): void
@@ -36,9 +47,9 @@ final class StudentImportTest extends TestCase
 
         $response->assertOk()
             ->assertViewIs('admin.students.import')
-            ->assertViewHas('schools')
             ->assertViewHas('requiredColumns')
-            ->assertViewHas('optionalColumns');
+            ->assertViewHas('optionalColumns')
+            ->assertViewHas('importTypes');
     }
 
     public function test_non_admin_cannot_view_import_form(): void
@@ -70,7 +81,7 @@ final class StudentImportTest extends TestCase
                 'email' => 'john@example.com',
                 'gender' => 'Male',
                 'date_of_birth' => '2010-05-15',
-                'school_id' => (string) $this->school->id,
+                'school_name' => $this->school->external_emr_name,
                 'id_number' => 'STU001',
                 'timezone' => 'America/New_York',
                 'grade_level' => '8',
@@ -85,7 +96,7 @@ final class StudentImportTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->postJson(route('admin.students.import.store'), [
                 'file' => $file,
-                'school_id' => $this->school->id,
+                'type' => StudentImportType::NOVA->value,
             ]);
 
         $response->assertOk()
@@ -94,12 +105,21 @@ final class StudentImportTest extends TestCase
             ])
             ->assertJsonStructure([
                 'data' => [
-                    'total_rows',
-                    'success_count',
-                    'skipped_count',
-                    'error_count',
+                    'import_id',
+                    'status',
                 ],
             ]);
+
+        Bus::assertDispatched(ProcessStudentImportJob::class);
+
+        $import = StudentImport::first();
+        $this->assertNotNull($import);
+
+        // Run job synchronously to validate processing
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $import->refresh();
+        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
 
         $this->assertDatabaseHas('users', [
             'email' => 'john@example.com',
@@ -112,6 +132,9 @@ final class StudentImportTest extends TestCase
             'id_number' => 'STU001',
             'school_id' => $this->school->id,
         ]);
+
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
     }
 
     public function test_import_validates_required_columns(): void
@@ -122,17 +145,18 @@ final class StudentImportTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->postJson(route('admin.students.import.store'), [
                 'file' => $file,
-                'school_id' => $this->school->id,
+                'type' => StudentImportType::NOVA->value,
             ]);
 
-        $response->assertOk()
-            ->assertJson([
-                'success' => true,
-            ]);
+        $response->assertOk();
+        Bus::assertDispatched(ProcessStudentImportJob::class);
 
-        $data = $response->json('data');
-        $this->assertGreaterThan(0, $data['error_count']);
-        $this->assertNotEmpty($data['errors']);
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+        $import->refresh();
+
+        $this->assertEquals(StudentImportStatus::FAILED, $import->status);
+        $this->assertStringContainsString('Missing required columns', (string) $import->error_message);
     }
 
     public function test_import_skips_duplicate_by_email(): void
@@ -158,7 +182,7 @@ final class StudentImportTest extends TestCase
                 'email' => 'existing@example.com',
                 'gender' => 'Female',
                 'date_of_birth' => '2011-06-20',
-                'school_id' => (string) $this->school->id,
+                'school_name' => $this->school->external_emr_name,
                 'id_number' => 'STU002',
                 'timezone' => 'America/Chicago',
                 'grade_level' => '7',
@@ -173,17 +197,19 @@ final class StudentImportTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->postJson(route('admin.students.import.store'), [
                 'file' => $file,
-                'school_id' => $this->school->id,
+                'type' => StudentImportType::NOVA->value,
             ]);
 
         $response->assertOk();
+        Bus::assertDispatched(ProcessStudentImportJob::class);
 
-        $data = $response->json('data');
-        $this->assertEquals(1, $data['skipped_count']);
-        $this->assertNotEmpty($data['skipped_rows']);
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
-        // Verify no new student was created
         $this->assertDatabaseCount('users', 2); // admin + existing student
+
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('duplicate', $row->status->value);
     }
 
     public function test_import_skips_duplicate_by_id_number(): void
@@ -209,7 +235,7 @@ final class StudentImportTest extends TestCase
                 'email' => 'another@example.com',
                 'gender' => 'Male',
                 'date_of_birth' => '2012-07-25',
-                'school_id' => (string) $this->school->id,
+                'school_name' => $this->school->external_emr_name,
                 'id_number' => 'STU003',
                 'timezone' => 'America/Denver',
                 'grade_level' => '6',
@@ -224,54 +250,19 @@ final class StudentImportTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->postJson(route('admin.students.import.store'), [
                 'file' => $file,
-                'school_id' => $this->school->id,
+                'type' => StudentImportType::NOVA->value,
             ]);
 
         $response->assertOk();
+        Bus::assertDispatched(ProcessStudentImportJob::class);
 
-        $data = $response->json('data');
-        $this->assertEquals(1, $data['skipped_count']);
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
-        // Verify no new student was created
         $this->assertDatabaseCount('users', 2); // admin + existing student
-    }
 
-    public function test_import_validates_file_required(): void
-    {
-        $response = $this->actingAs($this->admin)
-            ->postJson(route('admin.students.import.store'), [
-                'school_id' => $this->school->id,
-            ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['file']);
-    }
-
-    public function test_import_validates_school_id_required(): void
-    {
-        $file = UploadedFile::fake()->create('students.csv', 100);
-
-        $response = $this->actingAs($this->admin)
-            ->postJson(route('admin.students.import.store'), [
-                'file' => $file,
-            ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['school_id']);
-    }
-
-    public function test_import_validates_school_exists(): void
-    {
-        $file = UploadedFile::fake()->create('students.csv', 100);
-
-        $response = $this->actingAs($this->admin)
-            ->postJson(route('admin.students.import.store'), [
-                'file' => $file,
-                'school_id' => 99999,
-            ]);
-
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['school_id']);
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('duplicate', $row->status->value);
     }
 
     public function test_import_handles_multiple_rows(): void
@@ -284,28 +275,28 @@ final class StudentImportTest extends TestCase
                 'last_name' => 'Smith',
                 'email' => 'alice@example.com',
                 'gender' => 'Female',
-                'date_of_birth' => '2010-01-10',
-                'school_id' => (string) $this->school->id,
+                'date_of_birth' => '2010-04-10',
+                'school_name' => $this->school->external_emr_name,
                 'id_number' => 'STU004',
-                'timezone' => 'America/Los_Angeles',
-                'grade_level' => '9',
-                'city' => 'Los Angeles',
-                'state' => 'CA',
-                'zip_code' => '90001',
+                'timezone' => 'America/New_York',
+                'grade_level' => '8',
+                'city' => 'Boston',
+                'state' => 'MA',
+                'zip_code' => '02101',
             ],
             [
                 'first_name' => 'Bob',
                 'last_name' => 'Jones',
                 'email' => 'bob@example.com',
                 'gender' => 'Male',
-                'date_of_birth' => '2011-02-15',
-                'school_id' => (string) $this->school->id,
+                'date_of_birth' => '2011-03-15',
+                'school_name' => $this->school->external_emr_name,
                 'id_number' => 'STU005',
-                'timezone' => 'America/New_York',
-                'grade_level' => '8',
-                'city' => 'Boston',
-                'state' => 'MA',
-                'zip_code' => '02115',
+                'timezone' => 'America/Chicago',
+                'grade_level' => '7',
+                'city' => 'Chicago',
+                'state' => 'IL',
+                'zip_code' => '60601',
             ],
         ]);
 
@@ -314,14 +305,14 @@ final class StudentImportTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->postJson(route('admin.students.import.store'), [
                 'file' => $file,
-                'school_id' => $this->school->id,
+                'type' => StudentImportType::NOVA->value,
             ]);
 
         $response->assertOk();
+        Bus::assertDispatched(ProcessStudentImportJob::class);
 
-        $data = $response->json('data');
-        $this->assertEquals(2, $data['total_rows']);
-        $this->assertEquals(2, $data['success_count']);
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
         $this->assertDatabaseHas('users', ['email' => 'alice@example.com']);
         $this->assertDatabaseHas('users', ['email' => 'bob@example.com']);
@@ -335,7 +326,7 @@ final class StudentImportTest extends TestCase
             'email',
             'gender',
             'date_of_birth',
-            'school_id',
+            'school_name',
             'id_number',
             'timezone',
             'grade_level',

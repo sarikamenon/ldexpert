@@ -17,7 +17,7 @@ final class ImportStudentResultDTO
 
     public static function create(): self
     {
-        return new self();
+        return new self;
     }
 
     public function withTotalRows(int $totalRows): self

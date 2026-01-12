@@ -25,8 +25,8 @@ final class ImportStudentsRequest extends FormRequest
                 'required',
                 'file',
                 'mimes:csv,txt',
-                'mimetypes:' . implode(',', $allowedMimes),
-                'max:' . $maxSize,
+                'mimetypes:'.implode(',', $allowedMimes),
+                'max:'.$maxSize,
             ],
             'type' => [
                 'nullable',
@@ -43,7 +43,7 @@ final class ImportStudentsRequest extends FormRequest
             'file.file' => 'The uploaded file is invalid.',
             'file.mimes' => 'The file must be a CSV file.',
             'file.mimetypes' => 'The file must be a CSV file.',
-            'file.max' => 'The file size must not exceed ' . config('student-import.settings.max_file_size', 10240) . ' KB.',
+            'file.max' => 'The file size must not exceed '.config('student-import.settings.max_file_size', 10240).' KB.',
             'type.in' => 'Invalid import type. Must be one of: NOVA, RSM, MARVIN.',
         ];
     }

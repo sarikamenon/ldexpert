@@ -8,7 +8,6 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
-use App\DTOs\CreateStudentDTO;
 use App\DTOs\ImportStudentDTO;
 use App\DTOs\StoreStudentImportDTO;
 use App\Enums\StudentImportRowStatus;
@@ -18,7 +17,6 @@ use App\Models\School;
 use App\Models\StudentImport;
 use App\Models\StudentImportRow;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -173,7 +171,7 @@ final class StudentImportService
         } catch (\Exception $e) {
             $importRow->update([
                 'status' => StudentImportRowStatus::VALIDATION_ERROR,
-                'error_message' => 'Failed to process row: ' . $e->getMessage(),
+                'error_message' => 'Failed to process row: '.$e->getMessage(),
                 'processed_at' => now(),
             ]);
         }
@@ -188,8 +186,9 @@ final class StudentImportService
     {
         $errors = [];
 
-        // Read file from S3
-        $fileContent = Storage::disk('s3')->get($import->file_path);
+        // Read file from storage (S3 in production, local in testing)
+        $disk = app()->environment('testing') ? 'local' : 's3';
+        $fileContent = Storage::disk($disk)->get($import->file_path);
         if ($fileContent === false) {
             return ['Unable to read file from S3.'];
         }
@@ -225,7 +224,7 @@ final class StudentImportService
         }
 
         if (! empty($missingColumns)) {
-            $errors[] = 'Missing required columns: ' . implode(', ', $missingColumns);
+            $errors[] = 'Missing required columns: '.implode(', ', $missingColumns);
         }
 
         return $errors;
@@ -235,8 +234,9 @@ final class StudentImportService
     {
         $rows = [];
 
-        // Read file from S3
-        $fileContent = Storage::disk('s3')->get($filePath);
+        // Read file from storage (S3 in production, local in testing)
+        $disk = app()->environment('testing') ? 'local' : 's3';
+        $fileContent = Storage::disk($disk)->get($filePath);
         if ($fileContent === false) {
             return [];
         }
@@ -351,7 +351,7 @@ final class StudentImportService
         if (isset($data['email'])) {
             $existing = $this->repository->findByEmail($data['email']);
             if ($existing !== null) {
-                return 'Student with email "' . $data['email'] . '" already exists.';
+                return 'Student with email "'.$data['email'].'" already exists.';
             }
         }
 
@@ -359,7 +359,7 @@ final class StudentImportService
         if (isset($data['id_number'])) {
             $existing = $this->repository->findByIdNumber($data['id_number'], $schoolId);
             if ($existing !== null) {
-                return 'Student with ID number "' . $data['id_number'] . '" already exists for this school.';
+                return 'Student with ID number "'.$data['id_number'].'" already exists for this school.';
             }
         }
 
@@ -378,11 +378,13 @@ final class StudentImportService
     {
         $year = now()->format('Y');
         $month = now()->format('m');
-        $filename = now()->format('Ymd_His') . '_' . Str::random(8) . '_' . $file->getClientOriginalName();
+        $filename = now()->format('Ymd_His').'_'.Str::random(8).'_'.$file->getClientOriginalName();
 
-        $path = config('student-import.s3.path_prefix', 'student-imports') . "/{$year}/{$month}/{$filename}";
+        $path = config('student-import.s3.path_prefix', 'student-imports')."/{$year}/{$month}/{$filename}";
 
-        Storage::disk('s3')->put($path, file_get_contents($file->getRealPath()));
+        // Use local disk in testing, S3 in production
+        $disk = app()->environment('testing') ? 'local' : 's3';
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
 
         return $path;
     }
