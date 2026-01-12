@@ -130,7 +130,7 @@ final class SessionLogIndexService
                     'therapist' => $log->therapist?->name ?? '-',
                     'school_amount' => $this->formatCurrency($log->school_invoice_amount),
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
-                    'status' => $log->status?->label() ?? '-',
+                    'status' => $this->getStatusLabel($log),
                     'actions' => $this->adminActions($log),
                 ];
             })
@@ -156,6 +156,7 @@ final class SessionLogIndexService
                 $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
                 return [
+                    'date' => $sessionDate?->format('Y-m-d') ?? null,
                     'date_time' => [
                         'date' => $sessionDate?->format('M d, Y') ?? null,
                         'time' => $timeRange,
@@ -171,7 +172,7 @@ final class SessionLogIndexService
                         'school' => $log->school?->display_name ?? null,
                     ],
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
-                    'status' => $log->status?->label() ?? '-',
+                    'status' => $this->getStatusLabel($log),
                     'actions' => $this->therapistActions($log),
                 ];
             })
@@ -268,6 +269,22 @@ final class SessionLogIndexService
             ];
         }
 
+        if ($log->status?->canCancel()) {
+            $actions[] = [
+                'type' => 'form',
+                'label' => 'Cancel',
+                'method' => 'post',
+                'url' => route('therapist.session-logs.cancel', $log),
+                'icon' => 'x',
+                'variant' => 'primary-outline',
+                'confirm' => [
+                    'title' => 'Cancel session?',
+                    'text' => 'This will cancel the session log.',
+                    'icon' => 'warning',
+                ],
+            ];
+        }
+
         return $actions;
     }
 
@@ -283,6 +300,15 @@ final class SessionLogIndexService
 
         $value = (float) $amount;
 
-        return '$'.number_format($value, 2);
+        return '$' . number_format($value, 2);
+    }
+
+    private function getStatusLabel(SessionLog $log): string
+    {
+        try {
+            return $log->status?->label() ?? '-';
+        } catch (\Throwable $e) {
+            return '-';
+        }
     }
 }
