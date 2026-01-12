@@ -160,7 +160,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
     {
         return User::query()
             ->where('role', 'student')
-            ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $schoolId))
+            ->whereHas('studentProfile', fn($q) => $q->where('school_id', $schoolId))
             ->count();
     }
 
@@ -169,7 +169,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return User::query()
             ->where('role', 'student')
             ->where('status', UserStatus::ACTIVE)
-            ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $schoolId))
+            ->whereHas('studentProfile', fn($q) => $q->where('school_id', $schoolId))
             ->select(['id', 'name', 'email'])
             ->orderBy('name')
             ->get();
@@ -179,7 +179,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
     {
         return User::query()
             ->where('role', 'student')
-            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId))
+            ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapistId))
             ->count();
     }
 
@@ -187,7 +187,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
     {
         $query = User::query()
             ->where('role', 'student')
-            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId))
+            ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapistId))
             ->with('studentProfile.school');
 
         if ($search) {
@@ -209,7 +209,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return User::query()
             ->where('role', 'student')
             ->where('status', UserStatus::ACTIVE)
-            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId))
+            ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapistId))
             ->select(['id', 'name', 'email'])
             ->orderBy('name')
             ->get();
@@ -220,5 +220,21 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return StudentProfile::query()
             ->where('user_id', $userId)
             ->value('school_id');
+    }
+
+    public function findByEmail(string $email): ?User
+    {
+        return User::query()
+            ->where('role', 'student')
+            ->where('email', $email)
+            ->first();
+    }
+
+    public function findByIdNumber(string $idNumber, int $schoolId): ?StudentProfile
+    {
+        return StudentProfile::query()
+            ->where('id_number', $idNumber)
+            ->where('school_id', $schoolId)
+            ->first();
     }
 }
