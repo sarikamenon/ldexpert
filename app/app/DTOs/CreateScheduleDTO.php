@@ -64,7 +64,7 @@ final class CreateScheduleDTO
             // Neither provided - this is invalid, throw exception
             throw new \InvalidArgumentException('Either end_time or duration_minutes must be provided.');
         } else {
-            // Both provided - validate both are valid
+            // Both provided - validate both are valid and consistent
             // At this point, both are guaranteed to be non-null due to the if-elseif-elseif logic above
             // but we add explicit checks for defensive programming
             if ($providedDurationMinutes === null) {
@@ -80,7 +80,17 @@ final class CreateScheduleDTO
             if ($calculatedDuration <= 0) {
                 throw new \InvalidArgumentException('end_time must be after start_time.');
             }
-            // Use provided duration_minutes value
+            // Validate that provided duration_minutes matches the calculated duration from time range
+            if ($calculatedDuration !== $providedDurationMinutes) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'duration_minutes (%d) does not match the duration calculated from start_time and end_time (%d). They must be consistent.',
+                        $providedDurationMinutes,
+                        $calculatedDuration
+                    )
+                );
+            }
+            // Use provided duration_minutes value (validated to match calculated duration)
             $durationMinutes = $providedDurationMinutes;
         }
 
