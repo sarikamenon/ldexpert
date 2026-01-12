@@ -28,7 +28,7 @@ final class CreateServiceDTO
             name: $data['name'],
             description: $data['description'] ?? null,
             isDirectService: (bool) ($data['is_direct_service'] ?? false),
-            isGroupService: false,
+            isGroupService: (bool) ($data['is_group_service'] ?? false),
             isFrequencyService: (bool) ($data['is_frequency_service'] ?? false),
             includeInTho: (bool) ($data['include_in_tho'] ?? false),
             deliveryMode: $data['delivery_mode'] ?? Service::defaultDeliveryMode(),

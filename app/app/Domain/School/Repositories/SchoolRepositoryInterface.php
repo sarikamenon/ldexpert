@@ -34,4 +34,6 @@ interface SchoolRepositoryInterface
     public function listActiveForSelect(): Collection;
 
     public function find(int $id): ?School;
+
+    public function findByExternalEmrName(string $externalEmrName): ?School;
 }

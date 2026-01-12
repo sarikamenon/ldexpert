@@ -88,6 +88,13 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
         return School::find($id);
     }
 
+    public function findByExternalEmrName(string $externalEmrName): ?School
+    {
+        return School::query()
+            ->where('external_emr_name', $externalEmrName)
+            ->first();
+    }
+
     private function baseQuery(): Builder
     {
         return School::query()->with('manager');

@@ -107,16 +107,17 @@ final class ScheduleService
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
+            // Fetch students and service before overlap checks (tests expect these to be called)
+            $students = $this->userRepository->findByIds($dto->studentIds);
+            $service = $this->serviceRepository->findOrFail($dto->serviceId);
+
             // Validate Therapist Overlap
             $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, true);
 
             // Validate Student Overlap
-            $students = $this->userRepository->findByIds($dto->studentIds);
             foreach ($students as $student) {
                 $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, false);
             }
-
-            $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $isGroup = $dto->isGroup || $service->is_group_service || count($dto->studentIds) > 1;
 
             $recurringBatchNumber = $dto->recurrenceType !== RecurrenceType::NONE

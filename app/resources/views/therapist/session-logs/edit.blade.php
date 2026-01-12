@@ -27,7 +27,10 @@
                 'students' => [$sessionLog->student],
                 'ssas' => [$sessionLog->ssa],
                 // Ensure the service dropdown is populated and pre-selected when editing
-                'services' => $sessionLog->ssa?->services ?? collect(),
+                // Include both primary service and additional services
+                'services' => $sessionLog->ssa
+                    ? collect([$sessionLog->ssa->primaryService])->merge($sessionLog->ssa->services ?? [])->filter()
+                    : collect(),
                 'sessionOutcomes' => $sessionOutcomes ?? [],
             ])
         </div>

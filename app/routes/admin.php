@@ -32,6 +32,12 @@ Route::middleware('role:admin')
         Route::resource('therapists', TherapistController::class)->except(['destroy']);
 
         Route::get('students/export', [StudentController::class, 'export'])->name('students.export');
+        Route::get('students/import', [StudentController::class, 'showImportForm'])->name('students.import');
+        Route::post('students/import', [StudentController::class, 'import'])->name('students.import.store');
+        Route::get('students/imports', [StudentController::class, 'importHistory'])->name('students.imports.index');
+        Route::get('students/imports/{import}', [StudentController::class, 'showImportStatus'])->name('students.imports.show');
+        Route::get('students/imports/{import}/status', [StudentController::class, 'showImportStatus'])->name('students.imports.status');
+        Route::get('students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::resource('students', StudentController::class)->except(['destroy']);
 

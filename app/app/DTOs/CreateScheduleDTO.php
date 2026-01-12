@@ -53,7 +53,7 @@ final class CreateScheduleDTO
                 throw new \InvalidArgumentException('duration_minutes must be greater than 0.');
             }
             $durationMinutes = $providedDurationMinutes;
-            $endTime = Carbon::parse($startTime)->addMinutes($durationMinutes)->toTimeString();
+            $endTime = Carbon::parse($startTime)->addMinutes($durationMinutes)->format('H:i');
         } elseif ($endTime !== null && $providedDurationMinutes === null) {
             // end_time provided, calculate duration_minutes
             $durationMinutes = (int) Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime));
@@ -64,7 +64,7 @@ final class CreateScheduleDTO
             // Neither provided - this is invalid, throw exception
             throw new \InvalidArgumentException('Either end_time or duration_minutes must be provided.');
         } else {
-            // Both provided - validate both are valid
+            // Both provided - validate both are valid and consistent
             // At this point, both are guaranteed to be non-null due to the if-elseif-elseif logic above
             // but we add explicit checks for defensive programming
             if ($providedDurationMinutes === null) {
@@ -80,7 +80,17 @@ final class CreateScheduleDTO
             if ($calculatedDuration <= 0) {
                 throw new \InvalidArgumentException('end_time must be after start_time.');
             }
-            // Use provided duration_minutes value
+            // Validate that provided duration_minutes matches the calculated duration from time range
+            if ($calculatedDuration !== $providedDurationMinutes) {
+                throw new \InvalidArgumentException(
+                    sprintf(
+                        'duration_minutes (%d) does not match the duration calculated from start_time and end_time (%d). They must be consistent.',
+                        $providedDurationMinutes,
+                        $calculatedDuration
+                    )
+                );
+            }
+            // Use provided duration_minutes value (validated to match calculated duration)
             $durationMinutes = $providedDurationMinutes;
         }
 
@@ -89,13 +99,13 @@ final class CreateScheduleDTO
         if ($durationMinutes === null) {
             throw new \InvalidArgumentException('duration_minutes must be calculated or provided.');
         }
-        if (!is_int($durationMinutes) || $durationMinutes <= 0) {
+        if (! is_int($durationMinutes) || $durationMinutes <= 0) {
             throw new \InvalidArgumentException('duration_minutes must be a positive integer.');
         }
 
         // Final validation: ensure endTime is always a string (non-null)
         // This provides explicit type safety guarantee before passing to constructor
-        if ($endTime === null || !is_string($endTime)) {
+        if ($endTime === null || ! is_string($endTime)) {
             throw new \InvalidArgumentException('end_time must be provided or calculated.');
         }
 

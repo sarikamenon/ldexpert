@@ -3,6 +3,7 @@
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\CompanyInfoService;
 use App\Domain\Invoice\Services\InvoiceService;
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
@@ -21,7 +22,8 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->repository = Mockery::mock(InvoiceRepositoryInterface::class);
     $this->companyInfoService = new CompanyInfoService;
-    $this->service = new InvoiceService($this->repository, $this->companyInfoService);
+    $this->schoolRepository = Mockery::mock(SchoolRepositoryInterface::class);
+    $this->service = new InvoiceService($this->repository, $this->companyInfoService, $this->schoolRepository);
 
     // Set up company settings
     Setting::set('company.name', 'LD Expert LLP', 'string', 'company');
@@ -117,6 +119,11 @@ test('invoice service generates invoice with snapshots', function () {
         ->once()
         ->with([1, 2])
         ->andReturn($sessionLogs);
+
+    $this->schoolRepository->shouldReceive('find')
+        ->once()
+        ->with($school->id)
+        ->andReturn($school);
 
     $this->repository->shouldReceive('generateInvoiceNumber')
         ->once()

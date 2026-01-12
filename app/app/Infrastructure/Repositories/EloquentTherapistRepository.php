@@ -230,8 +230,12 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->with('therapistProfile');
 
         if ($search) {
-            $query->whereHas('therapistProfile', function (Builder $q) use ($search) {
-                $q->search($search);
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereHas('therapistProfile', function (Builder $subQ) use ($search) {
+                        $subQ->search($search);
+                    });
             });
         }
 

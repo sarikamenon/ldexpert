@@ -10,6 +10,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentImportService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\TherapistService;
@@ -18,19 +19,23 @@ use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\StoreStudentImportDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Enums\SSAStatus;
+use App\Enums\StudentImportType;
 use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
 use App\Http\Requests\Admin\Student\ExportStudentsRequest;
+use App\Http\Requests\Admin\Student\ImportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
+use App\Models\StudentImport;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -44,6 +49,7 @@ final class StudentController extends Controller
 {
     public function __construct(
         private readonly StudentService $studentService,
+        private readonly StudentImportService $importService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
@@ -244,6 +250,125 @@ final class StudentController extends Controller
                     $student->status?->value ?? $student->status ?? 'inactive',
                 ]);
             }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function showImportForm(): View
+    {
+        $this->authorize('create', StudentProfile::class);
+
+        $novaTemplate = $this->importService->getTemplate(StudentImportType::NOVA);
+        $requiredColumns = $novaTemplate['required_columns'] ?? [];
+        $optionalColumns = $novaTemplate['optional_columns'] ?? [];
+
+        return view('admin.students.import', [
+            'requiredColumns' => $requiredColumns,
+            'optionalColumns' => $optionalColumns,
+            'importTypes' => StudentImportType::cases(),
+        ]);
+    }
+
+    public function import(ImportStudentsRequest $request): JsonResponse
+    {
+        $this->authorize('create', StudentProfile::class);
+
+        $validated = $request->validated();
+        $type = StudentImportType::from($validated['type'] ?? StudentImportType::NOVA->value);
+
+        $dto = StoreStudentImportDTO::fromArray([
+            'file' => $request->file('file'),
+            'user_id' => $request->user()->id,
+            'type' => $type->value,
+        ]);
+
+        $import = $this->importService->storeImportRequest($dto);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import queued successfully. You will receive an email notification when it completes.',
+            'data' => [
+                'import_id' => $import->id,
+                'status' => $import->status->value,
+            ],
+        ]);
+    }
+
+    public function showImportStatus(Request $request, StudentImport $import): View|JsonResponse
+    {
+        $this->authorize('view', StudentProfile::class);
+
+        $import->load(['rows.student', 'user']);
+
+        $stats = [
+            'total' => $import->total_rows,
+            'processed' => $import->processed_rows,
+            'success' => $import->rows()->where('status', 'done')->count(),
+            'duplicates' => $import->rows()->where('status', 'duplicate')->count(),
+            'errors' => $import->rows()->where('status', 'validation_error')->count(),
+            'pending' => $import->rows()->where('status', 'pending')->count(),
+        ];
+
+        // Return JSON for AJAX polling
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => $import->status->value,
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('admin.students.import-status', [
+            'import' => $import,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function importHistory(Request $request): View
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        $imports = StudentImport::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
+
+        return view('admin.students.import-history', [
+            'imports' => $imports,
+        ]);
+    }
+
+    public function downloadTemplate(Request $request): StreamedResponse
+    {
+        $this->authorize('create', StudentProfile::class);
+
+        $type = StudentImportType::from($request->query('type', StudentImportType::NOVA->value));
+        $template = $this->importService->getTemplate($type);
+
+        $requiredColumns = $template['required_columns'] ?? [];
+        $optionalColumns = $template['optional_columns'] ?? [];
+        $allColumns = array_merge($requiredColumns, $optionalColumns);
+
+        $filename = sprintf('student-import-template-%s-%s.csv', strtolower($type->value), now()->format('Ymd_His'));
+
+        return response()->streamDownload(function () use ($allColumns, $requiredColumns): void {
+            $handle = fopen('php://output', 'w');
+
+            // Write header row
+            fputcsv($handle, $allColumns);
+
+            // Write example row with placeholders
+            $exampleRow = [];
+            foreach ($allColumns as $column) {
+                if (in_array($column, $requiredColumns, true)) {
+                    $exampleRow[] = '['.str_replace('_', ' ', ucwords($column, '_')).']';
+                } else {
+                    $exampleRow[] = '';
+                }
+            }
+            fputcsv($handle, $exampleRow);
 
             fclose($handle);
         }, $filename, [

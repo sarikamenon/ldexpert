@@ -29,31 +29,31 @@ final class SettingsService
     public function updateSettings(array $settings): void
     {
         if (isset($settings['site_name'])) {
-            $this->repository->set('site_name', $settings['site_name'], 'string', 'general');
+            $this->repository->set('site_name', $settings['site_name'], 'string', 'general', false);
         }
 
         if (isset($settings['support_email'])) {
-            $this->repository->set('support_email', $settings['support_email'], 'string', 'general');
+            $this->repository->set('support_email', $settings['support_email'], 'string', 'general', false);
         }
 
         if (isset($settings['records_per_page'])) {
-            $this->repository->set('records_per_page', $settings['records_per_page'], 'integer', 'general');
+            $this->repository->set('records_per_page', $settings['records_per_page'], 'integer', 'general', false);
         }
 
         if (isset($settings['maintenance_mode'])) {
-            $this->repository->set('maintenance_mode', $settings['maintenance_mode'], 'boolean', 'system');
+            $this->repository->set('maintenance_mode', $settings['maintenance_mode'], 'boolean', 'system', false);
         }
 
         if (isset($settings['smtp_host'])) {
-            $this->repository->set('smtp_host', $settings['smtp_host'], 'string', 'email');
+            $this->repository->set('smtp_host', $settings['smtp_host'], 'string', 'email', false);
         }
 
         if (isset($settings['smtp_port'])) {
-            $this->repository->set('smtp_port', $settings['smtp_port'], 'integer', 'email');
+            $this->repository->set('smtp_port', $settings['smtp_port'], 'integer', 'email', false);
         }
 
         if (isset($settings['smtp_username'])) {
-            $this->repository->set('smtp_username', $settings['smtp_username'], 'string', 'email');
+            $this->repository->set('smtp_username', $settings['smtp_username'], 'string', 'email', false);
         }
 
         if (isset($settings['smtp_password'])) {

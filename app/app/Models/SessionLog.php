@@ -187,11 +187,13 @@ class SessionLog extends Model
     {
         if ($value === null) {
             $this->attributes['status'] = null;
+
             return;
         }
 
         if ($value instanceof SessionLogStatus) {
             $this->attributes['status'] = $value->value;
+
             return;
         }
 

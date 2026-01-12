@@ -40,4 +40,8 @@ interface StudentRepositoryInterface
     public function listActiveStudentsByTherapist(int $therapistId): Collection;
 
     public function getSchoolIdByUserId(int $userId): ?int;
+
+    public function findByEmail(string $email): ?User;
+
+    public function findByIdNumber(string $idNumber, int $schoolId): ?StudentProfile;
 }

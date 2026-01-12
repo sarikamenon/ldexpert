@@ -190,4 +190,23 @@ final class CreateScheduleDTOTest extends TestCase
         $this->assertSame('10:00', $dto->endTime);
         $this->assertSame(60, $dto->durationMinutes);
     }
+
+    public function test_from_array_throws_exception_when_both_provided_but_conflict(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('duration_minutes (120) does not match the duration calculated from start_time and end_time (60). They must be consistent.');
+
+        $data = [
+            'therapist_id' => 10,
+            'service_id' => '3',
+            'student_ids' => ['1'],
+            'schedule_date' => '2025-12-01',
+            'start_time' => '09:00',
+            'end_time' => '10:00', // This suggests 60 minutes
+            'duration_minutes' => 120, // But this says 120 minutes - conflict!
+            'recurrence_type' => 'none',
+        ];
+
+        CreateScheduleDTO::fromArray($data);
+    }
 }

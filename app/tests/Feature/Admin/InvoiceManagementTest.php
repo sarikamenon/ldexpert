@@ -161,7 +161,8 @@ it('verifies snapshot data persists even if school changes', function () {
     $this->actingAs($admin)
         ->post(route('admin.invoices.store'), $payload);
 
-    $invoice = Invoice::first();
+    $invoice = Invoice::where('school_id', $school->id)->first();
+    expect($invoice)->not->toBeNull();
 
     // Change school name
     $school->update([
