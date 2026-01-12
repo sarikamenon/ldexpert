@@ -21,6 +21,7 @@
 
         <div>
             <x-input-label for="name" :value="__('Name')" />
+            <p class="mt-1 text-xs text-foreground/60">Your full name</p>
             <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)"
                 required autofocus autocomplete="name" />
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
@@ -28,6 +29,7 @@
 
         <div>
             <x-input-label for="email" :value="__('Email')" />
+            <p class="mt-1 text-xs text-foreground/60">Your email address for account access</p>
             <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)"
                 required autocomplete="username" />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />

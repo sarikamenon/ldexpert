@@ -3,12 +3,16 @@
     $serviceRows = old(
         'services',
         $isEdit
-            ? $contract->services->map(fn($service) => [
-                    'service_id' => $service->service_id,
-                    'rate' => $service->rate,
-                    'rate_type' => $service->rate_type->value ?? $service->rate_type,
-                ])->toArray()
-            : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value]]
+            ? $contract->services
+                ->map(
+                    fn($service) => [
+                        'service_id' => $service->service_id,
+                        'rate' => $service->rate,
+                        'rate_type' => $service->rate_type->value ?? $service->rate_type,
+                    ],
+                )
+                ->toArray()
+            : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value]],
     );
 
     $selectedStatus = old('status', $isEdit ? $contract->status->value : \App\Enums\ContractStatus::ACTIVE->value);
@@ -29,11 +33,12 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <x-input-label value="School" />
+                <p class="mt-1 text-xs text-foreground/60">School for this contract</p>
                 @if ($isEdit)
                     <p class="mt-2 font-medium">{{ $contract->school?->display_name ?? '—' }}</p>
                 @else
                     <select name="school_id"
-                        class="mt-2 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
                         <option value="">Select School</option>
                         @foreach ($schools as $school)
                             <option value="{{ $school->id }}" @selected(old('school_id') == $school->id)>
@@ -49,8 +54,9 @@
 
             <div>
                 <x-input-label value="Status" />
-                    <select name="status"
-                    class="mt-2 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
+                <p class="mt-1 text-xs text-foreground/60">Contract status</p>
+                <select name="status"
+                    class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}" @selected($selectedStatus === $status->value)>
                             {{ $status->label() }}
@@ -66,8 +72,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <x-input-label value="Start Date" />
-                <x-text-input type="date" name="start_date" class="mt-2 w-full"
-                    value="{{ $startDateValue }}" />
+                <p class="mt-1 text-xs text-foreground/60">Contract start date</p>
+                <x-text-input type="date" name="start_date" class="mt-1 w-full" value="{{ $startDateValue }}" />
                 @error('start_date')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
@@ -75,8 +81,8 @@
 
             <div>
                 <x-input-label value="End Date" />
-                <x-text-input type="date" name="end_date" class="mt-2 w-full"
-                    value="{{ $endDateValue }}" />
+                <p class="mt-1 text-xs text-foreground/60">Contract end date (optional)</p>
+                <x-text-input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
                 @error('end_date')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
@@ -85,8 +91,9 @@
 
         <div>
             <x-input-label value="Notes" />
+            <p class="mt-1 text-xs text-foreground/60">Additional notes about this contract</p>
             <textarea name="notes" rows="4"
-                class="mt-2 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">{{ $notesValue }}</textarea>
+                class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">{{ $notesValue }}</textarea>
             @error('notes')
                 <p class="text-sm text-danger mt-1">{{ $message }}</p>
             @enderror
@@ -120,8 +127,7 @@
                                     class="w-full border border-border rounded-lg px-2 py-2">
                                     <option value="">Select Service</option>
                                     @foreach ($services as $service)
-                                        <option value="{{ $service->id }}"
-                                            @selected($serviceRow['service_id'] == $service->id)>
+                                        <option value="{{ $service->id }}" @selected($serviceRow['service_id'] == $service->id)>
                                             {{ $service->name }}
                                         </option>
                                     @endforeach
@@ -142,8 +148,7 @@
                                 <select name="services[{{ $index }}][rate_type]"
                                     class="w-full border border-border rounded-lg px-2 py-2">
                                     @foreach ($rateTypes as $rateType)
-                                        <option value="{{ $rateType->value }}"
-                                            @selected(($serviceRow['rate_type'] ?? null) === $rateType->value)>
+                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['rate_type'] ?? null) === $rateType->value)>
                                             {{ $rateType->label() }}
                                         </option>
                                     @endforeach
@@ -185,7 +190,8 @@
             </select>
         </td>
         <td class="py-2 px-3">
-            <x-text-input type="number" step="0.01" min="0" name="services[__INDEX__][rate]" class="w-full" />
+            <x-text-input type="number" step="0.01" min="0" name="services[__INDEX__][rate]"
+                class="w-full" />
         </td>
         <td class="py-2 px-3">
             <select name="services[__INDEX__][rate_type]" class="w-full border border-border rounded-lg px-2 py-2">
@@ -201,4 +207,3 @@
         </td>
     </tr>
 </template>
-

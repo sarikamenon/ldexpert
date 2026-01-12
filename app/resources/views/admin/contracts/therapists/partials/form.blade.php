@@ -33,13 +33,14 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <x-input-label value="Therapist" />
+                <p class="mt-1 text-xs text-foreground/60">Therapist for this contract</p>
                 @if ($isEdit)
                     <p class="mt-2 font-medium">
                         {{ $contract->therapist?->first_name }} {{ $contract->therapist?->last_name }}
                     </p>
                 @else
                     <select name="therapist_id"
-                        class="mt-2 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
                         <option value="">Select Therapist</option>
                         @foreach ($therapists as $therapist)
                             <option value="{{ $therapist->id }}" @selected(old('therapist_id') == $therapist->id)>
@@ -55,8 +56,9 @@
 
             <div>
                 <x-input-label value="Status" />
+                <p class="mt-1 text-xs text-foreground/60">Contract status</p>
                 <select name="status"
-                    class="mt-2 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
+                    class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}" @selected($selectedStatus === $status->value)>
                             {{ $status->label() }}
@@ -72,7 +74,8 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <x-input-label value="Start Date" />
-                <x-text-input type="date" name="start_date" class="mt-2 w-full" value="{{ $startDateValue }}" />
+                <p class="mt-1 text-xs text-foreground/60">Contract start date</p>
+                <x-text-input type="date" name="start_date" class="mt-1 w-full" value="{{ $startDateValue }}" />
                 @error('start_date')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
@@ -80,7 +83,8 @@
 
             <div>
                 <x-input-label value="End Date" />
-                <x-text-input type="date" name="end_date" class="mt-2 w-full" value="{{ $endDateValue }}" />
+                <p class="mt-1 text-xs text-foreground/60">Contract end date (optional)</p>
+                <x-text-input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
                 @error('end_date')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
@@ -89,8 +93,9 @@
 
         <div>
             <x-input-label value="Notes" />
+            <p class="mt-1 text-xs text-foreground/60">Additional notes about this contract</p>
             <textarea name="notes" rows="4"
-                class="mt-2 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">{{ $notesValue }}</textarea>
+                class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">{{ $notesValue }}</textarea>
             @error('notes')
                 <p class="text-sm text-danger mt-1">{{ $message }}</p>
             @enderror

@@ -103,7 +103,7 @@ final class ScheduleService
             }
 
             // Timezone Conversion & Overlap Check
-            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
+            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
@@ -204,7 +204,12 @@ final class ScheduleService
 
                 $schedules->push($parentSchedule);
 
-                $occurrences = $this->generateRecurringOccurrences($parentSchedule, $dto->studentIds, $isGroup);
+                // Use provided occurrence dates if available, otherwise generate them
+                if ($dto->occurrenceDates !== null && count($dto->occurrenceDates) > 0) {
+                    $occurrences = $this->createOccurrencesFromDates($parentSchedule, $dto->occurrenceDates, $dto->scheduleDate, $dto->studentIds, $isGroup, $therapist);
+                } else {
+                    $occurrences = $this->generateRecurringOccurrences($parentSchedule, $dto->studentIds, $isGroup);
+                }
                 $schedules = $schedules->merge($occurrences);
             }
 
@@ -242,7 +247,7 @@ final class ScheduleService
             // DTO fromArray sets all fields.
 
             $durationMinutes = $dto->durationMinutes ?? $schedule->durationMinutes();
-            $localStartStr = $dto->scheduleDate.' '.$dto->startTime;
+            $localStartStr = $dto->scheduleDate . ' ' . $dto->startTime;
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($durationMinutes);
 
@@ -343,7 +348,7 @@ final class ScheduleService
             // If this is the parent of a recurring series, delete all in the batch
             if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
                 $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                    ->each(fn (Schedule $occurrence) => $this->repository->delete($occurrence));
+                    ->each(fn(Schedule $occurrence) => $this->repository->delete($occurrence));
             }
 
             $this->repository->delete($schedule);
@@ -392,8 +397,8 @@ final class ScheduleService
             ? $parentSchedule->end_time->format('H:i:s')
             : $parentSchedule->end_time;
 
-        $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
-        $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
+        $utcStart = Carbon::parse($scheduleDate . ' ' . $startTime);
+        $utcEnd = Carbon::parse($scheduleDate . ' ' . $endTime);
         if ($utcEnd->lt($utcStart)) {
             $utcEnd->addDay();
         }
@@ -450,6 +455,117 @@ final class ScheduleService
 
             $currentStart = $this->nextRecurrenceDate($currentStart, $parentSchedule->recurrence_type);
             $currentEnd = $this->nextRecurrenceDate($currentEnd, $parentSchedule->recurrence_type);
+        }
+
+        return $occurrences;
+    }
+
+    /**
+     * Create occurrences from provided dates
+     *
+     * @param  array<string>  $occurrenceDates  Local dates as Y-m-d strings
+     * @param  string  $parentScheduleDate  Local date as Y-m-d string (to filter out from occurrences)
+     * @param  array<int, int>  $studentIds
+     * @return Collection<int, Schedule>
+     */
+    private function createOccurrencesFromDates(Schedule $parentSchedule, array $occurrenceDates, string $parentScheduleDate, array $studentIds, bool $isGroup, User $therapist): Collection
+    {
+        $students = $this->userRepository->findByIds($studentIds);
+        $occurrences = collect();
+
+        // Get time from parent schedule (stored as UTC)
+        $startTime = $parentSchedule->start_time instanceof \Carbon\Carbon
+            ? $parentSchedule->start_time->format('H:i')
+            : ($parentSchedule->start_time instanceof \DateTimeInterface
+                ? $parentSchedule->start_time->format('H:i')
+                : $parentSchedule->start_time);
+        $endTime = $parentSchedule->end_time instanceof \Carbon\Carbon
+            ? $parentSchedule->end_time->format('H:i')
+            : ($parentSchedule->end_time instanceof \DateTimeInterface
+                ? $parentSchedule->end_time->format('H:i')
+                : $parentSchedule->end_time);
+
+        // Format schedule date to ensure it's just a date string
+        $parentScheduleDateStr = $parentSchedule->schedule_date instanceof \Carbon\Carbon
+            ? $parentSchedule->schedule_date->format('Y-m-d')
+            : ($parentSchedule->schedule_date instanceof \DateTimeInterface
+                ? $parentSchedule->schedule_date->format('Y-m-d')
+                : $parentSchedule->schedule_date);
+
+        // Parse parent schedule date/time to get duration
+        $parentUtcStart = Carbon::parse($parentScheduleDateStr . ' ' . $startTime);
+        $parentUtcEnd = Carbon::parse($parentScheduleDateStr . ' ' . $endTime);
+        if ($parentUtcEnd->lt($parentUtcStart)) {
+            $parentUtcEnd->addDay();
+        }
+        $durationMinutes = (int) $parentUtcStart->diffInMinutes($parentUtcEnd);
+
+        // Filter out dates that match the parent schedule date (already created as parent schedule)
+        $occurrenceDates = array_filter($occurrenceDates, function ($dateStr) use ($parentScheduleDate) {
+            return $dateStr !== $parentScheduleDate;
+        });
+
+        foreach ($occurrenceDates as $occurrenceDateStr) {
+            // Ensure occurrence date is just a date string (Y-m-d)
+            $cleanOccurrenceDate = $occurrenceDateStr;
+            if (str_contains($occurrenceDateStr, ' ')) {
+                $cleanOccurrenceDate = explode(' ', $occurrenceDateStr)[0];
+            }
+
+            // Ensure start time is in H:i format
+            $cleanStartTime = $startTime;
+            if (str_contains($startTime, ':')) {
+                $parts = explode(':', $startTime);
+                $cleanStartTime = $parts[0] . ':' . $parts[1]; // Take only H:i
+            }
+
+            // Parse local date string and combine with start time
+            $localDateTimeStr = $cleanOccurrenceDate . ' ' . $cleanStartTime;
+
+            // Convert to UTC for storage/validation
+            $occurrenceUtcStart = $this->timezoneService->parseUserLocalToUtc($localDateTimeStr, $therapist);
+            $occurrenceUtcEnd = $occurrenceUtcStart->copy()->addMinutes($durationMinutes);
+
+            // Validate for weekends (should already be validated in request, but double-check)
+            $localDate = Carbon::parse($cleanOccurrenceDate);
+            if ($localDate->isWeekend()) {
+                throw new \InvalidArgumentException(sprintf('Occurrence date %s falls on a weekend and cannot be scheduled.', $cleanOccurrenceDate));
+            }
+
+            // Check Overlap
+            $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, true);
+            foreach ($students as $student) {
+                $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, false);
+            }
+
+            $groupBatchNumber = $isGroup
+                ? $this->repository->generateBatchNumber('group')
+                : null;
+
+            foreach ($studentIds as $studentId) {
+                $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId);
+
+                $occurrences->push($this->repository->create([
+                    'therapist_id' => $parentSchedule->therapist_id,
+                    'student_id' => $studentId,
+                    'ssa_id' => $parentSchedule->ssa_id,
+                    'service_id' => $parentSchedule->service_id,
+                    'school_id' => $schoolId,
+                    'parent_schedule_id' => $parentSchedule->id,
+                    'schedule_date' => $occurrenceUtcStart->toDateString(),
+                    'start_time' => $occurrenceUtcStart->toTimeString(),
+                    'end_time' => $occurrenceUtcEnd->toTimeString(),
+                    'recurrence_type' => $parentSchedule->recurrence_type,
+                    'recurrence_end_date' => $parentSchedule->recurrence_end_date?->format('Y-m-d'),
+                    'is_group' => $isGroup,
+                    'recurring_batch_number' => $parentSchedule->recurring_batch_number,
+                    'group_batch_number' => $groupBatchNumber,
+                    'status' => ScheduleStatus::SCHEDULED,
+                    'billing_status' => BillingStatus::PENDING,
+                    'notes' => $parentSchedule->notes,
+                    'location_details' => $parentSchedule->location_details,
+                ]));
+            }
         }
 
         return $occurrences;

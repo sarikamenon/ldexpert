@@ -120,8 +120,9 @@
                 <div class="space-y-1">
                     <label for="school_id" class="text-sm font-medium text-foreground">School <span
                             class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">School to invoice for the selected session logs</p>
                     <select id="school_id" name="school_id" required
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                         <option value="">Select School</option>
                         @foreach ($schools ?? [] as $school)
                             <option value="{{ $school->id }}" @selected(old('school_id', $filters['school_id'] ?? null) == $school->id)>
@@ -137,9 +138,10 @@
                 <div class="space-y-1">
                     <label for="invoice_date" class="text-sm font-medium text-foreground">Invoice Date <span
                             class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">Date when the invoice is issued</p>
                     <input type="date" id="invoice_date" name="invoice_date" required
                         value="{{ old('invoice_date', now()->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('invoice_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -148,11 +150,11 @@
                 <div class="space-y-1">
                     <label for="invoice_number" class="text-sm font-medium text-foreground">Invoice Number <span
                             class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">Auto-generated number is shown. You can edit if needed.
+                    </p>
                     <input type="text" id="invoice_number" name="invoice_number"
                         value="{{ old('invoice_number', $invoiceNumber ?? '') }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                    <p class="text-xs text-foreground/60 mt-1">Auto-generated number is shown. You can edit if needed.
-                    </p>
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('invoice_number')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -161,9 +163,11 @@
                 <div class="space-y-1">
                     <label for="billing_period_start" class="text-sm font-medium text-foreground">Billing Period Start
                         <span class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">Start date of the billing period covered by this invoice
+                    </p>
                     <input type="date" id="billing_period_start" name="billing_period_start" required
                         value="{{ old('billing_period_start', $filters['date_from'] ?? now()->subDays(30)->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('billing_period_start')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -172,9 +176,11 @@
                 <div class="space-y-1">
                     <label for="billing_period_end" class="text-sm font-medium text-foreground">Billing Period End
                         <span class="text-red-500">*</span></label>
+                    <p class="mt-1 text-xs text-foreground/60">End date of the billing period covered by this invoice
+                    </p>
                     <input type="date" id="billing_period_end" name="billing_period_end" required
                         value="{{ old('billing_period_end', $filters['date_to'] ?? now()->format('Y-m-d')) }}"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
                     @error('billing_period_end')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
@@ -182,8 +188,9 @@
 
                 <div class="space-y-1 md:col-span-2">
                     <label for="notes" class="text-sm font-medium text-foreground">Notes (Optional)</label>
+                    <p class="mt-1 text-xs text-foreground/60">Additional notes or comments for this invoice</p>
                     <textarea id="notes" name="notes" rows="3"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">{{ old('notes') }}</textarea>
+                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">{{ old('notes') }}</textarea>
                     @error('notes')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror

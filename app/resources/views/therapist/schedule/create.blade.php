@@ -51,6 +51,6 @@
                 'selected_service' => old('service_id', $preselectedService?->id),
             ]) !!}
         </script>
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js'])
+        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
     </x-slot>
 </x-app-layout>

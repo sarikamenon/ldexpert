@@ -23,6 +23,7 @@ final class ChangeStudentStatusDTO
     {
         return [
             'status' => $this->status,
+            'reason' => $this->reason,
         ];
     }
 }

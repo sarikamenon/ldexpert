@@ -21,9 +21,10 @@ final class CreateScheduleDTO
         public readonly ?string $recurrenceEndDate,
         public readonly bool $isGroup,
         public readonly ?int $occurrenceCount,
+        public readonly ?array $occurrenceDates,
         public readonly ?string $notes,
         public readonly ?string $locationDetails,
-        public readonly int $durationMinutes = 0,
+        public readonly int $durationMinutes,
     ) {}
 
     public static function fromArray(array $data): self
@@ -33,15 +34,70 @@ final class CreateScheduleDTO
             : RecurrenceType::from($data['recurrence_type']);
 
         $studentIds = array_map(
-            static fn ($id): int => (int) $id,
+            static fn($id): int => (int) $id,
             $data['student_ids']
         );
 
         $startTime = $data['start_time'];
         $endTime = $data['end_time'] ?? null;
-        $durationMinutes = isset($data['duration_minutes'])
+        $providedDurationMinutes = isset($data['duration_minutes']) && $data['duration_minutes'] !== ''
             ? (int) $data['duration_minutes']
-            : ($endTime ? (int) Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime)) : 0);
+            : null;
+
+        // Calculate missing values: at least one of end_time or duration_minutes must be provided
+        $durationMinutes = null;
+
+        if ($providedDurationMinutes !== null && $endTime === null) {
+            // duration_minutes provided, calculate end_time
+            if ($providedDurationMinutes <= 0) {
+                throw new \InvalidArgumentException('duration_minutes must be greater than 0.');
+            }
+            $durationMinutes = $providedDurationMinutes;
+            $endTime = Carbon::parse($startTime)->addMinutes($durationMinutes)->toTimeString();
+        } elseif ($endTime !== null && $providedDurationMinutes === null) {
+            // end_time provided, calculate duration_minutes
+            $durationMinutes = (int) Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime));
+            if ($durationMinutes <= 0) {
+                throw new \InvalidArgumentException('end_time must be after start_time.');
+            }
+        } elseif ($providedDurationMinutes === null && $endTime === null) {
+            // Neither provided - this is invalid, throw exception
+            throw new \InvalidArgumentException('Either end_time or duration_minutes must be provided.');
+        } else {
+            // Both provided - validate both are valid
+            // At this point, both are guaranteed to be non-null due to the if-elseif-elseif logic above
+            // but we add explicit checks for defensive programming
+            if ($providedDurationMinutes === null) {
+                throw new \InvalidArgumentException('duration_minutes must be provided.');
+            }
+            if ($providedDurationMinutes <= 0) {
+                throw new \InvalidArgumentException('duration_minutes must be greater than 0.');
+            }
+            if ($endTime === null) {
+                throw new \InvalidArgumentException('end_time must be provided.');
+            }
+            $calculatedDuration = (int) Carbon::parse($startTime)->diffInMinutes(Carbon::parse($endTime));
+            if ($calculatedDuration <= 0) {
+                throw new \InvalidArgumentException('end_time must be after start_time.');
+            }
+            // Use provided duration_minutes value
+            $durationMinutes = $providedDurationMinutes;
+        }
+
+        // Final validation: ensure durationMinutes is set and is a positive integer
+        // This provides explicit type safety guarantee before passing to constructor
+        if ($durationMinutes === null) {
+            throw new \InvalidArgumentException('duration_minutes must be calculated or provided.');
+        }
+        if (!is_int($durationMinutes) || $durationMinutes <= 0) {
+            throw new \InvalidArgumentException('duration_minutes must be a positive integer.');
+        }
+
+        // Final validation: ensure endTime is always a string (non-null)
+        // This provides explicit type safety guarantee before passing to constructor
+        if ($endTime === null || !is_string($endTime)) {
+            throw new \InvalidArgumentException('end_time must be provided or calculated.');
+        }
 
         return new self(
             therapistId: (int) $data['therapist_id'],
@@ -52,7 +108,7 @@ final class CreateScheduleDTO
             studentIds: $studentIds,
             scheduleDate: $data['schedule_date'],
             startTime: $startTime,
-            endTime: $endTime ?? Carbon::parse($startTime)->addMinutes($durationMinutes)->toTimeString(),
+            endTime: $endTime,
             recurrenceType: $recurrenceType,
             recurrenceEndDate: isset($data['recurrence_end_date']) && $data['recurrence_end_date'] !== ''
                 ? $data['recurrence_end_date']
@@ -60,6 +116,9 @@ final class CreateScheduleDTO
             isGroup: isset($data['is_group']) ? (bool) $data['is_group'] : false,
             occurrenceCount: isset($data['occurrence_count']) && $data['occurrence_count'] !== ''
                 ? (int) $data['occurrence_count']
+                : null,
+            occurrenceDates: isset($data['occurrence_dates']) && is_array($data['occurrence_dates']) && count($data['occurrence_dates']) > 0
+                ? $data['occurrence_dates']
                 : null,
             notes: $data['notes'] ?? null,
             locationDetails: isset($data['location_details']) && $data['location_details'] !== ''
@@ -84,6 +143,7 @@ final class CreateScheduleDTO
             'recurrence_end_date' => $this->recurrenceEndDate,
             'is_group' => $this->isGroup,
             'occurrence_count' => $this->occurrenceCount,
+            'occurrence_dates' => $this->occurrenceDates,
             'notes' => $this->notes,
             'location_details' => $this->locationDetails,
         ];
