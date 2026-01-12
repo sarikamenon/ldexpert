@@ -1,6 +1,7 @@
 ---
 alwaysApply: true
 ---
+
 # Cursor Coding Rules for Bird (Laravel)
 
 - Monolith only: no public API controllers. Use Blade pages with Form Requests and jQuery AJAX where asynchronous behavior is needed.
@@ -24,6 +25,41 @@ alwaysApply: true
 - Follow PSR-12; run `make qa` before commits.
 - Keep files small and focused: hard cap of 300 lines per file. If approaching 300, extract to smaller classes, view components, or dedicated services. No exceptions without a comment justifying and a follow-up task to split.
   — Use soft deletes by default on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
+
+Form Help Text Standards
+
+- **All form inputs MUST have help text** to guide users
+- **Help text MUST be placed BEFORE the input field** (between label and input)
+- Use consistent styling: `class="mt-1 text-xs text-foreground/60"`
+- Standard structure: Label → Help Text → Input → Error Messages
+
+Required Pattern:
+
+```blade
+<div>
+    <x-input-label for="field_name" value="Field Label *" />
+    <p class="mt-1 text-xs text-foreground/60" id="field_name_help">
+        Clear, concise help text explaining what this field is for and any requirements.
+    </p>
+    <x-text-input
+        id="field_name"
+        name="field_name"
+        class="mt-1 block w-full"
+        aria-describedby="field_name_help"
+    />
+    <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
+</div>
+```
+
+Guidelines:
+
+- Help text should explain the purpose of the field, format requirements, or constraints
+- Use `aria-describedby` on inputs linking to help text ID for accessibility
+- Keep help text concise (1-2 sentences maximum)
+- For optional fields, mention they're optional in the help text if not obvious
+- For date/time fields, specify timezone context if relevant
+- For numeric fields, specify units, ranges, or increments (e.g., "Duration in minutes (minimum 5, increments of 5)")
+- Never place help text after the input field
 
 Project-enforced conventions
 

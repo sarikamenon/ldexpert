@@ -14,6 +14,21 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Use lowercase with dashes for directories (e.g., app/Http/Controllers).
 - Favor dependency injection and service containers.
 
+## Architecture Standards
+
+- **Monolith only**: No public API controllers. Use Blade pages with Form Requests and jQuery AJAX where asynchronous behavior is needed.
+- **Always use DTOs** for input transport between layers.
+- **Always use Form Request classes** for validation. Controllers MUST type-hint Request objects from `app/Http/Requests/**`.
+- **Controllers must delegate to Services**; Services use Repositories.
+- **Prefer Eloquent**; raw queries only with justification.
+- **Always use `use` statements** for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
+- **Always add policies** for new models/features. Use `$this->authorize()` in controllers.
+- **Keep files small and focused**: Hard cap of 300 lines per file. If approaching 300, extract to smaller classes, view components, or dedicated services. No exceptions without a comment justifying and a follow-up task to split.
+- **Use soft deletes by default** on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
+- **No public registration routes**; users created via command or privileged UI.
+- **Roles system**: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
+- **Follow PSR-12**; run `make qa` before commits.
+
 ## PHP/Laravel
 
 - Use PHP 8.2+ features when appropriate (e.g., typed properties, match expressions).
@@ -44,10 +59,9 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Utilize Laravel's caching mechanisms for improved performance.
 - Implement job queues for long-running tasks.
 - Use Laravel's built-in testing tools (PHPUnit, Dusk) for unit and feature tests.
-- Implement API versioning for public APIs.
 - Use Laravel's localization features for multi-language support.
 - Implement proper CSRF protection and security measures.
-- Use Laravel Mix for asset compilation.
+- Use Vite for asset compilation and bundling.
 - Implement proper database indexing for improved query performance.
 - Use Laravel's built-in pagination features.
 - Implement proper error logging and monitoring.
@@ -73,6 +87,8 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Use Tailwind CSS for styling following utility-first approach.
 - Organize JavaScript files by feature/page in `resources/js/pages/`.
 - Use shared utilities in `resources/js/common/`.
+- **Use jQuery for DOM/AJAX interactivity**; avoid vanilla JS for features.
+- **Keep CSS and JS in separate files**. Use Tailwind for styles.
 
 ## User Interactions & Confirmations
 
@@ -157,6 +173,11 @@ try {
 
 ## Testing Standards
 
+- **Tests are mandatory for new logic**:
+  - Unit tests for DTOs/Services/Repositories
+  - Feature tests for routes/commands
+  - Dusk browser tests for any UI (views, forms, interactions)
+  - **Do not merge features without corresponding tests**
 - Write unit tests for DTOs, repositories, and services
 - Write feature tests for HTTP workflows
 - Write Dusk tests for browser interactions
@@ -167,8 +188,58 @@ try {
 ## UI Standards
 
 - Use Blade components for reusable UI elements
+- **Create Blade UI components in `resources/views/components/ui`** and reuse them.
+- **Prefer `x-ui-card` for page sections and forms**. Always add a card when adding new UI.
 - Implement responsive designs with Tailwind CSS
 - Provide clear user feedback for all actions
 - Use consistent button styles and icons
 - Implement proper form validation with error messages
 - Show loading states for async operations
+
+## Form Help Text Standards
+
+- **All form inputs MUST have help text** to guide users
+- **Help text MUST be placed BEFORE the input field** (between label and input)
+- Use consistent styling: `class="mt-1 text-xs text-foreground/60"`
+- Standard structure: Label → Help Text → Input → Error Messages
+
+### Required Pattern:
+
+```blade
+<div>
+    <x-input-label for="field_name" value="Field Label *" />
+    <p class="mt-1 text-xs text-foreground/60" id="field_name_help">
+        Clear, concise help text explaining what this field is for and any requirements.
+    </p>
+    <x-text-input
+        id="field_name"
+        name="field_name"
+        class="mt-1 block w-full"
+        aria-describedby="field_name_help"
+    />
+    <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
+</div>
+```
+
+### Guidelines:
+
+- Help text should explain the purpose of the field, format requirements, or constraints
+- Use `aria-describedby` on inputs linking to help text ID for accessibility
+- Keep help text concise (1-2 sentences maximum)
+- For optional fields, mention they're optional in the help text if not obvious
+- For date/time fields, specify timezone context if relevant
+- For numeric fields, specify units, ranges, or increments (e.g., "Duration in minutes (minimum 5, increments of 5)")
+- Never place help text after the input field
+
+## Project-Enforced Conventions
+
+- **Always run commands via Docker**:
+  - Use `docker compose exec -T app bash -lc 'cd app && <command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly.
+  - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'cd app && php artisan migrate'`).
+- **After any frontend asset changes** (`resources/js`, `resources/css`, etc.), run `make assets-build` before QA or deployment so the Vite manifest stays updated.
+- **When introducing a new page-specific JS/CSS entry**, immediately register it in `vite.config.js` and rerun `make assets-build` so Vite's manifest includes the chunk before opening the corresponding Blade view.
+
+## Quality Gates
+
+- **Every development task must include tests** and follow these rules by default, even if work will be refined later.
+- **Before implementing a feature**, add (or outline) the tests; before moving to next steps, run tests locally (Feature/Unit) and Dusk (headless) in Docker and fix failures.
