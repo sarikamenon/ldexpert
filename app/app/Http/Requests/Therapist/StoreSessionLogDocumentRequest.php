@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Enums\DocumentType;
-use App\Models\SessionLog;
 use App\Models\StudentDocument;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;

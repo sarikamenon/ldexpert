@@ -125,7 +125,7 @@ final class StudentDocumentController extends Controller
             ->where('role', \App\Enums\Role::STUDENT->value)
             ->orderBy('name')
             ->get()
-            ->map(fn ($student) => [
+            ->map(fn($student) => [
                 'id' => $student->id,
                 'name' => $student->name,
             ])
@@ -147,7 +147,7 @@ final class StudentDocumentController extends Controller
             ->whereIn('id', $userIds)
             ->orderBy('name')
             ->get()
-            ->map(fn ($user) => [
+            ->map(fn($user) => [
                 'id' => $user->id,
                 'name' => $user->name,
             ])

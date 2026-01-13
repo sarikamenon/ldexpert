@@ -19,7 +19,9 @@ final class SessionLogDocumentTest extends TestCase
     use RefreshDatabase;
 
     private User $therapist;
+
     private User $student;
+
     private SessionLog $sessionLog;
 
     protected function setUp(): void

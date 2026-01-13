@@ -18,6 +18,7 @@ final class StudentDocumentTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
 
     protected function setUp(): void

@@ -90,9 +90,12 @@ final class StudentDocumentService
     {
         $year = now()->format('Y');
         $month = now()->format('m');
-        $filename = now()->format('Ymd_His') . '_' . Str::random(8) . '_' . $file->getClientOriginalName();
+        $timestamp = now()->format('Ymd_His');
+        $random = Str::random(8);
+        $originalName = $file->getClientOriginalName();
+        $filename = "{$timestamp}_{$random}_{$originalName}";
 
-        $path = 'student-documents' . "/{$year}/{$month}/{$filename}";
+        $path = "student-documents/{$year}/{$month}/{$filename}";
 
         // Use local disk in testing, S3 in production
         $disk = app()->environment('testing') ? 'local' : 's3';

@@ -53,6 +53,7 @@ class StudentDocument extends Model
         }
 
         $disk = app()->environment('testing') ? 'local' : 's3';
+
         return Storage::disk($disk)->url($this->file_path);
     }
 
@@ -71,7 +72,7 @@ class StudentDocument extends Model
             $unit++;
         }
 
-        return round($size, 2) . ' ' . $units[$unit];
+        return sprintf('%.2f %s', round($size, 2), $units[$unit]);
     }
 
     public function isForStudent(): bool

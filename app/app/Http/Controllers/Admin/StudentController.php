@@ -371,7 +371,8 @@ final class StudentController extends Controller
             $exampleRow = [];
             foreach ($allColumns as $column) {
                 if (in_array($column, $requiredColumns, true)) {
-                    $exampleRow[] = '[' . str_replace('_', ' ', ucwords($column, '_')) . ']';
+                    $label = str_replace('_', ' ', ucwords($column, '_'));
+                    $exampleRow[] = sprintf('[%s]', $label);
                 } else {
                     $exampleRow[] = '';
                 }
