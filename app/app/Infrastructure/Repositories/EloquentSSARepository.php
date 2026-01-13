@@ -399,7 +399,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->where('assigned_therapist_id', $therapistId)
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->distinct('student_id')
+            ->distinct()
             ->count('student_id');
     }
 }

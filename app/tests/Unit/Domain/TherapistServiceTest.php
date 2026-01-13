@@ -26,12 +26,12 @@ final class TherapistServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Mail::fake();
         $this->service = new TherapistService(new EloquentTherapistRepository);
     }
 
     public function test_create_creates_therapist_and_sends_welcome_email(): void
     {
-        Mail::fake();
 
         $manager = User::factory()->admin()->create();
 

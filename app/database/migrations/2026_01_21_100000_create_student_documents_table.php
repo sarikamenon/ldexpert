@@ -27,7 +27,6 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['documentable_type', 'documentable_id']);
             $table->index('document_type');
             $table->index('uploaded_by_id');
             $table->index('created_at');
