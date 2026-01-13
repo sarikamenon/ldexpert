@@ -71,6 +71,10 @@
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                 Session Logs
             </a>
+            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'comments']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'comments' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Comments
+            </a>
         </nav>
     </div>
 
@@ -157,11 +161,13 @@
     @elseif (($activeTab ?? 'dashboard') === 'therapists' && isset($therapists))
         <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($schedules))
-        <x-admin.schedules-list :schedules="$schedules" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []"
-            :billingStatuses="$billingStatuses ?? []" :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail" />
+        <x-admin.schedules-list :schedules="$schedules" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
+            :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []" :filters="$sessionLogFilters ?? []"
+            :statuses="$sessionLogStatuses ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'comments' && isset($comments))
+        <x-student.comments-section :student="$student" :comments="$comments" context="admin" />
     @endif
 
     <x-slot name="scripts">
@@ -175,6 +181,8 @@
             @vite(['resources/js/pages/admin-students-schedule.js'])
         @elseif (($activeTab ?? 'dashboard') === 'session_logs')
             @vite(['resources/js/pages/admin-session-logs-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'comments')
+            @vite(['resources/js/pages/admin-students-comments.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>
