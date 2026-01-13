@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\Domain\User\Services\UserService;
@@ -28,6 +29,7 @@ final class SessionLogController extends Controller
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SSAService $ssaService,
+        private readonly StudentDocumentService $documentService,
     ) {}
 
     public function index(SessionLogIndexRequest $request): View
@@ -64,8 +66,11 @@ final class SessionLogController extends Controller
     {
         $sessionLog->load(['student', 'ssa', 'service', 'school', 'therapistContract', 'schoolContract', 'therapist']);
 
+        $documents = $this->documentService->listBySessionLog($sessionLog->id);
+
         return view('admin.session-logs.show', [
             'sessionLog' => $sessionLog,
+            'documents' => $documents,
         ]);
     }
 

@@ -144,11 +144,10 @@ class SessionLog extends Model
         return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
     }
 
-    // Documents relationship can be added later when document storage is implemented
-    // public function documents(): MorphMany
-    // {
-    //     return $this->morphMany(SessionLogDocument::class, 'documentable');
-    // }
+    public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(\App\Models\StudentDocument::class, 'documentable');
+    }
 
     public function isDraft(): bool
     {

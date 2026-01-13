@@ -61,5 +61,10 @@
 
         {{-- Shared details component --}}
         <x-session-log.details :session-log="$sessionLog" />
+
+        {{-- Documents Section --}}
+        @if (isset($documents))
+            <x-session-log.documents-section :session-log="$sessionLog" :documents="$documents" context="admin" />
+        @endif
     </div>
 </x-admin.layouts.app>

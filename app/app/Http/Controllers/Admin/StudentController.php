@@ -11,6 +11,7 @@ use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
+use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Student\Services\StudentImportService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\ScheduleService;
@@ -58,6 +59,7 @@ final class StudentController extends Controller
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly StudentCommentService $commentService,
+        private readonly StudentDocumentService $documentService,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -188,6 +190,8 @@ final class StudentController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
+        } elseif ($activeTab === 'documents') {
+            $viewData['documents'] = $this->documentService->listByStudent($student->id);
         }
 
         return view('admin.students.show', $viewData);
@@ -367,7 +371,7 @@ final class StudentController extends Controller
             $exampleRow = [];
             foreach ($allColumns as $column) {
                 if (in_array($column, $requiredColumns, true)) {
-                    $exampleRow[] = '['.str_replace('_', ' ', ucwords($column, '_')).']';
+                    $exampleRow[] = '[' . str_replace('_', ' ', ucwords($column, '_')) . ']';
                 } else {
                     $exampleRow[] = '';
                 }

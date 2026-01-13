@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -147,5 +148,13 @@ class User extends Authenticatable
     public function assignedSSAs(): HasMany
     {
         return $this->hasMany(ServiceSupportAgreement::class, 'assigned_therapist_id');
+    }
+
+    /**
+     * Get documents attached to this user (when user is a student).
+     */
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(\App\Models\StudentDocument::class, 'documentable');
     }
 }

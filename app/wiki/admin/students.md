@@ -1,5 +1,5 @@
 NOVA · Student Module PRD
-Version 1.0 · Last Updated: 14 Nov 2025
+Version 2.0 · Last Updated: 13 Jan 2026
 
 1. OVERVIEW
    The Student module enables NOVA administrators to maintain complete, up-to-date student records for therapeutic, administrative, and reporting purposes. It centralizes demographics, school association, guardians, and scheduling context to power SSA creation, session planning, and billing accuracy.
@@ -30,6 +30,12 @@ Version 1.0 · Last Updated: 14 Nov 2025
 
     4.5 Status & Lifecycle Actions - Students can be marked Active or Deactivated via list/button or edit screen. - Deactivation removes student from assignment pickers but keeps historical data. - Confirmation dialogs capture reason for status change (future enhancement optional).
 
+    4.6 Student Import - Admins can bulk import students via CSV files. - Supports multiple import types: NOVA, RSM, MARVIN with column mapping templates. - Import process runs asynchronously with status tracking per row. - Duplicate detection by email or student ID within school. - Import history viewable with detailed row-level error reporting. - See [Student Import PRD](./student-import.md) for complete documentation.
+
+    4.7 Student Comments - Admins can add comments on student records visible to all admins and assigned therapists. - Comments appear in chronological order on student detail page. - Comments are soft-deleted and retain audit trail. - Maximum length: 5000 characters. - See [Student Comments PRD](../therapist/student-comments.md) for complete documentation.
+
+    4.8 Student Documents - Admins can upload and manage documents associated with students. - Documents can be attached to students directly or to session logs. - Supported document types: Progress Report, IEP, Consent Form, Assessment, Other. - Documents stored on S3 (local in testing) with metadata tracking. - Download and delete operations with authorization checks. - See [Student Documents PRD](./student-documents.md) for complete documentation.
+
 5. USER EXPERIENCE GUIDELINES
    • Required fields marked with \* and validated inline.
    • Dropdowns (schools, timezones, grades, states) always reflect latest data from respective catalogs.
@@ -41,6 +47,10 @@ Version 1.0 · Last Updated: 14 Nov 2025
    Table: users – `id`, `name` (composed from first/last), `email` (unique), `role=student`, `status`, timestamps, soft deletes.
    Table: student_profiles – `user_id`, `parent_id` (optional linked parent user), `first_name`, `middle_name`, `last_name`, `school_id`, `id_number`, `timezone`, `gender`, `address`, `city`, `state`, `zip_code`, `parent_guardian_name`, `parent_guardian_email`, `parent_guardian_phone`, `date_of_birth`, `grade_level`, timestamps, `deleted_at`.
    Table: schools – referenced via `school_id`.
+   Table: student_imports – `id`, `imported_by_id`, `type` (NOVA/RSM/MARVIN), `file_name`, `file_path`, `status`, `total_rows`, `processed_rows`, `successful_rows`, `failed_rows`, `error_message`, timestamps, `completed_at`.
+   Table: student_import_rows – `id`, `student_import_id`, `row_number`, `status`, `raw_data` (json), `error_message`, `student_id` (nullable, if created), timestamps, `processed_at`.
+   Table: student_comments – `id`, `student_id`, `author_id`, `comment` (text, max 5000), timestamps, `deleted_at`.
+   Table: student_documents – `id`, `documentable_type` (polymorphic), `documentable_id` (polymorphic), `uploaded_by_id`, `document_type`, `file_name`, `file_path`, `mime_type`, `file_size`, `description`, timestamps, `deleted_at`.
 
 7. ROUTES (INTERNAL WEB APP)
    • GET /admin/students – list view with filters.
@@ -48,7 +58,17 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • GET /admin/students/{student} – detail/view page.
    • GET /admin/students/{student}/edit, PUT|PATCH /admin/students/{student} – edit flow.
    • PATCH /admin/students/{student}/status – activate/deactivate actions.
-   • GET /admin/students/export (optional) – export filtered dataset.
+   • GET /admin/students/export – export filtered dataset.
+   • GET /admin/students/import – show import form.
+   • POST /admin/students/import – process CSV import.
+   • GET /admin/students/imports – import history list.
+   • GET /admin/students/imports/{import} – import status detail.
+   • GET /admin/students/import/template – download CSV template.
+   • POST /admin/students/{student}/comments – create comment on student.
+   • GET /admin/student-documents – list all student documents with filters.
+   • POST /admin/student-documents/students/{student} – upload document for student.
+   • GET /admin/student-documents/{document}/download – download document.
+   • DELETE /admin/student-documents/{document} – delete document.
 
 8. VALIDATION RULES
    • Required: first_name, last_name, email (unique on users), gender, date_of_birth (past, after 1900-01-01), school_id (active school), id_number, timezone (from constants), grade_level, city, state (US list), zip_code.
@@ -94,7 +114,9 @@ Version 1.0 · Last Updated: 14 Nov 2025
 
 16. VERSION 2 BACKLOG (FUTURE ENHANCEMENTS)
     • Guardian Invitations & Parent Accounts – send invites, track acceptance, manage multiple guardians.
-    • Bulk Import – CSV upload with validation summary for onboarding cohorts.
     • SSA/Assignment Context – display linked SSAs, therapists, and progress on student view (beyond the core timeline events).
     • Reason Codes for Status Changes – require reason/resolution when deactivating/graduating.
     • Enhanced Audit Notes – internal notes separate from therapy session notes with tagging/search.
+    • Import Templates Customization – allow admins to define custom column mappings per school or import source.
+    • Comment Threading – support replies and threaded conversations on student comments.
+    • Document Versioning – track document revisions and maintain history of changes.

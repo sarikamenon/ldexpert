@@ -4,6 +4,7 @@ use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
 use App\Http\Controllers\Therapist\ScheduleController;
 use App\Http\Controllers\Therapist\SessionLogController;
+use App\Http\Controllers\Therapist\SessionLogDocumentController;
 use App\Http\Controllers\Therapist\SSAController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
@@ -54,6 +55,13 @@ Route::middleware('role:therapist')
             Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
             Route::post('{sessionLog}/submit', [SessionLogController::class, 'submit'])->name('submit');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
+
+            // Session Log Documents
+            Route::prefix('{sessionLog}/documents')->name('documents.')->group(function () {
+                Route::post('/', [SessionLogDocumentController::class, 'store'])->name('store');
+                Route::get('{document}/download', [SessionLogDocumentController::class, 'download'])->name('download');
+                Route::delete('{document}', [SessionLogDocumentController::class, 'destroy'])->name('destroy');
+            });
         });
 
         // Billing routes

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\SessionLogIndexDTO;
@@ -29,6 +30,7 @@ final class SessionLogController extends Controller
         private readonly SessionLogService $sessionLogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly SSAService $ssaService,
+        private readonly StudentDocumentService $documentService,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -179,8 +181,11 @@ final class SessionLogController extends Controller
 
         $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapistContract', 'schoolContract']);
 
+        $documents = $this->documentService->listBySessionLog($sessionLog->id);
+
         return view('therapist.session-logs.show', [
             'sessionLog' => $sessionLog,
+            'documents' => $documents,
         ]);
     }
 
