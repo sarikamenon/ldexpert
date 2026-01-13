@@ -155,7 +155,7 @@ final class ScheduleController extends Controller
                 'first_name' => $student?->name ?? '',
                 'last_name' => '',
             ],
-        ])->filter(static fn($studentInfo) => $studentInfo->user_id !== null)->values();
+        ])->filter(static fn ($studentInfo) => $studentInfo->user_id !== null)->values();
 
         // Get all services from this SSA (primary + additional)
         $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
@@ -309,6 +309,7 @@ final class ScheduleController extends Controller
                 if ($ssa->services) {
                     $allServices = $allServices->merge($ssa->services);
                 }
+
                 return $allServices;
             })
             ->filter()
@@ -465,7 +466,7 @@ final class ScheduleController extends Controller
         $this->authorize('updateBillingStatus', $schedule);
 
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 
@@ -486,7 +487,7 @@ final class ScheduleController extends Controller
     public function bulkUpdateBillingStatus(Request $request): JsonResponse
     {
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 

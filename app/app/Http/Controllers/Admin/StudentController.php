@@ -10,6 +10,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentImportService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\ScheduleService;
@@ -56,6 +57,7 @@ final class StudentController extends Controller
         private readonly ScheduleService $scheduleService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly StudentCommentService $commentService,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -184,6 +186,8 @@ final class StudentController extends Controller
             $viewData['sessionLogRows'] = $sessionLogData['rows'];
             $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
             $viewData['sessionLogFilters'] = $request->query();
+        } elseif ($activeTab === 'comments') {
+            $viewData['comments'] = $this->commentService->listByStudent($student->id);
         }
 
         return view('admin.students.show', $viewData);

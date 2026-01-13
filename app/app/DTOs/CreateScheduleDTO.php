@@ -34,12 +34,14 @@ final class CreateScheduleDTO
             : RecurrenceType::from($data['recurrence_type']);
 
         $studentIds = array_map(
-            static fn($id): int => (int) $id,
+            static fn ($id): int => (int) $id,
             $data['student_ids']
         );
 
         $startTime = $data['start_time'];
-        $endTime = $data['end_time'] ?? null;
+        $endTime = isset($data['end_time']) && $data['end_time'] !== ''
+            ? $data['end_time']
+            : null;
         $providedDurationMinutes = isset($data['duration_minutes']) && $data['duration_minutes'] !== ''
             ? (int) $data['duration_minutes']
             : null;

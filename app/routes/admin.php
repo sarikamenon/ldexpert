@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SessionLogController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SSAController;
+use App\Http\Controllers\Admin\StudentCommentController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\TherapistContractController;
 use App\Http\Controllers\Admin\TherapistController;
@@ -39,6 +40,7 @@ Route::middleware('role:admin')
         Route::get('students/imports/{import}/status', [StudentController::class, 'showImportStatus'])->name('students.imports.status');
         Route::get('students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
+        Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
         Route::resource('students', StudentController::class)->except(['destroy']);
 
         Route::patch('services/{service}/status', [ServiceController::class, 'updateStatus'])->name('services.status');

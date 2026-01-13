@@ -300,7 +300,7 @@ final class SessionLogIndexService
 
         $value = (float) $amount;
 
-        return '$' . number_format($value, 2);
+        return '$'.number_format($value, 2);
     }
 
     private function getStatusLabel(SessionLog $log): string

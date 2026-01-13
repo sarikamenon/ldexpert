@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentService;
 use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
@@ -21,6 +22,7 @@ final class StudentController extends Controller
         private readonly SSAService $ssaService,
         private readonly StudentService $studentService,
         private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly StudentCommentService $commentService,
     ) {}
 
     public function index(Request $request): View
@@ -104,6 +106,8 @@ final class StudentController extends Controller
             $viewData['sessionLogRows'] = $sessionLogData['rows'];
             $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
             $viewData['sessionLogFilters'] = $request->query();
+        } elseif ($activeTab === 'comments') {
+            $viewData['comments'] = $this->commentService->listByStudent($student->id);
         }
 
         return view('therapist.students.show', $viewData);

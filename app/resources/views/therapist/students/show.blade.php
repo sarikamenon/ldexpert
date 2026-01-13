@@ -38,16 +38,20 @@
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'overview' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                         Overview
                     </a>
-            <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'ssas']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                SSAs
-            </a>
-            <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Session Logs
-            </a>
-        </nav>
-    </div>
+                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'ssas']) }}"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                        SSAs
+                    </a>
+                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']) }}"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                        Session Logs
+                    </a>
+                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'comments']) }}"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'comments' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                        Comments
+                    </a>
+                </nav>
+            </div>
 
             {{-- Tab Content --}}
             @if (($activeTab ?? 'dashboard') === 'dashboard')
@@ -124,15 +128,17 @@
                         </div>
                     </x-ui::card>
                 </div>
-    @elseif (($activeTab ?? 'dashboard') === 'overview')
-        <x-student.overview-details :student="$student" context="therapist" />
-    @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
-        <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="[]"
-            :therapists="[]" :services="[]" context="therapist" />
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
-    @endif
+            @elseif (($activeTab ?? 'dashboard') === 'overview')
+                <x-student.overview-details :student="$student" context="therapist" />
+            @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
+                <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="[]"
+                    :therapists="[]" :services="[]" context="therapist" />
+            @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
+                <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []" :filters="$sessionLogFilters ?? []"
+                    :statuses="$sessionLogStatuses ?? []" context="detail" />
+            @elseif (($activeTab ?? 'dashboard') === 'comments' && isset($comments))
+                <x-student.comments-section :student="$student" :comments="$comments" context="therapist" />
+            @endif
         </div>
     </div>
 
@@ -143,6 +149,8 @@
             @vite(['resources/js/pages/therapist-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'session_logs')
             @vite(['resources/js/pages/therapist-session-logs-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'comments')
+            @vite(['resources/js/pages/therapist-students-comments.js'])
         @endif
     </x-slot>
 </x-app-layout>
