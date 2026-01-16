@@ -17,6 +17,7 @@ use Mockery;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Mail::fake();
     $this->repository = Mockery::mock(TherapistBillRepositoryInterface::class);
     $this->companyInfoService = new CompanyInfoService;
     $this->service = new TherapistBillService($this->repository, $this->companyInfoService);
@@ -90,8 +91,6 @@ test('therapist bill service copies company snapshot correctly', function () {
 });
 
 test('therapist bill service sends bill via email', function () {
-    Mail::fake();
-
     $user = User::factory()->admin()->create();
     $bill = TherapistBill::factory()->create([
         'status' => TherapistBillStatus::DRAFT->value,

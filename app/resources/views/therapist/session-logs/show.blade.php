@@ -61,6 +61,17 @@
 
             {{-- Details Card --}}
             <x-session-log.details :session-log="$sessionLog" />
+
+            {{-- Documents Section --}}
+            @if (isset($documents))
+                <x-session-log.documents-section :session-log="$sessionLog" :documents="$documents" context="therapist" />
+            @endif
         </div>
     </div>
+
+    <x-slot name="scripts">
+        @if (isset($documents))
+            @vite(['resources/js/pages/therapist-session-logs-documents.js'])
+        @endif
+    </x-slot>
 </x-app-layout>

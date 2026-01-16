@@ -15,6 +15,8 @@ NOVA is LD Expert's bird-care platform that coordinates schools, therapists, stu
 -   [Manage Schools](./admin/schools.md) — onboard, edit, activate/deactivate schools plus contracted services/rates.
 -   [Manage Therapists](./admin/therapists.md) — lifecycle of therapist providers, credentials, compensation rates, availability sync.
 -   [Manage Students](./admin/students.md) — admin-only student master data and guardians; powers SSA creation, scheduling, and billing.
+-   [Student Import](./admin/student-import.md) — bulk import students via CSV files with validation, duplicate detection, and error reporting.
+-   [Student Documents](./admin/student-documents.md) — upload, manage, and track documents associated with students or session logs.
 -   [Manage SSA](./admin/ssa.md) — service agreements per student outlining services, duration, frequency, therapist assignments. **Currently links existing students to services/therapists; future iterations may embed student intake directly into the SSA flow.**
 -   [Manage Services](./admin/services.md) — catalog definitions (SLP, OT, PT, Progress Reports, IEP meetings, etc.) with billing metadata.
 
@@ -26,7 +28,9 @@ NOVA is LD Expert's bird-care platform that coordinates schools, therapists, stu
 
 ### Therapist Experience (`app/wiki/therapist`)
 
--   [Therapist Workspace](./therapist/workspace.md) — dashboard plus implemented schedule calendar and read-only caseload/SSA views, with planned extensions for session notes and billing visibility.
+-   [Therapist Workspace](./therapist/workspace.md) — dashboard plus implemented schedule calendar with recurring schedule support, read-only caseload/SSA views, and student comments.
+-   [Session Logs](./therapist/session-logs.md) — log therapy sessions with notes, billing metadata, and document attachments.
+-   [Student Comments](./therapist/student-comments.md) — add contextual comments on student records visible to admins and assigned therapists.
 
 ### Student Experience (`app/wiki/student`)
 
@@ -46,7 +50,10 @@ Refer back to this index whenever you add, refine, or discuss a module PRD.
 
 -   **Routing & Roles** — Admin routes live under `/admin/*` with `role:admin`; therapist-facing routes live under `/therapist/*` with `role:therapist`; student dashboard is under `/student/dashboard`.
 -   **Dashboards & Metrics** — Admin dashboards expose school/therapist/student/SSA metrics; school detail tabs lazy-load students, therapists, and SSAs via the respective services and DTO filters.
--   **Scheduling UX** — Therapists manage schedules via `Therapist\ScheduleController` (calendar, CRUD, billing status bulk updates). SSAs can be assigned/unassigned to therapists from admin routes.
+-   **Scheduling UX** — Therapists manage schedules via `Therapist\ScheduleController` (calendar, CRUD, billing status bulk updates) with recurring schedule support (daily, weekly, bi-weekly, monthly). SSAs can be assigned/unassigned to therapists from admin routes.
+-   **Student Import** — Admins can bulk import students via CSV with support for multiple import types (NOVA, RSM, MARVIN), row-level validation, and comprehensive error reporting.
+-   **Student Documents** — Polymorphic document storage for students and session logs with S3 storage, type categorization, and authorization-based access control.
+-   **Student Comments** — Shared comment system for admins and therapists to add contextual notes on student records with visibility based on SSA assignments.
 -   **Contracts** — School and therapist contracts have their own controllers and status transitions under `/admin/contracts/*`.
 
 ## Operations & Integrations

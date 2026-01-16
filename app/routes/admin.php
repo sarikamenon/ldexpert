@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SSAController;
 use App\Http\Controllers\Admin\StudentCommentController;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\StudentDocumentController;
 use App\Http\Controllers\Admin\TherapistContractController;
 use App\Http\Controllers\Admin\TherapistController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +43,14 @@ Route::middleware('role:admin')
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
         Route::resource('students', StudentController::class)->except(['destroy']);
+
+        // Student Documents
+        Route::prefix('student-documents')->name('student-documents.')->group(function () {
+            Route::get('/', [StudentDocumentController::class, 'index'])->name('index');
+            Route::post('students/{student}', [StudentDocumentController::class, 'store'])->name('store');
+            Route::get('{document}/download', [StudentDocumentController::class, 'download'])->name('download');
+            Route::delete('{document}', [StudentDocumentController::class, 'destroy'])->name('destroy');
+        });
 
         Route::patch('services/{service}/status', [ServiceController::class, 'updateStatus'])->name('services.status');
         Route::resource('services', ServiceController::class)->except(['destroy', 'show']);

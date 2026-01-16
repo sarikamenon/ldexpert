@@ -50,6 +50,10 @@
                         class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'comments' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                         Comments
                     </a>
+                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'documents']) }}"
+                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'documents' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                        Documents
+                    </a>
                 </nav>
             </div>
 
@@ -138,6 +142,8 @@
                     :statuses="$sessionLogStatuses ?? []" context="detail" />
             @elseif (($activeTab ?? 'dashboard') === 'comments' && isset($comments))
                 <x-student.comments-section :student="$student" :comments="$comments" context="therapist" />
+            @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))
+                <x-student.documents-section :student="$student" :documents="$documents" context="therapist" />
             @endif
         </div>
     </div>
@@ -151,6 +157,8 @@
             @vite(['resources/js/pages/therapist-session-logs-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'comments')
             @vite(['resources/js/pages/therapist-students-comments.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'documents')
+            @vite(['resources/js/pages/therapist-students-documents.js'])
         @endif
     </x-slot>
 </x-app-layout>

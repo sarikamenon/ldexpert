@@ -13,16 +13,18 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 
 ## Current Implementation
 
--   No session log tables or workflows exist. Therapists can create schedules but cannot log actual session delivery.
+-   Session log tables and workflows implemented. Therapists can create session logs from schedules or as standalone entries.
+-   All session logs require an SSA link (from schedule or manual selection).
+-   Dual billing calculation: therapist rates (from therapist contracts) and school rates (from school contracts).
+-   Session status workflow: draft → submitted → approved (implemented).
+-   Document attachments for session logs (implemented via Student Documents module with polymorphic relationship).
+-   Integration with billing module (therapist bills) and invoicing module (school invoices).
 
 ## Planned Scope
 
--   Therapists can create session logs tied to existing schedules or as standalone entries.
--   All session logs require an SSA link (from schedule or manual selection).
--   Dual billing calculation: therapist rates (from therapist contracts) and school rates (from school contracts).
--   Session status workflow: draft → submitted → approved.
--   Document attachments for session notes, consent forms, progress reports.
--   Integration with billing module (therapist bills) and invoicing module (school invoices).
+-   Enhanced document management with versioning and templates.
+-   Document preview without download.
+-   Advanced search within session notes and documents.
 
 ## Domain Model
 
@@ -46,7 +48,7 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 -   `session_logs.invoice_id` → `invoices.id` (nullable, set when invoice created)
 -   `session_logs.submitted_by_id` → `users.id` (nullable)
 -   `session_logs.approved_by_id` → `users.id` (nullable)
--   Polymorphic: `session_log_documents` → `documentable_type` = 'App\Models\SessionLog`, `documentable_id`
+-   Polymorphic: `student_documents` → `documentable_type` = 'App\Models\SessionLog', `documentable_id` (documents attached to session logs)
 
 ### Enums
 
@@ -76,19 +78,27 @@ Enable therapists to log all therapy sessions (scheduled or standalone) with com
 
 ```
 GET    /therapist/session-logs                    (list with filters)
-GET    /therapist/session-logs/create            (form: schedule selection or standalone)
-GET    /therapist/session-logs/create?schedule={id}  (pre-fill from schedule)
+GET    /therapist/session-logs/select-ssa        (select SSA for standalone session)
+GET    /therapist/session-logs/create             (form: schedule selection or standalone)
+GET    /therapist/session-logs/create/schedule/{id}  (pre-fill from schedule)
 POST   /therapist/session-logs                   (store)
 GET    /therapist/session-logs/{id}             (view)
 GET    /therapist/session-logs/{id}/edit         (edit draft only)
 PUT    /therapist/session-logs/{id}             (update draft only)
 POST   /therapist/session-logs/{id}/submit      (submit, locks edits)
 POST   /therapist/session-logs/{id}/cancel      (cancel with reason)
+POST   /therapist/session-logs/{sessionLog}/documents  (upload document)
+GET    /therapist/session-logs/{sessionLog}/documents/{document}/download  (download document)
+DELETE /therapist/session-logs/{sessionLog}/documents/{document}  (delete document)
 GET    /admin/session-logs                       (admin view, all therapists)
+GET    /admin/session-logs/{id}                  (admin view detail)
+GET    /admin/session-logs/{id}/edit             (admin edit)
+PUT    /admin/session-logs/{id}                  (admin update)
 POST   /admin/session-logs/{id}/approve         (approve, locks all edits)
+POST   /admin/session-logs/{id}/cancel           (admin cancel)
 ```
 
-Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Controllers\Admin\SessionLogController`
+Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Controllers\Therapist\SessionLogDocumentController`, `App\Http\Controllers\Admin\SessionLogController`
 
 ## Workflows
 
@@ -116,7 +126,16 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 8. System auto-calculates billing amounts.
 9. Therapist reviews, can override, saves or submits.
 
-### 3. Billing Integration
+### 3. Document Management
+
+1. Therapist can upload documents to session log (from session log detail page).
+2. Document types: Progress Report, IEP, Consent Form, Assessment, Other.
+3. Documents stored on S3 with metadata (type, size, uploader, description).
+4. Documents visible to admins and therapists assigned to student.
+5. Therapists can delete only documents they uploaded; admins can delete any document.
+6. See [Student Documents PRD](../admin/student-documents.md) for complete documentation.
+
+### 4. Billing Integration
 
 1. When session log is `approved`, it becomes available for billing cycles.
 2. Therapist billing: AP runs billing process, creates `therapist_bill`, links session logs via `therapist_bill_id`.
@@ -135,10 +154,11 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 ## Dependencies
 
 -   Requires SSA module (for `ssa_id` requirement).
--   Requires Schedule module (for optional schedule linkage).
+-   Requires Schedule module (for optional schedule linkage and recurring schedule support).
 -   Requires Contracts module (therapist and school contracts for rate lookup).
 -   Integrates with Billing module (therapist bills) and Invoicing module (school invoices).
--   Uses file storage for document attachments.
+-   Uses Student Documents module for document attachments (polymorphic relationship).
+-   File storage: S3 in production, local in testing.
 
 ## Metrics
 

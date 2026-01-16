@@ -20,6 +20,7 @@ use Mockery;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Mail::fake();
     $this->repository = Mockery::mock(InvoiceRepositoryInterface::class);
     $this->companyInfoService = new CompanyInfoService;
     $this->schoolRepository = Mockery::mock(SchoolRepositoryInterface::class);
@@ -95,8 +96,6 @@ test('invoice service copies company snapshot correctly', function () {
 });
 
 test('invoice service generates invoice with snapshots', function () {
-    Mail::fake();
-
     $user = User::factory()->admin()->create();
     $school = School::factory()->create([
         'full_name' => 'Test School Full',
@@ -149,8 +148,6 @@ test('invoice service generates invoice with snapshots', function () {
 });
 
 test('invoice service sends invoice via email', function () {
-    Mail::fake();
-
     $user = User::factory()->admin()->create();
     $invoice = Invoice::factory()->create([
         'status' => InvoiceStatus::DRAFT,
