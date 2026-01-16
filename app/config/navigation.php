@@ -139,6 +139,35 @@ return [
                 ],
             ],
             [
+                'label' => 'Reports',
+                'route' => 'admin.reports.ssa.utilization.index',
+                'active' => 'admin.reports.*',
+                'children' => [
+                    [
+                        'label' => 'SSA Reports',
+                        'route' => 'admin.reports.ssa.utilization.index',
+                        'active' => 'admin.reports.ssa.*',
+                        'children' => [
+                            [
+                                'label' => 'Utilization & Compliance',
+                                'route' => 'admin.reports.ssa.utilization.index',
+                                'active' => 'admin.reports.ssa.utilization.*',
+                            ],
+                            [
+                                'label' => 'Caseload & Assignment',
+                                'route' => 'admin.reports.ssa.caseload.index',
+                                'active' => 'admin.reports.ssa.caseload.*',
+                            ],
+                            [
+                                'label' => 'Expirations & Pipeline',
+                                'route' => 'admin.reports.ssa.expirations.index',
+                                'active' => 'admin.reports.ssa.expirations.*',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
                 'active' => ['admin.settings.*', 'admin.services.*', 'admin.activity-logs.*', 'admin.analytics.*'],

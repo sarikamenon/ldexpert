@@ -9,6 +9,9 @@ use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\SSAReport\CaseloadReportFilterDTO;
+use App\DTOs\SSAReport\ExpirationReportFilterDTO;
+use App\DTOs\SSAReport\UtilizationReportFilterDTO;
 use App\DTOs\UpdateSSADTO;
 use App\Enums\SSAStatus;
 use App\Models\ServiceSupportAgreement;
@@ -401,5 +404,171 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->whereYear('created_at', now()->year)
             ->distinct()
             ->count('student_id');
+    }
+
+    public function getUtilizationReport(UtilizationReportFilterDTO $filters): LengthAwarePaginator
+    {
+        $query = ServiceSupportAgreement::query()
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'assignedTherapist',
+            ]);
+
+        if ($filters->startDate) {
+            $query->where(function (Builder $q) use ($filters) {
+                $q->whereBetween('start_date', [$filters->startDate->format('Y-m-d'), $filters->endDate?->format('Y-m-d') ?? '9999-12-31'])
+                    ->orWhereBetween('end_date', [$filters->startDate->format('Y-m-d'), $filters->endDate?->format('Y-m-d') ?? '9999-12-31'])
+                    ->orWhere(function (Builder $subQ) use ($filters) {
+                        $subQ->where('start_date', '<=', $filters->startDate->format('Y-m-d'))
+                            ->where('end_date', '>=', $filters->endDate?->format('Y-m-d') ?? '9999-12-31');
+                    });
+            });
+        }
+
+        if ($filters->endDate) {
+            $query->where('end_date', '<=', $filters->endDate->format('Y-m-d'));
+        }
+
+        if ($filters->schoolIds) {
+            $query->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->whereIn('school_id', $filters->schoolIds);
+            });
+        }
+
+        if ($filters->therapistIds) {
+            $query->whereIn('assigned_therapist_id', $filters->therapistIds);
+        }
+
+        if ($filters->serviceIds) {
+            $query->whereIn('primary_service_id', $filters->serviceIds);
+        }
+
+        if ($filters->statuses) {
+            $statusValues = array_map(static fn (SSAStatus $status) => $status->value, $filters->statuses);
+            $query->whereIn('status', $statusValues);
+        }
+
+        if ($filters->gradeLevel) {
+            $query->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->where('grade_level', $filters->gradeLevel);
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')
+            ->paginate($filters->perPage)
+            ->withQueryString();
+    }
+
+    public function getCaseloadReport(CaseloadReportFilterDTO $filters): Collection
+    {
+        $query = ServiceSupportAgreement::query()
+            ->where('status', $filters->status ?? SSAStatus::ACTIVE)
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'assignedTherapist',
+            ]);
+
+        if ($filters->schoolIds) {
+            $query->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->whereIn('school_id', $filters->schoolIds);
+            });
+        }
+
+        if ($filters->therapistIds) {
+            $query->whereIn('assigned_therapist_id', $filters->therapistIds);
+        }
+
+        if ($filters->serviceIds) {
+            $query->whereIn('primary_service_id', $filters->serviceIds);
+        }
+
+        return $query->get();
+    }
+
+    public function getExpirationReport(ExpirationReportFilterDTO $filters): array
+    {
+        $today = Carbon::today();
+        $expirationDate = $today->copy()->addDays($filters->expirationWindowDays);
+
+        $baseQuery = ServiceSupportAgreement::query()
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'assignedTherapist',
+            ]);
+
+        if ($filters->schoolIds) {
+            $baseQuery->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->whereIn('school_id', $filters->schoolIds);
+            });
+        }
+
+        if ($filters->therapistIds) {
+            $baseQuery->whereIn('assigned_therapist_id', $filters->therapistIds);
+        }
+
+        if ($filters->serviceIds) {
+            $baseQuery->whereIn('primary_service_id', $filters->serviceIds);
+        }
+
+        $upcoming = (clone $baseQuery)
+            ->where('end_date', '>', $today->format('Y-m-d'))
+            ->where('end_date', '<=', $expirationDate->format('Y-m-d'))
+            ->get();
+
+        $expired = (clone $baseQuery)
+            ->where('end_date', '<', $today->format('Y-m-d'))
+            ->where('status', SSAStatus::ACTIVE->value)
+            ->get();
+
+        $pending = (clone $baseQuery)
+            ->where(function (Builder $q) {
+                $q->where('status', SSAStatus::PENDING->value)
+                    ->orWhere(function (Builder $subQ) {
+                        $subQ->where('status', SSAStatus::ACTIVE->value)
+                            ->whereNull('assigned_therapist_id');
+                    });
+            })
+            ->get();
+
+        // Get students with no active SSAs
+        $studentsWithActiveSSAs = ServiceSupportAgreement::query()
+            ->where('status', SSAStatus::ACTIVE->value)
+            ->pluck('student_id')
+            ->unique()
+            ->toArray();
+
+        $noCurrentQuery = \App\Models\User::query()
+            ->whereHas('studentProfile', function (Builder $q) use ($filters) {
+                if ($filters->schoolIds) {
+                    $q->whereIn('school_id', $filters->schoolIds);
+                }
+            })
+            ->whereNotIn('id', $studentsWithActiveSSAs ?: [0])
+            ->with(['studentProfile.school']);
+
+        $noCurrent = $noCurrentQuery->get()->map(function ($student) {
+            return (object) [
+                'id' => null,
+                'student_id' => $student->id,
+                'student' => $student,
+                'primaryService' => null,
+                'assignedTherapist' => null,
+                'status' => null,
+                'end_date' => null,
+            ];
+        });
+
+        return [
+            'upcoming' => $upcoming,
+            'expired' => $expired,
+            'pending' => $pending,
+            'no_current' => $noCurrent,
+        ];
     }
 }

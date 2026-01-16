@@ -45,6 +45,11 @@ final class SSAPolicy
         return $this->isAdmin($user);
     }
 
+    public function export(User $user, ServiceSupportAgreement $ssa): bool
+    {
+        return $this->viewAny($user);
+    }
+
     private function isAdmin(User $user): bool
     {
         $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
