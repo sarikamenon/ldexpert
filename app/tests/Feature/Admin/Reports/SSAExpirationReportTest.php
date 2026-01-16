@@ -24,9 +24,15 @@ final class SSAExpirationReportTest extends TestCase
 
     private function createSSA(array $overrides = []): ServiceSupportAgreement
     {
+        $school = School::factory()->create();
         $student = User::factory()->create([
             'role' => Role::STUDENT,
             'status' => UserStatus::ACTIVE,
+        ]);
+
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
         ]);
 
         $service = Service::factory()->create([

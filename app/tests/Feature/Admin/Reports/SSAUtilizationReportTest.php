@@ -7,8 +7,10 @@ namespace Tests\Feature\Admin\Reports;
 use App\Enums\Role;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
+use App\Models\School;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,9 +26,15 @@ final class SSAUtilizationReportTest extends TestCase
 
     private function createSSA(array $overrides = []): ServiceSupportAgreement
     {
+        $school = School::factory()->create();
         $student = User::factory()->create([
             'role' => Role::STUDENT,
             'status' => UserStatus::ACTIVE,
+        ]);
+
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
         ]);
 
         $service = Service::factory()->create([
