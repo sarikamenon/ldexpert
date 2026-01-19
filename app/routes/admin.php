@@ -6,6 +6,9 @@ use App\Http\Controllers\Admin\Billing\TherapistBillController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
+use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
+use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ServiceController;
@@ -120,5 +123,23 @@ Route::middleware('role:admin')
             Route::get('{bill}', [TherapistBillController::class, 'show'])->name('show');
             Route::get('{bill}/download', [TherapistBillController::class, 'download'])->name('download');
             Route::post('{bill}/send', [TherapistBillController::class, 'send'])->name('send');
+        });
+
+        // SSA Reports
+        Route::prefix('reports/ssa')->name('reports.ssa.')->group(function () {
+            Route::get('utilization', [SSAUtilizationReportController::class, 'index'])
+                ->name('utilization.index');
+            Route::get('utilization/export', [SSAUtilizationReportController::class, 'export'])
+                ->name('utilization.export');
+
+            Route::get('caseload', [SSACaseloadReportController::class, 'index'])
+                ->name('caseload.index');
+            Route::get('caseload/export', [SSACaseloadReportController::class, 'export'])
+                ->name('caseload.export');
+
+            Route::get('expirations', [SSAExpirationReportController::class, 'index'])
+                ->name('expirations.index');
+            Route::get('expirations/export', [SSAExpirationReportController::class, 'export'])
+                ->name('expirations.export');
         });
     });
