@@ -1,8 +1,8 @@
-# Session Logs PRD
+# Session Management & Logs PRD
 
 ## Purpose
 
-Enable therapists to log all therapy sessions (scheduled or standalone) with comprehensive documentation, notes, and billing metadata. Session logs serve as the billable entity that drives both therapist payouts (via therapist contracts) and school invoicing (via school contracts). All sessions must be linked to an SSA and include dual billing calculations for both sides.
+Enable therapists to manage and log all therapy sessions (scheduled or standalone) with comprehensive documentation, notes, and billing metadata. This module provides complete session lifecycle management from creation through approval to billing. Session logs serve as the billable entity that drives both therapist payouts (via therapist contracts) and school invoicing (via school contracts). All sessions must be linked to an SSA and include dual billing calculations for both sides.
 
 ## Personas
 
