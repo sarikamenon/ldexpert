@@ -16,38 +16,40 @@ The Email Notifications module provides automated and on-demand email communicat
 ### Schedule Notifications ✅
 
 **When Created or Updated:**
+
 - **Recipients:** Therapist and Student
 - **Trigger:** Event-based via `ScheduleCreated` and `ScheduleUpdated` events
 - **Implementation:** `App\Listeners\SendScheduleNotification` listener
 - **Mailable:** `App\Mail\ScheduleNotificationMail`
 - **Queue:** Sent immediately via queue (database queue by default)
-- **Content:** 
-  - Subject: "NOVA - New Schedule: [Date]" or "NOVA - Schedule Update: [Date]"
-  - Session details (therapist, student, service, date, time, location, notes)
-  - Therapist contact information for rescheduling
+- **Content:**
+    - Subject: "NOVA - New Schedule: [Date]" or "NOVA - Schedule Update: [Date]"
+    - Session details (therapist, student, service, date, time, location, notes)
+    - Therapist contact information for rescheduling
 - **View:** `resources/views/emails/schedule-notification.blade.php`
 
 ### Schedule Reminders ✅
 
 **Automated Reminders:**
+
 - **Frequency:** Runs every 30 minutes via scheduled command
 - **Recipients:** Therapist, Student, and Guardian (Parent)
 - **Triggers:**
-  - **48 Hours Before:** Sends reminder 48 hours before session start time
-  - **2 Hours Before:** Sends reminder 2 hours before session start time
-- **Implementation:** 
-  - Console Command: `App\Console\Commands\SendScheduleReminders`
-  - Mailable: `App\Mail\ScheduleReminderMail`
-  - Runs: Every 30 minutes (configured in `app/Console/Kernel.php`)
+    - **48 Hours Before:** Sends reminder 48 hours before session start time
+    - **2 Hours Before:** Sends reminder 2 hours before session start time
+- **Implementation:**
+    - Console Command: `App\Console\Commands\SendScheduleReminders`
+    - Mailable: `App\Mail\ScheduleReminderMail`
+    - Runs: Every 30 minutes (configured in `app/Console/Kernel.php`)
 - **Features:**
-  - 30-minute windows to avoid duplicates in overlapping runs
-  - Recipients deduplicated by email before queueing
-  - Timezone-aware: Dates/times converted to recipient's local timezone via `UserTimezoneService`
-  - Fallback order: profile timezone → user timezone → UTC
+    - 30-minute windows to avoid duplicates in overlapping runs
+    - Recipients deduplicated by email before queueing
+    - Timezone-aware: Dates/times converted to recipient's local timezone via `UserTimezoneService`
+    - Fallback order: profile timezone → user timezone → UTC
 - **Content:**
-  - Subject: "Reminder: Upcoming Session with [Therapist] in [48 hours/2 hours]"
-  - Session type, participants, date & time (timezone-converted), location, notes
-  - Therapist contact information
+    - Subject: "Reminder: Upcoming Session with [Therapist] in [48 hours/2 hours]"
+    - Session type, participants, date & time (timezone-converted), location, notes
+    - Therapist contact information
 - **View:** `resources/views/emails/schedule-reminder.blade.php`
 - **Repository:** `EloquentScheduleRepository::getSchedulesInWindow($start, $end)`
 
@@ -56,36 +58,39 @@ The Email Notifications module provides automated and on-demand email communicat
 ### Invoice Notifications ✅
 
 **When Invoice Sent:**
+
 - **Recipients:** School contacts (invoice email addresses)
 - **Trigger:** Admin action via `/admin/invoices/{invoice}/send` route
 - **Implementation:** `App\Domain\Invoice\Services\InvoiceService::sendInvoice`
 - **Mailable:** `App\Mail\InvoiceMail`
 - **Queue:** Sent via queue
 - **Content:**
-  - Subject: "Invoice [Invoice Number] from [Company Name]"
-  - Invoice PDF attachment
-  - Invoice summary (total, due date, billing period)
-  - Payment instructions
+    - Subject: "Invoice [Invoice Number] from [Company Name]"
+    - Invoice PDF attachment
+    - Invoice summary (total, due date, billing period)
+    - Payment instructions
 - **View:** `resources/views/emails/invoice.blade.php`
 
 ### Therapist Bill Notifications ✅
 
 **When Bill Sent:**
+
 - **Recipients:** Therapist (therapist's email address)
 - **Trigger:** Admin action via `/admin/billing/therapist-bills/{bill}/send` route
 - **Implementation:** `App\Domain\Billing\Services\TherapistBillService::sendBill`
 - **Mailable:** `App\Mail\TherapistBillMail`
 - **Queue:** Sent via queue
 - **Content:**
-  - Subject: "Bill [Bill Number] from [Company Name]"
-  - Bill PDF attachment
-  - Bill summary (total, billing period, session count)
-  - Payment information
+    - Subject: "Bill [Bill Number] from [Company Name]"
+    - Bill PDF attachment
+    - Bill summary (total, billing period, session count)
+    - Payment information
 - **View:** `resources/views/emails/therapist-bill.blade.php`
 
 ### Welcome Emails ✅
 
 **User Onboarding:**
+
 - **Recipients:** New users (students, therapists, admins)
 - **Trigger:** User creation via `user:create-welcome` command or user service
 - **Implementation:** `App\Mail\WelcomeUserMail`
@@ -96,12 +101,14 @@ The Email Notifications module provides automated and on-demand email communicat
 ### School Notifications ✅
 
 **School Status Changes:**
+
 - **Recipients:** School contacts
 - **Trigger:** Event-based when school status changes
 - **Implementation:** `App\Notifications\SchoolStatusChangedNotification`
 - **Events:** School activation/deactivation, contract status changes
 
 **School Creation:**
+
 - **Recipients:** School contacts
 - **Trigger:** Event-based when school is created
 - **Implementation:** `App\Notifications\SchoolCreatedNotification`
