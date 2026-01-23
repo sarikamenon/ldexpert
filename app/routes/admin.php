@@ -59,6 +59,12 @@ Route::middleware('role:admin')
         Route::resource('services', ServiceController::class)->except(['destroy', 'show']);
 
         Route::get('ssas/export', [SSAController::class, 'export'])->name('ssas.export');
+        Route::get('ssas/import', [SSAController::class, 'showImportForm'])->name('ssas.import');
+        Route::post('ssas/import', [SSAController::class, 'import'])->name('ssas.import.store');
+        Route::get('ssas/imports', [SSAController::class, 'importHistory'])->name('ssas.imports.index');
+        Route::get('ssas/imports/{import}', [SSAController::class, 'showImportStatus'])->name('ssas.imports.show');
+        Route::get('ssas/imports/{import}/status', [SSAController::class, 'showImportStatus'])->name('ssas.imports.status');
+        Route::get('ssas/import/template', [SSAController::class, 'downloadTemplate'])->name('ssas.import.template');
         Route::patch('ssas/{ssa}/status', [SSAController::class, 'updateStatus'])->name('ssas.status');
         Route::post('ssas/{ssa}/assign-therapist', [SSAController::class, 'assignTherapist'])->name('ssas.assign-therapist');
         Route::post('ssas/{ssa}/unassign-therapist', [SSAController::class, 'unassignTherapist'])->name('ssas.unassign-therapist');

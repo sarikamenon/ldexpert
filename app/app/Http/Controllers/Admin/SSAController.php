@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAImportService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSSAStatusDTO;
@@ -13,22 +14,27 @@ use App\DTOs\CreateSSADTO;
 use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\StoreSSAImportDTO;
 use App\DTOs\UpdateSSADTO;
 use App\Enums\ServiceFrequency;
+use App\Enums\SSAImportType;
 use App\Enums\SSAStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SSA\AssignTherapistRequest;
 use App\Http\Requests\Admin\SSA\ChangeSSAStatusRequest;
+use App\Http\Requests\Admin\SSA\ImportSSAsRequest;
 use App\Http\Requests\Admin\SSA\IndexSSARequest;
 use App\Http\Requests\Admin\SSA\StoreSSARequest;
 use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
 use App\Models\ServiceSupportAgreement;
+use App\Models\SSAImport;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -36,6 +42,7 @@ final class SSAController extends Controller
 {
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly SSAImportService $importService,
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
@@ -274,6 +281,110 @@ final class SSAController extends Controller
     private function getActiveTherapists(): Collection
     {
         return $this->userService->listActiveTherapistsForSelect();
+    }
+
+    public function showImportForm(): View
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $type = SSAImportType::NOVA;
+        $template = $this->importService->getTemplate($type);
+
+        return view('admin.ssas.import', [
+            'importTypes' => SSAImportType::cases(),
+            'requiredColumns' => $template['required_columns'] ?? [],
+            'optionalColumns' => $template['optional_columns'] ?? [],
+        ]);
+    }
+
+    public function import(ImportSSAsRequest $request): JsonResponse
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $validated = $request->validated();
+        $type = SSAImportType::from($validated['type'] ?? SSAImportType::NOVA->value);
+
+        $dto = StoreSSAImportDTO::fromArray([
+            'file' => $request->file('file'),
+            'user_id' => $request->user()->id,
+            'type' => $type->value,
+        ]);
+
+        $import = $this->importService->storeImportRequest($dto);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import queued successfully. You will receive an email notification when it completes.',
+            'data' => [
+                'import_id' => $import->id,
+                'status' => $import->status->value,
+            ],
+        ]);
+    }
+
+    public function showImportStatus(Request $request, SSAImport $import): View|JsonResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $import->load(['rows.ssa', 'user']);
+
+        $stats = [
+            'total' => $import->total_rows,
+            'processed' => $import->processed_rows,
+            'success' => $import->rows()->where('status', 'done')->count(),
+            'duplicates' => $import->rows()->where('status', 'duplicate')->count(),
+            'errors' => $import->rows()->where('status', 'validation_error')->count(),
+            'pending' => $import->rows()->where('status', 'pending')->count(),
+        ];
+
+        // Return JSON for AJAX polling
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => $import->status->value,
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('admin.ssas.import-status', [
+            'import' => $import,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function importHistory(Request $request): View
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $imports = SSAImport::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
+
+        return view('admin.ssas.import-history', [
+            'imports' => $imports,
+        ]);
+    }
+
+    public function downloadTemplate(Request $request): StreamedResponse
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $type = SSAImportType::from($request->query('type', SSAImportType::NOVA->value));
+        $template = $this->importService->getTemplate($type);
+
+        $requiredColumns = $template['required_columns'] ?? [];
+        $optionalColumns = $template['optional_columns'] ?? [];
+        $allColumns = array_merge($requiredColumns, $optionalColumns);
+
+        $filename = sprintf('ssa-import-template-%s-%s.csv', strtolower($type->value), now()->format('Ymd_His'));
+
+        return response()->streamDownload(function () use ($allColumns): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $allColumns);
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 
     private function formData(): array
