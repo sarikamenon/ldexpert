@@ -55,20 +55,20 @@ return [
             [
                 'label' => 'Students',
                 'route' => 'admin.students.index',
-                'active' => ['admin.students.*', 'admin.student-documents.*'],
+                'active' => ['admin.students.*', 'admin.student-documents.*', 'admin.ssas.*'],
                 'children' => [
                     [
-                        'label' => 'List',
+                        'label' => 'Student List',
                         'route' => 'admin.students.index',
                         'active' => 'admin.students.index',
                     ],
                     [
-                        'label' => 'Create',
+                        'label' => 'Student Create',
                         'route' => 'admin.students.create',
                         'active' => 'admin.students.create',
                     ],
                     [
-                        'label' => 'Import',
+                        'label' => 'Student Import',
                         'route' => 'admin.students.import',
                         'active' => ['admin.students.import', 'admin.students.imports.*'],
                     ],
@@ -77,25 +77,18 @@ return [
                         'route' => 'admin.student-documents.index',
                         'active' => 'admin.student-documents.*',
                     ],
-                ],
-            ],
-            [
-                'label' => 'SSAs',
-                'route' => 'admin.ssas.index',
-                'active' => 'admin.ssas.*',
-                'children' => [
                     [
-                        'label' => 'List',
+                        'label' => 'SSA List',
                         'route' => 'admin.ssas.index',
                         'active' => 'admin.ssas.index',
                     ],
                     [
-                        'label' => 'Create',
+                        'label' => 'SSA Create',
                         'route' => 'admin.ssas.create',
                         'active' => 'admin.ssas.create',
                     ],
                     [
-                        'label' => 'Import',
+                        'label' => 'SSA Import',
                         'route' => 'admin.ssas.import',
                         'active' => ['admin.ssas.import', 'admin.ssas.imports.*'],
                     ],
