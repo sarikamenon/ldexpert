@@ -12,6 +12,7 @@ use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
+use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Settings\Repositories\SettingsRepositoryInterface;
@@ -32,6 +33,7 @@ use App\Infrastructure\Repositories\EloquentAnalyticsRepository;
 use App\Infrastructure\Repositories\EloquentDashboardRepository;
 use App\Infrastructure\Repositories\EloquentInvoiceRepository;
 use App\Infrastructure\Repositories\EloquentNotificationRepository;
+use App\Infrastructure\Repositories\EloquentSchoolCalendarEventRepository;
 use App\Infrastructure\Repositories\EloquentScheduleRepository;
 use App\Infrastructure\Repositories\EloquentSchoolContractRepository;
 use App\Infrastructure\Repositories\EloquentSchoolRepository;
@@ -50,6 +52,7 @@ use App\Listeners\SendScheduleNotification;
 use App\Models\Invoice;
 use App\Models\Schedule;
 use App\Models\School;
+use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolContract;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
@@ -63,6 +66,7 @@ use App\Models\TherapistProfile;
 use App\Models\User;
 use App\Policies\InvoicePolicy;
 use App\Policies\SchedulePolicy;
+use App\Policies\SchoolCalendarEventPolicy;
 use App\Policies\SchoolContractPolicy;
 use App\Policies\SchoolPolicy;
 use App\Policies\ServicePolicy;
@@ -105,6 +109,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(DashboardRepositoryInterface::class, EloquentDashboardRepository::class);
         $this->app->bind(SettingsRepositoryInterface::class, EloquentSettingsRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, EloquentNotificationRepository::class);
+        $this->app->bind(SchoolCalendarEventRepositoryInterface::class, EloquentSchoolCalendarEventRepository::class);
 
         $this->app->singleton(UserTimezoneService::class, static function (): UserTimezoneService {
             return new UserTimezoneService(config('app.timezone', 'UTC'));
@@ -118,6 +123,7 @@ class AppServiceProvider extends ServiceProvider
         $router->aliasMiddleware('role', RoleMiddleware::class);
 
         Gate::policy(School::class, SchoolPolicy::class);
+        Gate::policy(SchoolCalendarEvent::class, SchoolCalendarEventPolicy::class);
         Gate::policy(TherapistProfile::class, TherapistProfilePolicy::class);
         Gate::policy(StudentProfile::class, StudentProfilePolicy::class);
         Gate::policy(StudentComment::class, StudentCommentPolicy::class);

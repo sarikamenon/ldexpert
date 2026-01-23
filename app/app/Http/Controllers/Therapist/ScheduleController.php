@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateScheduleDTO;
@@ -33,6 +34,7 @@ final class ScheduleController extends Controller
         private readonly ScheduleService $scheduleService,
         private readonly SSAService $ssaService,
         private readonly SessionLogService $sessionLogService,
+        private readonly SchoolCalendarService $calendarService,
     ) {}
 
     public function calendar(ScheduleFilterRequest $request): View
@@ -103,6 +105,27 @@ final class ScheduleController extends Controller
         $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
+        $calendarStart = $selectedDate->startOfMonth();
+        $calendarEnd = $selectedDate->endOfMonth();
+        $schoolIds = $filters->schoolId
+            ? [(int) $filters->schoolId]
+            : $schools->pluck('id')->map('intval')->toArray();
+
+        $calendarEvents = $this->calendarService->listBySchoolsAndRange($schoolIds, $calendarStart, $calendarEnd);
+        $formattedEvents = $calendarEvents->map(function ($event) {
+            return [
+                'id' => $event->id,
+                'school_id' => $event->school_id,
+                'title' => $event->title,
+                'event_type' => $event->event_type?->value,
+                'event_type_label' => $event->event_type?->label(),
+                'start_date' => $event->start_date?->format('Y-m-d'),
+                'end_date' => $event->end_date?->format('Y-m-d'),
+                'notes' => $event->notes,
+                'is_holiday' => $event->event_type?->value === 'holiday',
+            ];
+        })->values();
+
         return view('therapist.schedule.calendar', [
             'selectedDate' => $selectedDate,
             'selectedDateFormatted' => $selectedDate->format('Y-m-d'),
@@ -115,6 +138,7 @@ final class ScheduleController extends Controller
             'activeSSAs' => $activeSSAs,
             'therapistTimezone' => $therapistTimezone,
             'therapistTimezoneLabel' => $therapistTimezoneLabel,
+            'calendarEvents' => $formattedEvents,
         ]);
     }
 
@@ -235,6 +259,29 @@ final class ScheduleController extends Controller
 
         $schedules = $this->scheduleService->getSchedules($therapist, $filters);
 
+        $schools = $this->scheduleService->getSchools($therapist);
+        $schoolIds = $filters->schoolId
+            ? [(int) $filters->schoolId]
+            : $schools->pluck('id')->map('intval')->toArray();
+        $selectedDate = $filters->date
+            ? CarbonImmutable::parse($filters->date)
+            : CarbonImmutable::today();
+        $events = $this->calendarService
+            ->listBySchoolsAndRange($schoolIds, $selectedDate->startOfDay(), $selectedDate->endOfDay())
+            ->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'school_id' => $event->school_id,
+                    'title' => $event->title,
+                    'event_type' => $event->event_type?->value,
+                    'event_type_label' => $event->event_type?->label(),
+                    'start_date' => $event->start_date?->format('Y-m-d'),
+                    'end_date' => $event->end_date?->format('Y-m-d'),
+                    'notes' => $event->notes,
+                    'is_holiday' => $event->event_type?->value === 'holiday',
+                ];
+            })->values();
+
         $sessionLogsBySchedule = $this->sessionLogService->getSessionLogsByScheduleIds(
             $schedules->pluck('id')->toArray()
         );
@@ -277,6 +324,44 @@ final class ScheduleController extends Controller
                     'edit_url' => route('therapist.schedule.edit', $schedule->id),
                 ];
             })->toArray(),
+            'events' => $events,
+        ]);
+    }
+
+    public function getCalendarEvents(ScheduleFilterRequest $request): JsonResponse
+    {
+        /** @var User $therapist */
+        $therapist = $request->user();
+        $filters = ScheduleFilterDTO::fromRequest($request->validated());
+
+        $start = $request->query('start')
+            ? CarbonImmutable::parse((string) $request->query('start'))
+            : CarbonImmutable::today()->startOfMonth();
+        $end = $request->query('end')
+            ? CarbonImmutable::parse((string) $request->query('end'))
+            : CarbonImmutable::today()->endOfMonth();
+
+        $schools = $this->scheduleService->getSchools($therapist);
+        $schoolIds = $filters->schoolId
+            ? [(int) $filters->schoolId]
+            : $schools->pluck('id')->map('intval')->toArray();
+
+        $events = $this->calendarService->listBySchoolsAndRange($schoolIds, $start, $end);
+
+        return response()->json([
+            'events' => $events->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'school_id' => $event->school_id,
+                    'title' => $event->title,
+                    'event_type' => $event->event_type?->value,
+                    'event_type_label' => $event->event_type?->label(),
+                    'start_date' => $event->start_date?->format('Y-m-d'),
+                    'end_date' => $event->end_date?->format('Y-m-d'),
+                    'notes' => $event->notes,
+                    'is_holiday' => $event->event_type?->value === 'holiday',
+                ];
+            })->values(),
         ]);
     }
 

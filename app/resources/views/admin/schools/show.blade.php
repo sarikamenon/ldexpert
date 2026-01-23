@@ -4,6 +4,9 @@
         @if (in_array($activeTab ?? 'dashboard', ['students', 'therapists', 'ssas', 'contracts']))
             @vite(['resources/css/common/datatables.css'])
         @endif
+        @if (($activeTab ?? 'dashboard') === 'calendar')
+            @vite(['resources/css/therapist-schedule.css'])
+        @endif
     </x-slot>
 
     {{-- Header Card --}}
@@ -70,6 +73,10 @@
             <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'ssas']) }}"
                 class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
                 SSAs
+            </a>
+            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'calendar']) }}"
+                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
+                Calendar
             </a>
         </nav>
     </div>
@@ -146,6 +153,11 @@
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []"
             :therapists="$therapists ?? []" :services="$services ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'calendar')
+        @include('admin.schools._calendar-events', [
+            'school' => $school,
+            'selectedDate' => $selectedDate ?? now(),
+        ])
     @endif
 
     <x-slot name="scripts">
@@ -159,6 +171,8 @@
             @vite(['resources/js/pages/admin-contracts-schools-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'ssas')
             @vite(['resources/js/pages/admin-ssas-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'calendar')
+            @vite(['resources/js/pages/admin-school-calendar-events.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

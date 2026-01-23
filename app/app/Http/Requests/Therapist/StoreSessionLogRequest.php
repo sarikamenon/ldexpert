@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Enums\SessionOutcome;
 use App\Enums\SSAStatus;
+use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
@@ -170,9 +173,38 @@ final class StoreSessionLogRequest extends FormRequest
             // Validate schedule if provided
             $scheduleId = $this->input('schedule_id');
             if ($scheduleId) {
-                $schedule = \App\Models\Schedule::find($scheduleId);
+                $schedule = Schedule::find($scheduleId);
                 if ($schedule && $schedule->therapist_id !== $therapist->id) {
                     $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
+                }
+            }
+
+            // Validate session date is not a holiday
+            $calendarService = app(SchoolCalendarService::class);
+            $studentRepository = app(StudentRepositoryInterface::class);
+            $schoolId = null;
+
+            if ($scheduleId) {
+                $schedule = Schedule::find($scheduleId);
+                $schoolId = $schedule?->school_id
+                    ?? ($schedule?->student_id ? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id) : null);
+            }
+
+            if (! $schoolId) {
+                $schoolId = $this->input('school_id')
+                    ? (int) $this->input('school_id')
+                    : null;
+            }
+
+            if (! $schoolId && $studentId) {
+                $schoolId = $studentRepository->getSchoolIdByUserId((int) $studentId);
+            }
+
+            $sessionDate = $this->input('session_date');
+            if ($schoolId && $sessionDate) {
+                $date = Carbon::parse((string) $sessionDate);
+                if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
+                    $validator->errors()->add('session_date', 'Session date falls on a school holiday.');
                 }
             }
 

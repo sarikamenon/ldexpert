@@ -35,6 +35,7 @@ use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
 use App\Http\Requests\Admin\School\UpdateSchoolRequest;
 use App\Models\School;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -199,6 +200,10 @@ final class SchoolController extends Controller
             $viewData['contracts'] = $this->schoolContractService->paginate($filters);
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
+        } elseif ($activeTab === 'calendar') {
+            $viewData['selectedDate'] = $request->query('date')
+                ? CarbonImmutable::parse((string) $request->query('date'))
+                : CarbonImmutable::today();
         }
 
         return view('admin.schools.show', $viewData);

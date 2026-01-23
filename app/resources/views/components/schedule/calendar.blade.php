@@ -18,9 +18,10 @@
         </button>
     @endif
 
-    <div id="calendar" class="calendar-widget" data-selected-date="{{ $selectedDateFormatted }}"
+    <div id="calendar" data-selected-date="{{ $selectedDateFormatted }}"
         data-therapist-timezone-label="{{ $timezoneLabel }}"
-        @if ($onDateSelect) data-on-date-select="{{ $onDateSelect }}" @endif>
+        @if ($onDateSelect) data-on-date-select="{{ $onDateSelect }}" @endif
+        {{ $attributes->except(['data-therapist-timezone-label', 'data-on-date-select'])->merge(['class' => 'calendar-widget']) }}>
         {{-- Calendar will be rendered by JavaScript --}}
     </div>
 </x-ui::card>

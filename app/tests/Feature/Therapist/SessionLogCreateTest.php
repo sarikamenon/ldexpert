@@ -10,7 +10,9 @@ use App\Enums\RateType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Enums\SchoolCalendarEventType;
 use App\Models\School;
+use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolContract;
 use App\Models\SchoolContractService;
 use App\Models\Service;
@@ -208,7 +210,10 @@ final class SessionLogCreateTest extends TestCase
     {
         $therapist = User::factory()->therapist()->create();
         $student = User::factory()->student()->create();
-        $service = Service::factory()->create();
+        $service = Service::factory()->create([
+            'min_duration_minutes' => 30,
+            'max_duration_minutes' => 120,
+        ]);
         $ssa = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
             'primary_service_id' => $service->id,
@@ -241,7 +246,10 @@ final class SessionLogCreateTest extends TestCase
             'user_id' => $student->id,
             'school_id' => $school->id,
         ]);
-        $service = Service::factory()->create();
+        $service = Service::factory()->create([
+            'min_duration_minutes' => 30,
+            'max_duration_minutes' => 120,
+        ]);
         $ssa = ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
             'primary_service_id' => $service->id,
@@ -259,6 +267,58 @@ final class SessionLogCreateTest extends TestCase
                 'session_date' => now()->format('Y-m-d'),
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
+                'notes' => str_repeat('a', 60),
+                'is_billable_therapist' => true,
+                '_token' => csrf_token(),
+            ]);
+
+        $response->assertSessionHasErrors(['session_date']);
+    }
+
+    public function test_rejects_session_on_school_holiday(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $school = School::factory()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+        $service = Service::factory()->create([
+            'min_duration_minutes' => 30,
+            'max_duration_minutes' => 120,
+        ]);
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $holidayDate = now()->addDays(2)->format('Y-m-d');
+        SchoolCalendarEvent::factory()->holiday()->create([
+            'school_id' => $school->id,
+            'start_date' => $holidayDate,
+            'end_date' => $holidayDate,
+            'event_type' => SchoolCalendarEventType::HOLIDAY->value,
+        ]);
+
+        $this->seedContracts($therapist, $school, $service, now());
+
+        $startTime = Carbon::parse($holidayDate)->setTime(10, 0, 0);
+        $endTime = $startTime->copy()->addHour();
+
+        $response = $this->actingAs($therapist)
+            ->post(route('therapist.session-logs.store'), [
+                'student_id' => $student->id,
+                'ssa_id' => $ssa->id,
+                'service_id' => $service->id,
+                'school_id' => $school->id,
+                'session_date' => $holidayDate,
+                'start_time' => $startTime->format('Y-m-d H:i:s'),
+                'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),

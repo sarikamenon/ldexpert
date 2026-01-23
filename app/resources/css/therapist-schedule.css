@@ -114,6 +114,19 @@
     background-color: #9ca3af;
 }
 
+.calendar-dot-holiday {
+    background-color: #dc2626;
+}
+
+.calendar-dot-event {
+    background-color: #111827;
+}
+
+.calendar-day-holiday:not(.selected) {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
 /* Day names header */
 .calendar-header .grid {
     display: grid;

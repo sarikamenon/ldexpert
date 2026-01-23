@@ -30,6 +30,7 @@ export default defineConfig({
                 'resources/js/pages/admin-student-documents.js',
                 'resources/js/pages/admin-therapists-show.js',
                 'resources/js/pages/admin-schools-show.js',
+                'resources/js/pages/admin-school-calendar-events.js',
                 'resources/js/pages/admin-activity-logs-index.js',
                 'resources/js/pages/admin-contracts-schools-index.js',
                 'resources/js/pages/admin-contracts-therapists-index.js',
