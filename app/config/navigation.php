@@ -68,6 +68,11 @@ return [
                         'active' => 'admin.students.create',
                     ],
                     [
+                        'label' => 'Import',
+                        'route' => 'admin.students.import',
+                        'active' => ['admin.students.import', 'admin.students.imports.*'],
+                    ],
+                    [
                         'label' => 'Documents',
                         'route' => 'admin.student-documents.index',
                         'active' => 'admin.student-documents.*',
@@ -88,6 +93,11 @@ return [
                         'label' => 'Create',
                         'route' => 'admin.ssas.create',
                         'active' => 'admin.ssas.create',
+                    ],
+                    [
+                        'label' => 'Import',
+                        'route' => 'admin.ssas.import',
+                        'active' => ['admin.ssas.import', 'admin.ssas.imports.*'],
                     ],
                 ],
             ],
