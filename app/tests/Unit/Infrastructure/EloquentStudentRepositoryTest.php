@@ -124,7 +124,11 @@ final class EloquentStudentRepositoryTest extends TestCase
         $initialCount = User::where('role', Role::STUDENT->value)->count();
         StudentProfile::factory()->count(4)->create();
 
-        $result = $this->repository->list(new StudentFilterDTO(null, null, 25));
+        $result = $this->repository->list(new StudentFilterDTO(
+            search: null,
+            status: null,
+            perPage: 25
+        ));
 
         $this->assertEquals($initialCount + 4, $result->total());
     }
@@ -134,7 +138,11 @@ final class EloquentStudentRepositoryTest extends TestCase
         StudentProfile::factory()->create(['first_name' => 'Unique']);
         StudentProfile::factory()->create(['first_name' => 'Other']);
 
-        $result = $this->repository->list(new StudentFilterDTO('Unique', null, 25));
+        $result = $this->repository->list(new StudentFilterDTO(
+            search: 'Unique',
+            status: null,
+            perPage: 25
+        ));
 
         $this->assertCount(1, $result->items());
         $this->assertSame('Unique', $result->items()[0]->studentProfile->first_name);
@@ -169,7 +177,11 @@ final class EloquentStudentRepositoryTest extends TestCase
             ->where('status', UserStatus::ACTIVE->value)
             ->count();
 
-        $result = $this->repository->list(new StudentFilterDTO(null, 'active', 25));
+        $result = $this->repository->list(new StudentFilterDTO(
+            search: null,
+            status: 'active',
+            perPage: 25
+        ));
 
         $this->assertEquals($expectedCount, $result->total());
 
@@ -223,7 +235,11 @@ final class EloquentStudentRepositoryTest extends TestCase
         $initialCount = User::where('role', Role::STUDENT->value)->count();
         StudentProfile::factory()->count(2)->create();
 
-        $result = $this->repository->export(new StudentFilterDTO(null, null, 100));
+        $result = $this->repository->export(new StudentFilterDTO(
+            search: null,
+            status: null,
+            perPage: 100
+        ));
 
         $this->assertEquals($initialCount + 2, $result->count());
     }

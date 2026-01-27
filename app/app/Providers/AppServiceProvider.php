@@ -17,6 +17,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Settings\Repositories\SettingsRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
+use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentCommentRepositoryInterface;
 use App\Domain\Student\Repositories\StudentDocumentRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
@@ -48,6 +49,8 @@ use App\Infrastructure\Repositories\EloquentTherapistBillRepository;
 use App\Infrastructure\Repositories\EloquentTherapistContractRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
+use App\Infrastructure\Services\Storage\LocalStorageService;
+use App\Infrastructure\Services\Storage\S3StorageService;
 use App\Listeners\SendScheduleNotification;
 use App\Models\Invoice;
 use App\Models\Schedule;
@@ -111,6 +114,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SettingsRepositoryInterface::class, EloquentSettingsRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, EloquentNotificationRepository::class);
         $this->app->bind(SchoolCalendarEventRepositoryInterface::class, EloquentSchoolCalendarEventRepository::class);
+        $this->app->bind(StorageServiceInterface::class, function (): StorageServiceInterface {
+            return match (config('filesystems.default')) {
+                'local' => $this->app->make(LocalStorageService::class),
+                default => $this->app->make(S3StorageService::class),
+            };
+        });
 
         $this->app->singleton(UserTimezoneService::class, static function (): UserTimezoneService {
             return new UserTimezoneService(config('app.timezone', 'UTC'));

@@ -28,7 +28,8 @@ final class SessionLogDocumentTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
 
         $this->therapist = User::factory()->create([
             'role' => Role::THERAPIST,
@@ -70,9 +71,10 @@ final class SessionLogDocumentTest extends TestCase
 
     public function test_therapist_can_download_their_session_log_document(): void
     {
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
         $filePath = 'student-documents/2026/01/test.pdf';
-        Storage::disk('local')->put($filePath, 'test content');
+        Storage::disk($disk)->put($filePath, 'test content');
 
         $document = StudentDocument::factory()->forSessionLog($this->sessionLog)->create([
             'uploaded_by_id' => $this->therapist->id,
@@ -92,9 +94,10 @@ final class SessionLogDocumentTest extends TestCase
 
     public function test_therapist_can_delete_their_own_document(): void
     {
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
         $filePath = 'student-documents/2026/01/test.pdf';
-        Storage::disk('local')->put($filePath, 'test content');
+        Storage::disk($disk)->put($filePath, 'test content');
 
         $document = StudentDocument::factory()->forSessionLog($this->sessionLog)->create([
             'uploaded_by_id' => $this->therapist->id,

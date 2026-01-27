@@ -46,7 +46,8 @@ final class StudentImportServiceTest extends TestCase
             'external_emr_name' => 'Test School EMR',
         ]);
 
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
     }
 
     public function test_validate_file_structure_with_valid_headers(): void
@@ -55,7 +56,8 @@ final class StudentImportServiceTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
 
         $path = 'student-imports/tests/valid-headers.csv';
-        Storage::disk('local')->put($path, file_get_contents($file->getRealPath()));
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
 
         $import = StudentImport::create([
             'user_id' => $this->admin->id,
@@ -79,7 +81,8 @@ final class StudentImportServiceTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
 
         $path = 'student-imports/tests/missing-columns.csv';
-        Storage::disk('local')->put($path, file_get_contents($file->getRealPath()));
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
 
         $import = StudentImport::create([
             'user_id' => $this->admin->id,
@@ -104,9 +107,10 @@ final class StudentImportServiceTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
 
         $path = 'student-imports/tests/parse-csv.csv';
-        Storage::disk('local')->put($path, file_get_contents($file->getRealPath()));
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
 
-        $rows = $this->service->parseCsvFromS3($path);
+        $rows = $this->service->parseCsvFromStorage($path);
 
         $this->assertCount(1, $rows);
         $this->assertEquals('John', $rows[0]['first_name']);
@@ -120,9 +124,10 @@ final class StudentImportServiceTest extends TestCase
         $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
 
         $path = 'student-imports/tests/parse-csv-empty.csv';
-        Storage::disk('local')->put($path, file_get_contents($file->getRealPath()));
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
 
-        $rows = $this->service->parseCsvFromS3($path);
+        $rows = $this->service->parseCsvFromStorage($path);
 
         $this->assertCount(1, $rows);
     }

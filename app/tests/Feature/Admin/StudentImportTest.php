@@ -37,7 +37,8 @@ final class StudentImportTest extends TestCase
             'external_emr_name' => 'Test School EMR',
         ]);
 
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
         Bus::fake();
     }
 

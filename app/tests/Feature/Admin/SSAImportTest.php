@@ -60,7 +60,8 @@ final class SSAImportTest extends TestCase
             'is_direct_service' => true,
         ]);
 
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
         Bus::fake();
     }
 
