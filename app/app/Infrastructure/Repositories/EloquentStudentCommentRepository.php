@@ -21,7 +21,7 @@ final class EloquentStudentCommentRepository implements StudentCommentRepository
         return StudentComment::query()
             ->where('student_id', $studentId)
             ->with(['author'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->paginate($perPage);
     }
 

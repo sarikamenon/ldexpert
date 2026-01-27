@@ -17,7 +17,8 @@ use App\Models\StudentDocument;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\StreamedResponse;
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class StudentDocumentController extends Controller
 {
@@ -48,7 +49,7 @@ final class StudentDocumentController extends Controller
         ]);
     }
 
-    public function store(StoreStudentDocumentRequest $request, User $student): JsonResponse
+    public function store(StoreStudentDocumentRequest $request, User $student): JsonResponse|RedirectResponse
     {
         $this->authorize('create', [StudentDocument::class, $student]);
 
@@ -66,17 +67,23 @@ final class StudentDocumentController extends Controller
         $document = $this->documentService->create($dto);
         $document->load(['uploadedBy']);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Document uploaded successfully.',
-            'document' => [
-                'id' => $document->id,
-                'file_name' => $document->file_name,
-                'document_type' => $document->document_type->label(),
-                'uploaded_by_name' => $document->uploadedBy->name,
-                'created_at' => $document->created_at->toIso8601String(),
-            ],
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Document uploaded successfully.',
+                'document' => [
+                    'id' => $document->id,
+                    'file_name' => $document->file_name,
+                    'document_type' => $document->document_type->label(),
+                    'uploaded_by_name' => $document->uploadedBy->name,
+                    'created_at' => $document->created_at->toIso8601String(),
+                ],
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.students.show', ['student' => $student, 'tab' => 'documents'])
+            ->with('success', 'Document uploaded successfully.');
     }
 
     public function download(StudentDocument $document): StreamedResponse

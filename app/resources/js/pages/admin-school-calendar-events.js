@@ -169,18 +169,10 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
         }
 
         function renderCalendar(year, month, selected) {
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            const startingDayOfWeek = firstDay.getDay();
-
             const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
                 'July', 'August', 'September', 'October', 'November', 'December'];
-
             const dayNames = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-
-            const prevMonth = new Date(year, month, 0);
-            const daysInPrevMonth = prevMonth.getDate();
+            const weeks = buildMonthWeeks(year, month);
 
             let html = `
                 <div class="calendar-header mb-4">
@@ -201,32 +193,23 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                         ${dayNames.map(day => `<div class="text-center text-xs font-medium text-foreground/70 py-1">${day}</div>`).join('')}
                     </div>
                 </div>
-                <div class="calendar-grid">
+                <div class="calendar-month">
             `;
 
-            for (let i = startingDayOfWeek - 1; i >= 0; i -= 1) {
-                const date = daysInPrevMonth - i;
-                const dateObj = new Date(year, month - 1, date);
-                html += buildCalendarCell(dateObj, selected, true);
-            }
-
-            for (let day = 1; day <= daysInMonth; day += 1) {
-                const dateObj = new Date(year, month, day);
-                html += buildCalendarCell(dateObj, selected, false);
-            }
-
-            const totalCells = 42;
-            const cellsUsed = startingDayOfWeek + daysInMonth;
-            const remainingCells = totalCells - cellsUsed;
-            for (let day = 1; day <= remainingCells; day += 1) {
-                const dateObj = new Date(year, month + 1, day);
-                html += buildCalendarCell(dateObj, selected, true);
-            }
+            weeks.forEach((weekDates) => {
+                html += `
+                    <div class="calendar-week">
+                        <div class="calendar-week-days">
+                            ${weekDates.map((dateObj) => buildCalendarCell(dateObj, selected, dateObj.getMonth() !== month)).join('')}
+                        </div>
+                    </div>
+                `;
+            });
 
             html += '</div>';
             $calendarEl.html(html);
 
-            applyEventMarkers();
+            renderEventBarsInCells();
 
             $calendarEl.find('.calendar-day').on('click', function () {
                 const dateStr = $(this).data('date');
@@ -265,6 +248,36 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             });
         }
 
+        function buildMonthWeeks(year, month) {
+            const firstOfMonth = new Date(year, month, 1);
+            const startDate = new Date(firstOfMonth);
+            startDate.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
+
+            const weeks = [];
+            for (let week = 0; week < 6; week += 1) {
+                const weekDates = [];
+                for (let day = 0; day < 7; day += 1) {
+                    const date = new Date(startDate);
+                    date.setDate(startDate.getDate() + (week * 7) + day);
+                    weekDates.push(date);
+                }
+                weeks.push(weekDates);
+            }
+            return weeks;
+        }
+
+        function escapeHtml(value) {
+            if (! value) {
+                return '';
+            }
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         function buildCalendarCell(dateObj, selected, isOtherMonth) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -285,33 +298,50 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             else if (isToday) classes += ' today';
 
             return `<div class="${classes}" data-date="${formatDate(dateObj)}">
-                ${dateObj.getDate()}
-                <span class="calendar-dot" style="display: none;"></span>
+                <span class="calendar-day-number">${dateObj.getDate()}</span>
+                <div class="calendar-day-events"></div>
             </div>`;
         }
 
-        function applyEventMarkers() {
+        function renderEventBarsInCells() {
             $calendarEl.find('.calendar-day').each(function () {
                 const dateStr = $(this).data('date');
-                const dot = $(this).find('.calendar-dot');
-                if (! dateStr || ! dot.length) {
+                const container = $(this).find('.calendar-day-events');
+                if (! dateStr || ! container.length) {
                     return;
                 }
 
                 const events = getEventsForDate(dateStr);
-                if (events.length === 0) {
-                    dot.hide();
-                    $(this).removeClass('calendar-day-holiday calendar-day-event');
+                if (! events.length) {
+                    container.empty();
                     return;
                 }
 
-                const hasHoliday = events.some((event) => event.is_holiday);
-                $(this).toggleClass('calendar-day-holiday', hasHoliday);
-                $(this).toggleClass('calendar-day-event', ! hasHoliday);
-                dot
-                    .show()
-                    .toggleClass('calendar-dot-holiday', hasHoliday)
-                    .toggleClass('calendar-dot-event', ! hasHoliday);
+                const sorted = events.slice().sort((a, b) => {
+                    if (a.is_holiday && ! b.is_holiday) return -1;
+                    if (! a.is_holiday && b.is_holiday) return 1;
+                    return a.title.localeCompare(b.title);
+                });
+
+                const visibleEvents = sorted.slice(0, 2);
+                let html = visibleEvents.map((event) => {
+                    const isStart = dateStr === event.start_date;
+                    const isEnd = dateStr === event.end_date;
+                    const typeClass = event.is_holiday ? 'calendar-event-holiday' : 'calendar-event-info';
+                    const startClass = isStart ? 'calendar-event-start' : '';
+                    const endClass = isEnd ? 'calendar-event-end' : '';
+                    return `
+                        <div class="calendar-event-bar ${typeClass} ${startClass} ${endClass}" title="${escapeHtml(event.title)}">
+                            ${escapeHtml(event.title)}
+                        </div>
+                    `;
+                }).join('');
+
+                if (sorted.length > visibleEvents.length) {
+                    html += `<div class="calendar-event-more">+${sorted.length - visibleEvents.length} more</div>`;
+                }
+
+                container.html(html);
             });
         }
 

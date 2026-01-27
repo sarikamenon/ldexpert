@@ -72,6 +72,7 @@ use App\Policies\SchoolPolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\SessionLogPolicy;
 use App\Policies\SSAPolicy;
+use App\Policies\StudentCommentPolicy;
 use App\Policies\StudentDocumentPolicy;
 use App\Policies\StudentProfilePolicy;
 use App\Policies\TherapistBillPolicy;

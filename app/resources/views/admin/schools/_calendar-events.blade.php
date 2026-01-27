@@ -5,18 +5,12 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-1 space-y-6">
-        <x-schedule.calendar :selected-date="$selectedDate" />
-
         <x-ui::card class="p-6">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 class="text-lg font-semibold text-foreground">Add Calendar Event</h2>
                     <p class="text-sm text-foreground/60">Create school-wide closures or informational events.</p>
                 </div>
-                <button type="button" id="calendarEventReset"
-                    class="text-sm text-primary hover:underline">
-                    New Entry
-                </button>
             </div>
 
             <form id="schoolCalendarEventForm" class="space-y-4"
@@ -95,19 +89,37 @@
     </div>
 
     <div class="lg:col-span-2">
-        <x-ui::card class="p-6">
-            <div class="flex items-center justify-between mb-4">
+        <x-ui::card class="p-6 space-y-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h2 class="text-lg font-semibold text-foreground">Events</h2>
-                    <p class="text-sm text-foreground/60" id="calendarEventDateLabel"></p>
+                    <h2 class="text-lg font-semibold text-foreground">Calendar</h2>
+                    <p class="text-sm text-foreground/60">Monthly view of school events.</p>
                 </div>
-                <span class="text-xs text-foreground/60">Holiday events block scheduling</span>
+                <button type="button"
+                    class="calendar-today-btn px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                    TODAY'S VIEW
+                </button>
             </div>
 
-            <div id="calendarEventsList"
-                data-list-url="{{ route('admin.schools.calendar-events.index', $school) }}"
-                data-update-url-template="{{ route('admin.schools.calendar-events.update', ['school' => $school, 'event' => 'EVENT_ID']) }}"
-                data-delete-url-template="{{ route('admin.schools.calendar-events.destroy', ['school' => $school, 'event' => 'EVENT_ID']) }}">
+            <div id="calendar" data-selected-date="{{ $selectedDate->format('Y-m-d') }}"
+                class="calendar-widget calendar-admin">
+                {{-- Calendar will be rendered by JavaScript --}}
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-foreground">Events</h2>
+                        <p class="text-sm text-foreground/60" id="calendarEventDateLabel"></p>
+                    </div>
+                    <span class="text-xs text-foreground/60">Holiday events block scheduling</span>
+                </div>
+
+                <div id="calendarEventsList"
+                    data-list-url="{{ route('admin.schools.calendar-events.index', $school) }}"
+                    data-update-url-template="{{ route('admin.schools.calendar-events.update', ['school' => $school, 'event' => 'EVENT_ID']) }}"
+                    data-delete-url-template="{{ route('admin.schools.calendar-events.destroy', ['school' => $school, 'event' => 'EVENT_ID']) }}">
+                </div>
             </div>
         </x-ui::card>
     </div>
