@@ -7,10 +7,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitText = document.getElementById('submit-text');
     const submitSpinner = document.getElementById('submit-spinner');
     const commentInput = document.getElementById('comment');
+    const commentsScroll = document.getElementById('comments-scroll');
+
+    const scrollToBottom = () => {
+        if (commentsScroll) {
+            commentsScroll.scrollTop = commentsScroll.scrollHeight;
+        }
+    };
 
     if (!form) {
         return;
     }
+
+    scrollToBottom();
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();

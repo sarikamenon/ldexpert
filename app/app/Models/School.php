@@ -96,6 +96,11 @@ class School extends Model
         return $this->hasMany(StudentProfile::class);
     }
 
+    public function calendarEvents(): HasMany
+    {
+        return $this->hasMany(SchoolCalendarEvent::class);
+    }
+
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return SchoolScope::search($query, $term);

@@ -70,6 +70,32 @@ final class StudentDocumentTest extends TestCase
         ]);
     }
 
+    public function test_admin_is_redirected_after_uploading_document_via_form(): void
+    {
+        $file = UploadedFile::fake()->create('test.pdf', 100);
+
+        $response = $this->actingAs($this->admin)
+            ->post(route('admin.student-documents.store', $this->student), [
+                'file' => $file,
+                'document_type' => DocumentType::PROGRESS_REPORT->value,
+                'description' => 'Test document',
+            ]);
+
+        $response->assertRedirect(route('admin.students.show', [
+            'student' => $this->student,
+            'tab' => 'documents',
+        ]));
+        $response->assertSessionHas('success', 'Document uploaded successfully.');
+
+        $this->assertDatabaseHas('student_documents', [
+            'documentable_type' => User::class,
+            'documentable_id' => $this->student->id,
+            'uploaded_by_id' => $this->admin->id,
+            'document_type' => DocumentType::PROGRESS_REPORT->value,
+            'description' => 'Test document',
+        ]);
+    }
+
     public function test_admin_can_download_document(): void
     {
         Storage::fake('local');

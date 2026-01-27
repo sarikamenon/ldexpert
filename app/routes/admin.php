@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
 use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
 use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
 use App\Http\Controllers\Admin\SchoolContractController;
+use App\Http\Controllers\Admin\SchoolCalendarEventController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SessionLogController;
@@ -31,6 +32,14 @@ Route::middleware('role:admin')
         Route::get('schools/export', [SchoolController::class, 'export'])->name('schools.export');
         Route::patch('schools/{school}/status', [SchoolController::class, 'updateStatus'])->name('schools.status');
         Route::resource('schools', SchoolController::class)->except(['destroy']);
+        Route::get('schools/{school}/calendar-events', [SchoolCalendarEventController::class, 'index'])
+            ->name('schools.calendar-events.index');
+        Route::post('schools/{school}/calendar-events', [SchoolCalendarEventController::class, 'store'])
+            ->name('schools.calendar-events.store');
+        Route::put('schools/{school}/calendar-events/{event}', [SchoolCalendarEventController::class, 'update'])
+            ->name('schools.calendar-events.update');
+        Route::delete('schools/{school}/calendar-events/{event}', [SchoolCalendarEventController::class, 'destroy'])
+            ->name('schools.calendar-events.destroy');
 
         Route::get('therapists/export', [TherapistController::class, 'export'])->name('therapists.export');
         Route::patch('therapists/{therapist}/status', [TherapistController::class, 'updateStatus'])->name('therapists.status');

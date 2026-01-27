@@ -20,6 +20,7 @@ Route::middleware('role:therapist')
         // Schedule routes
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('calendar', [ScheduleController::class, 'calendar'])->name('calendar');
+            Route::get('calendar-events', [ScheduleController::class, 'getCalendarEvents'])->name('calendar-events');
             Route::get('create', [ScheduleController::class, 'create'])->name('create');
             Route::get('schedules', [ScheduleController::class, 'getSchedules'])->name('schedules');
             Route::get('pending', [ScheduleController::class, 'pending'])->name('pending');

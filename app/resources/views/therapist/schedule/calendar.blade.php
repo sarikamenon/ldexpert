@@ -77,7 +77,9 @@
                 <div class="lg:col-span-1 space-y-6">
                     {{-- Calendar --}}
                     <x-schedule.calendar :selected-date="$selectedDate"
-                        data-therapist-timezone-label="{{ $therapistTimezoneLabel ?? 'Central Time (CT)' }}" />
+                        data-therapist-timezone-label="{{ $therapistTimezoneLabel ?? 'Central Time (CT)' }}"
+                        data-calendar-events='@json($calendarEvents ?? [])'
+                        data-calendar-events-url="{{ route('therapist.schedule.calendar-events') }}" />
 
                     {{-- Filters -- Hidden for now, will be enabled later --}}
                     {{-- <x-schedule.schedule-filters :schools="$schools" :students="$students" :selected-school-id="$selectedSchoolId"
@@ -89,6 +91,8 @@
                     <x-ui::card class="p-6">
                         {{-- Date Header --}}
                         <x-schedule.schedule-details-header :selected-date="$selectedDate" :timezone="$therapistTimezone ?? 'America/Chicago'" :timezone-label="$therapistTimezoneLabel ?? 'Central Time (CT)'" />
+
+                        <div id="schoolEventList" class="mb-6"></div>
 
                         {{-- Schedule List --}}
                         <x-schedule.schedule-list :schedules="$schedules" :selected-date="$selectedDate"

@@ -30,8 +30,12 @@ composer-update:
 	$(PHP_SHELL) 'cd /var/www/html/app && composer update --no-interaction'
 
 composer-require:
-	@echo "Usage: make composer-require PACKAGE=sentry/sentry-laravel"
-	$(PHP_SHELL) 'cd /var/www/html/app && composer require $(PACKAGE) --no-interaction'
+	@test -n "$(PACKAGE)" || (echo "Usage: make composer-require PACKAGE=sentry/sentry-laravel" && exit 1)
+	$(COMPOSER_CMD) require $(PACKAGE) --no-interaction
+
+composer-require-dev:
+	@test -n "$(PACKAGE)" || (echo "Usage: make composer-require-dev PACKAGE=laravel/pint" && exit 1)
+	$(COMPOSER_CMD) require --dev $(PACKAGE) --no-interaction
 
 install:
 	$(COMPOSER_CMD) install --no-interaction

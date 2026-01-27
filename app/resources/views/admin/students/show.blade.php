@@ -6,6 +6,12 @@
         @endif
     </x-slot>
 
+    @if (session('success'))
+        <x-ui::alert variant="success" class="mb-6">
+            {{ session('success') }}
+        </x-ui::alert>
+    @endif
+
     {{-- Header Card --}}
     <x-ui::card class="p-6 mb-6">
         <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -189,6 +195,8 @@
             @vite(['resources/js/pages/admin-session-logs-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'comments')
             @vite(['resources/js/pages/admin-students-comments.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'documents')
+            @vite(['resources/js/pages/admin-student-documents.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

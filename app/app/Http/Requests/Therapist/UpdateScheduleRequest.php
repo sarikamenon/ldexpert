@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Models\Schedule;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -86,6 +89,25 @@ final class UpdateScheduleRequest extends FormRequest
             if ($studentIds && is_array($studentIds) && ! empty($studentIds)) {
                 if (! $repository->validateTherapistAccessToStudents($therapist, array_map('intval', $studentIds))) {
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
+                }
+            }
+
+            $schedule = Schedule::find($this->route('id'));
+            if ($schedule) {
+                $calendarService = app(SchoolCalendarService::class);
+                $studentRepository = app(StudentRepositoryInterface::class);
+                $schoolId = $schedule->school_id
+                    ?? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id);
+
+                $scheduleDate = $this->input('schedule_date');
+                if ($schoolId && $scheduleDate) {
+                    $date = Carbon::parse((string) $scheduleDate);
+                    if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
+                        $validator->errors()->add(
+                            'schedule_date',
+                            'Scheduling is not allowed on school holidays.'
+                        );
+                    }
                 }
             }
         });
