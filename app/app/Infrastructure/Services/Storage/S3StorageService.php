@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Services\Storage;
 
 use App\Domain\Storage\Services\StorageServiceInterface;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use League\Flysystem\UnableToCheckExistence;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class S3StorageService implements StorageServiceInterface
@@ -22,7 +24,17 @@ final class S3StorageService implements StorageServiceInterface
 
     public function exists(string $path): bool
     {
-        return Storage::disk('s3')->exists($path);
+        try {
+            return Storage::disk('s3')->exists($path);
+        } catch (UnableToCheckExistence $exception) {
+            Log::warning('Unable to check file existence on S3.', [
+                'path' => $path,
+                'disk' => 's3',
+                'exception' => $exception,
+            ]);
+
+            return false;
+        }
     }
 
     public function delete(string $path): bool

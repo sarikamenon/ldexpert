@@ -12,8 +12,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Reports\SSA\UtilizationReportRequest;
 use App\Models\ServiceSupportAgreement;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\StreamedResponse;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SSAUtilizationReportController extends Controller
 {

@@ -24,6 +24,24 @@ final class SchedulePendingListTest extends TestCase
     public function test_pending_schedule_page_shows_table_with_expected_columns(): void
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'ssa_id' => $ssa->id,
+            'service_id' => $service->id,
+            'schedule_date' => now()->subDay()->toDateString(),
+            'status' => ScheduleStatus::SCHEDULED,
+            'billing_status' => BillingStatus::PENDING,
+        ]);
 
         $response = $this->actingAs($therapist)
             ->get(route('therapist.schedule.pending'));
@@ -138,7 +156,9 @@ final class SchedulePendingListTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSee('Student One');
-        $response->assertDontSee('Student Two');
+        $viewData = $response->viewData('pendingSchedules');
+        $this->assertCount(1, $viewData);
+        $this->assertEquals($student1->id, $viewData->first()->student_id);
     }
 
     public function test_pending_schedule_page_filters_by_ssa(): void
@@ -309,15 +329,15 @@ final class SchedulePendingListTest extends TestCase
 
         $response->assertStatus(200);
 
-        $viewData = $response->viewData();
-        $this->assertArrayHasKey('students', $viewData);
-        $this->assertArrayHasKey('ssas', $viewData);
-        $this->assertArrayHasKey('services', $viewData);
-        $this->assertArrayHasKey('filters', $viewData);
+        $students = $response->viewData('students');
+        $ssas = $response->viewData('ssas');
+        $services = $response->viewData('services');
+        $filters = $response->viewData('filters');
 
-        $this->assertTrue($viewData['students']->pluck('id')->contains($student->id));
-        $this->assertTrue($viewData['ssas']->pluck('id')->contains($ssa->id));
-        $this->assertTrue($viewData['services']->pluck('id')->contains($service->id));
+        $this->assertNotNull($filters);
+        $this->assertTrue($students->pluck('id')->contains($student->id));
+        $this->assertTrue($ssas->pluck('id')->contains($ssa->id));
+        $this->assertTrue($services->pluck('id')->contains($service->id));
     }
 
     public function test_pending_schedule_page_shows_clear_button_when_filters_are_applied(): void

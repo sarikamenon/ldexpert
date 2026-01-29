@@ -89,8 +89,18 @@ final class SSAUtilizationReportTest extends TestCase
     public function test_filters_work_correctly(): void
     {
         $admin = $this->createAdmin();
-        $ssa1 = $this->createSSA(['tho_minutes' => 1000, 'served_minutes' => 500]);
-        $ssa2 = $this->createSSA(['tho_minutes' => 2000, 'served_minutes' => 2000]);
+        $dateRange = [
+            'start_date' => now()->subDays(10),
+            'end_date' => now()->addDays(10),
+        ];
+        $ssa1 = $this->createSSA(array_merge($dateRange, [
+            'tho_minutes' => 1000,
+            'served_minutes' => 500,
+        ]));
+        $ssa2 = $this->createSSA(array_merge($dateRange, [
+            'tho_minutes' => 2000,
+            'served_minutes' => 2000,
+        ]));
 
         $response = $this->actingAs($admin)
             ->get(route('admin.reports.ssa.utilization.index', [
@@ -125,7 +135,7 @@ final class SSAUtilizationReportTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $this->assertStringContainsString('SSA ID', $response->getContent());
-        $this->assertStringContainsString('Student Name', $response->getContent());
+        $this->assertStringContainsString('SSA ID', $response->streamedContent());
+        $this->assertStringContainsString('Student Name', $response->streamedContent());
     }
 }

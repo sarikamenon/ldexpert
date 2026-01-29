@@ -416,7 +416,7 @@ final class StudentImportService
                 'student_import_id' => $import->id,
                 'row_number' => $i,
                 'status' => StudentImportRowStatus::PENDING,
-                'raw_data' => [],
+                'raw_data' => json_encode([]),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

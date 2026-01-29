@@ -327,12 +327,19 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                 let html = visibleEvents.map((event) => {
                     const isStart = dateStr === event.start_date;
                     const isEnd = dateStr === event.end_date;
+                    const isMultiDay = event.start_date !== event.end_date;
+                    const currentDate = new Date(`${dateStr}T00:00:00`);
+                    const isWeekStart = currentDate.getDay() === 0;
+                    const isWeekEnd = currentDate.getDay() === 6;
                     const typeClass = event.is_holiday ? 'calendar-event-holiday' : 'calendar-event-info';
-                    const startClass = isStart ? 'calendar-event-start' : '';
-                    const endClass = isEnd ? 'calendar-event-end' : '';
+                    const startClass = isStart || isWeekStart ? 'calendar-event-start' : '';
+                    const endClass = isEnd || isWeekEnd ? 'calendar-event-end' : '';
+                    const continueLeftClass = isMultiDay && !isStart && !isWeekStart ? 'calendar-event-continue-left' : '';
+                    const continueRightClass = isMultiDay && !isEnd && !isWeekEnd ? 'calendar-event-continue-right' : '';
+                    const label = !isMultiDay || isStart || isWeekStart ? escapeHtml(event.title) : '&nbsp;';
                     return `
-                        <div class="calendar-event-bar ${typeClass} ${startClass} ${endClass}" title="${escapeHtml(event.title)}">
-                            ${escapeHtml(event.title)}
+                        <div class="calendar-event-bar ${typeClass} ${startClass} ${endClass} ${continueLeftClass} ${continueRightClass}" title="${escapeHtml(event.title)}">
+                            ${label}
                         </div>
                     `;
                 }).join('');

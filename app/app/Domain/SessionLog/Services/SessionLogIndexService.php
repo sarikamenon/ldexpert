@@ -73,7 +73,7 @@ final class SessionLogIndexService
     private function adminColumns(): array
     {
         return [
-            ['key' => 'date_time', 'label' => 'Date & Time'],
+            ['key' => 'date_time', 'label' => 'Date & Time / Duration'],
             ['key' => 'entry_info', 'label' => 'Entry'],
             ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
             ['key' => 'therapist', 'label' => 'Therapist'],

@@ -40,6 +40,7 @@ abstract class ServiceFormRequest extends FormRequest
             'is_direct_service' => ['required', 'boolean'],
             'is_group_service' => ['required', 'boolean'],
             'is_frequency_service' => ['required', 'boolean'],
+            'include_in_tho' => ['required', 'boolean'],
             'delivery_mode' => ['required', Rule::in($deliveryModes)],
             'is_billable' => ['required', 'boolean'],
             'min_duration_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],

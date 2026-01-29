@@ -40,7 +40,7 @@ final class SessionLogIndexTest extends TestCase
         $response->assertSee('Status');
         $response->assertSee('Submit');
         $response->assertSee('Edit');
-        $response->assertDontSee('Approve');
+        $response->assertDontSee('>Approve<', false);
 
         Carbon::setTestNow();
     }

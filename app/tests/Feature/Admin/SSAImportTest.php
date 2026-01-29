@@ -90,8 +90,11 @@ final class SSAImportTest extends TestCase
             ->get(route('admin.ssas.import.template'));
 
         $response->assertOk()
-            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
-            ->assertDownload('ssa-import-template-');
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString(
+            'ssa-import-template-',
+            (string) $response->headers->get('Content-Disposition')
+        );
     }
 
     public function test_admin_can_import_valid_csv(): void

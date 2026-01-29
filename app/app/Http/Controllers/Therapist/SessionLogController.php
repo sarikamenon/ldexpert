@@ -193,7 +193,14 @@ final class SessionLogController extends Controller
     {
         $this->authorize('update', $sessionLog);
 
-        $sessionLog->load(['student', 'ssa', 'service', 'school']);
+        $sessionLog->load([
+            'student',
+            'ssa',
+            'ssa.primaryService',
+            'ssa.services',
+            'service',
+            'school',
+        ]);
 
         return view('therapist.session-logs.edit', [
             'sessionLog' => $sessionLog,

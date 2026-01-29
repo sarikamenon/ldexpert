@@ -67,8 +67,11 @@ final class StudentImportTest extends TestCase
             ->get(route('admin.students.import.template'));
 
         $response->assertOk()
-            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
-            ->assertDownload('student-import-template-');
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $this->assertStringContainsString(
+            'student-import-template-',
+            (string) $response->headers->get('Content-Disposition')
+        );
     }
 
     public function test_admin_can_import_valid_csv(): void
@@ -205,9 +208,11 @@ final class StudentImportTest extends TestCase
         Bus::assertDispatched(ProcessStudentImportJob::class);
 
         $import = StudentImport::first();
+        $userCountBefore = User::count();
         (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
-        $this->assertDatabaseCount('users', 2); // admin + existing student
+        $this->assertSame($userCountBefore, User::count());
+        $this->assertSame(1, User::where('email', 'existing@example.com')->count());
 
         $row = StudentImportRow::where('student_import_id', $import->id)->first();
         $this->assertEquals('duplicate', $row->status->value);
@@ -258,9 +263,11 @@ final class StudentImportTest extends TestCase
         Bus::assertDispatched(ProcessStudentImportJob::class);
 
         $import = StudentImport::first();
+        $userCountBefore = User::count();
         (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
-        $this->assertDatabaseCount('users', 2); // admin + existing student
+        $this->assertSame($userCountBefore, User::count());
+        $this->assertSame(1, StudentProfile::where('id_number', 'STU003')->count());
 
         $row = StudentImportRow::where('student_import_id', $import->id)->first();
         $this->assertEquals('duplicate', $row->status->value);

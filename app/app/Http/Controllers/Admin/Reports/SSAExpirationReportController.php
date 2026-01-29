@@ -13,8 +13,8 @@ use App\Http\Requests\Admin\Reports\SSA\ExpirationReportRequest;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
-use Illuminate\Http\StreamedResponse;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SSAExpirationReportController extends Controller
 {

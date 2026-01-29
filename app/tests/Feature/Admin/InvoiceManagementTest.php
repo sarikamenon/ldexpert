@@ -153,6 +153,7 @@ it('verifies snapshot data persists even if school changes', function () {
 
     $payload = [
         'school_id' => $school->id,
+        'invoice_date' => now()->format('Y-m-d'),
         'billing_period_start' => now()->startOfMonth()->format('Y-m-d'),
         'billing_period_end' => now()->endOfMonth()->format('Y-m-d'),
         'session_log_ids' => [$log->id],

@@ -41,8 +41,9 @@ final class CreateSSADTO
             studentId: (int) $data['student_id'],
             primaryServiceId: (int) $data['primary_service_id'],
             additionalServiceIds: collect($data['additional_service_ids'] ?? [])
-                ->filter(static fn ($value) => $value !== null && $value !== '')
+                ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
                 ->map(static fn ($value) => (int) $value)
+                ->filter(static fn (int $value) => $value > 0)
                 ->unique()
                 ->values()
                 ->all(),

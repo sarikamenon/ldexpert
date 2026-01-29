@@ -36,6 +36,11 @@ final class ProcessStudentImportJob implements ShouldQueue
             // Process the import
             $importService->processImport($this->import);
 
+            $this->import->refresh();
+            if ($this->import->status === StudentImportStatus::FAILED) {
+                return;
+            }
+
             // Update import status to completed
             $this->import->update([
                 'status' => StudentImportStatus::COMPLETED,
