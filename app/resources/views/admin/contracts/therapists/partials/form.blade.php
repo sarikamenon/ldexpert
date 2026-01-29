@@ -75,7 +75,7 @@
             <div>
                 <x-input-label value="Start Date" />
                 <p class="mt-1 text-xs text-foreground/60">Contract start date</p>
-                <x-text-input type="date" name="start_date" class="mt-1 w-full" value="{{ $startDateValue }}" />
+                <x-ui::input type="date" name="start_date" class="mt-1 w-full" value="{{ $startDateValue }}" />
                 @error('start_date')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
@@ -84,7 +84,7 @@
             <div>
                 <x-input-label value="End Date" />
                 <p class="mt-1 text-xs text-foreground/60">Contract end date (optional)</p>
-                <x-text-input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
+                <x-ui::input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
                 @error('end_date')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
@@ -139,7 +139,7 @@
                                 @enderror
                             </td>
                             <td class="py-2 px-3">
-                                <x-text-input type="number" step="0.01" min="0"
+                                <x-ui::input type="number" step="0.01" min="0"
                                     name="services[{{ $index }}][rate]" value="{{ $serviceRow['rate'] }}"
                                     class="w-full" />
                                 @error("services.$index.rate")
@@ -172,12 +172,14 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <a href="{{ route('admin.contracts.therapists.index') }}"
-            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">Cancel</a>
-        <button type="submit"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+        <a href="{{ route('admin.contracts.therapists.index') }}">
+            <x-ui::button variant="secondary">
+                Cancel
+            </x-ui::button>
+        </a>
+        <x-ui::button type="submit">
             {{ $isEdit ? 'Update Contract' : 'Create Contract' }}
-        </button>
+        </x-ui::button>
     </div>
 </form>
 
@@ -192,7 +194,7 @@
             </select>
         </td>
         <td class="py-2 px-3">
-            <x-text-input type="number" step="0.01" min="0" name="services[__INDEX__][rate]"
+            <x-ui::input type="number" step="0.01" min="0" name="services[__INDEX__][rate]"
                 class="w-full" />
         </td>
         <td class="py-2 px-3">

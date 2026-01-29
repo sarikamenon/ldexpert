@@ -16,7 +16,7 @@
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Date</label>
-            <x-ui-input type="date" name="date" value="{{ $filters['date'] ?? '' }}" />
+            <x-ui::input type="date" name="date" value="{{ $filters['date'] ?? '' }}" />
         </div>
 
         <div>

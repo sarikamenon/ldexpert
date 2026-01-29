@@ -47,14 +47,14 @@
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 Therapist Rate Amount
                             </label>
-                            <x-ui-input type="number" step="0.01" name="therapist_rate_amount"
+                            <x-ui::input type="number" step="0.01" name="therapist_rate_amount"
                                 value="{{ old('therapist_rate_amount', $sessionLog->therapist_rate_amount ?? '') }}" />
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 Therapist Billable Amount
                             </label>
-                            <x-ui-input type="number" step="0.01" name="therapist_billable_amount"
+                            <x-ui::input type="number" step="0.01" name="therapist_billable_amount"
                                 value="{{ old('therapist_billable_amount', $sessionLog->therapist_billable_amount ?? '') }}" />
                         </div>
                     </div>
@@ -81,22 +81,22 @@
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 School Rate Amount
                             </label>
-                            <x-ui-input type="number" step="0.01" name="school_rate_amount"
+                            <x-ui::input type="number" step="0.01" name="school_rate_amount"
                                 value="{{ old('school_rate_amount', $sessionLog->school_rate_amount ?? '') }}" />
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 School Invoice Amount
                             </label>
-                            <x-ui-input type="number" step="0.01" name="school_invoice_amount"
+                            <x-ui::input type="number" step="0.01" name="school_invoice_amount"
                                 value="{{ old('school_invoice_amount', $sessionLog->school_invoice_amount ?? '') }}" />
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <x-ui-checkbox name="is_rate_override" value="1"
+                        <x-ui::checkbox name="is_rate_override" value="1"
                             label="Override Rates"
-                            @checked(old('is_rate_override', $sessionLog->is_rate_override ?? false)) />
+                            :checked="old('is_rate_override', $sessionLog->is_rate_override ?? false)" />
                         <p class="text-xs text-foreground/60">
                             Check this if you want to manually override the calculated rates for this session.
                         </p>

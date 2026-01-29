@@ -16,12 +16,12 @@
 
         <div class="flex-1 min-w-[180px]">
             <label class="block text-sm font-medium text-foreground/70 mb-1">From Date</label>
-            <x-ui-input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
+            <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
         </div>
 
         <div class="flex-1 min-w-[180px]">
             <label class="block text-sm font-medium text-foreground/70 mb-1">To Date</label>
-            <x-ui-input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
+            <x-ui::input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
         </div>
 
         <div class="flex-1 min-w-[180px]">

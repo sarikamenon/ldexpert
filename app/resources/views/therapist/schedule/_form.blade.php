@@ -112,7 +112,7 @@
                     <x-input-label for="service_id" value="Service *" />
                     @if ($isEdit)
                         {{-- Edit mode: Show service as disabled/read-only --}}
-                        <x-text-input id="service_id" type="text"
+                        <x-ui::input id="service_id" type="text"
                             class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75"
                             value="{{ $schedule->service?->name ?? 'N/A' }}" disabled readonly />
                         <input type="hidden" name="service_id" value="{{ $schedule->service_id }}">
@@ -169,10 +169,10 @@
             <div>
                 <x-input-label for="schedule_date" value="Schedule Date *" />
                 @if ($isEdit)
-                    <x-text-input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
+                    <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
                         value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}" required />
                 @else
-                    <x-text-input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
+                    <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
                         value="{{ old('schedule_date', $selectedDate?->format('Y-m-d')) }}"
                         min="{{ now()->format('Y-m-d') }}" required />
                 @endif
@@ -182,14 +182,14 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="start_time" value="Start Time *" />
-                    <x-text-input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
+                    <x-ui::input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
                         value="{{ old('start_time', $isEdit ? $schedule->start_time?->format('H:i') : '09:00') }}"
                         required />
                     <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="end_time_display" value="End Time (auto-calculated)" />
-                    <x-text-input id="end_time_display" type="text"
+                    <x-ui::input id="end_time_display" type="text"
                         class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75" value=""
                         disabled readonly />
                 </div>
@@ -232,7 +232,7 @@
 
                 <div id="recurrence_end_date_container" class="hidden">
                     <x-input-label for="recurrence_end_date" value="Recurrence End Date *" />
-                    <x-text-input id="recurrence_end_date" name="recurrence_end_date" type="date"
+                    <x-ui::input id="recurrence_end_date" name="recurrence_end_date" type="date"
                         class="mt-1 block w-full" value="{{ old('recurrence_end_date', '') }}"
                         min="{{ old('schedule_date', $selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" />
                     <p class="text-xs text-foreground/60 mt-1">

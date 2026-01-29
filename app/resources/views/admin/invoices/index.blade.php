@@ -54,17 +54,17 @@
 
             <div class="space-y-1">
                 <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
-                <x-ui-input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
+                <x-ui::input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
             </div>
 
             <div class="space-y-1">
                 <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
-                <x-ui-input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
+                <x-ui::input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
             </div>
 
             <div class="space-y-1">
                 <label for="invoice_number" class="text-xs font-medium text-foreground/70">Invoice Number</label>
-                <x-ui-input type="text" id="invoice_number" name="invoice_number"
+                <x-ui::input type="text" id="invoice_number" name="invoice_number"
                     value="{{ $filters['invoice_number'] ?? '' }}" placeholder="Search..." />
             </div>
 

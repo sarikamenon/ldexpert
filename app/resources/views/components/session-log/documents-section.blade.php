@@ -15,7 +15,7 @@
                         <p class="mt-1 text-xs text-foreground/60" id="file_help">
                             Upload a document file (PDF, DOC, DOCX, JPG, JPEG, PNG). Maximum file size: 10MB.
                         </p>
-                        <x-ui-file-input id="file" name="file"
+                        <x-ui::file-input id="file" name="file"
                             class="mt-1"
                             aria-describedby="file_help" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         <x-input-error :messages="$errors->get('file')" class="mt-2" />

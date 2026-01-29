@@ -49,7 +49,7 @@
 
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Search</label>
-                <x-ui-input type="text" name="search" placeholder="File name or description"
+                <x-ui::input type="text" name="search" placeholder="File name or description"
                     value="{{ $filters['search'] ?? '' }}" />
             </div>
 

@@ -13,7 +13,7 @@
         <!-- Email Address -->
         <div>
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required
+            <x-ui::input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required
                 autofocus autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
@@ -22,7 +22,7 @@
         <div class="mt-4">
             <x-input-label for="password" :value="__('Password')" />
 
-            <x-text-input id="password" class="block mt-1 w-full" type="password" name="password" required
+            <x-ui::input id="password" class="block mt-1 w-full" type="password" name="password" required
                 autocomplete="current-password" />
 
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
@@ -30,7 +30,7 @@
 
         <!-- Remember Me -->
         <div class="block mt-4">
-            <x-ui-checkbox id="remember_me" name="remember" label="{{ __('Remember me') }}" />
+            <x-ui::checkbox id="remember_me" name="remember" label="{{ __('Remember me') }}" />
         </div>
 
         <div class="flex items-center justify-end mt-4">
@@ -41,9 +41,9 @@
                 </a>
             @endif
 
-            <x-primary-button class="ms-3" dusk="login-button">
+            <x-ui::button type="submit" class="ms-3" dusk="login-button">
                 {{ __('Log in') }}
-            </x-primary-button>
+            </x-ui::button>
         </div>
     </form>
 </x-guest-layout>

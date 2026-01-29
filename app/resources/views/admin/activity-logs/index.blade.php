@@ -12,7 +12,7 @@
                 id="activityLogFiltersForm">
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">Search</label>
-                    <x-text-input type="text" name="search" placeholder="Search description"
+                    <x-ui::input type="text" name="search" placeholder="Search description"
                         value="{{ $filters['search'] ?? '' }}" />
                 </div>
 
@@ -54,12 +54,12 @@
 
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">From Date</label>
-                    <x-text-input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
+                    <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-foreground/70 mb-1">To Date</label>
-                    <x-text-input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
+                    <x-ui::input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
                 </div>
 
                 <div class="flex items-end gap-2">

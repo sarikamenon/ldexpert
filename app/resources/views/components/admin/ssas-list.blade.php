@@ -39,7 +39,7 @@
                 <input type="hidden" name="tab" value="ssas">
             @endif
 
-            <x-text-input type="text" name="search" class="w-56" placeholder="Search SSAs"
+            <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
                 value="{{ $filters['search'] ?? '' }}" />
 
             <x-ui::select name="status" searchable placeholder="All Statuses">

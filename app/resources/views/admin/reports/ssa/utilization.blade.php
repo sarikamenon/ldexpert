@@ -48,7 +48,7 @@
                     <p class="mt-1 text-xs text-foreground/60" id="start_date_help">
                         Filter SSAs active within this date range.
                     </p>
-                    <x-text-input type="date" id="start_date" name="start_date"
+                    <x-ui::input type="date" id="start_date" name="start_date"
                         value="{{ $filters['start_date'] ?? '' }}"
                         class="mt-1 block w-full" aria-describedby="start_date_help" />
                 </div>
@@ -57,7 +57,7 @@
                     <p class="mt-1 text-xs text-foreground/60" id="end_date_help">
                         Filter SSAs active within this date range.
                     </p>
-                    <x-text-input type="date" id="end_date" name="end_date"
+                    <x-ui::input type="date" id="end_date" name="end_date"
                         value="{{ $filters['end_date'] ?? '' }}"
                         class="mt-1 block w-full" aria-describedby="end_date_help" />
                 </div>
@@ -108,14 +108,14 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                <x-primary-button type="submit">Apply Filters</x-primary-button>
-                <x-secondary-button type="button"
+                <x-ui::button type="submit">Apply Filters</x-ui::button>
+                <x-ui::button type="button" variant="secondary"
                     onclick="window.location.href='{{ route('admin.reports.ssa.utilization.index') }}'">
                     Reset
-                </x-secondary-button>
-                <x-secondary-button type="submit" formaction="{{ route('admin.reports.ssa.utilization.export') }}">
+                </x-ui::button>
+                <x-ui::button type="submit" variant="secondary" formaction="{{ route('admin.reports.ssa.utilization.export') }}">
                     Export CSV
-                </x-secondary-button>
+                </x-ui::button>
             </div>
         </form>
     </x-ui::card>

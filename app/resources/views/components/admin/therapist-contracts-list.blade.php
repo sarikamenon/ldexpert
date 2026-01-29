@@ -30,10 +30,10 @@
     <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
         <form method="GET" class="flex flex-wrap gap-2">
             @if($context !== 'detail')
-            <x-text-input type="text" name="search" class="w-64" placeholder="Search by ID or Therapist"
+            <x-ui::input type="text" name="search" class="w-64" placeholder="Search by ID or Therapist"
                 value="{{ $filters['search'] ?? '' }}" />
             @else
-            <x-text-input type="text" name="search" class="w-64" placeholder="Search by ID"
+            <x-ui::input type="text" name="search" class="w-64" placeholder="Search by ID"
                 value="{{ $filters['search'] ?? '' }}" />
             @endif
 

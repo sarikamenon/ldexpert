@@ -22,7 +22,7 @@
                 <x-input-label for="name" value="Service Name *" />
                 <p class="mt-1 text-xs text-foreground/60">Appears everywhere the service is referenced (SSA, schedules,
                     invoices).</p>
-                <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $service->name ?? '')"
+                <x-ui::input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $service->name ?? '')"
                     required placeholder="Enter service name" />
                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
             </div>
@@ -123,7 +123,7 @@
                 <x-input-label for="min_duration_minutes" value="Min Duration (minutes)" />
                 <p class="mt-1 text-xs text-foreground/60">Optional safeguard to prevent logging sessions shorter than
                     policy allows.</p>
-                <x-text-input id="min_duration_minutes" name="min_duration_minutes" type="number" min="5"
+                <x-ui::input id="min_duration_minutes" name="min_duration_minutes" type="number" min="5"
                     max="1440" class="mt-1 block w-full" :value="old('min_duration_minutes', $service->min_duration_minutes ?? null)" placeholder="e.g., 30" />
                 <x-input-error :messages="$errors->get('min_duration_minutes')" class="mt-2" />
             </div>
@@ -132,7 +132,7 @@
                 <x-input-label for="max_duration_minutes" value="Max Duration (minutes)" />
                 <p class="mt-1 text-xs text-foreground/60">Stops therapists from logging more minutes than authorized
                     for a single session.</p>
-                <x-text-input id="max_duration_minutes" name="max_duration_minutes" type="number" min="5"
+                <x-ui::input id="max_duration_minutes" name="max_duration_minutes" type="number" min="5"
                     max="1440" class="mt-1 block w-full" :value="old('max_duration_minutes', $service->max_duration_minutes ?? null)" placeholder="e.g., 120" />
                 <x-input-error :messages="$errors->get('max_duration_minutes')" class="mt-2" />
             </div>
@@ -141,13 +141,13 @@
 
     {{-- Form Actions --}}
     <div class="flex justify-end gap-3">
-        <a href="{{ route('admin.services.index') }}"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
-            Cancel
+        <a href="{{ route('admin.services.index') }}">
+            <x-ui::button variant="secondary">
+                Cancel
+            </x-ui::button>
         </a>
-        <button type="submit"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:bg-primary/90">
+        <x-ui::button type="submit">
             {{ $isEdit ? 'Update Service' : 'Create Service' }}
-        </button>
+        </x-ui::button>
     </div>
 </form>

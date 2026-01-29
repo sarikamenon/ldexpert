@@ -29,7 +29,7 @@
         <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div class="flex flex-wrap gap-3">
                 <form method="GET" class="flex gap-2" id="schoolFiltersForm">
-                    <x-text-input type="text" name="search" class="w-64" placeholder="Search schools"
+                    <x-ui::input type="text" name="search" class="w-64" placeholder="Search schools"
                         value="{{ $filters['search'] ?? '' }}" />
 
                     <x-ui::select name="status" searchable placeholder="All Statuses">

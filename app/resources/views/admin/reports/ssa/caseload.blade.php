@@ -79,14 +79,14 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                <x-primary-button type="submit">Apply Filters</x-primary-button>
-                <x-secondary-button type="button"
+                <x-ui::button type="submit">Apply Filters</x-ui::button>
+                <x-ui::button type="button" variant="secondary"
                     onclick="window.location.href='{{ route('admin.reports.ssa.caseload.index') }}'">
                     Reset
-                </x-secondary-button>
-                <x-secondary-button type="submit" formaction="{{ route('admin.reports.ssa.caseload.export') }}">
+                </x-ui::button>
+                <x-ui::button type="submit" variant="secondary" formaction="{{ route('admin.reports.ssa.caseload.export') }}">
                     Export CSV
-                </x-secondary-button>
+                </x-ui::button>
             </div>
         </form>
     </x-ui::card>

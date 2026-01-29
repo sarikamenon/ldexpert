@@ -40,7 +40,7 @@
                 <input type="hidden" name="tab" value="students">
             @endif
 
-            <x-text-input type="text" name="search" class="w-64" placeholder="Search students"
+            <x-ui::input type="text" name="search" class="w-64" placeholder="Search students"
                 value="{{ $filters['search'] ?? '' }}" />
 
             <x-ui::select name="status" searchable placeholder="All Statuses">

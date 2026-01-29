@@ -64,7 +64,7 @@
                         <div class="space-y-1">
                             <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
                             <div class="relative">
-                                <x-ui-input id="date_from" type="date" name="date_from"
+                                <x-ui::input id="date_from" type="date" name="date_from"
                                     value="{{ $filters['date_from'] ?? '' }}" class="w-40" />
                             </div>
                         </div>
@@ -72,7 +72,7 @@
                         <div class="space-y-1">
                             <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
                             <div class="relative">
-                                <x-ui-input id="date_to" type="date" name="date_to"
+                                <x-ui::input id="date_to" type="date" name="date_to"
                                     value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
                             </div>
                         </div>

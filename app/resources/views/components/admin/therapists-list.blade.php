@@ -34,7 +34,7 @@
                     <input type="hidden" name="tab" value="therapists">
                 @endif
 
-                <x-text-input type="text" name="search" class="w-64" placeholder="Search therapists"
+                <x-ui::input type="text" name="search" class="w-64" placeholder="Search therapists"
                     value="{{ $filters['search'] ?? '' }}" />
 
                 <x-ui::select name="status" searchable placeholder="All Statuses">

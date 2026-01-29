@@ -27,7 +27,7 @@
     <x-ui::card class="p-6 space-y-6">
         <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <form method="GET" class="flex flex-wrap gap-3" id="serviceFiltersForm">
-                <x-text-input type="text" name="search" class="w-56" placeholder="Search services"
+                <x-ui::input type="text" name="search" class="w-56" placeholder="Search services"
                     value="{{ $filters['search'] ?? '' }}" />
 
                 <x-ui::select name="status" searchable placeholder="All Statuses">

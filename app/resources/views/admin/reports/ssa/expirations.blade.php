@@ -48,7 +48,7 @@
                     <p class="mt-1 text-xs text-foreground/60" id="expiration_window_days_help">
                         Number of days ahead to check for expiring SSAs.
                     </p>
-                    <x-text-input type="number" id="expiration_window_days" name="expiration_window_days"
+                    <x-ui::input type="number" id="expiration_window_days" name="expiration_window_days"
                         value="{{ $filters['expiration_window_days'] ?? 30 }}"
                         class="mt-1 block w-full" aria-describedby="expiration_window_days_help" />
                 </div>
@@ -97,14 +97,14 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                <x-primary-button type="submit">Apply Filters</x-primary-button>
-                <x-secondary-button type="button"
+                <x-ui::button type="submit">Apply Filters</x-ui::button>
+                <x-ui::button type="button" variant="secondary"
                     onclick="window.location.href='{{ route('admin.reports.ssa.expirations.index') }}'">
                     Reset
-                </x-secondary-button>
-                <x-secondary-button type="submit" formaction="{{ route('admin.reports.ssa.expirations.export') }}">
+                </x-ui::button>
+                <x-ui::button type="submit" variant="secondary" formaction="{{ route('admin.reports.ssa.expirations.export') }}">
                     Export CSV
-                </x-secondary-button>
+                </x-ui::button>
             </div>
         </form>
     </x-ui::card>

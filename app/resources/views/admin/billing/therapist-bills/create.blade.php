@@ -80,13 +80,13 @@
 
                 <div class="space-y-1">
                     <label for="filter_date_from" class="text-sm font-medium text-foreground/70">Date From</label>
-                    <x-ui-input type="date" id="filter_date_from" name="date_from"
+                    <x-ui::input type="date" id="filter_date_from" name="date_from"
                         value="{{ $filters['date_from'] ?? now()->subDays(30)->format('Y-m-d') }}" />
                 </div>
 
                 <div class="space-y-1">
                     <label for="filter_date_to" class="text-sm font-medium text-foreground/70">Date To</label>
-                    <x-ui-input type="date" id="filter_date_to" name="date_to"
+                    <x-ui::input type="date" id="filter_date_to" name="date_to"
                         value="{{ $filters['date_to'] ?? now()->format('Y-m-d') }}" />
                 </div>
             </div>
@@ -133,7 +133,7 @@
                     <label for="bill_date" class="text-sm font-medium text-foreground">Bill Date <span
                             class="text-red-500">*</span></label>
                     <p class="mt-1 text-xs text-foreground/60">Date when the bill is issued</p>
-                    <x-ui-input type="date" id="bill_date" name="bill_date" required
+                    <x-ui::input type="date" id="bill_date" name="bill_date" required
                         value="{{ old('bill_date', now()->format('Y-m-d')) }}" class="mt-1" />
                     @error('bill_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
@@ -144,7 +144,7 @@
                     <label for="bill_number" class="text-sm font-medium text-foreground">Bill Number</label>
                     <p class="mt-1 text-xs text-foreground/60">Auto-generated number is shown. You can edit if needed.
                     </p>
-                    <x-ui-input type="text" id="bill_number" name="bill_number"
+                    <x-ui::input type="text" id="bill_number" name="bill_number"
                         value="{{ old('bill_number', $billNumber ?? '') }}" class="mt-1" />
                     @error('bill_number')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
@@ -156,7 +156,7 @@
                         <span class="text-red-500">*</span></label>
                     <p class="mt-1 text-xs text-foreground/60">Start date of the billing period covered by this bill
                     </p>
-                    <x-ui-input type="date" id="billing_period_start" name="billing_period_start" required
+                    <x-ui::input type="date" id="billing_period_start" name="billing_period_start" required
                         value="{{ old('billing_period_start', $filters['date_from'] ?? now()->subDays(30)->format('Y-m-d')) }}" class="mt-1" />
                     @error('billing_period_start')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
@@ -167,7 +167,7 @@
                     <label for="billing_period_end" class="text-sm font-medium text-foreground">Billing Period End
                         <span class="text-red-500">*</span></label>
                     <p class="mt-1 text-xs text-foreground/60">End date of the billing period covered by this bill</p>
-                    <x-ui-input type="date" id="billing_period_end" name="billing_period_end" required
+                    <x-ui::input type="date" id="billing_period_end" name="billing_period_end" required
                         value="{{ old('billing_period_end', $filters['date_to'] ?? now()->format('Y-m-d')) }}" class="mt-1" />
                     @error('billing_period_end')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
@@ -178,7 +178,7 @@
                     <label for="due_date" class="text-sm font-medium text-foreground">Due Date</label>
                     <p class="mt-1 text-xs text-foreground/60">Date when payment is due (default: 30 days from bill
                         date)</p>
-                    <x-ui-input type="date" id="due_date" name="due_date"
+                    <x-ui::input type="date" id="due_date" name="due_date"
                         value="{{ old('due_date', now()->addDays(30)->format('Y-m-d')) }}" class="mt-1" />
                     @error('due_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
@@ -222,7 +222,7 @@
                         <thead>
                             <tr class="border-b border-border">
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">
-                                    <x-ui-checkbox id="selectAllCheckbox" />
+                                    <x-ui::checkbox id="selectAllCheckbox" />
                                 </th>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Student</th>
@@ -237,7 +237,7 @@
                                 <tr class="border-b border-border hover:bg-background/subtle session-log-row"
                                     data-therapist-id="{{ $log->therapist_id }}">
                                     <td class="py-3 px-4">
-                                        <x-ui-checkbox name="session_log_ids[]" value="{{ $log->id }}"
+                                        <x-ui::checkbox name="session_log_ids[]" value="{{ $log->id }}"
                                             class="session-log-checkbox"
                                             data-amount="{{ $log->therapist_billable_amount ?? 0 }}"
                                             data-therapist-id="{{ $log->therapist_id }}" />

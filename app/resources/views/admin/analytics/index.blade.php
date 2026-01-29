@@ -36,12 +36,12 @@
 
             <div id="customDateRange" class="{{ $dateRange === 'custom' ? '' : 'hidden' }}">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Start Date</label>
-                <x-text-input type="date" name="start_date" value="{{ $startDate }}" />
+                <x-ui::input type="date" name="start_date" value="{{ $startDate }}" />
             </div>
 
             <div id="customDateRangeEnd" class="{{ $dateRange === 'custom' ? '' : 'hidden' }}">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">End Date</label>
-                <x-text-input type="date" name="end_date" value="{{ $endDate }}" />
+                <x-ui::input type="date" name="end_date" value="{{ $endDate }}" />
             </div>
 
             <button type="submit"

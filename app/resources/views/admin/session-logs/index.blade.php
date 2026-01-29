@@ -71,13 +71,13 @@
                 <div class="space-y-1">
                     <label for="admin_date_from" class="block text-xs font-medium text-foreground/70 mb-1">From
                         Date</label>
-                    <x-ui-input id="admin_date_from" type="date" name="date_from"
+                    <x-ui::input id="admin_date_from" type="date" name="date_from"
                         value="{{ $filters['date_from'] ?? '' }}" class="w-40" />
                 </div>
 
                 <div class="space-y-1">
                     <label for="admin_date_to" class="block text-xs font-medium text-foreground/70 mb-1">To Date</label>
-                    <x-ui-input id="admin_date_to" type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
+                    <x-ui::input id="admin_date_to" type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
                         class="w-40" />
                 </div>
 

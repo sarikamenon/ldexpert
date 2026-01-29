@@ -8,9 +8,10 @@
             @include('admin.schools._form', ['school' => $school])
 
             <div class="flex justify-end gap-3">
-                <a href="{{ route('admin.schools.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg hover:bg-background/subtle">Cancel</a>
-                <x-primary-button>Update School</x-primary-button>
+                <a href="{{ route('admin.schools.index') }}">
+                    <x-ui::button variant="secondary">Cancel</x-ui::button>
+                </a>
+                <x-ui::button type="submit">Update School</x-ui::button>
             </div>
         </form>
     </x-ui::card>

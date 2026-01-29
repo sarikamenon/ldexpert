@@ -22,7 +22,7 @@
                     <p class="mt-1 text-xs text-foreground/60" id="event_title_help">
                         Provide a short name that appears on the calendar.
                     </p>
-                    <x-text-input id="event_title" name="title" class="mt-1 block w-full"
+                    <x-ui::input id="event_title" name="title" class="mt-1 block w-full"
                         aria-describedby="event_title_help" required />
                     <p class="text-xs text-danger mt-2 hidden" data-error-for="title"></p>
                 </div>
@@ -48,7 +48,7 @@
                         <p class="mt-1 text-xs text-foreground/60" id="event_start_date_help">
                             First day the event applies (school local date).
                         </p>
-                        <x-text-input id="event_start_date" name="start_date" type="date"
+                        <x-ui::input id="event_start_date" name="start_date" type="date"
                             class="mt-1 block w-full" aria-describedby="event_start_date_help" required />
                         <p class="text-xs text-danger mt-2 hidden" data-error-for="start_date"></p>
                     </div>
@@ -57,7 +57,7 @@
                         <p class="mt-1 text-xs text-foreground/60" id="event_end_date_help">
                             Last day the event applies (can be the same as start).
                         </p>
-                        <x-text-input id="event_end_date" name="end_date" type="date"
+                        <x-ui::input id="event_end_date" name="end_date" type="date"
                             class="mt-1 block w-full" aria-describedby="event_end_date_help" required />
                         <p class="text-xs text-danger mt-2 hidden" data-error-for="end_date"></p>
                     </div>
