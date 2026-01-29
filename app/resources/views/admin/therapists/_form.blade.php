@@ -29,7 +29,7 @@
                 <div>
                     <x-input-label for="title" value="Title *" />
                     <p class="mt-1 text-xs text-foreground/60">Professional title (e.g., BCBA, RBT)</p>
-                    <x-ui::select name="title" id="title" :searchable="false" class="mt-1">
+                    <x-ui::select name="title" id="title" class="mt-1">
                         <option value="">Select Title</option>
                         @foreach ($titles as $title)
                             <option value="{{ $title->value }}"
@@ -138,7 +138,7 @@
                 <div>
                     <x-input-label for="position" value="Position *" />
                     <p class="mt-1 text-xs text-foreground/60">Therapist's professional position</p>
-                    <x-ui::select name="position" id="position" :searchable="false" class="mt-1">
+                    <x-ui::select name="position" id="position" class="mt-1">
                         <option value="">Select Position</option>
                         @foreach ($positions as $position)
                             <option value="{{ $position->value }}"
@@ -154,7 +154,7 @@
                 <div>
                     <x-input-label for="state" value="State Residing *" />
                     <p class="mt-1 text-xs text-foreground/60">US state where the therapist resides</p>
-                    <x-ui::select name="state" id="state" :searchable="false" class="mt-1">
+                    <x-ui::select name="state" id="state" class="mt-1">
                         <option value="">Select State</option>
                         @foreach ($states as $code => $name)
                             <option value="{{ $code }}"
@@ -172,7 +172,7 @@
                 <div>
                     <x-input-label for="timezone" value="Timezone *" />
                     <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
-                    <x-ui::select name="timezone" id="timezone" :searchable="false" class="mt-1">
+                    <x-ui::select name="timezone" id="timezone" class="mt-1">
                         <option value="">Select Timezone</option>
                         @foreach ($timezones as $tz => $label)
                             <option value="{{ $tz }}"
@@ -188,7 +188,7 @@
                 <div>
                     <x-input-label for="manager_id" value="Therapist Manager *" />
                     <p class="mt-1 text-xs text-foreground/60">Assigned manager for this therapist</p>
-                    <x-ui::select name="manager_id" id="manager_id" :searchable="false" class="mt-1">
+                    <x-ui::select name="manager_id" id="manager_id" class="mt-1">
                         <option value="">Select Manager</option>
                         @foreach ($managers as $manager)
                             <option value="{{ $manager->id }}"

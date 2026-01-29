@@ -89,6 +89,23 @@ const toBoolean = (value, fallback = false) => {
     return String(value).toLowerCase() === 'true';
 };
 
+/**
+ * Determine the minimumResultsForSearch value based on searchable mode and threshold.
+ * 
+ * @param {string|boolean} searchable - 'auto', 'true', 'false', true, or false
+ * @param {string|number} threshold - The threshold for auto mode (default: 10)
+ * @returns {number} - 0 (always show search), Infinity (never show), or threshold number
+ */
+const getMinimumResultsForSearch = (searchable, threshold = 10) => {
+    // Auto mode: show search only when options exceed threshold
+    if (searchable === 'auto' || searchable === undefined || searchable === null || searchable === '') {
+        return parseInt(threshold, 10) || 10;
+    }
+    // Explicit true: always show search
+    // Explicit false: never show search
+    return toBoolean(searchable) ? 0 : Infinity;
+};
+
 const initializeSelect = (element) => {
     const $el = window.jQuery(element);
 
@@ -109,6 +126,7 @@ const initializeSelect = (element) => {
         searchingMessage,
         tags,
         searchable,
+        searchThreshold,
         allowClear,
     } = element.dataset;
 
@@ -118,7 +136,7 @@ const initializeSelect = (element) => {
         allowClear: toBoolean(allowClear, !!placeholder && !element.hasAttribute('multiple')),
         tags: toBoolean(tags),
         dropdownParent: dropdownParent ? window.jQuery(dropdownParent) : undefined,
-        minimumResultsForSearch: toBoolean(searchable, true) ? 0 : Infinity,
+        minimumResultsForSearch: getMinimumResultsForSearch(searchable, searchThreshold),
         language: {
             noResults: () => noResults ?? 'No results found',
             searching: () => searchingMessage ?? 'Searching...',

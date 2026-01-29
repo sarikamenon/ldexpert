@@ -35,7 +35,7 @@
                 <p class="mt-1 text-xs text-foreground/60">Service Support Agreement for this session</p>
                 <input type="hidden" name="ssa_id"
                     value="{{ old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) }}" />
-                <x-ui::select id="session-log-ssa" name="ssa_id" disabled :searchable="false" class="mt-1 bg-gray-100">
+                <x-ui::select id="session-log-ssa" name="ssa_id" disabled class="mt-1 bg-gray-100">
                     <option value="">Select SSA</option>
                     @foreach ($ssas ?? [] as $ssa)
                         <option value="{{ $ssa->id }}" @selected(old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) == $ssa->id)
@@ -63,7 +63,7 @@
                         class="mt-1 bg-gray-100" />
                 @else
                     {{-- Standalone: service selectable based on SSA --}}
-                    <x-ui::select name="service_id" id="session-log-service" :searchable="false" class="mt-1" required>
+                    <x-ui::select name="service_id" id="session-log-service" class="mt-1" required>
                         @if (isset($sessionLog) || isset($selectedSsa))
                             <option value="">Select service</option>
                             @foreach ($services ?? [] as $service)
@@ -148,7 +148,7 @@
                 <div>
                     <label class="block text-sm font-medium text-foreground">Session Outcome</label>
                     <p class="mt-1 text-xs text-foreground/60">Select the outcome of this session</p>
-                    <x-ui::select name="outcome" :searchable="false" class="mt-1">
+                    <x-ui::select name="outcome" class="mt-1">
                         @foreach ($sessionOutcomes ?? [] as $outcome)
                             <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
                                 {{ $outcome->label() }}

@@ -32,13 +32,13 @@
                     <p class="mt-1 text-xs text-foreground/60" id="event_type_help">
                         Select whether this is a holiday (blocks scheduling) or an informational event.
                     </p>
-                    <select id="event_type" name="event_type" class="mt-1 block w-full"
+                    <x-ui::select id="event_type" name="event_type" class="mt-1"
                         aria-describedby="event_type_help" required>
                         <option value="">Select event type</option>
                         @foreach (\App\Enums\SchoolCalendarEventType::cases() as $eventType)
                             <option value="{{ $eventType->value }}">{{ $eventType->label() }}</option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     <p class="text-xs text-danger mt-2 hidden" data-error-for="event_type"></p>
                 </div>
 

@@ -32,54 +32,50 @@
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="space-y-1">
                     <label for="filter_school_id" class="text-sm font-medium text-foreground/70">School</label>
-                    <select id="filter_school_id" name="school_id"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select id="filter_school_id" name="school_id">
                         <option value="">All Schools</option>
                         @foreach ($schools ?? [] as $school)
                             <option value="{{ $school->id }}" @selected(($filters['school_id'] ?? null) == $school->id)>
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div class="space-y-1">
                     <label for="filter_therapist_id" class="text-sm font-medium text-foreground/70">Therapist</label>
-                    <select id="filter_therapist_id" name="therapist_id"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select id="filter_therapist_id" name="therapist_id">
                         <option value="">All Therapists</option>
                         @foreach ($therapists ?? [] as $therapist)
                             <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
                                 {{ $therapist->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div class="space-y-1">
                     <label for="filter_student_id" class="text-sm font-medium text-foreground/70">Student</label>
-                    <select id="filter_student_id" name="student_id"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select id="filter_student_id" name="student_id">
                         <option value="">All Students</option>
                         @foreach ($students ?? [] as $student)
                             <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
                                 {{ $student->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div class="space-y-1">
                     <label for="filter_service_id" class="text-sm font-medium text-foreground/70">Service</label>
-                    <select id="filter_service_id" name="service_id"
-                        class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select id="filter_service_id" name="service_id">
                         <option value="">All Services</option>
                         @foreach ($services ?? [] as $service)
                             <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
                                 {{ $service->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
 
                 <div class="space-y-1">
@@ -119,15 +115,14 @@
                     <label for="school_id" class="text-sm font-medium text-foreground">School <span
                             class="text-red-500">*</span></label>
                     <p class="mt-1 text-xs text-foreground/60">School to invoice for the selected session logs</p>
-                    <select id="school_id" name="school_id" required
-                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                    <x-ui::select id="school_id" name="school_id" class="mt-1" required>
                         <option value="">Select School</option>
                         @foreach ($schools ?? [] as $school)
                             <option value="{{ $school->id }}" @selected(old('school_id', $filters['school_id'] ?? null) == $school->id)>
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     @error('school_id')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror

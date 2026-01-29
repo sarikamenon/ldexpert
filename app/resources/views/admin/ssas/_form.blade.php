@@ -21,32 +21,29 @@
             <div>
                 <x-input-label for="student_id" value="Student *" />
                 <p class="mt-1 text-xs text-foreground/60">Choose the student this SSA belongs to.</p>
-                <select id="student_id" name="student_id"
-                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
-                    required>
+                <x-ui::select id="student_id" name="student_id" class="mt-1" required>
                     <option value="">Select a student</option>
                     @foreach ($students as $student)
                         <option value="{{ $student->id }}" @selected(old('student_id', $ssa->student_id ?? '') == $student->id)>
                             {{ $student->name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('student_id')" class="mt-2" />
             </div>
 
             <div>
                 <x-input-label for="primary_service_id" value="Primary Service *" />
                 <p class="mt-1 text-xs text-foreground/60">Pick the main direct service that drives scheduling.</p>
-                <select id="primary_service_id" name="primary_service_id"
-                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm {{ $isEdit ? 'bg-background cursor-not-allowed' : '' }}"
-                    required {{ $isEdit ? 'disabled' : '' }}>
+                <x-ui::select id="primary_service_id" name="primary_service_id" class="mt-1"
+                    required :disabled="$isEdit">
                     <option value="">Select a service</option>
                     @foreach ($services as $service)
                         <option value="{{ $service->id }}" @selected(old('primary_service_id', $ssa->primary_service_id ?? '') == $service->id)>
                             {{ $service->name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 @if ($isEdit)
                     <input type="hidden" name="primary_service_id" value="{{ $ssa->primary_service_id }}">
                 @endif
@@ -118,8 +115,7 @@
                 <x-input-label for="minutes_per_session" value="Minutes per Session *" />
                 <p id="minutes_per_session_help" class="mt-1 text-xs text-foreground/60">Select in 5-minute increments
                 </p>
-                <select id="minutes_per_session" name="minutes_per_session"
-                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                <x-ui::select id="minutes_per_session" name="minutes_per_session" class="mt-1"
                     aria-describedby="minutes_per_session_help" required>
                     <option value="">Select minutes</option>
                     @for ($i = 5; $i <= 180; $i += 5)
@@ -127,15 +123,14 @@
                             {{ $i }} minutes
                         </option>
                     @endfor
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('minutes_per_session')" class="mt-2" />
             </div>
 
             <div id="frequency-field">
                 <x-input-label for="frequency" value="Frequency *" />
                 <p id="frequency_help" class="mt-1 text-xs text-foreground/60">How often sessions occur</p>
-                <select id="frequency" name="frequency"
-                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                <x-ui::select id="frequency" name="frequency" class="mt-1"
                     aria-describedby="frequency_help">
                     <option value="">Select frequency</option>
                     @foreach ($frequencies as $frequency)
@@ -143,7 +138,7 @@
                             {{ $frequency->label() }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('frequency')" class="mt-2" />
             </div>
 
@@ -222,15 +217,14 @@
             <x-input-label for="assigned_therapist_id" value="Assigned Therapist" />
             <p class="mt-1 text-xs text-foreground/60">Optional - can be assigned later. SSA will be in Pending status
                 until assigned.</p>
-            <select id="assigned_therapist_id" name="assigned_therapist_id"
-                class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+            <x-ui::select id="assigned_therapist_id" name="assigned_therapist_id" class="mt-1">
                 <option value="">Unassigned</option>
                 @foreach ($therapists as $therapist)
                     <option value="{{ $therapist->id }}" @selected(old('assigned_therapist_id', isset($ssa) ? $ssa->assigned_therapist_id : '') == $therapist->id)>
                         {{ $therapist->name }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
             <x-input-error :messages="$errors->get('assigned_therapist_id')" class="mt-2" />
         </div>
     </x-ui::card>
