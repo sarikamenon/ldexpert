@@ -25,9 +25,9 @@
                 <p class="mt-1 text-xs text-foreground/60">Student associated with this session log</p>
                 <input type="hidden" name="student_id"
                     value="{{ old('student_id', $sessionLog->student_id ?? ($schedule->student_id ?? ($selectedSsa->student_id ?? ''))) }}" />
-                <input type="text" id="session-log-student-name" readonly
+                <x-ui-input type="text" id="session-log-student-name" readonly :disabled="true"
                     value="{{ $sessionLog->student->name ?? ($schedule->student?->name ?? ($selectedSsa->student?->name ?? '')) }}"
-                    class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 rounded-md shadow-sm" />
+                    class="mt-1 bg-gray-100" />
             </div>
 
             <div>
@@ -35,8 +35,7 @@
                 <p class="mt-1 text-xs text-foreground/60">Service Support Agreement for this session</p>
                 <input type="hidden" name="ssa_id"
                     value="{{ old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) }}" />
-                <select id="session-log-ssa"
-                    class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 rounded-md shadow-sm" disabled>
+                <x-ui::select id="session-log-ssa" name="ssa_id" disabled :searchable="false" class="mt-1 bg-gray-100">
                     <option value="">Select SSA</option>
                     @foreach ($ssas ?? [] as $ssa)
                         <option value="{{ $ssa->id }}" @selected(old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) == $ssa->id)
@@ -46,7 +45,7 @@
                             {{ $ssa->student?->name }} (SSA #{{ $ssa->id }} - {{ $ssa->primaryService?->name }})
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             </div>
         </div>
 
@@ -59,14 +58,12 @@
                     {{-- From schedule: service is read-only --}}
                     <input type="hidden" name="service_id"
                         value="{{ old('service_id', $sessionLog->service_id ?? ($schedule->service_id ?? '')) }}" />
-                    <input type="text" readonly
+                    <x-ui-input type="text" readonly :disabled="true"
                         value="{{ $schedule->service?->name ?? ($services->firstWhere('id', $schedule->service_id)->name ?? '') }}"
-                        class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 rounded-md shadow-sm" />
+                        class="mt-1 bg-gray-100" />
                 @else
                     {{-- Standalone: service selectable based on SSA --}}
-                    <select name="service_id" id="session-log-service"
-                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
-                        required>
+                    <x-ui::select name="service_id" id="session-log-service" :searchable="false" class="mt-1" required>
                         @if (isset($sessionLog) || isset($selectedSsa))
                             <option value="">Select service</option>
                             @foreach ($services ?? [] as $service)
@@ -77,18 +74,18 @@
                         @else
                             <option value="">Select SSA first</option>
                         @endif
-                    </select>
+                    </x-ui::select>
                 @endif
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Session Date</label>
                 <p class="mt-1 text-xs text-foreground/60">Date when the session occurred</p>
-                <input type="date" name="session_date" id="session-log-date"
+                <x-ui-input type="date" name="session_date" id="session-log-date"
                     value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
                     @if (isset($selectedSsa) && $selectedSsa?->start_date) min="{{ $selectedSsa->start_date->format('Y-m-d') }}" @endif
                     @if (isset($selectedSsa) && $selectedSsa?->end_date) max="{{ $selectedSsa->end_date->format('Y-m-d') }}" @endif
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    class="mt-1"
                     required />
             </div>
         </div>
@@ -98,28 +95,28 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700">Start Time</label>
                 <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
-                <input type="time" name="start_time" id="session-log-start-time"
+                <x-ui-input type="time" name="start_time" id="session-log-start-time"
                     value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    class="mt-1"
                     required />
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
                 <p class="mt-1 text-xs text-foreground/60">Session duration in minutes (minimum 5, increments of 5)</p>
-                <input type="number" name="duration_minutes" id="session-log-duration"
+                <x-ui-input type="number" name="duration_minutes" id="session-log-duration"
                     value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
                     min="5" step="5"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    class="mt-1"
                     required />
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">End Time</label>
                 <p class="mt-1 text-xs text-foreground/60">Automatically calculated based on start time and duration</p>
-                <input type="time" name="end_time" id="session-log-end-time" readonly
+                <x-ui-input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
                     value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
-                    class="mt-1 block w-full border-gray-300 bg-gray-100 text-gray-700 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    class="mt-1 bg-gray-100"
                     required />
             </div>
         </div>
@@ -151,14 +148,13 @@
                 <div>
                     <label class="block text-sm font-medium text-foreground">Session Outcome</label>
                     <p class="mt-1 text-xs text-foreground/60">Select the outcome of this session</p>
-                    <select name="outcome"
-                        class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                    <x-ui::select name="outcome" :searchable="false" class="mt-1">
                         @foreach ($sessionOutcomes ?? [] as $outcome)
                             <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
                                 {{ $outcome->label() }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     @error('outcome')
                         <p class="mt-1 text-sm text-danger">{{ $message }}</p>
                     @enderror
@@ -172,21 +168,8 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <button type="submit"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            x-data="{ loading: false }" x-on:click="loading = true" x-bind:disabled="loading">
-            <span x-show="!loading">
-                {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
-            </span>
-            <span x-show="loading" class="inline-flex items-center gap-2">
-                <svg class="animate-spin h-4 w-4 text-primary-foreground" xmlns="http://www.w3.org/2000/svg"
-                    fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                        stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                </svg>
-                Saving...
-            </span>
-        </button>
+        <x-ui::loading-button variant="primary" x-data="{ loading: false }" x-on:click="loading = true">
+            {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
+        </x-ui::loading-button>
     </div>
 </form>

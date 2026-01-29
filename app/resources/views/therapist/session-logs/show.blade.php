@@ -33,9 +33,10 @@
                         @endif
 
                         @can('update', $sessionLog)
-                            <a href="{{ route('therapist.session-logs.edit', $sessionLog) }}"
-                                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                                Edit
+                            <a href="{{ route('therapist.session-logs.edit', $sessionLog) }}">
+                                <x-ui::button>
+                                    Edit
+                                </x-ui::button>
                             </a>
                         @endcan
 
@@ -43,17 +44,17 @@
                             @if ($sessionLog->status?->canSubmit() ?? true)
                                 <form action="{{ route('therapist.session-logs.submit', $sessionLog) }}" method="POST">
                                     @csrf
-                                    <button type="submit"
-                                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                                    <x-ui::button type="submit">
                                         Submit
-                                    </button>
+                                    </x-ui::button>
                                 </form>
                             @endif
                         @endcan
 
-                        <a href="{{ route('therapist.session-logs.index') }}"
-                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                            Back to list
+                        <a href="{{ route('therapist.session-logs.index') }}">
+                            <x-ui::button variant="secondary">
+                                Back to list
+                            </x-ui::button>
                         </a>
                     </div>
                 </div>

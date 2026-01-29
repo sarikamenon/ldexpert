@@ -10,27 +10,34 @@
     @endif
 
     {{-- Summary Metrics --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Total Authorized (THO)</p>
-            <p class="text-3xl font-semibold mt-1">{{ number_format($summary['total_tho_minutes'] ?? 0) }}</p>
-            <p class="text-xs text-foreground/60 mt-1">minutes</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Total Served</p>
-            <p class="text-3xl font-semibold mt-1">{{ number_format($summary['total_served_minutes'] ?? 0) }}</p>
-            <p class="text-xs text-foreground/60 mt-1">minutes</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Overall Utilization</p>
-            <p class="text-3xl font-semibold mt-1">{{ number_format($summary['overall_utilization_percent'] ?? 0, 1) }}%</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Under-served</p>
-            <p class="text-3xl font-semibold mt-1 text-danger">{{ $summary['under_served_count'] ?? 0 }}</p>
-            <p class="text-xs text-foreground/60 mt-1">SSAs</p>
-        </x-ui::card>
-    </div>
+    @php
+        $metricItems = [
+            [
+                'label' => 'Total Authorized (THO)',
+                'value' => number_format($summary['total_tho_minutes'] ?? 0),
+                'valueClass' => 'text-3xl',
+                'subtext' => 'minutes',
+            ],
+            [
+                'label' => 'Total Served',
+                'value' => number_format($summary['total_served_minutes'] ?? 0),
+                'valueClass' => 'text-3xl',
+                'subtext' => 'minutes',
+            ],
+            [
+                'label' => 'Overall Utilization',
+                'value' => number_format($summary['overall_utilization_percent'] ?? 0, 1) . '%',
+                'valueClass' => 'text-3xl',
+            ],
+            [
+                'label' => 'Under-served',
+                'value' => $summary['under_served_count'] ?? 0,
+                'valueClass' => 'text-3xl text-danger',
+                'subtext' => 'SSAs',
+            ],
+        ];
+    @endphp
+    <x-ui::metric-grid :items="$metricItems" />
 
     {{-- Filters --}}
     <x-ui::card class="p-6 mb-6">
@@ -59,48 +66,45 @@
                     <p class="mt-1 text-xs text-foreground/60" id="school_ids_help">
                         Select one or more schools to filter.
                     </p>
-                    <select id="school_ids" name="school_ids[]" multiple
-                        class="mt-1 block w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                        aria-describedby="school_ids_help">
+                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable
+                        class="mt-1" aria-describedby="school_ids_help">
                         @foreach ($schools as $school)
                             <option value="{{ $school->id }}"
                                 @selected(in_array($school->id, $filters['school_ids'] ?? []))>
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
                 <div>
                     <x-input-label for="therapist_ids" value="Therapists" />
                     <p class="mt-1 text-xs text-foreground/60" id="therapist_ids_help">
                         Select one or more therapists to filter.
                     </p>
-                    <select id="therapist_ids" name="therapist_ids[]" multiple
-                        class="mt-1 block w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                        aria-describedby="therapist_ids_help">
+                    <x-ui::select id="therapist_ids" name="therapist_ids[]" multiple searchable
+                        class="mt-1" aria-describedby="therapist_ids_help">
                         @foreach ($therapists as $therapist)
                             <option value="{{ $therapist->id }}"
                                 @selected(in_array($therapist->id, $filters['therapist_ids'] ?? []))>
                                 {{ $therapist->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
                 <div>
                     <x-input-label for="service_ids" value="Services" />
                     <p class="mt-1 text-xs text-foreground/60" id="service_ids_help">
                         Select one or more services to filter.
                     </p>
-                    <select id="service_ids" name="service_ids[]" multiple
-                        class="mt-1 block w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                        aria-describedby="service_ids_help">
+                    <x-ui::select id="service_ids" name="service_ids[]" multiple searchable
+                        class="mt-1" aria-describedby="service_ids_help">
                         @foreach ($services as $service)
                             <option value="{{ $service->id }}"
                                 @selected(in_array($service->id, $filters['service_ids'] ?? []))>
                                 {{ $service->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
             </div>
             <div class="flex gap-2">

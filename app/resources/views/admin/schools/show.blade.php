@@ -10,97 +10,44 @@
     </x-slot>
 
     {{-- Header Card --}}
-    <x-ui::card class="p-6 mb-6">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-                <x-page-title title="{{ $school->display_name }}" />
-                <p class="text-sm text-foreground/60 mt-1">School ID #{{ $school->id }}</p>
-            </div>
-            <div class="flex items-center gap-3 flex-wrap">
-                <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'danger'">
-                    {{ ucfirst($school->status?->value ?? 'inactive') }}
-                </x-ui::badge>
-                <a href="{{ route('admin.schools.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                    Back to list
-                </a>
-                <a href="{{ route('admin.schools.edit', $school) }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Edit School
-                </a>
-
-                {{-- Status Change Buttons --}}
-                @if ($school->status?->value === 'active')
-                    <button type="button"
-                        class="change-status-btn inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium"
-                        data-school-id="{{ $school->id }}" data-status="inactive">
-                        Deactivate
-                    </button>
-                @else
-                    <button type="button"
-                        class="change-status-btn inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium"
-                        data-school-id="{{ $school->id }}" data-status="active">
-                        Activate
-                    </button>
-                @endif
-            </div>
-        </div>
-    </x-ui::card>
+    <x-ui::show-header :title="$school->display_name" :subtitle="'School ID #' . $school->id"
+        :back-url="route('admin.schools.index')" back-label="Back to list"
+        :edit-url="route('admin.schools.edit', $school)" edit-label="Edit School">
+        <x-slot name="badge">
+            <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'danger'">
+                {{ ucfirst($school->status?->value ?? 'inactive') }}
+            </x-ui::badge>
+        </x-slot>
+        <x-slot name="actions">
+            <x-ui::status-toggle :status="$school->status?->value" data-school-id="{{ $school->id }}" />
+        </x-slot>
+    </x-ui::show-header>
 
     {{-- Tabs Navigation --}}
-    <div class="border-b border-border mb-6">
-        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'dashboard']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'dashboard' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Dashboard
-            </a>
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'overview']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'overview' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Overview
-            </a>
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'students']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'students' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Students
-            </a>
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'therapists']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'therapists' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Therapists
-            </a>
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'contracts']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'contracts' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Contracts
-            </a>
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'ssas']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                SSAs
-            </a>
-            <a href="{{ route('admin.schools.show', ['school' => $school, 'tab' => 'calendar']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Calendar
-            </a>
-        </nav>
-    </div>
+    @php
+        $tabs = [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'dashboard'])],
+            ['key' => 'overview', 'label' => 'Overview', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'overview'])],
+            ['key' => 'students', 'label' => 'Students', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'students'])],
+            ['key' => 'therapists', 'label' => 'Therapists', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'therapists'])],
+            ['key' => 'contracts', 'label' => 'Contracts', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'contracts'])],
+            ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'ssas'])],
+            ['key' => 'calendar', 'label' => 'Calendar', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'calendar'])],
+        ];
+    @endphp
+    <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
     {{-- Tab Content --}}
     @if (($activeTab ?? 'dashboard') === 'dashboard')
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Students</p>
-                <p class="text-2xl font-semibold">{{ $metrics['total_students'] ?? 0 }}</p>
-            </x-ui::card>
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Therapists</p>
-                <p class="text-2xl font-semibold">{{ $metrics['total_therapists'] ?? 0 }}</p>
-            </x-ui::card>
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Total SSAs</p>
-                <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] ?? 0 }}</p>
-            </x-ui::card>
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Active SSAs</p>
-                <p class="text-2xl font-semibold text-success">{{ $statusCounts['Active'] ?? 0 }}</p>
-            </x-ui::card>
-        </div>
+        @php
+            $metricItems = [
+                ['label' => 'Students', 'value' => $metrics['total_students'] ?? 0],
+                ['label' => 'Therapists', 'value' => $metrics['total_therapists'] ?? 0],
+                ['label' => 'Total SSAs', 'value' => $metrics['total_ssas'] ?? 0],
+                ['label' => 'Active SSAs', 'value' => $statusCounts['Active'] ?? 0, 'valueClass' => 'text-success'],
+            ];
+        @endphp
+        <x-ui::metric-grid :items="$metricItems" />
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-ui::card class="p-6 lg:col-span-1">

@@ -26,8 +26,7 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end">
             <div>
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Date Range</label>
-                <select name="date_range" id="dateRangeSelect"
-                    class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="date_range" id="dateRangeSelect" searchable>
                     <option value="last_7_days" @selected($dateRange === 'last_7_days')>Last 7 Days</option>
                     <option value="last_30_days" @selected($dateRange === 'last_30_days')>Last 30 Days</option>
                     <option value="last_90_days" @selected($dateRange === 'last_90_days')>Last 90 Days</option>
@@ -35,7 +34,7 @@
                     <option value="last_month" @selected($dateRange === 'last_month')>Last Month</option>
                     <option value="this_year" @selected($dateRange === 'this_year')>This Year</option>
                     <option value="custom" @selected($dateRange === 'custom')>Custom</option>
-                </select>
+                </x-ui::select>
             </div>
 
             <div id="customDateRange" class="{{ $dateRange === 'custom' ? '' : 'hidden' }}">

@@ -37,17 +37,14 @@
                 value="{{ $filters['search'] ?? '' }}" />
             @endif
 
-            <div class="relative">
-                <select name="status"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">All Statuses</option>
-                    @foreach ($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                            {{ $status->label() }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <x-ui::select name="status" searchable placeholder="All Statuses">
+                <option value="">All Statuses</option>
+                @foreach ($statuses as $status)
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                        {{ $status->label() }}
+                    </option>
+                @endforeach
+            </x-ui::select>
 
             @if($context === 'detail')
                 <input type="hidden" name="tab" value="contracts">

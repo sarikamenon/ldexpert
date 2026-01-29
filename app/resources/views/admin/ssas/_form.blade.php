@@ -22,7 +22,7 @@
                 <x-input-label for="student_id" value="Student *" />
                 <p class="mt-1 text-xs text-foreground/60">Choose the student this SSA belongs to.</p>
                 <select id="student_id" name="student_id"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
                     required>
                     <option value="">Select a student</option>
                     @foreach ($students as $student)
@@ -38,7 +38,7 @@
                 <x-input-label for="primary_service_id" value="Primary Service *" />
                 <p class="mt-1 text-xs text-foreground/60">Pick the main direct service that drives scheduling.</p>
                 <select id="primary_service_id" name="primary_service_id"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm {{ $isEdit ? 'bg-gray-100 cursor-not-allowed' : '' }}"
+                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm {{ $isEdit ? 'bg-background cursor-not-allowed' : '' }}"
                     required {{ $isEdit ? 'disabled' : '' }}>
                     <option value="">Select a service</option>
                     @foreach ($services as $service)
@@ -223,7 +223,7 @@
             <p class="mt-1 text-xs text-foreground/60">Optional - can be assigned later. SSA will be in Pending status
                 until assigned.</p>
             <select id="assigned_therapist_id" name="assigned_therapist_id"
-                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
                 <option value="">Unassigned</option>
                 @foreach ($therapists as $therapist)
                     <option value="{{ $therapist->id }}" @selected(old('assigned_therapist_id', isset($ssa) ? $ssa->assigned_therapist_id : '') == $therapist->id)>

@@ -30,43 +30,38 @@
                 <x-text-input type="text" name="search" class="w-56" placeholder="Search services"
                     value="{{ $filters['search'] ?? '' }}" />
 
-                <select name="status"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="status" searchable placeholder="All Statuses">
                     <option value="">All Statuses</option>
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
                             {{ $status->label() }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
 
-                <select name="is_frequency_service"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="is_frequency_service" searchable placeholder="Frequency?">
                     <option value="">Frequency?</option>
                     <option value="1" @selected(($filters['is_frequency_service'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_frequency_service'] ?? null) === '0')>No</option>
-                </select>
+                </x-ui::select>
 
-                <select name="is_direct_service"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="is_direct_service" searchable placeholder="Direct?">
                     <option value="">Direct?</option>
                     <option value="1" @selected(($filters['is_direct_service'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_direct_service'] ?? null) === '0')>No</option>
-                </select>
+                </x-ui::select>
 
-                <select name="is_group_service"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="is_group_service" searchable placeholder="Group?">
                     <option value="">Group?</option>
                     <option value="1" @selected(($filters['is_group_service'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_group_service'] ?? null) === '0')>No</option>
-                </select>
+                </x-ui::select>
 
-                <select name="is_billable"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="is_billable" searchable placeholder="Billable?">
                     <option value="">Billable?</option>
                     <option value="1" @selected(($filters['is_billable'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_billable'] ?? null) === '0')>No</option>
-                </select>
+                </x-ui::select>
 
                 <button type="submit"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>

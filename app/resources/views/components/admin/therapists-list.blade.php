@@ -37,45 +37,41 @@
                 <x-text-input type="text" name="search" class="w-64" placeholder="Search therapists"
                     value="{{ $filters['search'] ?? '' }}" />
 
-                <div class="relative">
-                    <select name="status"
-                        class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option value="">All Statuses</option>
-                        @foreach (\App\Enums\UserStatus::cases() as $status)
-                            <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                                {{ ucfirst($status->value) }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <x-ui::select name="status" searchable placeholder="All Statuses">
+                    <option value="">All Statuses</option>
+                    @foreach (\App\Enums\UserStatus::cases() as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                            {{ ucfirst($status->value) }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
 
-                <div class="relative">
-                    <select name="position"
-                        class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option value="">All Positions</option>
-                        @foreach ($positions as $position)
-                            <option value="{{ $position->value }}" @selected(($filters['position'] ?? null) === $position->value)>
-                                {{ $position->value }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <x-ui::select name="position" searchable placeholder="All Positions">
+                    <option value="">All Positions</option>
+                    @foreach ($positions as $position)
+                        <option value="{{ $position->value }}" @selected(($filters['position'] ?? null) === $position->value)>
+                            {{ $position->value }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
 
-                <button type="submit"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
+                <x-ui::button type="submit">
+                    Filter
+                </x-ui::button>
             </form>
         </div>
 
         <div class="flex flex-wrap gap-2">
-            <a href="{{ route('admin.therapists.export', $filters) }}"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
-                id="exportTherapistsButton">
-                Export
+            <a href="{{ route('admin.therapists.export', $filters) }}" id="exportTherapistsButton">
+                <x-ui::button variant="secondary">
+                    Export
+                </x-ui::button>
             </a>
             @if ($context === 'index')
-                <a href="{{ route('admin.therapists.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add Therapist
+                <a href="{{ route('admin.therapists.create') }}">
+                    <x-ui::button>
+                        Add Therapist
+                    </x-ui::button>
                 </a>
             @endif
         </div>

@@ -47,17 +47,15 @@
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 Therapist Rate Amount
                             </label>
-                            <input type="number" step="0.01" name="therapist_rate_amount"
-                                value="{{ old('therapist_rate_amount', $sessionLog->therapist_rate_amount ?? '') }}"
-                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary" />
+                            <x-ui-input type="number" step="0.01" name="therapist_rate_amount"
+                                value="{{ old('therapist_rate_amount', $sessionLog->therapist_rate_amount ?? '') }}" />
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 Therapist Billable Amount
                             </label>
-                            <input type="number" step="0.01" name="therapist_billable_amount"
-                                value="{{ old('therapist_billable_amount', $sessionLog->therapist_billable_amount ?? '') }}"
-                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary" />
+                            <x-ui-input type="number" step="0.01" name="therapist_billable_amount"
+                                value="{{ old('therapist_billable_amount', $sessionLog->therapist_billable_amount ?? '') }}" />
                         </div>
                     </div>
 
@@ -83,27 +81,22 @@
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 School Rate Amount
                             </label>
-                            <input type="number" step="0.01" name="school_rate_amount"
-                                value="{{ old('school_rate_amount', $sessionLog->school_rate_amount ?? '') }}"
-                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary" />
+                            <x-ui-input type="number" step="0.01" name="school_rate_amount"
+                                value="{{ old('school_rate_amount', $sessionLog->school_rate_amount ?? '') }}" />
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1">
                                 School Invoice Amount
                             </label>
-                            <input type="number" step="0.01" name="school_invoice_amount"
-                                value="{{ old('school_invoice_amount', $sessionLog->school_invoice_amount ?? '') }}"
-                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary" />
+                            <x-ui-input type="number" step="0.01" name="school_invoice_amount"
+                                value="{{ old('school_invoice_amount', $sessionLog->school_invoice_amount ?? '') }}" />
                         </div>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="inline-flex items-center gap-2 text-sm text-foreground/80">
-                            <input type="checkbox" name="is_rate_override" value="1"
-                                class="rounded border-border text-primary focus:ring-primary"
-                                @checked(old('is_rate_override', $sessionLog->is_rate_override ?? false)) />
-                            <span>Override Rates</span>
-                        </label>
+                        <x-ui-checkbox name="is_rate_override" value="1"
+                            label="Override Rates"
+                            @checked(old('is_rate_override', $sessionLog->is_rate_override ?? false)) />
                         <p class="text-xs text-foreground/60">
                             Check this if you want to manually override the calculated rates for this session.
                         </p>

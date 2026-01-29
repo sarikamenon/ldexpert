@@ -292,13 +292,13 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <a href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}"
-            class="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg hover:bg-background/subtle">
-            Cancel
+        <a href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}">
+            <x-ui::button variant="secondary">
+                Cancel
+            </x-ui::button>
         </a>
-        <button type="submit"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+        <x-ui::button type="submit">
             {{ $isEdit ? 'Update Schedule' : 'Create Schedule' }}
-        </button>
+        </x-ui::button>
     </div>
 </form>

@@ -16,29 +16,24 @@
 
         <div class="flex-1 min-w-[180px]">
             <label class="block text-sm font-medium text-foreground/70 mb-1">From Date</label>
-            <input type="date" name="date_from"
-                class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                value="{{ $filters['date_from'] ?? '' }}">
+            <x-ui-input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
         </div>
 
         <div class="flex-1 min-w-[180px]">
             <label class="block text-sm font-medium text-foreground/70 mb-1">To Date</label>
-            <input type="date" name="date_to"
-                class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                value="{{ $filters['date_to'] ?? '' }}">
+            <x-ui-input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
         </div>
 
         <div class="flex-1 min-w-[180px]">
             <label class="block text-sm font-medium text-foreground/70 mb-1">Status</label>
-            <select name="status"
-                class="w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+            <x-ui::select name="status" searchable placeholder="All Statuses">
                 <option value="">All Statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
                         {{ $status->label() }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
         </div>
 
         <button type="submit"

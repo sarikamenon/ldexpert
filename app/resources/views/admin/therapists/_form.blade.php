@@ -29,8 +29,7 @@
                 <div>
                     <x-input-label for="title" value="Title *" />
                     <p class="mt-1 text-xs text-foreground/60">Professional title (e.g., BCBA, RBT)</p>
-                    <select name="title" id="title"
-                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                    <x-ui::select name="title" id="title" :searchable="false" class="mt-1">
                         <option value="">Select Title</option>
                         @foreach ($titles as $title)
                             <option value="{{ $title->value }}"
@@ -38,7 +37,7 @@
                                 {{ $title->value }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     <x-input-error :messages="$errors->get('title')" class="mt-2" />
                 </div>
 
@@ -139,8 +138,7 @@
                 <div>
                     <x-input-label for="position" value="Position *" />
                     <p class="mt-1 text-xs text-foreground/60">Therapist's professional position</p>
-                    <select name="position" id="position"
-                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                    <x-ui::select name="position" id="position" :searchable="false" class="mt-1">
                         <option value="">Select Position</option>
                         @foreach ($positions as $position)
                             <option value="{{ $position->value }}"
@@ -148,7 +146,7 @@
                                 {{ $position->value }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     <x-input-error :messages="$errors->get('position')" class="mt-2" />
                 </div>
 
@@ -156,8 +154,7 @@
                 <div>
                     <x-input-label for="state" value="State Residing *" />
                     <p class="mt-1 text-xs text-foreground/60">US state where the therapist resides</p>
-                    <select name="state" id="state"
-                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                    <x-ui::select name="state" id="state" :searchable="false" class="mt-1">
                         <option value="">Select State</option>
                         @foreach ($states as $code => $name)
                             <option value="{{ $code }}"
@@ -165,7 +162,7 @@
                                 {{ $name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     <x-input-error :messages="$errors->get('state')" class="mt-2" />
                 </div>
             </div>
@@ -175,8 +172,7 @@
                 <div>
                     <x-input-label for="timezone" value="Timezone *" />
                     <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
-                    <select name="timezone" id="timezone"
-                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                    <x-ui::select name="timezone" id="timezone" :searchable="false" class="mt-1">
                         <option value="">Select Timezone</option>
                         @foreach ($timezones as $tz => $label)
                             <option value="{{ $tz }}"
@@ -184,7 +180,7 @@
                                 {{ $label }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
                 </div>
 
@@ -192,8 +188,7 @@
                 <div>
                     <x-input-label for="manager_id" value="Therapist Manager *" />
                     <p class="mt-1 text-xs text-foreground/60">Assigned manager for this therapist</p>
-                    <select name="manager_id" id="manager_id"
-                        class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                    <x-ui::select name="manager_id" id="manager_id" :searchable="false" class="mt-1">
                         <option value="">Select Manager</option>
                         @foreach ($managers as $manager)
                             <option value="{{ $manager->id }}"
@@ -201,7 +196,7 @@
                                 {{ $manager->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                     <x-input-error :messages="$errors->get('manager_id')" class="mt-2" />
                 </div>
             </div>

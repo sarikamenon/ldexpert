@@ -9,74 +9,39 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
             {{-- Header Card --}}
-            <x-ui::card class="p-6 mb-6">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-2xl font-semibold text-foreground">{{ $student->name }}</h1>
-                        <p class="text-sm text-foreground/60 mt-1">Student ID #{{ $student->id }}</p>
-                    </div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <x-ui::badge :variant="$student->status?->value === 'active' ? 'success' : 'danger'">
-                            {{ ucfirst($student->status?->value ?? 'inactive') }}
-                        </x-ui::badge>
-                        <a href="{{ route('therapist.students.index') }}"
-                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                            Back to list
-                        </a>
-                    </div>
-                </div>
-            </x-ui::card>
+            <x-ui::show-header :title="$student->name" :subtitle="'Student ID #' . $student->id"
+                :back-url="route('therapist.students.index')" back-label="Back to list">
+                <x-slot name="badge">
+                    <x-ui::badge :variant="$student->status?->value === 'active' ? 'success' : 'danger'">
+                        {{ ucfirst($student->status?->value ?? 'inactive') }}
+                    </x-ui::badge>
+                </x-slot>
+            </x-ui::show-header>
 
             {{-- Tabs Navigation --}}
-            <div class="border-b border-border mb-6">
-                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'dashboard']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'dashboard' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Dashboard
-                    </a>
-                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'overview']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'overview' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Overview
-                    </a>
-                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'ssas']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        SSAs
-                    </a>
-                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Session Logs
-                    </a>
-                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'comments']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'comments' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Comments
-                    </a>
-                    <a href="{{ route('therapist.students.show', ['student' => $student, 'tab' => 'documents']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'documents' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Documents
-                    </a>
-                </nav>
-            </div>
+            @php
+                $tabs = [
+                    ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'dashboard'])],
+                    ['key' => 'overview', 'label' => 'Overview', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'overview'])],
+                    ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'ssas'])],
+                    ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs'])],
+                    ['key' => 'comments', 'label' => 'Comments', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'comments'])],
+                    ['key' => 'documents', 'label' => 'Documents', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'documents'])],
+                ];
+            @endphp
+            <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
             {{-- Tab Content --}}
             @if (($activeTab ?? 'dashboard') === 'dashboard')
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                    <x-ui::card class="p-4 space-y-1">
-                        <p class="text-sm text-foreground/70">Total SSAs</p>
-                        <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] ?? 0 }}</p>
-                    </x-ui::card>
-                    <x-ui::card class="p-4 space-y-1">
-                        <p class="text-sm text-foreground/70">Active SSAs</p>
-                        <p class="text-2xl font-semibold text-success">{{ $metrics['active_ssas'] ?? 0 }}</p>
-                    </x-ui::card>
-                    <x-ui::card class="p-4 space-y-1">
-                        <p class="text-sm text-foreground/70">Completed SSAs</p>
-                        <p class="text-2xl font-semibold text-primary">{{ $metrics['completed_ssas'] ?? 0 }}</p>
-                    </x-ui::card>
-                    <x-ui::card class="p-4 space-y-1">
-                        <p class="text-sm text-foreground/70">Pending SSAs</p>
-                        <p class="text-2xl font-semibold text-warning">{{ $metrics['pending_ssas'] ?? 0 }}</p>
-                    </x-ui::card>
-                </div>
+                @php
+                    $metricItems = [
+                        ['label' => 'Total SSAs', 'value' => $metrics['total_ssas'] ?? 0],
+                        ['label' => 'Active SSAs', 'value' => $metrics['active_ssas'] ?? 0, 'valueClass' => 'text-success'],
+                        ['label' => 'Completed SSAs', 'value' => $metrics['completed_ssas'] ?? 0, 'valueClass' => 'text-primary'],
+                        ['label' => 'Pending SSAs', 'value' => $metrics['pending_ssas'] ?? 0, 'valueClass' => 'text-warning'],
+                    ];
+                @endphp
+                <x-ui::metric-grid :items="$metricItems" />
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <x-ui::card class="p-6 lg:col-span-1">

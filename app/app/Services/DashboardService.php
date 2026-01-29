@@ -215,24 +215,28 @@ class DashboardService
             [
                 'label' => 'School-Therapist Ratio',
                 'value' => $activeTherapists > 0 ? number_format($activeSchools / $activeTherapists, 1).':1' : 'N/A',
+                'help' => 'Active schools divided by active therapists, shown as a ratio.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
             [
                 'label' => 'Avg SSA Duration',
                 'value' => "{$avgSSADurationMonths} months",
+                'help' => 'Average length of SSA agreements in months.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
             [
                 'label' => 'Service Completion Rate',
                 'value' => "{$completionRate}%",
+                'help' => 'Percent of services completed out of all assigned services.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
             [
                 'label' => 'Active Contracts',
                 'value' => "{$contractActivationRate}%",
+                'help' => 'Percent of school and therapist contracts currently active.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],

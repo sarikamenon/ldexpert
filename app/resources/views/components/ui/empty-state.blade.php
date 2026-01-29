@@ -1,31 +1,34 @@
 @props([
-    'title' => 'No data found',
+    'title' => '',
     'description' => null,
     'actionLabel' => null,
     'actionHref' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'text-center py-12']) }}>
-    @if (isset($icon))
-        <div class="mx-auto mb-4">
-            {{ $icon }}
+<div class="py-12 text-center">
+    @if(isset($icon) || $slot->isNotEmpty())
+        <div class="mx-auto h-12 w-12 text-foreground/40 mb-4">
+            @if(isset($icon))
+                {{ $icon }}
+            @else
+                {{ $slot }}
+            @endif
         </div>
     @endif
 
-    <p class="text-sm font-medium text-foreground/70 mb-1">{{ $title }}</p>
+    <h3 class="text-sm font-medium text-foreground mb-1">
+        {{ $title }}
+    </h3>
 
-    @if ($description)
-        <p class="text-sm text-foreground/60 mb-4">
+    @if($description)
+        <p class="text-sm text-foreground/60 mb-6">
             {{ $description }}
         </p>
     @endif
 
-    @if ($actionLabel && $actionHref)
-        <a href="{{ $actionHref }}"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    @if($actionLabel && $actionHref)
+        <x-ui::button variant="primary" href="{{ $actionHref }}">
             {{ $actionLabel }}
-        </a>
+        </x-ui::button>
     @endif
 </div>
-
-

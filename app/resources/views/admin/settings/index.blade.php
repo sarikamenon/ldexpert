@@ -65,16 +65,14 @@
             <h3 class="text-lg font-semibold text-foreground mb-4">System Settings</h3>
             
             <div class="space-y-4">
-                <div class="flex items-center">
-                    <input 
-                        type="checkbox" 
-                        name="maintenance_mode" 
-                        id="maintenance_mode" 
-                        value="1" 
+                <div>
+                    <x-ui-checkbox
+                        name="maintenance_mode"
+                        id="maintenance_mode"
+                        value="1"
                         @checked(old('maintenance_mode', $settings['system']['maintenance_mode'] ?? false))
-                        class="rounded border-border"
+                        label="Enable Maintenance Mode"
                     />
-                    <label for="maintenance_mode" class="ml-2 text-sm text-foreground">Enable Maintenance Mode</label>
                 </div>
                 <p class="text-xs text-foreground/60">When enabled, only admins can access the system.</p>
             </div>

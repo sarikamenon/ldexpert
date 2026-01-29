@@ -26,36 +26,36 @@
             <div>
                 <x-input-label for="state" value="State *" />
                 <p class="mt-1 text-xs text-foreground/60">US state where the school is located</p>
-                <select id="state" name="state" class="mt-1 block w-full border border-border rounded-lg">
+                <x-ui::select id="state" name="state" :searchable="false" class="mt-1">
                     @foreach ($states as $code => $label)
                         <option value="{{ $code }}" @selected(old('state', $school?->state_code ?? '') === $code)>
                             {{ $label }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('state')" class="mt-2" />
             </div>
             <div>
                 <x-input-label for="timezone" value="Time Zone *" />
                 <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
-                <select id="timezone" name="timezone" class="mt-1 block w-full border border-border rounded-lg">
+                <x-ui::select id="timezone" name="timezone" :searchable="false" class="mt-1">
                     @foreach ($timezones as $tz => $label)
                         <option value="{{ $tz }}" @selected(old('timezone', $school->timezone ?? '') === $tz)>
                             {{ $label }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
             </div>
             <div>
                 <x-input-label for="manager_id" value="Manager *" />
                 <p class="mt-1 text-xs text-foreground/60">Assigned manager for this school</p>
-                <select id="manager_id" name="manager_id" class="mt-1 block w-full border border-border rounded-lg">
+                <x-ui::select id="manager_id" name="manager_id" :searchable="false" class="mt-1">
                     <option value="">Select Manager</option>
                     @foreach ($managers as $manager)
                         <option value="{{ $manager->id }}" @selected(old('manager_id', $school->manager_id ?? '') == $manager->id)>{{ $manager->name }}</option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('manager_id')" class="mt-2" />
             </div>
         </div>
@@ -111,24 +111,24 @@
         <div>
             <x-input-label for="school_type" value="School Type *" />
             <p class="mt-1 text-xs text-foreground/60">Type of educational institution</p>
-            <select id="school_type" name="school_type" class="mt-1 block w-full border border-border rounded-lg">
+            <x-ui::select id="school_type" name="school_type" :searchable="false" class="mt-1">
                 @foreach ($schoolTypes as $type)
                     <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? '') === $type)>
                         {{ $type }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
             <x-input-error :messages="$errors->get('school_type')" class="mt-2" />
         </div>
-        <div class="flex items-center space-x-3 mt-6">
-            <input type="checkbox" id="is_private_student" name="is_private_student" value="1"
-                @checked(old('is_private_student', $school->is_private_student ?? false)) class="rounded border-border text-primary focus:ring-primary">
-            <x-input-label for="is_private_student" value="Is Private Student?" />
+        <div class="mt-6">
+            <x-ui-checkbox id="is_private_student" name="is_private_student" value="1"
+                @checked(old('is_private_student', $school->is_private_student ?? false))
+                label="Is Private Student?" />
         </div>
-        <div class="flex items-center space-x-3 mt-6">
-            <input type="checkbox" id="non_billable_scheduling" name="non_billable_scheduling" value="1"
-                @checked(old('non_billable_scheduling', $school->non_billable_scheduling ?? false)) class="rounded border-border text-primary focus:ring-primary">
-            <x-input-label for="non_billable_scheduling" value="Non Billable Scheduling?" />
+        <div class="mt-6">
+            <x-ui-checkbox id="non_billable_scheduling" name="non_billable_scheduling" value="1"
+                @checked(old('non_billable_scheduling', $school->non_billable_scheduling ?? false))
+                label="Non Billable Scheduling?" />
         </div>
     </div>
     <div>

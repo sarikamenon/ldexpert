@@ -43,54 +43,51 @@
             <x-text-input type="text" name="search" class="w-64" placeholder="Search students"
                 value="{{ $filters['search'] ?? '' }}" />
 
-            <div class="relative">
-                <select name="status"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                    <option value="">All Statuses</option>
-                    @foreach ($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                            {{ ucfirst($status->value) }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
+            <x-ui::select name="status" searchable placeholder="All Statuses">
+                <option value="">All Statuses</option>
+                @foreach ($statuses as $status)
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                        {{ ucfirst($status->value) }}
+                    </option>
+                @endforeach
+            </x-ui::select>
 
             @if (!empty($schools))
-                <div class="relative">
-                    <select name="school_id"
-                        class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option value="">All Schools</option>
-                        @foreach ($schools as $school)
-                            <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
-                                {{ $school->display_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+                <x-ui::select name="school_id" searchable placeholder="All Schools">
+                    <option value="">All Schools</option>
+                    @foreach ($schools as $school)
+                        <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
+                            {{ $school->display_name }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
             @endif
 
-            <button type="submit"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
+            <x-ui::button type="submit">
+                Filter
+            </x-ui::button>
 
             @if ($context === 'therapist' && !empty($filters))
-                <a href="{{ route('therapist.students.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                    Clear
+                <a href="{{ route('therapist.students.index') }}">
+                    <x-ui::button variant="secondary">
+                        Clear
+                    </x-ui::button>
                 </a>
             @endif
         </form>
 
         <div class="flex flex-wrap gap-2">
             @if ($context !== 'therapist')
-                <a href="{{ route('admin.students.export', $filters) }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
-                    id="exportStudentsButton">
-                    Export
+                <a href="{{ route('admin.students.export', $filters) }}" id="exportStudentsButton">
+                    <x-ui::button variant="secondary">
+                        Export
+                    </x-ui::button>
                 </a>
                 @if ($context === 'index')
-                    <a href="{{ route('admin.students.create') }}"
-                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                        Add Student
+                    <a href="{{ route('admin.students.create') }}">
+                        <x-ui::button>
+                            Add Student
+                        </x-ui::button>
                     </a>
                 @endif
             @endif

@@ -16,60 +16,55 @@
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Date</label>
-            <input type="date" name="date" value="{{ $filters['date'] ?? '' }}"
-                class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary" />
+            <x-ui-input type="date" name="date" value="{{ $filters['date'] ?? '' }}" />
         </div>
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Status</label>
-            <select name="status"
-                class="border border-border rounded-lg px-3 py-2 text-sm min-w-[180px] focus:ring-2 focus:ring-primary focus:border-primary">
+            <x-ui::select name="status" searchable placeholder="All" class="min-w-[180px]">
                 <option value="">All</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
                         {{ $status->label() }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Billing Status</label>
-            <select name="billing_status"
-                class="border border-border rounded-lg px-3 py-2 text-sm min-w-[180px] focus:ring-2 focus:ring-primary focus:border-primary">
+            <x-ui::select name="billing_status" searchable placeholder="All" class="min-w-[180px]">
                 <option value="">All</option>
                 @foreach ($billingStatuses as $billingStatus)
                     <option value="{{ $billingStatus->value }}" @selected(($filters['billing_status'] ?? null) === $billingStatus->value)>
                         {{ $billingStatus->label() }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">SSA</label>
-            <select name="ssa_id"
-                class="border border-border rounded-lg px-3 py-2 text-sm min-w-[220px] focus:ring-2 focus:ring-primary focus:border-primary">
+            <x-ui::select name="ssa_id" searchable placeholder="All" class="min-w-[220px]">
                 <option value="">All</option>
                 @foreach ($ssas as $ssa)
                     <option value="{{ $ssa->id }}" @selected(($filters['ssa_id'] ?? null) == $ssa->id)>
                         #{{ $ssa->id }} — {{ $ssa->primaryService?->name ?? 'Service' }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
         </div>
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Therapist</label>
-            <select name="therapist_id"
-                class="border border-border rounded-lg px-3 py-2 text-sm min-w-[220px] focus:ring-2 focus:ring-primary focus:border-primary">
+            <x-ui::select name="therapist_id" searchable placeholder="All" class="min-w-[220px]">
                 <option value="">All</option>
                 @foreach ($therapists as $therapist)
                     <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
                         {{ $therapist->name }} ({{ $therapist->email }})
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
         </div>
 
         <div class="flex gap-2">

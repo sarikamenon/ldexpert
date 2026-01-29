@@ -32,17 +32,14 @@
                     <x-text-input type="text" name="search" class="w-64" placeholder="Search schools"
                         value="{{ $filters['search'] ?? '' }}" />
 
-                    <div class="relative">
-                        <select name="status"
-                            class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                            <option value="">All Statuses</option>
-                            @foreach (\App\Enums\SchoolStatus::cases() as $status)
-                                <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                                    {{ ucfirst($status->value) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                    <x-ui::select name="status" searchable placeholder="All Statuses">
+                        <option value="">All Statuses</option>
+                        @foreach (\App\Enums\SchoolStatus::cases() as $status)
+                            <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                                {{ ucfirst($status->value) }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
 
                     <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>

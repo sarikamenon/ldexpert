@@ -24,47 +24,44 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end">
             <div class="space-y-1">
                 <label for="therapist_id" class="text-xs font-medium text-foreground/70">Therapist</label>
-                <select id="therapist_id" name="therapist_id"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary min-w-[10rem]">
+                <x-ui::select id="therapist_id" name="therapist_id" searchable
+                    placeholder="All Therapists" class="min-w-[10rem]">
                     <option value="">All Therapists</option>
                     @foreach ($therapists ?? [] as $therapist)
                         <option value="{{ $therapist->id }}" @selected((int) ($filters['therapist_id'] ?? 0) === $therapist->id)>
                             {{ $therapist->name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             </div>
 
             <div class="space-y-1">
                 <label for="status" class="text-xs font-medium text-foreground/70">Status</label>
-                <select id="status" name="status"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary min-w-[10rem]">
+                <x-ui::select id="status" name="status" searchable
+                    placeholder="All Statuses" class="min-w-[10rem]">
                     <option value="">All Statuses</option>
                     @foreach (\App\Enums\TherapistBillStatus::cases() as $status)
                         <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
                             {{ $status->label() }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             </div>
 
             <div class="space-y-1">
                 <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
-                <input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
-                    class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui-input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
             </div>
 
             <div class="space-y-1">
                 <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
-                <input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
-                    class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui-input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
             </div>
 
             <div class="space-y-1">
                 <label for="bill_number" class="text-xs font-medium text-foreground/70">Bill Number</label>
-                <input type="text" id="bill_number" name="bill_number" value="{{ $filters['bill_number'] ?? '' }}"
-                    placeholder="Search..."
-                    class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui-input type="text" id="bill_number" name="bill_number" value="{{ $filters['bill_number'] ?? '' }}"
+                    placeholder="Search..." />
             </div>
 
             <button type="submit"

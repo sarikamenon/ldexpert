@@ -25,23 +25,24 @@
                         </x-ui::badge>
                     @endif
 
-                    <a href="{{ route('admin.session-logs.index') }}"
-                        class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                        Back to list
+                    <a href="{{ route('admin.session-logs.index') }}">
+                        <x-ui::button variant="secondary">
+                            Back to list
+                        </x-ui::button>
                     </a>
 
-                    <a href="{{ route('admin.session-logs.edit', $sessionLog) }}"
-                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                        Override Rates
+                    <a href="{{ route('admin.session-logs.edit', $sessionLog) }}">
+                        <x-ui::button>
+                            Override Rates
+                        </x-ui::button>
                     </a>
 
                     @if ($sessionLog->status?->canApprove())
                         <form action="{{ route('admin.session-logs.approve', $sessionLog) }}" method="POST">
                             @csrf
-                            <button type="submit"
-                                class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
+                            <x-ui::button type="submit" variant="success">
                                 Approve
-                            </button>
+                            </x-ui::button>
                         </form>
                     @endif
 
@@ -49,10 +50,9 @@
                         <form action="{{ route('admin.session-logs.cancel', $sessionLog) }}" method="POST">
                             @csrf
                             <input type="hidden" name="cancellation_reason" value="Cancelled by admin" />
-                            <button type="submit"
-                                class="inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium">
+                            <x-ui::button type="submit" variant="danger">
                                 Cancel
-                            </button>
+                            </x-ui::button>
                         </form>
                     @endif
                 </div>

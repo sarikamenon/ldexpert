@@ -83,15 +83,14 @@
             <div>
                 <x-input-label for="school_id" value="School *" />
                 <p class="mt-1 text-xs text-foreground/60">School where the student is enrolled</p>
-                <select name="school_id" id="school_id"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                <x-ui::select name="school_id" id="school_id" :searchable="false" class="mt-1">
                     <option value="">Select School</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}" @selected((string) old('school_id', $profile?->school_id) === (string) $school->id)>
                             {{ $school->display_name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('school_id')" class="mt-2" />
             </div>
 
@@ -108,15 +107,14 @@
             <div>
                 <x-input-label for="timezone" value="Timezone *" />
                 <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
-                <select name="timezone" id="timezone"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">
+                <x-ui::select name="timezone" id="timezone" :searchable="false" class="mt-1">
                     <option value="">Select Timezone</option>
                     @foreach ($timezones as $tz => $label)
                         <option value="{{ $tz }}" @selected(old('timezone', $profile?->timezone) === $tz)>
                             {{ $label }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
                 <x-input-error :messages="$errors->get('timezone')" class="mt-2" />
             </div>
 

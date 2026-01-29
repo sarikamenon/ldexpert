@@ -13,101 +13,45 @@
     @endif
 
     {{-- Header Card --}}
-    <x-ui::card class="p-6 mb-6">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-                <x-page-title title="{{ $student->name }}" />
-                <p class="text-sm text-foreground/60 mt-1">Student ID #{{ $student->id }}</p>
-            </div>
-            <div class="flex items-center gap-3 flex-wrap">
-                <x-ui::badge :variant="$student->status?->value === 'active' ? 'success' : 'danger'">
-                    {{ ucfirst($student->status?->value ?? 'inactive') }}
-                </x-ui::badge>
-                <a href="{{ route('admin.students.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                    Back to list
-                </a>
-                <a href="{{ route('admin.students.edit', $student) }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Edit Student
-                </a>
-
-                {{-- Status Change Buttons --}}
-                @if ($student->status?->value === 'active')
-                    <button type="button"
-                        class="change-status-btn inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium"
-                        data-student-id="{{ $student->id }}" data-status="inactive">
-                        Deactivate
-                    </button>
-                @else
-                    <button type="button"
-                        class="change-status-btn inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium"
-                        data-student-id="{{ $student->id }}" data-status="active">
-                        Activate
-                    </button>
-                @endif
-            </div>
-        </div>
-    </x-ui::card>
+    <x-ui::show-header :title="$student->name" :subtitle="'Student ID #' . $student->id"
+        :back-url="route('admin.students.index')" back-label="Back to list"
+        :edit-url="route('admin.students.edit', $student)" edit-label="Edit Student">
+        <x-slot name="badge">
+            <x-ui::badge :variant="$student->status?->value === 'active' ? 'success' : 'danger'">
+                {{ ucfirst($student->status?->value ?? 'inactive') }}
+            </x-ui::badge>
+        </x-slot>
+        <x-slot name="actions">
+            <x-ui::status-toggle :status="$student->status?->value" data-student-id="{{ $student->id }}" />
+        </x-slot>
+    </x-ui::show-header>
 
     {{-- Tabs Navigation --}}
-    <div class="border-b border-border mb-6">
-        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'dashboard']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'dashboard' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Dashboard
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'overview']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'overview' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Overview
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'ssas']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'ssas' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                SSAs
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'therapists']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'therapists' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Therapists
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'schedule']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'schedule' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Schedule
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'session_logs']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Session Logs
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'comments']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'comments' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Comments
-            </a>
-            <a href="{{ route('admin.students.show', ['student' => $student, 'tab' => 'documents']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'documents' ? 'border-primary text-primary' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Documents
-            </a>
-        </nav>
-    </div>
+    @php
+        $tabs = [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'dashboard'])],
+            ['key' => 'overview', 'label' => 'Overview', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'overview'])],
+            ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'ssas'])],
+            ['key' => 'therapists', 'label' => 'Therapists', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'therapists'])],
+            ['key' => 'schedule', 'label' => 'Schedule', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'schedule'])],
+            ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'session_logs'])],
+            ['key' => 'comments', 'label' => 'Comments', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'comments'])],
+            ['key' => 'documents', 'label' => 'Documents', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'documents'])],
+        ];
+    @endphp
+    <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
     {{-- Tab Content --}}
     @if (($activeTab ?? 'dashboard') === 'dashboard')
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Total SSAs</p>
-                <p class="text-2xl font-semibold">{{ $metrics['total_ssas'] ?? 0 }}</p>
-            </x-ui::card>
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Active SSAs</p>
-                <p class="text-2xl font-semibold text-success">{{ $metrics['active_ssas'] ?? 0 }}</p>
-            </x-ui::card>
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Completed SSAs</p>
-                <p class="text-2xl font-semibold text-primary">{{ $metrics['completed_ssas'] ?? 0 }}</p>
-            </x-ui::card>
-            <x-ui::card class="p-4 space-y-1">
-                <p class="text-sm text-foreground/70">Pending SSAs</p>
-                <p class="text-2xl font-semibold text-warning">{{ $metrics['pending_ssas'] ?? 0 }}</p>
-            </x-ui::card>
-        </div>
+        @php
+            $metricItems = [
+                ['label' => 'Total SSAs', 'value' => $metrics['total_ssas'] ?? 0],
+                ['label' => 'Active SSAs', 'value' => $metrics['active_ssas'] ?? 0, 'valueClass' => 'text-success'],
+                ['label' => 'Completed SSAs', 'value' => $metrics['completed_ssas'] ?? 0, 'valueClass' => 'text-primary'],
+                ['label' => 'Pending SSAs', 'value' => $metrics['pending_ssas'] ?? 0, 'valueClass' => 'text-warning'],
+            ];
+        @endphp
+        <x-ui::metric-grid :items="$metricItems" />
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-ui::card class="p-6 lg:col-span-1">

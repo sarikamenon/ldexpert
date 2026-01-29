@@ -5,6 +5,7 @@
     'multiple' => false,
     'allowClear' => false,
     'tags' => false,
+    'disabled' => false,
     'dropdownParent' => null,
     'width' => '100%',
     'noResults' => null,
@@ -17,7 +18,7 @@
 @endphp
 
 <select name="{{ $name }}" {{ $attributes->merge(['class' => $baseClasses]) }}
-    @if ($multiple) multiple @endif data-select-box data-width="{{ $width }}"
+    @if ($multiple) multiple @endif @disabled($disabled) data-select-box data-width="{{ $width }}"
     data-searchable="{{ $searchable ? 'true' : 'false' }}" data-allow-clear="{{ $allowClear ? 'true' : 'false' }}"
     data-tags="{{ $tags ? 'true' : 'false' }}"
     @if ($placeholder) data-placeholder="{{ $placeholder }}" @endif

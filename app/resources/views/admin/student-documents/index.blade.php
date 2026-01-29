@@ -13,48 +13,44 @@
         <form method="GET" class="flex flex-wrap gap-3 items-end w-full" id="studentDocumentsFiltersForm">
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Student</label>
-                <select name="student_id"
-                    class="w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="student_id" searchable placeholder="All Students">
                     <option value="">All Students</option>
                     @foreach ($students as $student)
                         <option value="{{ $student['id'] }}" @selected(($filters['student_id'] ?? null) == $student['id'])>
                             {{ $student['name'] }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             </div>
 
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Document Type</label>
-                <select name="document_type"
-                    class="w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="document_type" searchable placeholder="All Types">
                     <option value="">All Types</option>
                     @foreach ($documentTypes as $type)
                         <option value="{{ $type->value }}" @selected(($filters['document_type'] ?? null) === $type->value)>
                             {{ $type->label() }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             </div>
 
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Uploaded By</label>
-                <select name="uploaded_by_id"
-                    class="w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="uploaded_by_id" searchable placeholder="All Users">
                     <option value="">All Users</option>
                     @foreach ($uploadedByUsers as $user)
                         <option value="{{ $user['id'] }}" @selected(($filters['uploaded_by_id'] ?? null) == $user['id'])>
                             {{ $user['name'] }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             </div>
 
             <div class="flex-1 min-w-[180px]">
                 <label class="block text-sm font-medium text-foreground/70 mb-1">Search</label>
-                <input type="text" name="search" placeholder="File name or description"
-                    class="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                    value="{{ $filters['search'] ?? '' }}">
+                <x-ui-input type="text" name="search" placeholder="File name or description"
+                    value="{{ $filters['search'] ?? '' }}" />
             </div>
 
             <button type="submit"
