@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Student\Services;
 
+use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentDocumentRepositoryInterface;
 use App\DTOs\CreateStudentDocumentDTO;
 use App\DTOs\StudentDocumentFilterDTO;
@@ -11,15 +12,15 @@ use App\Models\SessionLog;
 use App\Models\StudentDocument;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class StudentDocumentService
 {
     public function __construct(
         private readonly StudentDocumentRepositoryInterface $repository,
+        private readonly StorageServiceInterface $storageService,
     ) {}
 
     public function create(CreateStudentDocumentDTO $dto): StudentDocument
@@ -31,8 +32,8 @@ final class StudentDocumentService
             default => throw new \InvalidArgumentException('Invalid documentable type'),
         };
 
-        // Upload file to S3 (local in testing)
-        $filePath = $this->storeFileToS3($dto->file);
+        // Upload file to configured storage service
+        $filePath = $this->storeFile($dto->file);
 
         // Create document record
         $data = array_merge($dto->toArray(), [
@@ -62,31 +63,27 @@ final class StudentDocumentService
 
     public function download(StudentDocument $document): StreamedResponse
     {
-        $disk = app()->environment('testing') ? 'local' : 's3';
+        $exists = $this->storageService->exists($document->file_path);
 
-        if (! Storage::disk($disk)->exists($document->file_path)) {
+        if (! $exists) {
             abort(404, 'File not found');
         }
 
-        return Storage::disk($disk)->download(
-            $document->file_path,
-            $document->file_name
-        );
+        return $this->storageService->download($document->file_path, $document->file_name);
     }
 
     public function delete(StudentDocument $document): bool
     {
         // Delete file from storage
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        if (Storage::disk($disk)->exists($document->file_path)) {
-            Storage::disk($disk)->delete($document->file_path);
+        if ($this->storageService->exists($document->file_path)) {
+            $this->storageService->delete($document->file_path);
         }
 
         // Soft delete document record
         return $this->repository->delete($document);
     }
 
-    private function storeFileToS3(\Illuminate\Http\UploadedFile $file): string
+    private function storeFile(\Illuminate\Http\UploadedFile $file): string
     {
         $year = now()->format('Y');
         $month = now()->format('m');
@@ -97,9 +94,7 @@ final class StudentDocumentService
 
         $path = "student-documents/{$year}/{$month}/{$filename}";
 
-        // Use local disk in testing, S3 in production
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, file_get_contents($file->getRealPath()));
 
         return $path;
     }

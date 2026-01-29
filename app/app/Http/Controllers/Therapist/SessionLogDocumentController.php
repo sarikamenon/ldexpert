@@ -11,7 +11,7 @@ use App\Http\Requests\Therapist\StoreSessionLogDocumentRequest;
 use App\Models\SessionLog;
 use App\Models\StudentDocument;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\StreamedResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SessionLogDocumentController extends Controller
 {
@@ -50,15 +50,23 @@ final class SessionLogDocumentController extends Controller
         ]);
     }
 
-    public function download(StudentDocument $document): StreamedResponse
+    public function download(SessionLog $sessionLog, StudentDocument $document): StreamedResponse
     {
+        if (! $document->isForSessionLog() || $document->documentable_id !== $sessionLog->id) {
+            abort(404);
+        }
+
         $this->authorize('view', $document);
 
         return $this->documentService->download($document);
     }
 
-    public function destroy(StudentDocument $document): JsonResponse
+    public function destroy(SessionLog $sessionLog, StudentDocument $document): JsonResponse
     {
+        if (! $document->isForSessionLog() || $document->documentable_id !== $sessionLog->id) {
+            abort(404);
+        }
+
         $this->authorize('delete', $document);
 
         $this->documentService->delete($document);

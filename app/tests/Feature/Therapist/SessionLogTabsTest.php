@@ -25,6 +25,7 @@ final class SessionLogTabsTest extends TestCase
         SessionLog::factory()->create([
             'ssa_id' => $ssa->id,
             'therapist_id' => $therapist->id,
+            'session_date' => now()->startOfMonth(),
         ]);
 
         $response = $this->actingAs($therapist)
@@ -51,6 +52,7 @@ final class SessionLogTabsTest extends TestCase
         SessionLog::factory()->create([
             'student_id' => $student->id,
             'therapist_id' => $therapist->id,
+            'session_date' => now()->startOfMonth(),
         ]);
 
         $response = $this->actingAs($therapist)
@@ -76,11 +78,13 @@ final class SessionLogTabsTest extends TestCase
         SessionLog::factory()->create([
             'ssa_id' => $ssa->id,
             'therapist_id' => $therapist->id,
+            'session_date' => now()->startOfMonth(),
         ]);
 
         SessionLog::factory()->create([
             'ssa_id' => $ssa->id,
             'therapist_id' => $otherTherapist->id,
+            'session_date' => now()->startOfMonth(),
         ]);
 
         $response = $this->actingAs($therapist)

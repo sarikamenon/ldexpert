@@ -20,6 +20,7 @@ function servicePayload(): array
         'name' => 'Speech Therapy',
         'description' => 'Weekly individual session.',
         'is_direct_service' => true,
+        'is_group_service' => false,
         'include_in_tho' => true,
         'is_frequency_service' => true,
         'delivery_mode' => 'virtual',

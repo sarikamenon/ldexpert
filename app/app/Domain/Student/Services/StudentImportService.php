@@ -7,6 +7,7 @@ namespace App\Domain\Student\Services;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\DTOs\ImportStudentDTO;
 use App\DTOs\StoreStudentImportDTO;
@@ -17,7 +18,6 @@ use App\Models\School;
 use App\Models\StudentImport;
 use App\Models\StudentImportRow;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -27,12 +27,13 @@ final class StudentImportService
         private readonly StudentRepositoryInterface $repository,
         private readonly StudentService $studentService,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly StorageServiceInterface $storageService,
     ) {}
 
     public function storeImportRequest(StoreStudentImportDTO $dto): StudentImport
     {
-        // Upload file to S3
-        $filePath = $this->storeFileToS3($dto->file);
+        // Upload file to configured storage service
+        $filePath = $this->storeFile($dto->file);
 
         // Count total rows in CSV
         $totalRows = $this->countCsvRows($dto->file);
@@ -73,8 +74,8 @@ final class StudentImportService
             return;
         }
 
-        // Parse CSV from S3
-        $rows = $this->parseCsvFromS3($import->file_path);
+        // Parse CSV from storage
+        $rows = $this->parseCsvFromStorage($import->file_path);
 
         // Process each row
         foreach ($rows as $rowNumber => $rowData) {
@@ -186,11 +187,9 @@ final class StudentImportService
     {
         $errors = [];
 
-        // Read file from storage (S3 in production, local in testing)
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        $fileContent = Storage::disk($disk)->get($import->file_path);
+        $fileContent = $this->storageService->get($import->file_path);
         if ($fileContent === false) {
-            return ['Unable to read file from S3.'];
+            return ['Unable to read file from storage.'];
         }
 
         // Use temporary file to parse CSV properly
@@ -230,13 +229,11 @@ final class StudentImportService
         return $errors;
     }
 
-    public function parseCsvFromS3(string $filePath): array
+    public function parseCsvFromStorage(string $filePath): array
     {
         $rows = [];
 
-        // Read file from storage (S3 in production, local in testing)
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        $fileContent = Storage::disk($disk)->get($filePath);
+        $fileContent = $this->storageService->get($filePath);
         if ($fileContent === false) {
             return [];
         }
@@ -374,7 +371,7 @@ final class StudentImportService
         return $config['templates'][$typeKey] ?? [];
     }
 
-    private function storeFileToS3(UploadedFile $file): string
+    private function storeFile(UploadedFile $file): string
     {
         $year = now()->format('Y');
         $month = now()->format('m');
@@ -382,9 +379,7 @@ final class StudentImportService
 
         $path = config('student-import.s3.path_prefix', 'student-imports')."/{$year}/{$month}/{$filename}";
 
-        // Use local disk in testing, S3 in production
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, file_get_contents($file->getRealPath()));
 
         return $path;
     }
@@ -421,7 +416,7 @@ final class StudentImportService
                 'student_import_id' => $import->id,
                 'row_number' => $i,
                 'status' => StudentImportRowStatus::PENDING,
-                'raw_data' => [],
+                'raw_data' => json_encode([]),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];

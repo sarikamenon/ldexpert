@@ -111,6 +111,6 @@ final class SSACaseloadReportTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $this->assertStringContainsString('Therapist Name', $response->getContent());
+        $this->assertStringContainsString('Therapist Name', $response->streamedContent());
     }
 }

@@ -14,6 +14,7 @@ class SchoolCalendarEvent extends Model
 {
     /** @use HasFactory<\Database\Factories\SchoolCalendarEventFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [

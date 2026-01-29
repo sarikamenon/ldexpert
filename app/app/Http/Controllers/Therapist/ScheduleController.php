@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
-use App\Domain\SSA\Services\SSAService;
 use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateScheduleDTO;

@@ -159,7 +159,8 @@ final class SessionLogIndexServiceTest extends TestCase
 
         SessionLog::factory()->create([
             'therapist_id' => $therapist->id,
-            'status' => 'approved', // legacy/invalid value
+            'status' => 'legacy_status', // legacy/invalid value
+            'session_date' => now()->startOfMonth(),
         ]);
 
         $service = app(SessionLogIndexService::class);

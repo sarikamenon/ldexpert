@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Enums\DocumentType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\Storage;
 
 class StudentDocument extends Model
 {
@@ -52,9 +52,10 @@ class StudentDocument extends Model
             return null;
         }
 
-        $disk = app()->environment('testing') ? 'local' : 's3';
+        /** @var StorageServiceInterface $storageService */
+        $storageService = app(StorageServiceInterface::class);
 
-        return Storage::disk($disk)->url($this->file_path);
+        return $storageService->url($this->file_path);
     }
 
     public function getFormattedFileSizeAttribute(): string

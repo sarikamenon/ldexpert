@@ -7,6 +7,7 @@ namespace App\Domain\SSA\Services;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
+use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateSSADTO;
@@ -24,7 +25,6 @@ use App\Models\SSAImport;
 use App\Models\SSAImportRow;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -37,12 +37,13 @@ final class SSAImportService
         private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly StorageServiceInterface $storageService,
     ) {}
 
     public function storeImportRequest(StoreSSAImportDTO $dto): SSAImport
     {
-        // Upload file to S3
-        $filePath = $this->storeFileToS3($dto->file);
+        // Upload file to configured storage service
+        $filePath = $this->storeFile($dto->file);
 
         // Count total rows in CSV
         $totalRows = $this->countCsvRows($dto->file);
@@ -83,8 +84,8 @@ final class SSAImportService
             return;
         }
 
-        // Parse CSV from S3
-        $rows = $this->parseCsvFromS3($import->file_path);
+        // Parse CSV from storage
+        $rows = $this->parseCsvFromStorage($import->file_path);
 
         // Process each row
         foreach ($rows as $rowNumber => $rowData) {
@@ -312,9 +313,7 @@ final class SSAImportService
     {
         $errors = [];
 
-        // Read file from storage (S3 in production, local in testing)
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        $fileContent = Storage::disk($disk)->get($import->file_path);
+        $fileContent = $this->storageService->get($import->file_path);
         if ($fileContent === false) {
             return ['Unable to read file from storage.'];
         }
@@ -364,13 +363,11 @@ final class SSAImportService
         return $errors;
     }
 
-    public function parseCsvFromS3(string $filePath): array
+    public function parseCsvFromStorage(string $filePath): array
     {
         $rows = [];
 
-        // Read file from storage (S3 in production, local in testing)
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        $fileContent = Storage::disk($disk)->get($filePath);
+        $fileContent = $this->storageService->get($filePath);
         if ($fileContent === false) {
             return [];
         }
@@ -509,7 +506,7 @@ final class SSAImportService
         return $config['templates'][$typeKey] ?? [];
     }
 
-    private function storeFileToS3(UploadedFile $file): string
+    private function storeFile(UploadedFile $file): string
     {
         $year = now()->format('Y');
         $month = now()->format('m');
@@ -517,9 +514,7 @@ final class SSAImportService
 
         $path = config('ssa-import.s3.path_prefix', 'ssa-imports')."/{$year}/{$month}/{$filename}";
 
-        // Use local disk in testing, S3 in production
-        $disk = app()->environment('testing') ? 'local' : 's3';
-        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, file_get_contents($file->getRealPath()));
 
         return $path;
     }

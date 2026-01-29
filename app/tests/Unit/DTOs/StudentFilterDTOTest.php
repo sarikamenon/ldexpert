@@ -33,7 +33,11 @@ final class StudentFilterDTOTest extends TestCase
 
     public function test_to_array_serializes_properties(): void
     {
-        $dto = new StudentFilterDTO('Mia', 'active', 25);
+        $dto = new StudentFilterDTO(
+            search: 'Mia',
+            status: 'active',
+            perPage: 25
+        );
 
         $array = $dto->toArray();
 

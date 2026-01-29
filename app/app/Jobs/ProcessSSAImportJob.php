@@ -36,6 +36,11 @@ final class ProcessSSAImportJob implements ShouldQueue
             // Process the import
             $importService->processImport($this->import);
 
+            $this->import->refresh();
+            if ($this->import->status === SSAImportStatus::FAILED) {
+                return;
+            }
+
             // Update import status to completed
             $this->import->update([
                 'status' => SSAImportStatus::COMPLETED,

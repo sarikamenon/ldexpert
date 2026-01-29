@@ -7,8 +7,10 @@ namespace Tests\Feature\Admin\Reports;
 use App\Enums\Role;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
+use App\Models\School;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -125,6 +127,6 @@ final class SSAExpirationReportTest extends TestCase
 
         $response->assertOk();
         $response->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
-        $this->assertStringContainsString('SSA ID', $response->getContent());
+        $this->assertStringContainsString('SSA ID', $response->streamedContent());
     }
 }

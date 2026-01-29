@@ -29,8 +29,13 @@
                 // Ensure the service dropdown is populated and pre-selected when editing
                 // Include both primary service and additional services
                 'services' => $sessionLog->ssa
-                    ? collect([$sessionLog->ssa->primaryService])->merge($sessionLog->ssa->services ?? [])->filter()
-                    : collect(),
+                    ? collect([$sessionLog->ssa->primaryService])
+                        ->merge($sessionLog->ssa->services ?? [])
+                        ->merge([$sessionLog->service])
+                        ->filter()
+                        ->unique('id')
+                        ->values()
+                    : collect([$sessionLog->service])->filter()->values(),
                 'sessionOutcomes' => $sessionOutcomes ?? [],
             ])
         </div>

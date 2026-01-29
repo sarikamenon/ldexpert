@@ -25,7 +25,8 @@ final class StudentDocumentTest extends TestCase
     {
         parent::setUp();
 
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
 
         $this->admin = User::factory()->create([
             'role' => Role::ADMIN,
@@ -98,9 +99,10 @@ final class StudentDocumentTest extends TestCase
 
     public function test_admin_can_download_document(): void
     {
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
         $filePath = 'student-documents/2026/01/test.pdf';
-        Storage::disk('local')->put($filePath, 'test content');
+        Storage::disk($disk)->put($filePath, 'test content');
 
         $document = StudentDocument::factory()->create([
             'documentable_type' => User::class,
@@ -119,9 +121,10 @@ final class StudentDocumentTest extends TestCase
 
     public function test_admin_can_delete_document(): void
     {
-        Storage::fake('local');
+        $disk = config('filesystems.default');
+        Storage::fake($disk);
         $filePath = 'student-documents/2026/01/test.pdf';
-        Storage::disk('local')->put($filePath, 'test content');
+        Storage::disk($disk)->put($filePath, 'test content');
 
         $document = StudentDocument::factory()->create([
             'documentable_type' => User::class,
