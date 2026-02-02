@@ -3,55 +3,46 @@
         @vite(['resources/js/pages/admin-invoices-show.js'])
     </x-slot>
 
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-semibold text-foreground">Invoice {{ $invoice->invoice_number }}</h1>
-                <p class="text-sm text-foreground/60 mt-1">Billing Period:
-                    {{ $invoice->billing_period_start->format('M d') }} -
-                    {{ $invoice->billing_period_end->format('M d, Y') }}</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <x-ui::badge :variant="match ($invoice->status) {
-                    \App\Enums\InvoiceStatus::DRAFT => 'secondary',
-                    \App\Enums\InvoiceStatus::SENT => 'primary',
-                    \App\Enums\InvoiceStatus::PAID => 'success',
-                    default => 'secondary',
-                }">
-                    {{ $invoice->status?->label() }}
-                </x-ui::badge>
-                <a href="{{ route('admin.invoices.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                    Back to List
-                </a>
-                <a href="{{ route('admin.invoices.download', $invoice) }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+    <x-ui::show-header :title="'Invoice ' . $invoice->invoice_number"
+        :subtitle="'Billing Period: ' . $invoice->billing_period_start->format('M d') . ' - ' . $invoice->billing_period_end->format('M d, Y')"
+        :back-url="route('admin.invoices.index')" back-label="Back to List">
+        <x-slot name="badge">
+            <x-ui::badge :variant="match ($invoice->status) {
+                \App\Enums\InvoiceStatus::DRAFT => 'secondary',
+                \App\Enums\InvoiceStatus::SENT => 'primary',
+                \App\Enums\InvoiceStatus::PAID => 'success',
+                default => 'secondary',
+            }">
+                {{ $invoice->status?->label() }}
+            </x-ui::badge>
+        </x-slot>
+        <x-slot name="actions">
+            <a href="{{ route('admin.invoices.download', $invoice) }}">
+                <x-ui::button>
                     Download PDF
-                </a>
-                @if ($invoice->isDraft())
-                    <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
-                        x-data="{ loading: false }" x-on:submit="loading = true">
-                        @csrf
-                        <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            x-bind:disabled="loading">
-                            <span data-label x-show="!loading">Send Invoice</span>
-                            <span data-loading x-show="loading" class="inline-flex items-center gap-2 hidden">
-                                <svg class="animate-spin h-4 w-4 text-success-foreground"
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor"
-                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                                </svg>
-                                Sending...
-                            </span>
-                        </button>
-                    </form>
-                @endif
-            </div>
-        </div>
-    </div>
+                </x-ui::button>
+            </a>
+            @if ($invoice->isDraft())
+                <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
+                    x-data="{ loading: false }" x-on:submit="loading = true">
+                    @csrf
+                    <x-ui::button type="submit" variant="success" x-bind:disabled="loading">
+                        <span data-label x-show="!loading">Send Invoice</span>
+                        <span data-loading x-show="loading" class="inline-flex items-center gap-2 hidden">
+                            <svg class="animate-spin h-4 w-4 text-success-foreground"
+                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            Sending...
+                        </span>
+                    </x-ui::button>
+                </form>
+            @endif
+        </x-slot>
+    </x-ui::show-header>
 
     @if (session('success'))
         <x-ui::alert variant="success" class="mb-4">{{ session('success') }}</x-ui::alert>

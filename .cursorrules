@@ -174,16 +174,88 @@ try {
 ## Testing Standards
 
 - **Tests are mandatory for new logic**:
-  - Unit tests for DTOs/Services/Repositories
-  - Feature tests for routes/commands
-  - Dusk browser tests for any UI (views, forms, interactions)
-  - **Do not merge features without corresponding tests**
+ - Unit tests for DTOs/Services/Repositories
+ - Feature tests for routes/commands
+ - Dusk browser tests for any UI (views, forms, interactions)
+ - **Do not merge features without corresponding tests**
 - Write unit tests for DTOs, repositories, and services
 - Write feature tests for HTTP workflows
 - Write Dusk tests for browser interactions
 - Use factories for test data generation
 - Test both success and failure scenarios
 - Test authorization rules
+
+### UI/UX Testing Requirements (MANDATORY)
+
+- **MANDATORY**: Include accessibility testing for all UI changes
+- **MANDATORY**: Test keyboard navigation on all new interactive elements
+- **MANDATORY**: Verify responsive design across all viewports (mobile, tablet, desktop)
+- **MANDATORY**: Run design quality checklist before marking UI complete
+- **MANDATORY**: Verify all form fields have help text and proper ARIA labels
+- **MANDATORY**: Test all interactive states (hover, focus, active, disabled)
+
+## Design System & UI/UX Standards (MANDATORY)
+
+### Design Principles (MANDATORY)
+
+- **Modern & Clean**: Prioritize whitespace, clear typography, and minimal visual clutter. Avoid busy layouts typical of legacy software.
+- **User-Centric**: Design for task completion, not data display. Hide complexity; reveal progressively.
+- **Consistency**: Establish and reuse UI patterns across all pages. Document any new patterns before implementing.
+
+### Visual Foundation (MANDATORY)
+
+- **Color System**: Use ONLY colors defined in `tailwind.config.js`. NEVER introduce ad-hoc colors (e.g., `bg-[#ff0000]`, `bg-red-50`, `text-red-600`).
+  - Use design system colors: `bg-primary`, `bg-secondary`, `bg-success`, `bg-warning`, `bg-danger`
+  - Use `text-danger` instead of `text-red-600` for error states
+- **Typography**: Follow established scale consistently:
+  - H1: `text-2xl font-semibold text-foreground`
+  - H2: `text-lg font-semibold text-foreground`
+  - H3: `text-sm font-medium text-foreground/70`
+  - Body: `text-sm text-foreground`
+  - Labels: `text-xs font-medium text-foreground/70`
+- **Spacing**: Use standard scale (2, 4, 6, 8) only. Card padding: `p-6`. Section spacing: `mb-6`.
+
+### Component Behavior (MANDATORY)
+
+- **Interactive States**: ALL interactive elements MUST have complete state patterns:
+  - Default: Base styling
+  - Hover: `hover:bg-{variant}/90`
+  - Focus: `focus:outline-none focus:ring-2 focus:ring-ring`
+  - Focus-Visible: `focus-visible:ring-2 focus-visible:ring-ring` (for keyboard navigation)
+  - Active: `active:bg-{variant}/80`
+  - Disabled: `disabled:opacity-50 disabled:pointer-events-none`
+- **Feedback**: Every user action requires immediate visual response
+- **Loading States**: Use SweetAlert2 loading OR button spinners OR skeleton loaders
+- **Empty States**: Use `x-ui::empty-state` component with `py-12` spacing
+- **Errors**: Show contextually near source with `text-danger` color
+
+### User Experience Patterns (MANDATORY)
+
+- **Progressive Disclosure**: Hide complexity behind clear affordances. Use collapsible sections for long forms.
+- **Destructive Actions**: Require explicit confirmation with clear consequence explanation.
+- **Error Recovery**: Provide clear paths to resolve errors; avoid dead ends.
+- **Responsiveness**: Design must work on mobile, tablet, and desktop viewports.
+
+### Accessibility Requirements (MANDATORY)
+
+- Keyboard navigation must work for all interactive elements
+- Color cannot be the only indicator of state or meaning
+- Text must have sufficient contrast against backgrounds
+- Use semantic HTML and appropriate ARIA labels
+- Form fields MUST have help text: Label → Help Text → Input → Error Messages
+- Help text styling: `class="mt-1 text-xs text-foreground/60"`
+- Add `aria-describedby` linking to help text IDs
+
+### Design Quality Gates (MANDATORY)
+
+Before considering UI complete, verify:
+- [ ] Follows established color palette and typography scale
+- [ ] Has clear visual hierarchy with one primary action per view
+- [ ] Includes all states: default, loading, empty, error, success
+- [ ] Related content is properly grouped and visually separated
+- [ ] Works on mobile, tablet, and desktop viewports
+- [ ] Passes keyboard-only navigation test
+- [ ] Matches established patterns from reference pages
 
 ## UI Standards
 
@@ -196,32 +268,32 @@ try {
 - Implement proper form validation with error messages
 - Show loading states for async operations
 
-## Form Help Text Standards
+## Form Help Text Standards (MANDATORY)
 
 - **All form inputs MUST have help text** to guide users
 - **Help text MUST be placed BEFORE the input field** (between label and input)
 - Use consistent styling: `class="mt-1 text-xs text-foreground/60"`
 - Standard structure: Label → Help Text → Input → Error Messages
 
-### Required Pattern:
+### Required Pattern (MANDATORY):
 
 ```blade
 <div>
-    <x-input-label for="field_name" value="Field Label *" />
-    <p class="mt-1 text-xs text-foreground/60" id="field_name_help">
-        Clear, concise help text explaining what this field is for and any requirements.
-    </p>
-    <x-text-input
-        id="field_name"
-        name="field_name"
-        class="mt-1 block w-full"
-        aria-describedby="field_name_help"
-    />
-    <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
+ <x-input-label for="field_name" value="Field Label *" />
+ <p class="mt-1 text-xs text-foreground/60" id="field_name_help">
+ Clear, concise help text explaining what this field is for and any requirements.
+ </p>
+ <x-text-input
+ id="field_name"
+ name="field_name"
+ class="mt-1 block w-full"
+ aria-describedby="field_name_help"
+ />
+ <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
 </div>
 ```
 
-### Guidelines:
+### Guidelines (MANDATORY):
 
 - Help text should explain the purpose of the field, format requirements, or constraints
 - Use `aria-describedby` on inputs linking to help text ID for accessibility
@@ -230,6 +302,23 @@ try {
 - For date/time fields, specify timezone context if relevant
 - For numeric fields, specify units, ranges, or increments (e.g., "Duration in minutes (minimum 5, increments of 5)")
 - Never place help text after the input field
+- **VIOLATION**: Any form field without help text is a design standards violation
+
+### Implementation Rules (MANDATORY)
+
+- **ALWAYS** use design system components (`x-ui::*`)
+- **NEVER** use hardcoded colors or arbitrary values
+- **ALWAYS** add help text to form inputs
+- **ALWAYS** include all required interactive states
+- **ALWAYS** test responsive behavior
+- **ALWAYS** verify accessibility requirements
+- **ALWAYS** follow the design quality checklist
+
+### Pattern Documentation Requirement (MANDATORY)
+
+- **MANDATORY**: Document any new UI patterns in `app/docs/DESIGN_SYSTEM.md` BEFORE implementing
+- **MANDATORY**: Update design system documentation when adding new components
+- **MANDATORY**: Reference `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues
 
 ## Project-Enforced Conventions
 

@@ -137,7 +137,12 @@ return [
                     [
                         'label' => 'Therapist Billing',
                         'route' => 'admin.billing.therapist-bills.index',
-                        'active' => 'admin.billing.therapist-bills.*',
+                        'active' => ['admin.billing.therapist-bills.index', 'admin.billing.therapist-bills.show'],
+                    ],
+                    [
+                        'label' => 'Create Bill',
+                        'route' => 'admin.billing.therapist-bills.create',
+                        'active' => 'admin.billing.therapist-bills.create',
                     ],
                 ],
             ],

@@ -7,79 +7,51 @@
     </x-slot>
 
     {{-- Header Card --}}
-    <x-ui::card class="p-6 mb-6">
-        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-                <x-page-title title="{{ $ssa->student->name }} - {{ $ssa->primaryService->name }}" />
-            </div>
-            <div class="flex items-center gap-3 flex-wrap">
-                {{-- Status Badge --}}
-                <x-ui::badge :variant="match ($ssa->status) {
-                    \App\Enums\SSAStatus::ACTIVE => 'success',
-                    \App\Enums\SSAStatus::PENDING => 'warning',
-                    \App\Enums\SSAStatus::COMPLETED => 'primary',
-                    \App\Enums\SSAStatus::DEACTIVATED => 'secondary',
-                    default => 'secondary',
-                }">
-                    {{ $ssa->status->label() }}
-                </x-ui::badge>
-
-                {{-- Action Buttons --}}
-                <a href="{{ route('admin.ssas.index') }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                    Back to List
-                </a>
-                <a href="{{ route('admin.ssas.edit', $ssa) }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Edit SSA
-                </a>
-
-                {{-- Status Change Buttons --}}
-                @if ($ssa->status === \App\Enums\SSAStatus::ACTIVE)
-                    <button type="button"
-                        class="change-status-btn inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
-                        data-ssa-id="{{ $ssa->id }}" data-status="completed">
-                        Mark as Complete
-                    </button>
-                    <button type="button"
-                        class="change-status-btn inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium"
-                        data-ssa-id="{{ $ssa->id }}" data-status="deactivated">
-                        Deactivate
-                    </button>
-                @elseif ($ssa->status === \App\Enums\SSAStatus::PENDING)
-                    <span class="text-sm text-foreground/70">
-                        @if (!$ssa->assignedTherapist)
-                            Assign a therapist to activate
-                        @else
-                            Will activate when therapist is assigned
-                        @endif
-                    </span>
-                @endif
-            </div>
-        </div>
-    </x-ui::card>
+    <x-ui::show-header :title="$ssa->student->name . ' - ' . $ssa->primaryService->name"
+        :back-url="route('admin.ssas.index')" back-label="Back to List"
+        :edit-url="route('admin.ssas.edit', $ssa)" edit-label="Edit SSA">
+        <x-slot name="badge">
+            <x-ui::badge :variant="match ($ssa->status) {
+                \App\Enums\SSAStatus::ACTIVE => 'success',
+                \App\Enums\SSAStatus::PENDING => 'warning',
+                \App\Enums\SSAStatus::COMPLETED => 'primary',
+                \App\Enums\SSAStatus::DEACTIVATED => 'secondary',
+                default => 'secondary',
+            }">
+                {{ $ssa->status->label() }}
+            </x-ui::badge>
+        </x-slot>
+        <x-slot name="actions">
+            @if ($ssa->status === \App\Enums\SSAStatus::ACTIVE)
+                <x-ui::button class="change-status-btn" data-ssa-id="{{ $ssa->id }}" data-status="completed">
+                    Mark as Complete
+                </x-ui::button>
+                <x-ui::button variant="danger" class="change-status-btn" data-ssa-id="{{ $ssa->id }}"
+                    data-status="deactivated">
+                    Deactivate
+                </x-ui::button>
+            @elseif ($ssa->status === \App\Enums\SSAStatus::PENDING)
+                <span class="text-sm text-foreground/70">
+                    @if (!$ssa->assignedTherapist)
+                        Assign a therapist to activate
+                    @else
+                        Will activate when therapist is assigned
+                    @endif
+                </span>
+            @endif
+        </x-slot>
+    </x-ui::show-header>
 
     {{-- Tabs Navigation --}}
-    <div class="border-b border-border mb-6">
-        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-            <a href="{{ route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'dashboard']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'dashboard' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Dashboard
-            </a>
-            <a href="{{ route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'details']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'details' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Details
-            </a>
-            <a href="{{ route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'assignment' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Assignment
-            </a>
-            <a href="{{ route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Session Logs
-            </a>
-        </nav>
-    </div>
+    @php
+        $tabs = [
+            ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'dashboard'])],
+            ['key' => 'details', 'label' => 'Details', 'href' => route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'details'])],
+            ['key' => 'assignment', 'label' => 'Assignment', 'href' => route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment'])],
+            ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs'])],
+        ];
+    @endphp
+    <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
     {{-- Tab Content --}}
     @if (($activeTab ?? 'dashboard') === 'dashboard')
@@ -119,17 +91,13 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-foreground">Assignment History</h3>
                 @if ($ssa->assignedTherapist)
-                    <button type="button" id="unassignTherapistBtn"
-                        class="inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium"
-                        data-ssa-id="{{ $ssa->id }}">
+                    <x-ui::button variant="danger" id="unassignTherapistBtn" data-ssa-id="{{ $ssa->id }}">
                         Unassign Therapist
-                    </button>
+                    </x-ui::button>
                 @else
-                    <button type="button" id="assignTherapistBtn"
-                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
-                        data-ssa-id="{{ $ssa->id }}">
+                    <x-ui::button id="assignTherapistBtn" data-ssa-id="{{ $ssa->id }}">
                         Assign Therapist
-                    </button>
+                    </x-ui::button>
                 @endif
             </div>
 

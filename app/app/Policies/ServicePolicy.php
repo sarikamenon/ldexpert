@@ -35,6 +35,11 @@ final class ServicePolicy
         return $this->isAdmin($user);
     }
 
+    public function export(User $user): bool
+    {
+        return $this->isAdmin($user);
+    }
+
     private function isAdmin(User $user): bool
     {
         $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);

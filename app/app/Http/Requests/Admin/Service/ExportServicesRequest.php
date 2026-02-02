@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Requests\Admin\Service;
+
+use App\Enums\ServiceStatus;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+
+final class ExportServicesRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true;
+    }
+
+    public function rules(): array
+    {
+        $statuses = array_map(static fn (ServiceStatus $status) => $status->value, ServiceStatus::cases());
+
+        return [
+            'search' => ['nullable', 'string', 'max:255'],
+            'status' => ['nullable', Rule::in($statuses)],
+            'is_frequency_service' => ['nullable', 'boolean'],
+            'is_direct_service' => ['nullable', 'boolean'],
+            'is_group_service' => ['nullable', 'boolean'],
+            'is_billable' => ['nullable', 'boolean'],
+        ];
+    }
+}

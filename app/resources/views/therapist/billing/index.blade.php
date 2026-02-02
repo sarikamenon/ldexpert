@@ -15,49 +15,43 @@
             @endif
 
             <x-ui::card class="p-6 space-y-4">
-                <form method="GET" class="flex flex-wrap gap-3 items-end">
-                    <div class="space-y-1">
-                        <label for="status" class="text-xs font-medium text-foreground/70">Status</label>
-                        <select id="status" name="status"
-                            class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary min-w-[10rem]">
-                            <option value="">All Statuses</option>
-                            @foreach (\App\Enums\TherapistBillStatus::cases() as $status)
-                                <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                                    {{ $status->label() }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                <x-ui::filter-toolbar formId="therapistBillingFiltersForm">
+                    <x-slot:filters>
+                        <div class="space-y-1">
+                            <label for="status" class="text-xs font-medium text-foreground/70">Status</label>
+                            <x-ui::select id="status" name="status" :searchable="false"
+                                placeholder="All Statuses" class="min-w-[10rem]">
+                                <option value="">All Statuses</option>
+                                @foreach (\App\Enums\TherapistBillStatus::cases() as $status)
+                                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                                        {{ $status->label() }}
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                        </div>
 
-                    <div class="space-y-1">
-                        <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
-                        <input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
-                            class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                    </div>
+                        <div class="space-y-1">
+                            <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
+                            <x-ui::input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
+                        </div>
 
-                    <div class="space-y-1">
-                        <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
-                        <input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
-                            class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                    </div>
+                        <div class="space-y-1">
+                            <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
+                            <x-ui::input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
+                        </div>
 
-                    <div class="space-y-1">
-                        <label for="bill_number" class="text-xs font-medium text-foreground/70">Bill Number</label>
-                        <input type="text" id="bill_number" name="bill_number"
-                            value="{{ $filters['bill_number'] ?? '' }}" placeholder="Search..."
-                            class="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
-                    </div>
+                        <div class="space-y-1">
+                            <label for="bill_number" class="text-xs font-medium text-foreground/70">Bill Number</label>
+                            <x-ui::input type="text" id="bill_number" name="bill_number"
+                                value="{{ $filters['bill_number'] ?? '' }}" placeholder="Search..." />
+                        </div>
 
-                    <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                        Filter
-                    </button>
-
-                    <a href="{{ route('therapist.billing.index') }}"
-                        class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                        Clear
-                    </a>
-                </form>
+                        <a href="{{ route('therapist.billing.index') }}"
+                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                            Clear
+                        </a>
+                    </x-slot:filters>
+                </x-ui::filter-toolbar>
 
                 @if ($bills->count() > 0)
                     <div class="overflow-x-auto">

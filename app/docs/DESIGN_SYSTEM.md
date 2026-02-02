@@ -1009,6 +1009,160 @@ Before considering any UI implementation complete, verify the following:
 - **Layout Components**: `resources/views/components/admin/layouts/`
 - **Form Components**: `resources/views/components/`
 
+---
+
+## UI Component Namespace Standards
+
+### Component Naming Convention
+
+All design system UI components use the `x-ui::*` namespace prefix. This namespace maps to components in `resources/views/components/ui/`.
+
+**ALWAYS use the `x-ui::` prefix** for design system components:
+
+```blade
+{{-- Correct --}}
+<x-ui::input type="text" name="email" />
+<x-ui::button variant="primary">Submit</x-ui::button>
+<x-ui::card class="p-6">Content</x-ui::card>
+<x-ui::checkbox name="remember" label="Remember me" />
+<x-ui::select name="school_id">...</x-ui::select>
+<x-ui::empty-state title="No data" />
+
+{{-- Incorrect (legacy patterns - do not use) --}}
+<x-text-input type="text" name="email" />
+<x-primary-button>Submit</x-primary-button>
+<x-ui-input type="text" name="email" />
+<x-ui-checkbox name="remember" />
+```
+
+### Available UI Components
+
+#### Form Controls
+| Component | Usage |
+|-----------|-------|
+| `x-ui::input` | Text, email, number, date, time, password inputs |
+| `x-ui::select` | Styled select with optional search (supports Select2) |
+| `x-ui::checkbox` | Checkbox with optional label |
+| `x-ui::file-input` | File upload control |
+| `x-ui::status-toggle` | Toggle for active/inactive states |
+
+#### Buttons & Feedback
+| Component | Usage |
+|-----------|-------|
+| `x-ui::button` | Primary, secondary, ghost, success, danger buttons |
+| `x-ui::loading-button` | Button with loading state |
+| `x-ui::alert` | Alert banners for success/error/info |
+| `x-ui::badge` | Status labels and chips |
+
+#### Layout & Page Structure
+| Component | Usage |
+|-----------|-------|
+| `x-ui::card` | Container for forms, sections, widgets |
+| `x-ui::show-header` | Standard header for show/detail pages |
+| `x-ui::tabs` | Tabbed navigation within a page |
+| `x-ui::metric-grid` | Grid layout for key metrics |
+
+#### Tables & Data Display
+| Component | Usage |
+|-----------|-------|
+| `x-ui::table` | Simple table wrapper |
+| `x-ui::datatable` | DataTables-enabled table wrapper |
+| `x-ui::session-log-table` | Specialized session log table |
+| `x-ui::empty-state` | Empty state with optional action |
+| `x-ui::table-loading` | Skeleton loading for tables |
+| `x-ui::skeleton` | Generic skeleton loader |
+
+#### Menus & Navigation
+| Component | Usage |
+|-----------|-------|
+| `x-ui::menubar` | Structured menubar container |
+| `x-ui::menubar-menu` | Menu within menubar |
+| `x-ui::menubar-item` | Item within menu |
+| `x-ui::menubar-separator` | Separator between items |
+
+### Component Props Reference
+
+#### x-ui::input
+```blade
+<x-ui::input
+    type="text"           {{-- text, email, number, date, time, password --}}
+    name="field_name"
+    id="field_id"
+    value="initial value"
+    placeholder="Enter value"
+    disabled               {{-- Optional: disable input --}}
+    required               {{-- Optional: make required --}}
+    class="mt-1 block w-full"
+/>
+```
+
+#### x-ui::button
+```blade
+<x-ui::button
+    variant="primary"     {{-- primary, secondary, ghost, success, danger --}}
+    size="md"             {{-- sm, md, lg --}}
+    type="button"         {{-- button, submit, reset --}}
+    disabled              {{-- Optional: disable button --}}
+>
+    Button Text
+</x-ui::button>
+```
+
+#### x-ui::select
+```blade
+<x-ui::select
+    name="field_name"
+    id="field_id"
+    :searchable="true"    {{-- Enable Select2 search --}}
+    multiple              {{-- Allow multiple selections --}}
+    class="mt-1"
+>
+    <option value="">Select...</option>
+    <option value="1">Option 1</option>
+</x-ui::select>
+```
+
+#### x-ui::checkbox
+```blade
+<x-ui::checkbox
+    name="field_name"
+    id="field_id"
+    value="1"
+    label="Checkbox label"
+    disabled              {{-- Optional: disable checkbox --}}
+    @checked($condition)
+/>
+```
+
+#### x-ui::empty-state
+```blade
+<x-ui::empty-state
+    title="No items found"
+    description="Optional description text"
+    action-label="Add Item"
+    :action-href="route('items.create')"
+>
+    <x-slot:icon>
+        {{-- Optional icon --}}
+    </x-slot:icon>
+</x-ui::empty-state>
+```
+
+### Migration Notes
+
+The following legacy component patterns have been standardized:
+
+| Legacy Pattern | Replaced By |
+|----------------|-------------|
+| `x-text-input` | `x-ui::input` |
+| `x-primary-button` | `x-ui::button variant="primary"` |
+| `x-secondary-button` | `x-ui::button variant="secondary"` |
+| `x-ui-input` | `x-ui::input` |
+| `x-ui-checkbox` | `x-ui::checkbox` |
+| `x-ui-file-input` | `x-ui::file-input` |
+
+All views have been migrated to use the standardized `x-ui::*` namespace.
+
 ### JavaScript Utilities
 
 - **SweetAlert2**: `resources/js/common/sweetalert.js`

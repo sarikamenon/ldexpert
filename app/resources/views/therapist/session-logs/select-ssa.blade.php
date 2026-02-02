@@ -17,16 +17,14 @@
                 <form method="GET" action="{{ route('therapist.session-logs.create') }}" class="space-y-4">
                     <div>
                         <label for="ssa_id" class="block text-sm font-medium text-gray-700">SSA</label>
-                        <select id="ssa_id" name="ssa_id"
-                            class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
-                            required>
+                        <x-ui::select id="ssa_id" name="ssa_id" class="mt-1" required>
                             <option value="">Select SSA</option>
                             @foreach ($ssas as $ssa)
                                 <option value="{{ $ssa->id }}">
                                     {{ $ssa->student?->name }} (SSA #{{ $ssa->id }} - {{ $ssa->primaryService?->name }})
                                 </option>
                             @endforeach
-                        </select>
+                        </x-ui::select>
                     </div>
 
                     <div class="flex items-center justify-end">

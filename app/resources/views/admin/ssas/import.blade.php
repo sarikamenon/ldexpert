@@ -79,9 +79,9 @@
                     Select a CSV file containing SSA data. Maximum file size: 10MB.
                     The file will be uploaded to S3 and processed in the background.
                 </p>
-                <input type="file" id="file" name="file" accept=".csv,.txt"
-                    class="mt-1 block w-full text-sm text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary/90"
-                    aria-describedby="file_help" required>
+                <x-ui::file-input id="file" name="file" accept=".csv,.txt"
+                    class="mt-1"
+                    aria-describedby="file_help" required />
                 <x-input-error :messages="$errors->get('file')" class="mt-2" />
             </div>
 

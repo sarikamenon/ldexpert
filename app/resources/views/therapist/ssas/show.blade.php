@@ -9,67 +9,45 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
             {{-- Header Card --}}
-            <x-ui::card class="p-6 mb-6">
-                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-2xl font-semibold text-foreground">
-                            {{ $ssa->student->name }} - {{ $ssa->primaryService->name }}
-                        </h1>
-                    </div>
-                    <div class="flex items-center gap-3 flex-wrap">
-                        {{-- Status Badge --}}
-                        <x-ui::badge :variant="match ($ssa->status) {
-                            \App\Enums\SSAStatus::ACTIVE => 'success',
-                            \App\Enums\SSAStatus::PENDING => 'warning',
-                            \App\Enums\SSAStatus::COMPLETED => 'primary',
-                            \App\Enums\SSAStatus::DEACTIVATED => 'secondary',
-                            default => 'secondary',
-                        }">
-                            {{ $ssa->status->label() }}
-                        </x-ui::badge>
-
-                        {{-- Add Schedule Button (only for active SSAs) --}}
-                        @if ($ssa->status === \App\Enums\SSAStatus::ACTIVE)
-                            <a href="{{ route('therapist.schedule.create', ['ssa_id' => $ssa->id]) }}"
-                                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+            <x-ui::show-header :title="$ssa->student->name . ' - ' . $ssa->primaryService->name"
+                :back-url="route('therapist.ssas.index')" back-label="Back to List">
+                <x-slot name="badge">
+                    <x-ui::badge :variant="match ($ssa->status) {
+                        \App\Enums\SSAStatus::ACTIVE => 'success',
+                        \App\Enums\SSAStatus::PENDING => 'warning',
+                        \App\Enums\SSAStatus::COMPLETED => 'primary',
+                        \App\Enums\SSAStatus::DEACTIVATED => 'secondary',
+                        default => 'secondary',
+                    }">
+                        {{ $ssa->status->label() }}
+                    </x-ui::badge>
+                </x-slot>
+                <x-slot name="actions">
+                    @if ($ssa->status === \App\Enums\SSAStatus::ACTIVE)
+                        <a href="{{ route('therapist.schedule.create', ['ssa_id' => $ssa->id]) }}">
+                            <x-ui::button>
                                 + Add New Schedule
-                            </a>
-                            <a href="{{ route('therapist.session-logs.create', ['ssa_id' => $ssa->id]) }}"
-                                class="inline-flex items-center px-4 py-2 bg-success text-white rounded-lg hover:bg-success/90 text-sm font-medium">
-                                + Add Session Log
-                            </a>
-                        @endif
-
-                        {{-- Back Button --}}
-                        <a href="{{ route('therapist.ssas.index') }}"
-                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                            Back to List
+                            </x-ui::button>
                         </a>
-                    </div>
-                </div>
-            </x-ui::card>
+                        <a href="{{ route('therapist.session-logs.create', ['ssa_id' => $ssa->id]) }}">
+                            <x-ui::button variant="success">
+                                + Add Session Log
+                            </x-ui::button>
+                        </a>
+                    @endif
+                </x-slot>
+            </x-ui::show-header>
 
             {{-- Tabs Navigation --}}
-            <div class="border-b border-border mb-6">
-                <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                    <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'dashboard']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'dashboard' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Dashboard
-                    </a>
-                    <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'details']) }}"
-                        class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'details' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                        Details
-                    </a>
-            <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'assignment' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Assignment History
-            </a>
-            <a href="{{ route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']) }}"
-                class="whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors {{ ($activeTab ?? 'dashboard') === 'session_logs' ? 'border-primary text-primary font-medium' : 'border-transparent text-foreground/70 hover:text-foreground hover:border-foreground/30' }}">
-                Session Logs
-            </a>
-        </nav>
-    </div>
+            @php
+                $tabs = [
+                    ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'dashboard'])],
+                    ['key' => 'details', 'label' => 'Details', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'details'])],
+                    ['key' => 'assignment', 'label' => 'Assignment History', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment'])],
+                    ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs'])],
+                ];
+            @endphp
+            <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
             {{-- Tab Content --}}
             @if (($activeTab ?? 'dashboard') === 'dashboard')

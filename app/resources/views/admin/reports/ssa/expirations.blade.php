@@ -10,27 +10,34 @@
     @endif
 
     {{-- Summary Metrics --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Upcoming Expirations</p>
-            <p class="text-3xl font-semibold mt-1">{{ $summary['upcoming_count'] ?? 0 }}</p>
-            <p class="text-xs text-foreground/60 mt-1">next {{ $summary['expiration_window_days'] ?? 30 }} days</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Expired (Active)</p>
-            <p class="text-3xl font-semibold mt-1 text-danger">{{ $summary['expired_count'] ?? 0 }}</p>
-            <p class="text-xs text-foreground/60 mt-1">need completion</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Pending</p>
-            <p class="text-3xl font-semibold mt-1 text-warning">{{ $summary['pending_count'] ?? 0 }}</p>
-            <p class="text-xs text-foreground/60 mt-1">need activation</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">No Current SSA</p>
-            <p class="text-3xl font-semibold mt-1">{{ $summary['no_current_count'] ?? 0 }}</p>
-        </x-ui::card>
-    </div>
+    @php
+        $metricItems = [
+            [
+                'label' => 'Upcoming Expirations',
+                'value' => $summary['upcoming_count'] ?? 0,
+                'valueClass' => 'text-3xl',
+                'subtext' => 'next ' . ($summary['expiration_window_days'] ?? 30) . ' days',
+            ],
+            [
+                'label' => 'Expired (Active)',
+                'value' => $summary['expired_count'] ?? 0,
+                'valueClass' => 'text-3xl text-danger',
+                'subtext' => 'need completion',
+            ],
+            [
+                'label' => 'Pending',
+                'value' => $summary['pending_count'] ?? 0,
+                'valueClass' => 'text-3xl text-warning',
+                'subtext' => 'need activation',
+            ],
+            [
+                'label' => 'No Current SSA',
+                'value' => $summary['no_current_count'] ?? 0,
+                'valueClass' => 'text-3xl',
+            ],
+        ];
+    @endphp
+    <x-ui::metric-grid :items="$metricItems" />
 
     {{-- Filters --}}
     <x-ui::card class="p-6 mb-6">
@@ -41,7 +48,7 @@
                     <p class="mt-1 text-xs text-foreground/60" id="expiration_window_days_help">
                         Number of days ahead to check for expiring SSAs.
                     </p>
-                    <x-text-input type="number" id="expiration_window_days" name="expiration_window_days"
+                    <x-ui::input type="number" id="expiration_window_days" name="expiration_window_days"
                         value="{{ $filters['expiration_window_days'] ?? 30 }}"
                         class="mt-1 block w-full" aria-describedby="expiration_window_days_help" />
                 </div>
@@ -50,41 +57,38 @@
                     <p class="mt-1 text-xs text-foreground/60" id="school_ids_help">
                         Select one or more schools to filter.
                     </p>
-                    <select id="school_ids" name="school_ids[]" multiple
-                        class="mt-1 block w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                        aria-describedby="school_ids_help">
+                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable
+                        class="mt-1" aria-describedby="school_ids_help">
                         @foreach ($schools as $school)
                             <option value="{{ $school->id }}"
                                 @selected(in_array($school->id, $filters['school_ids'] ?? []))>
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
                 <div>
                     <x-input-label for="therapist_ids" value="Therapists" />
                     <p class="mt-1 text-xs text-foreground/60" id="therapist_ids_help">
                         Select one or more therapists to filter.
                     </p>
-                    <select id="therapist_ids" name="therapist_ids[]" multiple
-                        class="mt-1 block w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                        aria-describedby="therapist_ids_help">
+                    <x-ui::select id="therapist_ids" name="therapist_ids[]" multiple searchable
+                        class="mt-1" aria-describedby="therapist_ids_help">
                         @foreach ($therapists as $therapist)
                             <option value="{{ $therapist->id }}"
                                 @selected(in_array($therapist->id, $filters['therapist_ids'] ?? []))>
                                 {{ $therapist->name }}
                             </option>
                         @endforeach
-                    </select>
+                    </x-ui::select>
                 </div>
                 <div>
                     <x-input-label for="bucket" value="View" />
                     <p class="mt-1 text-xs text-foreground/60" id="bucket_help">
                         Filter by expiration status bucket.
                     </p>
-                    <select id="bucket" name="bucket"
-                        class="mt-1 block w-full border border-border rounded-lg pl-3 pr-10 py-2 text-sm focus:ring-2 focus:ring-primary focus:border-primary"
-                        aria-describedby="bucket_help">
+                    <x-ui::select id="bucket" name="bucket" searchable
+                        class="mt-1" aria-describedby="bucket_help">
                         <option value="">All</option>
                         <option value="upcoming" @selected(($filters['bucket'] ?? '') === 'upcoming')>Upcoming</option>
                         <option value="expired" @selected(($filters['bucket'] ?? '') === 'expired')>Expired</option>
@@ -93,14 +97,14 @@
                 </div>
             </div>
             <div class="flex gap-2">
-                <x-primary-button type="submit">Apply Filters</x-primary-button>
-                <x-secondary-button type="button"
+                <x-ui::button type="submit">Apply Filters</x-ui::button>
+                <x-ui::button type="button" variant="secondary"
                     onclick="window.location.href='{{ route('admin.reports.ssa.expirations.index') }}'">
                     Reset
-                </x-secondary-button>
-                <x-secondary-button type="submit" formaction="{{ route('admin.reports.ssa.expirations.export') }}">
+                </x-ui::button>
+                <x-ui::button type="submit" variant="secondary" formaction="{{ route('admin.reports.ssa.expirations.export') }}">
                     Export CSV
-                </x-secondary-button>
+                </x-ui::button>
             </div>
         </form>
     </x-ui::card>

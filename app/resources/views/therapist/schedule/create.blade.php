@@ -13,9 +13,10 @@
                         Create a single schedule for a student with an active SSA.
                     </p>
                 </div>
-                <a href="{{ route('therapist.schedule.calendar') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Back to Calendar
+                <a href="{{ route('therapist.schedule.calendar') }}">
+                    <x-ui::button>
+                        Back to Calendar
+                    </x-ui::button>
                 </a>
             </div>
 
