@@ -66,7 +66,7 @@
                     );
                 @endphp
                 <x-ui::select id="additional_service_ids" name="additional_service_ids[]" multiple
-                    placeholder="Select indirect services" class="mt-1"
+                    searchable placeholder="Select indirect services" class="mt-1"
                     aria-describedby="additional_service_ids_help">
                     @foreach ($indirectServices as $service)
                         <option value="{{ $service->id }}" @selected(in_array($service->id, $selectedAdditionalServices, true))>
@@ -95,22 +95,29 @@
                     <x-input-error :messages="$errors->get('end_date')" class="mt-2" />
                 </div>
             </div>
+
+            <div>
+                <x-input-label for="assigned_therapist_id" value="Assigned Therapist" />
+                <p class="mt-1 text-xs text-foreground/60">Optional - can be assigned later. SSA will be in Pending status
+                    until assigned.</p>
+                <x-ui::select id="assigned_therapist_id" name="assigned_therapist_id" searchable class="mt-1">
+                    <option value="">Unassigned</option>
+                    @foreach ($therapists as $therapist)
+                        <option value="{{ $therapist->id }}" @selected(old('assigned_therapist_id', isset($ssa) ? $ssa->assigned_therapist_id : '') == $therapist->id)>
+                            {{ $therapist->name }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+                <x-input-error :messages="$errors->get('assigned_therapist_id')" class="mt-2" />
+            </div>
         </div>
     </x-ui::card>
 
-    {{-- Section B: Scheduling Parameters (advanced) --}}
-    <x-ui::card class="p-6 space-y-6" x-data="{ open: true }">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-foreground">Scheduling Parameters</h3>
-            <button type="button"
-                class="text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
-                @click="open = !open" x-bind:aria-expanded="open.toString()">
-                <span x-show="!open">Show</span>
-                <span x-show="open">Hide</span>
-            </button>
-        </div>
+    {{-- Section B: Scheduling Parameters --}}
+    <x-ui::card class="p-6 space-y-6">
+        <h3 class="text-lg font-semibold text-foreground">Scheduling Parameters</h3>
 
-        <div x-show="open" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4" id="frequency-fields">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="frequency-fields">
             <div>
                 <x-input-label for="minutes_per_session" value="Minutes per Session *" />
                 <p id="minutes_per_session_help" class="mt-1 text-xs text-foreground/60">Select in 5-minute increments
@@ -207,26 +214,6 @@
                 @json(['id' => $ssa->primaryService->id, 'supports_frequency' => $ssa->primaryService->is_frequency_service])
             </script>
         @endif
-    </x-ui::card>
-
-    {{-- Section C: Assignment --}}
-    <x-ui::card class="p-6 space-y-6">
-        <h3 class="text-lg font-semibold text-foreground">Assignment</h3>
-
-        <div>
-            <x-input-label for="assigned_therapist_id" value="Assigned Therapist" />
-            <p class="mt-1 text-xs text-foreground/60">Optional - can be assigned later. SSA will be in Pending status
-                until assigned.</p>
-            <x-ui::select id="assigned_therapist_id" name="assigned_therapist_id" class="mt-1">
-                <option value="">Unassigned</option>
-                @foreach ($therapists as $therapist)
-                    <option value="{{ $therapist->id }}" @selected(old('assigned_therapist_id', isset($ssa) ? $ssa->assigned_therapist_id : '') == $therapist->id)>
-                        {{ $therapist->name }}
-                    </option>
-                @endforeach
-            </x-ui::select>
-            <x-input-error :messages="$errors->get('assigned_therapist_id')" class="mt-2" />
-        </div>
     </x-ui::card>
 
     <div class="flex justify-end gap-3">

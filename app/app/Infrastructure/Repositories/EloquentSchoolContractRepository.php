@@ -151,6 +151,10 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $query->where('school_id', $filters->schoolId);
         }
 
+        if (!empty($filters->schoolIds)) {
+            $query->whereIn('school_id', $filters->schoolIds);
+        }
+
         return $query;
     }
 }

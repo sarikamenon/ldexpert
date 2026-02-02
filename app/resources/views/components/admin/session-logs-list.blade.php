@@ -26,7 +26,7 @@
 
         <div class="flex-1 min-w-[180px]">
             <label class="block text-sm font-medium text-foreground/70 mb-1">Status</label>
-            <x-ui::select name="status" searchable placeholder="All Statuses">
+            <x-ui::select name="status" :searchable="false" placeholder="All Statuses">
                 <option value="">All Statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>

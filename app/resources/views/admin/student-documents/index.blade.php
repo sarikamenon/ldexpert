@@ -10,10 +10,9 @@
     @endif
 
     <x-ui::card class="p-6 space-y-6">
-        <form method="GET" class="flex flex-wrap gap-3 items-end w-full" id="studentDocumentsFiltersForm">
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-sm font-medium text-foreground/70 mb-1">Student</label>
-                <x-ui::select name="student_id" searchable placeholder="All Students">
+        <x-ui::filter-toolbar formId="studentDocumentsFiltersForm">
+            <x-slot:filters>
+                <x-ui::select name="student_id" searchable placeholder="All Students" :inline="true" class="w-40">
                     <option value="">All Students</option>
                     @foreach ($students as $student)
                         <option value="{{ $student['id'] }}" @selected(($filters['student_id'] ?? null) == $student['id'])>
@@ -21,11 +20,8 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-sm font-medium text-foreground/70 mb-1">Document Type</label>
-                <x-ui::select name="document_type" searchable placeholder="All Types">
+                <x-ui::select name="document_type" :searchable="false" placeholder="All Types" :inline="true" class="w-32">
                     <option value="">All Types</option>
                     @foreach ($documentTypes as $type)
                         <option value="{{ $type->value }}" @selected(($filters['document_type'] ?? null) === $type->value)>
@@ -33,11 +29,8 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-sm font-medium text-foreground/70 mb-1">Uploaded By</label>
-                <x-ui::select name="uploaded_by_id" searchable placeholder="All Users">
+                <x-ui::select name="uploaded_by_id" searchable placeholder="All Users" :inline="true" class="w-36">
                     <option value="">All Users</option>
                     @foreach ($uploadedByUsers as $user)
                         <option value="{{ $user['id'] }}" @selected(($filters['uploaded_by_id'] ?? null) == $user['id'])>
@@ -45,26 +38,17 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="flex-1 min-w-[180px]">
-                <label class="block text-sm font-medium text-foreground/70 mb-1">Search</label>
-                <x-ui::input type="text" name="search" placeholder="File name or description"
-                    value="{{ $filters['search'] ?? '' }}" />
-            </div>
+                <x-ui::input type="text" name="search" placeholder="Search file name..."
+                    value="{{ $filters['search'] ?? '' }}" class="w-48" />
 
-            <button type="submit"
-                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                Apply Filters
-            </button>
-
-            @if (!empty(array_filter($filters)))
-                <a href="{{ route('admin.student-documents.index') }}"
-                    class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    Clear
-                </a>
-            @endif
-        </form>
+                @if (!empty(array_filter($filters)))
+                    <a href="{{ route('admin.student-documents.index') }}">
+                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
+                    </a>
+                @endif
+            </x-slot:filters>
+        </x-ui::filter-toolbar>
 
         @if ($documents->total() > 0)
             <div class="overflow-x-auto">

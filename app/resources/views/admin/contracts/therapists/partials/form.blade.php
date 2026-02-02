@@ -15,7 +15,6 @@
             : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value]],
     );
 
-    $selectedStatus = old('status', $isEdit ? $contract->status->value : \App\Enums\ContractStatus::ACTIVE->value);
     $startDateValue = old('start_date', $isEdit ? optional($contract->start_date)->toDateString() : null);
     $endDateValue = old('end_date', $isEdit ? optional($contract->end_date)->toDateString() : null);
     $notesValue = old('notes', $isEdit ? $contract->notes : null);
@@ -30,75 +29,61 @@
     <x-ui::card class="p-6 space-y-4">
         <h3 class="text-lg font-semibold text-foreground">Contract Details</h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <x-input-label value="Therapist" />
-                <p class="mt-1 text-xs text-foreground/60">Therapist for this contract</p>
-                @if ($isEdit)
-                    <p class="mt-2 font-medium">
-                        {{ $contract->therapist?->first_name }} {{ $contract->therapist?->last_name }}
-                    </p>
-                @else
-                    <select name="therapist_id"
-                        class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
-                        <option value="">Select Therapist</option>
-                        @foreach ($therapists as $therapist)
-                            <option value="{{ $therapist->id }}" @selected(old('therapist_id') == $therapist->id)>
-                                {{ $therapist->first_name }} {{ $therapist->last_name }}
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('therapist_id')
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {{-- Left column: Therapist, Start Date, End Date --}}
+            <div class="space-y-4">
+                <div>
+                    <x-input-label value="Therapist" />
+                    <p class="mt-1 text-xs text-foreground/60">Therapist for this contract</p>
+                    @if ($isEdit)
+                        <p class="mt-2 font-medium">
+                            {{ $contract->therapist?->first_name }} {{ $contract->therapist?->last_name }}
+                        </p>
+                    @else
+                        <select name="therapist_id"
+                            class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Select Therapist</option>
+                            @foreach ($therapists as $therapist)
+                                <option value="{{ $therapist->id }}" @selected(old('therapist_id') == $therapist->id)>
+                                    {{ $therapist->first_name }} {{ $therapist->last_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('therapist_id')
+                            <p class="text-sm text-danger mt-1">{{ $message }}</p>
+                        @enderror
+                    @endif
+                </div>
+
+                <div>
+                    <x-input-label value="Start Date" />
+                    <p class="mt-1 text-xs text-foreground/60">Contract start date</p>
+                    <x-ui::input type="date" name="start_date" class="mt-1 w-full" value="{{ $startDateValue }}" />
+                    @error('start_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>
                     @enderror
-                @endif
+                </div>
+
+                <div>
+                    <x-input-label value="End Date" />
+                    <p class="mt-1 text-xs text-foreground/60">Contract end date (optional)</p>
+                    <x-ui::input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
+                    @error('end_date')
+                        <p class="text-sm text-danger mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
             </div>
 
-            <div>
-                <x-input-label value="Status" />
-                <p class="mt-1 text-xs text-foreground/60">Contract status</p>
-                <select name="status"
-                    class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
-                    @foreach ($statuses as $status)
-                        <option value="{{ $status->value }}" @selected($selectedStatus === $status->value)>
-                            {{ $status->label() }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('status')
+            {{-- Right column: Notes --}}
+            <div class="flex flex-col">
+                <x-input-label value="Notes" />
+                <p class="mt-1 text-xs text-foreground/60">Additional notes about this contract</p>
+                <textarea name="notes"
+                    class="mt-1 w-full flex-1 min-h-[200px] border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">{{ $notesValue }}</textarea>
+                @error('notes')
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
             </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <x-input-label value="Start Date" />
-                <p class="mt-1 text-xs text-foreground/60">Contract start date</p>
-                <x-ui::input type="date" name="start_date" class="mt-1 w-full" value="{{ $startDateValue }}" />
-                @error('start_date')
-                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div>
-                <x-input-label value="End Date" />
-                <p class="mt-1 text-xs text-foreground/60">Contract end date (optional)</p>
-                <x-ui::input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
-                @error('end_date')
-                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-        </div>
-
-        <div>
-            <x-input-label value="Notes" />
-            <p class="mt-1 text-xs text-foreground/60">Additional notes about this contract</p>
-            <textarea name="notes" rows="4"
-                class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">{{ $notesValue }}</textarea>
-            @error('notes')
-                <p class="text-sm text-danger mt-1">{{ $message }}</p>
-            @enderror
         </div>
     </x-ui::card>
 
@@ -159,10 +144,13 @@
                                     <p class="text-xs text-danger mt-1">{{ $message }}</p>
                                 @enderror
                             </td>
-                            <td class="py-2 px-3 text-right">
-                                <button type="button" class="remove-service-row text-danger hover:text-danger/80">
-                                    Remove
-                                </button>
+                            <td class="py-2 px-3 text-center">
+                                <x-ui::button type="button" variant="danger" size="sm" class="remove-service-row" title="Remove service">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </x-ui::button>
                             </td>
                         </tr>
                     @endforeach
@@ -204,10 +192,13 @@
                 @endforeach
             </select>
         </td>
-        <td class="py-2 px-3 text-right">
-            <button type="button" class="remove-service-row text-danger hover:text-danger/80">
-                Remove
-            </button>
+        <td class="py-2 px-3 text-center">
+            <x-ui::button type="button" variant="danger" size="sm" class="remove-service-row" title="Remove service">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+            </x-ui::button>
         </td>
     </tr>
 </template>

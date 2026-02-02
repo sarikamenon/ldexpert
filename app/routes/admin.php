@@ -64,6 +64,7 @@ Route::middleware('role:admin')
             Route::delete('{document}', [StudentDocumentController::class, 'destroy'])->name('destroy');
         });
 
+        Route::get('services/export', [ServiceController::class, 'export'])->name('services.export');
         Route::patch('services/{service}/status', [ServiceController::class, 'updateStatus'])->name('services.status');
         Route::resource('services', ServiceController::class)->except(['destroy', 'show']);
 

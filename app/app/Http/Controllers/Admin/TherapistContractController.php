@@ -44,6 +44,7 @@ final class TherapistContractController extends Controller
             'metrics' => $this->service->metrics(),
             'filters' => $request->validated(),
             'statuses' => ContractStatus::cases(),
+            'therapists' => $this->therapistService->listActiveProfilesForSelect(),
         ]);
     }
 

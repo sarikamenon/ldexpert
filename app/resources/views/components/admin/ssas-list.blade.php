@@ -33,8 +33,8 @@
 @endif
 
 <x-ui::card class="p-6 space-y-6">
-    <div class="flex flex-col md:flex-row md:flex-wrap gap-4 items-start md:items-center justify-between">
-        <form method="GET" class="flex flex-wrap gap-3 w-full md:flex-1 md:max-w-3xl" id="ssaFiltersForm">
+    <x-ui::filter-toolbar formId="ssaFiltersForm">
+        <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="ssas">
             @endif
@@ -42,7 +42,7 @@
             <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
                 value="{{ $filters['search'] ?? '' }}" />
 
-            <x-ui::select name="status" searchable placeholder="All Statuses">
+            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true">
                 <option value="">All Statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -52,7 +52,7 @@
             </x-ui::select>
 
             @if ($context !== 'therapist')
-                <x-ui::select name="student_id" searchable placeholder="All Students">
+                <x-ui::select name="student_id" searchable placeholder="All Students" :inline="true">
                     <option value="">All Students</option>
                     @foreach ($students as $student)
                         <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
@@ -61,7 +61,7 @@
                     @endforeach
                 </x-ui::select>
 
-                <x-ui::select name="therapist_id" searchable placeholder="All Therapists">
+                <x-ui::select name="therapist_id" searchable placeholder="All Therapists" :inline="true">
                     <option value="">All Therapists</option>
                     @foreach ($therapists as $therapist)
                         <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
@@ -70,7 +70,7 @@
                     @endforeach
                 </x-ui::select>
 
-                <x-ui::select name="service_id" searchable placeholder="All Services">
+                <x-ui::select name="service_id" searchable placeholder="All Services" :inline="true">
                     <option value="">All Services</option>
                     @foreach ($services as $service)
                         <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
@@ -79,13 +79,9 @@
                     @endforeach
                 </x-ui::select>
             @endif
+        </x-slot:filters>
 
-            <x-ui::button type="submit">
-                Filter
-            </x-ui::button>
-        </form>
-
-        <div class="flex items-center gap-3">
+        <x-slot:actions>
             @if ($context !== 'therapist')
                 @php
                     $exportFilters = $filters;
@@ -98,7 +94,7 @@
                         Export
                     </x-ui::button>
                 </a>
-                @if ($context === 'index')
+                @if ($context === 'index' || $context === 'detail')
                     <a href="{{ route('admin.ssas.create') }}">
                         <x-ui::button>
                             Add SSA
@@ -106,8 +102,8 @@
                     </a>
                 @endif
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui::filter-toolbar>
 
     @if ($ssas->count() > 0)
         <div class="overflow-x-auto">

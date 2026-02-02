@@ -1,16 +1,5 @@
 <x-admin.layouts.app>
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-semibold text-foreground">Therapist Bills</h1>
-                <p class="text-sm text-foreground/60 mt-1">Manage and send bills to therapists</p>
-            </div>
-            <a href="{{ route('admin.billing.therapist-bills.create') }}"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                Create Bill
-            </a>
-        </div>
-    </div>
+    <x-page-title title="Therapist Bills" />
 
     @if (session('success'))
         <x-ui::alert variant="success" class="mb-4">{{ session('success') }}</x-ui::alert>
@@ -21,11 +10,9 @@
     @endif
 
     <x-ui::card class="p-6 space-y-4">
-        <form method="GET" class="flex flex-wrap gap-3 items-end">
-            <div class="space-y-1">
-                <label for="therapist_id" class="text-xs font-medium text-foreground/70">Therapist</label>
-                <x-ui::select id="therapist_id" name="therapist_id" searchable
-                    placeholder="All Therapists" class="min-w-[10rem]">
+        <x-ui::filter-toolbar formId="therapistBillsFiltersForm">
+            <x-slot:filters>
+                <x-ui::select name="therapist_id" searchable placeholder="All Therapists" :inline="true" class="w-40">
                     <option value="">All Therapists</option>
                     @foreach ($therapists ?? [] as $therapist)
                         <option value="{{ $therapist->id }}" @selected((int) ($filters['therapist_id'] ?? 0) === $therapist->id)>
@@ -33,12 +20,8 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="space-y-1">
-                <label for="status" class="text-xs font-medium text-foreground/70">Status</label>
-                <x-ui::select id="status" name="status" searchable
-                    placeholder="All Statuses" class="min-w-[10rem]">
+                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true" class="w-36">
                     <option value="">All Statuses</option>
                     @foreach (\App\Enums\TherapistBillStatus::cases() as $status)
                         <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -46,34 +29,29 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="space-y-1">
-                <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
-                <x-ui::input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
-            </div>
+                <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
+                    title="From Date" class="w-36" />
 
-            <div class="space-y-1">
-                <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
-                <x-ui::input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
-            </div>
+                <x-ui::input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
+                    title="To Date" class="w-36" />
 
-            <div class="space-y-1">
-                <label for="bill_number" class="text-xs font-medium text-foreground/70">Bill Number</label>
-                <x-ui::input type="text" id="bill_number" name="bill_number" value="{{ $filters['bill_number'] ?? '' }}"
-                    placeholder="Search..." />
-            </div>
+                <x-ui::input type="text" name="bill_number" value="{{ $filters['bill_number'] ?? '' }}"
+                    placeholder="Bill #" class="w-32" />
 
-            <button type="submit"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                Filter
-            </button>
+                @if (!empty(array_filter($filters ?? [])))
+                    <a href="{{ route('admin.billing.therapist-bills.index') }}">
+                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
+                    </a>
+                @endif
+            </x-slot:filters>
 
-            <a href="{{ route('admin.billing.therapist-bills.index') }}"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                Clear
-            </a>
-        </form>
+            <x-slot:actions>
+                <a href="{{ route('admin.billing.therapist-bills.create') }}">
+                    <x-ui::button>Create Bill</x-ui::button>
+                </a>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
 
         @if ($bills->count() > 0)
             <div class="overflow-x-auto">

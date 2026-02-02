@@ -127,100 +127,80 @@
         </div>
     </x-ui::card>
 
-    {{-- Section C: Parent / Guardian (advanced) --}}
-    <x-ui::card class="p-6 space-y-4" x-data="{ open: false }">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-foreground">Parent / Guardian Information</h3>
-            <button type="button"
-                class="text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
-                @click="open = !open" x-bind:aria-expanded="open.toString()">
-                <span x-show="!open">Show</span>
-                <span x-show="open">Hide</span>
-            </button>
-        </div>
+    {{-- Section C: Parent / Guardian Information --}}
+    <x-ui::card class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-foreground">Parent / Guardian Information</h3>
 
-        <div x-show="open" x-cloak class="space-y-4">
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <x-input-label for="parent_guardian_name" value="Name" />
-                    <p class="mt-1 text-xs text-foreground/60">Parent or guardian's full name</p>
-                    <x-ui::input id="parent_guardian_name" name="parent_guardian_name" type="text"
-                        class="mt-1 block w-full" :value="old('parent_guardian_name', $profile?->parent_guardian_name)" />
-                    <x-input-error :messages="$errors->get('parent_guardian_name')" class="mt-2" />
-                </div>
-
-                <div>
-                    <x-input-label for="parent_guardian_email" value="Email" />
-                    <p class="mt-1 text-xs text-foreground/60">Parent or guardian's email address</p>
-                    <x-ui::input id="parent_guardian_email" name="parent_guardian_email" type="email"
-                        class="mt-1 block w-full" :value="old('parent_guardian_email', $profile?->parent_guardian_email)" />
-                    <x-input-error :messages="$errors->get('parent_guardian_email')" class="mt-2" />
-                </div>
-
-                <div>
-                    <x-input-label for="parent_guardian_phone" value="Phone" />
-                    <p class="mt-1 text-xs text-foreground/60">Contact phone number (format: 123-456-7890)</p>
-                    <x-ui::input id="parent_guardian_phone" name="parent_guardian_phone" type="text"
-                        class="mt-1 block w-full" placeholder="123-456-7890" :value="old('parent_guardian_phone', $profile?->parent_guardian_phone)" data-phone-input />
-                    <x-input-error :messages="$errors->get('parent_guardian_phone')" class="mt-2" />
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <x-input-label for="parent_guardian_name" value="Name" />
+                <p class="mt-1 text-xs text-foreground/60">Parent or guardian's full name</p>
+                <x-ui::input id="parent_guardian_name" name="parent_guardian_name" type="text"
+                    class="mt-1 block w-full" :value="old('parent_guardian_name', $profile?->parent_guardian_name)" />
+                <x-input-error :messages="$errors->get('parent_guardian_name')" class="mt-2" />
             </div>
-    </x-ui::card>
-
-    {{-- Section D: Address (advanced) --}}
-    <x-ui::card class="p-6 space-y-4" x-data="{ open: true }">
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-foreground">Address Information</h3>
-            <button type="button"
-                class="text-sm text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
-                @click="open = !open" x-bind:aria-expanded="open.toString()">
-                <span x-show="!open">Show</span>
-                <span x-show="open">Hide</span>
-            </button>
-        </div>
-
-        <div x-show="open" x-cloak class="space-y-4">
 
             <div>
-                <x-input-label for="address" value="Address" />
-                <p class="mt-1 text-xs text-foreground/60">Street address (optional)</p>
-                <textarea id="address" name="address" rows="3"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('address', $profile?->address) }}</textarea>
-                <x-input-error :messages="$errors->get('address')" class="mt-2" />
+                <x-input-label for="parent_guardian_email" value="Email" />
+                <p class="mt-1 text-xs text-foreground/60">Parent or guardian's email address</p>
+                <x-ui::input id="parent_guardian_email" name="parent_guardian_email" type="email"
+                    class="mt-1 block w-full" :value="old('parent_guardian_email', $profile?->parent_guardian_email)" />
+                <x-input-error :messages="$errors->get('parent_guardian_email')" class="mt-2" />
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <x-input-label for="city" value="City *" />
-                    <p class="mt-1 text-xs text-foreground/60">City name</p>
-                    <x-ui::input id="city" name="city" type="text" class="mt-1 block w-full"
-                        :value="old('city', $profile?->city)" />
-                    <x-input-error :messages="$errors->get('city')" class="mt-2" />
-                </div>
-
-                <div>
-                    <x-input-label for="state" value="State *" />
-                    <p class="mt-1 text-xs text-foreground/60">US state</p>
-                    <x-ui::select name="state" id="state" class="mt-1">
-                        <option value="">Select State</option>
-                        @foreach ($states as $code => $name)
-                            <option value="{{ $code }}" @selected(old('state', $profile?->state) === $code)>
-                                {{ $name }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                    <x-input-error :messages="$errors->get('state')" class="mt-2" />
-                </div>
-
-                <div>
-                    <x-input-label for="zip_code" value="ZIP Code *" />
-                    <p class="mt-1 text-xs text-foreground/60">ZIP or postal code</p>
-                    <x-ui::input id="zip_code" name="zip_code" type="text" class="mt-1 block w-full"
-                        :value="old('zip_code', $profile?->zip_code)" />
-                    <x-input-error :messages="$errors->get('zip_code')" class="mt-2" />
-                </div>
+            <div>
+                <x-input-label for="parent_guardian_phone" value="Phone" />
+                <p class="mt-1 text-xs text-foreground/60">Contact phone number (format: 123-456-7890)</p>
+                <x-ui::input id="parent_guardian_phone" name="parent_guardian_phone" type="text"
+                    class="mt-1 block w-full" placeholder="123-456-7890" :value="old('parent_guardian_phone', $profile?->parent_guardian_phone)" data-phone-input />
+                <x-input-error :messages="$errors->get('parent_guardian_phone')" class="mt-2" />
             </div>
+        </div>
+    </x-ui::card>
+
+    {{-- Section D: Address Information --}}
+    <x-ui::card class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-foreground">Address Information</h3>
+
+        <div>
+            <x-input-label for="address" value="Address" />
+            <p class="mt-1 text-xs text-foreground/60">Street address (optional)</p>
+            <textarea id="address" name="address" rows="3"
+                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('address', $profile?->address) }}</textarea>
+            <x-input-error :messages="$errors->get('address')" class="mt-2" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <x-input-label for="city" value="City *" />
+                <p class="mt-1 text-xs text-foreground/60">City name</p>
+                <x-ui::input id="city" name="city" type="text" class="mt-1 block w-full"
+                    :value="old('city', $profile?->city)" />
+                <x-input-error :messages="$errors->get('city')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="state" value="State *" />
+                <p class="mt-1 text-xs text-foreground/60">US state</p>
+                <x-ui::select name="state" id="state" class="mt-1">
+                    <option value="">Select State</option>
+                    @foreach ($states as $code => $name)
+                        <option value="{{ $code }}" @selected(old('state', $profile?->state) === $code)>
+                            {{ $name }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+                <x-input-error :messages="$errors->get('state')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="zip_code" value="ZIP Code *" />
+                <p class="mt-1 text-xs text-foreground/60">ZIP or postal code</p>
+                <x-ui::input id="zip_code" name="zip_code" type="text" class="mt-1 block w-full"
+                    :value="old('zip_code', $profile?->zip_code)" />
+                <x-input-error :messages="$errors->get('zip_code')" class="mt-2" />
+            </div>
+        </div>
     </x-ui::card>
 
     <div class="flex items-center justify-end gap-3">

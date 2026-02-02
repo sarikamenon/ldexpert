@@ -48,7 +48,7 @@ abstract class TherapistFormRequest extends FormRequest
                 'integer',
                 Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', Role::ADMIN->value)),
             ],
-            'max_weekly_hours' => ['required', 'integer', 'min:1', 'max:168'],
+            'max_weekly_hours' => ['required', 'integer', 'min:1', 'max:40'],
             'dob' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'default_meeting_location' => ['nullable', 'string'],
         ];
@@ -61,7 +61,7 @@ abstract class TherapistFormRequest extends FormRequest
             'personal_email.unique' => 'This email is already registered in the system',
             'manager_id.exists' => 'Selected manager must be an admin user',
             'max_weekly_hours.min' => 'Max weekly hours must be at least 1 hour',
-            'max_weekly_hours.max' => 'Max weekly hours cannot exceed 168 hours',
+            'max_weekly_hours.max' => 'Max weekly hours cannot exceed 40 hours per week',
             'dob.before' => 'Date of birth must be in the past',
             'dob.after' => 'Date of birth must be after 1900',
         ];

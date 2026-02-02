@@ -3,18 +3,7 @@
         @vite(['resources/css/common/datatables.css'])
     </x-slot>
 
-    <div class="mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-semibold text-foreground">Invoices</h1>
-                <p class="text-sm text-foreground/60 mt-1">Manage and send invoices to schools</p>
-            </div>
-            <a href="{{ route('admin.invoices.create') }}"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                Create Invoice
-            </a>
-        </div>
-    </div>
+    <x-page-title title="Invoices" />
 
     @if (session('success'))
         <x-ui::alert variant="success" class="mb-4">{{ session('success') }}</x-ui::alert>
@@ -25,11 +14,9 @@
     @endif
 
     <x-ui::card class="p-6 space-y-4">
-        <form method="GET" class="flex flex-wrap gap-3 items-end">
-            <div class="space-y-1">
-                <label for="school_id" class="text-xs font-medium text-foreground/70">School</label>
-                <x-ui::select id="school_id" name="school_id" searchable
-                    placeholder="All Schools" class="min-w-[10rem]">
+        <x-ui::filter-toolbar formId="invoiceFiltersForm">
+            <x-slot:filters>
+                <x-ui::select name="school_id" searchable placeholder="All Schools" :inline="true" class="w-40">
                     <option value="">All Schools</option>
                     @foreach ($schools ?? [] as $school)
                         <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
@@ -37,12 +24,8 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="space-y-1">
-                <label for="status" class="text-xs font-medium text-foreground/70">Status</label>
-                <x-ui::select id="status" name="status" searchable
-                    placeholder="All Statuses" class="min-w-[10rem]">
+                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true" class="w-36">
                     <option value="">All Statuses</option>
                     @foreach (\App\Enums\InvoiceStatus::cases() as $status)
                         <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -50,34 +33,29 @@
                         </option>
                     @endforeach
                 </x-ui::select>
-            </div>
 
-            <div class="space-y-1">
-                <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
-                <x-ui::input type="date" id="date_from" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
-            </div>
+                <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
+                    title="From Date" class="w-36" />
 
-            <div class="space-y-1">
-                <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
-                <x-ui::input type="date" id="date_to" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
-            </div>
+                <x-ui::input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
+                    title="To Date" class="w-36" />
 
-            <div class="space-y-1">
-                <label for="invoice_number" class="text-xs font-medium text-foreground/70">Invoice Number</label>
-                <x-ui::input type="text" id="invoice_number" name="invoice_number"
-                    value="{{ $filters['invoice_number'] ?? '' }}" placeholder="Search..." />
-            </div>
+                <x-ui::input type="text" name="invoice_number" value="{{ $filters['invoice_number'] ?? '' }}"
+                    placeholder="Invoice #" class="w-32" />
 
-            <button type="submit"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                Filter
-            </button>
+                @if (!empty(array_filter($filters ?? [])))
+                    <a href="{{ route('admin.invoices.index') }}">
+                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
+                    </a>
+                @endif
+            </x-slot:filters>
 
-            <a href="{{ route('admin.invoices.index') }}"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                Clear
-            </a>
-        </form>
+            <x-slot:actions>
+                <a href="{{ route('admin.invoices.create') }}">
+                    <x-ui::button>Create Invoice</x-ui::button>
+                </a>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
 
         @if ($invoices->count() > 0)
             <div class="overflow-x-auto">

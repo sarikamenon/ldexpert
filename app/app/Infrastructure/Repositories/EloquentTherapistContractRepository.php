@@ -149,15 +149,14 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         }
 
         if ($filters->therapistId) {
-            // Since the relationship is to TherapistProfile (therapist_id on contracts table points to therapist_profiles.id),
-            // and we usually filter by the User ID (therapist_profiles.user_id), we need to check this relationship.
-            // Let's check TherapistContract model. It belongs to TherapistProfile.
-            // If filters->therapistId comes from the controller (User ID), we should filter via relationship.
-            // Or if it comes as profile ID.
-            // Looking at TherapistController, it passes User $therapist.
-            // So we need to filter where therapist.user_id = $filters->therapistId
             $query->whereHas('therapist', function (Builder $q) use ($filters) {
                 $q->where('user_id', $filters->therapistId);
+            });
+        }
+
+        if (!empty($filters->therapistIds)) {
+            $query->whereHas('therapist', function (Builder $q) use ($filters) {
+                $q->whereIn('user_id', $filters->therapistIds);
             });
         }
 

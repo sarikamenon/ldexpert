@@ -27,41 +27,35 @@
 @endif
 
 <x-ui::card class="p-6 space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div class="flex flex-wrap gap-3">
-            <form method="GET" class="flex gap-2" id="therapistsFiltersForm">
-                @if ($context === 'detail')
-                    <input type="hidden" name="tab" value="therapists">
-                @endif
+    <x-ui::filter-toolbar formId="therapistsFiltersForm">
+        <x-slot:filters>
+            @if ($context === 'detail')
+                <input type="hidden" name="tab" value="therapists">
+            @endif
 
-                <x-ui::input type="text" name="search" class="w-64" placeholder="Search therapists"
-                    value="{{ $filters['search'] ?? '' }}" />
+            <x-ui::input type="text" name="search" class="w-64" placeholder="Search therapists"
+                value="{{ $filters['search'] ?? '' }}" />
 
-                <x-ui::select name="status" searchable placeholder="All Statuses">
-                    <option value="">All Statuses</option>
-                    @foreach (\App\Enums\UserStatus::cases() as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                            {{ ucfirst($status->value) }}
-                        </option>
-                    @endforeach
-                </x-ui::select>
+            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true">
+                <option value="">All Statuses</option>
+                @foreach (\App\Enums\UserStatus::cases() as $status)
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                        {{ ucfirst($status->value) }}
+                    </option>
+                @endforeach
+            </x-ui::select>
 
-                <x-ui::select name="position" searchable placeholder="All Positions">
-                    <option value="">All Positions</option>
-                    @foreach ($positions as $position)
-                        <option value="{{ $position->value }}" @selected(($filters['position'] ?? null) === $position->value)>
-                            {{ $position->value }}
-                        </option>
-                    @endforeach
-                </x-ui::select>
+            <x-ui::select name="position" :searchable="false" placeholder="All Positions" :inline="true">
+                <option value="">All Positions</option>
+                @foreach ($positions as $position)
+                    <option value="{{ $position->value }}" @selected(($filters['position'] ?? null) === $position->value)>
+                        {{ $position->value }}
+                    </option>
+                @endforeach
+            </x-ui::select>
+        </x-slot:filters>
 
-                <x-ui::button type="submit">
-                    Filter
-                </x-ui::button>
-            </form>
-        </div>
-
-        <div class="flex flex-wrap gap-2">
+        <x-slot:actions>
             <a href="{{ route('admin.therapists.export', $filters) }}" id="exportTherapistsButton">
                 <x-ui::button variant="secondary">
                     Export
@@ -74,8 +68,8 @@
                     </x-ui::button>
                 </a>
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui::filter-toolbar>
 
     @if ($therapists->count() > 0)
         <div class="overflow-x-auto">

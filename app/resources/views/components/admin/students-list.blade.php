@@ -34,8 +34,8 @@
 @endif
 
 <x-ui::card class="p-6 space-y-4">
-    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <form method="GET" class="flex flex-wrap gap-3" id="studentsFiltersForm">
+    <x-ui::filter-toolbar formId="studentsFiltersForm">
+        <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="students">
             @endif
@@ -43,7 +43,7 @@
             <x-ui::input type="text" name="search" class="w-64" placeholder="Search students"
                 value="{{ $filters['search'] ?? '' }}" />
 
-            <x-ui::select name="status" searchable placeholder="All Statuses">
+            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true">
                 <option value="">All Statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -53,7 +53,7 @@
             </x-ui::select>
 
             @if (!empty($schools))
-                <x-ui::select name="school_id" searchable placeholder="All Schools">
+                <x-ui::select name="school_id" searchable placeholder="All Schools" :inline="true">
                     <option value="">All Schools</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
@@ -63,10 +63,6 @@
                 </x-ui::select>
             @endif
 
-            <x-ui::button type="submit">
-                Filter
-            </x-ui::button>
-
             @if ($context === 'therapist' && !empty($filters))
                 <a href="{{ route('therapist.students.index') }}">
                     <x-ui::button variant="secondary">
@@ -74,16 +70,16 @@
                     </x-ui::button>
                 </a>
             @endif
-        </form>
+        </x-slot:filters>
 
-        <div class="flex flex-wrap gap-2">
+        <x-slot:actions>
             @if ($context !== 'therapist')
                 <a href="{{ route('admin.students.export', $filters) }}" id="exportStudentsButton">
                     <x-ui::button variant="secondary">
                         Export
                     </x-ui::button>
                 </a>
-                @if ($context === 'index')
+                @if ($context === 'index' || $context === 'detail')
                     <a href="{{ route('admin.students.create') }}">
                         <x-ui::button>
                             Add Student
@@ -91,8 +87,8 @@
                     </a>
                 @endif
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui::filter-toolbar>
 
     @if ($students->count() > 0)
         <div class="overflow-x-auto">

@@ -17,8 +17,8 @@
             @endif
 
             <x-ui::card class="p-6 space-y-4">
-                <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                    <form method="GET" class="flex flex-wrap gap-3 items-end" id="sessionLogsFiltersForm">
+                <x-ui::filter-toolbar formId="sessionLogsFiltersForm">
+                    <x-slot:filters>
                         <div class="space-y-1">
                             <label for="student_id" class="text-xs font-medium text-foreground/70">Student</label>
                             <x-ui::select id="student_id" name="student_id" searchable
@@ -63,24 +63,15 @@
 
                         <div class="space-y-1">
                             <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
-                            <div class="relative">
-                                <x-ui::input id="date_from" type="date" name="date_from"
-                                    value="{{ $filters['date_from'] ?? '' }}" class="w-40" />
-                            </div>
+                            <x-ui::input id="date_from" type="date" name="date_from"
+                                value="{{ $filters['date_from'] ?? '' }}" class="w-40" />
                         </div>
 
                         <div class="space-y-1">
                             <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
-                            <div class="relative">
-                                <x-ui::input id="date_to" type="date" name="date_to"
-                                    value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
-                            </div>
+                            <x-ui::input id="date_to" type="date" name="date_to"
+                                value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
                         </div>
-
-                        <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-sm font-medium">
-                            Filter
-                        </button>
 
                         @if (!empty(array_filter($filters ?? [])))
                             <a href="{{ route('therapist.session-logs.index') }}"
@@ -88,15 +79,15 @@
                                 Clear
                             </a>
                         @endif
-                    </form>
+                    </x-slot:filters>
 
-                    <div class="flex flex-wrap gap-2">
+                    <x-slot:actions>
                         <a href="{{ route('therapist.session-logs.select-ssa') }}"
                             class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                             + Add Session Log
                         </a>
-                    </div>
-                </div>
+                    </x-slot:actions>
+                </x-ui::filter-toolbar>
 
                 <div class="overflow-x-auto">
                     <x-ui::session-log-table :columns="$columns" :rows="$rows" />

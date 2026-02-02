@@ -3,6 +3,15 @@
 .select2-container {
     width: 100% !important;
     font-size: 0.875rem !important;
+    margin-top: 4px !important;
+}
+
+/* Inline selects (filters) - inherit flex sizing from parent select element */
+.select2-container.select2-container--inline {
+    width: auto !important;
+    min-width: inherit !important;
+    max-width: inherit !important;
+    flex: inherit !important;
 }
 
 /* Base selection styling - match text inputs */
@@ -126,24 +135,47 @@
 
 /* Multiple select choice tags */
 .select2-container--default .select2-selection--multiple .select2-selection__choice {
-    border-radius: 9999px !important;
+    border-radius: 4px !important;
     background-color: #eef0f9 !important;
-    border: none !important;
+    border: 1px solid #aaa !important;
     color: #0b1220 !important;
-    padding: 0.125rem 0.5rem !important;
-    margin: 0 !important;
+    padding: 0 5px !important;
+    margin: 0 5px 0 0 !important;
+    position: relative !important;
+    max-width: 100% !important;
+    font-size: 0.8125rem !important;
+}
+
+/* Choice text content should truncate if too long */
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    cursor: default !important;
+    padding-left: 2px !important;
+    padding-right: 5px !important;
+    margin-left: 8px !important;
 }
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
-    color: #475569 !important;
-    margin-right: 0.25rem !important;
+    background-color: transparent !important;
     border: none !important;
-    background: transparent !important;
+    border-right: 1px solid #aaa !important;
+    border-top-left-radius: 4px !important;
+    border-bottom-left-radius: 4px !important;
+    color: #999 !important;
+    cursor: pointer !important;
+    font-size: 1em !important;
+    font-weight: bold !important;
+    padding: 0 4px !important;
+    position: absolute !important;
+    left: 2px !important;
+    top: 5px !important;
 }
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #0b1220 !important;
-    background: transparent !important;
+    color: #333 !important;
+    background-color: transparent !important;
 }
 
 /* Custom dropdown arrow via ::after pseudo-element */

@@ -205,10 +205,9 @@
                 {{-- Max Weekly Hours --}}
                 <div>
                     <x-input-label for="max_weekly_hours" value="Max Weekly Hours *" />
-                    <p class="mt-1 text-xs text-foreground/60">Maximum hours per week this therapist can work (default:
-                        40)</p>
+                    <p class="mt-1 text-xs text-foreground/60">Maximum hours per week this therapist can work (maximum 40)</p>
                     <x-ui::input id="max_weekly_hours" name="max_weekly_hours" type="number" min="1"
-                        max="168" step="1" class="mt-1 block w-full" :value="old('max_weekly_hours', $profile?->max_weekly_hours ?? 40)"
+                        max="40" step="1" class="mt-1 block w-full" :value="old('max_weekly_hours', $profile?->max_weekly_hours ?? 40)"
                         placeholder="e.g. 40" dusk="therapist-max-weekly-hours" />
                     <x-input-error :messages="$errors->get('max_weekly_hours')" class="mt-2" />
                 </div>

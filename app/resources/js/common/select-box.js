@@ -128,10 +128,20 @@ const initializeSelect = (element) => {
         searchable,
         searchThreshold,
         allowClear,
+        inline,
     } = element.dataset;
 
+    // Handle 'fit' width for inline selects - use 'style' and add CSS width
+    let selectWidth = width;
+    if (width === 'fit' || inline === 'true') {
+        // For inline/fit width, use 'style' and let CSS handle it
+        selectWidth = 'style';
+        // Add inline style for auto width
+        element.style.width = 'auto';
+    }
+
     const config = {
-        width,
+        width: selectWidth,
         placeholder: placeholder ?? '',
         allowClear: toBoolean(allowClear, !!placeholder && !element.hasAttribute('multiple')),
         tags: toBoolean(tags),
@@ -146,6 +156,25 @@ const initializeSelect = (element) => {
     try {
         $el.select2(config);
         $el.data('select-initialized', true);
+
+        // For inline selects, add class to container and copy width/flex classes
+        if (inline === 'true' || width === 'fit') {
+            const $container = $el.next('.select2-container');
+            $container.addClass('select2-container--inline');
+            
+            // Copy width, min-width, max-width, and flex classes from original select
+            const selectClasses = element.className.split(' ');
+            const widthClasses = selectClasses.filter(cls => 
+                cls.startsWith('w-') ||
+                cls.startsWith('min-w-') || 
+                cls.startsWith('max-w-') || 
+                cls.startsWith('flex-') ||
+                cls === 'flex-1'
+            );
+            if (widthClasses.length > 0) {
+                $container.addClass(widthClasses.join(' '));
+            }
+        }
 
         if (element.form) {
             element.form.addEventListener('reset', () => {

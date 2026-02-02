@@ -20,6 +20,8 @@ final class IndexSchoolContractRequest extends FormRequest
         return [
             'status' => ['nullable', Rule::in(ContractStatus::values())],
             'search' => ['nullable', 'string', 'max:255'],
+            'school_ids' => ['nullable', 'array'],
+            'school_ids.*' => ['integer', 'exists:schools,id'],
         ];
     }
 }

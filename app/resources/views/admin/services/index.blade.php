@@ -24,13 +24,14 @@
         </x-ui::card>
     </div>
 
-    <x-ui::card class="p-6 space-y-6">
-        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <form method="GET" class="flex flex-wrap gap-3" id="serviceFiltersForm">
-                <x-ui::input type="text" name="search" class="w-56" placeholder="Search services"
+    <x-ui::card class="p-6 space-y-4">
+        <x-ui::filter-toolbar formId="serviceFiltersForm">
+            <x-slot:filters>
+                <x-ui::input type="text" name="search" class="w-48" placeholder="Search services"
                     value="{{ $filters['search'] ?? '' }}" />
 
-                <x-ui::select name="status" searchable placeholder="All Statuses">
+                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true"
+                    class="w-32">
                     <option value="">All Statuses</option>
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -39,39 +40,40 @@
                     @endforeach
                 </x-ui::select>
 
-                <x-ui::select name="is_frequency_service" searchable placeholder="Frequency?">
+                <x-ui::select name="is_frequency_service" :searchable="false" placeholder="Frequency?" :inline="true"
+                    class="w-28">
                     <option value="">Frequency?</option>
                     <option value="1" @selected(($filters['is_frequency_service'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_frequency_service'] ?? null) === '0')>No</option>
                 </x-ui::select>
 
-                <x-ui::select name="is_direct_service" searchable placeholder="Direct?">
+                <x-ui::select name="is_direct_service" :searchable="false" placeholder="Direct?" :inline="true"
+                    class="w-24">
                     <option value="">Direct?</option>
                     <option value="1" @selected(($filters['is_direct_service'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_direct_service'] ?? null) === '0')>No</option>
                 </x-ui::select>
 
-                <x-ui::select name="is_group_service" searchable placeholder="Group?">
-                    <option value="">Group?</option>
-                    <option value="1" @selected(($filters['is_group_service'] ?? null) === '1')>Yes</option>
-                    <option value="0" @selected(($filters['is_group_service'] ?? null) === '0')>No</option>
-                </x-ui::select>
-
-                <x-ui::select name="is_billable" searchable placeholder="Billable?">
+                <x-ui::select name="is_billable" :searchable="false" placeholder="Billable?" :inline="true"
+                    class="w-28">
                     <option value="">Billable?</option>
                     <option value="1" @selected(($filters['is_billable'] ?? null) === '1')>Yes</option>
                     <option value="0" @selected(($filters['is_billable'] ?? null) === '0')>No</option>
                 </x-ui::select>
+            </x-slot:filters>
 
-                <button type="submit"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
-            </form>
-
-            <a href="{{ route('admin.services.create') }}"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                Add Service
-            </a>
-        </div>
+            <x-slot:actions>
+                <a href="{{ route('admin.services.export', $filters) }}"
+                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
+                    id="exportServicesButton">
+                    Export
+                </a>
+                <a href="{{ route('admin.services.create') }}"
+                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                    Add Service
+                </a>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
 
         @if ($services->count() > 0)
             <div class="overflow-x-auto">

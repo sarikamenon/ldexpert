@@ -21,7 +21,7 @@
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Status</label>
-            <x-ui::select name="status" searchable placeholder="All" class="min-w-[180px]">
+            <x-ui::select name="status" :searchable="false" placeholder="All" :inline="true" width="180px">
                 <option value="">All</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
@@ -33,7 +33,7 @@
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Billing Status</label>
-            <x-ui::select name="billing_status" searchable placeholder="All" class="min-w-[180px]">
+            <x-ui::select name="billing_status" :searchable="false" placeholder="All" :inline="true" width="180px">
                 <option value="">All</option>
                 @foreach ($billingStatuses as $billingStatus)
                     <option value="{{ $billingStatus->value }}" @selected(($filters['billing_status'] ?? null) === $billingStatus->value)>
@@ -45,7 +45,7 @@
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">SSA</label>
-            <x-ui::select name="ssa_id" searchable placeholder="All" class="min-w-[220px]">
+            <x-ui::select name="ssa_id" searchable placeholder="All" :inline="true" width="220px">
                 <option value="">All</option>
                 @foreach ($ssas as $ssa)
                     <option value="{{ $ssa->id }}" @selected(($filters['ssa_id'] ?? null) == $ssa->id)>
@@ -57,7 +57,7 @@
 
         <div>
             <label class="block text-sm font-medium text-foreground/70 mb-2">Therapist</label>
-            <x-ui::select name="therapist_id" searchable placeholder="All" class="min-w-[220px]">
+            <x-ui::select name="therapist_id" searchable placeholder="All" :inline="true" width="220px">
                 <option value="">All</option>
                 @foreach ($therapists as $therapist)
                     <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
@@ -68,10 +68,10 @@
         </div>
 
         <div class="flex gap-2">
-            <button type="submit"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Apply</button>
-            <a href="{{ request()->url() }}?tab=schedule"
-                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">Reset</a>
+            <x-ui::button type="submit">Apply</x-ui::button>
+            <a href="{{ request()->url() }}?tab=schedule">
+                <x-ui::button variant="secondary">Reset</x-ui::button>
+            </a>
         </div>
     </form>
 

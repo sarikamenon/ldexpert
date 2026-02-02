@@ -44,6 +44,7 @@ final class SchoolContractController extends Controller
             'metrics' => $this->service->metrics(),
             'filters' => $request->validated(),
             'statuses' => ContractStatus::cases(),
+            'schools' => $this->schoolService->listActiveForSelect(),
         ]);
     }
 
