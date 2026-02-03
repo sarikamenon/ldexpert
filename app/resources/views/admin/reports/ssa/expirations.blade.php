@@ -49,19 +49,18 @@
                         Number of days ahead to check for expiring SSAs.
                     </p>
                     <x-ui::input type="number" id="expiration_window_days" name="expiration_window_days"
-                        value="{{ $filters['expiration_window_days'] ?? 30 }}"
-                        class="mt-1 block w-full" aria-describedby="expiration_window_days_help" />
+                        value="{{ $filters['expiration_window_days'] ?? 30 }}" class="mt-1 block w-full"
+                        aria-describedby="expiration_window_days_help" />
                 </div>
                 <div>
                     <x-input-label for="school_ids" value="Schools" />
                     <p class="mt-1 text-xs text-foreground/60" id="school_ids_help">
                         Select one or more schools to filter.
                     </p>
-                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable
+                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable placeholder="All Schools"
                         class="mt-1" aria-describedby="school_ids_help">
                         @foreach ($schools as $school)
-                            <option value="{{ $school->id }}"
-                                @selected(in_array($school->id, $filters['school_ids'] ?? []))>
+                            <option value="{{ $school->id }}" @selected(in_array($school->id, $filters['school_ids'] ?? []))>
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
@@ -73,10 +72,9 @@
                         Select one or more therapists to filter.
                     </p>
                     <x-ui::select id="therapist_ids" name="therapist_ids[]" multiple searchable
-                        class="mt-1" aria-describedby="therapist_ids_help">
+                        placeholder="All Therapists" class="mt-1" aria-describedby="therapist_ids_help">
                         @foreach ($therapists as $therapist)
-                            <option value="{{ $therapist->id }}"
-                                @selected(in_array($therapist->id, $filters['therapist_ids'] ?? []))>
+                            <option value="{{ $therapist->id }}" @selected(in_array($therapist->id, $filters['therapist_ids'] ?? []))>
                                 {{ $therapist->name }}
                             </option>
                         @endforeach
@@ -87,13 +85,13 @@
                     <p class="mt-1 text-xs text-foreground/60" id="bucket_help">
                         Filter by expiration status bucket.
                     </p>
-                    <x-ui::select id="bucket" name="bucket" searchable
-                        class="mt-1" aria-describedby="bucket_help">
+                    <x-ui::select id="bucket" name="bucket" searchable class="mt-1"
+                        aria-describedby="bucket_help">
                         <option value="">All</option>
                         <option value="upcoming" @selected(($filters['bucket'] ?? '') === 'upcoming')>Upcoming</option>
                         <option value="expired" @selected(($filters['bucket'] ?? '') === 'expired')>Expired</option>
                         <option value="pending" @selected(($filters['bucket'] ?? '') === 'pending')>Pending</option>
-                    </select>
+                        </select>
                 </div>
             </div>
             <div class="flex gap-2">
@@ -102,7 +100,8 @@
                     onclick="window.location.href='{{ route('admin.reports.ssa.expirations.index') }}'">
                     Reset
                 </x-ui::button>
-                <x-ui::button type="submit" variant="secondary" formaction="{{ route('admin.reports.ssa.expirations.export') }}">
+                <x-ui::button type="submit" variant="secondary"
+                    formaction="{{ route('admin.reports.ssa.expirations.export') }}">
                     Export CSV
                 </x-ui::button>
             </div>
@@ -197,7 +196,10 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 whitespace-nowrap">
-                                @if (isset($ssa->student) && is_object($ssa->student) && $ssa->student->studentProfile && $ssa->student->studentProfile->school)
+                                @if (isset($ssa->student) &&
+                                        is_object($ssa->student) &&
+                                        $ssa->student->studentProfile &&
+                                        $ssa->student->studentProfile->school)
                                     {{ $ssa->student->studentProfile->school->display_name }}
                                 @else
                                     —

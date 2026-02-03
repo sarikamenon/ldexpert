@@ -146,6 +146,7 @@
                     <x-input-label for="duration_minutes" value="Duration (minutes) *" />
                     <select id="duration_minutes" name="duration_minutes" data-select-box class="mt-1 block w-full"
                         required>
+                        <option value="">Select duration</option>
                         @foreach (range(5, 400, 5) as $minutesOption)
                             <option value="{{ $minutesOption }}" @selected(old('duration_minutes', $isEdit ? $schedule->durationMinutes() : $currentSsa?->minutes_per_session ?? 60) == $minutesOption)>
                                 {{ $minutesOption }} minutes
@@ -218,6 +219,7 @@
                     <x-input-label for="recurrence_type" value="Recurrence Type *" />
                     <select id="recurrence_type" name="recurrence_type" data-select-box class="mt-1 block w-full"
                         required>
+                        <option value="">Select recurrence type</option>
                         @foreach (\App\Enums\RecurrenceType::cases() as $recurrenceType)
                             <option value="{{ $recurrenceType->value }}" @selected(old('recurrence_type', 'none') === $recurrenceType->value)>
                                 {{ $recurrenceType->label() }}
@@ -292,7 +294,8 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <a href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}">
+        <a
+            href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}">
             <x-ui::button variant="secondary">
                 Cancel
             </x-ui::button>

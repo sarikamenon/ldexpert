@@ -17,11 +17,12 @@
                 <form method="GET" action="{{ route('therapist.session-logs.create') }}" class="space-y-4">
                     <div>
                         <label for="ssa_id" class="block text-sm font-medium text-gray-700">SSA</label>
-                        <x-ui::select id="ssa_id" name="ssa_id" class="mt-1" required>
+                        <x-ui::select id="ssa_id" name="ssa_id" class="mt-1" placeholder="Select SSA" required>
                             <option value="">Select SSA</option>
                             @foreach ($ssas as $ssa)
                                 <option value="{{ $ssa->id }}">
-                                    {{ $ssa->student?->name }} (SSA #{{ $ssa->id }} - {{ $ssa->primaryService?->name }})
+                                    {{ $ssa->student?->name }} (SSA #{{ $ssa->id }} -
+                                    {{ $ssa->primaryService?->name }})
                                 </option>
                             @endforeach
                         </x-ui::select>
@@ -37,5 +38,3 @@
         </div>
     </div>
 </x-app-layout>
-
-

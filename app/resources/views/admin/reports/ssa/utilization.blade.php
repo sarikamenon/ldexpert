@@ -49,16 +49,15 @@
                         Filter SSAs active within this date range.
                     </p>
                     <x-ui::input type="date" id="start_date" name="start_date"
-                        value="{{ $filters['start_date'] ?? '' }}"
-                        class="mt-1 block w-full" aria-describedby="start_date_help" />
+                        value="{{ $filters['start_date'] ?? '' }}" class="mt-1 block w-full"
+                        aria-describedby="start_date_help" />
                 </div>
                 <div>
                     <x-input-label for="end_date" value="End Date *" />
                     <p class="mt-1 text-xs text-foreground/60" id="end_date_help">
                         Filter SSAs active within this date range.
                     </p>
-                    <x-ui::input type="date" id="end_date" name="end_date"
-                        value="{{ $filters['end_date'] ?? '' }}"
+                    <x-ui::input type="date" id="end_date" name="end_date" value="{{ $filters['end_date'] ?? '' }}"
                         class="mt-1 block w-full" aria-describedby="end_date_help" />
                 </div>
                 <div>
@@ -66,11 +65,10 @@
                     <p class="mt-1 text-xs text-foreground/60" id="school_ids_help">
                         Select one or more schools to filter.
                     </p>
-                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable
+                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable placeholder="All Schools"
                         class="mt-1" aria-describedby="school_ids_help">
                         @foreach ($schools as $school)
-                            <option value="{{ $school->id }}"
-                                @selected(in_array($school->id, $filters['school_ids'] ?? []))>
+                            <option value="{{ $school->id }}" @selected(in_array($school->id, $filters['school_ids'] ?? []))>
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
@@ -82,10 +80,9 @@
                         Select one or more therapists to filter.
                     </p>
                     <x-ui::select id="therapist_ids" name="therapist_ids[]" multiple searchable
-                        class="mt-1" aria-describedby="therapist_ids_help">
+                        placeholder="All Therapists" class="mt-1" aria-describedby="therapist_ids_help">
                         @foreach ($therapists as $therapist)
-                            <option value="{{ $therapist->id }}"
-                                @selected(in_array($therapist->id, $filters['therapist_ids'] ?? []))>
+                            <option value="{{ $therapist->id }}" @selected(in_array($therapist->id, $filters['therapist_ids'] ?? []))>
                                 {{ $therapist->name }}
                             </option>
                         @endforeach
@@ -96,11 +93,10 @@
                     <p class="mt-1 text-xs text-foreground/60" id="service_ids_help">
                         Select one or more services to filter.
                     </p>
-                    <x-ui::select id="service_ids" name="service_ids[]" multiple searchable
+                    <x-ui::select id="service_ids" name="service_ids[]" multiple searchable placeholder="All Services"
                         class="mt-1" aria-describedby="service_ids_help">
                         @foreach ($services as $service)
-                            <option value="{{ $service->id }}"
-                                @selected(in_array($service->id, $filters['service_ids'] ?? []))>
+                            <option value="{{ $service->id }}" @selected(in_array($service->id, $filters['service_ids'] ?? []))>
                                 {{ $service->name }}
                             </option>
                         @endforeach
@@ -113,7 +109,8 @@
                     onclick="window.location.href='{{ route('admin.reports.ssa.utilization.index') }}'">
                     Reset
                 </x-ui::button>
-                <x-ui::button type="submit" variant="secondary" formaction="{{ route('admin.reports.ssa.utilization.export') }}">
+                <x-ui::button type="submit" variant="secondary"
+                    formaction="{{ route('admin.reports.ssa.utilization.export') }}">
                     Export CSV
                 </x-ui::button>
             </div>
@@ -162,7 +159,12 @@
                             $served = $ssa->served_minutes ?? 0;
                             $utilization = $tho > 0 ? round(($served / $tho) * 100, 2) : 0;
                             $isNearEnd = $ssa->end_date->diffInDays(now()) <= 30;
-                            $badgeColor = $utilization < 80 && $isNearEnd ? 'danger' : ($utilization > 120 ? 'warning' : 'success');
+                            $badgeColor =
+                                $utilization < 80 && $isNearEnd
+                                    ? 'danger'
+                                    : ($utilization > 120
+                                        ? 'warning'
+                                        : 'success');
                         @endphp
                         <tr>
                             <td class="px-4 py-3 whitespace-nowrap">

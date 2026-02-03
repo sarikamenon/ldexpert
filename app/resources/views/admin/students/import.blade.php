@@ -25,6 +25,7 @@
             <select name="import_type" id="import_type"
                 class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
                 aria-describedby="import_type_help">
+                <option value="">Select import type</option>
                 @foreach ($importTypes as $type)
                     <option value="{{ $type->value }}" @selected(old('import_type', 'NOVA') === $type->value)>
                         {{ $type->value }}
@@ -79,8 +80,7 @@
                     Select a CSV file containing student data. Maximum file size: 10MB.
                     The file will be uploaded to S3 and processed in the background.
                 </p>
-                <x-ui::file-input id="file" name="file" accept=".csv,.txt"
-                    class="mt-1"
+                <x-ui::file-input id="file" name="file" accept=".csv,.txt" class="mt-1"
                     aria-describedby="file_help" required />
                 <x-input-error :messages="$errors->get('file')" class="mt-2" />
             </div>

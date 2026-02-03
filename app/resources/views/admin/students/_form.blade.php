@@ -19,8 +19,8 @@
             <div>
                 <x-input-label for="first_name" value="First Name *" />
                 <p class="mt-1 text-xs text-foreground/60">Student's first name</p>
-                <x-ui::input id="first_name" name="first_name" type="text" class="mt-1 block w-full"
-                    :value="old('first_name', $profile?->first_name)" dusk="student-first-name" />
+                <x-ui::input id="first_name" name="first_name" type="text" class="mt-1 block w-full" :value="old('first_name', $profile?->first_name)"
+                    dusk="student-first-name" />
                 <x-input-error :messages="$errors->get('first_name')" class="mt-2" />
             </div>
 
@@ -53,7 +53,7 @@
             <div>
                 <x-input-label for="gender" value="Gender *" />
                 <p class="mt-1 text-xs text-foreground/60">Student's gender identity</p>
-                <x-ui::select id="gender" name="gender" class="mt-1">
+                <x-ui::select id="gender" name="gender" class="mt-1" placeholder="Select Gender">
                     <option value="">Select Gender</option>
                     @foreach ($genderOptions as $gender)
                         <option value="{{ $gender }}" @selected(old('gender', $profile?->gender) === $gender)>
@@ -82,7 +82,7 @@
             <div>
                 <x-input-label for="school_id" value="School *" />
                 <p class="mt-1 text-xs text-foreground/60">School where the student is enrolled</p>
-                <x-ui::select name="school_id" id="school_id" class="mt-1">
+                <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School">
                     <option value="">Select School</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}" @selected((string) old('school_id', $profile?->school_id) === (string) $school->id)>
@@ -106,7 +106,7 @@
             <div>
                 <x-input-label for="timezone" value="Timezone *" />
                 <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
-                <x-ui::select name="timezone" id="timezone" class="mt-1">
+                <x-ui::select name="timezone" id="timezone" class="mt-1" placeholder="Select Timezone">
                     <option value="">Select Timezone</option>
                     @foreach ($timezones as $tz => $label)
                         <option value="{{ $tz }}" @selected(old('timezone', $profile?->timezone) === $tz)>
@@ -182,7 +182,7 @@
             <div>
                 <x-input-label for="state" value="State *" />
                 <p class="mt-1 text-xs text-foreground/60">US state</p>
-                <x-ui::select name="state" id="state" class="mt-1">
+                <x-ui::select name="state" id="state" class="mt-1" placeholder="Select State">
                     <option value="">Select State</option>
                     @foreach ($states as $code => $name)
                         <option value="{{ $code }}" @selected(old('state', $profile?->state) === $code)>

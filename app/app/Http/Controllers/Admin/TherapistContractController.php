@@ -96,7 +96,7 @@ final class TherapistContractController extends Controller
     {
         $this->authorize('update', $therapistContract);
 
-        $dto = UpdateTherapistContractDTO::fromArray($request->validated());
+        $dto = UpdateTherapistContractDTO::fromArray($request->validated(), $therapistContract->status);
 
         try {
             $this->service->update($therapistContract, $dto);

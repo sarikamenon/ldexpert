@@ -119,7 +119,7 @@ const initializeSelect = (element) => {
     }
 
     const {
-        placeholder,
+        placeholder: dataPlaceholder,
         width = '100%',
         dropdownParent,
         noResults,
@@ -130,6 +130,12 @@ const initializeSelect = (element) => {
         allowClear,
         inline,
     } = element.dataset;
+
+    // Use data-placeholder, or first empty option's text so Select2 shows default text when nothing selected
+    let placeholder = dataPlaceholder ?? '';
+    if (placeholder === '' && element.options.length > 0 && element.options[0].value === '') {
+        placeholder = element.options[0].textContent.trim() || '';
+    }
 
     // Handle 'fit' width for inline selects - use 'style' and add CSS width
     let selectWidth = width;
@@ -142,7 +148,7 @@ const initializeSelect = (element) => {
 
     const config = {
         width: selectWidth,
-        placeholder: placeholder ?? '',
+        placeholder,
         allowClear: toBoolean(allowClear, !!placeholder && !element.hasAttribute('multiple')),
         tags: toBoolean(tags),
         dropdownParent: dropdownParent ? window.jQuery(dropdownParent) : undefined,

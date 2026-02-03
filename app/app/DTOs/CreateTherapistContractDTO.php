@@ -23,16 +23,18 @@ final class CreateTherapistContractDTO
 
     public static function fromArray(array $data): self
     {
+        $status = isset($data['status'])
+            ? ($data['status'] instanceof ContractStatus ? $data['status'] : ContractStatus::from($data['status']))
+            : ContractStatus::ACTIVE;
+
         return new self(
             therapistId: (int) $data['therapist_id'],
             startDate: CarbonImmutable::parse($data['start_date']),
             endDate: CarbonImmutable::parse($data['end_date']),
             notes: $data['notes'] ?? null,
-            status: $data['status'] instanceof ContractStatus
-                ? $data['status']
-                : ContractStatus::from($data['status']),
+            status: $status,
             services: array_map(
-                static fn (array $row) => ContractServiceRateDTO::fromArray($row),
+                static fn(array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
         );

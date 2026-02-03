@@ -85,8 +85,7 @@
                     value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
                     @if (isset($selectedSsa) && $selectedSsa?->start_date) min="{{ $selectedSsa->start_date->format('Y-m-d') }}" @endif
                     @if (isset($selectedSsa) && $selectedSsa?->end_date) max="{{ $selectedSsa->end_date->format('Y-m-d') }}" @endif
-                    class="mt-1"
-                    required />
+                    class="mt-1" required />
             </div>
         </div>
 
@@ -97,8 +96,7 @@
                 <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
                 <x-ui::input type="time" name="start_time" id="session-log-start-time"
                     value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
-                    class="mt-1"
-                    required />
+                    class="mt-1" required />
             </div>
 
             <div>
@@ -106,9 +104,7 @@
                 <p class="mt-1 text-xs text-foreground/60">Session duration in minutes (minimum 5, increments of 5)</p>
                 <x-ui::input type="number" name="duration_minutes" id="session-log-duration"
                     value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
-                    min="5" step="5"
-                    class="mt-1"
-                    required />
+                    min="5" step="5" class="mt-1" required />
             </div>
 
             <div>
@@ -116,8 +112,7 @@
                 <p class="mt-1 text-xs text-foreground/60">Automatically calculated based on start time and duration</p>
                 <x-ui::input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
                     value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
-                    class="mt-1 bg-gray-100"
-                    required />
+                    class="mt-1 bg-gray-100" required />
             </div>
         </div>
 
@@ -148,7 +143,8 @@
                 <div>
                     <label class="block text-sm font-medium text-foreground">Session Outcome</label>
                     <p class="mt-1 text-xs text-foreground/60">Select the outcome of this session</p>
-                    <x-ui::select name="outcome" class="mt-1">
+                    <x-ui::select name="outcome" class="mt-1" placeholder="Select outcome">
+                        <option value="">Select outcome</option>
                         @foreach ($sessionOutcomes ?? [] as $outcome)
                             <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
                                 {{ $outcome->label() }}

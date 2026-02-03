@@ -6,8 +6,8 @@
         <x-ui::card class="p-6">
             <h3 class="text-lg font-semibold text-foreground mb-4">Upload Document</h3>
             <form id="session-log-document-upload-form"
-                action="{{ route('therapist.session-logs.documents.store', $sessionLog) }}"
-                method="POST" enctype="multipart/form-data">
+                action="{{ route('therapist.session-logs.documents.store', $sessionLog) }}" method="POST"
+                enctype="multipart/form-data">
                 @csrf
                 <div class="space-y-4">
                     <div>
@@ -15,9 +15,8 @@
                         <p class="mt-1 text-xs text-foreground/60" id="file_help">
                             Upload a document file (PDF, DOC, DOCX, JPG, JPEG, PNG). Maximum file size: 10MB.
                         </p>
-                        <x-ui::file-input id="file" name="file"
-                            class="mt-1"
-                            aria-describedby="file_help" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                        <x-ui::file-input id="file" name="file" class="mt-1" aria-describedby="file_help"
+                            required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         <x-input-error :messages="$errors->get('file')" class="mt-2" />
                     </div>
 
@@ -26,7 +25,7 @@
                         <p class="mt-1 text-xs text-foreground/60" id="document_type_help">
                             Select the type of document you are uploading.
                         </p>
-                        <x-ui::select id="document_type" name="document_type" class="mt-1"
+                        <x-ui::select id="document_type" name="document_type" class="mt-1" placeholder="Select a type"
                             aria-describedby="document_type_help" required>
                             <option value="">Select a type</option>
                             @foreach (\App\Enums\DocumentType::cases() as $type)
@@ -52,10 +51,10 @@
                             class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                             <span id="submit-text">Upload Document</span>
                             <span id="submit-spinner" class="hidden ml-2">
-                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                    viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                     </path>
@@ -99,7 +98,8 @@
                                         Download
                                     </a>
                                     @if ($document->uploaded_by_id === auth()->id())
-                                        <button type="button" class="delete-document-btn text-danger hover:text-danger/80 text-sm font-medium"
+                                        <button type="button"
+                                            class="delete-document-btn text-danger hover:text-danger/80 text-sm font-medium"
                                             data-document-id="{{ $document->id }}"
                                             data-session-log-id="{{ $sessionLog->id }}">
                                             Delete
@@ -110,7 +110,8 @@
                                         class="text-primary hover:text-primary/80 text-sm font-medium">
                                         Download
                                     </a>
-                                    <button type="button" class="delete-document-btn text-danger hover:text-danger/80 text-sm font-medium"
+                                    <button type="button"
+                                        class="delete-document-btn text-danger hover:text-danger/80 text-sm font-medium"
                                         data-document-id="{{ $document->id }}">
                                         Delete
                                     </button>
@@ -121,7 +122,10 @@
                 @endforeach
             @else
                 <div class="text-center py-8">
-                    <p class="text-sm text-foreground/60">No documents yet.@if ($context === 'therapist') Upload a document to get started!@endif</p>
+                    <p class="text-sm text-foreground/60">No documents yet.@if ($context === 'therapist')
+                            Upload a document to get started!
+                        @endif
+                    </p>
                 </div>
             @endif
         </div>

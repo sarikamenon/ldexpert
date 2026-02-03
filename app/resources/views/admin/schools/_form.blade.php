@@ -2,8 +2,7 @@
     $isEdit = isset($school) && $school->exists;
 @endphp
 
-<form method="POST"
-    action="{{ $isEdit ? route('admin.schools.update', $school) : route('admin.schools.store') }}"
+<form method="POST" action="{{ $isEdit ? route('admin.schools.update', $school) : route('admin.schools.store') }}"
     class="space-y-6">
     @csrf
     @if ($isEdit)
@@ -45,7 +44,8 @@
                 <div>
                     <x-input-label for="state" value="State *" />
                     <p class="mt-1 text-xs text-foreground/60">US state where the school is located</p>
-                    <x-ui::select id="state" name="state" class="mt-1">
+                    <x-ui::select id="state" name="state" class="mt-1" placeholder="Select State">
+                        <option value="">Select State</option>
                         @foreach ($states as $code => $label)
                             <option value="{{ $code }}" @selected(old('state', $school?->state_code ?? '') === $code)>
                                 {{ $label }}
@@ -58,7 +58,8 @@
                 <div>
                     <x-input-label for="timezone" value="Time Zone *" />
                     <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
-                    <x-ui::select id="timezone" name="timezone" class="mt-1">
+                    <x-ui::select id="timezone" name="timezone" class="mt-1" placeholder="Select Time Zone">
+                        <option value="">Select Time Zone</option>
                         @foreach ($timezones as $tz => $label)
                             <option value="{{ $tz }}" @selected(old('timezone', $school->timezone ?? '') === $tz)>
                                 {{ $label }}
@@ -71,7 +72,7 @@
                 <div>
                     <x-input-label for="manager_id" value="Manager *" />
                     <p class="mt-1 text-xs text-foreground/60">Assigned manager for this school</p>
-                    <x-ui::select id="manager_id" name="manager_id" class="mt-1">
+                    <x-ui::select id="manager_id" name="manager_id" class="mt-1" placeholder="Select Manager">
                         <option value="">Select Manager</option>
                         @foreach ($managers as $manager)
                             <option value="{{ $manager->id }}" @selected(old('manager_id', $school->manager_id ?? '') == $manager->id)>
@@ -113,8 +114,7 @@
                     <x-input-label for="contact_phone" value="Phone Number" />
                     <p class="mt-1 text-xs text-foreground/60">Contact phone number (format: 123-456-7890)</p>
                     <x-ui::input id="contact_phone" name="contact_phone" type="text" class="mt-1 block w-full"
-                        placeholder="123-456-7890" :value="old('contact_phone', $school->contact_phone ?? '')"
-                        data-phone-input />
+                        placeholder="123-456-7890" :value="old('contact_phone', $school->contact_phone ?? '')" data-phone-input />
                     <x-input-error :messages="$errors->get('contact_phone')" class="mt-2" />
                 </div>
 
@@ -145,7 +145,9 @@
                 <div>
                     <x-input-label for="school_type" value="School Type *" />
                     <p class="mt-1 text-xs text-foreground/60">Type of educational institution</p>
-                    <x-ui::select id="school_type" name="school_type" class="mt-1">
+                    <x-ui::select id="school_type" name="school_type" class="mt-1"
+                        placeholder="Select school type">
+                        <option value="">Select school type</option>
                         @foreach ($schoolTypes as $type)
                             <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? '') === $type)>
                                 {{ $type }}
@@ -177,8 +179,8 @@
                         be included in billing calculations.</p>
                     <div class="flex items-center gap-2">
                         <input type="hidden" name="non_billable_scheduling" value="0">
-                        <input id="non_billable_scheduling" name="non_billable_scheduling" type="checkbox" value="1"
-                            class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        <input id="non_billable_scheduling" name="non_billable_scheduling" type="checkbox"
+                            value="1" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                             @checked(old('non_billable_scheduling', $school->non_billable_scheduling ?? false))>
                         <label for="non_billable_scheduling"
                             class="text-sm font-medium text-foreground/80 cursor-pointer">
@@ -192,8 +194,8 @@
             <div>
                 <x-input-label for="external_emr_name" value="External EMR School Name" />
                 <p class="mt-1 text-xs text-foreground/60">Name used in external EMR system (if applicable)</p>
-                <x-ui::input id="external_emr_name" name="external_emr_name" type="text" class="mt-1 block w-full"
-                    :value="old('external_emr_name', $school->external_emr_name ?? '')" />
+                <x-ui::input id="external_emr_name" name="external_emr_name" type="text"
+                    class="mt-1 block w-full" :value="old('external_emr_name', $school->external_emr_name ?? '')" />
                 <x-input-error :messages="$errors->get('external_emr_name')" class="mt-2" />
             </div>
         </div>

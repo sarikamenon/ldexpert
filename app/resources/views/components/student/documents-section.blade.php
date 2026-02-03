@@ -2,18 +2,15 @@
 
 <div class="space-y-6">
     @php
-        $showUpload = $errors->any()
-            || old('document_type')
-            || old('description');
+        $showUpload = $errors->any() || old('document_type') || old('description');
     @endphp
 
     {{-- Upload Form --}}
     @if ($context === 'admin')
         <x-ui::card id="document-upload-card" class="p-6 {{ $showUpload ? '' : 'hidden' }}">
             <h3 class="text-lg font-semibold text-foreground mb-4">Upload Document</h3>
-            <form id="document-upload-form"
-                action="{{ route('admin.student-documents.store', $student) }}"
-                method="POST" enctype="multipart/form-data">
+            <form id="document-upload-form" action="{{ route('admin.student-documents.store', $student) }}" method="POST"
+                enctype="multipart/form-data">
                 @csrf
                 <div class="space-y-4">
                     <div>
@@ -21,9 +18,8 @@
                         <p class="mt-1 text-xs text-foreground/60" id="file_help">
                             Upload a document file (PDF, DOC, DOCX, JPG, JPEG, PNG). Maximum file size: 10MB.
                         </p>
-                        <x-ui::file-input id="file" name="file"
-                            class="mt-1"
-                            aria-describedby="file_help" required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                        <x-ui::file-input id="file" name="file" class="mt-1" aria-describedby="file_help"
+                            required accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
                         <x-input-error :messages="$errors->get('file')" class="mt-2" />
                     </div>
 
@@ -32,7 +28,7 @@
                         <p class="mt-1 text-xs text-foreground/60" id="document_type_help">
                             Select the type of document you are uploading.
                         </p>
-                        <x-ui::select id="document_type" name="document_type" class="mt-1"
+                        <x-ui::select id="document_type" name="document_type" class="mt-1" placeholder="Select a type"
                             aria-describedby="document_type_help" required>
                             <option value="">Select a type</option>
                             @foreach (\App\Enums\DocumentType::cases() as $type)
@@ -58,10 +54,10 @@
                             class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                             <span id="submit-text">Upload Document</span>
                             <span id="submit-spinner" class="hidden ml-2">
-                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                    viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                     </path>
@@ -139,28 +135,29 @@
                                         @if ($context === 'admin')
                                             <a href="{{ route('admin.student-documents.download', $document) }}"
                                                 class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                title="Download"
-                                                aria-label="Download {{ $document->file_name }}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
+                                                title="Download" aria-label="Download {{ $document->file_name }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path
+                                                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
                                                     </path>
                                                 </svg>
                                             </a>
                                             <button type="button"
                                                 class="delete-document-btn inline-flex items-center justify-center w-8 h-8 bg-danger text-danger-foreground rounded hover:bg-danger/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                data-document-id="{{ $document->id }}"
-                                                title="Delete"
+                                                data-document-id="{{ $document->id }}" title="Delete"
                                                 aria-label="Delete {{ $document->file_name }}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <polyline points="3 6 5 6 21 6"></polyline>
                                                     <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                                                    <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                    <line x1="10" y1="11" x2="10"
+                                                        y2="17"></line>
+                                                    <line x1="14" y1="11" x2="14"
+                                                        y2="17"></line>
                                                 </svg>
                                             </button>
                                         @else
@@ -171,7 +168,8 @@
                                                     aria-label="Download {{ $document->file_name }}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        stroke-width="2" stroke-linecap="round"
+                                                        stroke-linejoin="round">
                                                         <path
                                                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
                                                         </path>
@@ -189,14 +187,14 @@
                                                             stroke-width="2" stroke-linecap="round"
                                                             stroke-linejoin="round">
                                                             <polyline points="3 6 5 6 21 6"></polyline>
-                                                            <path
-                                                                d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
                                                             </path>
-                                                            <path
-                                                                d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6">
+                                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6">
                                                             </path>
-                                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                                            <line x1="10" y1="11" x2="10"
+                                                                y2="17"></line>
+                                                            <line x1="14" y1="11" x2="14"
+                                                                y2="17"></line>
                                                         </svg>
                                                     </button>
                                                 @endif
@@ -207,7 +205,8 @@
                                                     aria-label="Download {{ $document->file_name }}">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                         viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        stroke-width="2" stroke-linecap="round"
+                                                        stroke-linejoin="round">
                                                         <path
                                                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
                                                         </path>

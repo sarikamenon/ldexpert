@@ -96,7 +96,7 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('update', $schoolContract);
 
-        $dto = UpdateSchoolContractDTO::fromArray($request->validated());
+        $dto = UpdateSchoolContractDTO::fromArray($request->validated(), $schoolContract->status);
 
         try {
             $this->service->update($schoolContract, $dto);
