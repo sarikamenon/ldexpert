@@ -79,13 +79,14 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Session Date</label>
+                <x-input-label for="session-log-date" value="Session Date *" />
                 <p class="mt-1 text-xs text-foreground/60">Date when the session occurred</p>
-                <x-ui::input type="date" name="session_date" id="session-log-date"
+                <input type="hidden" name="session_date"
+                    value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}" />
+                <x-ui::input type="date" id="session-log-date" class="mt-1 block w-full bg-gray-100"
                     value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
-                    @if (isset($selectedSsa) && $selectedSsa?->start_date) min="{{ $selectedSsa->start_date->format('Y-m-d') }}" @endif
-                    @if (isset($selectedSsa) && $selectedSsa?->end_date) max="{{ $selectedSsa->end_date->format('Y-m-d') }}" @endif
-                    class="mt-1" required />
+                    readonly :disabled="true" />
+                <x-input-error :messages="$errors->get('session_date')" class="mt-2" />
             </div>
         </div>
 
@@ -101,15 +102,19 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
-                <p class="mt-1 text-xs text-foreground/60">Session duration in minutes (minimum 5, increments of 5)</p>
+                <p class="mt-1 text-xs text-foreground/60" id="session-log-duration-help">
+                    Session duration in minutes (min {{ config('session_minutes.min') }}, max
+                    {{ config('session_minutes.max') }}).
+                </p>
                 <x-ui::input type="number" name="duration_minutes" id="session-log-duration"
                     value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
-                    min="5" step="5" class="mt-1" required />
+                    min="{{ config('session_minutes.min') }}" max="{{ config('session_minutes.max') }}" step="1"
+                    class="mt-1" aria-describedby="session-log-duration-help" required />
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">End Time</label>
-                <p class="mt-1 text-xs text-foreground/60">Automatically calculated based on start time and duration</p>
+                <p class="mt-1 text-xs text-foreground/60">Calculated based on start time and duration</p>
                 <x-ui::input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
                     value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
                     class="mt-1 bg-gray-100" required />
@@ -164,7 +169,8 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <x-ui::loading-button variant="primary" x-data="{ loading: false }" x-on:click="loading = true">
+        <x-ui::loading-button variant="primary" loadingText="{{ $isEdit ? 'Updating...' : 'Creating...' }}"
+            x-on:click="$nextTick(() => loading = true)">
             {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
         </x-ui::loading-button>
     </div>

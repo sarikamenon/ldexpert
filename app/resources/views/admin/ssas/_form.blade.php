@@ -122,17 +122,15 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="frequency-fields">
             <div>
                 <x-input-label for="minutes_per_session" value="Minutes per Session *" />
-                <p id="minutes_per_session_help" class="mt-1 text-xs text-foreground/60">Select in 5-minute increments
+                <p id="minutes_per_session_help" class="mt-1 text-xs text-foreground/60">
+                    Enter the minutes for each session (minimum {{ config('session_minutes.min') }}, maximum
+                    {{ config('session_minutes.max') }}).
                 </p>
-                <x-ui::select id="minutes_per_session" name="minutes_per_session" class="mt-1"
-                    placeholder="Select minutes" aria-describedby="minutes_per_session_help" required>
-                    <option value="">Select minutes</option>
-                    @for ($i = 5; $i <= 180; $i += 5)
-                        <option value="{{ $i }}" @selected(old('minutes_per_session', $ssa->minutes_per_session ?? '') == $i)>
-                            {{ $i }} minutes
-                        </option>
-                    @endfor
-                </x-ui::select>
+                <x-ui::input id="minutes_per_session" name="minutes_per_session" type="number"
+                    class="mt-1 block w-full" min="{{ config('session_minutes.min') }}"
+                    max="{{ config('session_minutes.max') }}" step="1"
+                    aria-describedby="minutes_per_session_help"
+                    value="{{ old('minutes_per_session', $ssa->minutes_per_session ?? '') }}" required />
                 <x-input-error :messages="$errors->get('minutes_per_session')" class="mt-2" />
             </div>
 

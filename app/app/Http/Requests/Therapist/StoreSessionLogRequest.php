@@ -47,7 +47,7 @@ final class StoreSessionLogRequest extends FormRequest
 
         // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
         if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
-            $start = Carbon::parse($sessionDate.' '.$startTimeInput.':00');
+            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
             $end = (clone $start)->addMinutes((int) $durationInput);
 
             $this->merge([
@@ -66,7 +66,7 @@ final class StoreSessionLogRequest extends FormRequest
         if ($start && $end) {
             $startTime = Carbon::parse($start);
             $endTime = Carbon::parse($end);
-            $durationMinutes = (int) round($startTime->diffInMinutes($endTime) / 5) * 5;
+            $durationMinutes = $startTime->diffInMinutes($endTime);
 
             $this->merge([
                 'duration_minutes' => $durationMinutes,
@@ -90,7 +90,12 @@ final class StoreSessionLogRequest extends FormRequest
             'session_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:Y-m-d H:i:s'],
             'end_time' => ['required', 'date_format:Y-m-d H:i:s', 'after:start_time'],
-            'duration_minutes' => ['required', 'integer', 'min:1'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'outcome' => ['string', Rule::in(SessionOutcome::values())],
             'notes' => ['required', 'string', 'min:50', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],

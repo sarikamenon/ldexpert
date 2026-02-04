@@ -208,7 +208,7 @@ final class SessionLogService
                 if (isset($data['start_time']) && isset($data['end_time'])) {
                     $start = \Carbon\Carbon::parse($data['start_time']);
                     $end = \Carbon\Carbon::parse($data['end_time']);
-                    $data['duration_minutes'] = (int) round($start->diffInMinutes($end) / 5) * 5;
+                    $data['duration_minutes'] = $start->diffInMinutes($end);
                 } elseif (isset($data['duration_minutes'])) {
                     // Use provided duration
                 } else {

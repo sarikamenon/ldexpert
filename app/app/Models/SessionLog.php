@@ -75,7 +75,7 @@ class SessionLog extends Model
             'school_rate_amount' => 'decimal:2',
             'school_invoice_amount' => 'decimal:2',
             'is_rate_override' => 'boolean',
-            'status' => SessionLogStatus::class,
+            // Status is handled via custom accessor/mutator; do not also use enum cast
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
             'created_at' => 'datetime',

@@ -28,7 +28,7 @@ abstract class SSAFormRequest extends FormRequest
 
     protected function baseRules(): array
     {
-        $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
+        $frequencies = array_map(static fn(ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
 
         return [
             'student_id' => ['required', 'integer', Rule::exists('users', 'id')->where(function ($query) {
@@ -45,7 +45,12 @@ abstract class SSAFormRequest extends FormRequest
             ],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
-            'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
+            'minutes_per_session' => [
+                'required',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'frequency' => ['nullable', Rule::in($frequencies)],
             'sessions_per_frequency' => ['nullable', 'integer', 'min:1', 'max:100'],
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],

@@ -27,12 +27,12 @@ final class UpdateScheduleRequest extends FormRequest
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn (RecurrenceType $type): string => $type->value,
+            static fn(RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
         $billingStatuses = array_map(
-            static fn (BillingStatus $status): string => $status->value,
+            static fn(BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 
@@ -45,7 +45,12 @@ final class UpdateScheduleRequest extends FormRequest
             })],
             'schedule_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
-            'duration_minutes' => ['required', 'integer', 'between:5,400', 'multiple_of:5'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
             'location_details' => ['nullable', 'string', 'max:1000'],
@@ -58,8 +63,8 @@ final class UpdateScheduleRequest extends FormRequest
     {
         return [
             'duration_minutes.required' => 'Duration is required.',
-            'duration_minutes.between' => 'Duration must be between :min and :max minutes.',
-            'duration_minutes.multiple_of' => 'Duration must be in 5-minute increments.',
+            'duration_minutes.min' => 'Duration must be at least :min minutes.',
+            'duration_minutes.max' => 'Duration may not be greater than :max minutes.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
         ];

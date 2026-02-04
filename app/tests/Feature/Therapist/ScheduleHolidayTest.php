@@ -61,8 +61,9 @@ final class ScheduleHolidayTest extends TestCase
             'student_ids' => [$studentUser->id],
             'schedule_date' => $holidayDate,
             'start_time' => '10:00',
-            'end_time' => '11:00',
-            'duration_minutes' => 60,
+            // Use a non-5-multiple duration to ensure free-form durations are allowed
+            'end_time' => '10:37',
+            'duration_minutes' => 37,
             'recurrence_type' => 'none',
             'notes' => 'Test session',
             'location_details' => 'Office A',

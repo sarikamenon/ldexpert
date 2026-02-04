@@ -250,19 +250,30 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
 
         function buildMonthWeeks(year, month) {
             const firstOfMonth = new Date(year, month, 1);
+            const lastOfMonth = new Date(year, month + 1, 0);
+
+            // Start on the Sunday of the week that contains the first of the month
             const startDate = new Date(firstOfMonth);
             startDate.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
 
+            // End on the Saturday of the week that contains the last of the month
+            const endDate = new Date(lastOfMonth);
+            endDate.setDate(lastOfMonth.getDate() + (6 - lastOfMonth.getDay()));
+
             const weeks = [];
-            for (let week = 0; week < 6; week += 1) {
+            let current = new Date(startDate);
+
+            // Build weeks until we've covered through the endDate.
+            // This will naturally produce 4, 5, or 6 weeks depending on the month layout.
+            while (current <= endDate) {
                 const weekDates = [];
                 for (let day = 0; day < 7; day += 1) {
-                    const date = new Date(startDate);
-                    date.setDate(startDate.getDate() + (week * 7) + day);
-                    weekDates.push(date);
+                    weekDates.push(new Date(current));
+                    current.setDate(current.getDate() + 1);
                 }
                 weeks.push(weekDates);
             }
+
             return weeks;
         }
 

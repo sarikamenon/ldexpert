@@ -26,7 +26,7 @@ final class UpdateSSARequest extends FormRequest
 
     public function rules(): array
     {
-        $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
+        $frequencies = array_map(static fn(ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
 
         return [
             'additional_service_ids' => ['nullable', 'array'],
@@ -39,7 +39,12 @@ final class UpdateSSARequest extends FormRequest
             ],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after:start_date'],
-            'minutes_per_session' => ['nullable', 'integer', 'min:5', 'max:1440'],
+            'minutes_per_session' => [
+                'nullable',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'frequency' => ['nullable', Rule::in($frequencies)],
             'sessions_per_frequency' => ['nullable', 'integer', 'min:1', 'max:100'],
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],

@@ -71,7 +71,8 @@ final class SessionLogCreateTest extends TestCase
 
         $sessionDate = now()->format('Y-m-d');
         $startTime = now()->setTime(10, 0, 0);
-        $endTime = $startTime->copy()->addHour();
+        // Use a non-5-multiple duration (37 minutes) to ensure we no longer round to 5-minute increments
+        $endTime = $startTime->copy()->addMinutes(37);
 
         $response = $this->actingAs($therapist)
             ->post(route('therapist.session-logs.store'), [
@@ -97,6 +98,15 @@ final class SessionLogCreateTest extends TestCase
             'schedule_id' => $schedule->id,
             'status' => SessionLogStatus::DRAFT->value,
         ]);
+
+        /** @var SessionLog $log */
+        $log = SessionLog::where('therapist_id', $therapist->id)
+            ->where('student_id', $student->id)
+            ->where('ssa_id', $ssa->id)
+            ->where('schedule_id', $schedule->id)
+            ->firstOrFail();
+
+        expect($log->duration_minutes)->toBe(37);
     }
 
     public function test_therapist_can_create_standalone_session_log(): void

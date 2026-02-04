@@ -144,22 +144,16 @@
                 </div>
                 <div>
                     <x-input-label for="duration_minutes" value="Duration (minutes) *" />
-                    <select id="duration_minutes" name="duration_minutes" data-select-box class="mt-1 block w-full"
-                        required>
-                        <option value="">Select duration</option>
-                        @foreach (range(5, 400, 5) as $minutesOption)
-                            <option value="{{ $minutesOption }}" @selected(old('duration_minutes', $isEdit ? $schedule->durationMinutes() : $currentSsa?->minutes_per_session ?? 60) == $minutesOption)>
-                                {{ $minutesOption }} minutes
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-foreground/60 mt-1">
-                        @if ($currentSsa)
-                            This is the default duration from the SSA. You can change it as needed.
-                        @else
-                            Select the duration for this schedule.
-                        @endif
-                    </p>
+                    <x-ui::input id="duration_minutes" name="duration_minutes" type="number" class="mt-1 block w-full"
+                        min="{{ config('session_minutes.min') }}" max="{{ config('session_minutes.max') }}"
+                        step="1"
+                        value="{{ old('duration_minutes', $isEdit ? $schedule->durationMinutes() : $currentSsa?->minutes_per_session ?? 60) }}"
+                        required />
+                    @if ($currentSsa)
+                        <p class="text-xs text-foreground/60 mt-1">
+                            This defaults from the SSA but can be adjusted for this schedule.
+                        </p>
+                    @endif
                     <x-input-error :messages="$errors->get('duration_minutes')" class="mt-2" />
                 </div>
             </div>
