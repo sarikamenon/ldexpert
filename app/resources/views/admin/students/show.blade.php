@@ -141,6 +141,9 @@
                         @else
                             <p class="text-lg font-semibold text-foreground/50">Not provided</p>
                         @endif
+                        @if ($student->studentProfile?->schedule_email)
+                            <p class="text-sm text-foreground/60 mt-1">Schedule email: {{ $student->studentProfile->schedule_email }}</p>
+                        @endif
                     </div>
                 </div>
             </x-ui::card>
