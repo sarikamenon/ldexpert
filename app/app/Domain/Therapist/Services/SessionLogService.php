@@ -362,7 +362,7 @@ final class SessionLogService
      */
     private function applyOutcomeBillingFlags(array &$data): void
     {
-        $outcomeValue = $data['outcome'] ?? SessionOutcome::SERVICE_DELIVERED->value;
+        $outcomeValue = $data['outcome'] ?? SessionOutcome::SERVICES_ADMINISTERED->value;
 
         $outcome = SessionOutcome::from($outcomeValue);
 

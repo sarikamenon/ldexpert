@@ -57,7 +57,7 @@ final class CreateSessionLogDTO
             ? (int) $data['tho_minutes']
             : 0;
 
-        $outcome = $data['outcome'] ?? SessionOutcome::SERVICE_DELIVERED->value;
+        $outcome = $data['outcome'] ?? SessionOutcome::SERVICES_ADMINISTERED->value;
 
         return new self(
             therapistId: (int) $data['therapist_id'],

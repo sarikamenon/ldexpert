@@ -6,18 +6,20 @@ namespace App\Enums;
 
 enum SessionOutcome: string
 {
-    case SERVICE_DELIVERED = 'service_delivered';
-    case NO_SHOW_STUDENT = 'no_show_student';
-    case NO_SHOW_THERAPIST = 'no_show_therapist';
-    case TECHNICAL_ISSUE = 'technical_issue';
+    case SERVICES_ADMINISTERED = 'services_administered';
+    case NO_SHOW = 'no_show';
+    case BILLABLE_CANCELLATION = 'billable_cancellation';
+    case NON_BILLABLE_CANCELLATION_CLIENT = 'non_billable_cancellation_client';
+    case NON_BILLABLE_CANCELLATION_PROVIDER = 'non_billable_cancellation_provider';
 
     public function label(): string
     {
         return match ($this) {
-            self::SERVICE_DELIVERED => 'Service delivered',
-            self::NO_SHOW_STUDENT => 'No show student',
-            self::NO_SHOW_THERAPIST => 'No show therapist',
-            self::TECHNICAL_ISSUE => 'Technical issue',
+            self::SERVICES_ADMINISTERED => 'Services Administered',
+            self::NO_SHOW => 'No Show',
+            self::BILLABLE_CANCELLATION => 'Billable Cancellation',
+            self::NON_BILLABLE_CANCELLATION_CLIENT => 'Non-Billable Cancellation - Client',
+            self::NON_BILLABLE_CANCELLATION_PROVIDER => 'Non-Billable Cancellation - Provider',
         };
     }
 
@@ -27,38 +29,55 @@ enum SessionOutcome: string
     public static function values(): array
     {
         return array_map(
-            static fn (self $outcome): string => $outcome->value,
+            static fn(self $outcome): string => $outcome->value,
             self::cases()
         );
     }
 
+    /** Billable: pay therapist their rate. */
     public function isBillableForTherapist(): bool
     {
         return match ($this) {
-            self::SERVICE_DELIVERED => true,
-            self::NO_SHOW_STUDENT => true,
-            self::NO_SHOW_THERAPIST => true,
-            self::TECHNICAL_ISSUE => true,
+            self::SERVICES_ADMINISTERED,
+            self::NO_SHOW,
+            self::BILLABLE_CANCELLATION => true,
+            self::NON_BILLABLE_CANCELLATION_CLIENT,
+            self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }
 
     public function isBillableForSchool(): bool
     {
         return match ($this) {
-            self::SERVICE_DELIVERED => true,
-            self::NO_SHOW_STUDENT => true,
-            self::NO_SHOW_THERAPIST => false,
-            self::TECHNICAL_ISSUE => false,
+            self::SERVICES_ADMINISTERED,
+            self::NO_SHOW,
+            self::BILLABLE_CANCELLATION => true,
+            self::NON_BILLABLE_CANCELLATION_CLIENT,
+            self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }
 
+    /** Whether this outcome counts toward THO. All five outcomes count. */
     public function shouldIncludeInTho(): bool
     {
+        return true;
+    }
+
+    /** Pay therapist their regular rate (used when applying contract logic). */
+    public function paysTherapistRate(): bool
+    {
+        return $this === self::SERVICES_ADMINISTERED;
+    }
+
+    /** Pay no-show rate (used when applying contract logic; no-show rate comes from contract). */
+    public function paysNoShowRate(): bool
+    {
         return match ($this) {
-            self::SERVICE_DELIVERED => true,
-            self::NO_SHOW_STUDENT => true,
-            self::NO_SHOW_THERAPIST => false,
-            self::TECHNICAL_ISSUE => false,
+            self::NO_SHOW,
+            self::BILLABLE_CANCELLATION => true,
+            self::SERVICES_ADMINISTERED,
+            self::NON_BILLABLE_CANCELLATION_CLIENT,
+            self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }
 }

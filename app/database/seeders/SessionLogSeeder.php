@@ -78,13 +78,13 @@ final class SessionLogSeeder extends Seeder
             // Get THO minutes from SSA
             $thoMinutes = $schedule->ssa->minutes_per_session ?? $durationMinutes;
 
-            // Determine outcome (mostly service_delivered, occasionally others)
-            $outcome = SessionOutcome::SERVICE_DELIVERED;
+            // Determine outcome (mostly services_administered, occasionally others)
+            $outcome = SessionOutcome::SERVICES_ADMINISTERED;
             $outcomeRand = rand(1, 100);
             if ($outcomeRand <= 5) {
-                $outcome = SessionOutcome::NO_SHOW_STUDENT;
+                $outcome = SessionOutcome::NO_SHOW;
             } elseif ($outcomeRand <= 8) {
-                $outcome = SessionOutcome::TECHNICAL_ISSUE;
+                $outcome = SessionOutcome::NON_BILLABLE_CANCELLATION_PROVIDER;
             }
 
             // Calculate billing amounts
