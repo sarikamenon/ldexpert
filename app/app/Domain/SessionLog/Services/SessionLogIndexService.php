@@ -233,15 +233,15 @@ final class SessionLogIndexService
      */
     private function therapistActions(SessionLog $log): array
     {
-        $actions = [];
-
-        $actions[] = [
-            'type' => 'link',
-            'label' => 'View',
-            'icon' => 'eye',
-            'method' => 'get',
-            'url' => route('therapist.session-logs.show', $log),
-            'variant' => 'secondary',
+        $actions = [
+            [
+                'type' => 'link',
+                'label' => 'View',
+                'icon' => 'eye',
+                'method' => 'get',
+                'url' => route('therapist.session-logs.show', $log),
+                'variant' => 'secondary',
+            ],
         ];
 
         if ($log->status?->canEdit()) {
@@ -269,22 +269,6 @@ final class SessionLogIndexService
             ];
         }
 
-        if ($log->status?->canCancel()) {
-            $actions[] = [
-                'type' => 'form',
-                'label' => 'Cancel',
-                'method' => 'post',
-                'url' => route('therapist.session-logs.cancel', $log),
-                'icon' => 'x',
-                'variant' => 'primary-outline',
-                'confirm' => [
-                    'title' => 'Cancel session?',
-                    'text' => 'This will cancel the session log.',
-                    'icon' => 'warning',
-                ],
-            ];
-        }
-
         return $actions;
     }
 
@@ -300,7 +284,7 @@ final class SessionLogIndexService
 
         $value = (float) $amount;
 
-        return '$'.number_format($value, 2);
+        return '$' . number_format($value, 2);
     }
 
     private function getStatusLabel(SessionLog $log): string
