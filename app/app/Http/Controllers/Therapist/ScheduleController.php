@@ -14,6 +14,7 @@ use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Http\Controllers\Controller;
+use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
 use App\Http\Requests\Therapist\StoreScheduleRequest;
@@ -350,7 +351,13 @@ final class ScheduleController extends Controller
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
-        $this->scheduleService->deleteSchedule($therapist, $id);
+        try {
+            $this->scheduleService->deleteSchedule($therapist, $id);
+        } catch (CannotDeleteBilledScheduleException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,

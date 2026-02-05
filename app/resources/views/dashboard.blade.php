@@ -1,4 +1,7 @@
 <x-app-layout>
+    {{-- Schedule Details Modal (for view icon on Today's Schedule cards) --}}
+    <x-schedule.schedule-details-modal />
+
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
             <!-- Metrics -->
@@ -104,4 +107,8 @@
             </div>
         </div>
     </div>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/therapist-schedule-calendar.js'])
+    </x-slot>
 </x-app-layout>

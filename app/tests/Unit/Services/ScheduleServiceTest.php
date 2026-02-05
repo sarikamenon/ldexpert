@@ -12,6 +12,7 @@ use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
+use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -28,8 +29,11 @@ final class ScheduleServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    private MockInterface $repository;
-    private MockInterface $timezoneService;
+    /** @var ScheduleRepositoryInterface&MockInterface */
+    private $repository;
+
+    /** @var UserTimezoneService&MockInterface */
+    private $timezoneService;
 
     protected function setUp(): void
     {
@@ -383,6 +387,30 @@ final class ScheduleServiceTest extends TestCase
         $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
 
         $serviceLayer->deleteSchedule($therapist, $parent->id);
+    }
+
+    public function test_delete_schedule_throws_when_billed(): void
+    {
+        $therapist = User::factory()->create();
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::NONE,
+            'billing_status' => BillingStatus::BILLED,
+        ]);
+
+        $this->repository->shouldReceive('findForTherapist')
+            ->once()
+            ->with($therapist, $schedule->id)
+            ->andReturn($schedule);
+
+        $this->repository->shouldNotReceive('delete');
+
+        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+
+        $this->expectException(CannotDeleteBilledScheduleException::class);
+        $this->expectExceptionMessage('Cannot delete a schedule that has already been billed.');
+
+        $serviceLayer->deleteSchedule($therapist, $schedule->id);
     }
 
     public function test_create_schedule_throws_exception_on_therapist_overlap(): void

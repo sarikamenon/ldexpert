@@ -14,6 +14,7 @@ use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Events\ScheduleCreated;
 use App\Events\ScheduleUpdated;
+use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -318,6 +319,10 @@ final class ScheduleService
 
             if (! $schedule) {
                 return;
+            }
+
+            if ($schedule->billing_status === BillingStatus::BILLED) {
+                throw new CannotDeleteBilledScheduleException();
             }
 
             // If this is the parent of a recurring series, delete all in the batch
