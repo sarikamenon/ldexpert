@@ -1,4 +1,5 @@
 import { initSelectBoxes } from '../common/select-box';
+import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
 
 (function ($) {
     'use strict';
@@ -131,6 +132,52 @@ import { initSelectBoxes } from '../common/select-box';
             const scheduleId = $(this).data('schedule-id');
             if (scheduleId) {
                 window.location.href = `/therapist/schedule/${scheduleId}/edit`;
+            }
+        });
+
+        // Handle delete schedule button (calendar list + server-rendered list)
+        $(document).on('click', '.schedule-delete-btn', async function () {
+            const $btn = $(this);
+            const scheduleId = $btn.data('schedule-id');
+            if (!scheduleId) {
+                return;
+            }
+
+            const result = await confirmDialog({
+                title: 'Delete Schedule?',
+                text: 'This will remove the schedule from your calendar. This action cannot be undone.',
+                icon: 'warning',
+                confirmButtonText: 'Yes, delete it',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+            });
+
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            showLoading('Deleting schedule...');
+
+            try {
+                const response = await fetch(`/therapist/schedule/${scheduleId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                });
+
+                closeAlert();
+
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({ message: 'Failed to delete schedule' }));
+                    throw new Error(error.message || 'Failed to delete schedule');
+                }
+
+                $btn.closest('.border.border-border.rounded-lg').remove();
+                successToast('Schedule deleted successfully.');
+            } catch (error) {
+                errorAlert(error.message || 'An error occurred while deleting the schedule');
             }
         });
 
@@ -616,6 +663,13 @@ import { initSelectBoxes } from '../common/select-box';
                                             </button>
                                         `
                                 ) : ''}
+                                ${!isBilled ? `
+                                    <button type="button" class="schedule-delete-btn p-2 border border-border rounded-lg hover:bg-destructive/10 hover:border-destructive/30 transition-colors text-destructive" data-schedule-id="${schedule.id}" title="Delete Schedule">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                ` : ''}
 
                                 ${isPast && isPendingBilling ? `
                                     <button type="button" class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" data-schedule-id="${schedule.id}" title="Bill Your Session">
