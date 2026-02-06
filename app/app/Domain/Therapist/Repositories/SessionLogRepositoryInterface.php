@@ -37,7 +37,7 @@ interface SessionLogRepositoryInterface
 
     public function getSessionLogsForSchedule(int $scheduleId): Collection;
 
-    public function getSessionLogsByScheduleIds(array $scheduleIds): Collection;
+    public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection;
 
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 }

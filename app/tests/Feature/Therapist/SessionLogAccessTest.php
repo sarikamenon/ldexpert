@@ -92,4 +92,16 @@ final class SessionLogAccessTest extends TestCase
             // Ensure trimmed notes are displayed without leading spaces
             ->assertSeeText(str_repeat('B', 60));
     }
+
+    public function test_therapist_cannot_view_other_therapist_session_log(): void
+    {
+        /** @var SessionLog $sessionLog */
+        $sessionLog = SessionLog::factory()->draft()->create();
+
+        $otherTherapist = User::factory()->therapist()->create();
+
+        $this->actingAs($otherTherapist)
+            ->get(route('therapist.session-logs.show', $sessionLog))
+            ->assertNotFound();
+    }
 }

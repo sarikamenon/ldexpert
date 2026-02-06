@@ -213,12 +213,16 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
-    public function getSessionLogsByScheduleIds(array $scheduleIds): Collection
+    public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection
     {
-        return SessionLog::query()
-            ->whereIn('schedule_id', $scheduleIds)
-            ->get()
-            ->groupBy('schedule_id');
+        $query = SessionLog::query()
+            ->whereIn('schedule_id', $scheduleIds);
+
+        if ($therapist !== null) {
+            $query->where('therapist_id', $therapist->id);
+        }
+
+        return $query->get()->groupBy('schedule_id');
     }
 
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator

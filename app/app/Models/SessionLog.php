@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Role;
 use App\Enums\RateType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
@@ -219,5 +220,34 @@ class SessionLog extends Model
         $minutes = (int) $start->diffInMinutes($end);
 
         return (int) round($minutes / 5) * 5;
+    }
+
+    /**
+     * Scope route model binding so therapists can only resolve their own
+     * session logs on therapist routes. Admin routes continue to resolve
+     * by ID only.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $query = $this->newQuery();
+        $field ??= $this->getRouteKeyName();
+
+        $route = request()?->route();
+        $routeName = $route?->getName();
+        $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
+
+        /** @var \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard $auth */
+        $auth = auth();
+        $user = $auth->user();
+
+        if ($isTherapistRoute && $user instanceof User) {
+            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
+
+            if ($role === Role::THERAPIST) {
+                $query->where('therapist_id', $user->id);
+            }
+        }
+
+        return $query->where($field, $value)->firstOrFail();
     }
 }
