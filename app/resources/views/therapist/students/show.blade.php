@@ -8,9 +8,14 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
+            @if (session('success'))
+                <x-ui::alert variant="success" class="mb-6">
+                    {{ session('success') }}
+                </x-ui::alert>
+            @endif
+
             {{-- Header Card --}}
-            <x-ui::show-header :title="$student->name" :subtitle="'Student ID #' . $student->id"
-                :back-url="route('therapist.students.index')" back-label="Back to list">
+            <x-ui::show-header :title="$student->name" :subtitle="'Student ID #' . $student->id" :back-url="route('therapist.students.index')" back-label="Back to list">
                 <x-slot name="badge">
                     <x-ui::badge :variant="$student->status?->value === 'active' ? 'success' : 'danger'">
                         {{ ucfirst($student->status?->value ?? 'inactive') }}
@@ -21,12 +26,36 @@
             {{-- Tabs Navigation --}}
             @php
                 $tabs = [
-                    ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'dashboard'])],
-                    ['key' => 'overview', 'label' => 'Overview', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'overview'])],
-                    ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'ssas'])],
-                    ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs'])],
-                    ['key' => 'comments', 'label' => 'Comments', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'comments'])],
-                    ['key' => 'documents', 'label' => 'Documents', 'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'documents'])],
+                    [
+                        'key' => 'dashboard',
+                        'label' => 'Dashboard',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'dashboard']),
+                    ],
+                    [
+                        'key' => 'overview',
+                        'label' => 'Overview',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'overview']),
+                    ],
+                    [
+                        'key' => 'ssas',
+                        'label' => 'SSAs',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'ssas']),
+                    ],
+                    [
+                        'key' => 'session_logs',
+                        'label' => 'Session Logs',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']),
+                    ],
+                    [
+                        'key' => 'comments',
+                        'label' => 'Comments',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'comments']),
+                    ],
+                    [
+                        'key' => 'documents',
+                        'label' => 'Documents',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'documents']),
+                    ],
                 ];
             @endphp
             <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -36,9 +65,21 @@
                 @php
                     $metricItems = [
                         ['label' => 'Total SSAs', 'value' => $metrics['total_ssas'] ?? 0],
-                        ['label' => 'Active SSAs', 'value' => $metrics['active_ssas'] ?? 0, 'valueClass' => 'text-success'],
-                        ['label' => 'Completed SSAs', 'value' => $metrics['completed_ssas'] ?? 0, 'valueClass' => 'text-primary'],
-                        ['label' => 'Pending SSAs', 'value' => $metrics['pending_ssas'] ?? 0, 'valueClass' => 'text-warning'],
+                        [
+                            'label' => 'Active SSAs',
+                            'value' => $metrics['active_ssas'] ?? 0,
+                            'valueClass' => 'text-success',
+                        ],
+                        [
+                            'label' => 'Completed SSAs',
+                            'value' => $metrics['completed_ssas'] ?? 0,
+                            'valueClass' => 'text-primary',
+                        ],
+                        [
+                            'label' => 'Pending SSAs',
+                            'value' => $metrics['pending_ssas'] ?? 0,
+                            'valueClass' => 'text-warning',
+                        ],
                     ];
                 @endphp
                 <x-ui::metric-grid :items="$metricItems" />

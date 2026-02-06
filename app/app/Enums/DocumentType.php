@@ -10,6 +10,7 @@ enum DocumentType: string
     case IEP = 'iep';
     case CONSENT_FORM = 'consent_form';
     case ASSESSMENT = 'assessment';
+    case COMMON = 'common';
     case OTHER = 'other';
 
     public function label(): string
@@ -19,6 +20,7 @@ enum DocumentType: string
             self::IEP => 'IEP',
             self::CONSENT_FORM => 'Consent Form',
             self::ASSESSMENT => 'Assessment',
+            self::COMMON => 'Common Document',
             self::OTHER => 'Other',
         };
     }
@@ -29,7 +31,7 @@ enum DocumentType: string
     public static function values(): array
     {
         return array_map(
-            static fn (self $type): string => $type->value,
+            static fn(self $type): string => $type->value,
             self::cases()
         );
     }

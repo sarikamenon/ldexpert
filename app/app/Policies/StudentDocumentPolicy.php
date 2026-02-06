@@ -65,6 +65,13 @@ class StudentDocumentPolicy
             if ($documentable instanceof SessionLog) {
                 return $documentable->therapist_id === $user->id;
             }
+            // Therapist can create documents for students they're assigned to (e.g. common documents)
+            if ($documentable instanceof User && $documentable->role === Role::STUDENT) {
+                return $this->ssaService->hasStudentAssignedToTherapist(
+                    $documentable->id,
+                    $user->id
+                );
+            }
         }
 
         return false;
