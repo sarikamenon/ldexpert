@@ -25,6 +25,7 @@ final class CreateStudentDTOTest extends TestCase
             'parent_guardian_name' => 'Maria Rivera',
             'parent_guardian_email' => 'maria@example.com',
             'parent_guardian_phone' => '123-456-7890',
+            'schedule_email' => 'schedule@example.com',
             'address' => '123 Elm St',
             'city' => 'Boston',
             'state' => 'MA',
@@ -47,6 +48,7 @@ final class CreateStudentDTOTest extends TestCase
         $this->assertSame('Maria Rivera', $dto->parentGuardianName);
         $this->assertSame('maria@example.com', $dto->parentGuardianEmail);
         $this->assertSame('123-456-7890', $dto->parentGuardianPhone);
+        $this->assertSame('schedule@example.com', $dto->scheduleEmail);
         $this->assertSame('123 Elm St', $dto->address);
         $this->assertSame('Boston', $dto->city);
         $this->assertSame('MA', $dto->state);
@@ -73,6 +75,7 @@ final class CreateStudentDTOTest extends TestCase
         $this->assertNull($dto->parentGuardianName);
         $this->assertNull($dto->parentGuardianEmail);
         $this->assertNull($dto->parentGuardianPhone);
+        $this->assertNull($dto->scheduleEmail);
         $this->assertNull($dto->address);
         $this->assertNull($dto->city);
         $this->assertNull($dto->state);
@@ -95,6 +98,7 @@ final class CreateStudentDTOTest extends TestCase
             parentGuardianName: null,
             parentGuardianEmail: null,
             parentGuardianPhone: null,
+            scheduleEmail: null,
             address: null,
             city: null,
             state: null,
@@ -127,6 +131,7 @@ final class CreateStudentDTOTest extends TestCase
             parentGuardianName: 'Lan Nguyen',
             parentGuardianEmail: 'lan@example.com',
             parentGuardianPhone: '222-333-4444',
+            scheduleEmail: 'reminders@example.com',
             address: '789 Maple Ave',
             city: 'Seattle',
             state: 'WA',
@@ -151,6 +156,7 @@ final class CreateStudentDTOTest extends TestCase
         $this->assertSame('Lan Nguyen', $profileArray['parent_guardian_name']);
         $this->assertSame('lan@example.com', $profileArray['parent_guardian_email']);
         $this->assertSame('222-333-4444', $profileArray['parent_guardian_phone']);
+        $this->assertSame('reminders@example.com', $profileArray['schedule_email']);
         $this->assertSame('2010-07-21', $profileArray['date_of_birth']);
         $this->assertSame('7', $profileArray['grade_level']);
     }

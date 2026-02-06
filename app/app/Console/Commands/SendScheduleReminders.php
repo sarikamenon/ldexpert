@@ -99,55 +99,18 @@ class SendScheduleReminders extends Command
             ];
         }
 
-        // Student
-        if ($schedule->student && $schedule->student->email) {
-            // Use UserTimezoneService to resolve timezone with proper fallback
-            $profileTimezone = $schedule->student->studentProfile?->timezone;
-            $timezone = $this->resolveUserTimezone($schedule->student, $profileTimezone);
-
-            $recipients[] = [
-                'email' => $schedule->student->email,
-                'name' => $schedule->student->name,
-                'timezone' => $timezone,
-            ];
-        }
-
-        // Guardian/Parent
-        if ($schedule->student && $schedule->student->studentProfile) {
+        // Student side: only schedule_email (no student user email or parent/guardian emails)
+        if ($schedule->student?->studentProfile?->schedule_email) {
             $profile = $schedule->student->studentProfile;
-            // Assume guardian is in same timezone as student
             $studentTimezone = $this->resolveUserTimezone(
                 $schedule->student,
                 $profile->timezone
             );
-
-            // Check linked parent user
-            if ($profile->parent && $profile->parent->email) {
-                // Try to get parent's timezone, fallback to student's timezone
-                $parentProfileTimezone = $profile->parent->therapistProfile?->timezone
-                    ?? $profile->parent->studentProfile?->timezone
-                    ?? $profile->parent->parentProfile?->timezone;
-
-                $timezone = $this->resolveUserTimezone(
-                    $profile->parent,
-                    $parentProfileTimezone ?? $studentTimezone
-                );
-
-                $recipients[] = [
-                    'email' => $profile->parent->email,
-                    'name' => $profile->parent->name,
-                    'timezone' => $timezone,
-                ];
-            }
-
-            // Check manually entered guardian email (use student's timezone)
-            if ($profile->parent_guardian_email) {
-                $recipients[] = [
-                    'email' => $profile->parent_guardian_email,
-                    'name' => $profile->parent_guardian_name ?? 'Guardian',
-                    'timezone' => $studentTimezone,
-                ];
-            }
+            $recipients[] = [
+                'email' => $profile->schedule_email,
+                'name' => $profile->parent_guardian_name ?? 'Schedule contact',
+                'timezone' => $studentTimezone,
+            ];
         }
 
         // Unique recipients by email to avoid duplicates

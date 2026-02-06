@@ -71,21 +71,22 @@
     {{-- Section C: Parent / Guardian Information --}}
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold text-foreground mb-4">Parent / Guardian Information</h3>
-        <dl class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-6">
+        <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Name</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_name ?? '—' }}
-                </dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_name ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Email</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_email ?? '—' }}
-                </dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_email ?? '—' }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-foreground/70">Schedule Email</dt>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->schedule_email ?? '—' }}</dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Phone</dt>
-                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_phone ?? '—' }}
-                </dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_phone ?? '—' }}</dd>
             </div>
         </dl>
     </x-ui::card>

@@ -124,7 +124,7 @@
     <x-ui::card class="p-6 space-y-4">
         <h3 class="text-lg font-semibold">Parent / Guardian Information</h3>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
                 <x-input-label for="parent_guardian_name" value="Name" />
                 <x-text-input id="parent_guardian_name" name="parent_guardian_name" type="text"
@@ -137,6 +137,14 @@
                 <x-text-input id="parent_guardian_email" name="parent_guardian_email" type="email"
                     class="mt-1 block w-full" :value="old('parent_guardian_email', $profile?->parent_guardian_email)" />
                 <x-input-error :messages="$errors->get('parent_guardian_email')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="schedule_email" value="Schedule Email" />
+                <x-text-input id="schedule_email" name="schedule_email" type="email"
+                    class="mt-1 block w-full" :value="old('schedule_email', $profile?->schedule_email)"
+                    placeholder="For schedule reminder emails" />
+                <x-input-error :messages="$errors->get('schedule_email')" class="mt-2" />
             </div>
 
             <div>

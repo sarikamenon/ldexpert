@@ -37,6 +37,7 @@ abstract class StudentFormRequest extends FormRequest
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
+            'schedule_email' => ['nullable', 'email:rfc', 'max:255'],
             'address' => ['nullable', 'string'],
             'city' => ['required', 'string', 'max:255'],
             'state' => ['required', Rule::in(array_keys(UsStates::STATES))],

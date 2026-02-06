@@ -25,6 +25,7 @@ final class UpdateStudentDTOTest extends TestCase
             'parent_guardian_name' => 'Andy Park',
             'parent_guardian_email' => 'andy@example.com',
             'parent_guardian_phone' => '555-222-1111',
+            'schedule_email' => 'schedules@example.com',
             'address' => '22 River Rd',
             'city' => 'Austin',
             'state' => 'TX',
@@ -46,6 +47,7 @@ final class UpdateStudentDTOTest extends TestCase
         $this->assertSame('Andy Park', $dto->parentGuardianName);
         $this->assertSame('andy@example.com', $dto->parentGuardianEmail);
         $this->assertSame('555-222-1111', $dto->parentGuardianPhone);
+        $this->assertSame('schedules@example.com', $dto->scheduleEmail);
         $this->assertSame('22 River Rd', $dto->address);
         $this->assertSame('Austin', $dto->city);
         $this->assertSame('TX', $dto->state);
@@ -68,6 +70,7 @@ final class UpdateStudentDTOTest extends TestCase
             parentGuardianName: null,
             parentGuardianEmail: null,
             parentGuardianPhone: null,
+            scheduleEmail: null,
             address: null,
             city: null,
             state: null,
@@ -96,6 +99,7 @@ final class UpdateStudentDTOTest extends TestCase
             parentGuardianName: 'Laura Rivera',
             parentGuardianEmail: 'laura@example.com',
             parentGuardianPhone: '321-654-0987',
+            scheduleEmail: 'reminders@example.com',
             address: '999 Pine Ln',
             city: 'Miami',
             state: 'FL',
@@ -118,6 +122,7 @@ final class UpdateStudentDTOTest extends TestCase
         $this->assertSame('Laura Rivera', $profile['parent_guardian_name']);
         $this->assertSame('laura@example.com', $profile['parent_guardian_email']);
         $this->assertSame('321-654-0987', $profile['parent_guardian_phone']);
+        $this->assertSame('reminders@example.com', $profile['schedule_email']);
         $this->assertSame('2012-02-14', $profile['date_of_birth']);
         $this->assertSame('7', $profile['grade_level']);
     }
