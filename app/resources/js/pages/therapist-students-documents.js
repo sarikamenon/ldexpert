@@ -83,9 +83,12 @@ $(() => {
 
         if (result.isConfirmed) {
             try {
+                const isTherapistStudentDocument = $(this).data('therapist-student-document');
                 const url = sessionLogId
                     ? `/therapist/session-logs/${sessionLogId}/documents/${documentId}`
-                    : `/admin/student-documents/${documentId}`;
+                    : (isTherapistStudentDocument
+                        ? `/therapist/student-documents/${documentId}`
+                        : `/admin/student-documents/${documentId}`);
                 const response = await $.ajax({
                     url: url,
                     method: 'DELETE',

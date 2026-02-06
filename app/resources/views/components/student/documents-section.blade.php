@@ -5,12 +5,13 @@
         $showUpload = $errors->any() || old('document_type') || old('description');
     @endphp
 
-    {{-- Upload Form --}}
-    @if ($context === 'admin')
+    {{-- Upload Form (admin and therapist) --}}
+    @if ($context === 'admin' || $context === 'therapist')
         <x-ui::card id="document-upload-card" class="p-6 {{ $showUpload ? '' : 'hidden' }}">
             <h3 class="text-lg font-semibold text-foreground mb-4">Upload Document</h3>
-            <form id="document-upload-form" action="{{ route('admin.student-documents.store', $student) }}" method="POST"
-                enctype="multipart/form-data">
+            <form id="document-upload-form"
+                action="{{ $context === 'admin' ? route('admin.student-documents.store', $student) : route('therapist.students.documents.store', $student) }}"
+                method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="space-y-4">
                     <div>
@@ -74,7 +75,7 @@
     <x-ui::card class="p-6">
         <div class="flex items-center justify-between gap-3 mb-4">
             <h3 class="text-lg font-semibold text-foreground">Documents</h3>
-            @if ($context === 'admin')
+            @if ($context === 'admin' || $context === 'therapist')
                 <button type="button" id="toggle-document-upload"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
                     aria-controls="document-upload-card" aria-expanded="{{ $showUpload ? 'true' : 'false' }}">
@@ -199,7 +200,7 @@
                                                     </button>
                                                 @endif
                                             @else
-                                                <a href="{{ route('admin.student-documents.download', $document) }}"
+                                                <a href="{{ route('therapist.student-documents.download', $document) }}"
                                                     class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                                     title="Download"
                                                     aria-label="Download {{ $document->file_name }}">
@@ -212,6 +213,28 @@
                                                         </path>
                                                     </svg>
                                                 </a>
+                                                @if ($document->uploaded_by_id === auth()->id())
+                                                    <button type="button"
+                                                        class="delete-document-btn inline-flex items-center justify-center w-8 h-8 bg-danger text-danger-foreground rounded hover:bg-danger/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                        data-document-id="{{ $document->id }}"
+                                                        data-therapist-student-document="1" title="Delete"
+                                                        aria-label="Delete {{ $document->file_name }}">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
+                                                            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                            stroke-width="2" stroke-linecap="round"
+                                                            stroke-linejoin="round">
+                                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                            </path>
+                                                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6">
+                                                            </path>
+                                                            <line x1="10" y1="11" x2="10"
+                                                                y2="17"></line>
+                                                            <line x1="14" y1="11" x2="14"
+                                                                y2="17"></line>
+                                                        </svg>
+                                                    </button>
+                                                @endif
                                             @endif
                                         @endif
                                     </div>

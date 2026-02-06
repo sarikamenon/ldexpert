@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
+use App\Enums\Role;
 use App\Models\Pivots\SSAService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -143,5 +144,34 @@ class ServiceSupportAgreement extends Model
         $totalSessions = $numberOfFrequencies * $this->sessions_per_frequency;
 
         return $totalSessions * $this->minutes_per_session;
+    }
+
+    /**
+     * Scope route model binding so therapists can only resolve SSAs
+     * assigned to them on therapist routes. Admin routes continue to
+     * resolve by ID only.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $query = $this->newQuery();
+        $field ??= $this->getRouteKeyName();
+
+        $route = request()?->route();
+        $routeName = $route?->getName();
+        $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
+
+        /** @var \Illuminate\Contracts\Auth\Guard|\Illuminate\Contracts\Auth\StatefulGuard $auth */
+        $auth = auth();
+        $user = $auth->user();
+
+        if ($isTherapistRoute && $user instanceof User) {
+            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
+
+            if ($role === Role::THERAPIST) {
+                $query->where('assigned_therapist_id', $user->id);
+            }
+        }
+
+        return $query->where($field, $value)->firstOrFail();
     }
 }

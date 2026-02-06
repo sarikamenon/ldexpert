@@ -56,6 +56,7 @@ final class ScheduleController extends Controller
         $activeSSAs = $this->ssaService->getActiveSSAsForTherapist($therapist->id);
 
         $sessionLogsBySchedule = $this->sessionLogService->getSessionLogsByScheduleIds(
+            $therapist,
             $schedules->pluck('id')->toArray()
         );
 
@@ -283,6 +284,7 @@ final class ScheduleController extends Controller
             })->values();
 
         $sessionLogsBySchedule = $this->sessionLogService->getSessionLogsByScheduleIds(
+            $therapist,
             $schedules->pluck('id')->toArray()
         );
 

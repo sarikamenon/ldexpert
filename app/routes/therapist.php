@@ -8,6 +8,7 @@ use App\Http\Controllers\Therapist\SessionLogDocumentController;
 use App\Http\Controllers\Therapist\SSAController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
+use App\Http\Controllers\Therapist\StudentDocumentController;
 use Illuminate\Support\Facades\Route;
 
 // Therapist area
@@ -43,6 +44,12 @@ Route::middleware('role:therapist')
         Route::get('students', [StudentController::class, 'index'])->name('students.index');
         Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
+        Route::post('students/{student}/documents', [StudentDocumentController::class, 'store'])->name('students.documents.store');
+
+        Route::prefix('student-documents')->name('student-documents.')->group(function () {
+            Route::get('{document}/download', [StudentDocumentController::class, 'download'])->name('download');
+            Route::delete('{document}', [StudentDocumentController::class, 'destroy'])->name('destroy');
+        });
 
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {

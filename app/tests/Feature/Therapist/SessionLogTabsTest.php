@@ -108,10 +108,9 @@ final class SessionLogTabsTest extends TestCase
             'status' => SSAStatus::ACTIVE,
         ]);
 
-        $response = $this->actingAs($therapist)
-            ->get(route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']));
-
-        $response->assertForbidden();
+        $this->actingAs($therapist)
+            ->get(route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']))
+            ->assertNotFound();
     }
 
     public function test_therapist_cannot_access_unassigned_student_session_logs(): void
@@ -127,10 +126,9 @@ final class SessionLogTabsTest extends TestCase
             'status' => SSAStatus::ACTIVE,
         ]);
 
-        $response = $this->actingAs($therapist)
-            ->get(route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']));
-
-        $response->assertForbidden();
+        $this->actingAs($therapist)
+            ->get(route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']))
+            ->assertForbidden();
     }
 
     public function test_session_logs_tab_filters_work_correctly(): void

@@ -43,9 +43,9 @@ final class SessionLogService
         return $this->repository->getActiveSSAsForStudent($studentId);
     }
 
-    public function getSessionLogsByScheduleIds(array $scheduleIds): Collection
+    public function getSessionLogsByScheduleIds(User $therapist, array $scheduleIds): Collection
     {
-        return $this->repository->getSessionLogsByScheduleIds($scheduleIds);
+        return $this->repository->getSessionLogsByScheduleIds($scheduleIds, $therapist);
     }
 
     public function createFromSchedule(User $therapist, Schedule $schedule, CreateSessionLogDTO $dto): SessionLog
