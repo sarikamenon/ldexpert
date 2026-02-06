@@ -21,6 +21,8 @@ class TherapistSeeder extends Seeder
         $managerId = $this->resolveManagerId();
         $email = env('THERAPIST_EMAIL', 'therapist@example.com');
         $password = env('THERAPIST_PASSWORD', 'Temp1234!');
+        $personalEmail = env('THERAPIST_PERSONAL_EMAIL', $email);
+        $ldEmail = env('THERAPIST_LD_EMAIL', $email);
 
         $user = User::query()->updateOrCreate(
             ['email' => $email],
@@ -39,9 +41,9 @@ class TherapistSeeder extends Seeder
                 'title' => env('THERAPIST_TITLE', TherapistTitle::MS->value),
                 'first_name' => env('THERAPIST_FIRST_NAME', 'Taylor'),
                 'last_name' => env('THERAPIST_LAST_NAME', 'Morgan'),
-                'personal_email' => env('THERAPIST_PERSONAL_EMAIL', 'therapist.personal@example.com'),
+                'personal_email' => $personalEmail,
                 'phone' => env('THERAPIST_PHONE', '555-123-9876'),
-                'ld_email' => env('THERAPIST_LD_EMAIL', 'taylor.morgan@languagedive.com'),
+                'ld_email' => $ldEmail,
                 'address' => env('THERAPIST_ADDRESS', '1234 Therapy Lane, San Diego, CA 92101'),
                 'comments' => env('THERAPIST_COMMENTS', 'Seeder generated therapist account for manual QA.'),
                 'position' => env('THERAPIST_POSITION', TherapistPosition::SLP->value),

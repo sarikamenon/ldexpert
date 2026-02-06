@@ -29,9 +29,8 @@ enum RecurrenceType: string
     public static function options(): array
     {
         return array_map(
-            static fn(self $type): string => $type->value,
+            static fn (self $type): string => $type->value,
             self::cases()
         );
     }
 }
-

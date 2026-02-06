@@ -34,7 +34,7 @@ export function initDataTable(selector, customOptions = {}) {
                         infoEmpty: "Showing 0 to 0 of 0 entries",
                         infoFiltered: "(filtered from _TOTAL_ total entries)",
                         zeroRecords: "No matching records found",
-                        emptyTable: "No data available in table",
+                        emptyTable: "No session logs found.",
                         paginate: {
                             first: "First",
                             last: "Last",

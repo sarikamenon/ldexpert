@@ -218,7 +218,7 @@ final class ServiceCatalog
         return array_values(
             array_filter(
                 self::services(),
-                static fn(array $service): bool => in_array($position->value, $service['positions'], true)
+                static fn (array $service): bool => in_array($position->value, $service['positions'], true)
             )
         );
     }

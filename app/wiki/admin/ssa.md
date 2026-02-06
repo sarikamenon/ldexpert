@@ -15,9 +15,9 @@ Version 1.0 · Last Updated: 14 Nov 2025
 
 4. FUNCTIONAL SCOPE
    4.1 Create SSA (Add New SSA)
-   Form Section A – Core Details - Student* (dropdown of all active students) - Primary Service* (dropdown of active services) - Additional Service* (optional multi-select or dropdown; required if business dictates a secondary service) - Start Date* (date picker) - End Date* (date picker)
-   Form Section B – Scheduling Parameters - Minutes per Session* (dropdown in 5-minute increments) - Frequency* (dropdown: Daily, Weekly, Bi-weekly, Monthly) - Sessions per Frequency* (numeric input) - THO Minutes* (numeric, auto-calculated: total occurrences × minutes per session; editable override if needed)
-   Form Section C – Assignment - Assigned Therapist* (dropdown of all active therapists)
+   Form Section A – Core Details - Student* (active students) - Primary Service* (active services) - Additional Services (optional multi-select; indirect services only) - Start Date* (date picker) - End Date* (date picker)
+   Form Section B – Scheduling Parameters - Minutes per Session* (int 5–1440) - Frequency (nullable enum; required when primary service is frequency-based) - Sessions per Frequency (required when frequency applies) - THO Minutes* (auto-calculated, editable override) - Calculated Minutes (optional stored value) - Adjusted Minutes/Notes (optional override + reason)
+   Form Section C – Assignment - Assigned Therapist (optional at creation; required before activation)
    Actions - Create SSA (primary submit) - Cancel (secondary, returns to SSA list)
 
     4.2 List SSA
@@ -39,9 +39,9 @@ Version 1.0 · Last Updated: 14 Nov 2025
 
     4.3 Edit SSA - Same sections/fields as Create, pre-populated. - Update SSA Info button saves edits; Cancel returns to list. - Primary Service cannot be changed once the SSA is created (field read-only); other fields remain editable within policy rules. - No Reset button to avoid accidental data loss.
 
-    4.4 Status & Lifecycle Actions - Status values include Pending (draft), Active, Completed, Deactivated. - Activate/Deactivate actions require confirmation dialog; optionally capture reason. - Completing an SSA locks scheduling for remaining sessions but preserves Served Minutes history.
+    4.4 Status & Lifecycle Actions - Status values include Pending (draft), Active, Completed, Deactivated. - Activate/Deactivate actions require confirmation dialog; optionally capture reason. - Completing an SSA locks scheduling for remaining sessions but preserves Served Minutes history. - Activation requires an assigned therapist.
 
-    4.5 Calculations & Business Rules - THO Minutes auto-calculation = Minutes per Session × (sessions per frequency × number of frequencies in date range). Provide helper tooltip describing formula. - Ensure Start Date precedes End Date; warn if frequency would push beyond End Date. - Prevent overlapping active SSAs for the same student/service combination unless explicitly allowed; surface inline warnings when a conflict is detected. - Served Minutes updates automatically as approved sessions are recorded, eliminating manual entry discrepancies.
+    4.5 Calculations & Business Rules - THO Minutes auto-calculated from minutes_per_session × (sessions_per_frequency × number of frequencies in date range); stored in `tho_minutes` with optional `adjusted_minutes` + `adjustment_notes` for overrides. - `calculated_minutes` may be stored for reporting. - Ensure Start Date precedes End Date; if the primary service is frequency-based, frequency and sessions_per_frequency become required. - Prevent overlapping active SSAs for the same student/service combination unless explicitly allowed; surface inline warnings when a conflict is detected. - Served Minutes updates automatically as approved sessions are recorded, eliminating manual entry discrepancies.
 
 5. USER EXPERIENCE GUIDELINES
    • Required fields marked with \* and validated inline before submission.
@@ -50,8 +50,8 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • Table supports keyboard navigation, column sorting, and clearly labeled action buttons.
 
 6. DATA MODEL
-   Table: service_support_agreements – `id`, `student_id`, `primary_service_id`, `start_date`, `end_date`, `minutes_per_session`, `frequency`, `sessions_per_frequency`, `tho_minutes`, `assigned_therapist_id`, `status`, `served_minutes`, timestamps, `deleted_at`.
-   Table: ssa_additional_services – `id`, `ssa_id`, `service_id`, timestamps, `deleted_at`; unique per (`ssa_id`, `service_id`) to support multiple additional services.
+   Table: service_support_agreements – `id`, `student_id`, `primary_service_id`, `start_date`, `end_date`, `minutes_per_session`, `frequency`, `sessions_per_frequency`, `calculated_minutes`, `adjusted_minutes`, `adjustment_notes`, `tho_minutes`, `assigned_therapist_id`, `status`, `served_minutes`, timestamps, `deleted_at`.
+   Table: ssa_services (pivot) – `ssa_id`, `service_id`, `is_primary`, timestamps, `deleted_at`; additional services flagged with `is_primary=false`.
    Table: students, services, therapists – referenced via foreign keys.
 
 7. ROUTES (INTERNAL WEB APP)
@@ -63,11 +63,10 @@ Version 1.0 · Last Updated: 14 Nov 2025
    • GET /admin/ssas/export – export filtered dataset.
 
 8. VALIDATION RULES
-   • Student, Primary Service, Start Date, End Date, Minutes per Session, Frequency, Sessions per Frequency, THO Minutes, and Assigned Therapist are required.
-   • Date fields must be real dates with Start Date < End Date.
-   • Minutes per Session must align to allowed increments; THO Minutes recalculates automatically but accepts manual override with numeric validation.
-   • Disallow editing Primary Service after creation; enforce rule server-side.
-   • Prevent creation of SSAs for inactive students, services, or therapists.
+   • Required: student_id (role=student), primary_service_id (service exists), start_date, end_date (after start), minutes_per_session (5–1440), tho_minutes, frequency and sessions_per_frequency when the primary service is marked `is_frequency_service`.
+   • Additional services: optional array; each distinct and must be an indirect service.
+   • Assigned therapist: optional at creation, required before activation; must be role=therapist.
+   • Prevent creation for inactive students/services/therapists (policies/filters).
 
 9. SECURITY & PERMISSIONS
    • Routes protected by `auth` + `role:admin` middleware.

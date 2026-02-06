@@ -32,7 +32,7 @@ class Setting extends Model
         return Cache::remember($cacheKey, now()->addHours(24), function () use ($key, $default) {
             $setting = self::where('key', $key)->first();
 
-            if (!$setting) {
+            if (! $setting) {
                 return $default;
             }
 
@@ -92,4 +92,3 @@ class Setting extends Model
         })->toArray();
     }
 }
-

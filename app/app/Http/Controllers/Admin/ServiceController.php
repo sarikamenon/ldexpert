@@ -12,6 +12,7 @@ use App\DTOs\UpdateServiceDTO;
 use App\Enums\ServiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Service\ChangeServiceStatusRequest;
+use App\Http\Requests\Admin\Service\ExportServicesRequest;
 use App\Http\Requests\Admin\Service\IndexServiceRequest;
 use App\Http\Requests\Admin\Service\StoreServiceRequest;
 use App\Http\Requests\Admin\Service\UpdateServiceRequest;
@@ -19,6 +20,7 @@ use App\Models\Service;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ServiceController extends Controller
 {
@@ -99,4 +101,48 @@ final class ServiceController extends Controller
         ]);
     }
 
+    public function export(ExportServicesRequest $request): StreamedResponse
+    {
+        $this->authorize('export', Service::class);
+
+        $filters = ServiceFilterDTO::fromArray($request->validated());
+        $services = $this->serviceCatalog->all($filters);
+        $filename = sprintf('services-%s.csv', now()->format('Ymd_His'));
+
+        return response()->streamDownload(function () use ($services): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, [
+                'ID',
+                'Name',
+                'Description',
+                'Status',
+                'Frequency Service',
+                'Direct Service',
+                'Group Service',
+                'Billable',
+                'Min Duration (mins)',
+                'Max Duration (mins)',
+            ]);
+
+            /** @var Service $service */
+            foreach ($services as $service) {
+                fputcsv($handle, [
+                    $service->id,
+                    $service->name,
+                    $service->description,
+                    $service->status->value,
+                    $service->is_frequency_service ? 'Yes' : 'No',
+                    $service->is_direct_service ? 'Yes' : 'No',
+                    $service->is_group_service ? 'Yes' : 'No',
+                    $service->is_billable ? 'Yes' : 'No',
+                    $service->min_duration_minutes,
+                    $service->max_duration_minutes,
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
 }

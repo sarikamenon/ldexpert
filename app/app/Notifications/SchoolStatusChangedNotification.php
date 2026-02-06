@@ -7,7 +7,6 @@ namespace App\Notifications;
 use App\Models\School;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 class SchoolStatusChangedNotification extends Notification implements ShouldQueue
@@ -37,4 +36,3 @@ class SchoolStatusChangedNotification extends Notification implements ShouldQueu
         ];
     }
 }
-

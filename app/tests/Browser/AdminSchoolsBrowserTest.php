@@ -16,7 +16,7 @@ class AdminSchoolsBrowserTest extends DuskTestCase
 
     private const PASSWORD = 'Password123!';
 
-    public function testAdminCanNavigateSchoolsPages(): void
+    public function test_admin_can_navigate_schools_pages(): void
     {
         $this->browse(function (Browser $browser) {
             $admin = $this->createAdminUser();
@@ -31,7 +31,7 @@ class AdminSchoolsBrowserTest extends DuskTestCase
         });
     }
 
-    public function testAdminCanSeeEditForm(): void
+    public function test_admin_can_see_edit_form(): void
     {
         $this->browse(function (Browser $browser) {
             $admin = $this->createAdminUser();
@@ -48,7 +48,7 @@ class AdminSchoolsBrowserTest extends DuskTestCase
     private function createAdminUser(): User
     {
         return User::factory()->admin()->create([
-            'email' => 'admin+schools-' . Str::uuid() . '@example.com',
+            'email' => 'admin+schools-'.Str::uuid().'@example.com',
             'password' => Hash::make(self::PASSWORD),
         ]);
     }

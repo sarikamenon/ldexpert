@@ -15,7 +15,7 @@ class SendScheduleNotification implements ShouldQueue
     public function handle(ScheduleCreated|ScheduleUpdated $event): void
     {
         $schedule = $event->schedule;
-        
+
         // Eager load relationships if missing to avoid N+1 in loop/mail view
         $schedule->loadMissing(['therapist', 'student', 'service']);
 
@@ -36,4 +36,3 @@ class SendScheduleNotification implements ShouldQueue
         }
     }
 }
-

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Models\Schedule;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -42,7 +45,12 @@ final class UpdateScheduleRequest extends FormRequest
             })],
             'schedule_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
-            'duration_minutes' => ['required', 'integer', 'between:5,400', 'multiple_of:5'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
             'location_details' => ['nullable', 'string', 'max:1000'],
@@ -55,8 +63,8 @@ final class UpdateScheduleRequest extends FormRequest
     {
         return [
             'duration_minutes.required' => 'Duration is required.',
-            'duration_minutes.between' => 'Duration must be between :min and :max minutes.',
-            'duration_minutes.multiple_of' => 'Duration must be in 5-minute increments.',
+            'duration_minutes.min' => 'Duration must be at least :min minutes.',
+            'duration_minutes.max' => 'Duration may not be greater than :max minutes.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
         ];
@@ -86,6 +94,25 @@ final class UpdateScheduleRequest extends FormRequest
             if ($studentIds && is_array($studentIds) && ! empty($studentIds)) {
                 if (! $repository->validateTherapistAccessToStudents($therapist, array_map('intval', $studentIds))) {
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
+                }
+            }
+
+            $schedule = Schedule::find($this->route('id'));
+            if ($schedule) {
+                $calendarService = app(SchoolCalendarService::class);
+                $studentRepository = app(StudentRepositoryInterface::class);
+                $schoolId = $schedule->school_id
+                    ?? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id);
+
+                $scheduleDate = $this->input('schedule_date');
+                if ($schoolId && $scheduleDate) {
+                    $date = Carbon::parse((string) $scheduleDate);
+                    if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
+                        $validator->errors()->add(
+                            'schedule_date',
+                            'Scheduling is not allowed on school holidays.'
+                        );
+                    }
                 }
             }
         });

@@ -10,6 +10,7 @@ use App\DTOs\TherapistFilterDTO;
 use App\Enums\UserStatus;
 use App\Models\TherapistProfile;
 use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
     {
         return DB::transaction(function () use ($userData, $profileData) {
             $user = User::create($userData);
+
             return TherapistProfile::create(array_merge($profileData, ['user_id' => $user->id]));
         });
     }
@@ -32,6 +34,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             // Create profile if it doesn't exist, otherwise update it
             if ($user->therapistProfile) {
                 $user->therapistProfile->update($profileData);
+
                 return $user->therapistProfile->fresh();
             } else {
                 return $user->therapistProfile()->create($profileData);
@@ -134,6 +137,49 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         return $query->orderBy('name')->get();
     }
 
+    public function listActiveProfilesForSelect(): Collection
+    {
+        return TherapistProfile::query()
+            ->active()
+            ->select(['id', 'first_name', 'last_name'])
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get();
+    }
+
+    public function countTherapistsBySchool(int $schoolId): int
+    {
+        return User::query()
+            ->where('role', 'therapist')
+            ->where(function (Builder $query) use ($schoolId) {
+                $query->whereHas('students.studentProfile', function (Builder $studentQuery) use ($schoolId) {
+                    $studentQuery->where('school_id', $schoolId);
+                })->orWhereHas('assignedSSAs.student.studentProfile', function (Builder $ssaQuery) use ($schoolId) {
+                    $ssaQuery->where('school_id', $schoolId);
+                });
+            })
+            ->distinct('users.id')
+            ->count('users.id');
+    }
+
+    public function listActiveTherapistsBySchool(int $schoolId): Collection
+    {
+        return User::query()
+            ->where('role', 'therapist')
+            ->where('status', UserStatus::ACTIVE)
+            ->where(function (Builder $query) use ($schoolId) {
+                $query->whereHas('students.studentProfile', function (Builder $studentQuery) use ($schoolId) {
+                    $studentQuery->where('school_id', $schoolId);
+                })->orWhereHas('assignedSSAs.student.studentProfile', function (Builder $ssaQuery) use ($schoolId) {
+                    $ssaQuery->where('school_id', $schoolId);
+                });
+            })
+            ->select(['id', 'name', 'email'])
+            ->distinct('users.id')
+            ->orderBy('name')
+            ->get();
+    }
+
     private function applySchoolFilter(Builder $query, int $schoolId): void
     {
         $query->where(function ($builder) use ($schoolId) {
@@ -143,5 +189,66 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
                 $ssaQuery->where('school_id', $schoolId);
             });
         });
+    }
+
+    public function findProfileByUserId(int $userId): ?TherapistProfile
+    {
+        return TherapistProfile::query()
+            ->where('user_id', $userId)
+            ->first();
+    }
+
+    public function listActiveTherapists(): Collection
+    {
+        return User::query()
+            ->where('role', 'therapist')
+            ->where('status', UserStatus::ACTIVE)
+            ->with('therapistProfile')
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function listTherapistsByStudent(int $studentId): Collection
+    {
+        return User::query()
+            ->where('role', 'therapist')
+            ->whereHas('assignedSSAs', function (Builder $query) use ($studentId) {
+                $query->where('student_id', $studentId);
+            })
+            ->with('therapistProfile')
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?string $position = null, int $perPage = 15): LengthAwarePaginator
+    {
+        $query = User::query()
+            ->where('role', 'therapist')
+            ->whereHas('assignedSSAs', function (Builder $q) use ($studentId) {
+                $q->where('student_id', $studentId);
+            })
+            ->with('therapistProfile');
+
+        if ($search) {
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhereHas('therapistProfile', function (Builder $subQ) use ($search) {
+                        $subQ->search($search);
+                    });
+            });
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        if ($position) {
+            $query->whereHas('therapistProfile', function (Builder $q) use ($position) {
+                $q->where('position', $position);
+            });
+        }
+
+        return $query->orderBy('name')->paginate($perPage);
     }
 }

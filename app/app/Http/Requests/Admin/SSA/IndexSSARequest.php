@@ -17,7 +17,7 @@ final class IndexSSARequest extends FormRequest
 
     public function rules(): array
     {
-        $statuses = array_map(static fn(SSAStatus $status) => $status->value, SSAStatus::cases());
+        $statuses = array_map(static fn (SSAStatus $status) => $status->value, SSAStatus::cases());
 
         return [
             'search' => ['nullable', 'string', 'max:255'],
@@ -29,4 +29,3 @@ final class IndexSSARequest extends FormRequest
         ];
     }
 }
-

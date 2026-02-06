@@ -9,6 +9,11 @@
     'isEdit' => false,
 ])
 
+@php
+    /** @var \Illuminate\Support\ViewErrorBag $errors */
+    $errors = $errors ?? session('errors', new \Illuminate\Support\ViewErrorBag());
+@endphp
+
 <form method="POST"
     action="{{ $isEdit ? route('therapist.schedule.update', $schedule->id) : route('therapist.schedule.store') }}"
     id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6">
@@ -107,7 +112,7 @@
                     <x-input-label for="service_id" value="Service *" />
                     @if ($isEdit)
                         {{-- Edit mode: Show service as disabled/read-only --}}
-                        <x-text-input id="service_id" type="text"
+                        <x-ui::input id="service_id" type="text"
                             class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75"
                             value="{{ $schedule->service?->name ?? 'N/A' }}" disabled readonly />
                         <input type="hidden" name="service_id" value="{{ $schedule->service_id }}">
@@ -139,21 +144,16 @@
                 </div>
                 <div>
                     <x-input-label for="duration_minutes" value="Duration (minutes) *" />
-                    <select id="duration_minutes" name="duration_minutes" data-select-box class="mt-1 block w-full"
-                        required>
-                        @foreach (range(5, 400, 5) as $minutesOption)
-                            <option value="{{ $minutesOption }}" @selected(old('duration_minutes', $isEdit ? $schedule->durationMinutes() : $currentSsa?->minutes_per_session ?? 60) == $minutesOption)>
-                                {{ $minutesOption }} minutes
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-foreground/60 mt-1">
-                        @if ($currentSsa)
-                            This is the default duration from the SSA. You can change it as needed.
-                        @else
-                            Select the duration for this schedule.
-                        @endif
-                    </p>
+                    <x-ui::input id="duration_minutes" name="duration_minutes" type="number" class="mt-1 block w-full"
+                        min="{{ config('session_minutes.min') }}" max="{{ config('session_minutes.max') }}"
+                        step="1"
+                        value="{{ old('duration_minutes', $isEdit ? $schedule->durationMinutes() : $currentSsa?->minutes_per_session ?? 60) }}"
+                        required />
+                    @if ($currentSsa)
+                        <p class="text-xs text-foreground/60 mt-1">
+                            This defaults from the SSA but can be adjusted for this schedule.
+                        </p>
+                    @endif
                     <x-input-error :messages="$errors->get('duration_minutes')" class="mt-2" />
                 </div>
             </div>
@@ -164,10 +164,10 @@
             <div>
                 <x-input-label for="schedule_date" value="Schedule Date *" />
                 @if ($isEdit)
-                    <x-text-input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
+                    <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
                         value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}" required />
                 @else
-                    <x-text-input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
+                    <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
                         value="{{ old('schedule_date', $selectedDate?->format('Y-m-d')) }}"
                         min="{{ now()->format('Y-m-d') }}" required />
                 @endif
@@ -177,37 +177,82 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="start_time" value="Start Time *" />
-                    <x-text-input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
+                    <x-ui::input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
                         value="{{ old('start_time', $isEdit ? $schedule->start_time?->format('H:i') : '09:00') }}"
                         required />
                     <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="end_time_display" value="End Time (auto-calculated)" />
-                    <x-text-input id="end_time_display" type="text"
+                    <x-ui::input id="end_time_display" type="text"
                         class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75" value=""
                         disabled readonly />
-                    <p class="text-xs text-foreground/60 mt-1">End time is calculated from start time and
-                        duration.</p>
                 </div>
             </div>
         </div>
-
         @if (!$isEdit)
-            <p class="text-xs text-foreground/60 mt-1">
+            <p class="text-xs text-foreground/60" style="margin-top: 0;">
                 Enter the schedule date and time in <span class="font-medium">your</span> timezone.
                 If the student is in a different timezone, the system will handle the conversion for them.
             </p>
         @endif
     </x-ui::card>
 
-    {{-- Recurrence removed for first iteration --}}
+    {{-- Section 2: Recurrence Options (only for create) --}}
     @if (!$isEdit)
-        <input type="hidden" name="recurrence_type" value="none">
-        <input type="hidden" id="recurrence_end_date" name="recurrence_end_date" value="">
+        <x-ui::card class="p-6 space-y-6">
+            <div>
+                <h2 class="text-lg font-semibold text-foreground">Recurrence Options</h2>
+                <p class="text-sm text-foreground/60">
+                    Create a recurring schedule that repeats at regular intervals.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <x-input-label for="recurrence_type" value="Recurrence Type *" />
+                    <select id="recurrence_type" name="recurrence_type" data-select-box class="mt-1 block w-full"
+                        required>
+                        <option value="">Select recurrence type</option>
+                        @foreach (\App\Enums\RecurrenceType::cases() as $recurrenceType)
+                            <option value="{{ $recurrenceType->value }}" @selected(old('recurrence_type', 'none') === $recurrenceType->value)>
+                                {{ $recurrenceType->label() }}
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-foreground/60 mt-1">
+                        Select how often this schedule should repeat. Choose "None" for a single occurrence.
+                    </p>
+                    <x-input-error :messages="$errors->get('recurrence_type')" class="mt-2" />
+                </div>
+
+                <div id="recurrence_end_date_container" class="hidden">
+                    <x-input-label for="recurrence_end_date" value="Recurrence End Date *" />
+                    <x-ui::input id="recurrence_end_date" name="recurrence_end_date" type="date"
+                        class="mt-1 block w-full" value="{{ old('recurrence_end_date', '') }}"
+                        min="{{ old('schedule_date', $selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" />
+                    <p class="text-xs text-foreground/60 mt-1">
+                        The last occurrence will be created on or before this date. Must be after the schedule start
+                        date.
+                    </p>
+                    <x-input-error :messages="$errors->get('recurrence_end_date')" class="mt-2" />
+                </div>
+
+                <div id="occurrence_dates_container" class="hidden mt-4">
+                    <x-input-label value="Occurrence Dates *" />
+                    <p class="text-xs text-foreground/60 mt-1 mb-3">
+                        Review and adjust the occurrence dates below. Dates falling on weekends are highlighted in
+                        yellow.
+                        You can modify any date if needed (e.g., if a monthly occurrence falls on a weekend).
+                    </p>
+                    <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
+                    <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
+                </div>
+            </div>
+        </x-ui::card>
     @endif
 
-    {{-- Section 2: Location & Meeting Details --}}
+    {{-- Section 3: Location & Meeting Details --}}
     <x-ui::card class="p-6 space-y-6">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Location & Meeting Details</h2>
@@ -228,7 +273,7 @@
         </div>
     </x-ui::card>
 
-    {{-- Section 3: Notes --}}
+    {{-- Section 4: Notes --}}
     <x-ui::card class="p-6 space-y-4">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Notes</h2>
@@ -243,13 +288,14 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <a href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}"
-            class="inline-flex items-center px-4 py-2 border border-border text-sm font-medium rounded-lg hover:bg-background/subtle">
-            Cancel
+        <a
+            href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}">
+            <x-ui::button variant="secondary">
+                Cancel
+            </x-ui::button>
         </a>
-        <button type="submit"
-            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+        <x-ui::button type="submit">
             {{ $isEdit ? 'Update Schedule' : 'Create Schedule' }}
-        </button>
+        </x-ui::button>
     </div>
 </form>

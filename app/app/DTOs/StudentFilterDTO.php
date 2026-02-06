@@ -9,8 +9,8 @@ final class StudentFilterDTO
     public function __construct(
         public readonly ?string $search = null,
         public readonly ?string $status = null,
-        public readonly ?int $schoolId = null,
         public readonly int $perPage = 15,
+        public readonly ?int $schoolId = null,
     ) {}
 
     public static function fromRequest(array $data): self
@@ -18,10 +18,10 @@ final class StudentFilterDTO
         return new self(
             search: $data['search'] ?? null,
             status: $data['status'] ?? null,
+            perPage: (int) ($data['per_page'] ?? 15),
             schoolId: isset($data['school_id']) && $data['school_id'] !== ''
                 ? (int) $data['school_id']
                 : null,
-            perPage: (int) ($data['per_page'] ?? 15),
         );
     }
 
@@ -30,8 +30,8 @@ final class StudentFilterDTO
         return [
             'search' => $this->search,
             'status' => $this->status,
+            'perPage' => $this->perPage,
             'school_id' => $this->schoolId,
-            'per_page' => $this->perPage,
         ];
     }
 }

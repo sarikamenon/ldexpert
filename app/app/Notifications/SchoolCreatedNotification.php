@@ -42,4 +42,3 @@ class SchoolCreatedNotification extends Notification implements ShouldQueue
         ];
     }
 }
-

@@ -5,22 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Contract\Services\SchoolContractService;
+use App\Domain\School\Services\SchoolService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\DTOs\ChangeContractStatusDTO;
 use App\DTOs\CreateSchoolContractDTO;
 use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolContractDTO;
 use App\Enums\ContractStatus;
 use App\Enums\RateType;
-use App\Enums\ServiceStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Contract\ChangeSchoolContractStatusRequest;
 use App\Http\Requests\Admin\Contract\IndexSchoolContractRequest;
 use App\Http\Requests\Admin\Contract\StoreSchoolContractRequest;
 use App\Http\Requests\Admin\Contract\UpdateSchoolContractRequest;
-use App\Models\School;
 use App\Models\SchoolContract;
-use App\Models\Service;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -29,6 +28,8 @@ final class SchoolContractController extends Controller
 {
     public function __construct(
         private readonly SchoolContractService $service,
+        private readonly SchoolService $schoolService,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function index(IndexSchoolContractRequest $request): View
@@ -43,6 +44,7 @@ final class SchoolContractController extends Controller
             'metrics' => $this->service->metrics(),
             'filters' => $request->validated(),
             'statuses' => ContractStatus::cases(),
+            'schools' => $this->schoolService->listActiveForSelect(),
         ]);
     }
 
@@ -94,7 +96,7 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('update', $schoolContract);
 
-        $dto = UpdateSchoolContractDTO::fromArray($request->validated());
+        $dto = UpdateSchoolContractDTO::fromArray($request->validated(), $schoolContract->status);
 
         try {
             $this->service->update($schoolContract, $dto);
@@ -137,19 +139,9 @@ final class SchoolContractController extends Controller
 
     private function formData(): array
     {
-        $schools = School::query()
-            ->active()
-            ->orderBy('display_name')
-            ->get(['id', 'display_name']);
-
-        $services = Service::query()
-            ->where('status', ServiceStatus::ACTIVE->value)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-
         return [
-            'schools' => $schools,
-            'services' => $services,
+            'schools' => $this->schoolService->listActiveForSelect(),
+            'services' => $this->serviceCatalogService->listActiveForSelect(),
             'statuses' => ContractStatus::cases(),
             'rateTypes' => RateType::cases(),
         ];

@@ -74,6 +74,27 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    public function listActiveForSelect(): Collection
+    {
+        return School::query()
+            ->active()
+            ->select(['id', 'display_name'])
+            ->orderBy('display_name')
+            ->get();
+    }
+
+    public function find(int $id): ?School
+    {
+        return School::find($id);
+    }
+
+    public function findByExternalEmrName(string $externalEmrName): ?School
+    {
+        return School::query()
+            ->where('external_emr_name', $externalEmrName)
+            ->first();
+    }
+
     private function baseQuery(): Builder
     {
         return School::query()->with('manager');

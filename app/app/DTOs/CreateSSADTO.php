@@ -41,8 +41,9 @@ final class CreateSSADTO
             studentId: (int) $data['student_id'],
             primaryServiceId: (int) $data['primary_service_id'],
             additionalServiceIds: collect($data['additional_service_ids'] ?? [])
-                ->filter(static fn($value) => $value !== null && $value !== '')
-                ->map(static fn($value) => (int) $value)
+                ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
+                ->map(static fn ($value) => (int) $value)
+                ->filter(static fn (int $value) => $value > 0)
                 ->unique()
                 ->values()
                 ->all(),
@@ -75,8 +76,8 @@ final class CreateSSADTO
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             'minutes_per_session' => $this->minutesPerSession,
-            'frequency' => $this->frequency?->value,
-            'sessions_per_frequency' => $this->sessionsPerFrequency,
+            'frequency' => $this->frequency?->value ?? ServiceFrequency::WEEKLY->value,
+            'sessions_per_frequency' => $this->sessionsPerFrequency ?? ($this->frequency === null ? 1 : null),
             'calculated_minutes' => $this->calculatedMinutes,
             'adjusted_minutes' => $this->adjustedMinutes,
             'adjustment_notes' => $this->adjustmentNotes,

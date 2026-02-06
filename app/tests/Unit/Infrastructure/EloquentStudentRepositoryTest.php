@@ -24,7 +24,7 @@ final class EloquentStudentRepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentStudentRepository();
+        $this->repository = new EloquentStudentRepository;
     }
 
     public function test_create_persists_user_and_profile(): void
@@ -124,7 +124,11 @@ final class EloquentStudentRepositoryTest extends TestCase
         $initialCount = User::where('role', Role::STUDENT->value)->count();
         StudentProfile::factory()->count(4)->create();
 
-        $result = $this->repository->list(new StudentFilterDTO(null, null, 25));
+        $result = $this->repository->list(new StudentFilterDTO(
+            search: null,
+            status: null,
+            perPage: 25
+        ));
 
         $this->assertEquals($initialCount + 4, $result->total());
     }
@@ -134,7 +138,11 @@ final class EloquentStudentRepositoryTest extends TestCase
         StudentProfile::factory()->create(['first_name' => 'Unique']);
         StudentProfile::factory()->create(['first_name' => 'Other']);
 
-        $result = $this->repository->list(new StudentFilterDTO('Unique', null, 25));
+        $result = $this->repository->list(new StudentFilterDTO(
+            search: 'Unique',
+            status: null,
+            perPage: 25
+        ));
 
         $this->assertCount(1, $result->items());
         $this->assertSame('Unique', $result->items()[0]->studentProfile->first_name);
@@ -169,7 +177,11 @@ final class EloquentStudentRepositoryTest extends TestCase
             ->where('status', UserStatus::ACTIVE->value)
             ->count();
 
-        $result = $this->repository->list(new StudentFilterDTO(null, 'active', 25));
+        $result = $this->repository->list(new StudentFilterDTO(
+            search: null,
+            status: 'active',
+            perPage: 25
+        ));
 
         $this->assertEquals($expectedCount, $result->total());
 
@@ -208,8 +220,8 @@ final class EloquentStudentRepositoryTest extends TestCase
             'status' => UserStatus::INACTIVE->value,
         ]);
 
-        $activeUsers->each(fn(User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
-        $inactiveUsers->each(fn(User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
+        $activeUsers->each(fn (User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
+        $inactiveUsers->each(fn (User $user) => StudentProfile::factory()->state(['user_id' => $user->id])->create());
 
         $metrics = $this->repository->getMetrics();
 
@@ -223,8 +235,42 @@ final class EloquentStudentRepositoryTest extends TestCase
         $initialCount = User::where('role', Role::STUDENT->value)->count();
         StudentProfile::factory()->count(2)->create();
 
-        $result = $this->repository->export(new StudentFilterDTO(null, null, 100));
+        $result = $this->repository->export(new StudentFilterDTO(
+            search: null,
+            status: null,
+            perPage: 100
+        ));
 
         $this->assertEquals($initialCount + 2, $result->count());
+    }
+
+    public function test_get_school_id_by_user_id_returns_school_id(): void
+    {
+        $school = School::factory()->create();
+        $user = User::factory()->create(['role' => Role::STUDENT->value]);
+        StudentProfile::factory()->create([
+            'user_id' => $user->id,
+            'school_id' => $school->id,
+        ]);
+
+        $result = $this->repository->getSchoolIdByUserId($user->id);
+
+        $this->assertSame($school->id, $result);
+    }
+
+    public function test_get_school_id_by_user_id_returns_null_when_no_profile(): void
+    {
+        $user = User::factory()->create(['role' => Role::STUDENT->value]);
+
+        $result = $this->repository->getSchoolIdByUserId($user->id);
+
+        $this->assertNull($result);
+    }
+
+    public function test_get_school_id_by_user_id_returns_null_for_invalid_user(): void
+    {
+        $result = $this->repository->getSchoolIdByUserId(999999);
+
+        $this->assertNull($result);
     }
 }

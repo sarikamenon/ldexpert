@@ -23,4 +23,3 @@ final class ExportTherapistsRequest extends FormRequest
         ];
     }
 }
-

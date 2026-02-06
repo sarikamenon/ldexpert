@@ -15,7 +15,9 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
     use DatabaseMigrations;
 
     private User $admin;
+
     private User $manager;
+
     private User $therapist;
 
     protected function setUp(): void
@@ -99,8 +101,8 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/therapists')
-                ->click('@edit-therapist-' . $this->therapist->id)
-                ->assertPathIs('/admin/therapists/' . $this->therapist->id . '/edit')
+                ->click('@edit-therapist-'.$this->therapist->id)
+                ->assertPathIs('/admin/therapists/'.$this->therapist->id.'/edit')
                 ->assertSee('Edit Therapist')
                 ->assertInputValue('first_name', $this->therapist->therapistProfile->first_name)
                 ->assertInputValue('last_name', $this->therapist->therapistProfile->last_name);
@@ -111,7 +113,7 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
     {
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
-                ->visit('/admin/therapists/' . $this->therapist->id . '/edit')
+                ->visit('/admin/therapists/'.$this->therapist->id.'/edit')
                 ->type('@therapist-first-name', 'Updated')
                 ->type('@therapist-last-name', 'Name')
                 ->press('Update Therapist Info')
@@ -133,7 +135,7 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/therapists')
-                ->click('@status-toggle-' . $this->therapist->id)
+                ->click('@status-toggle-'.$this->therapist->id)
                 ->waitForText('Deactivate Therapist?')
                 ->type('input[type="text"]', 'Testing deactivation')
                 ->press('Yes, deactivate')

@@ -51,7 +51,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         $contract->services()->delete();
         $contract->services()->createMany(
             array_map(
-                static fn(ContractServiceRateDTO $dto) => [
+                static fn (ContractServiceRateDTO $dto) => [
                     'service_id' => $dto->serviceId,
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
@@ -75,7 +75,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         return TherapistContract::query()
             ->where('therapist_id', $therapistId)
             ->where('status', ContractStatus::ACTIVE->value)
-            ->when($ignoreId, fn(Builder $query) => $query->whereKeyNot($ignoreId))
+            ->when($ignoreId, fn (Builder $query) => $query->whereKeyNot($ignoreId))
             ->where(function (Builder $query) use ($startDate, $endDate) {
                 $query->whereDate('start_date', '<=', $endDate)
                     ->whereDate('end_date', '>=', $startDate);
@@ -96,6 +96,35 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         ];
     }
 
+    public function findActiveContractForDate(int $therapistId, string $date): ?TherapistContract
+    {
+        $dateObj = \Carbon\Carbon::parse($date);
+
+        return TherapistContract::query()
+            ->where('therapist_id', $therapistId)
+            ->where('status', ContractStatus::ACTIVE)
+            ->whereDate('start_date', '<=', $dateObj)
+            ->whereDate('end_date', '>=', $dateObj)
+            ->first();
+    }
+
+    public function getServiceRate(int $contractId, int $serviceId): ?array
+    {
+        $contractService = \App\Models\TherapistContractService::query()
+            ->where('therapist_contract_id', $contractId)
+            ->where('service_id', $serviceId)
+            ->first();
+
+        if (! $contractService) {
+            return null;
+        }
+
+        return [
+            'rate_type' => $contractService->rate_type,
+            'rate_amount' => (float) $contractService->rate,
+        ];
+    }
+
     private function baseQuery(): Builder
     {
         return TherapistContract::query()
@@ -113,22 +142,21 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                 $builder->where('id', $filters->search)
                     ->orWhereHas('therapist', function (Builder $therapistQuery) use ($filters) {
                         $therapistQuery
-                            ->where('first_name', 'like', '%' . $filters->search . '%')
-                            ->orWhere('last_name', 'like', '%' . $filters->search . '%');
+                            ->where('first_name', 'like', '%'.$filters->search.'%')
+                            ->orWhere('last_name', 'like', '%'.$filters->search.'%');
                     });
             });
         }
 
         if ($filters->therapistId) {
-            // Since the relationship is to TherapistProfile (therapist_id on contracts table points to therapist_profiles.id),
-            // and we usually filter by the User ID (therapist_profiles.user_id), we need to check this relationship.
-            // Let's check TherapistContract model. It belongs to TherapistProfile.
-            // If filters->therapistId comes from the controller (User ID), we should filter via relationship.
-            // Or if it comes as profile ID.
-            // Looking at TherapistController, it passes User $therapist.
-            // So we need to filter where therapist.user_id = $filters->therapistId
             $query->whereHas('therapist', function (Builder $q) use ($filters) {
                 $q->where('user_id', $filters->therapistId);
+            });
+        }
+
+        if (!empty($filters->therapistIds)) {
+            $query->whereHas('therapist', function (Builder $q) use ($filters) {
+                $q->whereIn('user_id', $filters->therapistIds);
             });
         }
 

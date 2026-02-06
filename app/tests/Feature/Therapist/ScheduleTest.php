@@ -107,6 +107,7 @@ final class ScheduleTest extends TestCase
             'schedule_date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '10:00',
             'end_time' => '11:00',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'notes' => 'Test session',
             'location_details' => 'Office A',
@@ -241,6 +242,7 @@ final class ScheduleTest extends TestCase
             'schedule_date' => now()->addDay()->format('Y-m-d'),
             'start_time' => '09:00',
             'end_time' => '10:00',
+            'duration_minutes' => 60,
             'recurrence_type' => 'none',
             'notes' => 'Via form submission',
             'location_details' => 'Office',
@@ -259,7 +261,76 @@ final class ScheduleTest extends TestCase
         ]);
     }
 
-    public function test_recurring_schedules_are_disabled(): void
+    public function test_therapist_can_create_recurring_schedule_with_occurrence_dates(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST, 'timezone' => 'UTC']);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        StudentProfile::factory()->create(['user_id' => $student->id]);
+        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        $therapist->students()->attach($student->id, ['assigned_at' => now(), 'status' => 'active']);
+
+        $startDate = now()->addWeek()->format('Y-m-d');
+        $endDate = now()->addWeeks(3)->format('Y-m-d');
+
+        // Generate occurrence dates (weekly, excluding weekends)
+        $occurrenceDates = [];
+        $currentDate = new \DateTime($startDate);
+        $endDateTime = new \DateTime($endDate);
+
+        while ($currentDate <= $endDateTime) {
+            $dayOfWeek = (int) $currentDate->format('w');
+            // Skip weekends (0 = Sunday, 6 = Saturday)
+            if ($dayOfWeek !== 0 && $dayOfWeek !== 6) {
+                $occurrenceDates[] = $currentDate->format('Y-m-d');
+            }
+            $currentDate->modify('+7 days');
+        }
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => $startDate,
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'weekly',
+            'recurrence_end_date' => $endDate,
+            'occurrence_dates' => $occurrenceDates,
+            'notes' => 'Recurring form schedule',
+            'location_details' => 'Recurring Loc',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertStatus(201);
+
+        // Verify parent schedule was created
+        $this->assertDatabaseHas('schedules', [
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'schedule_date' => $startDate,
+            'recurrence_type' => 'weekly',
+        ]);
+
+        // Verify occurrences were created (excluding parent)
+        $occurrenceCount = Schedule::where('therapist_id', $therapist->id)
+            ->where('student_id', $student->id)
+            ->where('recurrence_type', 'weekly')
+            ->count();
+
+        $this->assertGreaterThan(1, $occurrenceCount);
+    }
+
+    public function test_recurring_schedule_requires_occurrence_dates(): void
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
@@ -273,25 +344,82 @@ final class ScheduleTest extends TestCase
             'status' => SSAStatus::ACTIVE,
         ]);
 
-        $startDate = now()->addWeek()->format('Y-m-d');
+        $therapist->students()->attach($student->id, ['assigned_at' => now(), 'status' => 'active']);
 
         $payload = [
             'ssa_id' => $ssa->id,
             'student_ids' => [$student->id],
             'service_id' => $service->id,
-            'schedule_date' => $startDate,
+            'schedule_date' => now()->addWeek()->format('Y-m-d'),
             'start_time' => '09:00',
-            'end_time' => '10:00',
+            'duration_minutes' => 60,
             'recurrence_type' => 'weekly',
-            'occurrence_count' => 3,
-            'notes' => 'Recurring form schedule',
-            'location_details' => 'Recurring Loc',
+            'recurrence_end_date' => now()->addWeeks(2)->format('Y-m-d'),
+            // Missing occurrence_dates
+            'location_details' => 'Location',
         ];
 
         $response = $this->actingAs($therapist)
-            ->post(route('therapist.schedule.store'), $payload);
+            ->postJson(route('therapist.schedule.store'), $payload);
 
-        $response->assertSessionHasErrors(['recurrence_type']);
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['occurrence_dates']);
+    }
+
+    public function test_recurring_schedule_rejects_weekend_dates(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST, 'timezone' => 'UTC']);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        StudentProfile::factory()->create(['user_id' => $student->id]);
+        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        $therapist->students()->attach($student->id, ['assigned_at' => now(), 'status' => 'active']);
+
+        // Find next Saturday
+        $saturday = new \DateTime;
+        while ((int) $saturday->format('w') !== 6) {
+            $saturday->modify('+1 day');
+        }
+        $saturdayStr = $saturday->format('Y-m-d');
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => now()->addWeek()->format('Y-m-d'),
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'weekly',
+            'recurrence_end_date' => now()->addWeeks(3)->format('Y-m-d'),
+            'occurrence_dates' => [
+                now()->addWeek()->format('Y-m-d'),
+                $saturdayStr, // Weekend date - should be rejected
+            ],
+            'location_details' => 'Location',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['occurrence_dates']);
+
+        $errors = $response->json('errors.occurrence_dates');
+        $this->assertNotEmpty($errors);
+        $errorMessage = is_array($errors) ? implode(' ', $errors) : (string) $errors;
+        $this->assertTrue(
+            str_contains(strtolower($errorMessage), 'weekend') ||
+                str_contains(strtolower($errorMessage), 'saturday') ||
+                str_contains(strtolower($errorMessage), 'sunday'),
+            'Error message should mention weekend/Saturday/Sunday'
+        );
     }
 
     public function test_therapist_can_view_edit_page(): void
@@ -338,6 +466,7 @@ final class ScheduleTest extends TestCase
             'schedule_date' => now()->addDays(2)->format('Y-m-d'),
             'start_time' => '10:00',
             'end_time' => '11:00',
+            'duration_minutes' => 60,
             'notes' => 'Updated notes',
             'recurrence_type' => 'none',
         ];
@@ -351,7 +480,7 @@ final class ScheduleTest extends TestCase
         $this->assertDatabaseHas('schedules', [
             'id' => $schedule->id,
             'schedule_date' => $payload['schedule_date'],
-            'start_time' => $payload['start_time'] . ':00',
+            'start_time' => $payload['start_time'].':00',
             'notes' => 'Updated notes',
         ]);
 

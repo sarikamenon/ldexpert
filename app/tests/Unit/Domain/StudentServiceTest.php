@@ -27,12 +27,12 @@ final class StudentServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->service = new StudentService(new EloquentStudentRepository());
+        Mail::fake();
+        $this->service = new StudentService(new EloquentStudentRepository);
     }
 
     public function test_create_creates_student_and_sends_welcome_email(): void
     {
-        Mail::fake();
         $school = School::factory()->create();
 
         $dto = new CreateStudentDTO(
@@ -112,7 +112,11 @@ final class StudentServiceTest extends TestCase
         $initialCount = User::where('role', 'student')->count();
         StudentProfile::factory()->count(3)->create();
 
-        $paginator = $this->service->list(new StudentFilterDTO(null, null, 25));
+        $paginator = $this->service->list(new StudentFilterDTO(
+            search: null,
+            status: null,
+            perPage: 25
+        ));
 
         $this->assertEquals($initialCount + 3, $paginator->total());
     }
@@ -133,7 +137,11 @@ final class StudentServiceTest extends TestCase
         $initialCount = User::where('role', 'student')->count();
         StudentProfile::factory()->count(2)->create();
 
-        $collection = $this->service->export(new StudentFilterDTO(null, null, 100));
+        $collection = $this->service->export(new StudentFilterDTO(
+            search: null,
+            status: null,
+            perPage: 100
+        ));
 
         $this->assertEquals($initialCount + 2, $collection->count());
     }

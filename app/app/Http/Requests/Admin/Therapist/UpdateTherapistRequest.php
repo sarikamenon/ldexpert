@@ -9,7 +9,7 @@ final class UpdateTherapistRequest extends TherapistFormRequest
     public function rules(): array
     {
         $user = $this->route('therapist');
+
         return $this->baseRules($user?->id);
     }
 }
-

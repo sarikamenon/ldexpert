@@ -30,4 +30,10 @@ interface SchoolRepositoryInterface
     public function export(SchoolFilterDTO $filters): Collection;
 
     public function listAllForSelect(): Collection;
+
+    public function listActiveForSelect(): Collection;
+
+    public function find(int $id): ?School;
+
+    public function findByExternalEmrName(string $externalEmrName): ?School;
 }

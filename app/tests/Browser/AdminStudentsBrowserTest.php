@@ -16,7 +16,9 @@ final class AdminStudentsBrowserTest extends DuskTestCase
     use DatabaseMigrations;
 
     private User $admin;
+
     private User $student;
+
     private School $school;
 
     protected function setUp(): void
@@ -92,8 +94,8 @@ final class AdminStudentsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/students')
-                ->click('@edit-student-' . $this->student->id)
-                ->assertPathIs('/admin/students/' . $this->student->id . '/edit')
+                ->click('@edit-student-'.$this->student->id)
+                ->assertPathIs('/admin/students/'.$this->student->id.'/edit')
                 ->assertInputValue('first_name', 'Browser')
                 ->type('@student-first-name', 'UpdatedBrowser')
                 ->press('Update Student Info')
@@ -109,7 +111,7 @@ final class AdminStudentsBrowserTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit('/admin/students')
-                ->click('@student-status-toggle-' . $this->student->id)
+                ->click('@student-status-toggle-'.$this->student->id)
                 ->waitForText('Deactivate Student?')
                 ->type('input[type="text"]', 'Testing toggle')
                 ->press('Yes, deactivate')

@@ -9,8 +9,8 @@
         <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>
     @endif
 
-    <x-admin.school-contracts-list :contracts="$contracts" :filters="$filters" :statuses="$statuses" :metrics="$metrics"
-        :show-metrics="true" context="index" />
+    <x-admin.school-contracts-list :contracts="$contracts" :filters="$filters" :statuses="$statuses" :schools="$schools"
+        :metrics="$metrics" :show-metrics="true" context="index" />
 
     @vite(['resources/js/pages/admin-contracts-schools-index.js'])
 </x-admin.layouts.app>

@@ -4,39 +4,48 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAImportService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\StoreSSAImportDTO;
 use App\DTOs\UpdateSSADTO;
-use App\Enums\Role;
 use App\Enums\ServiceFrequency;
-use App\Enums\ServiceStatus;
+use App\Enums\SSAImportType;
 use App\Enums\SSAStatus;
-use App\Enums\UserStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SSA\AssignTherapistRequest;
 use App\Http\Requests\Admin\SSA\ChangeSSAStatusRequest;
+use App\Http\Requests\Admin\SSA\ImportSSAsRequest;
 use App\Http\Requests\Admin\SSA\IndexSSARequest;
 use App\Http\Requests\Admin\SSA\StoreSSARequest;
 use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
-use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
-use App\Models\User;
+use App\Models\SSAImport;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SSAController extends Controller
 {
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly SSAImportService $importService,
+        private readonly UserService $userService,
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
     ) {}
 
     public function index(IndexSSARequest $request): View
@@ -112,6 +121,17 @@ final class SSAController extends Controller
             ]);
             $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
             $viewData['therapists'] = $this->getActiveTherapists();
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), ['ssa_id' => $ssa->id])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
         }
 
         return view('admin.ssas.show', $viewData);
@@ -248,51 +268,133 @@ final class SSAController extends Controller
         ]);
     }
 
+    private function getActiveStudents(): Collection
+    {
+        return $this->userService->listActiveStudentsForSelect();
+    }
+
+    private function getActiveServices(): Collection
+    {
+        return $this->serviceCatalogService->listActiveWithFrequencyFlag();
+    }
+
+    private function getActiveTherapists(): Collection
+    {
+        return $this->userService->listActiveTherapistsForSelect();
+    }
+
+    public function showImportForm(): View
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $type = SSAImportType::NOVA;
+        $template = $this->importService->getTemplate($type);
+
+        return view('admin.ssas.import', [
+            'importTypes' => SSAImportType::cases(),
+            'requiredColumns' => $template['required_columns'] ?? [],
+            'optionalColumns' => $template['optional_columns'] ?? [],
+        ]);
+    }
+
+    public function import(ImportSSAsRequest $request): JsonResponse
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $validated = $request->validated();
+        $type = SSAImportType::from($validated['type'] ?? SSAImportType::NOVA->value);
+
+        $dto = StoreSSAImportDTO::fromArray([
+            'file' => $request->file('file'),
+            'user_id' => $request->user()->id,
+            'type' => $type->value,
+        ]);
+
+        $import = $this->importService->storeImportRequest($dto);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import queued successfully. You will receive an email notification when it completes.',
+            'data' => [
+                'import_id' => $import->id,
+                'status' => $import->status->value,
+            ],
+        ]);
+    }
+
+    public function showImportStatus(Request $request, SSAImport $import): View|JsonResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $import->load(['rows.ssa', 'user']);
+
+        $stats = [
+            'total' => $import->total_rows,
+            'processed' => $import->processed_rows,
+            'success' => $import->rows()->where('status', 'done')->count(),
+            'duplicates' => $import->rows()->where('status', 'duplicate')->count(),
+            'errors' => $import->rows()->where('status', 'validation_error')->count(),
+            'pending' => $import->rows()->where('status', 'pending')->count(),
+        ];
+
+        // Return JSON for AJAX polling
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => $import->status->value,
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('admin.ssas.import-status', [
+            'import' => $import,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function importHistory(Request $request): View
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $imports = SSAImport::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
+
+        return view('admin.ssas.import-history', [
+            'imports' => $imports,
+        ]);
+    }
+
+    public function downloadTemplate(Request $request): StreamedResponse
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $type = SSAImportType::from($request->query('type', SSAImportType::NOVA->value));
+        $template = $this->importService->getTemplate($type);
+
+        $requiredColumns = $template['required_columns'] ?? [];
+        $optionalColumns = $template['optional_columns'] ?? [];
+        $allColumns = array_merge($requiredColumns, $optionalColumns);
+
+        $filename = sprintf('ssa-import-template-%s-%s.csv', strtolower($type->value), now()->format('Ymd_His'));
+
+        return response()->streamDownload(function () use ($allColumns): void {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, $allColumns);
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
     private function formData(): array
     {
         return [
-            'students' => $this->getActiveStudents(),
-            'services' => $this->getActiveServices(),
-            'indirectServices' => $this->getIndirectServices(),
-            'therapists' => $this->getActiveTherapists(),
+            'students' => $this->userService->listActiveStudentsForSelect(),
+            'services' => $this->serviceCatalogService->listActiveWithFrequencyFlag(),
+            'indirectServices' => $this->serviceCatalogService->listIndirectServices(),
+            'therapists' => $this->userService->listActiveTherapistsForSelect(),
             'frequencies' => ServiceFrequency::cases(),
         ];
-    }
-
-    private function getActiveStudents()
-    {
-        return User::query()
-            ->where('role', Role::STUDENT)
-            ->where('status', UserStatus::ACTIVE)
-            ->with('studentProfile')
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
-    }
-
-    private function getActiveServices()
-    {
-        return Service::query()
-            ->where('status', ServiceStatus::ACTIVE)
-            ->orderBy('name')
-            ->get(['id', 'name', 'is_frequency_service']);
-    }
-
-    private function getIndirectServices()
-    {
-        return Service::query()
-            ->where('status', ServiceStatus::ACTIVE)
-            ->where('is_direct_service', false)
-            ->orderBy('name')
-            ->get(['id', 'name']);
-    }
-
-    private function getActiveTherapists()
-    {
-        return User::query()
-            ->where('role', Role::THERAPIST)
-            ->where('status', UserStatus::ACTIVE)
-            ->with('therapistProfile')
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
     }
 }

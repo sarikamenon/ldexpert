@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentCommentService;
+use App\Domain\Student\Services\StudentDocumentService;
+use App\Domain\Student\Services\StudentService;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
-use App\Enums\Role;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
-use App\Models\ServiceSupportAgreement;
-use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -19,44 +21,22 @@ final class StudentController extends Controller
 {
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly StudentService $studentService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly StudentCommentService $commentService,
+        private readonly StudentDocumentService $documentService,
     ) {}
 
     public function index(Request $request): View
     {
         $therapist = $request->user();
 
-        // Get students from SSAs assigned to this therapist
-        $studentsQuery = User::query()
-            ->where('role', Role::STUDENT)
-            ->whereHas('studentProfile.ssas', function ($query) use ($therapist) {
-                $query->where('assigned_therapist_id', $therapist->id);
-            })
-            ->with([
-                'studentProfile.school',
-            ]);
-
-        // Apply search filter
-        if ($request->filled('search')) {
-            $search = $request->query('search');
-            $studentsQuery->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
-
-        // Apply status filter
-        if ($request->filled('status')) {
-            $studentsQuery->where('status', $request->query('status'));
-        }
-
-        $students = $studentsQuery->distinct()->orderBy('name')->paginate($request->integer('per_page', 15));
-
-        // Load SSAs for each student
-        $students->load([
-            'studentProfile.ssas' => function ($query) use ($therapist) {
-                $query->where('assigned_therapist_id', $therapist->id);
-            },
-        ]);
+        $students = $this->studentService->listByTherapist(
+            $therapist->id,
+            $request->query('search'),
+            $request->query('status'),
+            $request->integer('per_page', 15)
+        );
 
         return view('therapist.students.index', [
             'students' => $students,
@@ -65,16 +45,12 @@ final class StudentController extends Controller
         ]);
     }
 
-    public function show(Request $request, User $student): View
+    public function show(Request $request, \App\Models\User $student): View
     {
         $therapist = $request->user();
 
         // Ensure student has SSAs assigned to this therapist
-        $hasAssignedSSA = ServiceSupportAgreement::where('student_id', $student->id)
-            ->where('assigned_therapist_id', $therapist->id)
-            ->exists();
-
-        if (!$hasAssignedSSA) {
+        if (! $this->ssaService->hasStudentAssignedToTherapist($student->id, $therapist->id)) {
             abort(403, 'You do not have access to this student.');
         }
 
@@ -88,10 +64,7 @@ final class StudentController extends Controller
 
         // Load dashboard data
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
-            $ssasForMetrics = ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
-                ->where('student_id', $student->id)
-                ->where('assigned_therapist_id', $therapist->id)
-                ->get();
+            $ssasForMetrics = $this->ssaService->getSSAsForMetrics($student->id, $therapist->id);
 
             $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
             $served = (int) $ssasForMetrics->sum('served_minutes');
@@ -121,6 +94,24 @@ final class StudentController extends Controller
             $viewData['ssas'] = $this->ssaService->paginate($filters);
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), [
+                    'student_id' => $student->id,
+                    'therapist_id' => $therapist->id,
+                ])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
+        } elseif ($activeTab === 'comments') {
+            $viewData['comments'] = $this->commentService->listByStudent($student->id);
+        } elseif ($activeTab === 'documents') {
+            $viewData['documents'] = $this->documentService->listByStudent($student->id);
         }
 
         return view('therapist.students.show', $viewData);

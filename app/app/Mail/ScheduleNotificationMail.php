@@ -38,4 +38,3 @@ class ScheduleNotificationMail extends Mailable
         );
     }
 }
-

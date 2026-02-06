@@ -23,4 +23,3 @@ final class ChangeTherapistStatusRequest extends FormRequest
         ];
     }
 }
-

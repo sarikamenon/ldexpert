@@ -19,7 +19,9 @@ final class StudentManagementTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private School $school;
+
     private User $student;
 
     protected function setUp(): void
@@ -107,7 +109,7 @@ final class StudentManagementTest extends TestCase
             'school_id' => $this->school->id,
         ]);
 
-        Mail::assertSent(WelcomeStudentMail::class, fn(WelcomeStudentMail $mail) => $mail->hasTo('ava@example.com'));
+        Mail::assertSent(WelcomeStudentMail::class, fn (WelcomeStudentMail $mail) => $mail->hasTo('ava@example.com'));
     }
 
     public function test_admin_can_view_edit_form(): void
@@ -397,7 +399,7 @@ final class StudentManagementTest extends TestCase
 
         $response->assertOk();
         $therapists = $response->viewData('therapists');
-        $this->assertTrue($therapists->every(fn($therapist) => $therapist->status === UserStatus::ACTIVE));
+        $this->assertTrue($therapists->every(fn ($therapist) => $therapist->status === UserStatus::ACTIVE));
     }
 
     public function test_student_show_page_filters_therapists_by_position(): void
