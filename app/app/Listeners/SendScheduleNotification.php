@@ -9,6 +9,7 @@ use App\Events\ScheduleUpdated;
 use App\Mail\ScheduleNotificationMail;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class SendScheduleNotification implements ShouldQueue
 {
@@ -17,7 +18,7 @@ class SendScheduleNotification implements ShouldQueue
         $schedule = $event->schedule;
         
         // Eager load relationships if missing to avoid N+1 in loop/mail view
-        $schedule->loadMissing(['therapist', 'student', 'service']);
+        $schedule->loadMissing(['therapist', 'student.studentProfile', 'service']);
 
         $type = $event instanceof ScheduleCreated ? 'created' : 'updated';
 
@@ -27,10 +28,10 @@ class SendScheduleNotification implements ShouldQueue
                 new ScheduleNotificationMail($schedule, $type, isRecipientStudent: false)
             );
         }
-
-        // Notify Student
-        if ($schedule->student && $schedule->student->email) {
-            Mail::to($schedule->student->email)->send(
+        
+        // Student side: only schedule_email (no student user email or parent/guardian emails)
+        if ($schedule->student?->studentProfile?->schedule_email) {
+            Mail::to($schedule->student->studentProfile->schedule_email)->send(
                 new ScheduleNotificationMail($schedule, $type, isRecipientStudent: true)
             );
         }
