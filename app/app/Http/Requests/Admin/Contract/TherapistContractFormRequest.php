@@ -33,8 +33,8 @@ abstract class TherapistContractFormRequest extends FormRequest
             ],
             'services.*.rate' => ['required', 'numeric', 'min:0'],
             'services.*.rate_type' => ['required', Rule::in(RateType::values())],
-            'services.*.no_rate' => ['required', 'numeric', 'min:0'],
-            'services.*.no_rate_type' => ['required', Rule::in(RateType::values())],
+            'services.*.no_show_rate' => ['required', 'numeric', 'min:0'],
+            'services.*.no_show_rate_type' => ['required', Rule::in(RateType::values())],
         ];
     }
 
@@ -48,10 +48,10 @@ abstract class TherapistContractFormRequest extends FormRequest
             'services.*.rate.numeric' => 'Rate must be a valid number.',
             'services.*.rate.min' => 'Rate must be 0 or greater.',
             'services.*.rate_type.required' => 'Rate type is required.',
-            'services.*.no_rate.required' => 'No-show rate is required.',
-            'services.*.no_rate.numeric' => 'No-show rate must be a valid number.',
-            'services.*.no_rate.min' => 'No-show rate must be 0 or greater.',
-            'services.*.no_rate_type.required' => 'No-show rate type is required.',
+            'services.*.no_show_rate.required' => 'No-show rate is required.',
+            'services.*.no_show_rate.numeric' => 'No-show rate must be a valid number.',
+            'services.*.no_show_rate.min' => 'No-show rate must be 0 or greater.',
+            'services.*.no_show_rate_type.required' => 'No-show rate type is required.',
         ];
     }
 }

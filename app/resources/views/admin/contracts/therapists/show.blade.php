@@ -56,8 +56,8 @@
                             <td class="py-2 px-3">{{ $service->service?->name ?? '—' }}</td>
                             <td class="py-2 px-3">${{ number_format((float) $service->rate, 2) }}</td>
                             <td class="py-2 px-3">{{ $service->rate_type->label() }}</td>
-                            <td class="py-2 px-3">${{ number_format((float) $service->no_rate, 2) }}</td>
-                            <td class="py-2 px-3">{{ $service->no_rate_type->label() }}</td>
+                            <td class="py-2 px-3">${{ number_format((float) $service->no_show_rate, 2) }}</td>
+                            <td class="py-2 px-3">{{ $service->no_show_rate_type->label() }}</td>
                         </tr>
                     @endforeach
                 </tbody>

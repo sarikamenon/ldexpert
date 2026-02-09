@@ -9,12 +9,12 @@
                         'service_id' => $service->service_id,
                         'rate' => $service->rate,
                         'rate_type' => $service->rate_type->value ?? $service->rate_type,
-                        'no_rate' => $service->no_rate,
-                        'no_rate_type' => $service->no_rate_type->value ?? $service->no_rate_type,
+                        'no_show_rate' => $service->no_show_rate,
+                        'no_show_rate_type' => $service->no_show_rate_type->value ?? $service->no_show_rate_type,
                     ],
                 )
                 ->toArray()
-            : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value, 'no_rate' => null, 'no_rate_type' => \App\Enums\RateType::HOURLY->value]],
+            : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value, 'no_show_rate' => null, 'no_show_rate_type' => \App\Enums\RateType::HOURLY->value]],
     );
 
     $startDateValue = old('start_date', $isEdit ? optional($contract->start_date)->toDateString() : null);
@@ -151,23 +151,23 @@
                             </td>
                             <td class="py-2 px-3">
                                 <x-ui::input type="number" step="0.01" min="0"
-                                    name="services[{{ $index }}][no_rate]" value="{{ $serviceRow['no_rate'] }}"
+                                    name="services[{{ $index }}][no_show_rate]" value="{{ $serviceRow['no_show_rate'] }}"
                                     class="w-full" />
-                                @error("services.$index.no_rate")
+                                @error("services.$index.no_show_rate")
                                     <p class="text-xs text-danger mt-1">{{ $message }}</p>
                                 @enderror
                             </td>
                             <td class="py-2 px-3">
-                                <select name="services[{{ $index }}][no_rate_type]"
+                                <select name="services[{{ $index }}][no_show_rate_type]"
                                     class="w-full border border-border rounded-lg px-2 py-2">
                                     <option value="">Select rate type</option>
                                     @foreach ($rateTypes as $rateType)
-                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['no_rate_type'] ?? null) === $rateType->value)>
+                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['no_show_rate_type'] ?? null) === $rateType->value)>
                                             {{ $rateType->label() }}
                                         </option>
                                     @endforeach
                                 </select>
-                                @error("services.$index.no_rate_type")
+                                @error("services.$index.no_show_rate_type")
                                     <p class="text-xs text-danger mt-1">{{ $message }}</p>
                                 @enderror
                             </td>
@@ -226,11 +226,11 @@
             </select>
         </td>
         <td class="py-2 px-3">
-            <x-ui::input type="number" step="0.01" min="0" name="services[__INDEX__][no_rate]"
+            <x-ui::input type="number" step="0.01" min="0" name="services[__INDEX__][no_show_rate]"
                 class="w-full" />
         </td>
         <td class="py-2 px-3">
-            <select name="services[__INDEX__][no_rate_type]" class="w-full border border-border rounded-lg px-2 py-2">
+            <select name="services[__INDEX__][no_show_rate_type]" class="w-full border border-border rounded-lg px-2 py-2">
                 <option value="">Select rate type</option>
                 @foreach ($rateTypes as $rateType)
                     <option value="{{ $rateType->value }}">{{ $rateType->label() }}</option>

@@ -18,8 +18,8 @@ class SchoolContractService extends Model
     protected $casts = [
         'rate' => 'decimal:2',
         'rate_type' => RateType::class,
-        'no_rate' => 'decimal:2',
-        'no_rate_type' => RateType::class,
+        'no_show_rate' => 'decimal:2',
+        'no_show_rate_type' => RateType::class,
     ];
 
     public function contract(): BelongsTo
