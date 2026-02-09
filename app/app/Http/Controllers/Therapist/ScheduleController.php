@@ -14,6 +14,8 @@ use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
+use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
@@ -512,7 +514,13 @@ final class ScheduleController extends Controller
 
         $this->authorize('delete', $schedule);
 
-        $this->scheduleService->deleteSchedule($therapist, $id);
+        try {
+            $this->scheduleService->deleteSchedule($therapist, $id);
+        } catch (CannotDeleteBilledScheduleException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
