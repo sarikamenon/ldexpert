@@ -6,8 +6,8 @@ namespace Database\Seeders;
 
 use App\Enums\Role;
 use App\Enums\ServiceFrequency;
-use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
@@ -33,6 +33,7 @@ final class SSASeeder extends Seeder
 
         if ($students->isEmpty() || $services->isEmpty()) {
             $this->command->warn('No active students or services found. Skipping SSA seeding.');
+
             return;
         }
 
@@ -43,19 +44,12 @@ final class SSASeeder extends Seeder
             ServiceFrequency::QUARTERLY,
         ];
 
-        $statuses = [
-            SSAStatus::PENDING,
-            SSAStatus::ACTIVE,
-            SSAStatus::COMPLETED,
-        ];
-
         // Create SSAs for a subset of students
         $studentsToSeed = $students->random(min(10, $students->count()));
 
         foreach ($studentsToSeed as $student) {
             $service = $services->random();
             $frequency = $frequencies[array_rand($frequencies)];
-            $status = $statuses[array_rand($statuses)];
 
             // Determine dates
             $startDate = now()->subMonths(rand(0, 6))->startOfMonth();
@@ -83,12 +77,19 @@ final class SSASeeder extends Seeder
             $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
             $thoMinutes = $totalSessions * $minutesPerSession;
 
-            // Assign therapist only if status is Active or Pending (with 70% chance)
+            // First decide if we assign a therapist (50% chance)
             $assignedTherapist = null;
-            if ($status === SSAStatus::ACTIVE || ($status === SSAStatus::PENDING && rand(1, 100) <= 70)) {
-                if ($therapists->isNotEmpty()) {
-                    $assignedTherapist = $therapists->random();
-                }
+            if ($therapists->isNotEmpty() && rand(1, 100) <= 50) {
+                $assignedTherapist = $therapists->random();
+            }
+
+            // Set status based on therapist assignment
+            // If therapist assigned: active or completed
+            // If no therapist: pending or deactivated
+            if ($assignedTherapist !== null) {
+                $status = rand(1, 100) <= 70 ? SSAStatus::ACTIVE : SSAStatus::COMPLETED;
+            } else {
+                $status = rand(1, 100) <= 60 ? SSAStatus::PENDING : SSAStatus::DEACTIVATED;
             }
 
             // Calculate served minutes (only for active/completed SSAs)
@@ -145,6 +146,6 @@ final class SSASeeder extends Seeder
             $ssa->services()->sync($servicePayload);
         }
 
-        $this->command->info('SSA seeder completed. Created ' . $studentsToSeed->count() . ' SSAs.');
+        $this->command->info('SSA seeder completed. Created '.$studentsToSeed->count().' SSAs.');
     }
 }

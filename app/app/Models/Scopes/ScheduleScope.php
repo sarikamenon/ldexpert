@@ -7,7 +7,6 @@ namespace App\Models\Scopes;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
-use App\Models\Schedule;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -91,4 +90,3 @@ final class ScheduleScope extends BaseModelScope
         return $builder->where(self::qualify($model, 'group_batch_number'), $batchNumber);
     }
 }
-

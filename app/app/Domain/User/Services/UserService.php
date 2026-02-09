@@ -10,25 +10,23 @@ use App\DTOs\CreateParentProfileDTO;
 use App\DTOs\CreateTherapistProfileDTO;
 use App\DTOs\CreateUserDTO;
 use App\Enums\Role;
-use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
 class UserService
 {
     public function __construct(
-        private readonly UserRepositoryInterface $users,
-        private readonly EloquentUserRepository $repository
+        private readonly UserRepositoryInterface $repository,
     ) {}
 
     public function createWithRole(CreateUserDTO $dto, string $role): User
     {
-        return $this->users->create($dto, $role);
+        return $this->repository->create($dto, $role);
     }
 
     public function createWithProfile(CreateUserDTO $dto, string $role, array $profileData = []): User
     {
-        $user = $this->users->create($dto, $role);
+        $user = $this->repository->create($dto, $role);
 
         $profileData['user_id'] = $user->id;
 
@@ -52,6 +50,26 @@ class UserService
 
     public function listByRole(Role $role): Collection
     {
-        return $this->users->listByRole($role->value);
+        return $this->repository->listByRole($role->value);
+    }
+
+    public function updateProfile(User $user, array $data): User
+    {
+        return $this->repository->updateProfile($user, $data);
+    }
+
+    public function listAdmins(): Collection
+    {
+        return $this->repository->listAdmins();
+    }
+
+    public function listActiveStudentsForSelect(): Collection
+    {
+        return $this->repository->listActiveStudentsForSelect();
+    }
+
+    public function listActiveTherapistsForSelect(): Collection
+    {
+        return $this->repository->listActiveTherapistsForSelect();
     }
 }

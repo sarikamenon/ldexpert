@@ -33,62 +33,55 @@
 @endif
 
 <x-ui::card class="p-6 space-y-6">
-    <div class="flex flex-col md:flex-row md:flex-wrap gap-4 items-start md:items-center justify-between">
-        <form method="GET" class="flex flex-wrap gap-3 w-full md:flex-1 md:max-w-3xl" id="ssaFiltersForm">
+    <x-ui::filter-toolbar formId="ssaFiltersForm">
+        <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="ssas">
             @endif
 
-            <x-text-input type="text" name="search" class="w-56" placeholder="Search SSAs"
+            <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
                 value="{{ $filters['search'] ?? '' }}" />
 
-            <select name="status"
-                class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true">
                 <option value="">All Statuses</option>
                 @foreach ($statuses as $status)
                     <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
                         {{ $status->label() }}
                     </option>
                 @endforeach
-            </select>
+            </x-ui::select>
 
             @if ($context !== 'therapist')
-                <select name="student_id"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="student_id" searchable placeholder="All Students" :inline="true">
                     <option value="">All Students</option>
                     @foreach ($students as $student)
                         <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
                             {{ $student->name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
 
-                <select name="therapist_id"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="therapist_id" searchable placeholder="All Therapists" :inline="true">
                     <option value="">All Therapists</option>
                     @foreach ($therapists as $therapist)
                         <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
                             {{ $therapist->name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
 
-                <select name="service_id"
-                    class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
+                <x-ui::select name="service_id" searchable placeholder="All Services" :inline="true">
                     <option value="">All Services</option>
                     @foreach ($services as $service)
                         <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
                             {{ $service->name }}
                         </option>
                     @endforeach
-                </select>
+                </x-ui::select>
             @endif
+        </x-slot:filters>
 
-            <button type="submit"
-                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
-        </form>
-
-        <div class="flex items-center gap-3">
+        <x-slot:actions>
             @if ($context !== 'therapist')
                 @php
                     $exportFilters = $filters;
@@ -96,19 +89,21 @@
                         unset($exportFilters['tab']);
                     }
                 @endphp
-                <a href="{{ route('admin.ssas.export', $exportFilters) }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                    Export
+                <a href="{{ route('admin.ssas.export', $exportFilters) }}">
+                    <x-ui::button variant="secondary">
+                        Export
+                    </x-ui::button>
                 </a>
-                @if ($context === 'index')
-                    <a href="{{ route('admin.ssas.create') }}"
-                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                        Add SSA
+                @if ($context === 'index' || $context === 'detail')
+                    <a href="{{ route('admin.ssas.create') }}">
+                        <x-ui::button>
+                            Add SSA
+                        </x-ui::button>
                     </a>
                 @endif
             @endif
-        </div>
-    </div>
+        </x-slot:actions>
+    </x-ui::filter-toolbar>
 
     @if ($ssas->count() > 0)
         <div class="overflow-x-auto">
@@ -165,7 +160,7 @@
                                         <div class="mt-1 flex flex-wrap gap-1">
                                             @foreach ($ssa->additionalServices as $service)
                                                 <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-[10px] font-medium text-foreground/70">
+                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-xs font-medium text-foreground/70">
                                                     {{ $service->name }}
                                                 </span>
                                             @endforeach
@@ -192,11 +187,10 @@
                                         {{ $ssa->assignedTherapist->name }}
                                     </a>
                                 @elseif ($context !== 'therapist')
-                                    <button type="button"
-                                        class="assign-therapist-btn inline-flex items-center justify-center px-3 py-1.5 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                    <x-ui::button type="button" class="assign-therapist-btn" size="sm"
                                         data-ssa-id="{{ $ssa->id }}" title="Assign Therapist">
                                         Assign
-                                    </button>
+                                    </x-ui::button>
                                 @else
                                     <span class="text-sm text-foreground/60">Unassigned</span>
                                 @endif
@@ -252,8 +246,9 @@
                                 <div class="flex items-center gap-2">
                                     @if ($context === 'therapist')
                                         <a href="{{ route('therapist.ssas.show', $ssa) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                            title="View SSA">
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="View SSA"
+                                            aria-label="View SSA {{ $ssa->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -263,8 +258,9 @@
                                         </a>
                                     @else
                                         <a href="{{ route('admin.ssas.show', $ssa) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                            title="View SSA">
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="View SSA"
+                                            aria-label="View SSA {{ $ssa->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -273,8 +269,9 @@
                                             </svg>
                                         </a>
                                         <a href="{{ route('admin.ssas.edit', $ssa) }}"
-                                            class="inline-flex items-center justify-center w-9 h-9 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                            title="Edit SSA">
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                            title="Edit SSA"
+                                            aria-label="Edit SSA {{ $ssa->id }}">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                 viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -293,15 +290,10 @@
             </table>
         </div>
     @else
-        <div class="text-center py-10">
-            <p class="text-foreground/70 mb-4">No SSAs found.</p>
-            @if ($context === 'index')
-                <a href="{{ route('admin.ssas.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add SSA
-                </a>
-            @endif
-        </div>
+        <x-ui::empty-state title="No SSAs found."
+            :description="$context === 'index' ? 'Create a new SSA to define services and scheduling for a student.' : null"
+            :action-label="$context === 'index' ? 'Add SSA' : null"
+            :action-href="$context === 'index' ? route('admin.ssas.create') : null" />
     @endif
 </x-ui::card>
 

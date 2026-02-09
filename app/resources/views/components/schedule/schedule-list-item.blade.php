@@ -55,8 +55,9 @@
             <div class="flex items-center gap-2 ml-4">
                 {{-- Details View Button --}}
                 <button type="button"
-                    class="schedule-details-view-btn p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors"
-                    data-schedule-id="{{ $schedule['id'] ?? '' }}" title="View Details">
+                    class="schedule-details-view-btn p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                    data-schedule-id="{{ $schedule['id'] ?? '' }}" title="View Details"
+                    aria-label="View schedule details for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-foreground" viewBox="0 0 24 24"
                         fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -69,8 +70,9 @@
                 @if (!$isBilled)
                     @if (isset($schedule['edit_url']))
                         <a href="{{ $schedule['edit_url'] }}"
-                            class="p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors"
-                            title="Edit Schedule">
+                            class="p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            title="Edit Schedule"
+                            aria-label="Edit schedule for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
                             <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -79,8 +81,9 @@
                         </a>
                     @else
                         <button type="button"
-                            class="schedule-edit-btn p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors"
-                            data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Edit Schedule">
+                            class="schedule-edit-btn p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Edit Schedule"
+                            aria-label="Edit schedule for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
                             <svg class="w-5 h-5 text-foreground" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -104,8 +107,9 @@
                 @if ($isPast && $isPendingBilling)
                     @if (isset($schedule['bill_url']))
                         <a href="{{ $schedule['bill_url'] }}"
-                            class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                            title="Bill Your Session">
+                            class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            title="Bill Your Session"
+                            aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -113,8 +117,9 @@
                         </a>
                     @else
                         <button type="button"
-                            class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
-                            data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Bill Your Session">
+                            class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Bill Your Session"
+                            aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -123,8 +128,9 @@
                     @endif
                 @elseif ($isPast && $isBilled)
                     <button type="button"
-                        class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
-                        data-schedule-id="{{ $schedule['id'] ?? '' }}" title="View Session">
+                        class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        data-schedule-id="{{ $schedule['id'] ?? '' }}" title="View Session"
+                        aria-label="View session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />

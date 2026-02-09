@@ -25,24 +25,10 @@ final class TherapistContractSeeder extends Seeder
             ->keyBy('name');
 
         TherapistProfile::query()->each(function (TherapistProfile $therapist) use ($catalog, $servicesByName, $schoolYear): void {
-            $position = $therapist->position?->value;
-
-            if (! $position) {
-                return;
-            }
-
-            $servicesForPosition = array_values(array_filter(
-                $catalog,
-                static fn(array $service): bool => in_array($position, $service['positions'], true)
-            ));
-
-            if ($servicesForPosition === []) {
-                return;
-            }
-
             $contract = $this->findOrCreateContract($therapist, $schoolYear['start'], $schoolYear['end']);
 
-            foreach ($servicesForPosition as $serviceDefinition) {
+            // Add all services from catalog to each therapist contract
+            foreach ($catalog as $serviceDefinition) {
                 $serviceModel = $servicesByName->get($serviceDefinition['name']);
 
                 if (! $serviceModel) {

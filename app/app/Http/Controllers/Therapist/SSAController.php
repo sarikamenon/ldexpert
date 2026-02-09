@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\Enums\SSAStatus;
 use App\Http\Controllers\Controller;
@@ -16,6 +18,7 @@ final class SSAController extends Controller
 {
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
     ) {}
 
     public function index(Request $request): View
@@ -69,6 +72,17 @@ final class SSAController extends Controller
                 'assignmentHistory.assignedBy',
             ]);
             $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), ['ssa_id' => $ssa->id, 'therapist_id' => $therapist->id])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
         }
 
         return view('therapist.ssas.show', $viewData);

@@ -1,9 +1,11 @@
+includes:
+  - vendor/nunomaduro/larastan/extension.neon
+
 parameters:
   paths:
     - app
   level: 8
-  checkMissingIterableValueType: false
-  ignoreErrors:
-    - '#Call to an undefined method Illuminate\\Support\\Stringable::toString\(\)#'
-
-
+  parallel:
+    maximumNumberOfProcesses: 4
+  tmpDir: storage/framework/cache/phpstan
+  checkModelProperties: true

@@ -13,7 +13,6 @@ use App\Enums\SSAStatus;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\ServiceSupportAgreement;
-use App\Models\StudentProfile;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -53,6 +52,42 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->where('billing_status', BillingStatus::PENDING->value)
             ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
             ->count();
+    }
+
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
+    {
+        $query = Schedule::query()
+            ->forTherapist($therapist)
+            ->whereDate('schedule_date', '<', now()->toDateString())
+            ->where('billing_status', BillingStatus::PENDING->value)
+            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
+            ->with(['student', 'service', 'ssa', 'school']);
+
+        if ($filters) {
+            if ($filters->studentId) {
+                $query->where('student_id', $filters->studentId);
+            }
+
+            if ($filters->ssaId) {
+                $query->where('ssa_id', $filters->ssaId);
+            }
+
+            if ($filters->serviceId) {
+                $query->where('service_id', $filters->serviceId);
+            }
+
+            if ($filters->dateFrom) {
+                $query->whereDate('schedule_date', '>=', $filters->dateFrom);
+            }
+
+            if ($filters->dateTo) {
+                $query->whereDate('schedule_date', '<=', $filters->dateTo);
+            }
+        }
+
+        return $query->orderBy('schedule_date', 'desc')
+            ->orderBy('start_time', 'desc')
+            ->get();
     }
 
     public function getSchoolsForTherapist(User $therapist): Collection
@@ -104,7 +139,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             $studentId = $ssa->student_id;
             $studentProfile = $ssa->student?->studentProfile;
             $studentName = $studentProfile
-                ? trim($studentProfile->first_name . ' ' . $studentProfile->last_name)
+                ? trim($studentProfile->first_name.' '.$studentProfile->last_name)
                 : $ssa->student?->name;
 
             if (! isset($mappings[$studentId])) {
@@ -132,7 +167,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 
         return collect($mappings)->map(function (array $entry) {
             $entry['services'] = collect($entry['services'])
-                ->unique(fn($service) => $service['service_id'] . '-' . $service['ssa_id'])
+                ->unique(fn ($service) => $service['service_id'].'-'.$service['ssa_id'])
                 ->values()
                 ->all();
 
@@ -261,7 +296,8 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function generateBatchNumber(string $type = 'recurring'): string
     {
         $prefix = $type === 'recurring' ? 'REC' : 'GRP';
-        return $prefix . '-' . Str::random(10) . '-' . time();
+
+        return $prefix.'-'.Str::random(10).'-'.time();
     }
 
     public function updateBillingStatus(Schedule $schedule, BillingStatus $status): Schedule
@@ -370,5 +406,17 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         }
 
         return $query;
+    }
+
+    public function countLessonsThisWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): int
+    {
+        return Schedule::query()
+            ->forTherapist($therapist)
+            ->whereBetween('schedule_date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->whereIn('status', [
+                ScheduleStatus::SCHEDULED->value,
+                ScheduleStatus::COMPLETED->value,
+            ])
+            ->count();
     }
 }

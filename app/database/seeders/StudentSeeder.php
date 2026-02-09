@@ -27,7 +27,7 @@ class StudentSeeder extends Seeder
 
         StudentProfile::factory()
             ->count(15)
-            ->state(fn() => ['school_id' => $schoolIds->random()])
+            ->state(fn () => ['school_id' => $schoolIds->random()])
             ->create()
             ->each(function (StudentProfile $profile): void {
                 if (fake()->boolean(30)) {

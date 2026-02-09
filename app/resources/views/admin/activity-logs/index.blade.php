@@ -6,81 +6,57 @@
     <x-page-title title="Activity Logs" />
 
     <x-ui::card class="p-6 space-y-4">
-        <!-- Filters -->
-        <div class="flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
-            <form method="GET" class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3"
-                id="activityLogFiltersForm">
-                <div>
-                    <label class="block text-sm font-medium text-foreground/70 mb-1">Search</label>
-                    <x-text-input type="text" name="search" placeholder="Search description"
-                        value="{{ $filters['search'] ?? '' }}" />
-                </div>
+        <x-ui::filter-toolbar formId="activityLogFiltersForm">
+            <x-slot:filters>
+                <x-ui::input type="text" name="search" placeholder="Search description"
+                    value="{{ $filters['search'] ?? '' }}" class="w-48" />
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground/70 mb-1">User</label>
-                    <x-ui::select name="user_id" searchable allow-clear placeholder="All Users">
-                        <option value="">All Users</option>
-                        @foreach ($users as $user)
-                            <option value="{{ $user->id }}" @selected(($filters['user_id'] ?? null) == $user->id)>
-                                {{ $user->name }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                </div>
+                <x-ui::select name="user_id" searchable allow-clear placeholder="All Users" :inline="true" class="w-36">
+                    <option value="">All Users</option>
+                    @foreach ($users as $user)
+                        <option value="{{ $user->id }}" @selected(($filters['user_id'] ?? null) == $user->id)>
+                            {{ $user->name }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground/70 mb-1">Action</label>
-                    <x-ui::select name="action" searchable allow-clear placeholder="All Actions">
-                        <option value="">All Actions</option>
-                        @foreach ($actions as $action)
-                            <option value="{{ $action }}" @selected(($filters['action'] ?? null) === $action)>
-                                {{ ucfirst(str_replace('_', ' ', $action)) }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                </div>
+                <x-ui::select name="action" searchable allow-clear placeholder="All Actions" :inline="true" class="w-36">
+                    <option value="">All Actions</option>
+                    @foreach ($actions as $action)
+                        <option value="{{ $action }}" @selected(($filters['action'] ?? null) === $action)>
+                            {{ ucfirst(str_replace('_', ' ', $action)) }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground/70 mb-1">Model Type</label>
-                    <x-ui::select name="model_type" searchable allow-clear placeholder="All Models">
-                        <option value="">All Models</option>
-                        @foreach ($modelTypes as $modelType)
-                            <option value="{{ $modelType }}" @selected(($filters['model_type'] ?? null) === $modelType)>
-                                {{ $modelType }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                </div>
+                <x-ui::select name="model_type" searchable allow-clear placeholder="All Models" :inline="true" class="w-36">
+                    <option value="">All Models</option>
+                    @foreach ($modelTypes as $modelType)
+                        <option value="{{ $modelType }}" @selected(($filters['model_type'] ?? null) === $modelType)>
+                            {{ $modelType }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground/70 mb-1">From Date</label>
-                    <x-text-input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}" />
-                </div>
+                <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
+                    title="From Date" class="w-36" />
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground/70 mb-1">To Date</label>
-                    <x-text-input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}" />
-                </div>
+                <x-ui::input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
+                    title="To Date" class="w-36" />
 
-                <div class="flex items-end gap-2">
-                    <button type="submit"
-                        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                        Filter
-                    </button>
-                    <a href="{{ route('admin.activity-logs.index') }}"
-                        class="px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                        Clear
+                @if (!empty(array_filter($filters ?? [])))
+                    <a href="{{ route('admin.activity-logs.index') }}">
+                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
                     </a>
-                </div>
-            </form>
+                @endif
+            </x-slot:filters>
 
-            <div class="flex gap-2">
-                <a href="{{ route('admin.activity-logs.export', $filters) }}"
-                    class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                    Export
+            <x-slot:actions>
+                <a href="{{ route('admin.activity-logs.export', $filters) }}">
+                    <x-ui::button variant="secondary">Export</x-ui::button>
                 </a>
-            </div>
-        </div>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
 
         <!-- Logs Table -->
         @if ($logs->count() > 0)
@@ -135,10 +111,11 @@
             <div class="mt-4">
                 {{ $logs->links() }}
             </div>
+
+            <div id="activityLogsStatus" class="sr-only" role="status" aria-live="polite"></div>
         @else
-            <div class="text-center py-10">
-                <p class="text-foreground/70">No activity logs found.</p>
-            </div>
+            <x-ui::empty-state title="No activity logs found."
+                description="Try broadening your filters or date range to see more activity." />
         @endif
     </x-ui::card>
 

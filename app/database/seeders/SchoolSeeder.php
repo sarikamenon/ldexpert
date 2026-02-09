@@ -18,7 +18,7 @@ final class SchoolSeeder extends Seeder
 
         School::factory()
             ->count(15)
-            ->state(fn() => ['manager_id' => $managerId])
+            ->state(fn () => ['manager_id' => $managerId])
             ->create()
             ->each(function (School $school): void {
                 if (fake()->boolean(35)) {

@@ -14,6 +14,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         const $todayViewBtn = $('.calendar-today-btn');
         const $scheduleFiltersForm = $('#scheduleFiltersForm');
         const $scheduleList = $('#scheduleList');
+        const $schoolEventList = $('#schoolEventList');
         const addScheduleButton = document.getElementById('addScheduleButton');
         const ssaSelectionModal = document.getElementById('ssaSelectionModal');
         const ssaSelectionForm = document.getElementById('ssaSelectionForm');
@@ -124,6 +125,8 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         }
 
         const therapistTimezoneLabel = $calendarEl.data('therapist-timezone-label') || 'Central Time (CT)';
+        const calendarEventsUrl = $calendarEl.data('calendar-events-url');
+        let calendarEvents = parseCalendarEvents($calendarEl.data('calendar-events'));
         const selectedDateStr = $calendarEl.data('selected-date');
         let selectedDate = selectedDateStr
             ? new Date(`${selectedDateStr}T00:00:00`)
@@ -133,7 +136,8 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         let currentYear = selectedDate.getFullYear();
 
         renderCalendar(currentYear, currentMonth, selectedDate);
-        
+        loadCalendarEventsForMonth(currentYear, currentMonth);
+
         // Load schedules for the initial selected date
         loadScheduleForDate(selectedDate);
 
@@ -209,6 +213,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             currentYear = today.getFullYear();
             renderCalendar(currentYear, currentMonth, selectedDate);
             updateSelectedDate(today);
+            loadCalendarEventsForMonth(currentYear, currentMonth);
             loadScheduleForDate(today);
         });
 
@@ -343,6 +348,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
 
             html += '</div>';
             $calendarEl.html(html);
+            applyEventMarkers();
 
             $calendarEl.find('.calendar-day').on('click', function () {
                 const dateStr = $(this).data('date');
@@ -376,6 +382,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                     }
                 }
                 renderCalendar(currentYear, currentMonth, selectedDate);
+                loadCalendarEventsForMonth(currentYear, currentMonth);
             });
         }
 
@@ -431,6 +438,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                 },
                 success(response) {
                     renderScheduleList(response.schedules, date);
+                    renderSchoolEvents(response.events || [], date);
                 },
                 error(xhr) {
                     let errorMessage = 'Failed to load schedules.';
@@ -438,8 +446,84 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                         errorMessage = xhr.responseJSON.message;
                     }
                     $scheduleList.html(`<div class="text-center py-12"><p class="text-danger">${errorMessage}</p></div>`);
+                    renderSchoolEvents([], date);
                 },
             });
+        }
+
+        function loadCalendarEventsForMonth(year, month) {
+            if (! calendarEventsUrl) {
+                return;
+            }
+            const range = getMonthRange(year, month);
+            $.ajax({
+                url: calendarEventsUrl,
+                method: 'GET',
+                data: {
+                    start: formatDate(range.start),
+                    end: formatDate(range.end),
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                success(response) {
+                    calendarEvents = response.events || [];
+                    applyEventMarkers();
+                },
+            });
+        }
+
+        function renderSchoolEvents(events, selected) {
+            if (! $schoolEventList.length) {
+                return;
+            }
+            const dateLabel = selected
+                ? selected.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                : 'Selected date';
+
+            const dayEvents = (events && events.length)
+                ? events
+                : getEventsForDate(formatDate(selected));
+
+            if (! dayEvents.length) {
+                $schoolEventList.html(`
+                    <div class="mb-4">
+                        <h3 class="text-sm font-semibold text-foreground">School Events</h3>
+                        <p class="text-xs text-foreground/60">For ${dateLabel}</p>
+                    </div>
+                    <p class="text-sm text-foreground/60">No school events on this date.</p>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-foreground">School Events</h3>
+                    <p class="text-xs text-foreground/60">For ${dateLabel}</p>
+                </div>
+                <div class="space-y-3">
+            `;
+
+            dayEvents.forEach((event) => {
+                const badgeClass = event.is_holiday
+                    ? 'bg-danger/10 text-danger'
+                    : 'bg-primary/10 text-primary';
+                html += `
+                    <div class="border border-border rounded-lg p-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-semibold text-foreground">${event.title}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full ${badgeClass}">
+                                ${event.event_type_label || ''}
+                            </span>
+                        </div>
+                        <div class="text-xs text-foreground/60 mt-1">${event.start_date} - ${event.end_date}</div>
+                        ${event.notes ? `<p class="text-xs text-foreground/70 mt-2">${event.notes}</p>` : ''}
+                    </div>
+                `;
+            });
+            html += '</div>';
+            $schoolEventList.html(html);
         }
 
         function renderScheduleList(schedules, selectedDate) {
@@ -544,21 +628,41 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                                     </button>
                                 ` : ''}
 
-                                ${isPast && isPendingBilling ? `
-                                    <button type="button" class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" data-schedule-id="${schedule.id}" title="Bill Your Session">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </button>
-                                ` : ''}
+                                ${isPast && isPendingBilling ? (
+                                    schedule.bill_url
+                                        ? `
+                                            <a href="${schedule.bill_url}" class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" title="Bill Your Session">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </a>
+                                        `
+                                        : `
+                                            <button type="button" class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" data-schedule-id="${schedule.id}" title="Bill Your Session">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        `
+                                ) : ''}
 
-                                ${isPast && isBilled ? `
-                                    <button type="button" class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" data-schedule-id="${schedule.id}" title="View Session">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    </button>
-                                ` : ''}
+                                ${isPast && isBilled ? (
+                                    schedule.session_log_url
+                                        ? `
+                                            <a href="${schedule.session_log_url}" class="schedule-view-session-link p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" title="View Session Log">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </a>
+                                        `
+                                        : `
+                                            <button type="button" class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors" data-schedule-id="${schedule.id}" title="View Session">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </button>
+                                        `
+                                ) : ''}
                             </div>
                         </div>
                     </div>
@@ -566,6 +670,65 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             });
 
             $scheduleList.html(html);
+        }
+
+        function applyEventMarkers() {
+            $calendarEl.find('.calendar-day').each(function () {
+                const dateStr = $(this).data('date');
+                const dot = $(this).find('.calendar-dot');
+                if (! dateStr || ! dot.length) {
+                    return;
+                }
+
+                if (! calendarEvents || calendarEvents.length === 0) {
+                    dot.hide();
+                    $(this).removeClass('calendar-day-holiday calendar-day-event');
+                    return;
+                }
+
+                const events = getEventsForDate(dateStr);
+                if (events.length === 0) {
+                    dot.hide();
+                    $(this).removeClass('calendar-day-holiday calendar-day-event');
+                    return;
+                }
+
+                const hasHoliday = events.some((event) => event.is_holiday);
+                $(this).toggleClass('calendar-day-holiday', hasHoliday);
+                $(this).toggleClass('calendar-day-event', ! hasHoliday);
+                dot
+                    .show()
+                    .toggleClass('calendar-dot-holiday', hasHoliday)
+                    .toggleClass('calendar-dot-event', ! hasHoliday);
+            });
+        }
+
+        function getEventsForDate(dateStr) {
+            if (! calendarEvents || calendarEvents.length === 0) {
+                return [];
+            }
+            return calendarEvents.filter((event) => dateStr >= event.start_date && dateStr <= event.end_date);
+        }
+
+        function getMonthRange(year, month) {
+            return {
+                start: new Date(year, month, 1),
+                end: new Date(year, month + 1, 0),
+            };
+        }
+
+        function parseCalendarEvents(data) {
+            if (! data) {
+                return [];
+            }
+            if (Array.isArray(data)) {
+                return data;
+            }
+            try {
+                return JSON.parse(data);
+            } catch (e) {
+                return [];
+            }
         }
 
         function getOrdinalSuffix(day) {

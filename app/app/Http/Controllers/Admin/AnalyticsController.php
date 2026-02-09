@@ -78,4 +78,3 @@ final class AnalyticsController extends Controller
         return [$startDate, $endDate];
     }
 }
-

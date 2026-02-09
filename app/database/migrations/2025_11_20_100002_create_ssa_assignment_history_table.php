@@ -41,4 +41,3 @@ return new class extends Migration
         Schema::dropIfExists('ssa_assignment_history');
     }
 };
-

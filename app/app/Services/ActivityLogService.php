@@ -67,11 +67,11 @@ class ActivityLogService
 
     public function logBulkAction(string $action, string $modelType, array $ids, ?array $metadata = null): ActivityLog
     {
-        $model = new $modelType();
+        $model = new $modelType;
 
         return $this->activityLogs->create([
             'user_id' => Auth::id(),
-            'action' => 'bulk_' . $action,
+            'action' => 'bulk_'.$action,
             'model_type' => $modelType,
             'model_id' => null,
             'changes' => [
@@ -79,7 +79,7 @@ class ActivityLogService
                 'count' => count($ids),
                 'metadata' => $metadata,
             ],
-            'description' => "Bulk {$action} performed on " . count($ids) . " " . class_basename($modelType) . "(s)",
+            'description' => "Bulk {$action} performed on ".count($ids).' '.class_basename($modelType).'(s)',
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);

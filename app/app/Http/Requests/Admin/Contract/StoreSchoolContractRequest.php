@@ -17,7 +17,7 @@ final class StoreSchoolContractRequest extends SchoolContractFormRequest
                 'integer',
                 Rule::exists('schools', 'id')
                     ->whereNull('deleted_at')
-                    ->where(fn($query) => $query->where('status', SchoolStatus::ACTIVE->value)),
+                    ->where(fn ($query) => $query->where('status', SchoolStatus::ACTIVE->value)),
             ],
         ] + $this->baseRules();
     }

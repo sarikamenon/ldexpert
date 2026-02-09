@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Therapist\Services\DashboardService;
+use App\Http\Controllers\Controller;
 use Illuminate\View\View;
 
 class DashboardController extends Controller

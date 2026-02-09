@@ -10,7 +10,7 @@
     </button>
 
     <div x-cloak x-show="open" @click.outside="open = false"
-        class="absolute left-0 z-50 mt-1 w-max min-w-[10rem] whitespace-nowrap rounded-md border border-border bg-white shadow-lg">
+        class="absolute left-0 z-50 mt-1 w-max min-w-[10rem] whitespace-nowrap overflow-hidden rounded-md border border-border bg-white shadow-lg">
         {{ $content ?? '' }}
     </div>
 </div>

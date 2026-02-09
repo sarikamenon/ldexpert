@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
-use App\Enums\Role;
-use App\Enums\ScheduleStatus;
-use App\Enums\SSAStatus;
-use App\Enums\UserStatus;
+use App\Domain\SSA\Repositories\SSARepositoryInterface;
+use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
+use App\Enums\SSAStatus;
 use App\Models\Schedule;
-use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -18,81 +17,30 @@ class DashboardService
 {
     public function __construct(
         private readonly ScheduleService $scheduleService,
+        private readonly SSARepositoryInterface $ssaRepository,
+        private readonly UserRepositoryInterface $userRepository,
+        private readonly ScheduleRepositoryInterface $scheduleRepository,
     ) {}
 
     public function getDashboardMetrics(User $therapist): array
     {
-        // Get all SSAs assigned to this therapist
-        $assignedSSAs = ServiceSupportAgreement::query()
-            ->where('assigned_therapist_id', $therapist->id)
-            ->get();
+        $assignedSSAs = $this->ssaRepository->getAssignedSSAsForTherapist($therapist->id);
+        $studentIds = $assignedSSAs->pluck('student_id')->unique()->all();
+        $activeStudents = $this->userRepository->countActiveStudentsByIds($studentIds);
+        $newStudentsThisMonth = $this->ssaRepository->countNewStudentsThisMonth($therapist->id);
+        $activeSSAs = $assignedSSAs->where('status', SSAStatus::ACTIVE)->count();
+        $completedSSAs = $assignedSSAs->where('status', SSAStatus::COMPLETED)->count();
+        $ssasList = $this->ssaRepository->getSSAsForTherapistDashboard($therapist->id, 5);
 
-        // Get distinct student IDs from assigned SSAs
-        $studentIds = $assignedSSAs->pluck('student_id')->unique();
-
-        // Count active students based on user status (not SSA status)
-        // Only count students who have SSAs assigned to this therapist
-        $activeStudents = User::query()
-            ->where('role', Role::STUDENT)
-            ->where('status', UserStatus::ACTIVE)
-            ->whereIn('id', $studentIds)
-            ->count();
-
-        // Count new students this month (students who got SSAs assigned this month)
-        $newStudentsThisMonth = ServiceSupportAgreement::query()
-            ->where('assigned_therapist_id', $therapist->id)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->distinct('student_id')
-            ->count('student_id');
-
-        // Count active SSAs
-        $activeSSAs = $assignedSSAs
-            ->where('status', SSAStatus::ACTIVE)
-            ->count();
-
-        // Count completed SSAs
-        $completedSSAs = $assignedSSAs
-            ->where('status', SSAStatus::COMPLETED)
-            ->count();
-
-        // Get SSAs list for dashboard (ordered by assignment date descending)
-        $ssasList = ServiceSupportAgreement::query()
-            ->where('assigned_therapist_id', $therapist->id)
-            ->with(['student', 'student.studentProfile.school', 'primaryService'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
-
-        // Today's schedules (reuse schedule service / filters)
         $today = now()->toDateString();
-
-        $todayFilters = new ScheduleFilterDTO(
-            date: $today,
-        );
-
-        $todaySchedules = $this->scheduleService
-            ->getSchedules($therapist, $todayFilters);
-
-        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules)
-            ->take(3);
-
+        $todayFilters = new ScheduleFilterDTO(date: $today);
+        $todaySchedules = $this->scheduleService->getSchedules($therapist, $todayFilters);
+        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules)->take(3);
         $lessonsToday = $todaySchedules->count();
 
-        // Weekly lessons (scheduled + completed sessions for this week)
         $startOfWeek = now()->startOfWeek();
         $endOfWeek = now()->endOfWeek();
-
-        $lessonsThisWeek = Schedule::query()
-            ->forTherapist($therapist)
-            ->whereBetween('schedule_date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
-            ->whereIn('status', [
-                ScheduleStatus::SCHEDULED->value,
-                ScheduleStatus::COMPLETED->value,
-            ])
-            ->count();
-
-        // Pending (unbilled) schedule count
+        $lessonsThisWeek = $this->scheduleRepository->countLessonsThisWeek($therapist, $startOfWeek, $endOfWeek);
         $pendingScheduleCount = $this->scheduleService->getPendingCount($therapist);
 
         return [
@@ -109,7 +57,7 @@ class DashboardService
     }
 
     /**
-     * @param Collection<int, Schedule> $schedules
+     * @param  Collection<int, Schedule>  $schedules
      * @return Collection<int, array<string, mixed>>
      */
     private function formatSchedulesForDashboard(Collection $schedules): Collection

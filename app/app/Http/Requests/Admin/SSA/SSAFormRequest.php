@@ -6,7 +6,6 @@ namespace App\Http\Requests\Admin\SSA;
 
 use App\Enums\ServiceFrequency;
 use App\Models\Service;
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -46,7 +45,12 @@ abstract class SSAFormRequest extends FormRequest
             ],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date', 'after:start_date'],
-            'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
+            'minutes_per_session' => [
+                'required',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'frequency' => ['nullable', Rule::in($frequencies)],
             'sessions_per_frequency' => ['nullable', 'integer', 'min:1', 'max:100'],
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],
@@ -84,10 +88,10 @@ abstract class SSAFormRequest extends FormRequest
 
                 if ($service && $service->is_frequency_service) {
                     // Service supports frequency, so frequency and sessions_per_frequency are required
-                    if (!$this->filled('frequency')) {
+                    if (! $this->filled('frequency')) {
                         $validator->errors()->add('frequency', 'The frequency field is required when the service supports frequency.');
                     }
-                    if (!$this->filled('sessions_per_frequency')) {
+                    if (! $this->filled('sessions_per_frequency')) {
                         $validator->errors()->add('sessions_per_frequency', 'The sessions per frequency field is required when the service supports frequency.');
                     }
                 }

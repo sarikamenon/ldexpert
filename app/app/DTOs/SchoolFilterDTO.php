@@ -17,7 +17,7 @@ final class SchoolFilterDTO
     public static function fromArray(array $data): self
     {
         $statusValue = $data['status'] ?? null;
-        
+
         // Parse status if provided
         $status = null;
         if (isset($statusValue) && $statusValue !== null && $statusValue !== '') {
@@ -25,12 +25,12 @@ final class SchoolFilterDTO
                 ? $statusValue
                 : SchoolStatus::from($statusValue);
         }
-        
+
         // When no specific status is selected (All Statuses), include deactivated schools
         $includeDeactivated = $status === null
             ? true
             : (bool) ($data['include_deactivated'] ?? $data['show_deactivated'] ?? false);
-        
+
         return new self(
             search: $data['search'] ?? null,
             status: $status,

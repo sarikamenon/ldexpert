@@ -13,6 +13,80 @@
             @endif
 
             <x-ui::card class="p-6 space-y-4">
+                <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                    <form method="GET" class="flex flex-wrap gap-3 items-end" id="pendingScheduleFiltersForm">
+                        <div class="space-y-1">
+                            <label for="student_id" class="text-xs font-medium text-foreground/70">Student</label>
+                            <x-ui::select id="student_id" name="student_id" searchable
+                                placeholder="All Students" class="min-w-[10rem]">
+                                <option value="">All Students</option>
+                                @foreach ($students ?? [] as $student)
+                                    <option value="{{ $student->id }}" @selected((int) ($filters['student_id'] ?? 0) === $student->id)>
+                                        {{ $student->name }}
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="ssa_id" class="text-xs font-medium text-foreground/70">SSA</label>
+                            <x-ui::select id="ssa_id" name="ssa_id" searchable
+                                placeholder="All SSAs" class="min-w-[10rem]">
+                                <option value="">All SSAs</option>
+                                @foreach ($ssas ?? [] as $ssa)
+                                    <option value="{{ $ssa->id }}" @selected((int) ($filters['ssa_id'] ?? 0) === $ssa->id)>
+                                        {{ $ssa->primaryService?->name ?? 'Unnamed service' }}
+                                        @if ($ssa->student?->name)
+                                            ({{ $ssa->student->name }})
+                                        @endif
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="service_id" class="text-xs font-medium text-foreground/70">Service</label>
+                            <x-ui::select id="service_id" name="service_id" searchable
+                                placeholder="All Services" class="min-w-[10rem]">
+                                <option value="">All Services</option>
+                                @foreach ($services ?? [] as $service)
+                                    <option value="{{ $service->id }}" @selected((int) ($filters['service_id'] ?? 0) === $service->id)>
+                                        {{ $service->name }}
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="date_from" class="text-xs font-medium text-foreground/70">From Date</label>
+                            <div class="relative">
+                                <x-ui::input id="date_from" type="date" name="date_from"
+                                    value="{{ $filters['date_from'] ?? '' }}" class="w-40" />
+                            </div>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="date_to" class="text-xs font-medium text-foreground/70">To Date</label>
+                            <div class="relative">
+                                <x-ui::input id="date_to" type="date" name="date_to"
+                                    value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-sm font-medium">
+                            Filter
+                        </button>
+
+                        @if (!empty(array_filter($filters ?? [])))
+                            <a href="{{ route('therapist.schedule.pending') }}"
+                                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
+                                Clear
+                            </a>
+                        @endif
+                    </form>
+                </div>
+
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-border" id="pendingScheduleList">
                         <thead class="bg-muted/40">
@@ -32,7 +106,7 @@
                             </tr>
                         </thead>
                         <tbody class="bg-background divide-y divide-border">
-                            @forelse ($pendingSchedules ?? [] as $schedule)
+                            @forelse ($pendingSchedules as $schedule)
                                 @php
                                     $durationMinutes = $schedule->durationMinutes();
                                     $hours = intdiv($durationMinutes, 60);
@@ -45,7 +119,7 @@
                                                     ($minutesRemainder > 0 ? $minutesRemainder . 'm' : ''),
                                             )
                                             : $minutesRemainder . 'm';
-
+                                    
                                     $startTime = $schedule->start_time?->format('g:i A');
                                     $endTime = $schedule->end_time?->format('g:i A');
                                     $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
@@ -88,11 +162,10 @@
                                                 class="schedule-delete-btn inline-flex items-center justify-center rounded-full border border-destructive/20 bg-background text-destructive hover:bg-destructive/10 hover:border-destructive/30 px-3 py-1 text-xs font-medium transition-colors">
                                                 Delete Schedule
                                             </button>
-                                            <button type="button"
-                                                class="schedule-bill-btn inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1 text-xs font-medium transition-colors"
-                                                data-schedule-id="{{ $schedule->id }}">
+                                            <a href="{{ route('therapist.session-logs.create.from-schedule', $schedule->id) }}"
+                                                class="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1 text-xs font-medium transition-colors">
                                                 Bill Your Session
-                                            </button>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

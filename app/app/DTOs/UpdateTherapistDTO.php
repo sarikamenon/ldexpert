@@ -50,7 +50,7 @@ final class UpdateTherapistDTO
     public function toUserArray(): array
     {
         return [
-            'name' => $this->firstName . ' ' . $this->lastName,
+            'name' => $this->firstName.' '.$this->lastName,
             'email' => $this->personalEmail,
         ];
     }

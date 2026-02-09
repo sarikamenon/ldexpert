@@ -5,37 +5,43 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
+use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\ScheduleService;
+use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateScheduleDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
-use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
-use App\Http\Controllers\Controller;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
 use App\Http\Requests\Therapist\StoreScheduleRequest;
 use App\Http\Requests\Therapist\UpdateScheduleRequest;
 use App\Models\Schedule;
-use App\Models\ServiceSupportAgreement;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 final class ScheduleController extends Controller
 {
     public function __construct(
         private readonly ScheduleService $scheduleService,
+        private readonly SSAService $ssaService,
+        private readonly SessionLogService $sessionLogService,
+        private readonly SchoolCalendarService $calendarService,
     ) {}
 
     public function calendar(ScheduleFilterRequest $request): View
     {
+        /** @var User $therapist */
         $therapist = $request->user();
         $filters = ScheduleFilterDTO::fromRequest($request->validated());
 
@@ -49,19 +55,22 @@ final class ScheduleController extends Controller
         $students = $this->scheduleService->getStudents($therapist);
 
         // Get active SSAs for the therapist
-        $activeSSAs = ServiceSupportAgreement::query()
-            ->where('assigned_therapist_id', $therapist->id)
-            ->where('status', SSAStatus::ACTIVE)
-            ->with(['student', 'primaryService'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $activeSSAs = $this->ssaService->getActiveSSAsForTherapist($therapist->id);
+
+        $sessionLogsBySchedule = $this->sessionLogService->getSessionLogsByScheduleIds(
+            $therapist,
+            $schedules->pluck('id')->toArray()
+        );
 
         // Format schedules for the view (matching the format expected by schedule-card component)
-        $formattedSchedules = $schedules->map(function ($schedule) {
+        $formattedSchedules = $schedules->map(function ($schedule) use ($sessionLogsBySchedule) {
             $studentProfile = $schedule->student?->studentProfile;
             $scheduleDate = $schedule->schedule_date;
             $isPast = $scheduleDate !== null && $scheduleDate->lt(now()->startOfDay());
             $isBilled = $schedule->billing_status === BillingStatus::BILLED;
+            $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
+            /** @var \App\Models\SessionLog|null $sessionLog */
+            $sessionLog = $sessionLogsBySchedule->get($schedule->id)?->first();
 
             return [
                 'id' => $schedule->id,
@@ -79,6 +88,12 @@ final class ScheduleController extends Controller
                 'is_group' => $schedule->is_group,
                 'is_past' => $isPast,
                 'is_billed' => $isBilled,
+                'bill_url' => $isPast && $isPendingBilling
+                    ? route('therapist.session-logs.create.from-schedule', $schedule->id)
+                    : null,
+                'session_log_url' => $isPast && $isBilled && $sessionLog
+                    ? route('therapist.session-logs.show', $sessionLog)
+                    : null,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'student_name' => $schedule->student?->name,
@@ -93,6 +108,27 @@ final class ScheduleController extends Controller
         $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
+        $calendarStart = $selectedDate->startOfMonth();
+        $calendarEnd = $selectedDate->endOfMonth();
+        $schoolIds = $filters->schoolId
+            ? [(int) $filters->schoolId]
+            : $schools->pluck('id')->map('intval')->toArray();
+
+        $calendarEvents = $this->calendarService->listBySchoolsAndRange($schoolIds, $calendarStart, $calendarEnd);
+        $formattedEvents = $calendarEvents->map(function ($event) {
+            return [
+                'id' => $event->id,
+                'school_id' => $event->school_id,
+                'title' => $event->title,
+                'event_type' => $event->event_type?->value,
+                'event_type_label' => $event->event_type?->label(),
+                'start_date' => $event->start_date?->format('Y-m-d'),
+                'end_date' => $event->end_date?->format('Y-m-d'),
+                'notes' => $event->notes,
+                'is_holiday' => $event->event_type?->value === 'holiday',
+            ];
+        })->values();
+
         return view('therapist.schedule.calendar', [
             'selectedDate' => $selectedDate,
             'selectedDateFormatted' => $selectedDate->format('Y-m-d'),
@@ -105,11 +141,13 @@ final class ScheduleController extends Controller
             'activeSSAs' => $activeSSAs,
             'therapistTimezone' => $therapistTimezone,
             'therapistTimezoneLabel' => $therapistTimezoneLabel,
+            'calendarEvents' => $formattedEvents,
         ]);
     }
 
     public function create(Request $request): View|RedirectResponse
     {
+        /** @var User $therapist */
         $therapist = $request->user();
 
         $selectedDate = $request->query('date')
@@ -126,12 +164,7 @@ final class ScheduleController extends Controller
                 ->with('status', 'Please click the "Add New Schedule" button and select an SSA to create a schedule.');
         }
 
-        $ssa = ServiceSupportAgreement::query()
-            ->where('id', $ssaId)
-            ->where('assigned_therapist_id', $therapist->id)
-            ->where('status', SSAStatus::ACTIVE)
-            ->with(['student', 'student.studentProfile.school', 'primaryService', 'services'])
-            ->first();
+        $ssa = $this->ssaService->findSSAForSchedule((int) $ssaId, $therapist->id);
 
         if (! $ssa) {
             return redirect()
@@ -149,7 +182,7 @@ final class ScheduleController extends Controller
                 'first_name' => $student?->name ?? '',
                 'last_name' => '',
             ],
-        ])->filter(static fn($studentInfo) => $studentInfo->user_id !== null)->values();
+        ])->filter(static fn ($studentInfo) => $studentInfo->user_id !== null)->values();
 
         // Get all services from this SSA (primary + additional)
         $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
@@ -187,24 +220,27 @@ final class ScheduleController extends Controller
 
     public function edit(Request $request, int $id): View
     {
+        /** @var User $therapist */
         $therapist = $request->user();
-        $schedule = Schedule::query()
-            ->where('id', $id)
-            ->where('therapist_id', $therapist->id)
-            ->with([
-                'student',
-                'student.studentProfile',
-                'student.studentProfile.school',
-                'service',
-                'ssa',
-                'ssa.primaryService',
-                'ssa.additionalServices',
-                'ssa.student',
-                'ssa.student.studentProfile',
-                'ssa.student.studentProfile.school',
-                'school'
-            ])
-            ->firstOrFail();
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
+        $schedule->load([
+            'student',
+            'student.studentProfile',
+            'student.studentProfile.school',
+            'service',
+            'ssa',
+            'ssa.primaryService',
+            'ssa.additionalServices',
+            'ssa.student',
+            'ssa.student.studentProfile',
+            'ssa.student.studentProfile.school',
+            'school',
+        ]);
 
         $this->authorize('update', $schedule);
 
@@ -220,16 +256,48 @@ final class ScheduleController extends Controller
 
     public function getSchedules(ScheduleFilterRequest $request): JsonResponse
     {
+        /** @var User $therapist */
         $therapist = $request->user();
         $filters = ScheduleFilterDTO::fromRequest($request->validated());
 
         $schedules = $this->scheduleService->getSchedules($therapist, $filters);
 
+        $schools = $this->scheduleService->getSchools($therapist);
+        $schoolIds = $filters->schoolId
+            ? [(int) $filters->schoolId]
+            : $schools->pluck('id')->map('intval')->toArray();
+        $selectedDate = $filters->date
+            ? CarbonImmutable::parse($filters->date)
+            : CarbonImmutable::today();
+        $events = $this->calendarService
+            ->listBySchoolsAndRange($schoolIds, $selectedDate->startOfDay(), $selectedDate->endOfDay())
+            ->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'school_id' => $event->school_id,
+                    'title' => $event->title,
+                    'event_type' => $event->event_type?->value,
+                    'event_type_label' => $event->event_type?->label(),
+                    'start_date' => $event->start_date?->format('Y-m-d'),
+                    'end_date' => $event->end_date?->format('Y-m-d'),
+                    'notes' => $event->notes,
+                    'is_holiday' => $event->event_type?->value === 'holiday',
+                ];
+            })->values();
+
+        $sessionLogsBySchedule = $this->sessionLogService->getSessionLogsByScheduleIds(
+            $therapist,
+            $schedules->pluck('id')->toArray()
+        );
+
         return response()->json([
-            'schedules' => $schedules->map(function ($schedule) {
+            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule) {
                 $scheduleDate = $schedule->schedule_date;
                 $isPast = $scheduleDate !== null && $scheduleDate->lt(now()->startOfDay());
                 $isBilled = $schedule->billing_status === BillingStatus::BILLED;
+                $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
+                /** @var \App\Models\SessionLog|null $sessionLog */
+                $sessionLog = $sessionLogsBySchedule->get($schedule->id)?->first();
 
                 return [
                     'id' => $schedule->id,
@@ -244,6 +312,12 @@ final class ScheduleController extends Controller
                     'is_group' => $schedule->is_group,
                     'is_past' => $isPast,
                     'is_billed' => $isBilled,
+                    'bill_url' => $isPast && $isPendingBilling
+                        ? route('therapist.session-logs.create.from-schedule', $schedule->id)
+                        : null,
+                    'session_log_url' => $isPast && $isBilled && $sessionLog
+                        ? route('therapist.session-logs.show', $sessionLog)
+                        : null,
                     'notes' => $schedule->notes,
                     'location_details' => $schedule->location_details,
                     'student_name' => $schedule->student?->name,
@@ -254,27 +328,91 @@ final class ScheduleController extends Controller
                     'edit_url' => route('therapist.schedule.edit', $schedule->id),
                 ];
             })->toArray(),
+            'events' => $events,
+        ]);
+    }
+
+    public function getCalendarEvents(ScheduleFilterRequest $request): JsonResponse
+    {
+        /** @var User $therapist */
+        $therapist = $request->user();
+        $filters = ScheduleFilterDTO::fromRequest($request->validated());
+
+        $start = $request->query('start')
+            ? CarbonImmutable::parse((string) $request->query('start'))
+            : CarbonImmutable::today()->startOfMonth();
+        $end = $request->query('end')
+            ? CarbonImmutable::parse((string) $request->query('end'))
+            : CarbonImmutable::today()->endOfMonth();
+
+        $schools = $this->scheduleService->getSchools($therapist);
+        $schoolIds = $filters->schoolId
+            ? [(int) $filters->schoolId]
+            : $schools->pluck('id')->map('intval')->toArray();
+
+        $events = $this->calendarService->listBySchoolsAndRange($schoolIds, $start, $end);
+
+        return response()->json([
+            'events' => $events->map(function ($event) {
+                return [
+                    'id' => $event->id,
+                    'school_id' => $event->school_id,
+                    'title' => $event->title,
+                    'event_type' => $event->event_type?->value,
+                    'event_type_label' => $event->event_type?->label(),
+                    'start_date' => $event->start_date?->format('Y-m-d'),
+                    'end_date' => $event->end_date?->format('Y-m-d'),
+                    'notes' => $event->notes,
+                    'is_holiday' => $event->event_type?->value === 'holiday',
+                ];
+            })->values(),
         ]);
     }
 
     public function pending(ScheduleFilterRequest $request): View
     {
+        /** @var User $therapist */
         $therapist = $request->user();
         $pendingCount = $this->scheduleService->getPendingCount($therapist);
 
-        $pendingSchedules = Schedule::query()
-            ->forTherapist($therapist)
-            ->whereDate('schedule_date', '<', now()->toDateString())
-            ->where('billing_status', BillingStatus::PENDING->value)
-            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
-            ->with(['student', 'service', 'ssa', 'school'])
-            ->orderBy('schedule_date', 'desc')
-            ->orderBy('start_time', 'desc')
-            ->get();
+        $filters = ScheduleFilterDTO::fromRequest($request->validated());
+        $pendingSchedules = $this->scheduleService->getPendingSchedules($therapist, $filters);
+
+        // Reference data for filters
+        $ssas = $this->ssaService
+            ->getActiveSSAsForTherapist($therapist->id)
+            ->loadMissing(['student.studentProfile', 'services']);
+
+        /** @var \Illuminate\Support\Collection<int, \App\Models\User> $students */
+        $students = $ssas
+            ->pluck('student')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        /** @var \Illuminate\Support\Collection<int, \App\Models\Service> $services */
+        $services = $ssas
+            ->flatMap(function ($ssa) {
+                $allServices = collect([$ssa->primaryService])->filter();
+                if ($ssa->services) {
+                    $allServices = $allServices->merge($ssa->services);
+                }
+
+                return $allServices;
+            })
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
 
         return view('therapist.schedule.pending', [
             'pendingSchedules' => $pendingSchedules,
             'pendingCount' => $pendingCount,
+            'students' => $students,
+            'ssas' => $ssas,
+            'services' => $services,
+            'filters' => $filters->toArray(),
         ]);
     }
 
@@ -282,6 +420,7 @@ final class ScheduleController extends Controller
     {
         $this->authorize('create', Schedule::class);
 
+        /** @var User $therapist */
         $therapist = $request->user();
 
         $data = $request->validated();
@@ -296,7 +435,7 @@ final class ScheduleController extends Controller
         } catch (ScheduleOverlapException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
-                    'message' => 'The selected time overlaps with another schedule.',
+                    'message' => 'Schedule conflict detected.',
                     'errors' => [
                         'start_time' => [$e->getMessage()],
                     ],
@@ -321,14 +460,33 @@ final class ScheduleController extends Controller
 
     public function update(UpdateScheduleRequest $request, int $id): JsonResponse|RedirectResponse
     {
-        $schedule = Schedule::findOrFail($id);
+        /** @var User $therapist */
+        $therapist = $request->user();
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
         $this->authorize('update', $schedule);
 
-        $therapist = $request->user();
         $dto = UpdateScheduleDTO::fromArray($request->validated());
 
-        $updated = $this->scheduleService->updateSchedule($therapist, $id, $dto)
-            ->load(['student', 'service', 'ssa', 'school']);
+        try {
+            $updated = $this->scheduleService->updateSchedule($therapist, $id, $dto)
+                ->load(['student', 'service', 'ssa', 'school']);
+        } catch (ScheduleOverlapException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Schedule conflict detected.',
+                    'errors' => [
+                        'start_time' => [$e->getMessage()],
+                    ],
+                ], 422);
+            }
+
+            return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -345,11 +503,16 @@ final class ScheduleController extends Controller
 
     public function destroy(Request $request, int $id): JsonResponse
     {
-        $schedule = Schedule::findOrFail($id);
-        $this->authorize('delete', $schedule);
-
-        /** @var \App\Models\User $therapist */
+        /** @var User $therapist */
         $therapist = $request->user();
+
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
+        $this->authorize('delete', $schedule);
 
         try {
             $this->scheduleService->deleteSchedule($therapist, $id);
@@ -366,11 +529,16 @@ final class ScheduleController extends Controller
 
     public function removeStudent(Request $request, int $id): JsonResponse
     {
-        $schedule = Schedule::findOrFail($id);
-        $this->authorize('delete', $schedule);
-
-        /** @var \App\Models\User $therapist */
+        /** @var User $therapist */
         $therapist = $request->user();
+
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
+        $this->authorize('delete', $schedule);
 
         $this->scheduleService->removeStudentFromOccurrence($therapist, $id);
 
@@ -381,20 +549,25 @@ final class ScheduleController extends Controller
 
     public function updateBillingStatus(Request $request, int $id): JsonResponse
     {
-        $schedule = Schedule::findOrFail($id);
+        /** @var User $therapist */
+        $therapist = $request->user();
+
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
         $this->authorize('updateBillingStatus', $schedule);
 
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 
         $validated = $request->validate([
             'billing_status' => ['required', 'string', Rule::in($billingStatuses)],
         ]);
-
-        /** @var \App\Models\User $therapist */
-        $therapist = $request->user();
 
         $status = BillingStatus::from($validated['billing_status']);
 
@@ -409,7 +582,7 @@ final class ScheduleController extends Controller
     public function bulkUpdateBillingStatus(Request $request): JsonResponse
     {
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 
@@ -419,7 +592,7 @@ final class ScheduleController extends Controller
             'billing_status' => ['required', 'string', Rule::in($billingStatuses)],
         ]);
 
-        /** @var \App\Models\User $therapist */
+        /** @var User $therapist */
         $therapist = $request->user();
 
         $status = BillingStatus::from($validated['billing_status']);
@@ -437,20 +610,23 @@ final class ScheduleController extends Controller
 
     public function show(Request $request, int $id): JsonResponse
     {
+        /** @var User $therapist */
         $therapist = $request->user();
-        $schedule = Schedule::query()
-            ->where('id', $id)
-            ->where('therapist_id', $therapist->id)
-            ->with([
-                'student',
-                'student.studentProfile',
-                'student.studentProfile.school',
-                'service',
-                'ssa',
-                'ssa.primaryService',
-                'school',
-            ])
-            ->firstOrFail();
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
+        $schedule->load([
+            'student',
+            'student.studentProfile',
+            'student.studentProfile.school',
+            'service',
+            'ssa',
+            'ssa.primaryService',
+            'school',
+        ]);
 
         $this->authorize('view', $schedule);
 

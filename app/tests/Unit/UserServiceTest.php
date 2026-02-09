@@ -1,12 +1,9 @@
 <?php
 
-use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Domain\User\Services\UserService;
 use App\DTOs\CreateUserDTO;
-use App\Infrastructure\Repositories\EloquentUserRepository;
 
 it('creates a user with a specific role', function () {
-    app()->bind(UserRepositoryInterface::class, EloquentUserRepository::class);
     /** @var UserService $service */
     $service = app(UserService::class);
 

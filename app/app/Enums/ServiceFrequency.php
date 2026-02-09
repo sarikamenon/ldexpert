@@ -27,7 +27,7 @@ enum ServiceFrequency: string
     public static function options(): array
     {
         return array_map(
-            static fn(self $frequency): string => $frequency->value,
+            static fn (self $frequency): string => $frequency->value,
             self::cases()
         );
     }
