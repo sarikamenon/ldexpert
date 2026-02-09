@@ -55,6 +55,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                     'service_id' => $dto->serviceId,
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
+                    'no_show_rate' => $dto->noShowRate,
+                    'no_show_rate_type' => $dto->noShowRateType->value,
                 ],
                 $services,
             )
