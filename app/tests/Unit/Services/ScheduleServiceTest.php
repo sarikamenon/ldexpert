@@ -32,17 +32,9 @@ final class ScheduleServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-<<<<<<< HEAD
-    /** @var ScheduleRepositoryInterface&MockInterface */
-    private $repository;
-
-    /** @var UserTimezoneService&MockInterface */
-    private $timezoneService;
-=======
     private MockInterface $repository;
 
     private MockInterface $timezoneService;
->>>>>>> staging
 
     private MockInterface $userRepository;
 
@@ -426,7 +418,13 @@ final class ScheduleServiceTest extends TestCase
 
         $this->repository->shouldNotReceive('delete');
 
-        $serviceLayer = new ScheduleService($this->repository, $this->timezoneService);
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
 
         $this->expectException(CannotDeleteBilledScheduleException::class);
         $this->expectExceptionMessage('Cannot delete a schedule that has already been billed.');
