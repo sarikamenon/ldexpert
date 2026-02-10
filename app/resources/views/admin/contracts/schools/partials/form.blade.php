@@ -10,7 +10,7 @@
                         'rate' => $service->rate,
                         'rate_type' => $service->rate_type->value ?? $service->rate_type,
                         'no_show_rate' => $service->no_show_rate,
-                        'no_show_rate_type' => $service->no_show_rate_type->value ?? $service->no_show_rate_type,
+                        'no_show_rate_type' => $service->getRawOriginal('no_show_rate_type') ? $service->no_show_rate_type->value : null,
                     ],
                 )
                 ->toArray()
