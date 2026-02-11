@@ -10,8 +10,8 @@ use App\DTOs\CreateTherapistContractDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
-use App\Models\TherapistContractService;
 use App\Models\TherapistContract;
+use App\Models\TherapistContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -162,7 +162,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
             });
         }
 
-        if (!empty($filters->therapistIds)) {
+        if (! empty($filters->therapistIds)) {
             $query->whereHas('therapist', function (Builder $q) use ($filters) {
                 $q->whereIn('user_id', $filters->therapistIds);
             });

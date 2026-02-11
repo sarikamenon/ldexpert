@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\RateType;
-use App\Enums\SessionOutcome;
 use App\Enums\SessionLogStatus;
+use App\Enums\SessionOutcome;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\Service;

@@ -47,7 +47,7 @@ final class SessionLogAccessTest extends TestCase
         // The edit form should contain a service select option for the current service_id
         // and mark it as selected so that the service appears pre-populated.
         $response->assertSee('name="service_id"', false);
-        $response->assertSee('value="' . $sessionLog->service_id . '"', false);
+        $response->assertSee('value="'.$sessionLog->service_id.'"', false);
     }
 
     public function test_edit_update_accepts_hh_mm_time_inputs(): void
@@ -89,7 +89,7 @@ final class SessionLogAccessTest extends TestCase
             'session_date' => $sessionLog->session_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
             'start_time' => '09:00',
             'duration_minutes' => 45,
-            'notes' => '   ' . str_repeat('B', 60) . '   ',
+            'notes' => '   '.str_repeat('B', 60).'   ',
             'outcome' => SessionOutcome::NO_SHOW->value,
         ];
 

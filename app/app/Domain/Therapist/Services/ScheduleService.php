@@ -348,7 +348,7 @@ final class ScheduleService
             }
 
             if ($schedule->billing_status === BillingStatus::BILLED) {
-                throw new CannotDeleteBilledScheduleException();
+                throw new CannotDeleteBilledScheduleException;
             }
 
             // If this is the parent of a recurring series, delete all in the batch

@@ -32,7 +32,7 @@ final class UpdateTherapistContractDTO
             notes: $data['notes'] ?? null,
             status: $status,
             services: array_map(
-                static fn(array $row) => ContractServiceRateDTO::fromArray($row),
+                static fn (array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
         );

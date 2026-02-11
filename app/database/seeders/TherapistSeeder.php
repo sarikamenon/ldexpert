@@ -57,7 +57,7 @@ class TherapistSeeder extends Seeder
 
         TherapistProfile::factory()
             ->count(15)
-            ->state(fn() => ['manager_id' => $managerId])
+            ->state(fn () => ['manager_id' => $managerId])
             ->create()
             ->each(function (TherapistProfile $profile): void {
                 if (fake()->boolean(40)) {

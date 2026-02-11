@@ -24,7 +24,7 @@ final class StoreScheduleRequest extends FormRequest
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn(RecurrenceType $type): string => $type->value,
+            static fn (RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
@@ -40,12 +40,12 @@ final class StoreScheduleRequest extends FormRequest
             'duration_minutes' => [
                 'required',
                 'integer',
-                'min:' . config('session_minutes.min'),
-                'max:' . config('session_minutes.max'),
+                'min:'.config('session_minutes.min'),
+                'max:'.config('session_minutes.max'),
             ],
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
-            'recurrence_end_date' => ['required_unless:recurrence_type,' . RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
-            'occurrence_dates' => ['required_unless:recurrence_type,' . RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
+            'recurrence_end_date' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
+            'occurrence_dates' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
             'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
@@ -160,7 +160,7 @@ final class StoreScheduleRequest extends FormRequest
                 }
 
                 if (count($weekendDates) > 0) {
-                    $validator->errors()->add('occurrence_dates', 'The following dates fall on weekends and cannot be scheduled: ' . implode(', ', $weekendDates) . '. Please adjust these dates.');
+                    $validator->errors()->add('occurrence_dates', 'The following dates fall on weekends and cannot be scheduled: '.implode(', ', $weekendDates).'. Please adjust these dates.');
                 }
 
                 // Check for duplicate dates
@@ -183,7 +183,7 @@ final class StoreScheduleRequest extends FormRequest
                     )));
 
                     if (count($datesToCheck) > 0) {
-                        $dateObjects = array_map(static fn($date) => Carbon::parse((string) $date), $datesToCheck);
+                        $dateObjects = array_map(static fn ($date) => Carbon::parse((string) $date), $datesToCheck);
                         $minDate = collect($dateObjects)->min();
                         $maxDate = collect($dateObjects)->max();
 
@@ -205,14 +205,14 @@ final class StoreScheduleRequest extends FormRequest
                             }
 
                             if (count($holidayDates) > 0) {
-                                $message = 'Scheduling is not allowed on school holidays: ' . implode(', ', $holidayDates) . '.';
+                                $message = 'Scheduling is not allowed on school holidays: '.implode(', ', $holidayDates).'.';
                                 $scheduleDateKey = $this->input('schedule_date');
                                 if ($scheduleDateKey && in_array($scheduleDateKey, $holidayDateKeys, true)) {
                                     $validator->errors()->add('schedule_date', $message);
                                 }
                                 $occurrenceHolidayDates = array_filter(
                                     $holidayDateKeys,
-                                    static fn($date) => $date !== $scheduleDateKey
+                                    static fn ($date) => $date !== $scheduleDateKey
                                 );
                                 if (count($occurrenceHolidayDates) > 0) {
                                     $validator->errors()->add('occurrence_dates', $message);

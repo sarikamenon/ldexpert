@@ -14,7 +14,6 @@ use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ServiceStatus;
-use App\Enums\SSAStatus;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;

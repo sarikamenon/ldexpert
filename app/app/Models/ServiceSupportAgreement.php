@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Role;
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
-use App\Enums\Role;
 use App\Models\Pivots\SSAService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
