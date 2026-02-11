@@ -11,7 +11,7 @@ abstract class BaseModelScope
 {
     protected static function qualify(Model $model, string $column): string
     {
-        return $model->getTable() . '.' . $column;
+        return $model->getTable().'.'.$column;
     }
 
     protected static function applyStatus(Builder $builder, Model $model, string $column, string $value): Builder

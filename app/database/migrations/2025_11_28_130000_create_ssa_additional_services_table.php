@@ -34,7 +34,7 @@ return new class extends Migration
 
             if ($existing->isNotEmpty()) {
                 $timestamp = now();
-                $rows = $existing->map(static fn($row) => [
+                $rows = $existing->map(static fn ($row) => [
                     'ssa_id' => $row->ssa_id,
                     'service_id' => $row->service_id,
                     'created_at' => $timestamp,
@@ -69,7 +69,7 @@ return new class extends Migration
             ->whereNull('deleted_at')
             ->get()
             ->groupBy('ssa_id')
-            ->map(fn($group) => $group->first()->service_id);
+            ->map(fn ($group) => $group->first()->service_id);
 
         foreach ($existing as $ssaId => $serviceId) {
             DB::table('service_support_agreements')

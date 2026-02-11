@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Notification\Services\NotificationService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Notification\DeleteNotificationRequest;
+use App\Http\Requests\Admin\Notification\IndexNotificationRequest;
+use App\Http\Requests\Admin\Notification\MarkNotificationAsReadRequest;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -12,11 +16,14 @@ use Illuminate\Http\Request;
 
 final class NotificationController extends Controller
 {
-    public function index(Request $request): View
+    public function __construct(
+        private readonly NotificationService $notificationService
+    ) {}
+
+    public function index(IndexNotificationRequest $request): View
     {
-        $notifications = $request->user()
-            ->notifications()
-            ->paginate(20);
+        $perPage = $request->integer('per_page', 20);
+        $notifications = $this->notificationService->paginate($request->user(), $perPage);
 
         return view('admin.notifications.index', [
             'notifications' => $notifications,
@@ -25,24 +32,18 @@ final class NotificationController extends Controller
 
     public function unread(Request $request): JsonResponse
     {
-        $notifications = $request->user()
-            ->unreadNotifications()
-            ->take(10)
-            ->get();
+        $notifications = $this->notificationService->getUnread($request->user(), 10);
+        $unreadCount = $this->notificationService->getUnreadCount($request->user());
 
         return response()->json([
             'notifications' => $notifications,
-            'unread_count' => $request->user()->unreadNotifications()->count(),
+            'unread_count' => $unreadCount,
         ]);
     }
 
-    public function markAsRead(Request $request, string $id): RedirectResponse|JsonResponse
+    public function markAsRead(MarkNotificationAsReadRequest $request, string $id): RedirectResponse|JsonResponse
     {
-        $notification = $request->user()
-            ->notifications()
-            ->findOrFail($id);
-
-        $notification->markAsRead();
+        $this->notificationService->markAsRead($request->user(), $id);
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true]);
@@ -53,7 +54,7 @@ final class NotificationController extends Controller
 
     public function markAllAsRead(Request $request): RedirectResponse|JsonResponse
     {
-        $request->user()->unreadNotifications->markAsRead();
+        $this->notificationService->markAllAsRead($request->user());
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true]);
@@ -62,13 +63,9 @@ final class NotificationController extends Controller
         return redirect()->back()->with('status', 'All notifications marked as read.');
     }
 
-    public function destroy(Request $request, string $id): RedirectResponse|JsonResponse
+    public function destroy(DeleteNotificationRequest $request, string $id): RedirectResponse|JsonResponse
     {
-        $notification = $request->user()
-            ->notifications()
-            ->findOrFail($id);
-
-        $notification->delete();
+        $this->notificationService->delete($request->user(), $id);
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true]);
@@ -77,4 +74,3 @@ final class NotificationController extends Controller
         return redirect()->back()->with('status', 'Notification deleted.');
     }
 }
-

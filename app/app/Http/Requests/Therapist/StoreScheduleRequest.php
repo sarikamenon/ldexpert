@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\RecurrenceType;
 use App\Models\Service;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -34,8 +37,16 @@ final class StoreScheduleRequest extends FormRequest
             })],
             'schedule_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
-            'duration_minutes' => ['required', 'integer', 'between:5,400', 'multiple_of:5'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:' . config('session_minutes.min'),
+                'max:' . config('session_minutes.max'),
+            ],
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
+            'recurrence_end_date' => ['required_unless:recurrence_type,' . RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
+            'occurrence_dates' => ['required_unless:recurrence_type,' . RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
+            'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
         ];
@@ -45,13 +56,19 @@ final class StoreScheduleRequest extends FormRequest
     {
         return [
             'duration_minutes.required' => 'Duration is required.',
-            'duration_minutes.between' => 'Duration must be between :min and :max minutes.',
-            'duration_minutes.multiple_of' => 'Duration must be in 5-minute increments.',
+            'duration_minutes.min' => 'Duration must be at least :min minutes.',
+            'duration_minutes.max' => 'Duration may not be greater than :max minutes.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'location_details.required' => 'Please enter the location or meeting details for this session.',
             'location_details.max' => 'Location/meeting details may not be greater than :max characters.',
-            'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
-            'recurrence_end_date.required_if' => 'Recurrence end date is required when recurrence type is not none.',
+            'recurrence_end_date.required_unless' => 'End date is required for recurring schedules.',
+            'recurrence_end_date.after' => 'End date must be after the schedule start date.',
+            'occurrence_dates.required_unless' => 'Occurrence dates are required for recurring schedules.',
+            'occurrence_dates.array' => 'Occurrence dates must be an array.',
+            'occurrence_dates.min' => 'At least one occurrence date is required.',
+            'occurrence_dates.*.required' => 'All occurrence dates must be filled.',
+            'occurrence_dates.*.date' => 'Each occurrence date must be a valid date.',
+            'occurrence_dates.*.after_or_equal' => 'Each occurrence date must be on or after the schedule start date.',
         ];
     }
 
@@ -76,6 +93,7 @@ final class StoreScheduleRequest extends FormRequest
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
+
                     return;
                 }
 
@@ -120,10 +138,89 @@ final class StoreScheduleRequest extends FormRequest
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
                 }
             }
-            // For first iteration: only single, non-recurring schedules are allowed
+
+            // Validate occurrence dates for recurring schedules
             $recurrenceType = $this->input('recurrence_type');
-            if ($recurrenceType && $recurrenceType !== RecurrenceType::NONE->value) {
-                $validator->errors()->add('recurrence_type', 'Recurring schedules are not available in this version.');
+            $occurrenceDates = $this->input('occurrence_dates', []);
+
+            if ($recurrenceType && $recurrenceType !== RecurrenceType::NONE->value && is_array($occurrenceDates) && count($occurrenceDates) > 0) {
+                // Check for weekend dates
+                $weekendDates = [];
+                foreach ($occurrenceDates as $index => $dateStr) {
+                    if ($dateStr) {
+                        try {
+                            $date = Carbon::parse($dateStr);
+                            if ($date->isWeekend()) {
+                                $weekendDates[] = $date->format('M d, Y');
+                            }
+                        } catch (\Exception $e) {
+                            // Invalid date will be caught by validation rules
+                        }
+                    }
+                }
+
+                if (count($weekendDates) > 0) {
+                    $validator->errors()->add('occurrence_dates', 'The following dates fall on weekends and cannot be scheduled: ' . implode(', ', $weekendDates) . '. Please adjust these dates.');
+                }
+
+                // Check for duplicate dates
+                $uniqueDates = array_unique($occurrenceDates);
+                if (count($uniqueDates) !== count($occurrenceDates)) {
+                    $validator->errors()->add('occurrence_dates', 'Duplicate occurrence dates are not allowed. Each occurrence must be on a unique date.');
+                }
+            }
+
+            // Validate schedule and occurrence dates are not on holidays
+            if ($studentCount > 0) {
+                $studentRepository = app(StudentRepositoryInterface::class);
+                $calendarService = app(SchoolCalendarService::class);
+                $schoolId = $studentRepository->getSchoolIdByUserId((int) $studentIdsArray[0]);
+
+                if ($schoolId) {
+                    $datesToCheck = array_filter(array_unique(array_merge(
+                        [$this->input('schedule_date')],
+                        is_array($occurrenceDates) ? $occurrenceDates : []
+                    )));
+
+                    if (count($datesToCheck) > 0) {
+                        $dateObjects = array_map(static fn($date) => Carbon::parse((string) $date), $datesToCheck);
+                        $minDate = collect($dateObjects)->min();
+                        $maxDate = collect($dateObjects)->max();
+
+                        $holidayEvents = $calendarService->listHolidayEventsBySchoolAndRange($schoolId, $minDate, $maxDate);
+
+                        if ($holidayEvents->isNotEmpty()) {
+                            $holidayDates = [];
+                            $holidayDateKeys = [];
+                            foreach ($datesToCheck as $dateStr) {
+                                $date = Carbon::parse((string) $dateStr)->format('Y-m-d');
+                                $isHoliday = $holidayEvents->first(function ($event) use ($date) {
+                                    return $event->start_date?->format('Y-m-d') <= $date
+                                        && $event->end_date?->format('Y-m-d') >= $date;
+                                });
+                                if ($isHoliday) {
+                                    $holidayDateKeys[] = $date;
+                                    $holidayDates[] = Carbon::parse($date)->format('M d, Y');
+                                }
+                            }
+
+                            if (count($holidayDates) > 0) {
+                                $message = 'Scheduling is not allowed on school holidays: ' . implode(', ', $holidayDates) . '.';
+                                $scheduleDateKey = $this->input('schedule_date');
+                                if ($scheduleDateKey && in_array($scheduleDateKey, $holidayDateKeys, true)) {
+                                    $validator->errors()->add('schedule_date', $message);
+                                }
+                                $occurrenceHolidayDates = array_filter(
+                                    $holidayDateKeys,
+                                    static fn($date) => $date !== $scheduleDateKey
+                                );
+                                if (count($occurrenceHolidayDates) > 0) {
+                                    $validator->errors()->add('occurrence_dates', $message);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
     }

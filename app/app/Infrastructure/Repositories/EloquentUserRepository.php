@@ -66,6 +66,20 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    public function updateProfile(User $user, array $data): User
+    {
+        $user->fill($data);
+
+        // If email changed, reset email verification
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return $user->fresh();
+    }
+
     public function createTherapistProfile(CreateTherapistProfileDTO $dto): TherapistProfile
     {
         return TherapistProfile::create($dto->toArray());
@@ -82,5 +96,54 @@ class EloquentUserRepository implements UserRepositoryInterface
     public function createAdminProfile(CreateAdminProfileDTO $dto): AdminProfile
     {
         return AdminProfile::create($dto->toArray());
+    }
+
+    public function listAdmins(): Collection
+    {
+        return User::query()
+            ->where('role', Role::ADMIN->value)
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function listActiveStudentsForSelect(): Collection
+    {
+        return User::query()
+            ->where('role', Role::STUDENT->value)
+            ->where('status', \App\Enums\UserStatus::ACTIVE->value)
+            ->with('studentProfile')
+            ->select(['id', 'name', 'email'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function listActiveTherapistsForSelect(): Collection
+    {
+        return User::query()
+            ->where('role', Role::THERAPIST->value)
+            ->where('status', \App\Enums\UserStatus::ACTIVE->value)
+            ->with('therapistProfile')
+            ->select(['id', 'name', 'email'])
+            ->orderBy('name')
+            ->get();
+    }
+
+    public function findByIds(array $ids): Collection
+    {
+        return User::whereIn('id', $ids)->get();
+    }
+
+    public function findById(int $id): ?User
+    {
+        return User::find($id);
+    }
+
+    public function countActiveStudentsByIds(array $studentIds): int
+    {
+        return User::query()
+            ->where('role', Role::STUDENT)
+            ->where('status', \App\Enums\UserStatus::ACTIVE)
+            ->whereIn('id', $studentIds)
+            ->count();
     }
 }

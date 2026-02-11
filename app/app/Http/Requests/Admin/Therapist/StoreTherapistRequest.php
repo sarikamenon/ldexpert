@@ -11,4 +11,3 @@ final class StoreTherapistRequest extends TherapistFormRequest
         return $this->baseRules();
     }
 }
-

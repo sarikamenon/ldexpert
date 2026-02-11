@@ -109,6 +109,7 @@ return new class extends Migration
                 return true;
             }
         }
+
         return false;
     }
 

@@ -7,32 +7,37 @@ namespace App\Http\Controllers\Admin;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\Domain\Therapist\Services\ScheduleService;
-use App\Domain\Student\Services\StudentService;
-use App\Domain\Therapist\Services\TherapistService;
+use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentCommentService;
+use App\Domain\Student\Services\StudentDocumentService;
+use App\Domain\Student\Services\StudentImportService;
+use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Services\ScheduleService;
+use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
-use App\DTOs\StudentFilterDTO;
-use App\DTOs\TherapistFilterDTO;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\StoreStudentImportDTO;
+use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
-use App\Enums\Role;
 use App\Enums\ScheduleStatus;
-use App\Enums\UserStatus;
 use App\Enums\SSAStatus;
-use App\Enums\ServiceStatus;
+use App\Enums\StudentImportType;
 use App\Enums\TherapistPosition;
+use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
 use App\Http\Requests\Admin\Student\ExportStudentsRequest;
+use App\Http\Requests\Admin\Student\ImportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
-use App\Models\ServiceSupportAgreement;
-use App\Models\Service;
+use App\Models\StudentImport;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -46,10 +51,15 @@ final class StudentController extends Controller
 {
     public function __construct(
         private readonly StudentService $studentService,
+        private readonly StudentImportService $importService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
         private readonly ScheduleService $scheduleService,
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly StudentCommentService $commentService,
+        private readonly StudentDocumentService $documentService,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -114,9 +124,7 @@ final class StudentController extends Controller
 
         // Load dashboard data (always needed for metrics)
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
-            $ssasForMetrics = ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
-                ->where('student_id', $student->id)
-                ->get();
+            $ssasForMetrics = $this->ssaService->getSSAsForStudentMetrics($student->id);
 
             $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
             $served = (int) $ssasForMetrics->sum('served_minutes');
@@ -145,43 +153,16 @@ final class StudentController extends Controller
             $viewData['statuses'] = SSAStatus::cases();
             // Don't show student filter in student detail view as it's redundant
             $viewData['students'] = [];
-            $viewData['therapists'] = User::query()
-                ->where('role', Role::THERAPIST)
-                ->where('status', UserStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
-            $viewData['services'] = Service::query()
-                ->where('status', ServiceStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'is_frequency_service']);
+            $viewData['therapists'] = $this->therapistService->listActiveTherapists();
+            $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
         } elseif ($activeTab === 'therapists') {
-            // Get therapists assigned to SSAs for this student
-            $therapistsQuery = User::query()
-                ->where('role', Role::THERAPIST)
-                ->whereHas('assignedSSAs', fn($q) => $q->where('student_id', $student->id))
-                ->with('therapistProfile')
-                ->distinct();
-
-            // Apply search filter
-            if ($request->filled('search')) {
-                $search = $request->query('search');
-                $therapistsQuery->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            }
-
-            // Apply status filter
-            if ($request->filled('status')) {
-                $therapistsQuery->where('status', $request->query('status'));
-            }
-
-            // Apply position filter
-            if ($request->filled('position')) {
-                $therapistsQuery->whereHas('therapistProfile', fn($q) => $q->where('position', $request->query('position')));
-            }
-
-            $viewData['therapists'] = $therapistsQuery->paginate($request->integer('per_page', 15));
+            $viewData['therapists'] = $this->therapistService->paginateTherapistsByStudent(
+                $student->id,
+                $request->query('search'),
+                $request->query('status'),
+                $request->query('position'),
+                $request->integer('per_page', 15)
+            );
             $viewData['therapistFilters'] = $request->query();
             $viewData['positions'] = TherapistPosition::cases();
         } elseif ($activeTab === 'schedule') {
@@ -194,15 +175,23 @@ final class StudentController extends Controller
             $viewData['scheduleFilters'] = $request->query();
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
-            $viewData['ssas'] = ServiceSupportAgreement::query()
-                ->where('student_id', $student->id)
-                ->with(['primaryService', 'assignedTherapist'])
-                ->get(['id', 'student_id', 'assigned_therapist_id', 'primary_service_id', 'status']);
-            $viewData['therapists'] = User::query()
-                ->where('role', Role::THERAPIST)
-                ->whereHas('assignedSSAs', fn($q) => $q->where('student_id', $student->id))
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
+            $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);
+            $viewData['therapists'] = $this->therapistService->listTherapistsByStudent($student->id);
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), ['student_id' => $student->id])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
+        } elseif ($activeTab === 'comments') {
+            $viewData['comments'] = $this->commentService->listByStudent($student->id);
+        } elseif ($activeTab === 'documents') {
+            $viewData['documents'] = $this->documentService->listByStudent($student->id);
         }
 
         return view('admin.students.show', $viewData);
@@ -272,7 +261,127 @@ final class StudentController extends Controller
 
             fclose($handle);
         }, $filename, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
+    }
+
+    public function showImportForm(): View
+    {
+        $this->authorize('create', StudentProfile::class);
+
+        $novaTemplate = $this->importService->getTemplate(StudentImportType::NOVA);
+        $requiredColumns = $novaTemplate['required_columns'] ?? [];
+        $optionalColumns = $novaTemplate['optional_columns'] ?? [];
+
+        return view('admin.students.import', [
+            'requiredColumns' => $requiredColumns,
+            'optionalColumns' => $optionalColumns,
+            'importTypes' => StudentImportType::cases(),
+        ]);
+    }
+
+    public function import(ImportStudentsRequest $request): JsonResponse
+    {
+        $this->authorize('create', StudentProfile::class);
+
+        $validated = $request->validated();
+        $type = StudentImportType::from($validated['type'] ?? StudentImportType::NOVA->value);
+
+        $dto = StoreStudentImportDTO::fromArray([
+            'file' => $request->file('file'),
+            'user_id' => $request->user()->id,
+            'type' => $type->value,
+        ]);
+
+        $import = $this->importService->storeImportRequest($dto);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import queued successfully. You will receive an email notification when it completes.',
+            'data' => [
+                'import_id' => $import->id,
+                'status' => $import->status->value,
+            ],
+        ]);
+    }
+
+    public function showImportStatus(Request $request, StudentImport $import): View|JsonResponse
+    {
+        $this->authorize('view', StudentProfile::class);
+
+        $import->load(['rows.student', 'user']);
+
+        $stats = [
+            'total' => $import->total_rows,
+            'processed' => $import->processed_rows,
+            'success' => $import->rows()->where('status', 'done')->count(),
+            'duplicates' => $import->rows()->where('status', 'duplicate')->count(),
+            'errors' => $import->rows()->where('status', 'validation_error')->count(),
+            'pending' => $import->rows()->where('status', 'pending')->count(),
+        ];
+
+        // Return JSON for AJAX polling
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => $import->status->value,
+                'stats' => $stats,
+            ]);
+        }
+
+        return view('admin.students.import-status', [
+            'import' => $import,
+            'stats' => $stats,
+        ]);
+    }
+
+    public function importHistory(Request $request): View
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        $imports = StudentImport::query()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(25);
+
+        return view('admin.students.import-history', [
+            'imports' => $imports,
+        ]);
+    }
+
+    public function downloadTemplate(Request $request): StreamedResponse
+    {
+        $this->authorize('create', StudentProfile::class);
+
+        $type = StudentImportType::from($request->query('type', StudentImportType::NOVA->value));
+        $template = $this->importService->getTemplate($type);
+
+        $requiredColumns = $template['required_columns'] ?? [];
+        $optionalColumns = $template['optional_columns'] ?? [];
+        $allColumns = array_merge($requiredColumns, $optionalColumns);
+
+        $filename = sprintf('student-import-template-%s-%s.csv', strtolower($type->value), now()->format('Ymd_His'));
+
+        return response()->streamDownload(function () use ($allColumns, $requiredColumns): void {
+            $handle = fopen('php://output', 'w');
+
+            // Write header row
+            fputcsv($handle, $allColumns);
+
+            // Write example row with placeholders
+            $exampleRow = [];
+            foreach ($allColumns as $column) {
+                if (in_array($column, $requiredColumns, true)) {
+                    $label = str_replace('_', ' ', ucwords($column, '_'));
+                    $exampleRow[] = sprintf('[%s]', $label);
+                } else {
+                    $exampleRow[] = '';
+                }
+            }
+            fputcsv($handle, $exampleRow);
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 

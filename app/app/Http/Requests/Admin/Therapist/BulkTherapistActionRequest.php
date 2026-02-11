@@ -34,4 +34,3 @@ class BulkTherapistActionRequest extends FormRequest
         ];
     }
 }
-

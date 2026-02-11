@@ -15,13 +15,14 @@ final class UpdateScheduleDTO
         public readonly ?array $studentIds,
         public readonly ?string $scheduleDate,
         public readonly ?string $startTime,
-        public readonly ?int $durationMinutes,
+        public readonly ?string $endTime,
         public readonly ?RecurrenceType $recurrenceType,
         public readonly ?string $recurrenceEndDate,
         public readonly ?bool $isGroup,
         public readonly ?string $locationDetails,
         public readonly ?string $notes,
         public readonly ?BillingStatus $billingStatus,
+        public readonly ?int $durationMinutes = null,
     ) {}
 
     public static function fromArray(array $data): self
@@ -43,7 +44,7 @@ final class UpdateScheduleDTO
         $studentIds = null;
         if (isset($data['student_ids']) && is_array($data['student_ids'])) {
             $studentIds = array_map(
-                static fn($id): int => (int) $id,
+                static fn ($id): int => (int) $id,
                 $data['student_ids']
             );
         }
@@ -58,9 +59,7 @@ final class UpdateScheduleDTO
             studentIds: $studentIds,
             scheduleDate: $data['schedule_date'] ?? null,
             startTime: $data['start_time'] ?? null,
-            durationMinutes: isset($data['duration_minutes']) && $data['duration_minutes'] !== ''
-                ? (int) $data['duration_minutes']
-                : null,
+            endTime: $data['end_time'] ?? null,
             recurrenceType: $recurrenceType,
             recurrenceEndDate: isset($data['recurrence_end_date']) && $data['recurrence_end_date'] !== ''
                 ? $data['recurrence_end_date']
@@ -71,6 +70,9 @@ final class UpdateScheduleDTO
                 : null,
             notes: $data['notes'] ?? null,
             billingStatus: $billingStatus,
+            durationMinutes: isset($data['duration_minutes']) && $data['duration_minutes'] !== ''
+                ? (int) $data['duration_minutes']
+                : null,
         );
     }
 
@@ -92,6 +94,9 @@ final class UpdateScheduleDTO
         }
         if ($this->startTime !== null) {
             $array['start_time'] = $this->startTime;
+        }
+        if ($this->endTime !== null) {
+            $array['end_time'] = $this->endTime;
         }
         if ($this->durationMinutes !== null) {
             $array['duration_minutes'] = $this->durationMinutes;

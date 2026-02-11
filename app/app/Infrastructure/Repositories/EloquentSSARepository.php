@@ -9,6 +9,9 @@ use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
+use App\DTOs\SSAReport\CaseloadReportFilterDTO;
+use App\DTOs\SSAReport\ExpirationReportFilterDTO;
+use App\DTOs\SSAReport\UtilizationReportFilterDTO;
 use App\DTOs\UpdateSSADTO;
 use App\Enums\SSAStatus;
 use App\Models\ServiceSupportAgreement;
@@ -50,6 +53,17 @@ final class EloquentSSARepository implements SSARepositoryInterface
             'assignmentHistory.therapist',
             'assignmentHistory.assignedBy',
         ])->find($id);
+    }
+
+    public function findWithRelations(int $id, array $relations = []): ?ServiceSupportAgreement
+    {
+        $query = ServiceSupportAgreement::query();
+
+        if (! empty($relations)) {
+            $query->with($relations);
+        }
+
+        return $query->find($id);
     }
 
     public function create(CreateSSADTO $dto): ServiceSupportAgreement
@@ -220,18 +234,82 @@ final class EloquentSSARepository implements SSARepositoryInterface
         return $query->get();
     }
 
+    public function hasStudentAssignedToTherapist(int $studentId, int $therapistId): bool
+    {
+        return ServiceSupportAgreement::where('student_id', $studentId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->exists();
+    }
+
+    public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+            ->where('student_id', $studentId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->get();
+    }
+
+    public function getActiveSSAsForTherapist(int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->where('status', SSAStatus::ACTIVE)
+            ->with(['student', 'primaryService'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    public function findSSAForSchedule(int $ssaId, int $therapistId): ?ServiceSupportAgreement
+    {
+        return ServiceSupportAgreement::query()
+            ->where('id', $ssaId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->where('status', SSAStatus::ACTIVE)
+            ->with(['student', 'student.studentProfile.school', 'primaryService', 'services'])
+            ->first();
+    }
+
+    public function getSSAsForSchoolMetrics(int $schoolId): Collection
+    {
+        return ServiceSupportAgreement::with(['student', 'primaryService', 'assignedTherapist'])
+            ->whereHas('student.studentProfile', fn ($q) => $q->where('school_id', $schoolId))
+            ->get();
+    }
+
+    public function getSSAsForStudentMetrics(int $studentId): Collection
+    {
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+            ->where('student_id', $studentId)
+            ->get();
+    }
+
+    public function getSSAsForStudentSchedule(int $studentId): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('student_id', $studentId)
+            ->with(['primaryService', 'assignedTherapist'])
+            ->get(['id', 'student_id', 'assigned_therapist_id', 'primary_service_id', 'status']);
+    }
+
+    public function getSSAsForTherapistMetrics(int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::with(['student', 'primaryService'])
+            ->where('assigned_therapist_id', $therapistId)
+            ->get();
+    }
+
     private function applyFilters(Builder $query, SSAFilterDTO $filters): Builder
     {
         if ($filters->search) {
             $query->where(function (Builder $q) use ($filters) {
                 $q->whereHas('student', function (Builder $studentQuery) use ($filters) {
-                    $studentQuery->where('name', 'like', '%' . $filters->search . '%');
+                    $studentQuery->where('name', 'like', '%'.$filters->search.'%');
                 })
                     ->orWhereHas('primaryService', function (Builder $serviceQuery) use ($filters) {
-                        $serviceQuery->where('name', 'like', '%' . $filters->search . '%');
+                        $serviceQuery->where('name', 'like', '%'.$filters->search.'%');
                     })
                     ->orWhereHas('assignedTherapist', function (Builder $therapistQuery) use ($filters) {
-                        $therapistQuery->where('name', 'like', '%' . $filters->search . '%');
+                        $therapistQuery->where('name', 'like', '%'.$filters->search.'%');
                     });
             });
         }
@@ -262,7 +340,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     }
 
     /**
-     * @param array<int>|null $additionalServiceIds
+     * @param  array<int>|null  $additionalServiceIds
      */
     private function syncSsaServices(ServiceSupportAgreement $ssa, ?array $additionalServiceIds = null): void
     {
@@ -286,7 +364,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         $additionalIds = array_values(array_unique(
             array_filter(
                 array_map('intval', $additionalIds),
-                static fn(int $serviceId): bool => $serviceId !== (int) $primaryServiceId
+                static fn (int $serviceId): bool => $serviceId !== (int) $primaryServiceId
             )
         ));
 
@@ -299,5 +377,198 @@ final class EloquentSSARepository implements SSARepositoryInterface
         }
 
         $ssa->services()->sync($payload);
+    }
+
+    public function getAssignedSSAsForTherapist(int $therapistId): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->get();
+    }
+
+    public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->with(['student.studentProfile.school', 'primaryService'])
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    public function countNewStudentsThisMonth(int $therapistId): int
+    {
+        return ServiceSupportAgreement::query()
+            ->where('assigned_therapist_id', $therapistId)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->distinct()
+            ->count('student_id');
+    }
+
+    public function getUtilizationReport(UtilizationReportFilterDTO $filters): LengthAwarePaginator
+    {
+        $query = ServiceSupportAgreement::query()
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'assignedTherapist',
+            ]);
+
+        if ($filters->startDate) {
+            $query->where(function (Builder $q) use ($filters) {
+                $q->whereBetween('start_date', [$filters->startDate->format('Y-m-d'), $filters->endDate?->format('Y-m-d') ?? '9999-12-31'])
+                    ->orWhereBetween('end_date', [$filters->startDate->format('Y-m-d'), $filters->endDate?->format('Y-m-d') ?? '9999-12-31'])
+                    ->orWhere(function (Builder $subQ) use ($filters) {
+                        $subQ->where('start_date', '<=', $filters->startDate->format('Y-m-d'))
+                            ->where('end_date', '>=', $filters->endDate?->format('Y-m-d') ?? '9999-12-31');
+                    });
+            });
+        }
+
+        if ($filters->endDate) {
+            $query->where('end_date', '<=', $filters->endDate->format('Y-m-d'));
+        }
+
+        if ($filters->schoolIds) {
+            $query->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->whereIn('school_id', $filters->schoolIds);
+            });
+        }
+
+        if ($filters->therapistIds) {
+            $query->whereIn('assigned_therapist_id', $filters->therapistIds);
+        }
+
+        if ($filters->serviceIds) {
+            $query->whereIn('primary_service_id', $filters->serviceIds);
+        }
+
+        if ($filters->statuses) {
+            $statusValues = array_map(static fn (SSAStatus $status) => $status->value, $filters->statuses);
+            $query->whereIn('status', $statusValues);
+        }
+
+        if ($filters->gradeLevel) {
+            $query->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->where('grade_level', $filters->gradeLevel);
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')
+            ->paginate($filters->perPage)
+            ->withQueryString();
+    }
+
+    public function getCaseloadReport(CaseloadReportFilterDTO $filters): Collection
+    {
+        $query = ServiceSupportAgreement::query()
+            ->where('status', $filters->status ?? SSAStatus::ACTIVE)
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'assignedTherapist',
+            ]);
+
+        if ($filters->schoolIds) {
+            $query->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->whereIn('school_id', $filters->schoolIds);
+            });
+        }
+
+        if ($filters->therapistIds) {
+            $query->whereIn('assigned_therapist_id', $filters->therapistIds);
+        }
+
+        if ($filters->serviceIds) {
+            $query->whereIn('primary_service_id', $filters->serviceIds);
+        }
+
+        return $query->get();
+    }
+
+    public function getExpirationReport(ExpirationReportFilterDTO $filters): array
+    {
+        $today = Carbon::today();
+        $expirationDate = $today->copy()->addDays($filters->expirationWindowDays);
+
+        $baseQuery = ServiceSupportAgreement::query()
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'assignedTherapist',
+            ]);
+
+        if ($filters->schoolIds) {
+            $baseQuery->whereHas('student.studentProfile', function (Builder $q) use ($filters) {
+                $q->whereIn('school_id', $filters->schoolIds);
+            });
+        }
+
+        if ($filters->therapistIds) {
+            $baseQuery->whereIn('assigned_therapist_id', $filters->therapistIds);
+        }
+
+        if ($filters->serviceIds) {
+            $baseQuery->whereIn('primary_service_id', $filters->serviceIds);
+        }
+
+        $upcoming = (clone $baseQuery)
+            ->where('end_date', '>', $today->format('Y-m-d'))
+            ->where('end_date', '<=', $expirationDate->format('Y-m-d'))
+            ->get();
+
+        $expired = (clone $baseQuery)
+            ->where('end_date', '<', $today->format('Y-m-d'))
+            ->where('status', SSAStatus::ACTIVE->value)
+            ->get();
+
+        $pending = (clone $baseQuery)
+            ->where(function (Builder $q) {
+                $q->where('status', SSAStatus::PENDING->value)
+                    ->orWhere(function (Builder $subQ) {
+                        $subQ->where('status', SSAStatus::ACTIVE->value)
+                            ->whereNull('assigned_therapist_id');
+                    });
+            })
+            ->get();
+
+        // Get students with no active SSAs
+        $studentsWithActiveSSAs = ServiceSupportAgreement::query()
+            ->where('status', SSAStatus::ACTIVE->value)
+            ->pluck('student_id')
+            ->unique()
+            ->toArray();
+
+        $noCurrentQuery = \App\Models\User::query()
+            ->whereHas('studentProfile', function (Builder $q) use ($filters) {
+                if ($filters->schoolIds) {
+                    $q->whereIn('school_id', $filters->schoolIds);
+                }
+            })
+            ->whereNotIn('id', $studentsWithActiveSSAs ?: [0])
+            ->with(['studentProfile.school']);
+
+        $noCurrent = $noCurrentQuery->get()->map(function ($student) {
+            return (object) [
+                'id' => null,
+                'student_id' => $student->id,
+                'student' => $student,
+                'primaryService' => null,
+                'assignedTherapist' => null,
+                'status' => null,
+                'end_date' => null,
+            ];
+        });
+
+        return [
+            'upcoming' => $upcoming,
+            'expired' => $expired,
+            'pending' => $pending,
+            'no_current' => $noCurrent,
+        ];
     }
 }

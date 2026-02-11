@@ -11,4 +11,3 @@ final class StoreSSARequest extends SSAFormRequest
         return $this->baseRules();
     }
 }
-

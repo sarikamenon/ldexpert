@@ -26,30 +26,22 @@
     </div>
 
     <x-ui::card class="p-6 space-y-4">
-        <div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div class="flex flex-wrap gap-3">
-                <form method="GET" class="flex gap-2" id="schoolFiltersForm">
-                    <x-text-input type="text" name="search" class="w-64" placeholder="Search schools"
-                        value="{{ $filters['search'] ?? '' }}" />
+        <x-ui::filter-toolbar formId="schoolFiltersForm">
+            <x-slot:filters>
+                <x-ui::input type="text" name="search" class="w-64" placeholder="Search schools"
+                    value="{{ $filters['search'] ?? '' }}" />
 
-                    <div class="relative">
-                        <select name="status"
-                            class="border border-border rounded-lg pl-3 pr-10 py-2 text-sm appearance-none focus:ring-2 focus:ring-primary focus:border-primary">
-                            <option value="">All Statuses</option>
-                            @foreach (\App\Enums\SchoolStatus::cases() as $status)
-                                <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
-                                    {{ ucfirst($status->value) }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true">
+                    <option value="">All Statuses</option>
+                    @foreach (\App\Enums\SchoolStatus::cases() as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                            {{ ucfirst($status->value) }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+            </x-slot:filters>
 
-                    <button type="submit"
-                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">Filter</button>
-                </form>
-            </div>
-
-            <div class="flex flex-wrap gap-2">
+            <x-slot:actions>
                 <a href="{{ route('admin.schools.export', $filters) }}"
                     class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
                     id="exportSchoolsButton">
@@ -59,8 +51,8 @@
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                     Add School
                 </a>
-            </div>
-        </div>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
 
         @if ($schools->count() > 0)
             <div class="overflow-x-auto">

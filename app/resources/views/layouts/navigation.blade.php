@@ -13,7 +13,17 @@
                         ->map(function ($item) use (&$buildMenu) {
                             $routeName = $item['route'] ?? null;
                             $hasRoute = $routeName && \Illuminate\Support\Facades\Route::has($routeName);
-                            $href = $hasRoute ? route($routeName, $item['route_params'] ?? []) : $item['url'] ?? '#';
+
+                            if ($hasRoute) {
+                                $href = route($routeName, $item['route_params'] ?? []);
+                                // Append query parameters if provided
+                                if (isset($item['query']) && is_array($item['query'])) {
+                                    $href .= '?' . http_build_query($item['query']);
+                                }
+                            } else {
+                                $href = $item['url'] ?? '#';
+                            }
+
                             $children = $buildMenu($item['children'] ?? []);
                             $activePatterns = (array) ($item['active'] ?? ($routeName ?? null));
                             $activePatterns = array_values(array_filter($activePatterns));
@@ -36,7 +46,7 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-12 w-auto fill-current text-gray-800" />
+                        <x-application-logo class="block h-12 w-auto fill-current text-foreground" />
                     </a>
                 </div>
             </div>

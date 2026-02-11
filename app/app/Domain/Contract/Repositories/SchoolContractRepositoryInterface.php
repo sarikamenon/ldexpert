@@ -21,7 +21,7 @@ interface SchoolContractRepositoryInterface
     public function update(SchoolContract $contract, UpdateSchoolContractDTO $dto): SchoolContract;
 
     /**
-     * @param array<int, ContractServiceRateDTO> $services
+     * @param  array<int, ContractServiceRateDTO>  $services
      */
     public function syncServices(SchoolContract $contract, array $services): void;
 
@@ -30,4 +30,8 @@ interface SchoolContractRepositoryInterface
     public function hasOverlap(int $schoolId, string $startDate, string $endDate, ?int $ignoreId = null): bool;
 
     public function metrics(): array;
+
+    public function findActiveContractForDate(int $schoolId, string $date): ?SchoolContract;
+
+    public function getServiceRate(int $contractId, int $serviceId): ?array;
 }

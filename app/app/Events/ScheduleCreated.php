@@ -17,4 +17,3 @@ class ScheduleCreated
         public readonly Schedule $schedule
     ) {}
 }
-

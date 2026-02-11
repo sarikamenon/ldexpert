@@ -1,0 +1,162 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Invoice\Services;
+
+use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\DTOs\CreateInvoiceDTO;
+use App\DTOs\SendInvoiceDTO;
+use App\Enums\InvoiceStatus;
+use App\Mail\InvoiceMail;
+use App\Models\Invoice;
+use App\Models\School;
+use App\Models\SessionLog;
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+
+final class InvoiceService
+{
+    public function __construct(
+        private readonly InvoiceRepositoryInterface $repository,
+        private readonly CompanyInfoService $companyInfoService,
+        private readonly SchoolRepositoryInterface $schoolRepository,
+    ) {}
+
+    public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
+    {
+        return DB::transaction(function () use ($dto): Invoice {
+            // Get approved session logs
+            $sessionLogs = $this->repository->getApprovedSessionLogsForInvoice($dto->sessionLogIds);
+
+            if ($sessionLogs->isEmpty()) {
+                throw new \InvalidArgumentException('No eligible session logs found for invoice generation.');
+            }
+
+            // Validate all session logs belong to the selected school
+            $invalidSessions = $sessionLogs->filter(fn ($log) => $log->school_id !== $dto->schoolId);
+            if ($invalidSessions->isNotEmpty()) {
+                throw new \InvalidArgumentException('All selected session logs must belong to the selected school.');
+            }
+
+            // Get school for snapshot
+            $school = $this->schoolRepository->find($dto->schoolId);
+            if (! $school) {
+                throw new \InvalidArgumentException('School not found.');
+            }
+
+            // Calculate totals
+            $totals = $this->calculateTotals($sessionLogs);
+
+            // Generate invoice number if not provided or empty
+            $invoiceNumber = ! empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
+
+            // Copy snapshots
+            $schoolSnapshot = $this->copySchoolSnapshot($school);
+            $companySnapshot = $this->copyCompanySnapshot();
+
+            // Create invoice
+            $invoice = $this->repository->create([
+                'school_id' => $dto->schoolId,
+                'invoice_number' => $invoiceNumber,
+                'invoice_date' => $dto->invoiceDate,
+                'billing_period_start' => $dto->billingPeriodStart,
+                'billing_period_end' => $dto->billingPeriodEnd,
+                'status' => InvoiceStatus::DRAFT->value,
+                'subtotal' => $totals['subtotal'],
+                'tax_total' => $totals['tax_total'],
+                'total' => $totals['total'],
+                'due_date' => now()->addDays(30)->toDateString(),
+                'notes' => $dto->notes,
+                ...$schoolSnapshot,
+                ...$companySnapshot,
+            ]);
+
+            // Link session logs to invoice
+            $this->repository->linkSessionLogs($invoice, $sessionLogs->pluck('id')->toArray());
+
+            return $invoice->load(['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist']);
+        });
+    }
+
+    /**
+     * @param  Collection<SessionLog>  $sessionLogs
+     * @return array<string, float>
+     */
+    public function calculateTotals(Collection $sessionLogs): array
+    {
+        $subtotal = $sessionLogs->sum('school_invoice_amount');
+        $taxTotal = 0; // Tax calculation can be extended later
+        $total = $subtotal + $taxTotal;
+
+        return [
+            'subtotal' => round($subtotal, 2),
+            'tax_total' => round($taxTotal, 2),
+            'total' => round($total, 2),
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function copySchoolSnapshot(School $school): array
+    {
+        return [
+            'school_name' => $school->full_name,
+            'school_display_name' => $school->display_name,
+            'school_address' => $school->address,
+            'school_state' => $school->getRawOriginal('state') ?? $school->stateCode,
+            'school_contact_first_name' => $school->contact_first_name,
+            'school_contact_last_name' => $school->contact_last_name,
+            'school_contact_phone' => $school->contact_phone,
+            'school_contact_email' => $school->contact_email,
+            'school_invoice_email' => $school->invoice_email,
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function copyCompanySnapshot(): array
+    {
+        $companyInfo = $this->companyInfoService->getCompanyInfo();
+
+        return [
+            'company_name' => $companyInfo['name'],
+            'company_address' => $companyInfo['address'],
+            'company_phone' => $companyInfo['phone'],
+            'company_email' => $companyInfo['email'],
+            'company_tax_id' => $companyInfo['tax_id'],
+        ];
+    }
+
+    public function sendInvoice(User $user, Invoice $invoice, SendInvoiceDTO $dto): Invoice
+    {
+        if ($invoice->isSent() || $invoice->isPaid()) {
+            throw new \InvalidArgumentException('Invoice cannot be sent in its current status.');
+        }
+
+        // Determine recipient email
+        $recipientEmail = $dto->email
+            ?? $invoice->school_invoice_email
+            ?? $invoice->school_contact_email;
+
+        if (! $recipientEmail) {
+            throw new \InvalidArgumentException('No email address available for sending invoice.');
+        }
+
+        // Send email with PDF attachment
+        Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message));
+
+        // Mark invoice as sent
+        return $this->repository->markAsSent($invoice, $user->id);
+    }
+
+    public function find(int $id): ?Invoice
+    {
+        return $this->repository->find($id);
+    }
+}

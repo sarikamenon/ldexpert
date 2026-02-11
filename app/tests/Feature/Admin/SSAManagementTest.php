@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 use App\Enums\Role;
 use App\Enums\ServiceFrequency;
-use App\Enums\SSAStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 // uses(TestCase::class, RefreshDatabase::class);
@@ -64,7 +64,8 @@ function ssaPayload(array $overrides = []): array
         'additional_service_ids' => [],
         'start_date' => now()->addDays(1)->format('Y-m-d'),
         'end_date' => now()->addDays(365)->format('Y-m-d'),
-        'minutes_per_session' => 30,
+        // Use a non-5-multiple value to ensure SSA accepts arbitrary minute values
+        'minutes_per_session' => 37,
         'frequency' => ServiceFrequency::WEEKLY->value,
         'sessions_per_frequency' => 2,
         'tho_minutes' => 3120,

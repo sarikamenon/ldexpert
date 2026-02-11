@@ -23,7 +23,7 @@ enum ServiceStatus: string
     public static function options(): array
     {
         return array_map(
-            static fn(self $status): string => $status->value,
+            static fn (self $status): string => $status->value,
             self::cases()
         );
     }

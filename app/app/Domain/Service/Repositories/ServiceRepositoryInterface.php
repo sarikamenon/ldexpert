@@ -28,4 +28,12 @@ interface ServiceRepositoryInterface
      * @return array{total:int,active:int,inactive:int}
      */
     public function metrics(): array;
+
+    public function listActiveForSelect(): Collection;
+
+    public function listActiveWithFrequencyFlag(): Collection;
+
+    public function listIndirectServices(): Collection;
+
+    public function findOrFail(int $id): Service;
 }

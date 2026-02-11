@@ -13,6 +13,9 @@ final class ScheduleFilterDTO
         public readonly ?string $status = null,
         public readonly ?string $billingStatus = null,
         public readonly ?int $ssaId = null,
+        public readonly ?int $serviceId = null,
+        public readonly ?string $dateFrom = null,
+        public readonly ?string $dateTo = null,
         public readonly ?int $therapistId = null,
     ) {}
 
@@ -31,6 +34,11 @@ final class ScheduleFilterDTO
             ssaId: isset($data['ssa_id']) && $data['ssa_id'] !== ''
                 ? (int) $data['ssa_id']
                 : null,
+            serviceId: isset($data['service_id']) && $data['service_id'] !== ''
+                ? (int) $data['service_id']
+                : null,
+            dateFrom: $data['date_from'] ?? null,
+            dateTo: $data['date_to'] ?? null,
             therapistId: isset($data['therapist_id']) && $data['therapist_id'] !== ''
                 ? (int) $data['therapist_id']
                 : null,
@@ -46,6 +54,9 @@ final class ScheduleFilterDTO
             'status' => $this->status,
             'billing_status' => $this->billingStatus,
             'ssa_id' => $this->ssaId,
+            'service_id' => $this->serviceId,
+            'date_from' => $this->dateFrom,
+            'date_to' => $this->dateTo,
             'therapist_id' => $this->therapistId,
         ];
     }

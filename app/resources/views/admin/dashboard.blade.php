@@ -372,7 +372,29 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             @foreach ($operationalMetrics as $metric)
                 <div class="text-center">
-                    <p class="text-sm text-foreground/70 mb-2">{{ $metric['label'] }}</p>
+                    <div class="flex items-center justify-center gap-1 mb-2">
+                        <p class="text-sm text-foreground/70">{{ $metric['label'] }}</p>
+                        @if (!empty($metric['help']))
+                            <span class="relative group flex items-center">
+                                <span
+                                    class="cursor-help text-foreground/50 hover:text-foreground/70 transition-colors"
+                                    tabindex="0"
+                                    aria-label="{{ $metric['help'] }}"
+                                    title="{{ $metric['help'] }}"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z" />
+                                    </svg>
+                                </span>
+                                <span
+                                    class="pointer-events-none absolute -top-2 left-1/2 z-10 w-56 -translate-y-full -translate-x-1/2 rounded-md bg-foreground px-3 py-2 text-left text-xs text-background opacity-0 shadow-lg transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+                                >
+                                    {{ $metric['help'] }}
+                                </span>
+                            </span>
+                        @endif
+                    </div>
                     <p class="text-2xl font-bold text-foreground">{{ $metric['value'] }}</p>
                     @if ($metric['trend'] !== '0')
                         <p

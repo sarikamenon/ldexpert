@@ -4,7 +4,7 @@
     <div class="flex items-start justify-between">
         <div class="flex-1">
             <p class="text-sm font-medium text-foreground/70 mb-1">{{ $title }}</p>
-            <p class="text-3xl font-bold text-foreground">{{ $value }}</p>
+            <p class="text-2xl font-semibold text-foreground">{{ $value }}</p>
             
             @if($trend)
                 <p class="text-xs mt-2 {{ $trend['type'] === 'up' ? 'text-success' : 'text-danger' }}">

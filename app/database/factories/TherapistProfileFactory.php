@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Enums\EmployeeType;
-use App\Enums\Role;
 use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Models\TherapistProfile;

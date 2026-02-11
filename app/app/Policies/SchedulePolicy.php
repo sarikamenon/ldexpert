@@ -63,5 +63,3 @@ final class SchedulePolicy
         return $role === Role::ADMIN;
     }
 }
-
-

@@ -16,7 +16,7 @@
             <div class="space-y-4">
                 <div>
                     <label for="site_name" class="block text-sm font-medium text-foreground/70 mb-1">Site Name</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="text" 
                         name="site_name" 
                         id="site_name" 
@@ -30,7 +30,7 @@
 
                 <div>
                     <label for="support_email" class="block text-sm font-medium text-foreground/70 mb-1">Support Email</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="email" 
                         name="support_email" 
                         id="support_email" 
@@ -44,7 +44,7 @@
 
                 <div>
                     <label for="records_per_page" class="block text-sm font-medium text-foreground/70 mb-1">Records Per Page</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="number" 
                         name="records_per_page" 
                         id="records_per_page" 
@@ -65,16 +65,14 @@
             <h3 class="text-lg font-semibold text-foreground mb-4">System Settings</h3>
             
             <div class="space-y-4">
-                <div class="flex items-center">
-                    <input 
-                        type="checkbox" 
-                        name="maintenance_mode" 
-                        id="maintenance_mode" 
-                        value="1" 
-                        @checked(old('maintenance_mode', $settings['system']['maintenance_mode'] ?? false))
-                        class="rounded border-border"
+                <div>
+                    <x-ui::checkbox
+                        name="maintenance_mode"
+                        id="maintenance_mode"
+                        value="1"
+                        :checked="old('maintenance_mode', $settings['system']['maintenance_mode'] ?? false)"
+                        label="Enable Maintenance Mode"
                     />
-                    <label for="maintenance_mode" class="ml-2 text-sm text-foreground">Enable Maintenance Mode</label>
                 </div>
                 <p class="text-xs text-foreground/60">When enabled, only admins can access the system.</p>
             </div>
@@ -87,7 +85,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="smtp_host" class="block text-sm font-medium text-foreground/70 mb-1">SMTP Host</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="text" 
                         name="smtp_host" 
                         id="smtp_host" 
@@ -98,7 +96,7 @@
 
                 <div>
                     <label for="smtp_port" class="block text-sm font-medium text-foreground/70 mb-1">SMTP Port</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="number" 
                         name="smtp_port" 
                         id="smtp_port" 
@@ -109,7 +107,7 @@
 
                 <div>
                     <label for="smtp_username" class="block text-sm font-medium text-foreground/70 mb-1">SMTP Username</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="text" 
                         name="smtp_username" 
                         id="smtp_username" 
@@ -120,7 +118,7 @@
 
                 <div>
                     <label for="smtp_password" class="block text-sm font-medium text-foreground/70 mb-1">SMTP Password</label>
-                    <x-text-input 
+                    <x-ui::input 
                         type="password" 
                         name="smtp_password" 
                         id="smtp_password" 
@@ -132,9 +130,9 @@
         </x-ui::card>
 
         <div class="flex justify-end">
-            <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+            <x-ui::button type="submit">
                 Save Settings
-            </button>
+            </x-ui::button>
         </div>
     </form>
 </x-admin.layouts.app>

@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Student;
 
-use App\Http\Controllers\Controller;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\ScheduleStatus;
-use Carbon\Carbon;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
@@ -25,7 +24,7 @@ class DashboardController extends Controller
         $student = Auth::user();
 
         // Load student profile if not already loaded
-        if (!$student->relationLoaded('studentProfile')) {
+        if (! $student->relationLoaded('studentProfile')) {
             $student->load('studentProfile');
         }
 

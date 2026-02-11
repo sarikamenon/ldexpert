@@ -18,7 +18,7 @@ return new class extends Migration
             }
 
             // Add school_id foreign key if it doesn't exist
-            if (!Schema::hasColumn('student_profiles', 'school_id')) {
+            if (! Schema::hasColumn('student_profiles', 'school_id')) {
                 $table->foreignId('school_id')
                     ->nullable()
                     ->after('id_number')
@@ -42,7 +42,7 @@ return new class extends Migration
             }
 
             // Restore old 'school' string column
-            if (!Schema::hasColumn('student_profiles', 'school')) {
+            if (! Schema::hasColumn('student_profiles', 'school')) {
                 $table->string('school')->nullable()->after('id_number');
             }
         });

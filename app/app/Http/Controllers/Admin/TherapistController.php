@@ -6,26 +6,27 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
-use App\Domain\Therapist\Services\TherapistService;
-use App\Domain\Student\Services\StudentService;
-use App\Domain\SSA\Services\SSAService;
 use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
-use App\DTOs\TherapistFilterDTO;
-use App\DTOs\StudentFilterDTO;
+use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\TherapistContractFilterDTO;
+use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Enums\EmployeeType;
 use App\Enums\Role;
+use App\Enums\SSAStatus;
 use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Enums\UserStatus;
-use App\Enums\SSAStatus;
-use App\Enums\ServiceStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Therapist\ChangeTherapistStatusRequest;
 use App\Http\Requests\Admin\Therapist\ExportTherapistsRequest;
@@ -34,8 +35,6 @@ use App\Http\Requests\Admin\Therapist\StoreTherapistRequest;
 use App\Http\Requests\Admin\Therapist\UpdateTherapistRequest;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use App\Models\ServiceSupportAgreement;
-use App\Models\Service;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -52,6 +51,8 @@ final class TherapistController extends Controller
         private readonly SSAService $ssaService,
         private readonly TherapistContractService $therapistContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly SessionLogIndexService $sessionLogIndexService,
     ) {}
 
     public function index(IndexTherapistRequest $request): View
@@ -103,6 +104,11 @@ final class TherapistController extends Controller
 
     public function show(Request $request, User $therapist): View
     {
+        $therapistId = $request->route('therapist');
+        if (is_numeric($therapistId)) {
+            $therapist = User::findOrFail((int) $therapistId);
+        }
+
         $this->authorize('view', TherapistProfile::class);
 
         $therapist->load('therapistProfile');
@@ -115,9 +121,7 @@ final class TherapistController extends Controller
 
         // Load dashboard data (always needed for metrics)
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
-            $ssasForMetrics = ServiceSupportAgreement::with(['student', 'primaryService'])
-                ->where('assigned_therapist_id', $therapist->id)
-                ->get();
+            $ssasForMetrics = $this->ssaService->getSSAsForTherapistMetrics($therapist->id);
 
             $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
             $served = (int) $ssasForMetrics->sum('served_minutes');
@@ -128,10 +132,7 @@ final class TherapistController extends Controller
                 'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
             ];
 
-            $studentsCount = User::query()
-                ->where('role', Role::STUDENT)
-                ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
-                ->count();
+            $studentsCount = $this->studentService->countStudentsByTherapist($therapist->id);
 
             $viewData['metrics'] = [
                 'total_students' => $studentsCount,
@@ -143,27 +144,12 @@ final class TherapistController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'students') {
-            // Filter students by therapist relationship
-            $studentsQuery = User::query()
-                ->where('role', Role::STUDENT)
-                ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
-                ->with('studentProfile.school');
-
-            // Apply search filter
-            if ($request->filled('search')) {
-                $search = $request->query('search');
-                $studentsQuery->where(function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
-                });
-            }
-
-            // Apply status filter
-            if ($request->filled('status')) {
-                $studentsQuery->where('status', $request->query('status'));
-            }
-
-            $viewData['students'] = $studentsQuery->orderBy('name')->paginate($request->integer('per_page', 15));
+            $viewData['students'] = $this->studentService->listStudentsByTherapist(
+                $therapist->id,
+                $request->query('search'),
+                $request->query('status'),
+                $request->integer('per_page', 15)
+            );
             $viewData['studentFilters'] = $request->query();
             $viewData['schools'] = $this->schoolRepository->listAllForSelect();
             $viewData['statuses'] = UserStatus::cases();
@@ -174,18 +160,10 @@ final class TherapistController extends Controller
             $viewData['ssas'] = $this->ssaService->paginate($filters);
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
-            $viewData['students'] = User::query()
-                ->where('role', Role::STUDENT)
-                ->where('status', UserStatus::ACTIVE)
-                ->whereHas('therapists', fn($q) => $q->where('therapist_id', $therapist->id))
-                ->orderBy('name')
-                ->get(['id', 'name', 'email']);
+            $viewData['students'] = $this->studentService->listActiveStudentsByTherapist($therapist->id);
             // Don't show therapist filter in therapist detail view as it's redundant
             $viewData['therapists'] = [];
-            $viewData['services'] = Service::query()
-                ->where('status', ServiceStatus::ACTIVE)
-                ->orderBy('name')
-                ->get(['id', 'name', 'is_frequency_service']);
+            $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
         } elseif ($activeTab === 'contracts') {
             $filters = TherapistContractFilterDTO::fromArray(
                 array_merge($request->query(), ['therapist_id' => $therapist->id])
@@ -193,6 +171,17 @@ final class TherapistController extends Controller
             $viewData['contracts'] = $this->therapistContractService->paginate($filters);
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
+        } elseif ($activeTab === 'session_logs') {
+            $dto = SessionLogIndexDTO::fromArray(
+                array_merge($request->query(), ['therapist_id' => $therapist->id])
+            );
+            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
+
+            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
+            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
+            $viewData['sessionLogRows'] = $sessionLogData['rows'];
+            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogFilters'] = $request->query();
         }
 
         return view('admin.therapists.show', $viewData);
@@ -264,7 +253,7 @@ final class TherapistController extends Controller
 
             fclose($handle);
         }, $filename, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
     }
 

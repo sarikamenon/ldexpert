@@ -1,0 +1,160 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Billing\Services;
+
+use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
+use App\Domain\Invoice\Services\CompanyInfoService;
+use App\DTOs\CreateTherapistBillDTO;
+use App\DTOs\SendTherapistBillDTO;
+use App\Enums\TherapistBillStatus;
+use App\Mail\TherapistBillMail;
+use App\Models\SessionLog;
+use App\Models\TherapistBill;
+use App\Models\User;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+
+final class TherapistBillService
+{
+    public function __construct(
+        private readonly TherapistBillRepositoryInterface $repository,
+        private readonly CompanyInfoService $companyInfoService,
+    ) {}
+
+    public function generateBill(User $user, CreateTherapistBillDTO $dto): TherapistBill
+    {
+        return DB::transaction(function () use ($dto): TherapistBill {
+            // Get approved session logs
+            $sessionLogs = $this->repository->getApprovedSessionLogsForBilling($dto->sessionLogIds);
+
+            if ($sessionLogs->isEmpty()) {
+                throw new \InvalidArgumentException('No eligible session logs found for bill generation.');
+            }
+
+            // Validate all session logs belong to the selected therapist
+            $invalidSessions = $sessionLogs->filter(fn ($log) => $log->therapist_id !== $dto->therapistId);
+            if ($invalidSessions->isNotEmpty()) {
+                throw new \InvalidArgumentException('All selected session logs must belong to the selected therapist.');
+            }
+
+            // Get therapist for snapshot
+            $therapist = User::with('therapistProfile')->find($dto->therapistId);
+            if (! $therapist) {
+                throw new \InvalidArgumentException('Therapist not found.');
+            }
+
+            // Calculate totals
+            $totals = $this->calculateTotals($sessionLogs);
+
+            // Generate bill number if not provided or empty
+            $billNumber = ! empty($dto->billNumber) ? $dto->billNumber : $this->repository->generateBillNumber();
+
+            // Copy snapshots
+            $therapistSnapshot = $this->copyTherapistSnapshot($therapist);
+            $companySnapshot = $this->copyCompanySnapshot();
+
+            // Determine due date
+            $dueDate = $dto->dueDate ?? now()->addDays(30)->toDateString();
+
+            // Create bill
+            $bill = $this->repository->create([
+                'therapist_id' => $dto->therapistId,
+                'bill_number' => $billNumber,
+                'bill_date' => $dto->billDate,
+                'billing_period_start' => $dto->billingPeriodStart,
+                'billing_period_end' => $dto->billingPeriodEnd,
+                'status' => TherapistBillStatus::DRAFT->value,
+                'subtotal' => $totals['subtotal'],
+                'adjustments_total' => $totals['adjustments_total'],
+                'total_due' => $totals['total_due'],
+                'due_date' => $dueDate,
+                'notes' => $dto->notes,
+                ...$therapistSnapshot,
+                ...$companySnapshot,
+            ]);
+
+            // Link session logs to bill
+            $this->repository->linkSessionLogs($bill, $sessionLogs->pluck('id')->toArray());
+
+            return $bill->load(['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist']);
+        });
+    }
+
+    /**
+     * @param  Collection<SessionLog>  $sessionLogs
+     * @return array<string, float>
+     */
+    public function calculateTotals(Collection $sessionLogs): array
+    {
+        $subtotal = $sessionLogs->sum('therapist_billable_amount');
+        $adjustmentsTotal = 0; // Adjustments can be added later
+        $totalDue = $subtotal + $adjustmentsTotal;
+
+        return [
+            'subtotal' => round($subtotal, 2),
+            'adjustments_total' => round($adjustmentsTotal, 2),
+            'total_due' => round($totalDue, 2),
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function copyTherapistSnapshot(User $therapist): array
+    {
+        $profile = $therapist->therapistProfile;
+
+        return [
+            'therapist_name' => $therapist->name,
+            'therapist_email' => $profile?->personal_email ?? $therapist->email,
+            'therapist_phone' => $profile?->phone,
+            'therapist_address' => $profile?->address,
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    public function copyCompanySnapshot(): array
+    {
+        $companyInfo = $this->companyInfoService->getCompanyInfo();
+
+        return [
+            'company_name' => $companyInfo['name'],
+            'company_address' => $companyInfo['address'],
+            'company_phone' => $companyInfo['phone'],
+            'company_email' => $companyInfo['email'],
+            'company_tax_id' => $companyInfo['tax_id'],
+        ];
+    }
+
+    public function sendBill(User $user, TherapistBill $bill, SendTherapistBillDTO $dto): TherapistBill
+    {
+        if ($bill->isSent() || $bill->isPaid()) {
+            throw new \InvalidArgumentException('Bill cannot be sent in its current status.');
+        }
+
+        // Determine recipient email
+        $recipientEmail = $dto->email
+            ?? $bill->therapist_email
+            ?? $bill->therapist->email;
+
+        if (! $recipientEmail) {
+            throw new \InvalidArgumentException('No email address available for sending bill.');
+        }
+
+        // Send email with PDF attachment
+        Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
+
+        // Mark bill as sent
+        return $this->repository->markAsSent($bill, $user->id);
+    }
+
+    public function find(int $id): ?TherapistBill
+    {
+        return $this->repository->find($id);
+    }
+}

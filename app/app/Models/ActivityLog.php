@@ -45,19 +45,18 @@ class ActivityLog extends Model
 
     public function getFormattedChangesAttribute(): ?string
     {
-        if (!$this->changes) {
+        if (! $this->changes) {
             return null;
         }
 
         $formatted = [];
         foreach ($this->changes as $key => $change) {
             if (isset($change['old'], $change['new'])) {
-                $formatted[] = ucfirst(str_replace('_', ' ', $key)) . ': ' 
-                    . $change['old'] . ' → ' . $change['new'];
+                $formatted[] = ucfirst(str_replace('_', ' ', $key)).': '
+                    .$change['old'].' → '.$change['new'];
             }
         }
 
         return implode(', ', $formatted);
     }
 }
-

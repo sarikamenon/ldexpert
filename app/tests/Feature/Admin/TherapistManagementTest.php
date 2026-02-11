@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Mail\WelcomeTherapistMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
@@ -19,7 +17,9 @@ final class TherapistManagementTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $therapist;
+
     private User $manager;
 
     protected function setUp(): void
@@ -443,7 +443,7 @@ final class TherapistManagementTest extends TestCase
 
         $response->assertOk();
         $students = $response->viewData('students');
-        $this->assertTrue($students->every(fn($student) => $student->status === UserStatus::ACTIVE));
+        $this->assertTrue($students->every(fn ($student) => $student->status === UserStatus::ACTIVE));
     }
 
     public function test_non_admin_cannot_view_therapist_show_page(): void
