@@ -136,6 +136,6 @@ final class SessionLogDocumentTest extends TestCase
                 'document_type' => DocumentType::PROGRESS_REPORT->value,
             ]);
 
-        $response->assertStatus(403);
+        $response->assertStatus(404);
     }
 }

@@ -7,6 +7,7 @@ use App\Constants\UsTimezones;
 use App\Enums\SchoolStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\School>
@@ -25,7 +26,7 @@ class SchoolFactory extends Factory
 
         return [
             'full_name' => $this->faker->company().' School',
-            'display_name' => $this->faker->unique()->company(),
+            'display_name' => $this->faker->company() . ' ' . Str::random(6),
             'address' => $this->faker->address(),
             'state' => $state,
             'timezone' => $timezone,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\RateType;
+use App\Enums\SessionOutcome;
 use App\Enums\SessionLogStatus;
 use App\Models\Schedule;
 use App\Models\School;
@@ -36,6 +37,7 @@ class SessionLogFactory extends Factory
             'duration_minutes' => 60,
             'tho_minutes' => 30,
             'notes' => $this->faker->paragraph(3),
+            'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
             'delivery_mode' => 'virtual',
             'is_group' => false,
             'is_billable_therapist' => true,

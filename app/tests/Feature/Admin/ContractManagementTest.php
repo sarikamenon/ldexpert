@@ -67,11 +67,15 @@ it('creates a school contract with services', function () {
                 'service_id' => $services[0]->id,
                 'rate' => '125.00',
                 'rate_type' => RateType::HOURLY->value,
+                'no_show_rate' => '25.00',
+                'no_show_rate_type' => RateType::HOURLY->value,
             ],
             [
                 'service_id' => $services[1]->id,
                 'rate' => '400.00',
                 'rate_type' => RateType::FLAT->value,
+                'no_show_rate' => '50.00',
+                'no_show_rate_type' => RateType::FLAT->value,
             ],
         ],
     ];
@@ -107,6 +111,8 @@ it('prevents overlapping active school contracts', function () {
         'service_id' => $service->id,
         'rate' => '100.00',
         'rate_type' => RateType::HOURLY->value,
+        'no_show_rate' => 25.00,
+        'no_show_rate_type' => RateType::HOURLY->value,
     ]);
 
     $payload = [
@@ -119,6 +125,8 @@ it('prevents overlapping active school contracts', function () {
                 'service_id' => $service->id,
                 'rate' => '150.00',
                 'rate_type' => RateType::HOURLY->value,
+                'no_show_rate' => '30.00',
+                'no_show_rate_type' => RateType::HOURLY->value,
             ],
         ],
     ];
@@ -145,6 +153,8 @@ it('creates a therapist contract with services', function () {
                 'service_id' => $service->id,
                 'rate' => '90.00',
                 'rate_type' => RateType::HOURLY->value,
+                'no_show_rate' => '20.00',
+                'no_show_rate_type' => RateType::HOURLY->value,
             ],
         ],
     ];
@@ -175,6 +185,8 @@ it('blocks overlapping therapist contracts when activating', function () {
         'service_id' => $service->id,
         'rate' => '85.00',
         'rate_type' => RateType::HOURLY->value,
+        'no_show_rate' => 20.00,
+        'no_show_rate_type' => RateType::HOURLY->value,
     ]);
 
     $inactiveContract = TherapistContract::create([
@@ -187,6 +199,8 @@ it('blocks overlapping therapist contracts when activating', function () {
         'service_id' => $service->id,
         'rate' => '95.00',
         'rate_type' => RateType::HOURLY->value,
+        'no_show_rate' => 25.00,
+        'no_show_rate_type' => RateType::HOURLY->value,
     ]);
 
     $this->actingAs($admin)
