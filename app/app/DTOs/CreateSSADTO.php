@@ -73,6 +73,7 @@ final class CreateSSADTO
         return [
             'student_id' => $this->studentId,
             'primary_service_id' => $this->primaryServiceId,
+            'additional_service_ids' => $this->additionalServiceIds,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             'minutes_per_session' => $this->minutesPerSession,
