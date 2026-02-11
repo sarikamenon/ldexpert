@@ -56,8 +56,16 @@
                     <x-ui::card class="p-6 lg:col-span-1">
                         <h3 class="text-lg font-semibold text-foreground mb-4">Delivery Progress</h3>
                         <div class="relative" style="height: 250px;">
-                            <canvas id="deliveryProgressChart" data-served="{{ $ssa->served_minutes }}"
-                                data-tho="{{ $ssa->tho_minutes }}"></canvas>
+                            <canvas
+                                id="deliveryProgressChart"
+                                data-served="{{ $ssa->served_minutes }}"
+                                data-tho="{{ $ssa->tho_minutes }}"
+                                @isset($minutesSummary)
+                                    data-scheduled="{{ $minutesSummary->scheduledMinutes }}"
+                                    data-logged="{{ $minutesSummary->loggedMinutes }}"
+                                    data-approved="{{ $minutesSummary->approvedMinutes }}"
+                                @endisset
+                            ></canvas>
                         </div>
                         <div class="mt-4 space-y-2 text-center">
                             <div class="flex items-center justify-between">
@@ -79,6 +87,12 @@
 
                     {{-- Quick Stats --}}
                     <x-ssa.dashboard-stats :ssa="$ssa" />
+                </div>
+
+                @isset($minutesSummary)
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <x-ssa.minutes-summary :ssa="$ssa" :summary="$minutesSummary" />
+                    </div>
                 </div>
             @elseif (($activeTab ?? 'dashboard') === 'details')
                 <x-ssa.overview-details :ssa="$ssa" context="therapist" />
