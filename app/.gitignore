@@ -12,6 +12,7 @@
 /.vscode
 /.zed
 /auth.json
+/.npm
 /node_modules
 /.npm
 /public/build
@@ -23,3 +24,4 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+.env.testing

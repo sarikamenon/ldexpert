@@ -20,6 +20,7 @@ final class CreateStudentDTO
         public readonly ?string $parentGuardianName,
         public readonly ?string $parentGuardianEmail,
         public readonly ?string $parentGuardianPhone,
+        public readonly ?string $scheduleEmail,
         public readonly ?string $address,
         public readonly ?string $city,
         public readonly ?string $state,
@@ -43,6 +44,7 @@ final class CreateStudentDTO
             parentGuardianName: $data['parent_guardian_name'] ?? null,
             parentGuardianEmail: $data['parent_guardian_email'] ?? null,
             parentGuardianPhone: $data['parent_guardian_phone'] ?? null,
+            scheduleEmail: $data['schedule_email'] ?? null,
             address: $data['address'] ?? null,
             city: $data['city'] ?? null,
             state: $data['state'] ?? null,
@@ -80,6 +82,7 @@ final class CreateStudentDTO
             'parent_guardian_name' => $this->parentGuardianName,
             'parent_guardian_email' => $this->parentGuardianEmail,
             'parent_guardian_phone' => $this->parentGuardianPhone,
+            'schedule_email' => $this->scheduleEmail,
             'date_of_birth' => $this->dateOfBirth,
             'grade_level' => $this->gradeLevel,
         ];
