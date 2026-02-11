@@ -5,10 +5,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadDataTablesLibrary();
     await initDataTable('#therapistContractsTable', {
         order: [[0, 'desc']],
-        searching: false,
-        lengthChange: false,
-        paging: false,
-        info: false,
+        pageLength: 25,
+        columnDefs: [
+            { orderable: false, targets: -1 }
+        ],
     });
 
     document.querySelectorAll('.therapist-contract-status-toggle').forEach((button) => {
