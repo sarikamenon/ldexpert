@@ -49,6 +49,8 @@ final class SchoolContractSeeder extends Seeder
                     [
                         'rate' => $definition['rate'],
                         'rate_type' => $definition['rate_type'],
+                        'no_show_rate' => $definition['no_show_rate'] ?? 0,
+                        'no_show_rate_type' => $definition['no_show_rate_type'] ?? $definition['rate_type'],
                     ]
                 );
             }

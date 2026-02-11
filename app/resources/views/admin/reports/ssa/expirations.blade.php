@@ -91,7 +91,7 @@
                         <option value="upcoming" @selected(($filters['bucket'] ?? '') === 'upcoming')>Upcoming</option>
                         <option value="expired" @selected(($filters['bucket'] ?? '') === 'expired')>Expired</option>
                         <option value="pending" @selected(($filters['bucket'] ?? '') === 'pending')>Pending</option>
-                        </select>
+                    </x-ui::select>
                 </div>
             </div>
             <div class="flex gap-2">

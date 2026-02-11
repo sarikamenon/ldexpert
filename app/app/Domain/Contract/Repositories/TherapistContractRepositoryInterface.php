@@ -9,6 +9,7 @@ use App\DTOs\CreateTherapistContractDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
+use App\Enums\RateType;
 use App\Models\TherapistContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -33,5 +34,8 @@ interface TherapistContractRepositoryInterface
 
     public function findActiveContractForDate(int $therapistId, string $date): ?TherapistContract;
 
+    /**
+     * @return array{rate_type: RateType, rate_amount: float, no_show_rate: float|null, no_show_rate_type: RateType|null}|null
+     */
     public function getServiceRate(int $contractId, int $serviceId): ?array;
 }

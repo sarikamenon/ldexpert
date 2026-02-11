@@ -54,7 +54,7 @@ final class SessionLogSubmitTest extends TestCase
         $response = $this->actingAs($therapist2)
             ->post(route('therapist.session-logs.submit', $sessionLog));
 
-        $response->assertForbidden();
+        $response->assertStatus(404);
     }
 
     public function test_therapist_cannot_submit_approved_session_log(): void

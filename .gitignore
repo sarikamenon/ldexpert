@@ -32,3 +32,10 @@ $RECYCLE.BIN/
 *.temp
 *.bak
 *.backup
+
+# Local-only docs (implementation plans, feature analysis, etc.) – do not push
+/_local_docs/
+app/test_output*.txt
+debug-*.php
+ignore
+ignore2

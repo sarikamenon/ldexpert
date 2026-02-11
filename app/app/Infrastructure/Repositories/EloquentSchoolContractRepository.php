@@ -11,6 +11,7 @@ use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolContractDTO;
 use App\Enums\ContractStatus;
 use App\Models\SchoolContract;
+use App\Models\SchoolContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -112,7 +113,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
 
     public function getServiceRate(int $contractId, int $serviceId): ?array
     {
-        $contractService = \App\Models\SchoolContractService::query()
+        $contractService = SchoolContractService::query()
             ->where('school_contract_id', $contractId)
             ->where('service_id', $serviceId)
             ->first();
@@ -121,9 +122,14 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             return null;
         }
 
+        $noShowRate = $contractService->no_show_rate !== null ? (float) $contractService->no_show_rate : null;
+        $noShowRateType = $contractService->no_show_rate_type ?? null;
+
         return [
             'rate_type' => $contractService->rate_type,
             'rate_amount' => (float) $contractService->rate,
+            'no_show_rate' => $noShowRate,
+            'no_show_rate_type' => $noShowRateType,
         ];
     }
 
@@ -153,7 +159,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $query->where('school_id', $filters->schoolId);
         }
 
-        if (!empty($filters->schoolIds)) {
+        if (! empty($filters->schoolIds)) {
             $query->whereIn('school_id', $filters->schoolIds);
         }
 

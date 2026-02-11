@@ -29,7 +29,7 @@ enum SessionOutcome: string
     public static function values(): array
     {
         return array_map(
-            static fn(self $outcome): string => $outcome->value,
+            static fn (self $outcome): string => $outcome->value,
             self::cases()
         );
     }
@@ -38,10 +38,10 @@ enum SessionOutcome: string
     public function isBillableForTherapist(): bool
     {
         return match ($this) {
-            self::SERVICES_ADMINISTERED,
-            self::NO_SHOW,
+            self::SERVICES_ADMINISTERED => true,
+            self::NO_SHOW => true,
             self::BILLABLE_CANCELLATION => true,
-            self::NON_BILLABLE_CANCELLATION_CLIENT,
+            self::NON_BILLABLE_CANCELLATION_CLIENT => false,
             self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }
@@ -49,10 +49,10 @@ enum SessionOutcome: string
     public function isBillableForSchool(): bool
     {
         return match ($this) {
-            self::SERVICES_ADMINISTERED,
-            self::NO_SHOW,
+            self::SERVICES_ADMINISTERED => true,
+            self::NO_SHOW => true,
             self::BILLABLE_CANCELLATION => true,
-            self::NON_BILLABLE_CANCELLATION_CLIENT,
+            self::NON_BILLABLE_CANCELLATION_CLIENT => false,
             self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }
@@ -73,10 +73,10 @@ enum SessionOutcome: string
     public function paysNoShowRate(): bool
     {
         return match ($this) {
-            self::NO_SHOW,
+            self::NO_SHOW => true,
             self::BILLABLE_CANCELLATION => true,
-            self::SERVICES_ADMINISTERED,
-            self::NON_BILLABLE_CANCELLATION_CLIENT,
+            self::SERVICES_ADMINISTERED => false,
+            self::NON_BILLABLE_CANCELLATION_CLIENT => false,
             self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }

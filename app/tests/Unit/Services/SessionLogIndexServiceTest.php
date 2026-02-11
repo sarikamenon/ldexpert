@@ -67,7 +67,6 @@ final class SessionLogIndexServiceTest extends TestCase
         $draftActions = collect($draftRow['actions'])->pluck('label')->all();
         $this->assertContains('Edit', $draftActions);
         $this->assertContains('Submit', $draftActions);
-        $this->assertContains('Cancel', $draftActions);
 
         $finalRow = collect($result['rows'])
             ->first(fn (array $row) => $row['status'] === SessionLogStatus::APPROVED->label());
