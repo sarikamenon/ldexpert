@@ -43,6 +43,8 @@ final class TherapistContractSeeder extends Seeder
                     [
                         'rate' => $serviceDefinition['rate'],
                         'rate_type' => $serviceDefinition['rate_type'],
+                        'no_show_rate' => $serviceDefinition['no_show_rate'] ?? 0,
+                        'no_show_rate_type' => $serviceDefinition['no_show_rate_type'] ?? $serviceDefinition['rate_type'],
                     ]
                 );
             }
