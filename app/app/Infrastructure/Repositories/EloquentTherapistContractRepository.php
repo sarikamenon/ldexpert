@@ -157,15 +157,11 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         }
 
         if ($filters->therapistId) {
-            $query->whereHas('therapist', function (Builder $q) use ($filters) {
-                $q->where('user_id', $filters->therapistId);
-            });
+            $query->where('therapist_id', $filters->therapistId);
         }
 
         if (! empty($filters->therapistIds)) {
-            $query->whereHas('therapist', function (Builder $q) use ($filters) {
-                $q->whereIn('user_id', $filters->therapistIds);
-            });
+            $query->whereIn('therapist_id', $filters->therapistIds);
         }
 
         return $query;

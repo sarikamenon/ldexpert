@@ -67,85 +67,104 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    <div class="overflow-x-auto">
-        <table id="schoolContractsTable" class="w-full display">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    @if ($context !== 'detail')
-                        <th>School</th>
-                    @endif
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>Services</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($contracts as $contract)
+    @if ($contracts->count() > 0)
+        <div class="overflow-x-auto">
+            <table id="schoolContractsTable" class="w-full display">
+                <thead>
                     <tr>
-                        <td>#{{ $contract->id }}</td>
+                        <th>ID</th>
                         @if ($context !== 'detail')
-                            <td>{{ $contract->school?->display_name ?? '—' }}</td>
+                            <th>School</th>
                         @endif
-                        <td>{{ $contract->start_date?->format('M d, Y') }}</td>
-                        <td>{{ $contract->end_date?->format('M d, Y') }}</td>
-                        <td>{{ $contract->services->count() }}</td>
-                        <td>
-                            <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE ? 'success' : 'danger'">
-                                {{ $contract->status->label() }}
-                            </x-ui::badge>
-                        </td>
-                        <td>
-                            <div class="flex space-x-1">
-                                <a href="{{ route('admin.contracts.schools.show', $contract) }}"
-                                    class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                    title="View Contract">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                        <circle cx="12" cy="12" r="3"></circle>
-                                    </svg>
-                                </a>
-                                <a href="{{ route('admin.contracts.schools.edit', $contract) }}"
-                                    class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                    title="Edit Contract">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                        stroke-linejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                    </svg>
-                                </a>
-                                <button type="button"
-                                    class="contract-status-toggle inline-flex items-center justify-center w-8 h-8 rounded transition-colors {{ $contract->status === \App\Enums\ContractStatus::ACTIVE ? 'bg-danger text-danger-foreground hover:bg-danger/90' : 'bg-success text-success-foreground hover:bg-success/90' }}"
-                                    data-endpoint="{{ route('admin.contracts.schools.status', $contract) }}"
-                                    data-next-status="{{ $contract->status === \App\Enums\ContractStatus::ACTIVE ? \App\Enums\ContractStatus::INACTIVE->value : \App\Enums\ContractStatus::ACTIVE->value }}"
-                                    title="{{ $contract->status === \App\Enums\ContractStatus::ACTIVE ? 'Deactivate Contract' : 'Activate Contract' }}">
-                                    @if ($contract->status === \App\Enums\ContractStatus::ACTIVE)
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <line x1="18" y1="6" x2="6" y2="18"></line>
-                                            <line x1="6" y1="6" x2="18" y2="18"></line>
-                                        </svg>
-                                    @else
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                            stroke-linejoin="round">
-                                            <polyline points="20 6 9 17 4 12"></polyline>
-                                        </svg>
-                                    @endif
-                                </button>
-                            </div>
-                        </td>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Services</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    {{ $contracts->withQueryString()->links() }}
+                </thead>
+                <tbody>
+                    @foreach ($contracts as $contract)
+                        <tr>
+                            <td>
+                                <a href="{{ route('admin.contracts.schools.show', $contract) }}"
+                                    class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                    title="View Contract">
+                                    {{ $contract->id }}
+                                </a>
+                            </td>
+                            @if ($context !== 'detail')
+                                <td>
+                                    <a href="{{ route('admin.schools.show', $contract->school) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $contract->school?->display_name ?? '—' }}
+                                    </a>
+                                </td>
+                            @endif
+                            <td>{{ $contract->start_date?->format('M d, Y') }}</td>
+                            <td>{{ $contract->end_date?->format('M d, Y') }}</td>
+                            <td>{{ $contract->services->count() }}</td>
+                            <td>
+                                <x-ui::badge :variant="$contract->status === \App\Enums\ContractStatus::ACTIVE ? 'success' : 'danger'">
+                                    {{ $contract->status->label() }}
+                                </x-ui::badge>
+                            </td>
+                            <td>
+                                <div class="flex space-x-1">
+                                    <a href="{{ route('admin.contracts.schools.show', $contract) }}"
+                                        class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
+                                        title="View Contract">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </a>
+                                    <a href="{{ route('admin.contracts.schools.edit', $contract) }}"
+                                        class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+                                        title="Edit Contract">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </a>
+                                    <button type="button"
+                                        class="contract-status-toggle inline-flex items-center justify-center w-8 h-8 rounded transition-colors {{ $contract->status === \App\Enums\ContractStatus::ACTIVE ? 'bg-danger text-danger-foreground hover:bg-danger/90' : 'bg-success text-success-foreground hover:bg-success/90' }}"
+                                        data-endpoint="{{ route('admin.contracts.schools.status', $contract) }}"
+                                        data-next-status="{{ $contract->status === \App\Enums\ContractStatus::ACTIVE ? \App\Enums\ContractStatus::INACTIVE->value : \App\Enums\ContractStatus::ACTIVE->value }}"
+                                        title="{{ $contract->status === \App\Enums\ContractStatus::ACTIVE ? 'Deactivate Contract' : 'Activate Contract' }}">
+                                        @if ($contract->status === \App\Enums\ContractStatus::ACTIVE)
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                                            </svg>
+                                        @else
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polyline points="20 6 9 17 4 12"></polyline>
+                                            </svg>
+                                        @endif
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @else
+        <div class="text-center py-10">
+            <p class="text-foreground/70 mb-4">No contracts found.</p>
+            <a href="{{ route('admin.contracts.schools.create') }}"
+                class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                Add Contract
+            </a>
+        </div>
+    @endif
 </x-ui::card>

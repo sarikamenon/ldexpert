@@ -114,9 +114,8 @@
     @endif
 
     <x-slot name="scripts">
-        @if (($activeTab ?? 'dashboard') === 'dashboard')
-            @vite(['resources/js/pages/admin-therapists-show.js'])
-        @elseif (($activeTab ?? 'dashboard') === 'students')
+        @vite(['resources/js/pages/admin-therapists-show.js'])
+        @if (($activeTab ?? 'dashboard') === 'students')
             @vite(['resources/js/pages/admin-students-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'contracts')
             @vite(['resources/js/pages/admin-contracts-therapists-index.js'])

@@ -22,7 +22,13 @@
     ];
 @endphp
 
+@if($attributes->has('href'))
+<a {{ $attributes->merge(['class' => $base . ' ' . $sizes[$size] . ' ' . ($variants[$variant] ?? $variants['primary'])]) }}>
+    {{ $slot }}
+</a>
+@else
 <button type="{{ $type }}"
     {{ $attributes->merge(['class' => $base . ' ' . $sizes[$size] . ' ' . ($variants[$variant] ?? $variants['primary'])]) }}>
     {{ $slot }}
 </button>
+@endif
