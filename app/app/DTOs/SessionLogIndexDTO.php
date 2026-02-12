@@ -20,17 +20,26 @@ final class SessionLogIndexDTO
         public readonly int $perPage = 15,
     ) {}
 
+    private static function nullableInt(mixed $value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) $value;
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
         return new self(
-            schoolId: $data['school_id'] ?? null,
-            studentId: $data['student_id'] ?? null,
-            therapistId: $data['therapist_id'] ?? null,
-            serviceId: $data['service_id'] ?? null,
-            ssaId: $data['ssa_id'] ?? null,
+            schoolId: self::nullableInt($data['school_id'] ?? null),
+            studentId: self::nullableInt($data['student_id'] ?? null),
+            therapistId: self::nullableInt($data['therapist_id'] ?? null),
+            serviceId: self::nullableInt($data['service_id'] ?? null),
+            ssaId: self::nullableInt($data['ssa_id'] ?? null),
             status: isset($data['status']) && $data['status'] !== null
                 ? SessionLogStatus::from($data['status'])
                 : null,
