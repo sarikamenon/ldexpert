@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Constants\ServiceCatalog;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use App\Enums\ContractStatus;
 use App\Models\School;
 use App\Models\SchoolContract;
@@ -15,6 +16,8 @@ use Illuminate\Database\Seeder;
 
 final class SchoolContractSeeder extends Seeder
 {
+    use SeedsSchoolYear;
+
     public function run(): void
     {
         $schoolYear = $this->currentSchoolYear();
@@ -55,17 +58,6 @@ final class SchoolContractSeeder extends Seeder
                 );
             }
         });
-    }
-
-    private function currentSchoolYear(): array
-    {
-        $today = now();
-        $startYear = $today->month >= 7 ? $today->year : $today->year - 1;
-
-        return [
-            'start' => Carbon::create($startYear, 7, 1)->startOfDay(),
-            'end' => Carbon::create($startYear + 1, 6, 30)->endOfDay(),
-        ];
     }
 
     private function findOrCreateContract(School $school, Carbon $start, Carbon $end): SchoolContract
