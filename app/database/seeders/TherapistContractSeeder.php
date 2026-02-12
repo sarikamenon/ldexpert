@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Constants\ServiceCatalog;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use App\Enums\ContractStatus;
 use App\Models\Service;
 use App\Models\TherapistContract;
@@ -15,6 +16,8 @@ use Illuminate\Database\Seeder;
 
 final class TherapistContractSeeder extends Seeder
 {
+    use SeedsSchoolYear;
+
     public function run(): void
     {
         $schoolYear = $this->currentSchoolYear();
@@ -43,21 +46,12 @@ final class TherapistContractSeeder extends Seeder
                     [
                         'rate' => $serviceDefinition['rate'],
                         'rate_type' => $serviceDefinition['rate_type'],
+                        'no_show_rate' => $serviceDefinition['no_show_rate'] ?? 0,
+                        'no_show_rate_type' => $serviceDefinition['no_show_rate_type'] ?? $serviceDefinition['rate_type'],
                     ]
                 );
             }
         });
-    }
-
-    private function currentSchoolYear(): array
-    {
-        $today = now();
-        $startYear = $today->month >= 7 ? $today->year : $today->year - 1;
-
-        return [
-            'start' => Carbon::create($startYear, 7, 1)->startOfDay(),
-            'end' => Carbon::create($startYear + 1, 6, 30)->endOfDay(),
-        ];
     }
 
     private function findOrCreateContract(TherapistProfile $therapist, Carbon $start, Carbon $end): TherapistContract
