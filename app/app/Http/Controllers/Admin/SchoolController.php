@@ -37,6 +37,7 @@ use App\Http\Requests\Admin\School\UpdateSchoolRequest;
 use App\Models\School;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -112,7 +113,7 @@ final class SchoolController extends Controller
             ->with('status', 'School information updated successfully.');
     }
 
-    public function updateStatus(ChangeSchoolStatusRequest $request, School $school): RedirectResponse
+    public function updateStatus(ChangeSchoolStatusRequest $request, School $school): JsonResponse
     {
         $this->authorize('changeStatus', $school);
 
@@ -123,9 +124,10 @@ final class SchoolController extends Controller
             ? 'School activated successfully.'
             : 'School deactivated successfully.';
 
-        return redirect()
-            ->route('admin.schools.index')
-            ->with('status', $message);
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+        ]);
     }
 
     public function show(Request $request, School $school): View

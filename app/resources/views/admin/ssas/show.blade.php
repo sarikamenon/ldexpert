@@ -166,10 +166,9 @@
     @endif
 
     <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-ssas-show.js'])
         @if (($activeTab ?? 'dashboard') === 'session_logs')
             @vite(['resources/js/pages/admin-session-logs-index.js'])
-        @else
-            @vite(['resources/js/pages/admin-ssas-show.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>
