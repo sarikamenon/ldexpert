@@ -2,25 +2,63 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
 import { setupStatusChanges } from '../common/status-change';
 import Swal from 'sweetalert2';
 
-// Initialize delivery progress chart
+// Design system colors (from tailwind.config.js)
+const CHART_COLORS = {
+    approved: '#22c55e',       // success
+    loggedNotApproved: '#f59e0b', // warning
+    scheduledNotLogged: '#99f6e4', // secondary-200
+    remaining: '#e5e7eb',      // gray
+    served: '#14b8a6',         // secondary (teal)
+};
+
+// Initialize delivery progress chart (2-segment or 4-segment when minutes summary exists)
 function initDeliveryProgressChart() {
     const canvas = document.getElementById('deliveryProgressChart');
     if (!canvas || typeof Chart === 'undefined') return;
 
     const servedMinutes = parseInt(canvas.dataset.served || '0');
     const thoMinutes = parseInt(canvas.dataset.tho || '0');
-    const remainingMinutes = Math.max(0, thoMinutes - servedMinutes);
+    const scheduledMinutes = parseInt(canvas.dataset.scheduled || '0');
+    const loggedMinutes = parseInt(canvas.dataset.logged || '0');
+    const approvedMinutes = parseInt(canvas.dataset.approved || '0');
+    const hasMinutesSummary = canvas.dataset.scheduled !== undefined && thoMinutes > 0;
+
+    let labels;
+    let data;
+    let backgroundColor;
+
+    if (hasMinutesSummary) {
+        const loggedNotApproved = Math.max(0, loggedMinutes - approvedMinutes);
+        const scheduledNotLogged = Math.max(0, scheduledMinutes - loggedMinutes);
+        const remaining = Math.max(0, thoMinutes - scheduledMinutes);
+
+        labels = [
+            'Approved Minutes',
+            'Logged (not approved)',
+            'Scheduled (not logged)',
+            'Remaining',
+        ];
+        data = [approvedMinutes, loggedNotApproved, scheduledNotLogged, remaining];
+        backgroundColor = [
+            CHART_COLORS.approved,
+            CHART_COLORS.loggedNotApproved,
+            CHART_COLORS.scheduledNotLogged,
+            CHART_COLORS.remaining,
+        ];
+    } else {
+        const remainingMinutes = Math.max(0, thoMinutes - servedMinutes);
+        labels = ['Served Minutes', 'Remaining Minutes'];
+        data = [servedMinutes, remainingMinutes];
+        backgroundColor = [CHART_COLORS.served, CHART_COLORS.remaining];
+    }
 
     new Chart(canvas, {
         type: 'doughnut',
         data: {
-            labels: ['Served Minutes', 'Remaining Minutes'],
+            labels,
             datasets: [{
-                data: [servedMinutes, remainingMinutes],
-                backgroundColor: [
-                    '#14b8a6', // Teal (secondary) for served
-                    '#e5e7eb', // Gray for remaining
-                ],
+                data,
+                backgroundColor,
                 borderWidth: 2,
                 borderColor: '#ffffff',
             }]
@@ -33,9 +71,7 @@ function initDeliveryProgressChart() {
                     position: 'bottom',
                     labels: {
                         padding: 10,
-                        font: {
-                            size: 12
-                        }
+                        font: { size: 12 }
                     }
                 },
                 tooltip: {
@@ -45,7 +81,7 @@ function initDeliveryProgressChart() {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value.toLocaleString()} minutes (${percentage}%)`;
+                            return `${label}: ${value.toLocaleString()} min (${percentage}%)`;
                         }
                     }
                 }

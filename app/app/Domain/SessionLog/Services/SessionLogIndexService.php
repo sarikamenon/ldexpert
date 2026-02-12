@@ -74,9 +74,9 @@ final class SessionLogIndexService
     {
         return [
             ['key' => 'date_time', 'label' => 'Date & Time / Duration'],
-            ['key' => 'entry_info', 'label' => 'Entry'],
-            ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
-            ['key' => 'therapist', 'label' => 'Therapist'],
+            ['key' => 'entry_info', 'label' => 'Entry Date'],
+            ['key' => 'student_service_school', 'label' => 'Student & School'],
+            ['key' => 'therapist', 'label' => 'Therapist & Service'],
             ['key' => 'school_amount', 'label' => 'School Amount'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],
             ['key' => 'status', 'label' => 'Status'],
@@ -91,7 +91,8 @@ final class SessionLogIndexService
     {
         return [
             ['key' => 'date_time', 'label' => 'Date & Time'],
-            ['key' => 'student_service_school', 'label' => 'Student, Service & School'],
+            ['key' => 'student_service_school', 'label' => 'Student & School'],
+            ['key' => 'Service', 'label' => 'Service'],
             ['key' => 'entry_info', 'label' => 'Entry'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],
             ['key' => 'status', 'label' => 'Status'],
@@ -124,10 +125,12 @@ final class SessionLogIndexService
                     ],
                     'student_service_school' => [
                         'student' => $log->student?->name ?? null,
-                        'service' => $log->service?->name ?? null,
                         'school' => $log->school?->display_name ?? null,
                     ],
-                    'therapist' => $log->therapist?->name ?? '-',
+                    'therapist' => [
+                        'name' => $log->therapist?->name ?? '-',
+                        'service' => $log->service?->name ?? null,
+                    ],
                     'school_amount' => $this->formatCurrency($log->school_invoice_amount),
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
                     'status' => $this->getStatusLabel($log),
@@ -168,8 +171,11 @@ final class SessionLogIndexService
                     ],
                     'student_service_school' => [
                         'student' => $log->student?->name ?? null,
-                        'service' => $log->service?->name ?? null,
                         'school' => $log->school?->display_name ?? null,
+                    ],
+                    'therapist' => [
+                        'name' => $log->therapist?->name ?? '-',
+                        'service' => $log->service?->name ?? null,
                     ],
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
                     'status' => $this->getStatusLabel($log),
@@ -284,7 +290,7 @@ final class SessionLogIndexService
 
         $value = (float) $amount;
 
-        return '$'.number_format($value, 2);
+        return '$' . number_format($value, 2);
     }
 
     private function getStatusLabel(SessionLog $log): string

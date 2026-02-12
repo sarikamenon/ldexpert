@@ -30,10 +30,6 @@ final class DateHelper
         $diffInDays = $fromDay->diffInDays($toDay);
         $dayLabel = $diffInDays === 1 ? 'day' : 'days';
 
-        if ($toDay->lessThan($fromDay)) {
-            return "{$diffInDays} {$dayLabel} earlier";
-        }
-
-        return "{$diffInDays} {$dayLabel} later";
+        return "{$diffInDays} {$dayLabel}";
     }
 }
