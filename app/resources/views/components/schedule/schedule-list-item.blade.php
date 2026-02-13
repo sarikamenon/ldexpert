@@ -94,7 +94,7 @@
 
                     {{-- Delete Schedule Button (hidden for billed schedules) --}}
                     <button type="button"
-                        class="schedule-delete-btn p-2 border border-border rounded-lg hover:bg-destructive/10 hover:border-destructive/30 transition-colors text-destructive"
+                        class="schedule-delete-btn p-2 border border-danger/30 rounded-lg hover:bg-danger/10 hover:border-danger/50 transition-colors text-danger"
                         data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Delete Schedule">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
