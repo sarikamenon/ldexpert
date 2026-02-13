@@ -13,6 +13,7 @@ use App\Domain\Therapist\Services\SessionLogService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\SessionLogIndexDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SendBackSessionLogRequest;
 use App\Http\Requests\Admin\UpdateSessionLogRequest;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
 use App\Models\SessionLog;
@@ -113,6 +114,21 @@ final class SessionLogController extends Controller
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)
                 ->with('success', 'Session log approved.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function sendBack(SendBackSessionLogRequest $request, SessionLog $sessionLog): RedirectResponse
+    {
+        try {
+            $this->service->sendBack($request->user(), $sessionLog, $request->validated('comment'));
+
+            return redirect()
+                ->route('admin.session-logs.show', $sessionLog)
+                ->with('success', 'Session log sent back to therapist for rectification.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()

@@ -16,7 +16,7 @@ Enable therapists to manage and log all therapy sessions (scheduled or standalon
 -   Session log tables and workflows implemented. Therapists can create session logs from schedules or as standalone entries.
 -   All session logs require an SSA link (from schedule or manual selection).
 -   Dual billing calculation: therapist rates (from therapist contracts) and school rates (from school contracts).
--   Session status workflow: draft → submitted → approved (implemented).
+-   Session status workflow: draft → submitted → approved; admin can send back submitted logs for rectification (sent_back → therapist edits and resubmits) (implemented).
 -   Document attachments for session logs (implemented via Student Documents module with polymorphic relationship).
 -   Integration with billing module (therapist bills) and invoicing module (school invoices).
 
@@ -32,7 +32,8 @@ Enable therapists to manage and log all therapy sessions (scheduled or standalon
 
 | Table          | Fields                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session_logs` | `id`, `therapist_id`, `student_id`, `ssa_id` (NOT NULL), `schedule_id` (nullable), `service_id`, `school_id` (nullable), `session_date`, `start_time`, `end_time`, `duration_minutes`, `tho_minutes`, `notes` (text, required), `delivery_mode` (always 'virtual'), `is_group` (always false), `outcome` (enum, required), `is_billable_therapist`, `therapist_contract_id` (nullable), `therapist_rate_type` (H/F), `therapist_rate_amount`, `therapist_billable_amount`, `therapist_bill_id` (nullable), `is_billable_school`, `school_contract_id` (nullable), `school_rate_type` (H/F), `school_rate_amount`, `school_invoice_amount`, `invoice_id` (nullable), `is_rate_override`, `override_reason` (nullable), `status` (draft/submitted/approved/cancelled), `submitted_at`, `submitted_by_id`, `approved_at`, `approved_by_id`, `cancellation_reason` (nullable), timestamps, `deleted_at` |
+| `session_logs` | … (as above) …, `status` (draft/submitted/sent_back/approved/cancelled), `sent_back_at` (nullable), `sent_back_by_id` (nullable), … |
+| `session_log_comments` | `id`, `session_log_id`, `author_id` (nullable), `comment` (text), `type` (e.g. sent_back, therapist_reply), timestamps, `deleted_at` |
 
 ### Relationships
 
@@ -48,11 +49,13 @@ Enable therapists to manage and log all therapy sessions (scheduled or standalon
 -   `session_logs.invoice_id` → `invoices.id` (nullable, set when invoice created)
 -   `session_logs.submitted_by_id` → `users.id` (nullable)
 -   `session_logs.approved_by_id` → `users.id` (nullable)
+-   `session_logs.sent_back_by_id` → `users.id` (nullable, set when admin sends back)
+-   `session_log_comments.session_log_id` → `session_logs.id`; `session_log_comments.author_id` → `users.id` (nullable)
 -   Polymorphic: `student_documents` → `documentable_type` = 'App\Models\SessionLog', `documentable_id` (documents attached to session logs)
 
 ### Enums
 
--   `SessionLogStatus`: `DRAFT`, `SUBMITTED`, `APPROVED`, `CANCELLED`
+-   `SessionLogStatus`: `DRAFT`, `SUBMITTED`, `SENT_BACK`, `APPROVED`, `CANCELLED`
 -   `SessionOutcome`: `SERVICES_ADMINISTERED`, `NO_SHOW`, `BILLABLE_CANCELLATION`, `NON_BILLABLE_CANCELLATION_CLIENT`, `NON_BILLABLE_CANCELLATION_PROVIDER`
 
 ### Rules
@@ -111,6 +114,7 @@ GET    /admin/session-logs/{id}                  (admin view detail)
 GET    /admin/session-logs/{id}/edit             (admin edit)
 PUT    /admin/session-logs/{id}                  (admin update)
 POST   /admin/session-logs/{id}/approve         (approve, locks all edits)
+POST   /admin/session-logs/{id}/send-back       (send back to therapist with comment; therapist notified by email)
 POST   /admin/session-logs/{id}/cancel           (admin cancel)
 ```
 

@@ -232,6 +232,17 @@ Templates use Tailwind CSS compatible styling and follow consistent branding.
 - **Frequency Controls:** Allow users to control reminder frequency (48h only, 2h only, both, none)
 - **Channel Preferences:** Support email, SMS, push notifications (future)
 
+### Session Log Sent Back ✅
+
+**When Admin Sends Back for Rectification:**
+
+- **Recipients:** Therapist (session log owner)
+- **Trigger:** Admin action via `/admin/session-logs/{id}/send-back` with required comment
+- **Implementation:** `App\Domain\Therapist\Services\SessionLogService::sendBack()`; `App\Mail\SessionLogSentBackMail`
+- **Queue:** Sent via queue
+- **Content:** Subject "Session log sent back for rectification – [Student], [Date]"; session details; admin feedback (latest sent_back comment from `session_log_comments`); link to edit and resubmit
+- **View:** `resources/views/emails/session-log-sent-back.blade.php`
+
 ### Additional Notification Types
 
 - **SSA Expiration Warnings:** Notify admins/therapists before SSA expiration

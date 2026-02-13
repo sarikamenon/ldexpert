@@ -13,12 +13,14 @@ use App\Enums\BillingStatus;
 use App\Enums\RateType;
 use App\Enums\Role;
 use App\Enums\SessionOutcome;
+use App\Mail\SessionLogSentBackMail;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 final class SessionLogService
@@ -285,8 +287,8 @@ final class SessionLogService
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
-        // Draft -> ok to submit
-        if ($sessionLog->isDraft() || $sessionLog->status === null) {
+        // Draft or sent back -> ok to submit
+        if ($sessionLog->isDraft() || $sessionLog->isSentBack() || $sessionLog->status === null) {
             return $this->repository->submit($sessionLog, $therapist);
         }
 
@@ -297,6 +299,22 @@ final class SessionLogService
 
         // Approved / cancelled -> not allowed
         throw new \InvalidArgumentException('Session log cannot be submitted in its current status.');
+    }
+
+    public function sendBack(User $admin, SessionLog $sessionLog, string $comment): SessionLog
+    {
+        if (! $sessionLog->isSubmitted()) {
+            throw new \InvalidArgumentException('Session log must be submitted before it can be sent back.');
+        }
+
+        $sessionLog = $this->repository->sendBack($sessionLog, $admin, $comment);
+
+        $sessionLog->loadMissing(['therapist', 'student', 'service']);
+        if ($sessionLog->therapist?->email) {
+            Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+        }
+
+        return $sessionLog;
     }
 
     public function approve(User $admin, SessionLog $sessionLog): SessionLog

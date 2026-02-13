@@ -139,6 +139,7 @@
                                 $variant = match ($statusLabel) {
                                     SessionLogStatus::APPROVED->label() => 'success',
                                     SessionLogStatus::SUBMITTED->label() => 'warning',
+                                    SessionLogStatus::SENT_BACK->label() => 'warning',
                                     SessionLogStatus::CANCELLED->label() => 'danger',
                                     default => 'secondary',
                                 };

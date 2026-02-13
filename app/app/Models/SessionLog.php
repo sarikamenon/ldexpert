@@ -6,12 +6,14 @@ namespace App\Models;
 
 use App\Enums\RateType;
 use App\Enums\Role;
+use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SessionLog extends Model
@@ -53,6 +55,8 @@ class SessionLog extends Model
         'submitted_by_id',
         'approved_at',
         'approved_by_id',
+        'sent_back_at',
+        'sent_back_by_id',
         'cancellation_reason',
     ];
 
@@ -79,6 +83,7 @@ class SessionLog extends Model
             // Status is handled via custom accessor/mutator; do not also use enum cast
             'submitted_at' => 'datetime',
             'approved_at' => 'datetime',
+            'sent_back_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -135,6 +140,24 @@ class SessionLog extends Model
         return $this->belongsTo(User::class, 'approved_by_id');
     }
 
+    public function sentBackBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sent_back_by_id');
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(SessionLogComment::class, 'session_log_id');
+    }
+
+    public function getLatestSentBackComment(): ?SessionLogComment
+    {
+        return $this->comments()
+            ->where('type', SessionLogCommentType::SENT_BACK)
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
@@ -168,6 +191,11 @@ class SessionLog extends Model
     public function isCancelled(): bool
     {
         return $this->status === SessionLogStatus::CANCELLED;
+    }
+
+    public function isSentBack(): bool
+    {
+        return $this->status === SessionLogStatus::SENT_BACK;
     }
 
     public function getStatusAttribute(mixed $value): ?SessionLogStatus
@@ -204,7 +232,7 @@ class SessionLog extends Model
 
     public function canEdit(): bool
     {
-        return $this->isDraft();
+        return $this->status?->canEdit() ?? false;
     }
 
     public function calculateDurationMinutes(): int

@@ -59,6 +59,8 @@ class SessionLogFactory extends Factory
             'submitted_by_id' => null,
             'approved_at' => null,
             'approved_by_id' => null,
+            'sent_back_at' => null,
+            'sent_back_by_id' => null,
             'cancellation_reason' => null,
         ];
     }
@@ -87,6 +89,17 @@ class SessionLogFactory extends Factory
             'submitted_by_id' => $attributes['therapist_id'],
             'approved_at' => now(),
             'approved_by_id' => User::factory()->admin(),
+        ]);
+    }
+
+    public function sentBack(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => SessionLogStatus::SENT_BACK,
+            'submitted_at' => now()->subDay(),
+            'submitted_by_id' => $attributes['therapist_id'],
+            'sent_back_at' => now(),
+            'sent_back_by_id' => User::factory()->admin(),
         ]);
     }
 

@@ -45,6 +45,75 @@
                     @endforelse
                 </x-dashboard::schedule>
 
+                <!-- Sessions to rectify -->
+                <x-ui::card>
+                    <div class="p-5 border-b border-border flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-foreground">Sessions to rectify</h3>
+                        <a href="{{ route('therapist.session-logs.index') }}" class="text-sm text-accent hover:underline">View all</a>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        @forelse($sentBackSessionLogs ?? [] as $log)
+                            <div class="rounded-lg border border-border p-4 bg-background">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-medium text-foreground">
+                                            {{ $log->student?->name ?? 'N/A' }}
+                                        </div>
+                                        <div class="text-sm text-foreground/70 mt-1">
+                                            {{ $log->service?->name ?? 'N/A' }} · {{ $log->session_date?->format('M d, Y') ?? '' }}
+                                        </div>
+                                        @if ($log->getLatestSentBackComment())
+                                            <p class="text-xs text-foreground/60 mt-2 line-clamp-2">
+                                                {{ Str::limit($log->getLatestSentBackComment()->comment, 80) }}
+                                            </p>
+                                        @endif
+                                    </div>
+                                    <a href="{{ route('therapist.session-logs.edit', $log) }}" class="shrink-0">
+                                        <x-ui::button variant="primary" size="sm">Edit</x-ui::button>
+                                    </a>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-8 text-foreground/60">
+                                <p>No sessions sent back for rectification.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </x-ui::card>
+
+                <!-- Pending Schedules -->
+                <x-ui::card>
+                    <div class="p-5 border-b border-border flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-foreground">Pending Schedules</h3>
+                        <a href="{{ route('therapist.schedule.pending') }}" class="text-sm text-accent hover:underline">View all</a>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        @forelse($pendingSchedulesList ?? [] as $row)
+                            <div class="rounded-lg border border-border p-4 bg-background">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-medium text-foreground">
+                                            {{ $row['student_name'] ?? $row['student'] ?? 'N/A' }}
+                                        </div>
+                                        <div class="text-sm text-foreground/70 mt-1">
+                                            {{ $row['service'] ?? 'N/A' }} · {{ $row['schedule_date'] ?? '' }}
+                                        </div>
+                                    </div>
+                                    @if (!empty($row['create_session_log_url']))
+                                        <a href="{{ $row['create_session_log_url'] }}" class="shrink-0">
+                                            <x-ui::button size="sm">Create session log</x-ui::button>
+                                        </a>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-8 text-foreground/60">
+                                <p>No pending schedules.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </x-ui::card>
+
                 <!-- My SSAs -->
                 <x-ui::card>
                     <div class="p-5 border-b border-border flex items-center justify-between">
