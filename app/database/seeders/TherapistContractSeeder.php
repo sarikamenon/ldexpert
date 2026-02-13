@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Constants\ServiceCatalog;
-use Database\Seeders\Concerns\SeedsSchoolYear;
 use App\Enums\ContractStatus;
 use App\Models\Service;
 use App\Models\TherapistContract;
 use App\Models\TherapistContractService;
 use App\Models\TherapistProfile;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
 
 final class TherapistContractSeeder extends Seeder

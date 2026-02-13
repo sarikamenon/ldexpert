@@ -37,6 +37,7 @@ export default defineConfig({
                 'resources/js/pages/admin-contracts-schools-form.js',
                 'resources/js/pages/admin-contracts-therapists-form.js',
                 'resources/js/pages/admin-session-logs-index.js',
+                'resources/js/pages/admin-session-log-override.js',
                 'resources/js/pages/admin-invoices-create.js',
                 'resources/js/pages/admin-invoices-show.js',
                 'resources/js/pages/admin-therapist-bills-create.js',

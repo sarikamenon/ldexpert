@@ -38,6 +38,8 @@ The Contracts module enables NOVA administrators to manage service contracts bet
     -   Service\* (dropdown: select from active services)
     -   Rate\* (decimal, min: 0.00)
     -   Rate Type\* (radio: H=Hourly, F=Flat)
+    -   No-Show Rate\* (decimal, min: 0.00) — used when session outcome is No Show or Billable Cancellation (school students only)
+    -   No-Show Rate Type\* (radio: H=Hourly, F=Flat)
     -   Actions: Add Service, Remove Service
 
 **Validation:**
@@ -108,6 +110,8 @@ The Contracts module enables NOVA administrators to manage service contracts bet
     -   Service\* (dropdown: select from active services)
     -   Rate\* (decimal, min: 0.00)
     -   Rate Type\* (radio: H=Hourly, F=Flat)
+    -   No-Show Rate\* (decimal, min: 0.00) — used when session outcome is No Show or Billable Cancellation (school students only)
+    -   No-Show Rate Type\* (radio: H=Hourly, F=Flat)
     -   Actions: Add Service, Remove Service
 
 **Validation:**
@@ -199,6 +203,8 @@ The Contracts module enables NOVA administrators to manage service contracts bet
 -   `service_id` (foreign key → services.id)
 -   `rate` (decimal 10,2)
 -   `rate_type` (enum: H, F)
+-   `no_show_rate` (decimal 10,2) — used for NO_SHOW and BILLABLE_CANCELLATION outcomes (school students only)
+-   `no_show_rate_type` (enum: H, F)
 -   `created_at`, `updated_at`
 -   Unique constraint: (school_contract_id, service_id)
 
@@ -229,6 +235,8 @@ The Contracts module enables NOVA administrators to manage service contracts bet
 -   `service_id` (foreign key → services.id)
 -   `rate` (decimal 10,2)
 -   `rate_type` (enum: H, F)
+-   `no_show_rate` (decimal 10,2) — used for NO_SHOW and BILLABLE_CANCELLATION outcomes (school students only)
+-   `no_show_rate_type` (enum: H, F)
 -   `created_at`, `updated_at`
 -   Unique constraint: (therapist_contract_id, service_id)
 
@@ -283,6 +291,8 @@ The Contracts module enables NOVA administrators to manage service contracts bet
 -   Service: required, must exist and be active
 -   Rate: required, numeric, min: 0.00, max: 999999.99
 -   Rate Type: required, must be 'H' (Hourly) or 'F' (Flat)
+-   No-Show Rate: required, numeric, min: 0.00
+-   No-Show Rate Type: required, must be 'H' (Hourly) or 'F' (Flat)
 -   Unique: each service can only appear once per contract
 
 ## 9. BUSINESS RULES
@@ -308,8 +318,9 @@ The Contracts module enables NOVA administrators to manage service contracts bet
 4. **Service Rates:**
 
     - Each contract must have at least one service
-    - Each service in a contract has its own rate and rate type
+    - Each service in a contract has its own rate, rate type, no-show rate, and no-show rate type
     - Rate types: H (Hourly) or F (Flat)
+    - No-show rates are required for session outcomes No Show and Billable Cancellation when the student's school is not a private-student school; see Session Logs module for details
 
 5. **Soft Deletes:**
     - Contracts use soft deletes to preserve historical data

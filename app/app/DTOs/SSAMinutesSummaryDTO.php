@@ -49,4 +49,3 @@ final class SSAMinutesSummaryDTO
         return round(($this->approvedMinutes / $this->thoMinutes) * 100, 1);
     }
 }
-

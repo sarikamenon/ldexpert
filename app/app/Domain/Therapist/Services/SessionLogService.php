@@ -10,14 +10,17 @@ use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
+use App\Enums\RateType;
 use App\Enums\Role;
 use App\Enums\SessionOutcome;
+use App\Mail\SessionLogSentBackMail;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
 final class SessionLogService
@@ -255,6 +258,25 @@ final class SessionLogService
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
             }
 
+            // When admin overrides rates, recalculate billable/invoice amounts from rate type, rate amount, and session duration
+            if ($isAdmin && ($dto->isRateOverride ?? false)) {
+                $durationMinutes = (int) $sessionLog->duration_minutes;
+                if ($durationMinutes > 0 && isset($data['therapist_rate_type'], $data['therapist_rate_amount'])) {
+                    $data['therapist_billable_amount'] = $this->rateService->calculateBillableAmount(
+                        RateType::from($data['therapist_rate_type']),
+                        (float) $data['therapist_rate_amount'],
+                        $durationMinutes
+                    );
+                }
+                if ($durationMinutes > 0 && isset($data['school_rate_type'], $data['school_rate_amount'])) {
+                    $data['school_invoice_amount'] = $this->rateService->calculateBillableAmount(
+                        RateType::from($data['school_rate_type']),
+                        (float) $data['school_rate_amount'],
+                        $durationMinutes
+                    );
+                }
+            }
+
             return $this->repository->update($sessionLog, $data);
         });
     }
@@ -265,8 +287,8 @@ final class SessionLogService
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
-        // Draft -> ok to submit
-        if ($sessionLog->isDraft() || $sessionLog->status === null) {
+        // Draft or sent back -> ok to submit
+        if ($sessionLog->isDraft() || $sessionLog->isSentBack() || $sessionLog->status === null) {
             return $this->repository->submit($sessionLog, $therapist);
         }
 
@@ -277,6 +299,22 @@ final class SessionLogService
 
         // Approved / cancelled -> not allowed
         throw new \InvalidArgumentException('Session log cannot be submitted in its current status.');
+    }
+
+    public function sendBack(User $admin, SessionLog $sessionLog, string $comment): SessionLog
+    {
+        if (! $sessionLog->isSubmitted()) {
+            throw new \InvalidArgumentException('Session log must be submitted before it can be sent back.');
+        }
+
+        $sessionLog = $this->repository->sendBack($sessionLog, $admin, $comment);
+
+        $sessionLog->loadMissing(['therapist', 'student', 'service']);
+        if ($sessionLog->therapist?->email) {
+            Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+        }
+
+        return $sessionLog;
     }
 
     public function approve(User $admin, SessionLog $sessionLog): SessionLog

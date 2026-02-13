@@ -8,8 +8,10 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
+use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -43,6 +45,28 @@ class DashboardService
         $lessonsThisWeek = $this->scheduleRepository->countLessonsThisWeek($therapist, $startOfWeek, $endOfWeek);
         $pendingScheduleCount = $this->scheduleService->getPendingCount($therapist);
 
+        $sentBackSessionLogs = SessionLog::query()
+            ->where('therapist_id', $therapist->id)
+            ->where('status', SessionLogStatus::SENT_BACK)
+            ->orderByDesc('sent_back_at')
+            ->limit(10)
+            ->with(['student', 'service', 'comments'])
+            ->get();
+
+        $pendingSchedules = $this->scheduleService->getPendingSchedules($therapist, null);
+        $pendingSchedulesLimited = $pendingSchedules->take(10)->values();
+        $pendingSchedulesList = $this->formatSchedulesForDashboard($pendingSchedulesLimited)
+            ->map(function (array $row, int $i) use ($pendingSchedulesLimited): array {
+                $schedule = $pendingSchedulesLimited->get($i);
+                $row['create_session_log_url'] = $schedule
+                    ? route('therapist.session-logs.create.from-schedule', $schedule)
+                    : null;
+
+                return $row;
+            })
+            ->values()
+            ->all();
+
         return [
             'activeStudents' => $activeStudents,
             'newStudentsThisMonth' => $newStudentsThisMonth,
@@ -53,6 +77,8 @@ class DashboardService
             'lessonsToday' => $lessonsToday,
             'lessonsThisWeek' => $lessonsThisWeek,
             'pendingScheduleCount' => $pendingScheduleCount,
+            'sentBackSessionLogs' => $sentBackSessionLogs,
+            'pendingSchedulesList' => $pendingSchedulesList,
         ];
     }
 

@@ -7,11 +7,11 @@ namespace App\Domain\SSA\Services;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\SSAMinutesSummaryDTO;
-use App\Enums\SessionLogStatus;
 use App\Enums\ScheduleStatus;
+use App\Enums\SessionLogStatus;
+use App\Models\Schedule;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
-use App\Models\Schedule;
 
 final class SSAMinutesSummaryService
 {
@@ -82,4 +82,3 @@ final class SSAMinutesSummaryService
         return (int) $logs->sum(static fn (SessionLog $log): int => (int) ($log->tho_minutes ?? 0));
     }
 }
-

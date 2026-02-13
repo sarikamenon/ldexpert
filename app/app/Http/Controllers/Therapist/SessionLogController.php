@@ -179,7 +179,7 @@ final class SessionLogController extends Controller
     {
         $this->authorize('view', $sessionLog);
 
-        $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapistContract', 'schoolContract']);
+        $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapistContract', 'schoolContract', 'comments.author']);
 
         $documents = $this->documentService->listBySessionLog($sessionLog->id);
 
@@ -200,6 +200,7 @@ final class SessionLogController extends Controller
             'ssa.services',
             'service',
             'school',
+            'comments.author',
         ]);
 
         return view('therapist.session-logs.edit', [
