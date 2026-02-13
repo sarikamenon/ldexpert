@@ -15,6 +15,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         const $scheduleFiltersForm = $('#scheduleFiltersForm');
         const $scheduleList = $('#scheduleList');
         const $schoolEventList = $('#schoolEventList');
+        let selectedDate = null;
         const addScheduleButton = document.getElementById('addScheduleButton');
         const ssaSelectionModal = document.getElementById('ssaSelectionModal');
         const ssaSelectionForm = document.getElementById('ssaSelectionForm');
@@ -94,8 +95,15 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                     const response = await fetch(`/therapist/schedule/${scheduleId}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '', 'X-Requested-With': 'XMLHttpRequest' } });
                     closeAlert();
                     if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || 'Failed to delete schedule'); }
-                    $btn.closest('.border.border-border.rounded-lg').remove();
                     successToast('Schedule deleted successfully.');
+
+                    const dateToReload = getSelectedDate() || selectedDate;
+                    if ($scheduleList.length && dateToReload instanceof Date && !Number.isNaN(dateToReload.getTime())) {
+                        loadScheduleForDate(dateToReload);
+                    } else {
+                        // Fallback for dashboard cards where the date-based list is not available.
+                        $btn.parents('div.border.border-border.rounded-lg').first().remove();
+                    }
                 } catch (error) {
                     errorAlert(error.message || 'An error occurred while deleting the schedule');
                 }
@@ -128,7 +136,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         const calendarEventsUrl = $calendarEl.data('calendar-events-url');
         let calendarEvents = parseCalendarEvents($calendarEl.data('calendar-events'));
         const selectedDateStr = $calendarEl.data('selected-date');
-        let selectedDate = selectedDateStr
+        selectedDate = selectedDateStr
             ? new Date(`${selectedDateStr}T00:00:00`)
             : new Date();
 
