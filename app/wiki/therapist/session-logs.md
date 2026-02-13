@@ -32,7 +32,7 @@ Enable therapists to manage and log all therapy sessions (scheduled or standalon
 
 | Table          | Fields                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `session_logs` | `id`, `therapist_id`, `student_id`, `ssa_id` (NOT NULL), `schedule_id` (nullable), `service_id`, `school_id` (nullable), `session_date`, `start_time`, `end_time`, `duration_minutes`, `tho_minutes`, `notes` (text, required), `delivery_mode` (always 'virtual'), `is_group` (always false), `is_billable_therapist`, `therapist_contract_id` (nullable), `therapist_rate_type` (H/F), `therapist_rate_amount`, `therapist_billable_amount`, `therapist_bill_id` (nullable), `is_billable_school`, `school_contract_id` (nullable), `school_rate_type` (H/F), `school_rate_amount`, `school_invoice_amount`, `invoice_id` (nullable), `is_rate_override`, `override_reason` (nullable), `status` (draft/submitted/approved/cancelled), `submitted_at`, `submitted_by_id`, `approved_at`, `approved_by_id`, `cancellation_reason` (nullable), timestamps, `deleted_at` |
+| `session_logs` | `id`, `therapist_id`, `student_id`, `ssa_id` (NOT NULL), `schedule_id` (nullable), `service_id`, `school_id` (nullable), `session_date`, `start_time`, `end_time`, `duration_minutes`, `tho_minutes`, `notes` (text, required), `delivery_mode` (always 'virtual'), `is_group` (always false), `outcome` (enum, required), `is_billable_therapist`, `therapist_contract_id` (nullable), `therapist_rate_type` (H/F), `therapist_rate_amount`, `therapist_billable_amount`, `therapist_bill_id` (nullable), `is_billable_school`, `school_contract_id` (nullable), `school_rate_type` (H/F), `school_rate_amount`, `school_invoice_amount`, `invoice_id` (nullable), `is_rate_override`, `override_reason` (nullable), `status` (draft/submitted/approved/cancelled), `submitted_at`, `submitted_by_id`, `approved_at`, `approved_by_id`, `cancellation_reason` (nullable), timestamps, `deleted_at` |
 
 ### Relationships
 
@@ -53,6 +53,7 @@ Enable therapists to manage and log all therapy sessions (scheduled or standalon
 ### Enums
 
 -   `SessionLogStatus`: `DRAFT`, `SUBMITTED`, `APPROVED`, `CANCELLED`
+-   `SessionOutcome`: `SERVICES_ADMINISTERED`, `NO_SHOW`, `BILLABLE_CANCELLATION`, `NON_BILLABLE_CANCELLATION_CLIENT`, `NON_BILLABLE_CANCELLATION_PROVIDER`
 
 ### Rules
 
@@ -64,13 +65,28 @@ Enable therapists to manage and log all therapy sessions (scheduled or standalon
 -   `duration_minutes` auto-calculated from `start_time` and `end_time` (rounded to nearest 5 minutes).
 -   `tho_minutes` auto-populated from SSA when `ssa_id` is set.
 -   Billing calculation:
-    -   Therapist side: lookup `TherapistContractService` for `therapist_id` + `service_id` + `session_date`, get `rate` and `rate_type`.
-    -   School side: lookup `SchoolContractService` for `school_id` + `service_id` + `session_date` (from SSA or student's school), get `rate` and `rate_type`.
+    -   Therapist side: lookup `TherapistContractService` for `therapist_id` + `service_id` + `session_date`, get `rate`, `rate_type`, `no_show_rate`, and `no_show_rate_type`.
+    -   School side: lookup `SchoolContractService` for `school_id` + `service_id` + `session_date` (from SSA or student's school), get `rate`, `rate_type`, `no_show_rate`, and `no_show_rate_type`.
+    -   **No-show rate logic (school students only):** When the student's school has `is_private_student = false` (i.e., a regular school, not a private-student placeholder) and the `outcome` is `NO_SHOW` or `BILLABLE_CANCELLATION`, both therapist and school sides use the contract's `no_show_rate` and `no_show_rate_type` instead of the regular rate. No-show rates must be configured on both therapist and school contracts for these outcomes.
+    -   **Private students:** When the student's school has `is_private_student = true`, the regular rate is always used regardless of outcome. No-show rate logic does **not** apply to private students.
     -   Amount calculation: `hourly = rate * (duration_minutes / 60)`, `flat = rate`.
 -   If `is_rate_override = true`, require `override_reason` (min 20 chars).
 -   `notes` field required with minimum 50 characters.
 -   Status transitions: `draft` → `submitted` (locks most edits) → `approved` (locks all edits).
 -   Only therapist who created the log can edit until submitted; admins can approve.
+
+### Session Outcome & No-Show Rate (School Students Only)
+
+| Outcome | Billable Therapist | Billable School | Rate Used (School Students) | Rate Used (Private Students) |
+| ------- | ------------------ | --------------- | --------------------------- | ---------------------------- |
+| Services Administered | Yes | Yes | Regular rate | Regular rate |
+| No Show | Yes | Yes | **No-show rate** | Regular rate |
+| Billable Cancellation | Yes | Yes | **No-show rate** | Regular rate |
+| Non-Billable Cancellation - Client | No | No | N/A | N/A |
+| Non-Billable Cancellation - Provider | No | No | N/A | N/A |
+
+-   **No-show rate applies only to school students** (schools where `is_private_student = false`). Private-student schools (`is_private_student = true`) always use the regular rate; no-show rate is never used.
+-   No-show rates must be configured in both therapist contracts and school contracts (Admin → Contracts) for NO_SHOW and BILLABLE_CANCELLATION outcomes; otherwise validation fails with a clear error message.
 
 ## UI / Routes
 
@@ -107,12 +123,13 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 1. Therapist views schedule calendar or schedule detail.
 2. Clicks "Log Session" button on completed schedule.
 3. Form pre-fills: `student_id`, `service_id`, `ssa_id`, `school_id`, `start_time`, `end_time`, `tho_minutes`.
-4. Therapist adjusts actual `start_time`/`end_time` if different from scheduled.
-5. Therapist enters `notes` (required, min 50 chars).
-6. System auto-calculates billing amounts for both therapist and school sides.
-7. Therapist reviews billing, can override with reason if needed.
-8. Therapist saves as draft or submits immediately.
-9. On submit, status changes to `submitted`, most fields lock.
+4. Therapist selects `outcome` (Services Administered, No Show, Billable Cancellation, or non-billable cancellations).
+5. Therapist adjusts actual `start_time`/`end_time` if different from scheduled.
+6. Therapist enters `notes` (required, min 50 chars).
+7. System auto-calculates billing amounts based on outcome and school type (school vs private student); see no-show rate logic above.
+8. Therapist reviews billing, can override with reason if needed.
+9. Therapist saves as draft or submits immediately.
+10. On submit, status changes to `submitted`, most fields lock.
 
 ### 2. Log Standalone Session
 
@@ -121,10 +138,11 @@ Controllers: `App\Http\Controllers\Therapist\SessionLogController`, `App\Http\Co
 3. Selects `ssa_id` (dropdown filtered to student's active SSAs).
 4. System auto-populates `service_id` from SSA's primary service.
 5. Therapist enters `session_date`, `start_time`, `end_time`.
-6. System auto-calculates `duration_minutes` and `tho_minutes` from SSA.
-7. Therapist enters `notes` (required).
-8. System auto-calculates billing amounts.
-9. Therapist reviews, can override, saves or submits.
+6. Therapist selects `outcome` (Services Administered, No Show, Billable Cancellation, or non-billable cancellations).
+7. System auto-calculates `duration_minutes` and `tho_minutes` from SSA.
+8. Therapist enters `notes` (required).
+9. System auto-calculates billing amounts based on outcome and school type.
+10. Therapist reviews, can override, saves or submits.
 
 ## Visibility & access control
 

@@ -10,6 +10,7 @@ use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
+use App\Enums\RateType;
 use App\Enums\Role;
 use App\Enums\SessionOutcome;
 use App\Models\Schedule;
@@ -253,6 +254,25 @@ final class SessionLogService
                 $data['school_rate_type'] = $billing['school']['rate_type']?->value;
                 $data['school_rate_amount'] = $billing['school']['rate_amount'];
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
+            }
+
+            // When admin overrides rates, recalculate billable/invoice amounts from rate type, rate amount, and session duration
+            if ($isAdmin && ($dto->isRateOverride ?? false)) {
+                $durationMinutes = (int) $sessionLog->duration_minutes;
+                if ($durationMinutes > 0 && isset($data['therapist_rate_type'], $data['therapist_rate_amount'])) {
+                    $data['therapist_billable_amount'] = $this->rateService->calculateBillableAmount(
+                        RateType::from($data['therapist_rate_type']),
+                        (float) $data['therapist_rate_amount'],
+                        $durationMinutes
+                    );
+                }
+                if ($durationMinutes > 0 && isset($data['school_rate_type'], $data['school_rate_amount'])) {
+                    $data['school_invoice_amount'] = $this->rateService->calculateBillableAmount(
+                        RateType::from($data['school_rate_type']),
+                        (float) $data['school_rate_amount'],
+                        $durationMinutes
+                    );
+                }
             }
 
             return $this->repository->update($sessionLog, $data);

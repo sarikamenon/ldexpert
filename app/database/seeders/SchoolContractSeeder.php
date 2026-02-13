@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Constants\ServiceCatalog;
-use Database\Seeders\Concerns\SeedsSchoolYear;
 use App\Enums\ContractStatus;
 use App\Models\School;
 use App\Models\SchoolContract;
 use App\Models\SchoolContractService;
 use App\Models\Service;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
 
 final class SchoolContractSeeder extends Seeder

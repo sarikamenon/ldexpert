@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Enums\Role;
-use Database\Seeders\Concerns\SeedsSchoolYear;
 use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
@@ -13,6 +12,7 @@ use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 

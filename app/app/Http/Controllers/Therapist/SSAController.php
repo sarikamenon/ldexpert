@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
-use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
 use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
