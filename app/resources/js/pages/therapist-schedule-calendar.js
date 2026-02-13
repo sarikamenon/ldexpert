@@ -15,6 +15,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         const $scheduleFiltersForm = $('#scheduleFiltersForm');
         const $scheduleList = $('#scheduleList');
         const $schoolEventList = $('#schoolEventList');
+        let selectedDate = null;
         const addScheduleButton = document.getElementById('addScheduleButton');
         const ssaSelectionModal = document.getElementById('ssaSelectionModal');
         const ssaSelectionForm = document.getElementById('ssaSelectionForm');
@@ -135,7 +136,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
         const calendarEventsUrl = $calendarEl.data('calendar-events-url');
         let calendarEvents = parseCalendarEvents($calendarEl.data('calendar-events'));
         const selectedDateStr = $calendarEl.data('selected-date');
-        let selectedDate = selectedDateStr
+        selectedDate = selectedDateStr
             ? new Date(`${selectedDateStr}T00:00:00`)
             : new Date();
 
