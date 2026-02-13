@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Invoice\Services;
 
+use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\CreateInvoiceDTO;
@@ -24,6 +25,7 @@ final class InvoiceService
         private readonly InvoiceRepositoryInterface $repository,
         private readonly CompanyInfoService $companyInfoService,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly LedgerService $ledgerService,
     ) {}
 
     public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
@@ -139,20 +141,27 @@ final class InvoiceService
             throw new \InvalidArgumentException('Invoice cannot be sent in its current status.');
         }
 
-        // Determine recipient email
-        $recipientEmail = $dto->email
-            ?? $invoice->school_invoice_email
-            ?? $invoice->school_contact_email;
+        return DB::transaction(function () use ($user, $invoice, $dto) {
+            // Determine recipient email
+            $recipientEmail = $dto->email
+                ?? $invoice->school_invoice_email
+                ?? $invoice->school_contact_email;
 
-        if (! $recipientEmail) {
-            throw new \InvalidArgumentException('No email address available for sending invoice.');
-        }
+            if (! $recipientEmail) {
+                throw new \InvalidArgumentException('No email address available for sending invoice.');
+            }
 
-        // Send email with PDF attachment
-        Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message));
+            // Send email with PDF attachment
+            Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message));
 
-        // Mark invoice as sent
-        return $this->repository->markAsSent($invoice, $user->id);
+            // Mark invoice as sent
+            $invoice = $this->repository->markAsSent($invoice, $user->id);
+
+            // Create ledger entry for invoice generation
+            $this->ledgerService->createInvoiceGeneratedEntry($invoice);
+
+            return $invoice;
+        });
     }
 
     public function find(int $id): ?Invoice

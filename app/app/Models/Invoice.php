@@ -10,7 +10,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property InvoiceStatus $status
+ * @property Carbon|null $paid_at
+ * @property float $total
+ * @property float $total_paid
+ */
 class Invoice extends Model
 {
     use HasFactory, SoftDeletes;
@@ -42,6 +49,7 @@ class Invoice extends Model
         'company_tax_id',
         'sent_at',
         'sent_by_id',
+        'paid_at',
         'notes',
     ];
 
@@ -57,6 +65,7 @@ class Invoice extends Model
             'tax_total' => 'decimal:2',
             'total' => 'decimal:2',
             'sent_at' => 'datetime',
+            'paid_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
@@ -78,6 +87,17 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'sent_by_id');
     }
 
+    public function paymentAllocations(): HasMany
+    {
+        return $this->hasMany(InvoicePaymentAllocation::class, 'invoice_id');
+    }
+
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(LedgerEntry::class, 'reference_id')
+            ->where('reference_type', self::class);
+    }
+
     public function isDraft(): bool
     {
         return $this->status === InvoiceStatus::DRAFT;
@@ -91,5 +111,27 @@ class Invoice extends Model
     public function isPaid(): bool
     {
         return $this->status === InvoiceStatus::PAID;
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->paymentAllocations()->sum('allocated_amount');
+    }
+
+    public function getBalanceRemainingAttribute(): float
+    {
+        return max(0, (float) $this->total - $this->getTotalPaidAttribute());
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return $this->getTotalPaidAttribute() >= (float) $this->total;
+    }
+
+    public function isPartiallyPaid(): bool
+    {
+        $totalPaid = $this->getTotalPaidAttribute();
+
+        return $totalPaid > 0 && $totalPaid < (float) $this->total;
     }
 }
