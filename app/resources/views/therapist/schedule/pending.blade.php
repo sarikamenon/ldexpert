@@ -159,7 +159,7 @@
                                     <td class="px-6 py-4 text-sm text-right">
                                         <div class="flex items-center justify-end gap-2">
                                             <button type="button"
-                                                class="schedule-delete-btn inline-flex items-center justify-center rounded-full border border-destructive/20 bg-background text-destructive hover:bg-destructive/10 hover:border-destructive/30 px-3 py-1 text-xs font-medium transition-colors">
+                                                class="schedule-delete-btn inline-flex items-center justify-center rounded-full border border-danger/30 bg-background text-danger hover:bg-danger/10 hover:border-danger/50 px-3 py-1 text-xs font-medium transition-colors">
                                                 Delete Schedule
                                             </button>
                                             <a href="{{ route('therapist.session-logs.create.from-schedule', $schedule->id) }}"
