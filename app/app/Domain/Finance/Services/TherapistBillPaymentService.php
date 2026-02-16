@@ -19,17 +19,32 @@ class TherapistBillPaymentService
     public function recordPayment(RecordTherapistBillPaymentDTO $dto): TherapistBillPayment
     {
         return DB::transaction(function () use ($dto) {
-            // Starting bill determines the therapist and initial context
-            $startingBill = TherapistBill::findOrFail($dto->therapistBillId);
+            $startingBill = null;
+            $therapistId = null;
+
+            if ($dto->therapistBillId > 0) {
+                // Starting bill determines the therapist and initial context
+                $startingBill = TherapistBill::findOrFail($dto->therapistBillId);
+                $therapistId = $startingBill->therapist_id;
+            } else {
+                $therapistId = $dto->therapistId;
+            }
+
+            if (! $therapistId) {
+                throw new \RuntimeException('Cannot record payment without a therapist.');
+            }
 
             // Create the payment receipt (lump-sum payment)
-            $payment = TherapistBillPayment::create($dto->toArray());
+            $paymentData = $dto->toArray();
+            $paymentData['therapist_id'] = $therapistId;
+
+            $payment = TherapistBillPayment::create($paymentData);
 
             $remainingPayment = $dto->amount;
 
-            // Oldest-first unpaid bills for this therapist
+            // Oldest-first bills for this therapist
             /** @var \Illuminate\Support\Collection<int, TherapistBill> $bills */
-            $bills = TherapistBill::where('therapist_id', $startingBill->therapist_id)
+            $bills = TherapistBill::where('therapist_id', $therapistId)
                 ->orderBy('bill_date')
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -61,38 +76,11 @@ class TherapistBillPaymentService
                 $affectedBills->push($bill);
             }
 
-            // Update statuses for all affected bills using allocation sums
-            $affectedBills
-                ->unique('id')
-                ->each(function (TherapistBill $bill): void {
-                    $this->updateBillStatus($bill);
-                });
-
             // Create a single ledger entry for the therapist based on the full receipt amount
-            $this->createLedgerEntry($payment, $startingBill->therapist_id);
+            $this->createLedgerEntry($payment, $therapistId);
 
             return $payment->load('allocations', 'recordedBy');
         });
-    }
-
-    protected function updateBillStatus(TherapistBill $bill): void
-    {
-        $totalPaid = (float) $bill->total_paid;
-        $totalDue = (float) $bill->total_due;
-
-        if ($totalPaid >= $totalDue) {
-            $bill->status = TherapistBillStatus::PAID;
-            if (! $bill->paid_at) {
-                $bill->paid_at = now();
-            }
-        } elseif ($totalPaid > 0) {
-            // Keep status as SENT if partially paid
-            if ($bill->status === TherapistBillStatus::DRAFT) {
-                $bill->status = TherapistBillStatus::SENT;
-            }
-        }
-
-        $bill->save();
     }
 
     protected function createLedgerEntry(TherapistBillPayment $payment, int $therapistId): void
@@ -125,22 +113,11 @@ class TherapistBillPaymentService
     public function deletePayment(TherapistBillPayment $payment): bool
     {
         return DB::transaction(function () use ($payment) {
-            // Capture affected bills before allocations are deleted
-            $billIds = $payment->allocations()
-                ->pluck('therapist_bill_id')
-                ->unique()
-                ->all();
-
             // Delete allocations
             $payment->allocations()->delete();
 
             // Delete the payment
             $payment->delete();
-
-            // Recalculate bill statuses
-            TherapistBill::whereIn('id', $billIds)->get()->each(function (TherapistBill $bill): void {
-                $this->updateBillStatus($bill);
-            });
 
             // Delete associated ledger entries
             LedgerEntry::where('reference_type', TherapistBillPayment::class)

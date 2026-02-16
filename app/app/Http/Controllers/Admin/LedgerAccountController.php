@@ -73,7 +73,6 @@ class LedgerAccountController extends Controller
             ])
             ->withCount('invoices')
             ->leftJoin('invoices', 'schools.id', '=', 'invoices.school_id')
-            ->leftJoin('invoice_payments', 'invoices.id', '=', 'invoice_payments.invoice_id')
             ->groupBy('schools.id', 'schools.full_name', 'schools.display_name', 'schools.contact_email', 'schools.contact_phone', 'schools.created_at');
 
         if ($search) {
@@ -87,10 +86,10 @@ class LedgerAccountController extends Controller
         $accounts = $query->get()->map(function ($school) {
             // Get detailed stats
             $totalInvoiced = $school->invoices()->sum('total');
-            $totalPaid = DB::table('invoice_payments')
-                ->join('invoices', 'invoice_payments.invoice_id', '=', 'invoices.id')
+            $totalPaid = DB::table('invoice_payment_allocations')
+                ->join('invoices', 'invoice_payment_allocations.invoice_id', '=', 'invoices.id')
                 ->where('invoices.school_id', $school->id)
-                ->sum('invoice_payments.amount');
+                ->sum('invoice_payment_allocations.allocated_amount');
 
             // Get current balance from ledger
             $lastEntry = $school->ledgerEntries()->latest('created_at')->first();
@@ -117,23 +116,22 @@ class LedgerAccountController extends Controller
                 'users.name',
                 'users.email',
                 'users.created_at',
-            ])
-            ->leftJoin('therapist_bills', 'users.id', '=', 'therapist_bills.therapist_id')
-            ->leftJoin('therapist_bill_payments', 'therapist_bills.id', '=', 'therapist_bill_payments.therapist_bill_id')
-            ->groupBy('users.id', 'users.name', 'users.email', 'users.created_at');
+            ]);
 
         if ($search) {
-            $query->where('users.name', 'like', "%{$search}%")
-                ->orWhere('users.email', 'like', "%{$search}%");
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%");
+            });
         }
 
         $accounts = $query->get()->map(function ($therapist) {
             // Get detailed stats
             $totalBilled = $therapist->therapistBills()->sum('total_due');
-            $totalPaid = DB::table('therapist_bill_payments')
-                ->join('therapist_bills', 'therapist_bill_payments.therapist_bill_id', '=', 'therapist_bills.id')
+            $totalPaid = DB::table('therapist_bill_payment_allocations')
+                ->join('therapist_bills', 'therapist_bill_payment_allocations.therapist_bill_id', '=', 'therapist_bills.id')
                 ->where('therapist_bills.therapist_id', $therapist->id)
-                ->sum('therapist_bill_payments.amount');
+                ->sum('therapist_bill_payment_allocations.allocated_amount');
 
             // Get current balance from ledger
             $lastEntry = $therapist->ledgerEntries()->latest('created_at')->first();
@@ -156,13 +154,13 @@ class LedgerAccountController extends Controller
     {
         if ($type === 'school') {
             $totalInvoiced = $account->invoices()->sum('total');
-            $totalPaid = DB::table('invoice_payments')
-                ->join('invoices', 'invoice_payments.invoice_id', '=', 'invoices.id')
+            $totalPaid = DB::table('invoice_payment_allocations')
+                ->join('invoices', 'invoice_payment_allocations.invoice_id', '=', 'invoices.id')
                 ->where('invoices.school_id', $account->id)
-                ->sum('invoice_payments.amount');
+                ->sum('invoice_payment_allocations.allocated_amount');
             $invoiceCount = $account->invoices()->count();
-            $paymentCount = DB::table('invoice_payments')
-                ->join('invoices', 'invoice_payments.invoice_id', '=', 'invoices.id')
+            $paymentCount = DB::table('invoice_payment_allocations')
+                ->join('invoices', 'invoice_payment_allocations.invoice_id', '=', 'invoices.id')
                 ->where('invoices.school_id', $account->id)
                 ->count();
 
@@ -175,13 +173,13 @@ class LedgerAccountController extends Controller
             ];
         } else {
             $totalBilled = $account->therapistBills()->sum('total_due');
-            $totalPaid = DB::table('therapist_bill_payments')
-                ->join('therapist_bills', 'therapist_bill_payments.therapist_bill_id', '=', 'therapist_bills.id')
+            $totalPaid = DB::table('therapist_bill_payment_allocations')
+                ->join('therapist_bills', 'therapist_bill_payment_allocations.therapist_bill_id', '=', 'therapist_bills.id')
                 ->where('therapist_bills.therapist_id', $account->id)
-                ->sum('therapist_bill_payments.amount');
+                ->sum('therapist_bill_payment_allocations.allocated_amount');
             $billCount = $account->therapistBills()->count();
-            $paymentCount = DB::table('therapist_bill_payments')
-                ->join('therapist_bills', 'therapist_bill_payments.therapist_bill_id', '=', 'therapist_bills.id')
+            $paymentCount = DB::table('therapist_bill_payment_allocations')
+                ->join('therapist_bills', 'therapist_bill_payment_allocations.therapist_bill_id', '=', 'therapist_bills.id')
                 ->where('therapist_bills.therapist_id', $account->id)
                 ->count();
 

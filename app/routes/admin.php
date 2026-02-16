@@ -149,6 +149,9 @@ Route::middleware('role:admin')
 
         // Invoice Payments
         Route::get('payments/invoices', [InvoicePaymentsListController::class, 'index'])->name('payments.invoices.index');
+        Route::get('payments/invoices/create', [InvoicePaymentsListController::class, 'create'])->name('payments.invoices.create');
+        Route::post('payments/invoices', [InvoicePaymentsListController::class, 'store'])->name('payments.invoices.store');
+        Route::delete('payments/invoices/{payment}', [InvoicePaymentsListController::class, 'destroy'])->name('payments.invoices.destroy');
         Route::post('invoices/{invoice}/payments', [InvoicePaymentController::class, 'store'])->name('invoices.payments.store');
         Route::delete('invoices/{invoice}/payments/{payment}', [InvoicePaymentController::class, 'destroy'])->name('invoices.payments.destroy');
 
@@ -164,6 +167,9 @@ Route::middleware('role:admin')
 
         // Therapist Bill Payments
         Route::get('payments/therapist-bills', [TherapistBillPaymentsListController::class, 'index'])->name('payments.therapist-bills.index');
+        Route::get('payments/therapist-bills/create', [TherapistBillPaymentsListController::class, 'create'])->name('payments.therapist-bills.create');
+        Route::post('payments/therapist-bills', [TherapistBillPaymentsListController::class, 'store'])->name('payments.therapist-bills.store');
+        Route::delete('payments/therapist-bills/{payment}', [TherapistBillPaymentsListController::class, 'destroy'])->name('payments.therapist-bills.destroy');
         Route::post('billing/therapist-bills/{therapist_bill}/payments', [TherapistBillPaymentController::class, 'store'])->name('billing.therapist-bills.payments.store');
         Route::delete('billing/therapist-bills/{therapist_bill}/payments/{payment}', [TherapistBillPaymentController::class, 'destroy'])->name('billing.therapist-bills.payments.destroy');
 

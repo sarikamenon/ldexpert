@@ -68,6 +68,14 @@
             </div>
         </x-ui::card>
 
+        {{-- Shared details component --}}
+        <x-session-log.details :session-log="$sessionLog" />
+
+        {{-- Documents Section --}}
+        @if (isset($documents))
+            <x-session-log.documents-section :session-log="$sessionLog" :documents="$documents" context="admin" />
+        @endif
+
         {{-- Send back for rectification (when submitted) --}}
         @if ($sessionLog->status?->canSendBack())
             <x-ui::card class="p-6" id="send-back-form">
@@ -97,14 +105,6 @@
                     </x-ui::button>
                 </form>
             </x-ui::card>
-        @endif
-
-        {{-- Shared details component --}}
-        <x-session-log.details :session-log="$sessionLog" />
-
-        {{-- Documents Section --}}
-        @if (isset($documents))
-            <x-session-log.documents-section :session-log="$sessionLog" :documents="$documents" context="admin" />
         @endif
     </div>
 </x-admin.layouts.app>

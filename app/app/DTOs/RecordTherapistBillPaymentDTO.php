@@ -16,6 +16,7 @@ final readonly class RecordTherapistBillPaymentDTO
         public ?string $reference = null,
         public ?string $notes = null,
         public ?int $recordedById = null,
+        public ?int $therapistId = null,
     ) {}
 
     /**
@@ -31,6 +32,7 @@ final readonly class RecordTherapistBillPaymentDTO
             reference: $data['reference'] ?? null,
             notes: $data['notes'] ?? null,
             recordedById: $data['recorded_by_id'] ?? null,
+            therapistId: isset($data['therapist_id']) ? (int) $data['therapist_id'] : null,
         );
     }
 
@@ -47,6 +49,7 @@ final readonly class RecordTherapistBillPaymentDTO
             'reference' => $this->reference,
             'notes' => $this->notes,
             'recorded_by_id' => $this->recordedById,
+            'therapist_id' => $this->therapistId,
         ];
     }
 }

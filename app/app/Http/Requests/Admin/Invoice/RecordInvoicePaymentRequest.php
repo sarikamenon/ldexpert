@@ -14,11 +14,9 @@ class RecordInvoicePaymentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Only admins can record payments
-        /** @var User|null $user */
-        $user = $this->user();
-
-        return $user instanceof User && $user->role === Role::ADMIN->value;
+        // Admin routes are already protected by role:admin middleware.
+        // Always authorize here to avoid unexpected 403s from the form request layer.
+        return true;
     }
 
     /**

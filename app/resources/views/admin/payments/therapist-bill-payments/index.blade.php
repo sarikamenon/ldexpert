@@ -1,5 +1,12 @@
 <x-admin.layouts.app>
     <x-ui::page-header title="Therapist Bill Payments" subtitle="Review payments made to therapists">
+        <x-slot name="actions">
+            <a href="{{ route('admin.payments.therapist-bills.create') }}">
+                <x-ui::button variant="primary">
+                    Record Payment
+                </x-ui::button>
+            </a>
+        </x-slot>
     </x-ui::page-header>
 
     @if (session('success'))
@@ -93,7 +100,6 @@
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Therapist</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Bills</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Amount</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Method</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
@@ -110,27 +116,13 @@
                                 <td class="py-3 px-4 text-sm">
                                     @php
                                         $firstAllocation = $payment->allocations->first();
-                                        $therapist = $firstAllocation?->therapistBill?->therapist;
+                                        $therapist = $firstAllocation?->therapistBill?->therapist ?? $payment->therapist;
                                     @endphp
                                     @if ($therapist)
                                         <a href="{{ route('admin.therapists.show', $therapist) }}"
                                             class="text-primary hover:underline">
                                             {{ $therapist->name }}
                                         </a>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4 text-sm">
-                                    @if ($payment->allocations->count() === 1 && $firstAllocation?->therapistBill)
-                                        <a href="{{ route('admin.billing.therapist-bills.show', $firstAllocation->therapistBill) }}"
-                                            class="text-primary hover:underline font-medium">
-                                            #{{ $firstAllocation->therapistBill->bill_number }}
-                                        </a>
-                                    @elseif ($payment->allocations->count() > 1)
-                                        <span class="text-sm text-foreground/70">
-                                            {{ $payment->allocations->count() }} bills
-                                        </span>
                                     @else
                                         —
                                     @endif
@@ -151,23 +143,17 @@
                                     {{ $payment->recordedBy->name ?? 'System' }}
                                 </td>
                                 <td class="py-3 px-4 text-sm text-right">
-                                    @if ($payment->allocations->count() === 1 && $firstAllocation?->therapistBill)
-                                        <div class="flex items-center justify-end">
-                                            <a href="{{ route('admin.billing.therapist-bills.show', $firstAllocation->therapistBill) }}"
-                                                class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                title="View Bill"
-                                                aria-label="View bill {{ $firstAllocation->therapistBill->bill_number }}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                                    fill="none" stroke="currentColor" stroke-width="2"
-                                                    stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                    <circle cx="12" cy="12" r="3"></circle>
-                                                </svg>
-                                            </a>
-                                        </div>
-                                    @else
-                                        <span class="text-xs text-foreground/60">View via Accounts Ledger</span>
-                                    @endif
+                                    <form method="POST"
+                                        action="{{ route('admin.payments.therapist-bills.destroy', $payment) }}"
+                                        class="inline"
+                                        onsubmit="return confirm('Are you sure you want to delete this payment? This will remove its allocations and ledger entry.');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit"
+                                            class="text-danger hover:text-danger/80 text-sm">
+                                            Delete
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach

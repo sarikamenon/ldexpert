@@ -14,6 +14,11 @@ return new class extends Migration
         Schema::create('invoice_payments', function (Blueprint $table) {
             $table->id();
 
+            $table->foreignId('school_id')
+                ->constrained('schools')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+
             // Payment details
             $table->date('paid_at');
             $table->decimal('amount', 10, 2);
@@ -32,6 +37,7 @@ return new class extends Migration
             $table->softDeletes();
 
             // Indexes
+            $table->index('school_id');
             $table->index('paid_at');
             $table->index('method');
         });

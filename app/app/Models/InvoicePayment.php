@@ -19,6 +19,7 @@ class InvoicePayment extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'school_id',
         'paid_at',
         'amount',
         'method',
@@ -45,6 +46,14 @@ class InvoicePayment extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_id');
+    }
+
+    /**
+     * @return BelongsTo<School, InvoicePayment>
+     */
+    public function school(): BelongsTo
+    {
+        return $this->belongsTo(School::class, 'school_id');
     }
 
     /**

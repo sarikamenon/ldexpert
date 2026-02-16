@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  */
 class Invoice extends Model
 {
+    /** @use HasFactory<\Database\Factories\InvoiceFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -72,26 +73,41 @@ class Invoice extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<School, Invoice>
+     */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
     }
 
+    /**
+     * @return HasMany<SessionLog, Invoice>
+     */
     public function sessionLogs(): HasMany
     {
         return $this->hasMany(SessionLog::class, 'invoice_id');
     }
 
+    /**
+     * @return BelongsTo<User, Invoice>
+     */
     public function sentBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sent_by_id');
     }
 
+    /**
+     * @return HasMany<InvoicePaymentAllocation, Invoice>
+     */
     public function paymentAllocations(): HasMany
     {
         return $this->hasMany(InvoicePaymentAllocation::class, 'invoice_id');
     }
 
+    /**
+     * @return HasMany<LedgerEntry, Invoice>
+     */
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(LedgerEntry::class, 'reference_id')

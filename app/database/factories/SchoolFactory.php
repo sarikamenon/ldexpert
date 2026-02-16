@@ -26,7 +26,7 @@ class SchoolFactory extends Factory
 
         return [
             'full_name' => $this->faker->company().' School',
-            'display_name' => $this->faker->company().' '.Str::random(6),
+            'display_name' => $this->faker->company(),
             'address' => $this->faker->address(),
             'state' => $state,
             'timezone' => $timezone,

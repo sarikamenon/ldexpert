@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  */
 class TherapistBill extends Model
 {
+    /** @use HasFactory<\Database\Factories\TherapistBillFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -67,26 +68,41 @@ class TherapistBill extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, TherapistBill>
+     */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
+    /**
+     * @return HasMany<SessionLog, TherapistBill>
+     */
     public function sessionLogs(): HasMany
     {
         return $this->hasMany(SessionLog::class, 'therapist_bill_id');
     }
 
+    /**
+     * @return BelongsTo<User, TherapistBill>
+     */
     public function sentBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sent_by_id');
     }
 
+    /**
+     * @return HasMany<TherapistBillPaymentAllocation, TherapistBill>
+     */
     public function paymentAllocations(): HasMany
     {
         return $this->hasMany(TherapistBillPaymentAllocation::class, 'therapist_bill_id');
     }
 
+    /**
+     * @return HasMany<LedgerEntry, TherapistBill>
+     */
     public function ledgerEntries(): HasMany
     {
         return $this->hasMany(LedgerEntry::class, 'reference_id')
