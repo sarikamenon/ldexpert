@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Services;
 
+use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
 use App\DTOs\RecordTherapistBillPaymentDTO;
-use App\Enums\TherapistBillStatus;
 use App\Enums\TransactionType;
 use App\Models\LedgerEntry;
 use App\Models\TherapistBill;
 use App\Models\TherapistBillPayment;
-use App\Models\TherapistBillPaymentAllocation;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class TherapistBillPaymentService
 {
+    public function __construct(
+        private readonly TherapistBillPaymentRepositoryInterface $payments,
+        private readonly LedgerEntryRepositoryInterface $ledgerEntries,
+    ) {}
+
     public function recordPayment(RecordTherapistBillPaymentDTO $dto): TherapistBillPayment
     {
         return DB::transaction(function () use ($dto) {
@@ -38,17 +43,12 @@ class TherapistBillPaymentService
             $paymentData = $dto->toArray();
             $paymentData['therapist_id'] = $therapistId;
 
-            $payment = TherapistBillPayment::create($paymentData);
+            $payment = $this->payments->createPayment($paymentData);
 
             $remainingPayment = $dto->amount;
 
             // Oldest-first bills for this therapist
-            /** @var \Illuminate\Support\Collection<int, TherapistBill> $bills */
-            $bills = TherapistBill::where('therapist_id', $therapistId)
-                ->orderBy('bill_date')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            $bills = $this->payments->getBillsForTherapistOldestFirst($therapistId);
 
             $affectedBills = collect();
 
@@ -66,7 +66,7 @@ class TherapistBillPaymentService
 
                 $allocationAmount = min($remainingOnBill, $remainingPayment);
 
-                TherapistBillPaymentAllocation::create([
+                $this->payments->createAllocation([
                     'therapist_bill_id' => $bill->id,
                     'therapist_bill_payment_id' => $payment->id,
                     'allocated_amount' => $allocationAmount,
@@ -85,14 +85,8 @@ class TherapistBillPaymentService
 
     protected function createLedgerEntry(TherapistBillPayment $payment, int $therapistId): void
     {
-        // Get current balance for the therapist
-        $lastEntry = LedgerEntry::where('ledgerable_type', User::class)
-            ->where('ledgerable_id', $therapistId)
-            ->orderBy('created_at', 'desc')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0;
+        $lastEntry = $this->ledgerEntries->getLastEntryForTherapist($therapistId);
+        $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0.0;
 
         // Payment made reduces the therapist's balance (we owe them less)
         $newBalance = $previousBalance - (float) $payment->amount;
@@ -114,10 +108,10 @@ class TherapistBillPaymentService
     {
         return DB::transaction(function () use ($payment) {
             // Delete allocations
-            $payment->allocations()->delete();
+            $this->payments->deleteAllocationsForPayment($payment);
 
             // Delete the payment
-            $payment->delete();
+            $this->payments->softDeletePayment($payment);
 
             // Delete associated ledger entries
             LedgerEntry::where('reference_type', TherapistBillPayment::class)

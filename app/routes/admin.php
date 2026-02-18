@@ -139,6 +139,7 @@ Route::middleware('role:admin')
         Route::get('finance/dashboard', [FinanceDashboardController::class, 'index'])->name('finance.dashboard');
 
         // Ledger Accounts
+        Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
         Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
 

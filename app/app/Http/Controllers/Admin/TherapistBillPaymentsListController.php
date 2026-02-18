@@ -4,65 +4,42 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Finance\Services\PaymentsListService;
+use App\DTOs\TherapistBillPaymentFilterDTO;
 use App\Http\Controllers\Controller;
 use App\Models\TherapistBillPayment;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
+use App\Http\Requests\Admin\Billing\TherapistBillPaymentIndexRequest;
 
 class TherapistBillPaymentsListController extends Controller
 {
     public function __construct(
         private readonly \App\Domain\Finance\Services\TherapistBillPaymentService $service,
+        private readonly PaymentsListService $paymentsListService,
     ) {}
 
-    public function index(Request $request): View
+    public function index(TherapistBillPaymentIndexRequest $request): View
     {
-        $query = TherapistBillPayment::query()
-            ->with(['therapist', 'allocations.therapistBill.therapist', 'recordedBy'])
-            ->orderByDesc('paid_at')
-            ->orderByDesc('created_at');
+        $this->authorize('viewAny', TherapistBillPayment::class);
 
-        // Filter by date range
-        if ($request->filled('from_date')) {
-            $query->where('paid_at', '>=', $request->from_date);
-        }
+        $filters = TherapistBillPaymentFilterDTO::fromArray($request->validated());
 
-        if ($request->filled('to_date')) {
-            $query->where('paid_at', '<=', $request->to_date);
-        }
+        $result = $this->paymentsListService->getTherapistBillPayments($filters);
 
-        // Filter by payment method
-        if ($request->filled('method')) {
-            $query->where('method', $request->method);
-        }
-
-        // Search by reference or therapist name
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function (Builder $q) use ($search) {
-                $q->where('reference', 'like', "%{$search}%")
-                    ->orWhereHas('allocations.therapistBill.therapist', function (Builder $sq) use ($search) {
-                        $sq->where('name', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        $payments = $query->paginate(25)->withQueryString();
-
-        $totalAmount = TherapistBillPayment::query()
-            ->when($request->filled('from_date'), fn ($q) => $q->where('paid_at', '>=', $request->from_date))
-            ->when($request->filled('to_date'), fn ($q) => $q->where('paid_at', '<=', $request->to_date))
-            ->when($request->filled('method'), fn ($q) => $q->where('method', $request->method))
-            ->sum('amount');
-
-        return view('admin.payments.therapist-bill-payments.index', compact('payments', 'totalAmount'));
+        return view('admin.payments.therapist-bill-payments.index', [
+            'payments' => $result['payments'],
+            'totalAmount' => $result['totalAmount'],
+        ]);
     }
 
     public function create(Request $request): View
     {
+        $this->authorize('viewAny', TherapistBillPayment::class);
+
         $therapists = User::where('role', \App\Enums\Role::THERAPIST)
             ->orderBy('name')
             ->get();
@@ -75,6 +52,8 @@ class TherapistBillPaymentsListController extends Controller
 
     public function store(\App\Http\Requests\Admin\Billing\RecordTherapistBillPaymentRequest $request): RedirectResponse
     {
+        $this->authorize('viewAny', TherapistBillPayment::class);
+
         $data = $request->validated();
         $therapistId = (int) $request->input('therapist_id');
 
@@ -109,6 +88,8 @@ class TherapistBillPaymentsListController extends Controller
 
     public function destroy(TherapistBillPayment $payment): RedirectResponse
     {
+        $this->authorize('delete', $payment);
+
         try {
             $this->service->deletePayment($payment);
 

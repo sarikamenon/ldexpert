@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Services;
 
+use App\Domain\Finance\Repositories\InvoicePaymentRepositoryInterface;
+use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
 use App\DTOs\RecordInvoicePaymentDTO;
-use App\Enums\InvoiceStatus;
 use App\Enums\TransactionType;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
-use App\Models\InvoicePaymentAllocation;
 use App\Models\LedgerEntry;
 use App\Models\School;
 use Illuminate\Support\Facades\DB;
 
 class InvoicePaymentService
 {
+    public function __construct(
+        private readonly InvoicePaymentRepositoryInterface $payments,
+        private readonly LedgerEntryRepositoryInterface $ledgerEntries,
+    ) {}
+
     public function recordPayment(RecordInvoicePaymentDTO $dto): InvoicePayment
     {
         return DB::transaction(function () use ($dto) {
@@ -43,17 +48,12 @@ class InvoicePaymentService
             $paymentData = $dto->toArray();
             $paymentData['school_id'] = $schoolId;
 
-            $payment = InvoicePayment::create($paymentData);
+            $payment = $this->payments->createPayment($paymentData);
 
             $remainingPayment = $dto->amount;
 
             // Oldest-first invoices for this school
-            /** @var \Illuminate\Support\Collection<int, Invoice> $invoices */
-            $invoices = Invoice::where('school_id', $schoolId)
-                ->orderBy('invoice_date')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
+            $invoices = $this->payments->getInvoicesForSchoolOldestFirst($schoolId);
 
             $affectedInvoices = collect();
 
@@ -71,7 +71,7 @@ class InvoicePaymentService
 
                 $allocationAmount = min($remainingOnInvoice, $remainingPayment);
 
-                InvoicePaymentAllocation::create([
+                $this->payments->createAllocation([
                     'invoice_id' => $invoice->id,
                     'invoice_payment_id' => $payment->id,
                     'allocated_amount' => $allocationAmount,
@@ -90,14 +90,8 @@ class InvoicePaymentService
 
     protected function createLedgerEntry(InvoicePayment $payment, int $schoolId): void
     {
-        // Get current balance for the school
-        $lastEntry = LedgerEntry::where('ledgerable_type', School::class)
-            ->where('ledgerable_id', $schoolId)
-            ->orderBy('created_at', 'desc')
-            ->orderBy('id', 'desc')
-            ->first();
-
-        $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0;
+        $lastEntry = $this->ledgerEntries->getLastEntryForSchool($schoolId);
+        $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0.0;
 
         $newBalance = $previousBalance - (float) $payment->amount;
 
@@ -118,10 +112,10 @@ class InvoicePaymentService
     {
         return DB::transaction(function () use ($payment) {
             // Delete allocations (will also adjust totals for each invoice)
-            $payment->allocations()->delete();
+            $this->payments->deleteAllocationsForPayment($payment);
 
             // Delete the payment
-            $payment->delete();
+            $this->payments->softDeletePayment($payment);
 
             // Delete associated ledger entries
             LedgerEntry::where('reference_type', InvoicePayment::class)

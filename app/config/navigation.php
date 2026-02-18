@@ -132,6 +132,7 @@ return [
                     [
                         'label' => 'Accounts Ledger',
                         'route' => 'admin.ledger.accounts.index',
+                        'query' => ['type' => 'schools'],
                         'active' => 'admin.ledger.accounts.*',
                     ],
                     [

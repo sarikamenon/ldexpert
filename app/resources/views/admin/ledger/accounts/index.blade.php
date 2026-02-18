@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-ui::page-header title="Accounts Ledger" subtitle="View all customer and therapist account balances">
     </x-ui::page-header>
 
@@ -16,59 +20,30 @@
         </div>
     </x-ui::card>
 
-    {{-- Search --}}
-    <x-ui::card class="p-6 mb-6">
-        <form method="GET" action="{{ route('admin.ledger.accounts.index') }}" class="space-y-4">
-            <input type="hidden" name="type" value="{{ $accountType }}">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1" for="search">
-                        Search Accounts
-                    </label>
-                    <input type="text" id="search" name="search" value="{{ request('search') }}"
-                        placeholder="Search by name or email"
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                </div>
-            </div>
-
-            <div class="flex gap-2">
-                <button type="submit"
-                    class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-                    Search
-                </button>
-                <a href="{{ route('admin.ledger.accounts.index', ['type' => $accountType]) }}"
-                    class="px-4 py-2 border border-border rounded-md hover:bg-background/subtle">
-                    Clear
-                </a>
-            </div>
-        </form>
-    </x-ui::card>
-
     {{-- Summary --}}
     <x-ui::card class="p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <p class="text-sm text-foreground/70">Total Accounts</p>
-                <p class="text-2xl font-bold mt-1">{{ $accounts->count() }}</p>
+                <p class="text-3xl font-semibold mt-1">{{ $accounts->count() }}</p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">
                     Total {{ $accountType === 'schools' ? 'Invoiced' : 'Billed' }}
                 </p>
-                <p class="text-2xl font-bold mt-1">
+                <p class="text-3xl font-semibold mt-1">
                     ${{ number_format($accounts->sum($accountType === 'schools' ? 'total_invoiced' : 'total_billed'), 2) }}
                 </p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">Total Paid</p>
-                <p class="text-2xl font-bold mt-1">
+                <p class="text-3xl font-semibold mt-1 text-success">
                     ${{ number_format($accounts->sum('total_paid'), 2) }}
                 </p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">Total Outstanding</p>
-                <p class="text-2xl font-bold mt-1">
+                <p class="text-3xl font-semibold mt-1 {{ $accounts->sum('outstanding') > 0 ? 'text-warning' : 'text-success' }}">
                     ${{ number_format($accounts->sum('outstanding'), 2) }}
                 </p>
             </div>
@@ -76,10 +51,19 @@
     </x-ui::card>
 
     {{-- Accounts Table --}}
-    <x-ui::card class="overflow-hidden">
+    <x-ui::card class="p-6 space-y-4 overflow-hidden">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-semibold text-foreground">
+                {{ $accountType === 'schools' ? 'School Accounts' : 'Therapist Accounts' }}
+            </h2>
+            <a href="{{ route('admin.ledger.accounts.export', ['type' => $accountType]) }}"
+                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
+                Export
+            </a>
+        </div>
         @if ($accounts->count() > 0)
             <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
+                <table id="ledgerAccountsTable" class="w-full display">
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">
@@ -90,7 +74,6 @@
                                 {{ $accountType === 'schools' ? 'Invoiced' : 'Billed' }}
                             </th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Paid</th>
-                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Outstanding</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Balance</th>
                             <th class="text-center py-3 px-4 text-sm font-medium text-foreground">Transactions</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Actions</th>
@@ -100,7 +83,19 @@
                         @foreach ($accounts as $account)
                             <tr class="border-t border-border hover:bg-background/subtle">
                                 <td class="py-3 px-4 text-sm">
-                                    <div class="font-medium">{{ $account->name }}</div>
+                                    <div class="font-medium">
+                                        @if ($accountType === 'schools')
+                                            <a href="{{ route('admin.schools.show', $account->id) }}"
+                                                class="text-primary hover:underline">
+                                                {{ $account->name }}
+                                            </a>
+                                        @else
+                                            <a href="{{ route('admin.therapists.show', $account->id) }}"
+                                                class="text-primary hover:underline">
+                                                {{ $account->name }}
+                                            </a>
+                                        @endif
+                                    </div>
                                     <div class="text-xs text-foreground/60">
                                         Member since {{ $account->created_at->format('M Y') }}
                                     </div>
@@ -127,19 +122,6 @@
                                     <span class="font-semibold text-info-600">
                                         ${{ number_format($account->total_paid, 2) }}
                                     </span>
-                                </td>
-                                <td class="py-3 px-4 text-sm text-right">
-                                    @if ($account->outstanding > 0)
-                                        <span
-                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-warning/10 text-warning-700">
-                                            ${{ number_format($account->outstanding, 2) }}
-                                        </span>
-                                    @else
-                                        <span
-                                            class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-success/10 text-success-700">
-                                            $0.00
-                                        </span>
-                                    @endif
                                 </td>
                                 <td class="py-3 px-4 text-sm text-right">
                                     <span
@@ -172,21 +154,6 @@
                             </tr>
                         @endforeach
                     </tbody>
-                    <tfoot>
-                        <tr class="border-t border-border bg-background/subtle text-sm font-semibold">
-                            <td class="py-3 px-4" colspan="2">Totals</td>
-                            <td class="py-3 px-4 text-right">
-                                ${{ number_format($accounts->sum($accountType === 'schools' ? 'total_invoiced' : 'total_billed'), 2) }}
-                            </td>
-                            <td class="py-3 px-4 text-right">
-                                ${{ number_format($accounts->sum('total_paid'), 2) }}
-                            </td>
-                            <td class="py-3 px-4 text-right">
-                                ${{ number_format($accounts->sum('outstanding'), 2) }}
-                            </td>
-                            <td colspan="3"></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         @else
@@ -194,4 +161,8 @@
                 description="No accounts match your current filters. Try adjusting your search criteria." />
         @endif
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-ledger-accounts-index.js'])
+    </x-slot>
 </x-admin.layouts.app>

@@ -1,27 +1,12 @@
 <x-admin.layouts.app>
-    <x-ui::page-header title="Finance Dashboard" :subtitle="'Financial Overview - ' . $currentMonth" />
+    <x-ui::page-header title="Finance Dashboard" subtitle="Financial Overview (all-time totals)" />
 
-    {{-- Key Metrics - This Month --}}
+    {{-- Key Metrics - All-time --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
         <x-ui::card class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-foreground/70">Revenue Invoiced</p>
-                    <p class="text-2xl font-bold mt-1">${{ number_format($revenueInvoiced, 2) }}</p>
-                </div>
-                <div class="p-3 bg-primary/10 rounded-full">
-                    <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                </div>
-            </div>
-        </x-ui::card>
-
-        <x-ui::card class="p-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-foreground/70">Revenue Collected</p>
+                    <p class="text-sm text-foreground/70">Revenue Collected (all-time)</p>
                     <p class="text-2xl font-bold mt-1 text-success">${{ number_format($revenueCollected, 2) }}</p>
                 </div>
                 <div class="p-3 bg-success/10 rounded-full">
@@ -36,7 +21,22 @@
         <x-ui::card class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-foreground/70">Total Expenses</p>
+                    <p class="text-sm text-foreground/70">Paid to Therapists (all-time)</p>
+                    <p class="text-2xl font-bold mt-1 text-danger">${{ number_format($therapistPayments, 2) }}</p>
+                </div>
+                <div class="p-3 bg-danger/10 rounded-full">
+                    <svg class="w-6 h-6 text-danger" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                </div>
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-foreground/70">Total Expenses (all-time)</p>
                     <p class="text-2xl font-bold mt-1 text-danger">${{ number_format($totalExpenses, 2) }}</p>
                 </div>
                 <div class="p-3 bg-danger/10 rounded-full">
@@ -51,7 +51,7 @@
         <x-ui::card class="p-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm text-foreground/70">Net Income</p>
+                    <p class="text-sm text-foreground/70">Net Income (all-time)</p>
                     <p class="text-2xl font-bold mt-1 {{ $netIncome >= 0 ? 'text-success' : 'text-danger' }}">
                         ${{ number_format($netIncome, 2) }}</p>
                 </div>
@@ -122,7 +122,7 @@
                     @foreach ($recentPaymentsReceived as $payment)
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <p class="text-sm font-medium">{{ $payment->invoice->school_name }}</p>
+                                <p class="text-sm font-medium">{{ $payment->school?->name ?? 'Unknown school' }}</p>
                                 <p class="text-xs text-foreground/70">{{ $payment->paid_at->format('M d, Y') }}</p>
                             </div>
                             <p class="text-sm font-semibold text-success">${{ number_format($payment->amount, 2) }}
@@ -143,7 +143,7 @@
                     @foreach ($recentPaymentsMade as $payment)
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <p class="text-sm font-medium">{{ $payment->therapistBill->therapist_name }}</p>
+                                <p class="text-sm font-medium">{{ $payment->therapist?->name ?? 'Unknown therapist' }}</p>
                                 <p class="text-xs text-foreground/70">{{ $payment->paid_at->format('M d, Y') }}</p>
                             </div>
                             <p class="text-sm font-semibold text-danger">${{ number_format($payment->amount, 2) }}</p>

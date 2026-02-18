@@ -10,6 +10,10 @@ use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
+use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\Domain\Finance\Repositories\FinanceSummaryRepositoryInterface;
+use App\Domain\Finance\Repositories\InvoicePaymentRepositoryInterface;
+use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
@@ -32,7 +36,10 @@ use App\Http\Middleware\RoleMiddleware;
 use App\Infrastructure\Repositories\EloquentActivityLogRepository;
 use App\Infrastructure\Repositories\EloquentAnalyticsRepository;
 use App\Infrastructure\Repositories\EloquentDashboardRepository;
+use App\Infrastructure\Repositories\EloquentFinanceSummaryRepository;
+use App\Infrastructure\Repositories\EloquentInvoicePaymentRepository;
 use App\Infrastructure\Repositories\EloquentInvoiceRepository;
+use App\Infrastructure\Repositories\EloquentLedgerEntryRepository;
 use App\Infrastructure\Repositories\EloquentNotificationRepository;
 use App\Infrastructure\Repositories\EloquentScheduleRepository;
 use App\Infrastructure\Repositories\EloquentSchoolCalendarEventRepository;
@@ -45,6 +52,7 @@ use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Infrastructure\Repositories\EloquentStudentCommentRepository;
 use App\Infrastructure\Repositories\EloquentStudentDocumentRepository;
 use App\Infrastructure\Repositories\EloquentStudentRepository;
+use App\Infrastructure\Repositories\EloquentTherapistBillPaymentRepository;
 use App\Infrastructure\Repositories\EloquentTherapistBillRepository;
 use App\Infrastructure\Repositories\EloquentTherapistContractRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
@@ -114,6 +122,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SettingsRepositoryInterface::class, EloquentSettingsRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, EloquentNotificationRepository::class);
         $this->app->bind(SchoolCalendarEventRepositoryInterface::class, EloquentSchoolCalendarEventRepository::class);
+        $this->app->bind(LedgerEntryRepositoryInterface::class, EloquentLedgerEntryRepository::class);
+        $this->app->bind(InvoicePaymentRepositoryInterface::class, EloquentInvoicePaymentRepository::class);
+        $this->app->bind(TherapistBillPaymentRepositoryInterface::class, EloquentTherapistBillPaymentRepository::class);
+        $this->app->bind(FinanceSummaryRepositoryInterface::class, EloquentFinanceSummaryRepository::class);
         $this->app->bind(StorageServiceInterface::class, function (): StorageServiceInterface {
             return match (config('filesystems.default')) {
                 'local' => $this->app->make(LocalStorageService::class),
