@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-ui::page-header title="Expense Categories" subtitle="Manage categories used to classify expenses">
         <x-slot name="actions">
             <a href="{{ route('admin.settings.expense-categories.create') }}">
@@ -20,50 +24,30 @@
         <x-ui::alert variant="danger" class="mb-4">{{ session('error') }}</x-ui::alert>
     @endif
 
-    {{-- Filters --}}
-    <x-ui::card class="p-6 mb-6">
-        <form method="GET" action="{{ route('admin.settings.expense-categories.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1" for="search">
-                        Search
-                    </label>
-                    <input type="text" id="search" name="search" value="{{ request('search') }}"
-                        placeholder="Category name"
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                </div>
+    <x-ui::card class="p-6 space-y-4">
+        <x-ui::filter-toolbar formId="expenseCategoriesFiltersForm"
+            :formAction="route('admin.settings.expense-categories.index')">
+            <x-slot:filters>
+                <x-ui::input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Category name" class="w-48" />
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1" for="status">
-                        Status
-                    </label>
-                    <select id="status" name="status"
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                        <option value="">All</option>
-                        <option value="active" @selected(request('status') === 'active')>Active</option>
-                        <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
-                    </select>
-                </div>
-            </div>
+                <x-ui::select name="status" placeholder="All" :inline="true" :searchable="false" class="w-32">
+                    <option value="">All</option>
+                    <option value="active" @selected(request('status') === 'active')>Active</option>
+                    <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
+                </x-ui::select>
 
-            <div class="flex gap-2">
-                <button type="submit"
-                    class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-                    Apply Filters
-                </button>
-                <a href="{{ route('admin.settings.expense-categories.index') }}"
-                    class="px-4 py-2 border border-border rounded-md hover:bg-background/subtle">
-                    Clear Filters
-                </a>
-            </div>
-        </form>
-    </x-ui::card>
+                @if (request()->hasAny(['search', 'status']) && array_filter(request()->only(['search', 'status'])))
+                    <a href="{{ route('admin.settings.expense-categories.index') }}">
+                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
+                    </a>
+                @endif
+            </x-slot:filters>
+        </x-ui::filter-toolbar>
 
-    {{-- Categories Table --}}
-    <x-ui::card class="overflow-hidden">
         @if ($categories->count() > 0)
             <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
+                <table class="w-full border-collapse expense-categories-table">
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Name</th>
@@ -85,7 +69,7 @@
                                         {{ $category->slug }}
                                     </code>
                                 </td>
-                                <td class="py-3 px-4 text-sm">
+                                <td class="py-3 px-4 text-sm expense-category-status-cell">
                                     @if ($category->is_active)
                                         <x-ui::badge variant="success">Active</x-ui::badge>
                                     @else
@@ -117,34 +101,25 @@
                                             </svg>
                                         </a>
 
-                                        @if ($category->expenses_count === 0)
-                                            <form method="POST"
-                                                action="{{ route('admin.settings.expense-categories.destroy', $category) }}"
-                                                onsubmit="return confirm('Are you sure you want to delete this category?');"
-                                                class="inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="inline-flex items-center justify-center w-8 h-8 bg-danger text-danger-foreground rounded hover:bg-danger/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                    title="Delete Category"
-                                                    aria-label="Delete category {{ $category->name }}">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
-                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                        stroke-width="2" stroke-linecap="round"
-                                                        stroke-linejoin="round">
-                                                        <polyline points="3 6 5 6 21 6"></polyline>
-                                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                                                        <path d="M10 11v6"></path>
-                                                        <path d="M14 11v6"></path>
-                                                        <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="text-xs text-foreground/60">
-                                                In use (cannot delete)
-                                            </span>
-                                        @endif
+                                        <button type="button"
+                                            class="toggle-expense-category-status inline-flex items-center justify-center w-8 h-8 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:pointer-events-none {{ $category->is_active ? 'bg-warning text-warning-foreground hover:bg-warning/90' : 'bg-success text-success-foreground hover:bg-success/90' }}"
+                                            data-category-id="{{ $category->id }}"
+                                            data-status="{{ $category->is_active ? 'active' : 'inactive' }}"
+                                            data-toggle-url="{{ route('admin.settings.expense-categories.toggle-status', $category) }}"
+                                            title="{{ $category->is_active ? 'Deactivate Category' : 'Activate Category' }}"
+                                            aria-label="{{ $category->is_active ? 'Deactivate category ' . $category->name : 'Activate category ' . $category->name }}">
+                                            @if ($category->is_active)
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <circle cx="12" cy="12" r="10"></circle>
+                                                    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                                </svg>
+                                            @else
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                </svg>
+                                            @endif
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -153,12 +128,16 @@
                 </table>
             </div>
 
-            <div class="px-6 py-4 border-t border-border">
-                {{ $categories->links() }}
+            <div class="mt-4">
+                {{ $categories->withQueryString()->links() }}
             </div>
         @else
             <x-ui::empty-state title="No expense categories found"
                 description="No categories match your current filters. Try adjusting your search criteria or create a new category." />
         @endif
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-settings-expense-categories-index.js'])
+    </x-slot>
 </x-admin.layouts.app>

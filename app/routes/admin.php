@@ -178,15 +178,15 @@ Route::middleware('role:admin')
         Route::resource('expenses', ExpenseController::class);
 
         // Expense Categories
+        Route::patch('settings/expense-categories/{expenseCategory}/toggle-status', [ExpenseCategoryController::class, 'toggleStatus'])->name('settings.expense-categories.toggle-status');
         Route::resource('settings/expense-categories', ExpenseCategoryController::class)
-            ->except(['show'])
+            ->except(['show', 'destroy'])
             ->names([
                 'index' => 'settings.expense-categories.index',
                 'create' => 'settings.expense-categories.create',
                 'store' => 'settings.expense-categories.store',
                 'edit' => 'settings.expense-categories.edit',
                 'update' => 'settings.expense-categories.update',
-                'destroy' => 'settings.expense-categories.destroy',
             ]);
 
         // SSA Reports

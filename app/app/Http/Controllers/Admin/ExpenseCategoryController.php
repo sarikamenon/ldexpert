@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ExpenseCategory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -75,18 +76,18 @@ class ExpenseCategoryController extends Controller
             ->with('success', 'Expense category updated successfully.');
     }
 
-    public function destroy(ExpenseCategory $expenseCategory): RedirectResponse
+    public function toggleStatus(ExpenseCategory $expenseCategory): JsonResponse
     {
-        if ($expenseCategory->expenses()->exists()) {
-            return redirect()
-                ->route('admin.settings.expense-categories.index')
-                ->with('error', 'Cannot delete category with associated expenses.');
-        }
+        $expenseCategory->update(['is_active' => ! $expenseCategory->is_active]);
 
-        $expenseCategory->delete();
+        $message = $expenseCategory->is_active
+            ? 'Expense category activated successfully.'
+            : 'Expense category deactivated successfully.';
 
-        return redirect()
-            ->route('admin.settings.expense-categories.index')
-            ->with('success', 'Expense category deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'is_active' => $expenseCategory->is_active,
+        ]);
     }
 }

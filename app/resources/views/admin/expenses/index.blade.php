@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-ui::page-header title="Expenses" subtitle="Track and manage business expenses">
         <x-slot name="actions">
             <a href="{{ route('admin.expenses.create') }}">
@@ -20,77 +24,45 @@
         <x-ui::alert variant="danger" class="mb-4">{{ session('error') }}</x-ui::alert>
     @endif
 
-    {{-- Filters --}}
-    <x-ui::card class="p-6 mb-6">
-        <form method="GET" action="{{ route('admin.expenses.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1">Category</label>
-                    <select name="category_id"
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                        <option value="">All Categories</option>
-                        @foreach ($categories as $category)
-                            <option value="{{ $category->id }}"
-                                {{ request('category_id') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+    <x-ui::card class="p-6 space-y-4">
+        <x-ui::filter-toolbar formId="expensesFiltersForm" :formAction="route('admin.expenses.index')">
+            <x-slot:filters>
+                <x-ui::select name="category_id" placeholder="All Categories" :inline="true" class="w-40">
+                    <option value="">All Categories</option>
+                    @foreach ($categories as $category)
+                        <option value="{{ $category->id }}"
+                            {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1">Date From</label>
-                    <input type="date" name="date_from" value="{{ request('date_from') }}"
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                </div>
+                <x-ui::input type="date" name="date_from" value="{{ request('date_from') }}"
+                    title="Date From" class="w-36" />
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1">Date To</label>
-                    <input type="date" name="date_to" value="{{ request('date_to') }}"
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                </div>
+                <x-ui::input type="date" name="date_to" value="{{ request('date_to') }}"
+                    title="Date To" class="w-36" />
 
-                <div>
-                    <label class="block text-sm font-medium text-foreground mb-1">Search</label>
-                    <input type="text" name="search" value="{{ request('search') }}"
-                        placeholder="Vendor, description, reference..."
-                        class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                </div>
-            </div>
+                <x-ui::input type="text" name="search" value="{{ request('search') }}"
+                    placeholder="Vendor, description, reference..." class="w-48" />
 
-            <div class="flex gap-2">
-                <button type="submit" class="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-                    Apply Filters
-                </button>
-                <a href="{{ route('admin.expenses.index') }}"
-                    class="px-4 py-2 border border-border rounded-md hover:bg-background/subtle">
-                    Clear Filters
-                </a>
-            </div>
-        </form>
-    </x-ui::card>
+                @if (request()->hasAny(['category_id', 'date_from', 'date_to', 'search']) && array_filter(request()->only(['category_id', 'date_from', 'date_to', 'search'])))
+                    <a href="{{ route('admin.expenses.index') }}">
+                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
+                    </a>
+                @endif
+            </x-slot:filters>
+        </x-ui::filter-toolbar>
 
-    {{-- Summary --}}
-    @if ($expenses->count() > 0)
-        <x-ui::card class="p-6 mb-6">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm text-foreground/70">Total Expenses</p>
-                    <p class="text-2xl font-bold mt-1">${{ number_format($totalAmount, 2) }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-foreground/70">Number of Expenses</p>
-                    <p class="text-2xl font-bold mt-1">{{ $expenses->total() }}</p>
-                </div>
-            </div>
-        </x-ui::card>
-    @endif
+        @if ($expenses->count() > 0)
+            <p class="text-sm text-foreground/70">
+                Total: ${{ number_format($totalAmount, 2) }} · {{ $expenses->total() }} expense(s)
+            </p>
+        @endif
 
-    {{-- Expenses List --}}
-    <x-ui::card class="overflow-hidden">
         @if ($expenses->count() > 0)
             <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
+                <table class="w-full border-collapse expenses-table">
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
@@ -148,8 +120,7 @@
                                         @endcan
                                         @can('delete', $expense)
                                             <form method="POST" action="{{ route('admin.expenses.destroy', $expense) }}"
-                                                class="inline" x-data="{ confirmDelete: false }"
-                                                x-on:submit.prevent="if (confirmDelete || confirm('Are you sure you want to delete this expense?')) $el.submit()">
+                                                class="inline expense-delete-form">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit"
@@ -177,12 +148,16 @@
                 </table>
             </div>
 
-            <div class="px-6 py-4 border-t border-border">
-                {{ $expenses->links() }}
+            <div class="mt-4">
+                {{ $expenses->withQueryString()->links() }}
             </div>
         @else
             <x-ui::empty-state title="No expenses found"
                 description="No expenses match your current filters. Try adjusting your search criteria or add a new expense." />
         @endif
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-expenses-index.js'])
+    </x-slot>
 </x-admin.layouts.app>

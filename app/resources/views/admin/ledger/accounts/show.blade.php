@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-ui::show-header :title="$accountName" :subtitle="$accountType . ' Account Ledger'"
         :back-url="route('admin.ledger.accounts.index', ['type' => $type === 'school' ? 'schools' : 'therapists'])"
         back-label="Back to Accounts" />
@@ -77,17 +81,12 @@
     </div>
 
     {{-- Ledger entries --}}
-    <x-ui::card class="overflow-hidden">
-        <div class="px-6 py-4 border-b border-border">
-            <h5 class="text-sm font-semibold flex items-center gap-2">
-                Transaction History
-            </h5>
-        </div>
+    <x-ui::card class="p-6 space-y-4">
+        <h5 class="text-sm font-semibold text-foreground">Transaction History</h5>
 
-        <div class="p-0">
-            @if ($ledgerEntries->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse">
+        @if ($ledgerEntries->count() > 0)
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse ledger-transactions-table">
                         <thead class="bg-background/subtle">
                             <tr>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
@@ -188,17 +187,16 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                    </table>
-                </div>
+                </table>
+            </div>
 
-                <div class="px-6 py-4 border-t border-border">
-                    {{ $ledgerEntries->links() }}
-                </div>
-            @else
-                <x-ui::empty-state title="No transactions found"
-                    description="No transactions have been recorded for this account yet." />
-            @endif
-        </div>
+            <div class="mt-4">
+                {{ $ledgerEntries->links() }}
+            </div>
+        @else
+            <x-ui::empty-state title="No transactions found"
+                description="No transactions have been recorded for this account yet." />
+        @endif
     </x-ui::card>
 
     {{-- Quick actions --}}
@@ -234,4 +232,8 @@
             @endif
         </div>
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-ledger-accounts-show.js'])
+    </x-slot>
 </x-admin.layouts.app>
