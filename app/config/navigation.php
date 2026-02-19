@@ -121,18 +121,29 @@ return [
             ],
             [
                 'label' => 'Finance',
-                'route' => 'admin.invoices.index',
-                'active' => ['admin.invoices.*', 'admin.billing.therapist-bills.*'],
+                'route' => 'admin.finance.dashboard',
+                'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
                 'children' => [
+                    [
+                        'label' => 'Dashboard',
+                        'route' => 'admin.finance.dashboard',
+                        'active' => 'admin.finance.dashboard',
+                    ],
+                    [
+                        'label' => 'Accounts Ledger',
+                        'route' => 'admin.ledger.accounts.index',
+                        'query' => ['type' => 'schools'],
+                        'active' => 'admin.ledger.accounts.*',
+                    ],
                     [
                         'label' => 'Invoices',
                         'route' => 'admin.invoices.index',
                         'active' => ['admin.invoices.index', 'admin.invoices.show'],
                     ],
                     [
-                        'label' => 'Create Invoice',
-                        'route' => 'admin.invoices.create',
-                        'active' => 'admin.invoices.create',
+                        'label' => 'Invoice Payments',
+                        'route' => 'admin.payments.invoices.index',
+                        'active' => 'admin.payments.invoices.*',
                     ],
                     [
                         'label' => 'Therapist Billing',
@@ -140,9 +151,14 @@ return [
                         'active' => ['admin.billing.therapist-bills.index', 'admin.billing.therapist-bills.show'],
                     ],
                     [
-                        'label' => 'Create Bill',
-                        'route' => 'admin.billing.therapist-bills.create',
-                        'active' => 'admin.billing.therapist-bills.create',
+                        'label' => 'Bill Payments',
+                        'route' => 'admin.payments.therapist-bills.index',
+                        'active' => 'admin.payments.therapist-bills.*',
+                    ],
+                    [
+                        'label' => 'Expenses',
+                        'route' => 'admin.expenses.index',
+                        'active' => ['admin.expenses.*'],
                     ],
                 ],
             ],
@@ -177,6 +193,11 @@ return [
                         'label' => 'Services',
                         'route' => 'admin.services.index',
                         'active' => 'admin.services.*',
+                    ],
+                    [
+                        'label' => 'Expense Categories',
+                        'route' => 'admin.settings.expense-categories.index',
+                        'active' => 'admin.settings.expense-categories.*',
                     ],
                     [
                         'label' => 'Activity Logs',

@@ -4,7 +4,13 @@ use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\Billing\TherapistBillController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ExpenseCategoryController;
+use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\InvoicePaymentController;
+use App\Http\Controllers\Admin\InvoicePaymentsListController;
+use App\Http\Controllers\Admin\LedgerAccountController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
 use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
@@ -19,6 +25,8 @@ use App\Http\Controllers\Admin\SSAController;
 use App\Http\Controllers\Admin\StudentCommentController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\StudentDocumentController;
+use App\Http\Controllers\Admin\TherapistBillPaymentController;
+use App\Http\Controllers\Admin\TherapistBillPaymentsListController;
 use App\Http\Controllers\Admin\TherapistContractController;
 use App\Http\Controllers\Admin\TherapistController;
 use Illuminate\Support\Facades\Route;
@@ -127,10 +135,26 @@ Route::middleware('role:admin')
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 
+        // Finance Dashboard
+        Route::get('finance/dashboard', [FinanceDashboardController::class, 'index'])->name('finance.dashboard');
+
+        // Ledger Accounts
+        Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
+        Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
+        Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
+
         // Invoices
         Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
         Route::resource('invoices', InvoiceController::class);
+
+        // Invoice Payments
+        Route::get('payments/invoices', [InvoicePaymentsListController::class, 'index'])->name('payments.invoices.index');
+        Route::get('payments/invoices/create', [InvoicePaymentsListController::class, 'create'])->name('payments.invoices.create');
+        Route::post('payments/invoices', [InvoicePaymentsListController::class, 'store'])->name('payments.invoices.store');
+        Route::delete('payments/invoices/{payment}', [InvoicePaymentsListController::class, 'destroy'])->name('payments.invoices.destroy');
+        Route::post('invoices/{invoice}/payments', [InvoicePaymentController::class, 'store'])->name('invoices.payments.store');
+        Route::delete('invoices/{invoice}/payments/{payment}', [InvoicePaymentController::class, 'destroy'])->name('invoices.payments.destroy');
 
         // Therapist Billing
         Route::prefix('billing/therapist-bills')->name('billing.therapist-bills.')->group(function () {
@@ -141,6 +165,29 @@ Route::middleware('role:admin')
             Route::get('{bill}/download', [TherapistBillController::class, 'download'])->name('download');
             Route::post('{bill}/send', [TherapistBillController::class, 'send'])->name('send');
         });
+
+        // Therapist Bill Payments
+        Route::get('payments/therapist-bills', [TherapistBillPaymentsListController::class, 'index'])->name('payments.therapist-bills.index');
+        Route::get('payments/therapist-bills/create', [TherapistBillPaymentsListController::class, 'create'])->name('payments.therapist-bills.create');
+        Route::post('payments/therapist-bills', [TherapistBillPaymentsListController::class, 'store'])->name('payments.therapist-bills.store');
+        Route::delete('payments/therapist-bills/{payment}', [TherapistBillPaymentsListController::class, 'destroy'])->name('payments.therapist-bills.destroy');
+        Route::post('billing/therapist-bills/{therapist_bill}/payments', [TherapistBillPaymentController::class, 'store'])->name('billing.therapist-bills.payments.store');
+        Route::delete('billing/therapist-bills/{therapist_bill}/payments/{payment}', [TherapistBillPaymentController::class, 'destroy'])->name('billing.therapist-bills.payments.destroy');
+
+        // Expenses
+        Route::resource('expenses', ExpenseController::class);
+
+        // Expense Categories
+        Route::resource('settings/expense-categories', ExpenseCategoryController::class)
+            ->except(['show'])
+            ->names([
+                'index' => 'settings.expense-categories.index',
+                'create' => 'settings.expense-categories.create',
+                'store' => 'settings.expense-categories.store',
+                'edit' => 'settings.expense-categories.edit',
+                'update' => 'settings.expense-categories.update',
+                'destroy' => 'settings.expense-categories.destroy',
+            ]);
 
         // SSA Reports
         Route::prefix('reports/ssa')->name('reports.ssa.')->group(function () {

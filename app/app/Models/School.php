@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class School extends Model
@@ -49,6 +50,27 @@ class School extends Model
             'non_billable_scheduling' => 'boolean',
             'status' => SchoolStatus::class,
         ];
+    }
+
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->display_name ?? $this->full_name,
+        );
+    }
+
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->contact_email ?? $this->invoice_email,
+        );
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->contact_phone,
+        );
     }
 
     protected function state(): Attribute
@@ -99,6 +121,16 @@ class School extends Model
     public function calendarEvents(): HasMany
     {
         return $this->hasMany(SchoolCalendarEvent::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'school_id');
+    }
+
+    public function ledgerEntries(): MorphMany
+    {
+        return $this->morphMany(LedgerEntry::class, 'ledgerable');
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

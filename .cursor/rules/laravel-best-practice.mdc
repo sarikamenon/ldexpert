@@ -18,6 +18,7 @@ alwaysApply: true
 - Use jQuery for DOM/AJAX interactivity; avoid vanilla JS for features.
 - Create Blade UI components in `resources/views/components/ui` and reuse them.
 - Prefer `x-ui-card` for page sections and forms. Always add a card when adding new UI.
+- For table row actions (view/edit/delete), prefer compact **icon buttons** or clearly styled buttons instead of plain text links. Use consistent Tailwind classes or `x-ui::button` with an appropriate icon so actions are visually discoverable and accessible.
 - No public registration routes; users created via command or privileged UI.
 - Roles: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
 - Always add policies for new models/features. Use `$this->authorize()` in controllers.

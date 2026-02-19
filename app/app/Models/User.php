@@ -157,4 +157,20 @@ class User extends Authenticatable
     {
         return $this->morphMany(\App\Models\StudentDocument::class, 'documentable');
     }
+
+    /**
+     * Get therapist bills for this user when the user is a therapist.
+     */
+    public function therapistBills(): HasMany
+    {
+        return $this->hasMany(TherapistBill::class, 'therapist_id');
+    }
+
+    /**
+     * Get ledger entries associated with this user as a ledgerable entity.
+     */
+    public function ledgerEntries(): MorphMany
+    {
+        return $this->morphMany(LedgerEntry::class, 'ledgerable');
+    }
 }
