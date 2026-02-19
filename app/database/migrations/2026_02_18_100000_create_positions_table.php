@@ -22,7 +22,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('position_id')->constrained('positions')->cascadeOnDelete();
             $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
-            $table->timestamps();
 
             $table->unique(['position_id', 'service_id']);
         });
