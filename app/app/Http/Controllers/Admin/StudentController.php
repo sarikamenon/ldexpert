@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
@@ -28,7 +29,6 @@ use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Enums\SSAStatus;
 use App\Enums\StudentImportType;
-use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
@@ -60,6 +60,7 @@ final class StudentController extends Controller
         private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly StudentCommentService $commentService,
         private readonly StudentDocumentService $documentService,
+        private readonly PositionCatalogService $positionCatalogService,
     ) {}
 
     public function index(IndexStudentRequest $request): View
@@ -164,7 +165,7 @@ final class StudentController extends Controller
                 $request->integer('per_page', 15)
             );
             $viewData['therapistFilters'] = $request->query();
-            $viewData['positions'] = TherapistPosition::cases();
+            $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
         } elseif ($activeTab === 'schedule') {
             $filters = ScheduleFilterDTO::fromRequest(
                 array_merge($request->query(), ['student_id' => $student->id])

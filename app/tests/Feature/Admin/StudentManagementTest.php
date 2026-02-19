@@ -405,10 +405,10 @@ final class StudentManagementTest extends TestCase
     public function test_student_show_page_filters_therapists_by_position(): void
     {
         $slpTherapist = User::factory()->therapist()->has(
-            \App\Models\TherapistProfile::factory()->state(['position' => \App\Enums\TherapistPosition::SLP])
+            \App\Models\TherapistProfile::factory()->state(['position' => 'SLP'])
         )->create();
         $otTherapist = User::factory()->therapist()->has(
-            \App\Models\TherapistProfile::factory()->state(['position' => \App\Enums\TherapistPosition::OT])
+            \App\Models\TherapistProfile::factory()->state(['position' => 'OT'])
         )->create();
 
         $service = \App\Models\Service::factory()->create();
@@ -424,13 +424,13 @@ final class StudentManagementTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)->get(
-            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position' => \App\Enums\TherapistPosition::SLP->value])
+            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position' => 'SLP'])
         );
 
         $response->assertOk();
         $therapists = $response->viewData('therapists');
         $this->assertTrue($therapists->every(function ($therapist) {
-            return $therapist->therapistProfile->position === \App\Enums\TherapistPosition::SLP;
+            return $therapist->therapistProfile->position === 'SLP';
         }));
     }
 

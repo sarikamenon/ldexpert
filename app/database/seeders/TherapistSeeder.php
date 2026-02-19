@@ -6,7 +6,6 @@ namespace Database\Seeders;
 
 use App\Enums\EmployeeType;
 use App\Enums\Role;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Enums\UserStatus;
 use App\Models\TherapistProfile;
@@ -46,7 +45,7 @@ class TherapistSeeder extends Seeder
                 'ld_email' => $ldEmail,
                 'address' => env('THERAPIST_ADDRESS', '1234 Therapy Lane, San Diego, CA 92101'),
                 'comments' => env('THERAPIST_COMMENTS', 'Seeder generated therapist account for manual QA.'),
-                'position' => env('THERAPIST_POSITION', TherapistPosition::SLP->value),
+                'position' => env('THERAPIST_POSITION', 'SLP'),
                 'state' => env('THERAPIST_STATE', 'CA'),
                 'timezone' => env('THERAPIST_TIMEZONE', 'America/Los_Angeles'),
                 'manager_id' => $managerId,

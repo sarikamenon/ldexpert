@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin\Therapist;
 
-use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +20,7 @@ final class IndexTherapistRequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in(UserStatus::values())],
-            'position' => ['nullable', Rule::in(TherapistPosition::values())],
+            'position' => ['nullable', 'string', Rule::exists('positions', 'name')],
         ];
     }
 }

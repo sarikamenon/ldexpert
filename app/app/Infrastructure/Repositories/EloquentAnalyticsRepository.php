@@ -197,7 +197,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
                 return [
                     'id' => $therapist->id,
                     'name' => "{$therapist->first_name} {$therapist->last_name}",
-                    'position' => $therapist->position?->value ?? 'N/A',
+                    'position' => $therapist->position ?? 'N/A',
                     'created_at' => $therapist->created_at_local->format('Y-m-d'),
                 ];
             });

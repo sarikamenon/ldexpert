@@ -74,7 +74,7 @@
                         <p class="text-foreground/70">Title</p>
                         <p class="font-semibold">{{ $therapist->therapistProfile?->title?->label() ?? '—' }}</p>
                         <p class="text-foreground/70">Position</p>
-                        <p>{{ $therapist->therapistProfile?->position?->label() ?? '—' }}</p>
+                        <p>{{ $therapist->therapistProfile?->position ?? '—' }}</p>
                     </div>
                     <div class="space-y-1">
                         <p class="text-foreground/70">Manager</p>

@@ -259,7 +259,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
 
         $this->assertCount($initialCount + 2, $result);
         $this->assertTrue($result->every(
-            fn ($user) => $user->therapistProfile?->position?->value === 'OT'
+            fn ($user) => $user->therapistProfile?->position === 'OT'
         ));
     }
 

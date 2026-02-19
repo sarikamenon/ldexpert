@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EmployeeType;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Models\Scopes\TherapistScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,7 +43,6 @@ class TherapistProfile extends Model
         return [
             'employee_type' => EmployeeType::class,
             'title' => TherapistTitle::class,
-            'position' => TherapistPosition::class,
             'max_weekly_hours' => 'integer',
             'dob' => 'date',
         ];

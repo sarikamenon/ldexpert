@@ -187,7 +187,7 @@ return [
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => ['admin.settings.*', 'admin.services.*', 'admin.activity-logs.*', 'admin.analytics.*'],
+                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*', 'admin.activity-logs.*', 'admin.analytics.*'],
                 'children' => [
                     [
                         'label' => 'Services',
@@ -198,6 +198,11 @@ return [
                         'label' => 'Expense Categories',
                         'route' => 'admin.settings.expense-categories.index',
                         'active' => 'admin.settings.expense-categories.*',
+                    ],
+                    [
+                        'label' => 'Positions',
+                        'route' => 'admin.positions.index',
+                        'active' => 'admin.positions.*',
                     ],
                     [
                         'label' => 'Activity Logs',

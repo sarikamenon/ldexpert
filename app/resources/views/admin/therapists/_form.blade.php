@@ -141,9 +141,9 @@
                     <x-ui::select name="position" id="position" class="mt-1" placeholder="Select Position">
                         <option value="">Select Position</option>
                         @foreach ($positions as $position)
-                            <option value="{{ $position->value }}"
-                                {{ old('position', $profile?->position?->value) === $position->value ? 'selected' : '' }}>
-                                {{ $position->value }}
+                            <option value="{{ $position->name }}"
+                                {{ old('position', $profile?->position) === $position->name ? 'selected' : '' }}>
+                                {{ $position->name }}
                             </option>
                         @endforeach
                     </x-ui::select>
