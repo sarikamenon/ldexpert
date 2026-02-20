@@ -47,6 +47,10 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
     {
         $position->update($dto->toArray());
 
+        if (! empty($dto->serviceIds)) {
+            $position->services()->sync($dto->serviceIds);
+        }
+
         return $position->fresh('services');
     }
 

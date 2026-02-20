@@ -37,7 +37,7 @@ interface TherapistRepositoryInterface
 
     public function listTherapistsByStudent(int $studentId): Collection;
 
-    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?string $position = null, int $perPage = 15): LengthAwarePaginator;
+    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator;
 
     public function findProfileByUserId(int $userId): ?TherapistProfile;
 }

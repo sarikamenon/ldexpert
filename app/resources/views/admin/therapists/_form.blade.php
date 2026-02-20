@@ -136,18 +136,18 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {{-- Position --}}
                 <div>
-                    <x-input-label for="position" value="Position *" />
+                    <x-input-label for="position_id" value="Position *" />
                     <p class="mt-1 text-xs text-foreground/60">Therapist's professional position</p>
-                    <x-ui::select name="position" id="position" class="mt-1" placeholder="Select Position">
+                    <x-ui::select name="position_id" id="position_id" class="mt-1" placeholder="Select Position">
                         <option value="">Select Position</option>
                         @foreach ($positions as $position)
-                            <option value="{{ $position->name }}"
-                                {{ old('position', $profile?->position) === $position->name ? 'selected' : '' }}>
+                            <option value="{{ $position->id }}"
+                                {{ (int) old('position_id', $profile?->position_id) === $position->id ? 'selected' : '' }}>
                                 {{ $position->name }}
                             </option>
                         @endforeach
                     </x-ui::select>
-                    <x-input-error :messages="$errors->get('position')" class="mt-2" />
+                    <x-input-error :messages="$errors->get('position_id')" class="mt-2" />
                 </div>
 
                 {{-- State --}}

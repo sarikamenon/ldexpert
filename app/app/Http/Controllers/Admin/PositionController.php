@@ -73,9 +73,11 @@ final class PositionController extends Controller
         $this->authorize('update', $position);
 
         $position->load('services');
+        $services = $this->serviceCatalog->listActiveForSelect();
 
         return view('admin.positions.edit', [
             'position' => $position,
+            'services' => $services,
         ]);
     }
 

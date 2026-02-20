@@ -7,6 +7,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Mail\WelcomeStudentMail;
+use App\Models\Position;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -404,11 +405,14 @@ final class StudentManagementTest extends TestCase
 
     public function test_student_show_page_filters_therapists_by_position(): void
     {
+        $slpPosition = Position::factory()->create(['name' => 'SLP']);
+        $otPosition = Position::factory()->create(['name' => 'OT']);
+
         $slpTherapist = User::factory()->therapist()->has(
-            \App\Models\TherapistProfile::factory()->state(['position' => 'SLP'])
+            \App\Models\TherapistProfile::factory()->state(['position_id' => $slpPosition->id])
         )->create();
         $otTherapist = User::factory()->therapist()->has(
-            \App\Models\TherapistProfile::factory()->state(['position' => 'OT'])
+            \App\Models\TherapistProfile::factory()->state(['position_id' => $otPosition->id])
         )->create();
 
         $service = \App\Models\Service::factory()->create();
@@ -424,13 +428,13 @@ final class StudentManagementTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)->get(
-            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position' => 'SLP'])
+            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position_id' => $slpPosition->id])
         );
 
         $response->assertOk();
         $therapists = $response->viewData('therapists');
-        $this->assertTrue($therapists->every(function ($therapist) {
-            return $therapist->therapistProfile->position === 'SLP';
+        $this->assertTrue($therapists->every(function ($therapist) use ($slpPosition) {
+            return $therapist->therapistProfile->position_id === $slpPosition->id;
         }));
     }
 

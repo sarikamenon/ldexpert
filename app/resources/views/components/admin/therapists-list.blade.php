@@ -45,10 +45,10 @@
                 @endforeach
             </x-ui::select>
 
-            <x-ui::select name="position" :searchable="false" placeholder="All Positions" :inline="true">
+            <x-ui::select name="position_id" :searchable="false" placeholder="All Positions" :inline="true">
                 <option value="">All Positions</option>
                 @foreach ($positions as $position)
-                    <option value="{{ $position->name }}" @selected(($filters['position'] ?? null) === $position->name)>
+                    <option value="{{ $position->id }}" @selected((int) ($filters['position_id'] ?? 0) === $position->id)>
                         {{ $position->name }}
                     </option>
                 @endforeach
@@ -104,7 +104,7 @@
                             </td>
                             <td>{{ $therapist->email }}</td>
                             <td>{{ $therapist->therapistProfile?->manager?->name ?? '—' }}</td>
-                            <td>{{ $therapist->therapistProfile?->position ?? '—' }}</td>
+                            <td>{{ $therapist->therapistProfile?->position?->name ?? '—' }}</td>
                             <td>{{ $therapist->therapistProfile?->max_weekly_hours ?? '—' }}</td>
                             <td>
                                 <x-ui::badge :variant="$therapist->status?->value === 'active' ? 'success' : 'danger'">

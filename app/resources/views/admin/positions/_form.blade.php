@@ -24,36 +24,24 @@
                 <x-input-error :messages="$errors->get('name')" class="mt-2" />
             </div>
 
-            @if ($isEdit)
-                <div>
-                    <x-input-label value="Associated Services" />
-                    <p class="mt-1 text-xs text-foreground/60">Services linked to this position (set during creation,
-                        read-only).</p>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        @forelse ($position->services as $service)
-                            <x-ui::badge variant="secondary">{{ $service->name }}</x-ui::badge>
-                        @empty
-                            <span class="text-sm text-foreground/50">No services assigned</span>
-                        @endforelse
-                    </div>
-                </div>
-            @else
-                <div>
-                    <x-input-label value="Services *" />
-                    <p class="mt-1 text-xs text-foreground/60">Select the services this position can provide. This
-                        cannot be changed after creation.</p>
-                    <x-ui::select name="service_ids[]" :multiple="true" placeholder="Select services"
-                        class="mt-2">
-                        @foreach ($services as $service)
-                            <option value="{{ $service->id }}"
-                                @selected(is_array(old('service_ids')) && in_array($service->id, old('service_ids')))>
-                                {{ $service->name }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                    <x-input-error :messages="$errors->get('service_ids')" class="mt-2" />
-                </div>
-            @endif
+            <div>
+                <x-input-label value="Services *" />
+                <p class="mt-1 text-xs text-foreground/60">Select the services this position can provide.</p>
+                <x-ui::select name="service_ids[]" :multiple="true" placeholder="Select services"
+                    class="mt-2">
+                    @foreach ($services as $service)
+                        <option value="{{ $service->id }}"
+                            @selected(
+                                is_array(old('service_ids'))
+                                    ? in_array($service->id, old('service_ids'))
+                                    : ($isEdit && $position->services->contains($service->id))
+                            )>
+                            {{ $service->name }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+                <x-input-error :messages="$errors->get('service_ids')" class="mt-2" />
+            </div>
         </div>
     </x-ui::card>
 

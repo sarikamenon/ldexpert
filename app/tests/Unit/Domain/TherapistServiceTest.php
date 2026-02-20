@@ -11,6 +11,7 @@ use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Mail\WelcomeTherapistMail;
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,6 +29,9 @@ final class TherapistServiceTest extends TestCase
         parent::setUp();
         Mail::fake();
         $this->service = new TherapistService(new EloquentTherapistRepository);
+
+        Position::factory()->create(['name' => 'SLP']);
+        Position::factory()->create(['name' => 'OT']);
     }
 
     public function test_create_creates_therapist_and_sends_welcome_email(): void
@@ -45,7 +49,7 @@ final class TherapistServiceTest extends TestCase
             ldEmail: 'john.doe@ldexpert.com',
             address: null,
             comments: null,
-            position: 'SLP',
+            positionId: Position::where('name', 'SLP')->first()->id,
             state: 'CA',
             timezone: 'America/Los_Angeles',
             managerId: $manager->id,
@@ -86,7 +90,7 @@ final class TherapistServiceTest extends TestCase
             ldEmail: 'jane.smith@ldexpert.com',
             address: '123 Main St',
             comments: 'Test comment',
-            position: 'OT',
+            positionId: Position::where('name', 'OT')->first()->id,
             state: 'NY',
             timezone: 'America/New_York',
             managerId: $manager->id,

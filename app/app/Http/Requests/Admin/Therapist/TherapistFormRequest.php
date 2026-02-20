@@ -39,7 +39,7 @@ abstract class TherapistFormRequest extends FormRequest
             'ld_email' => ['nullable', 'email:rfc'],
             'address' => ['nullable', 'string'],
             'comments' => ['nullable', 'string'],
-            'position' => ['required', 'string', Rule::exists('positions', 'name')->where('status', 'active')],
+            'position_id' => ['required', 'integer', Rule::exists('positions', 'id')->where('status', 'active')],
             'state' => ['required', Rule::in(array_keys(UsStates::STATES))],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
             'manager_id' => [

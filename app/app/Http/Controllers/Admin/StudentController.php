@@ -161,7 +161,7 @@ final class StudentController extends Controller
                 $student->id,
                 $request->query('search'),
                 $request->query('status'),
-                $request->query('position'),
+                $request->query('position_id') ? (int) $request->query('position_id') : null,
                 $request->integer('per_page', 15)
             );
             $viewData['therapistFilters'] = $request->query();

@@ -99,7 +99,7 @@ final class TherapistController extends Controller
         $this->authorize('update', TherapistProfile::class);
 
         return view('admin.therapists.edit', [
-            'therapist' => $therapist->load('therapistProfile'),
+            'therapist' => $therapist->load('therapistProfile.position'),
         ] + $this->referenceData());
     }
 
@@ -112,7 +112,7 @@ final class TherapistController extends Controller
 
         $this->authorize('view', TherapistProfile::class);
 
-        $therapist->load('therapistProfile');
+        $therapist->load('therapistProfile.position');
         $activeTab = $request->query('tab', 'dashboard');
 
         $viewData = [
@@ -246,7 +246,7 @@ final class TherapistController extends Controller
                     $therapist->email,
                     $profile?->manager?->name ?? '—',
                     $profile?->phone ?? '—',
-                    $profile?->position ?? '—',
+                    $profile?->position?->name ?? '—',
                     $profile?->employee_type?->value ?? $profile?->employee_type ?? '—',
                     $therapist->status?->value ?? $therapist->status ?? 'inactive',
                 ]);

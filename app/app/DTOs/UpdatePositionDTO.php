@@ -8,12 +8,14 @@ final class UpdatePositionDTO
 {
     public function __construct(
         public readonly string $name,
+        public readonly array $serviceIds = [],
     ) {}
 
     public static function fromArray(array $data): self
     {
         return new self(
             name: $data['name'],
+            serviceIds: $data['service_ids'] ?? [],
         );
     }
 

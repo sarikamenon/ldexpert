@@ -29,7 +29,7 @@ class TherapistProfile extends Model
         'ld_email',
         'address',
         'comments',
-        'position',
+        'position_id',
         'state',
         'timezone',
         'manager_id',
@@ -56,6 +56,11 @@ class TherapistProfile extends Model
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

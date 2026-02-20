@@ -21,7 +21,7 @@ final class UpdateTherapistDTOTest extends TestCase
             'ld_email' => 'sarah.w@ldexpert.com',
             'address' => '789 Elm St',
             'comments' => 'Updated comment',
-            'position' => 'LCSW',
+            'position_id' => 4,
             'state' => 'FL',
             'timezone' => 'America/New_York',
             'manager_id' => 5,
@@ -41,7 +41,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('sarah.w@ldexpert.com', $dto->ldEmail);
         $this->assertSame('789 Elm St', $dto->address);
         $this->assertSame('Updated comment', $dto->comments);
-        $this->assertSame('LCSW', $dto->position);
+        $this->assertSame(4, $dto->positionId);
         $this->assertSame('FL', $dto->state);
         $this->assertSame('America/New_York', $dto->timezone);
         $this->assertSame(5, $dto->managerId);
@@ -62,7 +62,7 @@ final class UpdateTherapistDTOTest extends TestCase
             ldEmail: 'michael.b@ldexpert.com',
             address: '321 Pine St',
             comments: 'New comment',
-            position: 'RBT',
+            positionId: 7,
             state: 'WA',
             timezone: 'America/Los_Angeles',
             managerId: 7,
@@ -89,7 +89,7 @@ final class UpdateTherapistDTOTest extends TestCase
             ldEmail: 'emily.d@ldexpert.com',
             address: '999 Main St',
             comments: 'Test',
-            position: 'SLP',
+            positionId: 1,
             state: 'CA',
             timezone: 'America/Los_Angeles',
             managerId: 1,
@@ -109,7 +109,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('emily.d@ldexpert.com', $array['ld_email']);
         $this->assertSame('999 Main St', $array['address']);
         $this->assertSame('Test', $array['comments']);
-        $this->assertSame('SLP', $array['position']);
+        $this->assertSame(1, $array['position_id']);
         $this->assertSame('CA', $array['state']);
         $this->assertSame('America/Los_Angeles', $array['timezone']);
         $this->assertSame(1, $array['manager_id']);
