@@ -42,11 +42,13 @@ class StudentImport extends Model
         ];
     }
 
+    /** @return BelongsTo<User, StudentImport> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<StudentImportRow, StudentImport> */
     public function rows(): HasMany
     {
         return $this->hasMany(StudentImportRow::class);

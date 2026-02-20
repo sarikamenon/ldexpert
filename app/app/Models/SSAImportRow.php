@@ -36,11 +36,13 @@ class SSAImportRow extends Model
         ];
     }
 
+    /** @return BelongsTo<SSAImport, SSAImportRow> */
     public function ssaImport(): BelongsTo
     {
         return $this->belongsTo(SSAImport::class, 'ssa_import_id');
     }
 
+    /** @return BelongsTo<ServiceSupportAgreement, SSAImportRow> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');

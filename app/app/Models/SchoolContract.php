@@ -24,11 +24,13 @@ class SchoolContract extends Model
         'status' => ContractStatus::class,
     ];
 
+    /** @return BelongsTo<School, SchoolContract> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
+    /** @return HasMany<SchoolContractService, SchoolContract> */
     public function services(): HasMany
     {
         return $this->hasMany(SchoolContractService::class);

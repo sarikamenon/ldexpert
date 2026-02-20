@@ -60,6 +60,8 @@ class User extends Authenticatable
 
     /**
      * Get the therapist profile for the user.
+     *
+     * @return HasOne<TherapistProfile, User>
      */
     public function therapistProfile(): HasOne
     {
@@ -68,6 +70,8 @@ class User extends Authenticatable
 
     /**
      * Get the student profile for the user.
+     *
+     * @return HasOne<StudentProfile, User>
      */
     public function studentProfile(): HasOne
     {
@@ -76,6 +80,8 @@ class User extends Authenticatable
 
     /**
      * Get the parent profile for the user.
+     *
+     * @return HasOne<ParentProfile, User>
      */
     public function parentProfile(): HasOne
     {
@@ -84,6 +90,8 @@ class User extends Authenticatable
 
     /**
      * Get the admin profile for the user.
+     *
+     * @return HasOne<AdminProfile, User>
      */
     public function adminProfile(): HasOne
     {
@@ -106,6 +114,8 @@ class User extends Authenticatable
 
     /**
      * Get the students for a therapist.
+     *
+     * @return BelongsToMany<User, User>
      */
     public function students(): BelongsToMany
     {
@@ -121,6 +131,8 @@ class User extends Authenticatable
 
     /**
      * Get the therapists for a student.
+     *
+     * @return BelongsToMany<User, User>
      */
     public function therapists(): BelongsToMany
     {
@@ -136,6 +148,8 @@ class User extends Authenticatable
 
     /**
      * Get the children (students) for a parent.
+     *
+     * @return HasMany<StudentProfile, User>
      */
     public function children(): HasMany
     {
@@ -144,6 +158,8 @@ class User extends Authenticatable
 
     /**
      * Get the SSAs assigned to this therapist.
+     *
+     * @return HasMany<ServiceSupportAgreement, User>
      */
     public function assignedSSAs(): HasMany
     {
@@ -160,6 +176,8 @@ class User extends Authenticatable
 
     /**
      * Get therapist bills for this user when the user is a therapist.
+     *
+     * @return HasMany<TherapistBill, User>
      */
     public function therapistBills(): HasMany
     {

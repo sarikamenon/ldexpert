@@ -35,11 +35,13 @@ class Expense extends Model
         ];
     }
 
+    /** @return BelongsTo<ExpenseCategory, Expense> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
     }
 
+    /** @return BelongsTo<User, Expense> */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');

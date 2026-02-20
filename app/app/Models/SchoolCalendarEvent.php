@@ -35,6 +35,7 @@ class SchoolCalendarEvent extends Model
         ];
     }
 
+    /** @return BelongsTo<School, SchoolCalendarEvent> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

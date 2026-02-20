@@ -90,61 +90,73 @@ class SessionLog extends Model
         ];
     }
 
+    /** @return BelongsTo<User, SessionLog> */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
+    /** @return BelongsTo<User, SessionLog> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /** @return BelongsTo<ServiceSupportAgreement, SessionLog> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
+    /** @return BelongsTo<Schedule, SessionLog> */
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(Schedule::class, 'schedule_id');
     }
 
+    /** @return BelongsTo<Service, SessionLog> */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'service_id');
     }
 
+    /** @return BelongsTo<School, SessionLog> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
     }
 
+    /** @return BelongsTo<TherapistContract, SessionLog> */
     public function therapistContract(): BelongsTo
     {
         return $this->belongsTo(TherapistContract::class, 'therapist_contract_id');
     }
 
+    /** @return BelongsTo<SchoolContract, SessionLog> */
     public function schoolContract(): BelongsTo
     {
         return $this->belongsTo(SchoolContract::class, 'school_contract_id');
     }
 
+    /** @return BelongsTo<User, SessionLog> */
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by_id');
     }
 
+    /** @return BelongsTo<User, SessionLog> */
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_id');
     }
 
+    /** @return BelongsTo<User, SessionLog> */
     public function sentBackBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sent_back_by_id');
     }
 
+    /** @return HasMany<SessionLogComment, SessionLog> */
     public function comments(): HasMany
     {
         return $this->hasMany(SessionLogComment::class, 'session_log_id');
@@ -158,11 +170,13 @@ class SessionLog extends Model
             ->first();
     }
 
+    /** @return BelongsTo<Invoice, SessionLog> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
+    /** @return BelongsTo<TherapistBill, SessionLog> */
     public function therapistBill(): BelongsTo
     {
         return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');

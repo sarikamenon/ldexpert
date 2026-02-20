@@ -108,21 +108,25 @@ class School extends Model
         return null;
     }
 
+    /** @return BelongsTo<User, School> */
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
 
+    /** @return HasMany<StudentProfile, School> */
     public function studentProfiles(): HasMany
     {
         return $this->hasMany(StudentProfile::class);
     }
 
+    /** @return HasMany<SchoolCalendarEvent, School> */
     public function calendarEvents(): HasMany
     {
         return $this->hasMany(SchoolCalendarEvent::class);
     }
 
+    /** @return HasMany<Invoice, School> */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class, 'school_id');

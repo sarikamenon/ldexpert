@@ -28,11 +28,13 @@ class SessionLogComment extends Model
         ];
     }
 
+    /** @return BelongsTo<SessionLog, SessionLogComment> */
     public function sessionLog(): BelongsTo
     {
         return $this->belongsTo(SessionLog::class, 'session_log_id');
     }
 
+    /** @return BelongsTo<User, SessionLogComment> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');

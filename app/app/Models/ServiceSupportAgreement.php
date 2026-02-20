@@ -58,16 +58,19 @@ class ServiceSupportAgreement extends Model
         ];
     }
 
+    /** @return BelongsTo<User, ServiceSupportAgreement> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /** @return BelongsTo<Service, ServiceSupportAgreement> */
     public function primaryService(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'primary_service_id');
     }
 
+    /** @return BelongsToMany<Service, ServiceSupportAgreement> */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'ssa_services', 'ssa_id', 'service_id')
@@ -77,16 +80,19 @@ class ServiceSupportAgreement extends Model
             ->withTimestamps();
     }
 
+    /** @return BelongsToMany<Service, ServiceSupportAgreement> */
     public function additionalServices(): BelongsToMany
     {
         return $this->services()->wherePivot('is_primary', false);
     }
 
+    /** @return BelongsTo<User, ServiceSupportAgreement> */
     public function assignedTherapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_therapist_id');
     }
 
+    /** @return HasMany<SSAAssignmentHistory, ServiceSupportAgreement> */
     public function assignmentHistory(): HasMany
     {
         return $this->hasMany(SSAAssignmentHistory::class, 'ssa_id')->orderBy('created_at', 'desc');
