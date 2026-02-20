@@ -136,6 +136,11 @@ final class StudentImportService
             // Apply type-specific transformations
             $mappedData = $this->applyTypeSpecificTransformations($mappedData, $template, $import->type, $school);
 
+            // Normalize parent_guardian_phone (e.g. (385) 497-0814 -> 385-497-0814)
+            if (! empty($mappedData['parent_guardian_phone'])) {
+                $mappedData['parent_guardian_phone'] = $this->normalizePhone($mappedData['parent_guardian_phone']);
+            }
+
             // Resolve timezone: accept key or display label, fallback to school timezone
             $resolvedTimezone = UsTimezones::resolveFromInput($mappedData['timezone'] ?? null);
             $mappedData['timezone'] = $resolvedTimezone ?? $school->timezone;
@@ -458,6 +463,17 @@ final class StudentImportService
         unset($mappedData['parent_guardian_first_name'], $mappedData['parent_guardian_last_name']);
 
         return $mappedData;
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+
+        if (strlen($digits) === 10) {
+            return substr($digits, 0, 3).'-'.substr($digits, 3, 3).'-'.substr($digits, 6, 4);
+        }
+
+        return $digits;
     }
 
     private function normalizeState(string $state): ?string
