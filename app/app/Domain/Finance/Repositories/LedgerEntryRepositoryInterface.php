@@ -38,4 +38,3 @@ interface LedgerEntryRepositoryInterface
      */
     public function getTherapistStats(int $therapistId): array;
 }
-

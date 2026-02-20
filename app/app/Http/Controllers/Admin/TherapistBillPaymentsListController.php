@@ -6,14 +6,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Finance\Services\PaymentsListService;
 use App\DTOs\TherapistBillPaymentFilterDTO;
+use App\Enums\TherapistBillStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Billing\TherapistBillPaymentIndexRequest;
+use App\Models\TherapistBill;
 use App\Models\TherapistBillPayment;
-use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Database\Eloquent\Builder;
-use App\Http\Requests\Admin\Billing\TherapistBillPaymentIndexRequest;
 
 class TherapistBillPaymentsListController extends Controller
 {
@@ -40,13 +40,15 @@ class TherapistBillPaymentsListController extends Controller
     {
         $this->authorize('viewAny', TherapistBillPayment::class);
 
-        $therapists = User::where('role', \App\Enums\Role::THERAPIST)
-            ->orderBy('name')
+        $bills = TherapistBill::whereIn('status', [TherapistBillStatus::DRAFT, TherapistBillStatus::SENT])
+            ->with('therapist')
+            ->orderBy('bill_date')
+            ->orderBy('id')
             ->get();
 
         return view('admin.payments.record-payment', [
             'mode' => 'therapist',
-            'entities' => $therapists,
+            'bills' => $bills,
         ]);
     }
 
@@ -55,19 +57,6 @@ class TherapistBillPaymentsListController extends Controller
         $this->authorize('viewAny', TherapistBillPayment::class);
 
         $data = $request->validated();
-        $therapistId = (int) $request->input('therapist_id');
-
-        $startingBill = \App\Models\TherapistBill::where('therapist_id', $therapistId)
-            ->where(function (Builder $q) {
-                $q->where('status', '!=', \App\Enums\TherapistBillStatus::PAID);
-            })
-            ->orderBy('bill_date')
-            ->orderBy('id')
-            ->first();
-
-        // If no unpaid bills exist, this will be treated as an advance payment.
-        $data['therapist_bill_id'] = $startingBill?->id ?? 0;
-        $data['therapist_id'] = $therapistId;
         $data['recorded_by_id'] = $request->user()->id;
 
         $dto = \App\DTOs\RecordTherapistBillPaymentDTO::fromArray($data);

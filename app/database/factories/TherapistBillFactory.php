@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class TherapistBillFactory extends Factory
 {
+    private static int $sequence = 1;
+
     /**
      * Define the model's default state.
      *
@@ -21,9 +23,15 @@ class TherapistBillFactory extends Factory
         $startDate = $this->faker->dateTimeBetween('-3 months', '-1 month');
         $endDate = $this->faker->dateTimeBetween($startDate, 'now');
 
+        $billNumber = sprintf(
+            'BILL-%s-%03d',
+            now()->format('Ymd'),
+            self::$sequence++
+        );
+
         return [
             'therapist_id' => User::factory(),
-            'bill_number' => 'BILL-'.now()->format('Ymd').'-'.str_pad((string) $this->faker->numberBetween(1, 999), 3, '0', STR_PAD_LEFT),
+            'bill_number' => $billNumber,
             'bill_date' => now(),
             'billing_period_start' => $startDate,
             'billing_period_end' => $endDate,

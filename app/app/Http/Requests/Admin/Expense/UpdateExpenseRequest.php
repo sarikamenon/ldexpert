@@ -22,7 +22,7 @@ class UpdateExpenseRequest extends FormRequest
             'expense_category_id' => ['required', 'integer', 'exists:expense_categories,id'],
             'expense_date' => ['required', 'date', 'before_or_equal:today'],
             'amount' => ['required', 'numeric', 'min:0.01'],
-            'vendor_payee' => ['nullable', 'string', 'max:255'],
+            'vendor_payee' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
             'reference' => ['nullable', 'string', 'max:255'],
         ];
@@ -42,6 +42,7 @@ class UpdateExpenseRequest extends FormRequest
             'amount.required' => 'Amount is required.',
             'amount.numeric' => 'Amount must be a number.',
             'amount.min' => 'Amount must be greater than zero.',
+            'vendor_payee.required' => 'Vendor/Payee is required.',
         ];
     }
 }

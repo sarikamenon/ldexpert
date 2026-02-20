@@ -8,7 +8,6 @@ use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,6 +19,7 @@ class InvoicePayment extends Model
 
     protected $fillable = [
         'school_id',
+        'invoice_id',
         'paid_at',
         'amount',
         'method',
@@ -73,17 +73,12 @@ class InvoicePayment extends Model
     }
 
     /**
-     * A payment may be allocated across multiple invoices.
+     * Single invoice this payment is for (1:1).
      *
-     * @return BelongsToMany<Invoice, InvoicePayment>
+     * @return BelongsTo<Invoice, InvoicePayment>
      */
-    public function invoice(): BelongsToMany
+    public function invoice(): BelongsTo
     {
-        return $this->belongsToMany(
-            Invoice::class,
-            'invoice_payment_allocations',
-            'invoice_payment_id',
-            'invoice_id',
-        );
+        return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 }

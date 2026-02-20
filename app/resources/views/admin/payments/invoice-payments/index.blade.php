@@ -133,7 +133,7 @@
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Invoice</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Amount</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Method</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
@@ -148,15 +148,12 @@
                                     {{ $payment->paid_at?->format('M d, Y') ?? '—' }}
                                 </td>
                                 <td class="py-3 px-4 text-sm">
-                                    @php
-                                        $firstAllocation = $payment->allocations->first();
-                                        $school = $firstAllocation?->invoice?->school ?? $payment->school;
-                                    @endphp
-                                    @if ($school)
-                                        <a href="{{ route('admin.schools.show', $school) }}"
+                                    @if ($payment->invoice)
+                                        <a href="{{ route('admin.invoices.show', $payment->invoice) }}"
                                             class="text-primary hover:underline">
-                                            {{ $school->name }}
+                                            {{ $payment->invoice->invoice_number }}
                                         </a>
+                                        <span class="text-foreground/60"> — {{ $payment->school?->name ?? $payment->invoice->school_name ?? '—' }}</span>
                                     @else
                                         —
                                     @endif

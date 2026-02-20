@@ -6,7 +6,6 @@ namespace App\Http\Requests\Admin\Invoice;
 
 use App\Enums\PaymentMethod;
 use App\Enums\Role;
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,6 +24,7 @@ class RecordInvoicePaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'invoice_id' => ['required', 'integer', 'exists:invoices,id'],
             'paid_at' => ['required', 'date', 'before_or_equal:today'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'method' => ['required', 'string', Rule::in(PaymentMethod::values())],
@@ -47,6 +47,8 @@ class RecordInvoicePaymentRequest extends FormRequest
             'amount.min' => 'Payment amount must be greater than zero.',
             'method.required' => 'Payment method is required.',
             'method.in' => 'Invalid payment method selected.',
+            'invoice_id.required' => 'Please select an invoice.',
+            'invoice_id.exists' => 'The selected invoice is invalid.',
         ];
     }
 }

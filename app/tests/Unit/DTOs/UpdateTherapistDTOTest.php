@@ -26,6 +26,7 @@ final class UpdateTherapistDTOTest extends TestCase
             'timezone' => 'America/New_York',
             'manager_id' => 5,
             'max_weekly_hours' => 20,
+            'hourly_rate' => 65.00,
             'dob' => '1988-03-20',
             'default_meeting_location' => 'https://meet.google.com/xyz',
         ];
@@ -46,6 +47,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('America/New_York', $dto->timezone);
         $this->assertSame(5, $dto->managerId);
         $this->assertSame(20, $dto->maxWeeklyHours);
+        $this->assertSame(65.0, $dto->hourlyRate);
         $this->assertSame('1988-03-20', $dto->dob);
         $this->assertSame('https://meet.google.com/xyz', $dto->defaultMeetingLocation);
     }
@@ -67,6 +69,7 @@ final class UpdateTherapistDTOTest extends TestCase
             timezone: 'America/Los_Angeles',
             managerId: 7,
             maxWeeklyHours: 36,
+            hourlyRate: 52.25,
             dob: '1992-07-10',
             defaultMeetingLocation: null,
         );
@@ -94,6 +97,7 @@ final class UpdateTherapistDTOTest extends TestCase
             timezone: 'America/Los_Angeles',
             managerId: 1,
             maxWeeklyHours: 40,
+            hourlyRate: 70.0,
             dob: '1990-01-01',
             defaultMeetingLocation: 'https://meet.google.com/test'
         );
@@ -114,6 +118,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('America/Los_Angeles', $array['timezone']);
         $this->assertSame(1, $array['manager_id']);
         $this->assertSame(40, $array['max_weekly_hours']);
+        $this->assertSame(70.0, $array['hourly_rate']);
         $this->assertSame('1990-01-01', $array['dob']);
         $this->assertSame('https://meet.google.com/test', $array['default_meeting_location']);
     }

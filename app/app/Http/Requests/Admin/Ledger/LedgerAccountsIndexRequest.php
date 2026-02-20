@@ -24,4 +24,3 @@ class LedgerAccountsIndexRequest extends FormRequest
         ];
     }
 }
-

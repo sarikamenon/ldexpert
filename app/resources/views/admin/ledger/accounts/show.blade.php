@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-ui::show-header :title="$accountName" :subtitle="$accountType . ' Account Ledger'"
         :back-url="route('admin.ledger.accounts.index', ['type' => $type === 'school' ? 'schools' : 'therapists'])"
         back-label="Back to Accounts" />
@@ -77,17 +81,12 @@
     </div>
 
     {{-- Ledger entries --}}
-    <x-ui::card class="overflow-hidden">
-        <div class="px-6 py-4 border-b border-border">
-            <h5 class="text-sm font-semibold flex items-center gap-2">
-                Transaction History
-            </h5>
-        </div>
+    <x-ui::card class="p-6 space-y-4">
+        <h5 class="text-sm font-semibold text-foreground">Transaction History</h5>
 
-        <div class="p-0">
-            @if ($ledgerEntries->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse">
+        @if ($ledgerEntries->count() > 0)
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse ledger-transactions-table">
                         <thead class="bg-background/subtle">
                             <tr>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
@@ -121,28 +120,78 @@
                                     </td>
                                     <td class="py-3 px-4 text-sm">
                                         @if ($entry->reference)
-                                            @if ($entry->reference_type === 'App\\Models\\Invoice')
-                                                <a href="{{ route('admin.invoices.show', $entry->reference) }}"
-                                                    class="text-primary hover:underline">
-                                                    Invoice #{{ $entry->reference->invoice_number }}
-                                                </a>
-                                            @elseif ($entry->reference_type === 'App\\Models\\TherapistBill')
-                                                <a href="{{ route('admin.billing.therapist-bills.show', $entry->reference) }}"
-                                                    class="text-primary hover:underline">
-                                                    Bill #{{ $entry->reference->bill_number }}
-                                                </a>
-                                            @elseif ($entry->reference_type === 'App\\Models\\InvoicePayment')
-                                                <a href="{{ route('admin.invoices.show', $entry->reference->invoice) }}"
-                                                    class="text-primary hover:underline">
-                                                    Payment #{{ $entry->reference->id }}
-                                                </a>
-                                            @elseif ($entry->reference_type === 'App\\Models\\TherapistBillPayment')
-                                                <a href="{{ route('admin.billing.therapist-bills.show', $entry->reference->therapistBill) }}"
-                                                    class="text-primary hover:underline">
-                                                    Payment #{{ $entry->reference->id }}
-                                                </a>
+                                            @php
+                                                $referenceType = $entry->reference_type;
+                                            @endphp
+
+                                            @if ($referenceType === 'App\\Models\\Invoice')
+                                                @php
+                                                    $invoiceId = is_object($entry->reference)
+                                                        ? $entry->reference->id
+                                                        : ($entry->reference['id'] ?? $entry->reference_id ?? null);
+                                                @endphp
+
+                                                @if ($invoiceId)
+                                                    <a href="{{ route('admin.invoices.show', ['invoice' => $invoiceId]) }}"
+                                                        class="text-primary hover:underline">
+                                                        Invoice #{{ is_object($entry->reference) ? $entry->reference->invoice_number : ($entry->reference['invoice_number'] ?? $invoiceId) }}
+                                                    </a>
+                                                @else
+                                                    Invoice #{{ $entry->reference_id ?? 'N/A' }}
+                                                @endif
+                                            @elseif ($referenceType === 'App\\Models\\TherapistBill')
+                                                @php
+                                                    $billId = is_object($entry->reference)
+                                                        ? $entry->reference->id
+                                                        : ($entry->reference['id'] ?? $entry->reference_id ?? null);
+                                                @endphp
+
+                                                @if ($billId)
+                                                    <a href="{{ route('admin.billing.therapist-bills.show', ['bill' => $billId]) }}"
+                                                        class="text-primary hover:underline">
+                                                        Bill #{{ is_object($entry->reference) ? $entry->reference->bill_number : ($entry->reference['bill_number'] ?? $billId) }}
+                                                    </a>
+                                                @else
+                                                    Bill #{{ $entry->reference_id ?? 'N/A' }}
+                                                @endif
+                                            @elseif ($referenceType === 'App\\Models\\InvoicePayment')
+                                                @php
+                                                    $invoiceFromPayment = null;
+
+                                                    if (is_object($entry->reference)) {
+                                                        $firstInvoice = $entry->reference->invoice()->first();
+                                                        $invoiceFromPayment = $firstInvoice?->id;
+                                                    }
+                                                @endphp
+
+                                                @if ($invoiceFromPayment)
+                                                    <a href="{{ route('admin.invoices.show', ['invoice' => $invoiceFromPayment]) }}"
+                                                        class="text-primary hover:underline">
+                                                        Payment #{{ $entry->reference->id ?? $entry->reference_id ?? '' }}
+                                                    </a>
+                                                @else
+                                                    Payment #{{ $entry->reference->id ?? $entry->reference_id ?? 'N/A' }}
+                                                @endif
+                                            @elseif ($referenceType === 'App\\Models\\TherapistBillPayment')
+                                                @php
+                                                    $billFromPayment = null;
+
+                                                    if (is_object($entry->reference)) {
+                                                        $firstBill = $entry->reference->therapistBill()->first();
+                                                        $billFromPayment = $firstBill?->id;
+                                                    }
+                                                @endphp
+
+                                                @if ($billFromPayment)
+                                                    <a href="{{ route('admin.billing.therapist-bills.show', ['bill' => $billFromPayment]) }}"
+                                                        class="text-primary hover:underline">
+                                                        Payment #{{ $entry->reference->id ?? $entry->reference_id ?? '' }}
+                                                    </a>
+                                                @else
+                                                    Payment #{{ $entry->reference->id ?? $entry->reference_id ?? 'N/A' }}
+                                                @endif
                                             @else
-                                                {{ class_basename($entry->reference_type) }} #{{ $entry->reference_id }}
+                                                {{ class_basename($referenceType) }} #{{ $entry->reference_id }}
                                             @endif
                                         @else
                                             <span class="text-foreground/40">—</span>
@@ -188,17 +237,16 @@
                                 </tr>
                             @endforeach
                         </tbody>
-                    </table>
-                </div>
+                </table>
+            </div>
 
-                <div class="px-6 py-4 border-t border-border">
-                    {{ $ledgerEntries->links() }}
-                </div>
-            @else
-                <x-ui::empty-state title="No transactions found"
-                    description="No transactions have been recorded for this account yet." />
-            @endif
-        </div>
+            <div class="mt-4">
+                {{ $ledgerEntries->links() }}
+            </div>
+        @else
+            <x-ui::empty-state title="No transactions found"
+                description="No transactions have been recorded for this account yet." />
+        @endif
     </x-ui::card>
 
     {{-- Quick actions --}}
@@ -234,4 +282,8 @@
             @endif
         </div>
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-ledger-accounts-show.js'])
+    </x-slot>
 </x-admin.layouts.app>

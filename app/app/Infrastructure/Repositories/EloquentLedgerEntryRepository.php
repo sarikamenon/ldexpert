@@ -116,4 +116,3 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         ];
     }
 }
-

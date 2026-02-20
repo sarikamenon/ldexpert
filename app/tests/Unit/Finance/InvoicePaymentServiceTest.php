@@ -19,32 +19,26 @@ class InvoicePaymentServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_lump_sum_allocates_to_oldest_invoices_and_updates_statuses(): void
+    public function test_record_payment_creates_single_allocation_for_invoice(): void
     {
         $admin = User::factory()->create();
         $school = School::factory()->create();
 
-        $invoices = Invoice::factory()
-            ->count(5)
-            ->sequence(
-                ['invoice_date' => now()->subDays(5), 'status' => InvoiceStatus::SENT, 'total' => 100],
-                ['invoice_date' => now()->subDays(4), 'status' => InvoiceStatus::SENT, 'total' => 100],
-                ['invoice_date' => now()->subDays(3), 'status' => InvoiceStatus::SENT, 'total' => 100],
-                ['invoice_date' => now()->subDays(2), 'status' => InvoiceStatus::SENT, 'total' => 100],
-                ['invoice_date' => now()->subDay(), 'status' => InvoiceStatus::SENT, 'total' => 100],
-            )
-            ->create([
-                'school_id' => $school->id,
-            ]);
+        $invoice = Invoice::factory()->create([
+            'school_id' => $school->id,
+            'invoice_date' => now()->subDays(5),
+            'status' => InvoiceStatus::SENT,
+            'total' => 100,
+        ]);
 
         $service = app(InvoicePaymentService::class);
 
         $dto = new RecordInvoicePaymentDTO(
-            invoiceId: $invoices[0]->id,
+            invoiceId: $invoice->id,
             paidAt: now()->toDateString(),
-            amount: 350.00,
+            amount: 100.00,
             method: PaymentMethod::CHECK,
-            reference: 'LUMP-001',
+            reference: 'INV-001',
             notes: null,
             recordedById: $admin->id,
         );
@@ -53,16 +47,30 @@ class InvoicePaymentServiceTest extends TestCase
 
         $this->assertDatabaseHas('invoice_payments', [
             'id' => $payment->id,
-            'amount' => 350.00,
+            'invoice_id' => $invoice->id,
+            'amount' => 100.00,
         ]);
 
-        $this->assertEquals(4, InvoicePaymentAllocation::count());
+        $this->assertEquals(1, InvoicePaymentAllocation::where('invoice_payment_id', $payment->id)->count());
+        $this->assertTrue($invoice->fresh()->isFullyPaid());
+    }
 
-        $this->assertEquals(InvoiceStatus::PAID, $invoices[0]->fresh()->status);
-        $this->assertEquals(InvoiceStatus::PAID, $invoices[1]->fresh()->status);
-        $this->assertEquals(InvoiceStatus::PAID, $invoices[2]->fresh()->status);
-        $this->assertTrue($invoices[3]->fresh()->isPartiallyPaid());
-        $this->assertTrue($invoices[4]->fresh()->isSent());
+    public function test_record_payment_throws_without_invoice(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Cannot record payment without an invoice.');
+
+        $service = app(InvoicePaymentService::class);
+        $dto = new RecordInvoicePaymentDTO(
+            invoiceId: 0,
+            paidAt: now()->toDateString(),
+            amount: 100.00,
+            method: PaymentMethod::CHECK,
+            reference: null,
+            notes: null,
+            recordedById: null,
+        );
+        $service->recordPayment($dto);
     }
 
     public function test_delete_payment_removes_allocations_and_resets_statuses(): void
@@ -90,7 +98,7 @@ class InvoicePaymentServiceTest extends TestCase
 
         $payment = $service->recordPayment($dto);
 
-        $this->assertTrue($invoice->fresh()->isPaid());
+        $this->assertTrue($invoice->fresh()->isFullyPaid());
         $this->assertEquals(1, InvoicePaymentAllocation::where('invoice_payment_id', $payment->id)->count());
 
         $service->deletePayment($payment);
@@ -99,7 +107,7 @@ class InvoicePaymentServiceTest extends TestCase
             'invoice_payment_id' => $payment->id,
         ]);
 
-        $this->assertFalse($invoice->fresh()->isPaid());
+        $this->assertFalse($invoice->fresh()->isFullyPaid());
         $this->assertEquals(0.0, $invoice->fresh()->total_paid);
     }
 }

@@ -17,11 +17,27 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            @if ($invoice->isDraft())
+                <a href="{{ route('admin.invoices.attach-sessions', $invoice) }}">
+                    <x-ui::button variant="secondary">
+                        Add or remove sessions
+                    </x-ui::button>
+                </a>
+            @endif
+
+            @if (!$invoice->isDraft() && !$invoice->isPaid())
+                <x-ui::button type="button" x-data=""
+                    x-on:click="$dispatch('open-record-payment-modal')">
+                    Record Payment
+                </x-ui::button>
+            @endif
+
             <a href="{{ route('admin.invoices.download', $invoice) }}">
                 <x-ui::button>
                     Download PDF
                 </x-ui::button>
             </a>
+
             @if ($invoice->isDraft())
                 <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
                     x-data="{ loading: false }" x-on:submit="loading = true">
@@ -171,93 +187,8 @@
         @endif
     </x-ui::card>
 
-    {{-- Payment Information --}}
+    {{-- Record Payment Modal --}}
     @if (!$invoice->isDraft())
-        <x-ui::card class="p-6 mt-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-semibold text-foreground">Payment Information</h2>
-                @if (!$invoice->isPaid())
-                    <button type="button" x-data="" x-on:click="$dispatch('open-record-payment-modal')"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Record Payment
-                    </button>
-                @endif
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-background/subtle rounded-lg">
-                <div>
-                    <p class="text-sm text-foreground/70">Total Amount</p>
-                    <p class="text-lg font-semibold mt-1">${{ number_format($invoice->total, 2) }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-foreground/70">Amount Paid</p>
-                    <p class="text-lg font-semibold mt-1 text-success">
-                        ${{ number_format($invoice->total_paid, 2) }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-foreground/70">Balance Remaining</p>
-                    <p class="text-lg font-semibold mt-1 {{ $invoice->balance_remaining > 0 ? 'text-warning' : 'text-success' }}">
-                        ${{ number_format($invoice->balance_remaining, 2) }}</p>
-                </div>
-            </div>
-
-            @php
-                $allocations = $invoice->paymentAllocations()->with(['payment.recordedBy'])->latest()->get();
-            @endphp
-
-            @if ($allocations->count() > 0)
-                <div class="overflow-x-auto">
-                    <table class="w-full border-collapse">
-                        <thead>
-                            <tr class="border-b border-border">
-                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
-                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Method</th>
-                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Reference</th>
-                                <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
-                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Recorded By</th>
-                                <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($allocations as $allocation)
-                                @php
-                                    $payment = $allocation->payment;
-                                @endphp
-                                <tr class="border-b border-border hover:bg-background/subtle">
-                                    <td class="py-3 px-4 text-sm">{{ $payment->paid_at->format('M d, Y') }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $payment->method?->label() }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $payment->reference ?? '—' }}</td>
-                                    <td class="py-3 px-4 text-sm text-right font-medium">
-                                        ${{ number_format($allocation->allocated_amount, 2) }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $payment->recordedBy?->name ?? '—' }}</td>
-                                    <td class="py-3 px-4 text-sm text-right">
-                                        @can('delete', $payment)
-                                            <form method="POST"
-                                                action="{{ route('admin.invoices.payments.destroy', [$invoice, $payment]) }}"
-                                                class="inline" x-data="{ confirmDelete: false }"
-                                                x-on:submit.prevent="if (confirmDelete || confirm('Are you sure you want to delete this payment?')) $el.submit()">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="text-danger hover:text-danger/80 text-sm">Delete</button>
-                                            </form>
-                                        @endcan
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <x-ui::empty-state title="No payments recorded"
-                    description="Click 'Record Payment' above to add a payment for this invoice." />
-            @endif
-        </x-ui::card>
-
-        {{-- Record Payment Modal --}}
         <div x-data="{ open: false }" x-on:open-record-payment-modal.window="open = true" x-show="open"
             class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
             <div class="flex items-center justify-center min-h-screen px-4">
@@ -268,6 +199,7 @@
 
                     <form method="POST" action="{{ route('admin.invoices.payments.store', $invoice) }}">
                         @csrf
+                        <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
 
                         <div class="space-y-4">
                             <div>

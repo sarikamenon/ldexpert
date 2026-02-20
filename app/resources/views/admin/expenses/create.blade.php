@@ -59,10 +59,10 @@
 
                     <div>
                         <label class="block text-sm font-medium text-foreground mb-1">
-                            Vendor/Payee
+                            Vendor/Payee *
                         </label>
                         <input type="text" name="vendor_payee" value="{{ old('vendor_payee') }}"
-                            placeholder="Who was this expense paid to?"
+                            placeholder="Who was this expense paid to?" required
                             class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
                         @error('vendor_payee')
                             <p class="text-sm text-danger mt-1">{{ $message }}</p>

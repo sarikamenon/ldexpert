@@ -213,6 +213,17 @@
                     <x-input-error :messages="$errors->get('max_weekly_hours')" class="mt-2" />
                 </div>
 
+                {{-- Hourly Rate --}}
+                <div>
+                    <x-input-label for="hourly_rate" value="Hourly Rate *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="hourly_rate_help">Pay rate per hour in dollars (e.g.,
+                        70.00). Required to genrate IRS W-2 forms.</p>
+                    <x-ui::input id="hourly_rate" name="hourly_rate" type="number" min="0" step="0.01"
+                        class="mt-1 block w-full" :value="old('hourly_rate', $profile?->hourly_rate ?? '')"
+                        placeholder="e.g. 45.00" dusk="therapist-hourly-rate" aria-describedby="hourly_rate_help" />
+                    <x-input-error :messages="$errors->get('hourly_rate')" class="mt-2" />
+                </div>
+
                 {{-- Date of Birth --}}
                 <div>
                     <x-input-label for="dob" value="Date of Birth" />

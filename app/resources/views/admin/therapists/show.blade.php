@@ -95,6 +95,10 @@
                         <p class="text-foreground/70">Employee Type</p>
                         <p>{{ $therapist->therapistProfile?->employee_type?->label() ?? '—' }}</p>
                     </div>
+                    <div class="space-y-1">
+                        <p class="text-foreground/70">Hourly Rate</p>
+                        <p>{{ $therapist->therapistProfile?->hourly_rate !== null ? '$' . number_format((float) $therapist->therapistProfile->hourly_rate, 2) : '—' }}</p>
+                    </div>
                 </div>
             </x-ui::card>
         </div>

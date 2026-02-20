@@ -119,4 +119,3 @@ final class LedgerAccountService
         throw new \InvalidArgumentException('Unsupported account type for ledger stats calculation.');
     }
 }
-

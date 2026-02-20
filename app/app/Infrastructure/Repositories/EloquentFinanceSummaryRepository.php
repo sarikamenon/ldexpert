@@ -126,4 +126,3 @@ final class EloquentFinanceSummaryRepository implements FinanceSummaryRepository
             ->count();
     }
 }
-

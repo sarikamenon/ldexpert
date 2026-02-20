@@ -26,4 +26,3 @@ class TherapistBillPaymentIndexRequest extends FormRequest
         ];
     }
 }
-

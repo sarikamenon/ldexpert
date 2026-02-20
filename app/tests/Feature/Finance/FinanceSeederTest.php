@@ -61,4 +61,3 @@ class FinanceSeederTest extends TestCase
         );
     }
 }
-

@@ -13,9 +13,9 @@ class FinanceSeeder extends Seeder
      */
     public function run(): void
     {
-        // Run in all non-production environments so finance demo data
-        // is available in any local/dev/staging context.
-        if (app()->environment('production')) {
+        // Run only in local/staging so finance demo data is available there;
+        // skip in production and testing.
+        if (app()->environment(['production', 'testing'])) {
             return;
         }
 
@@ -29,4 +29,3 @@ class FinanceSeeder extends Seeder
         ]);
     }
 }
-

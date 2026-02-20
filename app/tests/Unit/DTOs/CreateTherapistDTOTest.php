@@ -26,6 +26,7 @@ final class CreateTherapistDTOTest extends TestCase
             'timezone' => 'America/Los_Angeles',
             'manager_id' => 1,
             'max_weekly_hours' => 30,
+            'hourly_rate' => 55.50,
             'dob' => '1990-01-01',
             'default_meeting_location' => 'https://meet.google.com/abc-defg-hij',
             'password' => 'SecurePass123!',
@@ -47,6 +48,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame('America/Los_Angeles', $dto->timezone);
         $this->assertSame(1, $dto->managerId);
         $this->assertSame(30, $dto->maxWeeklyHours);
+        $this->assertSame(55.5, $dto->hourlyRate);
         $this->assertSame('1990-01-01', $dto->dob);
         $this->assertSame('https://meet.google.com/abc-defg-hij', $dto->defaultMeetingLocation);
         $this->assertSame('SecurePass123!', $dto->password);
@@ -66,6 +68,7 @@ final class CreateTherapistDTOTest extends TestCase
             'timezone' => 'America/Los_Angeles',
             'manager_id' => 1,
             'max_weekly_hours' => 25,
+            'hourly_rate' => 0,
             'password' => 'Pass123!',
         ];
 
@@ -95,6 +98,7 @@ final class CreateTherapistDTOTest extends TestCase
             timezone: 'America/New_York',
             managerId: 2,
             maxWeeklyHours: 32,
+            hourlyRate: 60.0,
             dob: '1985-05-15',
             defaultMeetingLocation: null,
             password: 'TestPass456!'
@@ -126,6 +130,7 @@ final class CreateTherapistDTOTest extends TestCase
             timezone: 'America/Chicago',
             managerId: 3,
             maxWeeklyHours: 28,
+            hourlyRate: 48.75,
             dob: null,
             defaultMeetingLocation: 'https://zoom.us/j/123456789',
             password: 'Pass789!'
@@ -148,6 +153,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame('America/Chicago', $array['timezone']);
         $this->assertSame(3, $array['manager_id']);
         $this->assertSame(28, $array['max_weekly_hours']);
+        $this->assertSame(48.75, $array['hourly_rate']);
         $this->assertNull($array['dob']);
         $this->assertSame('https://zoom.us/j/123456789', $array['default_meeting_location']);
     }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\PaymentMethod;
-use App\Models\School;
+use App\Models\Invoice;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,8 +21,11 @@ class InvoicePaymentFactory extends Factory
      */
     public function definition(): array
     {
+        $invoice = Invoice::factory()->create();
+
         return [
-            'school_id' => School::factory(),
+            'school_id' => $invoice->school_id,
+            'invoice_id' => $invoice->id,
             'paid_at' => $this->faker->dateTimeBetween('-30 days', 'now')->format('Y-m-d'),
             'amount' => $this->faker->randomFloat(2, 10, 5000),
             'method' => $this->faker->randomElement(PaymentMethod::cases()),

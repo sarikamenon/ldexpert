@@ -16,7 +16,7 @@ final class PaymentsListService
     public function getInvoicePayments(InvoicePaymentFilterDTO $filters): array
     {
         $query = InvoicePayment::query()
-            ->with(['school', 'allocations.invoice.school', 'recordedBy'])
+            ->with(['school', 'invoice', 'recordedBy'])
             ->orderByDesc('paid_at')
             ->orderByDesc('created_at');
 
@@ -26,11 +26,12 @@ final class PaymentsListService
             $search = $filters->search;
             $query->where(function (Builder $q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
-                    ->orWhereHas('allocations.invoice.school', function (Builder $sq) use ($search) {
-                        $sq->where(function (Builder $sqq) use ($search) {
-                            $sqq->where('display_name', 'like', "%{$search}%")
-                                ->orWhere('full_name', 'like', "%{$search}%");
-                        });
+                    ->orWhereHas('invoice.school', function (Builder $sq) use ($search) {
+                        $sq->where('display_name', 'like', "%{$search}%")
+                            ->orWhere('full_name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('invoice', function (Builder $sq) use ($search) {
+                        $sq->where('invoice_number', 'like', "%{$search}%");
                     });
             });
         }
@@ -53,7 +54,7 @@ final class PaymentsListService
     public function getTherapistBillPayments(TherapistBillPaymentFilterDTO $filters): array
     {
         $query = TherapistBillPayment::query()
-            ->with(['therapist', 'allocations.therapistBill.therapist', 'recordedBy'])
+            ->with(['therapist', 'therapistBill', 'recordedBy'])
             ->orderByDesc('paid_at')
             ->orderByDesc('created_at');
 
@@ -63,8 +64,11 @@ final class PaymentsListService
             $search = $filters->search;
             $query->where(function (Builder $q) use ($search) {
                 $q->where('reference', 'like', "%{$search}%")
-                    ->orWhereHas('allocations.therapistBill.therapist', function (Builder $sq) use ($search) {
+                    ->orWhereHas('therapistBill.therapist', function (Builder $sq) use ($search) {
                         $sq->where('name', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('therapistBill', function (Builder $sq) use ($search) {
+                        $sq->where('bill_number', 'like', "%{$search}%");
                     });
             });
         }
@@ -99,4 +103,3 @@ final class PaymentsListService
         }
     }
 }
-

@@ -11,10 +11,12 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
+use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Invoice\AttachSessionsRequest;
 use App\Http\Requests\Admin\Invoice\CreateInvoiceRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceIndexRequest;
 use App\Http\Requests\Admin\Invoice\SendInvoiceRequest;
@@ -56,60 +58,14 @@ final class InvoiceController extends Controller
     {
         $this->authorize('create', Invoice::class);
 
-        // Default to last 30 days
-        $selectedSchoolId = $request->input('school_id');
-        $filters = [
-            'date_from' => $request->input('date_from', now()->subDays(30)->format('Y-m-d')),
-            'date_to' => $request->input('date_to', now()->format('Y-m-d')),
-            'school_id' => $selectedSchoolId,
-            'therapist_id' => $request->input('therapist_id'),
-            'student_id' => $request->input('student_id'),
-            'service_id' => $request->input('service_id'),
-            'search' => $request->input('search'),
-        ];
-
-        $sessionLogs = $this->invoiceRepository->getAvailableSessionLogsForInvoiceCreation($filters);
-
-        // Get schools that have available session logs (only filter by date, not by selected school)
-        $schoolFilterForDropdown = [
-            'date_from' => $filters['date_from'],
-            'date_to' => $filters['date_to'],
-        ];
-        $availableSchoolIds = $this->invoiceRepository->getAvailableSchoolIdsForInvoiceCreation($schoolFilterForDropdown);
-
-        // Get filter options based on selected school
-        $therapists = collect();
-        $students = collect();
-        $services = collect();
-
-        if ($selectedSchoolId) {
-            $therapists = $this->therapistService->listActiveTherapistsBySchool((int) $selectedSchoolId);
-            $students = $this->studentService->listActiveStudentsBySchool((int) $selectedSchoolId);
-
-            // Get unique services from session logs for this school
-            $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool((int) $selectedSchoolId);
-
-            if ($serviceIds->isNotEmpty()) {
-                $services = $this->serviceCatalogService->listActiveForSelect()
-                    ->whereIn('id', $serviceIds->toArray());
-            }
-        }
-
-        // Generate invoice number for display
-        $invoiceNumber = $this->invoiceRepository->generateInvoiceNumber();
-
-        // Get schools that have available session logs (filtered by date range only)
-        $schools = $this->schoolRepository->listAllForSelect()
-            ->whereIn('id', $availableSchoolIds->toArray());
+        $dateFrom = now()->subDays(30)->format('Y-m-d');
+        $dateTo = now()->format('Y-m-d');
 
         return view('admin.invoices.create', [
-            'sessionLogs' => $sessionLogs,
-            'schools' => $schools,
-            'therapists' => $therapists,
-            'students' => $students,
-            'services' => $services,
-            'filters' => $filters,
-            'invoiceNumber' => $invoiceNumber,
+            'schools' => $this->schoolRepository->listActiveForSelect(),
+            'invoiceNumber' => $this->invoiceRepository->generateInvoiceNumber(),
+            'defaultDateFrom' => $dateFrom,
+            'defaultDateTo' => $dateTo,
         ]);
     }
 
@@ -121,6 +77,12 @@ final class InvoiceController extends Controller
 
         try {
             $invoice = $this->invoiceService->generateInvoice($request->user(), $dto);
+
+            if ($invoice->sessionLogs->isEmpty()) {
+                return redirect()
+                    ->route('admin.invoices.attach-sessions', $invoice)
+                    ->with('success', 'Draft invoice created. Add session logs below.');
+            }
 
             return redirect()
                 ->route('admin.invoices.show', $invoice)
@@ -176,5 +138,74 @@ final class InvoiceController extends Controller
         $pdf = $this->pdfService->generatePdf($invoice);
 
         return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
+    }
+
+    public function attachSessions(Request $request, Invoice $invoice): View|RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        if (! $invoice->isDraft()) {
+            abort(404);
+        }
+
+        $filters = [
+            'school_id' => $invoice->school_id,
+            'date_from' => $request->input('date_from', $invoice->billing_period_start->format('Y-m-d')),
+            'date_to' => $request->input('date_to', $invoice->billing_period_end->format('Y-m-d')),
+            'therapist_id' => $request->input('therapist_id'),
+            'student_id' => $request->input('student_id'),
+            'service_id' => $request->input('service_id'),
+        ];
+
+        $attachedSessionLogs = $invoice->sessionLogs()
+            ->with(['student', 'service', 'therapist', 'school'])
+            ->orderBy('session_date', 'desc')
+            ->get();
+
+        $availableSessionLogs = $this->invoiceRepository->getAvailableSessionLogsForInvoiceCreation($filters);
+        $attachedIds = $attachedSessionLogs->pluck('id')->all();
+
+        $therapists = $this->therapistService->listActiveTherapistsBySchool($invoice->school_id);
+        $students = $this->studentService->listActiveStudentsBySchool($invoice->school_id);
+        $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool($invoice->school_id);
+        $services = $serviceIds->isNotEmpty()
+            ? $this->serviceCatalogService->listActiveForSelect()->whereIn('id', $serviceIds->toArray())
+            : collect();
+
+        $sessionLogs = $attachedSessionLogs->concat($availableSessionLogs)->unique('id');
+
+        return view('admin.invoices.attach-sessions', [
+            'invoice' => $invoice,
+            'sessionLogs' => $sessionLogs,
+            'attachedIds' => $attachedIds,
+            'therapists' => $therapists,
+            'students' => $students,
+            'services' => $services,
+            'filters' => $filters,
+        ]);
+    }
+
+    public function storeAttachedSessions(AttachSessionsRequest $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('update', $invoice);
+
+        if (! $invoice->isDraft()) {
+            abort(404);
+        }
+
+        $dto = AttachSessionsDTO::fromArray($request->validated());
+
+        try {
+            $this->invoiceService->attachSessionsToDraft($invoice, $dto);
+
+            return redirect()
+                ->route('admin.invoices.show', $invoice)
+                ->with('success', 'Invoice sessions updated successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()])
+                ->withInput();
+        }
     }
 }

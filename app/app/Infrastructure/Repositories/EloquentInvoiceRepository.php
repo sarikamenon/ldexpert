@@ -189,4 +189,44 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
         return $query->distinct()->pluck('school_id');
     }
+
+    public function updateTotals(Invoice $invoice, float $subtotal, float $taxTotal, float $total): Invoice
+    {
+        $invoice->update([
+            'subtotal' => $subtotal,
+            'tax_total' => $taxTotal,
+            'total' => $total,
+        ]);
+
+        return $invoice->refresh();
+    }
+
+    public function unlinkAllSessionsForInvoice(Invoice $invoice): void
+    {
+        SessionLog::where('invoice_id', $invoice->id)
+            ->update(['invoice_id' => null]);
+    }
+
+    /**
+     * @param  array<int>  $sessionLogIds
+     * @return Collection<SessionLog>
+     */
+    public function getSessionLogsForInvoiceUpdate(Invoice $invoice, array $sessionLogIds): Collection
+    {
+        if (empty($sessionLogIds)) {
+            return collect();
+        }
+
+        return SessionLog::query()
+            ->whereIn('id', $sessionLogIds)
+            ->where('school_id', $invoice->school_id)
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->where('is_billable_school', true)
+            ->where(function ($q) use ($invoice) {
+                $q->whereNull('invoice_id')
+                    ->orWhere('invoice_id', $invoice->id);
+            })
+            ->with(['student', 'service', 'therapist', 'school'])
+            ->get();
+    }
 }

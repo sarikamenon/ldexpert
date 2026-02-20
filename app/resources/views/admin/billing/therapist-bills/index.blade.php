@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-page-title title="Therapist Bills" />
 
     @if (session('success'))
@@ -55,34 +59,42 @@
 
         @if ($bills->count() > 0)
             <div class="overflow-x-auto">
-                <table class="w-full border-collapse">
+                <table id="therapistBillsTable" class="w-full display">
                     <thead>
-                        <tr class="border-b border-border">
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Bill #</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Therapist</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Period</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Total</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Status</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Due Date</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Actions</th>
+                        <tr>
+                            <th>Bill #</th>
+                            <th>Therapist</th>
+                            <th>Period</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach ($bills as $bill)
-                            <tr class="border-b border-border hover:bg-background/subtle">
-                                <td class="py-3 px-4">
+                            <tr>
+                                <td>
                                     <a href="{{ route('admin.billing.therapist-bills.show', $bill) }}"
-                                        class="text-primary hover:underline font-medium">
+                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
+                                        title="View Bill">
                                         {{ $bill->bill_number }}
                                     </a>
                                 </td>
-                                <td class="py-3 px-4">{{ $bill->therapist_name ?? '—' }}</td>
-                                <td class="py-3 px-4 text-sm text-foreground/70">
+                                <td>
+                                    <a href="{{ route('admin.billing.therapist-bills.show', $bill) }}"
+                                        class="text-primary hover:underline font-medium">
+                                        {{ $bill->therapist_name ?? '—' }}
+                                    </a>
+                                </td>
+                                <td class="text-sm text-foreground/70">
                                     {{ $bill->billing_period_start->format('M d') }} -
                                     {{ $bill->billing_period_end->format('M d, Y') }}
                                 </td>
-                                <td class="py-3 px-4 font-medium">${{ number_format($bill->total_due, 2) }}</td>
-                                <td class="py-3 px-4">
+                                <td class="font-medium">
+                                    ${{ number_format($bill->total_due, 2) }}
+                                </td>
+                                <td>
                                     <x-ui::badge :variant="match ($bill->status) {
                                         \App\Enums\TherapistBillStatus::DRAFT => 'secondary',
                                         \App\Enums\TherapistBillStatus::SENT => 'primary',
@@ -92,11 +104,11 @@
                                         {{ $bill->status?->label() }}
                                     </x-ui::badge>
                                 </td>
-                                <td class="py-3 px-4 text-sm text-foreground/70">
+                                <td class="text-sm text-foreground/70">
                                     {{ $bill->due_date->format('M d, Y') }}
                                 </td>
-                                <td class="py-3 px-4">
-                                    <div class="flex items-center gap-2">
+                                <td>
+                                    <div class="flex space-x-1">
                                         <a href="{{ route('admin.billing.therapist-bills.show', $bill) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                             title="View Bill"
@@ -127,13 +139,13 @@
                     </tbody>
                 </table>
             </div>
-
-            <div class="mt-4">
-                {{ $bills->links() }}
-            </div>
         @else
             <x-ui::empty-state title="No therapist bills found."
                 description="Adjust your filters or create a new bill to see it listed here." />
         @endif
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-therapist-bills-index.js'])
+    </x-slot>
 </x-admin.layouts.app>

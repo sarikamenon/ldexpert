@@ -68,12 +68,7 @@ class InvoiceDemoSeeder extends Seeder
                 $invoice = Invoice::factory()
                     ->for($school)
                     ->state([
-                        'invoice_number' => sprintf(
-                            'INV-%s-%02d-%02d',
-                            now()->format('Ymd'),
-                            $schoolIndex,
-                            $i,
-                        ),
+                        // Use factory-generated invoice_number to avoid unique constraint collisions.
                         'status' => $statusValue,
                         'sent_by_id' => $statusValue !== InvoiceStatus::DRAFT->value ? $admin?->id : null,
                         'sent_at' => $statusValue !== InvoiceStatus::DRAFT->value ? now() : null,
@@ -87,4 +82,3 @@ class InvoiceDemoSeeder extends Seeder
         }
     }
 }
-
