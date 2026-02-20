@@ -29,7 +29,7 @@ final class ImportStudentsRequest extends FormRequest
                 'max:'.$maxSize,
             ],
             'type' => [
-                'required',
+                'nullable',
                 'string',
                 Rule::in(array_column(StudentImportType::cases(), 'value')),
             ],
@@ -44,9 +44,14 @@ final class ImportStudentsRequest extends FormRequest
             'file.mimes' => 'The file must be a CSV file.',
             'file.mimetypes' => 'The file must be a CSV file.',
             'file.max' => 'The file size must not exceed '.config('student-import.settings.max_file_size', 10240).' KB.',
-            'type.required' => 'Please select an import type.',
             'type.in' => 'Invalid import type. Must be one of: NOVA, RSM, MARVIN.',
         ];
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('type') || $this->input('type') === '') {
+            $this->merge(['type' => StudentImportType::NOVA->value]);
+        }
+    }
 }

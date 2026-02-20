@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const hideForTypes = ['RSM', 'MARVIN'];
 
     function updateTemplateVisibility() {
-        const selectedType = importTypeSelect?.value ?? '';
+        const selectedType = importTypeSelect?.value ?? 'NOVA';
         if (typeHidden) {
             typeHidden.value = selectedType;
         }

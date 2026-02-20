@@ -326,9 +326,26 @@ final class StudentImportTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'bob@example.com']);
     }
 
-    public function test_import_requires_type_selection(): void
+    public function test_import_defaults_to_nova_when_type_not_provided(): void
     {
-        $csvContent = "first_name,last_name,email\nJohn,Doe,john@example.com\n";
+        Mail::fake();
+
+        $csvContent = $this->generateCsvContent([
+            [
+                'first_name' => 'Default',
+                'last_name' => 'Type',
+                'email' => 'default@example.com',
+                'gender' => 'Male',
+                'date_of_birth' => '2010-01-01',
+                'school_name' => $this->school->external_emr_name,
+                'id_number' => 'STU008',
+                'timezone' => 'America/New_York',
+                'grade_level' => '8',
+                'city' => 'New York',
+                'state' => 'NY',
+                'zip_code' => '10001',
+            ],
+        ]);
         $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
 
         $response = $this->actingAs($this->admin)
@@ -336,8 +353,13 @@ final class StudentImportTest extends TestCase
                 'file' => $file,
             ]);
 
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['type']);
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $import = StudentImport::first();
+        $this->assertEquals(StudentImportType::NOVA->value, $import->type->value);
+
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+        $this->assertDatabaseHas('users', ['email' => 'default@example.com', 'role' => Role::STUDENT->value]);
     }
 
     public function test_rsm_import_uses_parent_email_and_default_dob(): void
