@@ -23,68 +23,34 @@ class InvoicePaymentService
 
     public function recordPayment(RecordInvoicePaymentDTO $dto): InvoicePayment
     {
+        if ($dto->invoiceId <= 0) {
+            throw new \RuntimeException('Cannot record payment without an invoice.');
+        }
+
         return DB::transaction(function () use ($dto) {
-            $startingInvoice = null;
-            $schoolId = null;
+            $invoice = Invoice::findOrFail($dto->invoiceId);
 
-            if ($dto->invoiceId > 0) {
-                // Starting invoice determines the school and initial context
-                $startingInvoice = Invoice::findOrFail($dto->invoiceId);
-
-                if (! $startingInvoice->school_id) {
-                    throw new \RuntimeException('Cannot record payment for an invoice without a school.');
-                }
-
-                $schoolId = $startingInvoice->school_id;
-            } else {
-                $schoolId = $dto->schoolId;
+            if (! $invoice->school_id) {
+                throw new \RuntimeException('Cannot record payment for an invoice without a school.');
             }
 
-            if (! $schoolId) {
-                throw new \RuntimeException('Cannot record payment without a school.');
-            }
+            $schoolId = $invoice->school_id;
 
-            // Create the payment receipt (lump-sum payment)
             $paymentData = $dto->toArray();
             $paymentData['school_id'] = $schoolId;
+            $paymentData['invoice_id'] = $invoice->id;
 
             $payment = $this->payments->createPayment($paymentData);
 
-            $remainingPayment = $dto->amount;
+            $this->payments->createAllocation([
+                'invoice_id' => $invoice->id,
+                'invoice_payment_id' => $payment->id,
+                'allocated_amount' => $dto->amount,
+            ]);
 
-            // Oldest-first invoices for this school
-            $invoices = $this->payments->getInvoicesForSchoolOldestFirst($schoolId);
-
-            $affectedInvoices = collect();
-
-            foreach ($invoices as $invoice) {
-                if ($remainingPayment <= 0) {
-                    break;
-                }
-
-                $alreadyAllocated = (float) $invoice->paymentAllocations()->sum('allocated_amount');
-                $remainingOnInvoice = max(0, (float) $invoice->total - $alreadyAllocated);
-
-                if ($remainingOnInvoice <= 0) {
-                    continue;
-                }
-
-                $allocationAmount = min($remainingOnInvoice, $remainingPayment);
-
-                $this->payments->createAllocation([
-                    'invoice_id' => $invoice->id,
-                    'invoice_payment_id' => $payment->id,
-                    'allocated_amount' => $allocationAmount,
-                ]);
-
-                $remainingPayment -= $allocationAmount;
-                $affectedInvoices->push($invoice);
-            }
-
-            // Create a single ledger entry for the school based on the full receipt amount
             $this->createLedgerEntry($payment, $schoolId);
 
-            return $payment->load('allocations', 'recordedBy');
+            return $payment->load('allocations', 'recordedBy', 'invoice');
         });
     }
 
@@ -111,13 +77,9 @@ class InvoicePaymentService
     public function deletePayment(InvoicePayment $payment): bool
     {
         return DB::transaction(function () use ($payment) {
-            // Delete allocations (will also adjust totals for each invoice)
             $this->payments->deleteAllocationsForPayment($payment);
-
-            // Delete the payment
             $this->payments->softDeletePayment($payment);
 
-            // Delete associated ledger entries
             LedgerEntry::where('reference_type', InvoicePayment::class)
                 ->where('reference_id', $payment->id)
                 ->delete();

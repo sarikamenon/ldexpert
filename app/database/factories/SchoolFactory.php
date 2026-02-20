@@ -7,7 +7,6 @@ use App\Constants\UsTimezones;
 use App\Enums\SchoolStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\School>

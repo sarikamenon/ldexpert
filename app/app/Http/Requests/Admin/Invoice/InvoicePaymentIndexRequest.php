@@ -26,4 +26,3 @@ class InvoicePaymentIndexRequest extends FormRequest
         ];
     }
 }
-

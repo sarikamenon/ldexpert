@@ -6,7 +6,6 @@ namespace App\Http\Requests\Admin\Billing;
 
 use App\Enums\PaymentMethod;
 use App\Enums\Role;
-use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,6 +24,7 @@ class RecordTherapistBillPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'therapist_bill_id' => ['required', 'integer', 'exists:therapist_bills,id'],
             'paid_at' => ['required', 'date', 'before_or_equal:today'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'method' => ['required', 'string', Rule::in(PaymentMethod::values())],
@@ -47,6 +47,8 @@ class RecordTherapistBillPaymentRequest extends FormRequest
             'amount.min' => 'Payment amount must be greater than zero.',
             'method.required' => 'Payment method is required.',
             'method.in' => 'Invalid payment method selected.',
+            'therapist_bill_id.required' => 'Please select a bill.',
+            'therapist_bill_id.exists' => 'The selected bill is invalid.',
         ];
     }
 }

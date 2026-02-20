@@ -199,6 +199,7 @@
 
                     <form method="POST" action="{{ route('admin.invoices.payments.store', $invoice) }}">
                         @csrf
+                        <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
 
                         <div class="space-y-4">
                             <div>

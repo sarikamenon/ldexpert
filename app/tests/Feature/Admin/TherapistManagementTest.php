@@ -87,6 +87,7 @@ final class TherapistManagementTest extends TestCase
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 40,
+            'hourly_rate' => 55.00,
             'dob' => '1990-01-01',
             'default_meeting_location' => 'https://meet.google.com/new',
         ];
@@ -101,6 +102,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane.smith@example.com',
             'max_weekly_hours' => 40,
+            'hourly_rate' => 55.00,
             'default_meeting_location' => 'https://meet.google.com/new',
         ]);
 
@@ -141,6 +143,7 @@ final class TherapistManagementTest extends TestCase
             'timezone' => 'America/New_York',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 32,
+            'hourly_rate' => 62.50,
             'dob' => '1985-05-15',
             'default_meeting_location' => 'https://meet.google.com/updated',
         ];
@@ -159,6 +162,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Name',
             'personal_email' => 'updated@example.com',
             'max_weekly_hours' => 32,
+            'hourly_rate' => 62.50,
             'default_meeting_location' => 'https://meet.google.com/updated',
         ]);
     }
@@ -238,6 +242,7 @@ final class TherapistManagementTest extends TestCase
             'timezone',
             'manager_id',
             'max_weekly_hours',
+            'hourly_rate',
         ]);
     }
 
@@ -255,6 +260,7 @@ final class TherapistManagementTest extends TestCase
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 35,
+            'hourly_rate' => 50,
         ]);
 
         $response->assertSessionHasErrors(['phone']);
@@ -269,6 +275,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane@example.com',
             'phone' => '123-456-7890', // Valid: digits and dashes
+            'hourly_rate' => 45,
             'position' => 'SLP',
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
@@ -295,6 +302,7 @@ final class TherapistManagementTest extends TestCase
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 40,
+            'hourly_rate' => 50,
         ]);
 
         $response->assertSessionHasErrors(['personal_email']);

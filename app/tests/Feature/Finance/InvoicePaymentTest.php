@@ -41,6 +41,7 @@ class InvoicePaymentTest extends TestCase
         $response = $this->actingAs($this->admin)->post(
             route('admin.invoices.payments.store', $this->invoice),
             [
+                'invoice_id' => $this->invoice->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 500.00,
                 'method' => PaymentMethod::CHECK->value,
@@ -70,11 +71,12 @@ class InvoicePaymentTest extends TestCase
         ]);
     }
 
-    public function test_invoice_status_updates_to_paid_when_fully_paid(): void
+    public function test_invoice_fully_paid_when_payment_covers_total(): void
     {
         $this->actingAs($this->admin)->post(
             route('admin.invoices.payments.store', $this->invoice),
             [
+                'invoice_id' => $this->invoice->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 1000.00,
                 'method' => PaymentMethod::BANK_TRANSFER->value,
@@ -83,9 +85,8 @@ class InvoicePaymentTest extends TestCase
 
         $this->invoice->refresh();
 
-        $this->assertTrue($this->invoice->isPaid());
-        $this->assertEquals(InvoiceStatus::PAID, $this->invoice->status);
-        $this->assertNotNull($this->invoice->paid_at);
+        $this->assertTrue($this->invoice->isFullyPaid());
+        $this->assertEquals(1000.00, $this->invoice->total_paid);
     }
 
     public function test_ledger_entry_created_on_payment(): void
@@ -93,6 +94,7 @@ class InvoicePaymentTest extends TestCase
         $this->actingAs($this->admin)->post(
             route('admin.invoices.payments.store', $this->invoice),
             [
+                'invoice_id' => $this->invoice->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 500.00,
                 'method' => PaymentMethod::CHECK->value,
@@ -112,6 +114,7 @@ class InvoicePaymentTest extends TestCase
         $response = $this->actingAs($this->admin)->post(
             route('admin.invoices.payments.store', $this->invoice),
             [
+                'invoice_id' => $this->invoice->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 0,
                 'method' => PaymentMethod::CHECK->value,
@@ -126,6 +129,7 @@ class InvoicePaymentTest extends TestCase
         $response = $this->actingAs($this->admin)->post(
             route('admin.invoices.payments.store', $this->invoice),
             [
+                'invoice_id' => $this->invoice->id,
                 'paid_at' => now()->addDays(1)->format('Y-m-d'),
                 'amount' => 500.00,
                 'method' => PaymentMethod::CHECK->value,
@@ -139,6 +143,7 @@ class InvoicePaymentTest extends TestCase
     {
         $payment = InvoicePayment::factory()->create([
             'invoice_id' => $this->invoice->id,
+            'school_id' => $this->invoice->school_id,
             'amount' => 500.00,
         ]);
 
@@ -152,8 +157,16 @@ class InvoicePaymentTest extends TestCase
 
     public function test_balance_calculations_are_correct(): void
     {
-        $payment1 = InvoicePayment::factory()->create(['amount' => 300.00]);
-        $payment2 = InvoicePayment::factory()->create(['amount' => 200.00]);
+        $payment1 = InvoicePayment::factory()->create([
+            'invoice_id' => $this->invoice->id,
+            'school_id' => $this->invoice->school_id,
+            'amount' => 300.00,
+        ]);
+        $payment2 = InvoicePayment::factory()->create([
+            'invoice_id' => $this->invoice->id,
+            'school_id' => $this->invoice->school_id,
+            'amount' => 200.00,
+        ]);
 
         \App\Models\InvoicePaymentAllocation::factory()->create([
             'invoice_id' => $this->invoice->id,

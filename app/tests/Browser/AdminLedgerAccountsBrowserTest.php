@@ -76,4 +76,3 @@ class AdminLedgerAccountsBrowserTest extends DuskTestCase
             ->waitForLocation('/admin/dashboard');
     }
 }
-

@@ -50,4 +50,3 @@ class AdminLedgerAccountsTest extends TestCase
             ->assertSee('Transactions');
     }
 }
-

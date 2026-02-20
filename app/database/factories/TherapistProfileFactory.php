@@ -44,6 +44,7 @@ class TherapistProfileFactory extends Factory
             'timezone' => $timezone,
             'manager_id' => User::factory()->admin(),
             'max_weekly_hours' => $this->faker->numberBetween(10, 60),
+            'hourly_rate' => $this->faker->randomFloat(2, 25, 120),
             'dob' => $this->faker->optional()->dateTimeBetween('-60 years', '-22 years'),
         ];
     }

@@ -23,8 +23,8 @@ class TherapistBillPaymentController extends Controller
      */
     public function store(RecordTherapistBillPaymentRequest $request, TherapistBill $therapistBill): RedirectResponse
     {
+        $request->merge(['therapist_bill_id' => $therapistBill->id]);
         $data = $request->validated();
-        $data['therapist_bill_id'] = $therapistBill->id;
         $data['recorded_by_id'] = $request->user()?->id;
 
         $dto = RecordTherapistBillPaymentDTO::fromArray($data);

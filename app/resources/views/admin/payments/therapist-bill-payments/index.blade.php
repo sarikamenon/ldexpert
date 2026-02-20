@@ -133,7 +133,7 @@
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Therapist</th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Bill</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Amount</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Method</th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
@@ -148,15 +148,12 @@
                                     {{ $payment->paid_at?->format('M d, Y') ?? '—' }}
                                 </td>
                                 <td class="py-3 px-4 text-sm">
-                                    @php
-                                        $firstAllocation = $payment->allocations->first();
-                                        $therapist = $firstAllocation?->therapistBill?->therapist ?? $payment->therapist;
-                                    @endphp
-                                    @if ($therapist)
-                                        <a href="{{ route('admin.therapists.show', $therapist) }}"
+                                    @if ($payment->therapistBill)
+                                        <a href="{{ route('admin.billing.therapist-bills.show', $payment->therapistBill) }}"
                                             class="text-primary hover:underline">
-                                            {{ $therapist->name }}
+                                            {{ $payment->therapistBill->bill_number }}
                                         </a>
+                                        <span class="text-foreground/60"> — {{ $payment->therapist?->name ?? $payment->therapistBill->therapist_name ?? '—' }}</span>
                                     @else
                                         —
                                     @endif

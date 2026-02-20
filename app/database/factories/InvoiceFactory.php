@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class InvoiceFactory extends Factory
 {
     private static int $sequence = 1;
+
     /**
      * Define the model's default state.
      *

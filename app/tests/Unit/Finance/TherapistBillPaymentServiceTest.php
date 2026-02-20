@@ -18,30 +18,26 @@ class TherapistBillPaymentServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_lump_sum_allocates_to_oldest_bills_and_updates_statuses(): void
+    public function test_record_payment_creates_single_allocation_for_bill(): void
     {
         $admin = User::factory()->create();
         $therapist = User::factory()->create();
 
-        $bills = TherapistBill::factory()
-            ->count(3)
-            ->sequence(
-                ['bill_date' => now()->subDays(3), 'status' => TherapistBillStatus::SENT, 'total_due' => 200],
-                ['bill_date' => now()->subDays(2), 'status' => TherapistBillStatus::SENT, 'total_due' => 200],
-                ['bill_date' => now()->subDay(), 'status' => TherapistBillStatus::SENT, 'total_due' => 200],
-            )
-            ->create([
-                'therapist_id' => $therapist->id,
-            ]);
+        $bill = TherapistBill::factory()->create([
+            'therapist_id' => $therapist->id,
+            'bill_date' => now()->subDays(3),
+            'status' => TherapistBillStatus::SENT,
+            'total_due' => 200,
+        ]);
 
         $service = app(TherapistBillPaymentService::class);
 
         $dto = new RecordTherapistBillPaymentDTO(
-            therapistBillId: $bills[0]->id,
+            therapistBillId: $bill->id,
             paidAt: now()->toDateString(),
-            amount: 250.00,
+            amount: 200.00,
             method: PaymentMethod::DIRECT_DEPOSIT,
-            reference: 'THER-LUMP-001',
+            reference: 'BILL-001',
             notes: null,
             recordedById: $admin->id,
         );
@@ -50,14 +46,30 @@ class TherapistBillPaymentServiceTest extends TestCase
 
         $this->assertDatabaseHas('therapist_bill_payments', [
             'id' => $payment->id,
-            'amount' => 250.00,
+            'therapist_bill_id' => $bill->id,
+            'amount' => 200.00,
         ]);
 
-        $this->assertEquals(2, TherapistBillPaymentAllocation::count());
+        $this->assertEquals(1, TherapistBillPaymentAllocation::where('therapist_bill_payment_id', $payment->id)->count());
+        $this->assertTrue($bill->fresh()->isFullyPaid());
+    }
 
-        $this->assertEquals(TherapistBillStatus::PAID, $bills[0]->fresh()->status);
-        $this->assertTrue($bills[1]->fresh()->isPartiallyPaid());
-        $this->assertTrue($bills[2]->fresh()->isSent());
+    public function test_record_payment_throws_without_bill(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('Cannot record payment without a therapist bill.');
+
+        $service = app(TherapistBillPaymentService::class);
+        $dto = new RecordTherapistBillPaymentDTO(
+            therapistBillId: 0,
+            paidAt: now()->toDateString(),
+            amount: 100.00,
+            method: PaymentMethod::DIRECT_DEPOSIT,
+            reference: null,
+            notes: null,
+            recordedById: null,
+        );
+        $service->recordPayment($dto);
     }
 
     public function test_delete_payment_removes_allocations_and_resets_statuses(): void
@@ -85,7 +97,7 @@ class TherapistBillPaymentServiceTest extends TestCase
 
         $payment = $service->recordPayment($dto);
 
-        $this->assertTrue($bill->fresh()->isPaid());
+        $this->assertTrue($bill->fresh()->isFullyPaid());
         $this->assertEquals(1, TherapistBillPaymentAllocation::where('therapist_bill_payment_id', $payment->id)->count());
 
         $service->deletePayment($payment);
@@ -94,7 +106,7 @@ class TherapistBillPaymentServiceTest extends TestCase
             'therapist_bill_payment_id' => $payment->id,
         ]);
 
-        $this->assertFalse($bill->fresh()->isPaid());
+        $this->assertFalse($bill->fresh()->isFullyPaid());
         $this->assertEquals(0.0, $bill->fresh()->total_paid);
     }
 }

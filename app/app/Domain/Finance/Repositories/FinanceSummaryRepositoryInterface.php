@@ -34,4 +34,3 @@ interface FinanceSummaryRepositoryInterface
 
     public function getOverdueBillsCount(TherapistBillStatus $paidStatus, Carbon $now): int;
 }
-

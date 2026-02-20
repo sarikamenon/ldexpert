@@ -86,4 +86,3 @@ class TherapistBillDemoSeeder extends Seeder
         }
     }
 }
-

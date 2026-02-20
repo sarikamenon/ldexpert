@@ -31,4 +31,3 @@ class InvoicePaymentsAuthorizationTest extends TestCase
         $response->assertForbidden();
     }
 }
-

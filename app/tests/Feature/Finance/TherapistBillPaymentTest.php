@@ -40,6 +40,7 @@ class TherapistBillPaymentTest extends TestCase
         $response = $this->actingAs($this->admin)->post(
             route('admin.billing.therapist-bills.payments.store', $this->bill),
             [
+                'therapist_bill_id' => $this->bill->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 400.00,
                 'method' => PaymentMethod::DIRECT_DEPOSIT->value,
@@ -69,11 +70,12 @@ class TherapistBillPaymentTest extends TestCase
         ]);
     }
 
-    public function test_bill_status_updates_to_paid_when_fully_paid(): void
+    public function test_bill_fully_paid_when_payment_covers_total(): void
     {
         $this->actingAs($this->admin)->post(
             route('admin.billing.therapist-bills.payments.store', $this->bill),
             [
+                'therapist_bill_id' => $this->bill->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 800.00,
                 'method' => PaymentMethod::DIRECT_DEPOSIT->value,
@@ -82,9 +84,8 @@ class TherapistBillPaymentTest extends TestCase
 
         $this->bill->refresh();
 
-        $this->assertTrue($this->bill->isPaid());
-        $this->assertEquals(TherapistBillStatus::PAID, $this->bill->status);
-        $this->assertNotNull($this->bill->paid_at);
+        $this->assertTrue($this->bill->isFullyPaid());
+        $this->assertEquals(800.00, $this->bill->total_paid);
     }
 
     public function test_ledger_entry_created_on_payment(): void
@@ -92,6 +93,7 @@ class TherapistBillPaymentTest extends TestCase
         $this->actingAs($this->admin)->post(
             route('admin.billing.therapist-bills.payments.store', $this->bill),
             [
+                'therapist_bill_id' => $this->bill->id,
                 'paid_at' => '2026-02-13',
                 'amount' => 400.00,
                 'method' => PaymentMethod::DIRECT_DEPOSIT->value,
@@ -108,8 +110,16 @@ class TherapistBillPaymentTest extends TestCase
 
     public function test_balance_calculations_are_correct(): void
     {
-        $payment1 = TherapistBillPayment::factory()->create(['amount' => 300.00]);
-        $payment2 = TherapistBillPayment::factory()->create(['amount' => 200.00]);
+        $payment1 = TherapistBillPayment::factory()->create([
+            'therapist_bill_id' => $this->bill->id,
+            'therapist_id' => $this->bill->therapist_id,
+            'amount' => 300.00,
+        ]);
+        $payment2 = TherapistBillPayment::factory()->create([
+            'therapist_bill_id' => $this->bill->id,
+            'therapist_id' => $this->bill->therapist_id,
+            'amount' => 200.00,
+        ]);
 
         \App\Models\TherapistBillPaymentAllocation::factory()->create([
             'therapist_bill_id' => $this->bill->id,

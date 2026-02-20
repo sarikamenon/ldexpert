@@ -131,6 +131,7 @@
 
                 <form method="POST" action="{{ route('admin.billing.therapist-bills.payments.store', $bill) }}">
                     @csrf
+                    <input type="hidden" name="therapist_bill_id" value="{{ $bill->id }}">
 
                     <div class="space-y-4">
                         <div>

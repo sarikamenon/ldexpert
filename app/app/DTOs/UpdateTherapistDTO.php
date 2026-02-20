@@ -21,6 +21,7 @@ final class UpdateTherapistDTO
         public readonly string $timezone,
         public readonly int $managerId,
         public readonly int $maxWeeklyHours,
+        public readonly float $hourlyRate,
         public readonly ?string $dob,
         public readonly ?string $defaultMeetingLocation,
     ) {}
@@ -42,6 +43,7 @@ final class UpdateTherapistDTO
             timezone: $data['timezone'],
             managerId: (int) $data['manager_id'],
             maxWeeklyHours: (int) $data['max_weekly_hours'],
+            hourlyRate: (float) $data['hourly_rate'],
             dob: $data['dob'] ?? null,
             defaultMeetingLocation: $data['default_meeting_location'] ?? null,
         );
@@ -72,6 +74,7 @@ final class UpdateTherapistDTO
             'timezone' => $this->timezone,
             'manager_id' => $this->managerId,
             'max_weekly_hours' => $this->maxWeeklyHours,
+            'hourly_rate' => $this->hourlyRate,
             'dob' => $this->dob,
             'default_meeting_location' => $this->defaultMeetingLocation,
         ];

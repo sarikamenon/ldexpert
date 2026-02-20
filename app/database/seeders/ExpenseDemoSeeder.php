@@ -97,4 +97,3 @@ class ExpenseDemoSeeder extends Seeder
         ]);
     }
 }
-

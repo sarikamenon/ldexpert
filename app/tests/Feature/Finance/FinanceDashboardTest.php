@@ -51,6 +51,7 @@ class FinanceDashboardTest extends TestCase
 
         InvoicePayment::factory()->create([
             'school_id' => $school->id,
+            'invoice_id' => $oldInvoice->id,
             'paid_at' => $oldMonth->copy()->addDay(),
             'amount' => 65,
             'method' => PaymentMethod::CASH,
@@ -72,6 +73,7 @@ class FinanceDashboardTest extends TestCase
 
         TherapistBillPayment::factory()->create([
             'therapist_id' => $therapist->id,
+            'therapist_bill_id' => $oldBill->id,
             'paid_at' => $oldMonth->copy()->addDays(2),
             'amount' => 30,
             'method' => PaymentMethod::CASH,
@@ -100,4 +102,3 @@ class FinanceDashboardTest extends TestCase
         $response->assertSee('$20.00', false);
     }
 }
-

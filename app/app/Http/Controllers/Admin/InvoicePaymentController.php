@@ -23,8 +23,8 @@ class InvoicePaymentController extends Controller
      */
     public function store(RecordInvoicePaymentRequest $request, Invoice $invoice): RedirectResponse
     {
+        $request->merge(['invoice_id' => $invoice->id]);
         $data = $request->validated();
-        $data['invoice_id'] = $invoice->id;
         $data['recorded_by_id'] = $request->user()?->id;
 
         $dto = RecordInvoicePaymentDTO::fromArray($data);

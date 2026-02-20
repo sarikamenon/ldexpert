@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 class TherapistBillFactory extends Factory
 {
     private static int $sequence = 1;
+
     /**
      * Define the model's default state.
      *

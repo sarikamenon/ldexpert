@@ -31,4 +31,3 @@ class TherapistBillPaymentsAuthorizationTest extends TestCase
         $response->assertForbidden();
     }
 }
-

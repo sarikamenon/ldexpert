@@ -8,7 +8,6 @@ use App\Enums\PaymentMethod;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -20,6 +19,7 @@ class TherapistBillPayment extends Model
 
     protected $fillable = [
         'therapist_id',
+        'therapist_bill_id',
         'paid_at',
         'amount',
         'method',
@@ -73,17 +73,12 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * A payment may be allocated across multiple therapist bills.
+     * Single therapist bill this payment is for (1:1).
      *
-     * @return BelongsToMany<TherapistBill, TherapistBillPayment>
+     * @return BelongsTo<TherapistBill, TherapistBillPayment>
      */
-    public function therapistBill(): BelongsToMany
+    public function therapistBill(): BelongsTo
     {
-        return $this->belongsToMany(
-            TherapistBill::class,
-            'therapist_bill_payment_allocations',
-            'therapist_bill_payment_id',
-            'therapist_bill_id',
-        );
+        return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
     }
 }

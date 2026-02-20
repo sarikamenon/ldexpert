@@ -82,4 +82,3 @@ class InvoiceDemoSeeder extends Seeder
         }
     }
 }
-

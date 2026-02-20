@@ -10,7 +10,6 @@ use App\Enums\TherapistBillStatus;
 use App\Models\Expense;
 use App\Models\InvoicePayment;
 use App\Models\TherapistBillPayment;
-use Illuminate\Support\Carbon;
 
 final class FinanceDashboardService
 {
@@ -81,4 +80,3 @@ final class FinanceDashboardService
         ];
     }
 }
-

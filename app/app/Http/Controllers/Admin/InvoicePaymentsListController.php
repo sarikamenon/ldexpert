@@ -6,14 +6,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Finance\Services\PaymentsListService;
 use App\DTOs\InvoicePaymentFilterDTO;
+use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Invoice\InvoicePaymentIndexRequest;
+use App\Models\Invoice;
 use App\Models\InvoicePayment;
-use App\Models\School;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use App\Http\Requests\Admin\Invoice\InvoicePaymentIndexRequest;
 
 class InvoicePaymentsListController extends Controller
 {
@@ -40,13 +40,15 @@ class InvoicePaymentsListController extends Controller
     {
         $this->authorize('viewAny', InvoicePayment::class);
 
-        $schools = School::orderBy('display_name')
-            ->orderBy('full_name')
+        $invoices = Invoice::whereIn('status', [InvoiceStatus::DRAFT, InvoiceStatus::SENT])
+            ->with('school')
+            ->orderBy('invoice_date')
+            ->orderBy('id')
             ->get();
 
         return view('admin.payments.record-payment', [
             'mode' => 'invoice',
-            'entities' => $schools,
+            'invoices' => $invoices,
         ]);
     }
 
@@ -55,20 +57,6 @@ class InvoicePaymentsListController extends Controller
         $this->authorize('viewAny', InvoicePayment::class);
 
         $data = $request->validated();
-        $schoolId = (int) $request->input('school_id');
-
-        $startingInvoice = \App\Models\Invoice::where('school_id', $schoolId)
-            ->where(function (Builder $q) {
-                $q->where('status', '!=', \App\Enums\InvoiceStatus::PAID);
-            })
-            ->orderBy('invoice_date')
-            ->orderBy('id')
-            ->first();
-
-        // If no unpaid invoices exist, this will be treated as an advance payment.
-        // We still record the payment and ledger entry, but no allocations are created.
-        $data['invoice_id'] = $startingInvoice?->id ?? 0;
-        $data['school_id'] = $schoolId;
         $data['recorded_by_id'] = $request->user()->id;
 
         $dto = \App\DTOs\RecordInvoicePaymentDTO::fromArray($data);
