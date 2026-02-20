@@ -28,11 +28,7 @@ class AdminUserSeeder extends Seeder
             [
                 'email' => 'info@ldexpert.org',
                 'name' => 'Chelsea DiMarzio',
-            ],
-            [
-                'email' => 'stephanie@ldexpert.org',
-                'name' => 'Stephanie Tsapakis',
-            ],
+            ]
         ];
 
         foreach ($admins as $admin) {
