@@ -276,4 +276,16 @@ final class StudentImportServiceTest extends TestCase
         $this->assertArrayHasKey('optional_columns', $template);
         $this->assertArrayHasKey('column_mapping', $template);
     }
+
+    public function test_get_template_returns_rsm_config(): void
+    {
+        $template = $this->service->getTemplate(StudentImportType::RSM);
+
+        $this->assertIsArray($template);
+        $this->assertArrayHasKey('required_columns', $template);
+        $this->assertArrayHasKey('column_mapping', $template);
+        $this->assertArrayHasKey('Identity ID', $template['column_mapping']);
+        $this->assertArrayHasKey('default_date_of_birth', $template);
+        $this->assertEquals('2020-02-20', $template['default_date_of_birth']);
+    }
 }

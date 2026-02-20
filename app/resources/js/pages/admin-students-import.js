@@ -13,15 +13,30 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Update template download link when type changes
-    if (importTypeSelect && templateDownloadLink) {
-        importTypeSelect.addEventListener('change', (e) => {
-            const selectedType = e.target.value;
+    // Update type hidden and toggle template visibility when import type changes
+    // Show template only for NOVA; hide for RSM and when nothing selected
+    const templateInfo = document.getElementById('templateInfo');
+    const hideForTypes = ['RSM', 'MARVIN'];
+
+    function updateTemplateVisibility() {
+        const selectedType = importTypeSelect?.value ?? '';
+        if (typeHidden) {
             typeHidden.value = selectedType;
+        }
+        if (templateInfo) {
+            const shouldHide = !selectedType || hideForTypes.includes(selectedType);
+            templateInfo.classList.toggle('hidden', shouldHide);
+        }
+        if (templateDownloadLink && selectedType) {
             const url = new URL(templateDownloadLink.href);
             url.searchParams.set('type', selectedType);
             templateDownloadLink.href = url.toString();
-        });
+        }
+    }
+
+    if (importTypeSelect) {
+        importTypeSelect.addEventListener('change', updateTemplateVisibility);
+        updateTemplateVisibility(); // Initial state
     }
 
     form.addEventListener('submit', async (e) => {

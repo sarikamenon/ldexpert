@@ -7,6 +7,7 @@ namespace App\Domain\Student\Services;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Enums\StudentImportType;
 use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\DTOs\ImportStudentDTO;
@@ -109,7 +110,7 @@ final class StudentImportService
             // Map columns using template
             $mappedData = $this->mapColumns($rowData, $template);
 
-            // Look up school by external_emr_name
+            // Look up school by external_emr_name (exact match)
             $schoolName = $mappedData['school_name'] ?? null;
             if (! $schoolName) {
                 $importRow->update([
@@ -131,6 +132,13 @@ final class StudentImportService
 
                 return;
             }
+
+            // Apply type-specific transformations
+            $mappedData = $this->applyTypeSpecificTransformations($mappedData, $template, $import->type, $school);
+
+            // Resolve timezone: accept key or display label, fallback to school timezone
+            $resolvedTimezone = UsTimezones::resolveFromInput($mappedData['timezone'] ?? null);
+            $mappedData['timezone'] = $resolvedTimezone ?? $school->timezone;
 
             // Validate row
             $importDTO = ImportStudentDTO::fromArray($mappedData, $rowNumber);
@@ -318,8 +326,8 @@ final class StudentImportService
             'zip_code' => ['required', 'string', 'max:20'],
         ];
 
-        // Validate timezone
-        if (isset($data['timezone']) && ! array_key_exists($data['timezone'], UsTimezones::TIMEZONES)) {
+        // Validate timezone (after resolution - must be valid key)
+        if (isset($data['timezone']) && $data['timezone'] !== '' && ! array_key_exists($data['timezone'], UsTimezones::TIMEZONES)) {
             $errors[] = 'Invalid timezone.';
         }
 
@@ -426,6 +434,30 @@ final class StudentImportService
         foreach (array_chunk($rows, 500) as $chunk) {
             StudentImportRow::insert($chunk);
         }
+    }
+
+    private function applyTypeSpecificTransformations(array $mappedData, array $template, StudentImportType $type, School $school): array
+    {
+        if ($type !== StudentImportType::RSM) {
+            return $mappedData;
+        }
+
+        // RSM: use parent email as student email
+        $mappedData['email'] = trim($mappedData['parent_guardian_email'] ?? '');
+
+        // RSM: default date of birth
+        $mappedData['date_of_birth'] = $template['default_date_of_birth'] ?? '2020-02-20';
+
+        // RSM: state from school
+        $mappedData['state'] = $school->state_code ?? $school->getAttributes()['state'] ?? null;
+
+        // RSM: build parent_guardian_name from Parent First Name + Parent Last Name
+        $parentFirst = trim($mappedData['parent_guardian_first_name'] ?? '');
+        $parentLast = trim($mappedData['parent_guardian_last_name'] ?? '');
+        $mappedData['parent_guardian_name'] = trim($parentFirst.' '.$parentLast) ?: null;
+        unset($mappedData['parent_guardian_first_name'], $mappedData['parent_guardian_last_name']);
+
+        return $mappedData;
     }
 
     private function normalizeState(string $state): ?string

@@ -58,10 +58,41 @@ return [
         ],
 
         'RSM' => [
-            // To be implemented later
-            'required_columns' => [],
-            'optional_columns' => [],
-            'column_mapping' => [],
+            'required_columns' => [
+                'Identity ID',
+                'Last Name',
+                'First Name',
+                'Gender',
+                'Grade',
+                'School Name',
+                'City',
+                'Zip',
+                'Parent Email',
+            ],
+            'optional_columns' => [
+                'Address',
+                'Phone',
+                'Parent Last Name',
+                'Parent First Name',
+                'timezone',
+            ],
+            'column_mapping' => [
+                'Identity ID' => 'id_number',
+                'Last Name' => 'last_name',
+                'First Name' => 'first_name',
+                'Gender' => 'gender',
+                'Grade' => 'grade_level',
+                'School Name' => 'school_name',
+                'Address' => 'address',
+                'City' => 'city',
+                'Zip' => 'zip_code',
+                'Phone' => 'parent_guardian_phone',
+                'Parent Email' => 'parent_guardian_email',
+                'Parent Last Name' => 'parent_guardian_last_name',
+                'Parent First Name' => 'parent_guardian_first_name',
+                'timezone' => 'timezone',
+            ],
+            'default_date_of_birth' => '2020-02-20',
         ],
 
         'MARVIN' => [

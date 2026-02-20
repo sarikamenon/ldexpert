@@ -27,7 +27,7 @@
                 aria-describedby="import_type_help">
                 <option value="">Select import type</option>
                 @foreach ($importTypes as $type)
-                    <option value="{{ $type->value }}" @selected(old('import_type', 'NOVA') === $type->value)>
+                    <option value="{{ $type->value }}" @selected(old('import_type') === $type->value)>
                         {{ $type->value }}
                     </option>
                 @endforeach
@@ -35,8 +35,8 @@
             <x-input-error :messages="$errors->get('type')" class="mt-2" />
         </div>
 
-        {{-- Template Information --}}
-        <div id="templateInfo" class="bg-foreground/5 rounded-lg p-4 space-y-3">
+        {{-- Template Information (hidden for RSM/MARVIN - CSV from external source, shown only for NOVA) --}}
+        <div id="templateInfo" class="bg-foreground/5 rounded-lg p-4 space-y-3 hidden">
             <h3 class="font-semibold text-sm">Required Columns</h3>
             <div class="flex flex-wrap gap-2">
                 @foreach ($requiredColumns as $column)
@@ -72,7 +72,7 @@
             enctype="multipart/form-data" class="space-y-4">
             @csrf
 
-            <input type="hidden" name="type" id="type" value="NOVA" />
+            <input type="hidden" name="type" id="type" value="" />
 
             <div>
                 <x-input-label for="file" value="CSV File *" />

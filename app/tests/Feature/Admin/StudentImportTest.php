@@ -326,6 +326,158 @@ final class StudentImportTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'bob@example.com']);
     }
 
+    public function test_import_requires_type_selection(): void
+    {
+        $csvContent = "first_name,last_name,email\nJohn,Doe,john@example.com\n";
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+            ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['type']);
+    }
+
+    public function test_rsm_import_uses_parent_email_and_default_dob(): void
+    {
+        Mail::fake();
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Identity ID' => 'RSM001',
+                'Last Name' => 'Gifford',
+                'First Name' => 'Ella',
+                'Gender' => 'Female',
+                'Grade' => '5',
+                'School Name' => $this->school->external_emr_name,
+                'City' => 'Provo',
+                'Zip' => '84606',
+                'Parent Email' => 'parent@example.com',
+                'Parent First Name' => 'Brittany',
+                'Parent Last Name' => 'Gifford',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm-students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::RSM->value,
+            ]);
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $import->refresh();
+        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'parent@example.com',
+            'role' => Role::STUDENT->value,
+        ]);
+
+        $profile = StudentProfile::where('id_number', 'RSM001')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('2020-02-20', $profile->date_of_birth->format('Y-m-d'));
+        $this->assertEquals('Brittany Gifford', $profile->parent_guardian_name);
+    }
+
+    public function test_nova_import_accepts_timezone_display_label(): void
+    {
+        Mail::fake();
+
+        $csvContent = $this->generateCsvContent([
+            [
+                'first_name' => 'Jane',
+                'last_name' => 'Doe',
+                'email' => 'jane@example.com',
+                'gender' => 'Female',
+                'date_of_birth' => '2010-06-01',
+                'school_name' => $this->school->external_emr_name,
+                'id_number' => 'STU006',
+                'timezone' => 'Eastern Time (ET)',
+                'grade_level' => '8',
+                'city' => 'New York',
+                'state' => 'NY',
+                'zip_code' => '10001',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::NOVA->value,
+            ]);
+
+        $response->assertOk();
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $profile = StudentProfile::where('id_number', 'STU006')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('America/New_York', $profile->timezone);
+    }
+
+    public function test_timezone_fallback_to_school_when_not_provided(): void
+    {
+        Mail::fake();
+
+        $schoolChicago = School::factory()->create([
+            'external_emr_name' => 'Chicago School',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $csvContent = "first_name,last_name,email,gender,date_of_birth,school_name,id_number,timezone,grade_level,city,state,zip_code\n";
+        $csvContent .= "John,Doe,no-tz@example.com,Male,2010-01-01,Chicago School,STU007,,8,Chicago,IL,60601\n";
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::NOVA->value,
+            ]);
+
+        $response->assertOk();
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $profile = StudentProfile::where('id_number', 'STU007')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('America/Chicago', $profile->timezone);
+    }
+
+    private function generateRsmCsvContent(array $rows): string
+    {
+        $columns = [
+            'Identity ID', 'Last Name', 'First Name', 'Gender', 'Grade', 'School Name',
+            'City', 'Zip', 'Parent Email', 'Parent Last Name', 'Parent First Name',
+            'Address', 'Phone', 'timezone',
+        ];
+
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $columns);
+        foreach ($rows as $row) {
+            $line = [];
+            foreach ($columns as $column) {
+                $line[] = $row[$column] ?? '';
+            }
+            fputcsv($handle, $line);
+        }
+        rewind($handle);
+        $content = stream_get_contents($handle);
+        fclose($handle);
+
+        return $content;
+    }
+
     private function generateCsvContent(array $rows): string
     {
         $requiredColumns = [
