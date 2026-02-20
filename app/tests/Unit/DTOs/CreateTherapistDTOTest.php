@@ -21,7 +21,7 @@ final class CreateTherapistDTOTest extends TestCase
             'ld_email' => 'john.doe@ldexpert.com',
             'address' => '123 Main St',
             'comments' => 'Test comment',
-            'position' => 'SLP',
+            'position_id' => 1,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => 1,
@@ -43,7 +43,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame('john.doe@ldexpert.com', $dto->ldEmail);
         $this->assertSame('123 Main St', $dto->address);
         $this->assertSame('Test comment', $dto->comments);
-        $this->assertSame('SLP', $dto->position);
+        $this->assertSame(1, $dto->positionId);
         $this->assertSame('CA', $dto->state);
         $this->assertSame('America/Los_Angeles', $dto->timezone);
         $this->assertSame(1, $dto->managerId);
@@ -63,7 +63,7 @@ final class CreateTherapistDTOTest extends TestCase
             'last_name' => 'Doe',
             'personal_email' => 'john.doe@example.com',
             'phone' => '123-456-7890',
-            'position' => 'OT',
+            'position_id' => 2,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => 1,
@@ -93,7 +93,7 @@ final class CreateTherapistDTOTest extends TestCase
             ldEmail: 'jane.smith@ldexpert.com',
             address: '456 Oak Ave',
             comments: 'Another comment',
-            position: 'PT',
+            positionId: 3,
             state: 'NY',
             timezone: 'America/New_York',
             managerId: 2,
@@ -125,7 +125,7 @@ final class CreateTherapistDTOTest extends TestCase
             ldEmail: null,
             address: null,
             comments: null,
-            position: 'BCBA',
+            positionId: 4,
             state: 'TX',
             timezone: 'America/Chicago',
             managerId: 3,
@@ -148,7 +148,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertNull($array['ld_email']);
         $this->assertNull($array['address']);
         $this->assertNull($array['comments']);
-        $this->assertSame('BCBA', $array['position']);
+        $this->assertSame(4, $array['position_id']);
         $this->assertSame('TX', $array['state']);
         $this->assertSame('America/Chicago', $array['timezone']);
         $this->assertSame(3, $array['manager_id']);

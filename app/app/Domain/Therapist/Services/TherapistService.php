@@ -104,9 +104,9 @@ final class TherapistService
         return $this->repository->listTherapistsByStudent($studentId);
     }
 
-    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?string $position = null, int $perPage = 15): LengthAwarePaginator
+    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator
     {
-        return $this->repository->paginateTherapistsByStudent($studentId, $search, $status, $position, $perPage);
+        return $this->repository->paginateTherapistsByStudent($studentId, $search, $status, $positionId, $perPage);
     }
 
     public function findProfileByUserId(int $userId): ?TherapistProfile

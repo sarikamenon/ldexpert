@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
 use App\Http\Controllers\Admin\SchoolCalendarEventController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SessionLogController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -75,6 +76,10 @@ Route::middleware('role:admin')
         Route::get('services/export', [ServiceController::class, 'export'])->name('services.export');
         Route::patch('services/{service}/status', [ServiceController::class, 'updateStatus'])->name('services.status');
         Route::resource('services', ServiceController::class)->except(['destroy', 'show']);
+
+        Route::get('positions/export', [PositionController::class, 'export'])->name('positions.export');
+        Route::patch('positions/{position}/status', [PositionController::class, 'updateStatus'])->name('positions.status');
+        Route::resource('positions', PositionController::class)->except(['destroy', 'show']);
 
         Route::get('ssas/export', [SSAController::class, 'export'])->name('ssas.export');
         Route::get('ssas/import', [SSAController::class, 'showImportForm'])->name('ssas.import');

@@ -9,6 +9,7 @@ use App\DTOs\TherapistFilterDTO;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,6 +26,9 @@ final class EloquentTherapistRepositoryTest extends TestCase
     {
         parent::setUp();
         $this->repository = new EloquentTherapistRepository;
+
+        Position::factory()->create(['name' => 'SLP']);
+        Position::factory()->create(['name' => 'OT']);
     }
 
     public function test_create_creates_user_and_profile(): void
@@ -46,7 +50,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'last_name' => 'Doe',
             'personal_email' => 'john.personal@example.com',
             'phone' => '123-456-7890',
-            'position' => 'SLP',
+            'position_id' => Position::where('name', 'SLP')->first()->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $manager->id,
@@ -116,7 +120,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
             'last_name' => 'Therapist',
             'personal_email' => 'new@example.com',
             'phone' => '555-123-4567',
-            'position' => 'OT',
+            'position_id' => Position::where('name', 'OT')->first()->id,
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $manager->id,
@@ -231,16 +235,18 @@ final class EloquentTherapistRepositoryTest extends TestCase
     public function test_list_filters_by_position(): void
     {
         $manager = User::factory()->admin()->create();
+        $otPosition = Position::where('name', 'OT')->first();
+        $slpPosition = Position::where('name', 'SLP')->first();
 
         $initialCount = User::where('role', 'therapist')
-            ->whereHas('therapistProfile', fn ($q) => $q->where('position', 'OT'))
+            ->whereHas('therapistProfile', fn ($q) => $q->where('position_id', $otPosition->id))
             ->count();
 
         User::factory()
             ->therapist()
             ->has(TherapistProfile::factory()->state([
                 'manager_id' => $manager->id,
-                'position' => 'OT',
+                'position_id' => $otPosition->id,
             ]), 'therapistProfile')
             ->count(2)
             ->create();
@@ -249,17 +255,17 @@ final class EloquentTherapistRepositoryTest extends TestCase
             ->therapist()
             ->has(TherapistProfile::factory()->state([
                 'manager_id' => $manager->id,
-                'position' => 'SLP',
+                'position_id' => $slpPosition->id,
             ]), 'therapistProfile')
             ->count(3)
             ->create();
 
-        $filters = new TherapistFilterDTO(position: 'OT');
+        $filters = new TherapistFilterDTO(positionId: $otPosition->id);
         $result = $this->repository->list($filters);
 
         $this->assertCount($initialCount + 2, $result);
         $this->assertTrue($result->every(
-            fn ($user) => $user->therapistProfile?->position?->value === 'OT'
+            fn ($user) => $user->therapistProfile?->position_id === $otPosition->id
         ));
     }
 

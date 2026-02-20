@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('positions', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->string('status', 32)->default('active');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('position_service', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('position_id')->constrained('positions')->cascadeOnDelete();
+            $table->foreignId('service_id')->constrained('services')->cascadeOnDelete();
+
+            $table->unique(['position_id', 'service_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('position_service');
+        Schema::dropIfExists('positions');
+    }
+};

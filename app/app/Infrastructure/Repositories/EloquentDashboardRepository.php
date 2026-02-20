@@ -184,9 +184,10 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     public function getTherapistsByPosition(): array
     {
         $therapistsByPosition = DB::table('therapist_profiles')
-            ->select('position', DB::raw('count(*) as count'))
-            ->whereNull('deleted_at')
-            ->groupBy('position')
+            ->join('positions', 'therapist_profiles.position_id', '=', 'positions.id')
+            ->select('positions.name as position', DB::raw('count(*) as count'))
+            ->whereNull('therapist_profiles.deleted_at')
+            ->groupBy('positions.name')
             ->get();
 
         if ($therapistsByPosition->isEmpty()) {

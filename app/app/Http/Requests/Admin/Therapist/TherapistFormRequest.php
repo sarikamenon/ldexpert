@@ -8,7 +8,6 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Enums\EmployeeType;
 use App\Enums\Role;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -40,7 +39,7 @@ abstract class TherapistFormRequest extends FormRequest
             'ld_email' => ['nullable', 'email:rfc'],
             'address' => ['nullable', 'string'],
             'comments' => ['nullable', 'string'],
-            'position' => ['required', Rule::in(TherapistPosition::values())],
+            'position_id' => ['required', 'integer', Rule::exists('positions', 'id')->where('status', 'active')],
             'state' => ['required', Rule::in(array_keys(UsStates::STATES))],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
             'manager_id' => [

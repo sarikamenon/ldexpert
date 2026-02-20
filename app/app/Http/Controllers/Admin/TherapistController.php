@@ -8,6 +8,7 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
@@ -24,7 +25,6 @@ use App\DTOs\UpdateTherapistDTO;
 use App\Enums\EmployeeType;
 use App\Enums\Role;
 use App\Enums\SSAStatus;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -53,6 +53,7 @@ final class TherapistController extends Controller
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly PositionCatalogService $positionCatalogService,
     ) {}
 
     public function index(IndexTherapistRequest $request): View
@@ -67,7 +68,7 @@ final class TherapistController extends Controller
             'therapists' => $therapists,
             'metrics' => $metrics,
             'filters' => $request->validated(),
-            'positions' => TherapistPosition::cases(),
+            'positions' => $this->positionCatalogService->listActiveForSelect(),
         ]);
     }
 
@@ -98,7 +99,7 @@ final class TherapistController extends Controller
         $this->authorize('update', TherapistProfile::class);
 
         return view('admin.therapists.edit', [
-            'therapist' => $therapist->load('therapistProfile'),
+            'therapist' => $therapist->load('therapistProfile.position'),
         ] + $this->referenceData());
     }
 
@@ -111,7 +112,7 @@ final class TherapistController extends Controller
 
         $this->authorize('view', TherapistProfile::class);
 
-        $therapist->load('therapistProfile');
+        $therapist->load('therapistProfile.position');
         $activeTab = $request->query('tab', 'dashboard');
 
         $viewData = [
@@ -245,7 +246,7 @@ final class TherapistController extends Controller
                     $therapist->email,
                     $profile?->manager?->name ?? '—',
                     $profile?->phone ?? '—',
-                    $profile?->position?->value ?? $profile?->position ?? '—',
+                    $profile?->position?->name ?? '—',
                     $profile?->employee_type?->value ?? $profile?->employee_type ?? '—',
                     $therapist->status?->value ?? $therapist->status ?? 'inactive',
                 ]);
@@ -264,7 +265,7 @@ final class TherapistController extends Controller
             'timezones' => UsTimezones::getTimezones(),
             'managers' => $this->userService->listByRole(Role::ADMIN),
             'titles' => TherapistTitle::cases(),
-            'positions' => TherapistPosition::cases(),
+            'positions' => $this->positionCatalogService->listActiveForSelect(),
             'employeeTypes' => EmployeeType::cases(),
         ];
     }

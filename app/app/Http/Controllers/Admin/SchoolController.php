@@ -9,6 +9,7 @@ use App\Constants\UsTimezones;
 use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\School\Services\SchoolService;
+use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
@@ -25,7 +26,6 @@ use App\DTOs\UpdateSchoolDTO;
 use App\Enums\Role;
 use App\Enums\SchoolType;
 use App\Enums\SSAStatus;
-use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\School\ChangeSchoolStatusRequest;
@@ -53,6 +53,7 @@ final class SchoolController extends Controller
         private readonly SchoolContractService $schoolContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly PositionCatalogService $positionCatalogService,
     ) {}
 
     public function index(IndexSchoolRequest $request): View
@@ -184,7 +185,7 @@ final class SchoolController extends Controller
             );
             $viewData['therapists'] = $this->therapistService->list($filters);
             $viewData['therapistFilters'] = $request->query();
-            $viewData['positions'] = TherapistPosition::cases();
+            $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
         } elseif ($activeTab === 'ssas') {
             $filters = SSAFilterDTO::fromArray(
                 array_merge($request->query(), ['school_id' => $school->id])

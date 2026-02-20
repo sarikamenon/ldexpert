@@ -6,6 +6,7 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\UserStatus;
 use App\Mail\WelcomeTherapistMail;
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,15 +23,20 @@ final class TherapistManagementTest extends TestCase
 
     private User $manager;
 
+    private Position $position;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->position = Position::factory()->create(['name' => 'SLP']);
+        Position::factory()->create(['name' => 'OT']);
 
         $this->admin = User::factory()->admin()->create();
         $this->manager = User::factory()->admin()->create();
         $this->therapist = User::factory()
             ->therapist()
-            ->has(TherapistProfile::factory()->state(['manager_id' => $this->manager->id]), 'therapistProfile')
+            ->has(TherapistProfile::factory()->state(['manager_id' => $this->manager->id, 'position_id' => $this->position->id]), 'therapistProfile')
             ->create();
     }
 
@@ -82,7 +88,7 @@ final class TherapistManagementTest extends TestCase
             'ld_email' => 'jane.smith@ldexpert.com',
             'address' => '123 Test St',
             'comments' => 'Test comment',
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
@@ -138,7 +144,7 @@ final class TherapistManagementTest extends TestCase
             'ld_email' => 'updated@ldexpert.com',
             'address' => '456 New St',
             'comments' => 'Updated comment',
-            'position' => 'OT',
+            'position_id' => Position::where('name', 'OT')->first()->id,
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $this->manager->id,
@@ -237,7 +243,7 @@ final class TherapistManagementTest extends TestCase
             'last_name',
             'personal_email',
             'phone',
-            'position',
+            'position_id',
             'state',
             'timezone',
             'manager_id',
@@ -255,7 +261,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane@example.com',
             'phone' => '123-456-7890abc', // Invalid: contains letters
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
@@ -276,7 +282,7 @@ final class TherapistManagementTest extends TestCase
             'personal_email' => 'jane@example.com',
             'phone' => '123-456-7890', // Valid: digits and dashes
             'hourly_rate' => 45,
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
@@ -297,7 +303,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => $existingEmail, // Duplicate
             'phone' => '555-123-4567',
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,

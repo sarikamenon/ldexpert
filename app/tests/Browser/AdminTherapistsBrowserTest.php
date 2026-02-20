@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Browser;
 
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -20,9 +21,13 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
 
     private User $therapist;
 
+    private Position $position;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->position = Position::factory()->create(['name' => 'SLP']);
 
         $this->admin = User::factory()->admin()->create([
             'email' => 'admin+therapists@example.com',
@@ -80,7 +85,7 @@ final class AdminTherapistsBrowserTest extends DuskTestCase
                 ->type('@therapist-personal-email', 'jane.smith@example.com')
                 ->type('@therapist-phone', '555-123-4567')
                 ->type('@therapist-ld-email', 'jane.smith@ldexpert.com')
-                ->select('position', 'SLP')
+                ->select('position_id', (string) $this->position->id)
                 ->select('state', 'CA')
                 ->select('timezone', 'America/Los_Angeles')
                 ->select('manager_id', (string) $this->manager->id)
