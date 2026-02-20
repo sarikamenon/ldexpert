@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class InvoiceFactory extends Factory
 {
+    private static int $sequence = 1;
     /**
      * Define the model's default state.
      *
@@ -22,9 +23,15 @@ class InvoiceFactory extends Factory
         $startDate = $this->faker->dateTimeBetween('-3 months', '-1 month');
         $endDate = $this->faker->dateTimeBetween($startDate, 'now');
 
+        $invoiceNumber = sprintf(
+            'INV-%s-%03d',
+            now()->format('Ymd'),
+            self::$sequence++
+        );
+
         return [
             'school_id' => School::factory(),
-            'invoice_number' => 'INV-'.now()->format('Ymd').'-'.str_pad((string) $this->faker->numberBetween(1, 999), 3, '0', STR_PAD_LEFT),
+            'invoice_number' => $invoiceNumber,
             'invoice_date' => now(),
             'billing_period_start' => $startDate,
             'billing_period_end' => $endDate,

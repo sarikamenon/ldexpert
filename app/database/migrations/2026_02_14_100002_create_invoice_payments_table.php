@@ -19,6 +19,13 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
+            // Optional direct reference to a single invoice (used as starting point/context)
+            $table->foreignId('invoice_id')
+                ->nullable()
+                ->constrained('invoices')
+                ->cascadeOnUpdate()
+                ->nullOnDelete();
+
             // Payment details
             $table->date('paid_at');
             $table->decimal('amount', 10, 2);
@@ -38,6 +45,7 @@ return new class extends Migration
 
             // Indexes
             $table->index('school_id');
+            $table->index('invoice_id');
             $table->index('paid_at');
             $table->index('method');
         });

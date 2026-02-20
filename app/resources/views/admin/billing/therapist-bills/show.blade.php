@@ -17,11 +17,19 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            @if (!$bill->isDraft() && !$bill->isPaid())
+                <x-ui::button type="button" x-data=""
+                    x-on:click="$dispatch('open-record-payment-modal')">
+                    Record Payment
+                </x-ui::button>
+            @endif
+
             <a href="{{ route('admin.billing.therapist-bills.download', $bill) }}">
                 <x-ui::button>
                     Download PDF
                 </x-ui::button>
             </a>
+
             @if ($bill->isDraft())
                 <form method="POST" action="{{ route('admin.billing.therapist-bills.send', $bill) }}"
                     class="inline" id="sendBillForm">

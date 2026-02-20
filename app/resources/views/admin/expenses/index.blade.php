@@ -56,7 +56,7 @@
 
         @if ($expenses->count() > 0)
             <p class="text-sm text-foreground/70">
-                Total: ${{ number_format($totalAmount, 2) }} · {{ $expenses->total() }} expense(s)
+                Total: ${{ number_format($totalAmount, 2) }} · {{ $expenses->count() }} expense(s)
             </p>
         @endif
 
@@ -78,10 +78,7 @@
                             <tr class="border-t border-border hover:bg-background/subtle">
                                 <td class="py-3 px-4 text-sm">{{ $expense->expense_date->format('M d, Y') }}</td>
                                 <td class="py-3 px-4 text-sm">
-                                    <span
-                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                        {{ $expense->category->name }}
-                                    </span>
+                                    {{ $expense->category->name }}
                                 </td>
                                 <td class="py-3 px-4 text-sm">{{ $expense->vendor_payee ?? '—' }}</td>
                                 <td class="py-3 px-4 text-sm">
@@ -146,10 +143,6 @@
                         @endforeach
                     </tbody>
                 </table>
-            </div>
-
-            <div class="mt-4">
-                {{ $expenses->withQueryString()->links() }}
             </div>
         @else
             <x-ui::empty-state title="No expenses found"

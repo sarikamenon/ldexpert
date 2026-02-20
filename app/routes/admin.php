@@ -146,6 +146,8 @@ Route::middleware('role:admin')
         // Invoices
         Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
+        Route::get('invoices/{invoice}/attach-sessions', [InvoiceController::class, 'attachSessions'])->name('invoices.attach-sessions');
+        Route::post('invoices/{invoice}/attach-sessions', [InvoiceController::class, 'storeAttachedSessions'])->name('invoices.attach-sessions.store');
         Route::resource('invoices', InvoiceController::class);
 
         // Invoice Payments

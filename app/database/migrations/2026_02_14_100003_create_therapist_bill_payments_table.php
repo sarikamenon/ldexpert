@@ -19,6 +19,13 @@ return new class extends Migration
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
 
+            // Optional direct reference to a single therapist bill (used as starting point/context)
+            $table->foreignId('therapist_bill_id')
+                ->nullable()
+                ->constrained('therapist_bills')
+                ->cascadeOnUpdate()
+                ->nullOnDelete();
+
             // Payment details
             $table->date('paid_at');
             $table->decimal('amount', 10, 2);
@@ -38,6 +45,7 @@ return new class extends Migration
 
             // Indexes
             $table->index('therapist_id');
+            $table->index('therapist_bill_id');
             $table->index('paid_at');
             $table->index('method');
         });

@@ -54,10 +54,9 @@ class ExpenseController extends Controller
             });
         }
 
-        $expenses = $query->paginate(15);
+        $expenses = $query->get();
 
-        // Get totals for the filtered results
-        $totalAmount = $query->sum('amount');
+        $totalAmount = $expenses->sum('amount');
 
         return view('admin.expenses.index', [
             'expenses' => $expenses,

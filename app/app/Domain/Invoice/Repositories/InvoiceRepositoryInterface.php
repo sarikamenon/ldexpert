@@ -57,4 +57,16 @@ interface InvoiceRepositoryInterface
      * @return Collection<int>
      */
     public function getAvailableSchoolIdsForInvoiceCreation(array $filters): Collection;
+
+    public function updateTotals(Invoice $invoice, float $subtotal, float $taxTotal, float $total): Invoice;
+
+    public function unlinkAllSessionsForInvoice(Invoice $invoice): void;
+
+    /**
+     * Get session logs for attach/update: approved, billable, same school, and either uninvoiced or already on this invoice.
+     *
+     * @param  array<int>  $sessionLogIds
+     * @return Collection<SessionLog>
+     */
+    public function getSessionLogsForInvoiceUpdate(Invoice $invoice, array $sessionLogIds): Collection;
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Domain\Finance\Services\LedgerService;
+use App\Enums\Role;
 use App\Enums\TherapistBillStatus;
 use App\Models\TherapistBill;
 use App\Models\User;
@@ -37,9 +38,7 @@ class TherapistBillDemoSeeder extends Seeder
 
         // Use existing therapists (users seeded by TherapistSeeder).
         $therapists = User::query()
-            ->whereHas('roles', static function ($query): void {
-                $query->where('name', 'therapist');
-            })
+            ->where('role', Role::THERAPIST->value)
             ->orderBy('id')
             ->limit(5)
             ->get();
@@ -73,12 +72,7 @@ class TherapistBillDemoSeeder extends Seeder
                 $bill = TherapistBill::factory()
                     ->for($therapist, 'therapist')
                     ->state([
-                        'bill_number' => sprintf(
-                            'BILL-%s-%02d-%02d',
-                            now()->format('Ymd'),
-                            $therapistIndex,
-                            $i,
-                        ),
+                        // Use factory-generated bill_number to avoid unique constraint collisions.
                         'status' => $statusValue,
                         'sent_by_id' => $statusValue !== TherapistBillStatus::DRAFT->value ? $admin?->id : null,
                         'sent_at' => $statusValue !== TherapistBillStatus::DRAFT->value ? now() : null,

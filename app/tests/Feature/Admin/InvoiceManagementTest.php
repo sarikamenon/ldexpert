@@ -82,7 +82,8 @@ it('allows admin to view invoice create page', function () {
     $response->assertOk()
         ->assertSee('Create Invoice')
         ->assertViewIs('admin.invoices.create')
-        ->assertViewHas('sessionLogs');
+        ->assertViewHas('schools')
+        ->assertViewHas('invoiceNumber');
 });
 
 it('creates an invoice from selected session logs', function () {
@@ -230,6 +231,114 @@ it('allows admin to download invoice PDF', function () {
 
     $response->assertOk()
         ->assertHeader('Content-Type', 'application/pdf');
+});
+
+it('creates draft with no sessions and redirects to attach-sessions', function () {
+    $admin = invoiceAdminUser();
+    $school = School::factory()->create();
+
+    $payload = [
+        'school_id' => $school->id,
+        'invoice_date' => now()->format('Y-m-d'),
+        'billing_period_start' => now()->startOfMonth()->format('Y-m-d'),
+        'billing_period_end' => now()->endOfMonth()->format('Y-m-d'),
+        'session_log_ids' => [],
+    ];
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.invoices.store'), $payload);
+
+    $response->assertRedirect();
+    expect(str_contains($response->headers->get('Location'), 'attach-sessions'))->toBeTrue();
+
+    $invoice = Invoice::where('school_id', $school->id)->latest()->first();
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->status)->toBe(InvoiceStatus::DRAFT)
+        ->and((float) $invoice->total)->toBe(0.0)
+        ->and($invoice->sessionLogs->count())->toBe(0);
+});
+
+it('attach-sessions page shows for draft and updates sessions', function () {
+    $admin = invoiceAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create();
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log1 = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+    $log2 = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+
+    $invoice = Invoice::factory()->create([
+        'school_id' => $school->id,
+        'status' => InvoiceStatus::DRAFT->value,
+        'subtotal' => 0,
+        'tax_total' => 0,
+        'total' => 0,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.invoices.attach-sessions.store', $invoice), [
+            'session_log_ids' => [$log1->id, $log2->id],
+        ]);
+
+    $response->assertRedirect(route('admin.invoices.show', $invoice));
+    $response->assertSessionHas('success');
+
+    $invoice->refresh();
+    expect($invoice->sessionLogs->count())->toBe(2)
+        ->and((float) $invoice->total)->toBe(200.0);
+    expect($log1->fresh()->invoice_id)->toBe($invoice->id)
+        ->and($log2->fresh()->invoice_id)->toBe($invoice->id);
+});
+
+it('attach-sessions allows removing sessions', function () {
+    $admin = invoiceAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create();
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log1 = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+    $log2 = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+
+    $invoice = Invoice::factory()->create([
+        'school_id' => $school->id,
+        'status' => InvoiceStatus::DRAFT->value,
+        'subtotal' => 200,
+        'tax_total' => 0,
+        'total' => 200,
+    ]);
+    $log1->update(['invoice_id' => $invoice->id]);
+    $log2->update(['invoice_id' => $invoice->id]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.invoices.attach-sessions.store', $invoice), [
+            'session_log_ids' => [$log1->id],
+        ]);
+
+    $response->assertRedirect(route('admin.invoices.show', $invoice));
+    $invoice->refresh();
+    expect($invoice->sessionLogs->count())->toBe(1)
+        ->and((float) $invoice->total)->toBe(100.0);
+    expect($log2->fresh()->invoice_id)->toBeNull();
+});
+
+it('attach-sessions rejects non-draft invoice', function () {
+    $admin = invoiceAdminUser();
+    $invoice = Invoice::factory()->create(['status' => InvoiceStatus::SENT->value]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.invoices.attach-sessions', $invoice));
+
+    $response->assertForbidden();
 });
 
 it('prevents creating invoice with already invoiced session logs', function () {
