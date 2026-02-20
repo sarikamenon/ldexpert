@@ -44,7 +44,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
 
     public function find(int $id): ?TherapistProfile
     {
-        return TherapistProfile::with(['user', 'manager'])->find($id);
+        return TherapistProfile::with(['user', 'manager', 'position'])->find($id);
     }
 
     public function list(TherapistFilterDTO $filters): Collection
@@ -52,7 +52,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         $query = User::query()
             ->select('users.*')
             ->where('role', 'therapist')
-            ->with(['therapistProfile.manager'])
+            ->with(['therapistProfile.manager', 'therapistProfile.position'])
             ->distinct();
 
         if ($filters->search) {
@@ -65,9 +65,9 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $query->where('status', $filters->status);
         }
 
-        if ($filters->position) {
+        if ($filters->positionId) {
             $query->whereHas('therapistProfile', function ($q) use ($filters) {
-                $q->where('position', $filters->position);
+                $q->where('position_id', $filters->positionId);
             });
         }
 
@@ -111,7 +111,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         $query = User::query()
             ->select('users.*')
             ->where('role', 'therapist')
-            ->with(['therapistProfile.manager'])
+            ->with(['therapistProfile.manager', 'therapistProfile.position'])
             ->distinct();
 
         if ($filters->search) {
@@ -124,9 +124,9 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $query->where('status', $filters->status);
         }
 
-        if ($filters->position) {
+        if ($filters->positionId) {
             $query->whereHas('therapistProfile', function ($q) use ($filters) {
-                $q->where('position', $filters->position);
+                $q->where('position_id', $filters->positionId);
             });
         }
 
@@ -203,7 +203,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         return User::query()
             ->where('role', 'therapist')
             ->where('status', UserStatus::ACTIVE)
-            ->with('therapistProfile')
+            ->with(['therapistProfile.position'])
             ->orderBy('name')
             ->get();
     }
@@ -215,19 +215,19 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->whereHas('assignedSSAs', function (Builder $query) use ($studentId) {
                 $query->where('student_id', $studentId);
             })
-            ->with('therapistProfile')
+            ->with(['therapistProfile.position'])
             ->orderBy('name')
             ->get();
     }
 
-    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?string $position = null, int $perPage = 15): LengthAwarePaginator
+    public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()
             ->where('role', 'therapist')
             ->whereHas('assignedSSAs', function (Builder $q) use ($studentId) {
                 $q->where('student_id', $studentId);
             })
-            ->with('therapistProfile');
+            ->with(['therapistProfile.position']);
 
         if ($search) {
             $query->where(function (Builder $q) use ($search) {
@@ -243,9 +243,9 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             $query->where('status', $status);
         }
 
-        if ($position) {
-            $query->whereHas('therapistProfile', function (Builder $q) use ($position) {
-                $q->where('position', $position);
+        if ($positionId) {
+            $query->whereHas('therapistProfile', function (Builder $q) use ($positionId) {
+                $q->where('position_id', $positionId);
             });
         }
 

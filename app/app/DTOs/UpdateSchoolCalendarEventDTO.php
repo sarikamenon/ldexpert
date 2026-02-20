@@ -16,6 +16,7 @@ final class UpdateSchoolCalendarEventDTO
         public readonly ?string $notes,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $eventType = $data['event_type'] instanceof SchoolCalendarEventType
@@ -31,6 +32,7 @@ final class UpdateSchoolCalendarEventDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

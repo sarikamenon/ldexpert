@@ -21,6 +21,7 @@ final class CreateTherapistContractDTO
         public readonly array $services,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $status = isset($data['status'])
@@ -34,7 +35,7 @@ final class CreateTherapistContractDTO
             notes: $data['notes'] ?? null,
             status: $status,
             services: array_map(
-                static fn(array $row) => ContractServiceRateDTO::fromArray($row),
+                static fn (array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
         );

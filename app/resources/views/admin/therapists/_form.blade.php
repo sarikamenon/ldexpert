@@ -136,18 +136,18 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {{-- Position --}}
                 <div>
-                    <x-input-label for="position" value="Position *" />
+                    <x-input-label for="position_id" value="Position *" />
                     <p class="mt-1 text-xs text-foreground/60">Therapist's professional position</p>
-                    <x-ui::select name="position" id="position" class="mt-1" placeholder="Select Position">
+                    <x-ui::select name="position_id" id="position_id" class="mt-1" placeholder="Select Position">
                         <option value="">Select Position</option>
                         @foreach ($positions as $position)
-                            <option value="{{ $position->value }}"
-                                {{ old('position', $profile?->position?->value) === $position->value ? 'selected' : '' }}>
-                                {{ $position->value }}
+                            <option value="{{ $position->id }}"
+                                {{ (int) old('position_id', $profile?->position_id) === $position->id ? 'selected' : '' }}>
+                                {{ $position->name }}
                             </option>
                         @endforeach
                     </x-ui::select>
-                    <x-input-error :messages="$errors->get('position')" class="mt-2" />
+                    <x-input-error :messages="$errors->get('position_id')" class="mt-2" />
                 </div>
 
                 {{-- State --}}
@@ -211,6 +211,17 @@
                         max="40" step="1" class="mt-1 block w-full" :value="old('max_weekly_hours', $profile?->max_weekly_hours ?? 40)"
                         placeholder="e.g. 40" dusk="therapist-max-weekly-hours" />
                     <x-input-error :messages="$errors->get('max_weekly_hours')" class="mt-2" />
+                </div>
+
+                {{-- Hourly Rate --}}
+                <div>
+                    <x-input-label for="hourly_rate" value="Hourly Rate *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="hourly_rate_help">Pay rate per hour in dollars (e.g.,
+                        70.00). Required to genrate IRS W-2 forms.</p>
+                    <x-ui::input id="hourly_rate" name="hourly_rate" type="number" min="0" step="0.01"
+                        class="mt-1 block w-full" :value="old('hourly_rate', $profile?->hourly_rate ?? '')"
+                        placeholder="e.g. 45.00" dusk="therapist-hourly-rate" aria-describedby="hourly_rate_help" />
+                    <x-input-error :messages="$errors->get('hourly_rate')" class="mt-2" />
                 </div>
 
                 {{-- Date of Birth --}}

@@ -150,9 +150,9 @@
 
             <div>
                 <x-input-label for="schedule_email" value="Schedule Email" />
+                <p class="mt-1 text-xs text-foreground/60">Schedule email for reminders</p>
                 <x-text-input id="schedule_email" name="schedule_email" type="email"
-                    class="mt-1 block w-full" :value="old('schedule_email', $profile?->schedule_email)"
-                    placeholder="For schedule reminder emails" />
+                    class="mt-1 block w-full" :value="old('schedule_email', $profile?->schedule_email)" />
                 <x-input-error :messages="$errors->get('schedule_email')" class="mt-2" />
             </div>
 

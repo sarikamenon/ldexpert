@@ -18,6 +18,7 @@
                         <x-ui::badge :variant="match ($sessionLog->status) {
                             \App\Enums\SessionLogStatus::APPROVED => 'success',
                             \App\Enums\SessionLogStatus::SUBMITTED => 'warning',
+                            \App\Enums\SessionLogStatus::SENT_BACK => 'warning',
                             \App\Enums\SessionLogStatus::CANCELLED => 'danger',
                             default => 'secondary',
                         }">
@@ -46,6 +47,14 @@
                         </form>
                     @endif
 
+                    @if ($sessionLog->status?->canSendBack())
+                        <a href="#send-back-form" class="inline-block">
+                            <x-ui::button type="button" variant="warning">
+                                Send back
+                            </x-ui::button>
+                        </a>
+                    @endif
+
                     @if ($sessionLog->status?->canCancel())
                         <form action="{{ route('admin.session-logs.cancel', $sessionLog) }}" method="POST">
                             @csrf
@@ -65,6 +74,37 @@
         {{-- Documents Section --}}
         @if (isset($documents))
             <x-session-log.documents-section :session-log="$sessionLog" :documents="$documents" context="admin" />
+        @endif
+
+        {{-- Send back for rectification (when submitted) --}}
+        @if ($sessionLog->status?->canSendBack())
+            <x-ui::card class="p-6" id="send-back-form">
+                <h2 class="text-lg font-semibold text-foreground mb-2">Send back for rectification</h2>
+                <p class="text-sm text-foreground/60 mb-4">
+                    Send this session log back to the therapist with a comment. They will be notified by email and can edit and resubmit.
+                </p>
+                <form action="{{ route('admin.session-logs.send-back', $sessionLog) }}" method="POST" class="space-y-4">
+                    @csrf
+                    <div>
+                        <x-input-label for="send_back_comment" value="Comment (required) *" />
+                        <p class="mt-1 text-xs text-foreground/60" id="send_back_comment_help">
+                            Explain what the therapist needs to correct or add before resubmission.
+                        </p>
+                        <textarea
+                            id="send_back_comment"
+                            name="comment"
+                            rows="4"
+                            class="mt-1 block w-full rounded-md border-border bg-background shadow-sm focus:border-ring focus:ring-ring text-sm"
+                            aria-describedby="send_back_comment_help"
+                            required
+                        >{{ old('comment') }}</textarea>
+                        <x-input-error :messages="$errors->get('comment')" class="mt-2" />
+                    </div>
+                    <x-ui::button type="submit" variant="warning">
+                        Send back to therapist
+                    </x-ui::button>
+                </form>
+            </x-ui::card>
         @endif
     </div>
 </x-admin.layouts.app>

@@ -8,6 +8,7 @@ use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\SSAStatus;
 use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class DashboardService
@@ -18,6 +19,7 @@ class DashboardService
         private readonly DashboardRepositoryInterface $repository,
     ) {}
 
+    /** @return array<string, mixed> */
     public function getKeyMetrics(): array
     {
         return [
@@ -50,6 +52,7 @@ class DashboardService
         ];
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function getCriticalAlerts(): array
     {
         $alerts = [];
@@ -109,15 +112,20 @@ class DashboardService
         return $alerts;
     }
 
+    /** @return array<string, mixed> */
     public function getChartData(): array
     {
         $ssaDistribution = $this->repository->getSSAStatusDistribution();
 
+        $pending = $ssaDistribution->get(SSAStatus::PENDING->value);
+        $active = $ssaDistribution->get(SSAStatus::ACTIVE->value);
+        $completed = $ssaDistribution->get(SSAStatus::COMPLETED->value);
+        $deactivated = $ssaDistribution->get(SSAStatus::DEACTIVATED->value);
         $ssaDistributionData = [
-            'Pending' => $ssaDistribution->get(SSAStatus::PENDING->value)?->count ?? 0,
-            'Active' => $ssaDistribution->get(SSAStatus::ACTIVE->value)?->count ?? 0,
-            'Completed' => $ssaDistribution->get(SSAStatus::COMPLETED->value)?->count ?? 0,
-            'Deactivated' => $ssaDistribution->get(SSAStatus::DEACTIVATED->value)?->count ?? 0,
+            'Pending' => $pending !== null ? $pending->count : 0,
+            'Active' => $active !== null ? $active->count : 0,
+            'Completed' => $completed !== null ? $completed->count : 0,
+            'Deactivated' => $deactivated !== null ? $deactivated->count : 0,
         ];
 
         return [
@@ -131,18 +139,19 @@ class DashboardService
         ];
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function getRecentActivity(int $limit = 10): array
     {
         $logs = $this->activityLogService
             ->recent($limit)
-            ->withUserTimezone(auth()->user());
+            ->withUserTimezone(Auth::user());
 
         return $logs
             ->map(function (ActivityLog $log): array {
                 return [
                     'type' => $log->action,
                     'description' => $log->description ?? $this->fallbackActivityDescription($log),
-                    'user' => $log->user?->name ?? 'System',
+                    'user' => $log->user !== null ? $log->user->name : 'System',
                     'created_at' => $log->created_at,
                     'created_at_local' => $log->getAttribute('created_at_local') ?? $log->created_at,
                     'icon' => $this->resolveActivityIcon($log),
@@ -152,6 +161,7 @@ class DashboardService
             ->toArray();
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function getUpcomingEvents(): array
     {
         $events = [];
@@ -165,13 +175,13 @@ class DashboardService
             $studentName = $ssa->student->studentProfile
                 ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
                 : 'Student';
-            $serviceName = $ssa->primaryService?->name ?? 'Service';
+            $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
 
             $events[] = [
                 'title' => 'SSA Expiring',
                 'entity' => "{$studentName} - {$serviceName}",
                 'due_date' => $ssa->end_date,
-                'due_date_local' => $this->userTimezoneService->toUserTimezone($ssa->end_date, auth()->user()),
+                'due_date_local' => $this->userTimezoneService->toUserTimezone($ssa->end_date, Auth::user()),
                 'priority' => $priority,
             ];
         }
@@ -187,7 +197,7 @@ class DashboardService
                     'title' => 'Contract Expiring',
                     'entity' => "School Contract - {$contract->school->display_name}",
                     'due_date' => $contract->end_date,
-                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, auth()->user()),
+                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, Auth::user()),
                     'priority' => $priority,
                 ];
             }
@@ -198,6 +208,7 @@ class DashboardService
         return array_slice($events, 0, 4);
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function getOperationalMetrics(): array
     {
         $activeSchools = $this->repository->getActiveSchoolsCount();
@@ -243,6 +254,7 @@ class DashboardService
         ];
     }
 
+    /** @return array<int, array<string, mixed>> */
     public function getQuickActions(): array
     {
         return [

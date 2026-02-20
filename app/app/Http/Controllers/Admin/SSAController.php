@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAImportService;
+use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSSAStatusDTO;
@@ -46,6 +47,7 @@ final class SSAController extends Controller
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
     ) {}
 
     public function index(IndexSSARequest $request): View
@@ -132,6 +134,10 @@ final class SSAController extends Controller
             $viewData['sessionLogRows'] = $sessionLogData['rows'];
             $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
             $viewData['sessionLogFilters'] = $request->query();
+        }
+
+        if ($activeTab === 'dashboard') {
+            $viewData['minutesSummary'] = $this->ssaMinutesSummaryService->getMinutesSummaryForSSA($ssa);
         }
 
         return view('admin.ssas.show', $viewData);

@@ -97,6 +97,32 @@ final class SessionLogPolicyTest extends TestCase
         $this->assertFalse($admin->can('approve', $sessionLog));
     }
 
+    public function test_admin_can_send_back_submitted_session_log(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $sessionLog = SessionLog::factory()->submitted()->create();
+
+        $this->assertTrue($admin->can('sendBack', $sessionLog));
+    }
+
+    public function test_admin_cannot_send_back_draft_session_log(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $sessionLog = SessionLog::factory()->draft()->create();
+
+        $this->assertFalse($admin->can('sendBack', $sessionLog));
+    }
+
+    public function test_therapist_cannot_send_back_session_log(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $sessionLog = SessionLog::factory()->submitted()->create([
+            'therapist_id' => $therapist->id,
+        ]);
+
+        $this->assertFalse($therapist->can('sendBack', $sessionLog));
+    }
+
     public function test_therapist_can_submit_own_draft_session_log(): void
     {
         $therapist = User::factory()->therapist()->create();

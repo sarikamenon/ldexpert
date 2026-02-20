@@ -29,6 +29,8 @@ interface SessionLogRepositoryInterface
 
     public function cancel(SessionLog $sessionLog, string $reason): SessionLog;
 
+    public function sendBack(SessionLog $sessionLog, User $sentBackBy, string $comment): SessionLog;
+
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool;
 
     public function validateTherapistAccessToStudent(User $therapist, int $studentId): bool;

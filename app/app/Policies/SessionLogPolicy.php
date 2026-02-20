@@ -80,6 +80,15 @@ final class SessionLogPolicy
         return $sessionLog->isSubmitted();
     }
 
+    public function sendBack(User $user, SessionLog $sessionLog): bool
+    {
+        if ($user->role !== Role::ADMIN) {
+            return false;
+        }
+
+        return $sessionLog->status?->canSendBack() ?? false;
+    }
+
     public function cancel(User $user, SessionLog $sessionLog): bool
     {
         if ($user->role === Role::ADMIN) {

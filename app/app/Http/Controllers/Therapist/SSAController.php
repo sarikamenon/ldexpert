@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
 use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
@@ -19,6 +20,7 @@ final class SSAController extends Controller
     public function __construct(
         private readonly SSAService $ssaService,
         private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
     ) {}
 
     public function index(Request $request): View
@@ -64,6 +66,10 @@ final class SSAController extends Controller
             'ssa' => $ssa,
             'activeTab' => $activeTab,
         ];
+
+        if ($activeTab === 'dashboard') {
+            $viewData['minutesSummary'] = $this->ssaMinutesSummaryService->getMinutesSummaryForSSA($ssa);
+        }
 
         // Load assignment history if needed
         if ($activeTab === 'assignment') {

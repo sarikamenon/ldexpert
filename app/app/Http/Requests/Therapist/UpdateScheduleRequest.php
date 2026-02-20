@@ -27,12 +27,12 @@ final class UpdateScheduleRequest extends FormRequest
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn(RecurrenceType $type): string => $type->value,
+            static fn (RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 
@@ -48,8 +48,8 @@ final class UpdateScheduleRequest extends FormRequest
             'duration_minutes' => [
                 'required',
                 'integer',
-                'min:' . config('session_minutes.min'),
-                'max:' . config('session_minutes.max'),
+                'min:'.config('session_minutes.min'),
+                'max:'.config('session_minutes.max'),
             ],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],

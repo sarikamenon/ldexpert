@@ -108,6 +108,12 @@ table.dataTable tbody td:last-child {
     border-right: none;
 }
 
+/* Session log table: reduced cell padding (half of default) */
+table.session-log-table.dataTable tbody td,
+table.session-log-table.dataTable thead th {
+    padding: 0.5rem 0.75rem;
+}
+
 table.dataTable tbody tr {
     transition: background-color 0.15s;
 }

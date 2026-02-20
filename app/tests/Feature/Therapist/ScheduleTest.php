@@ -506,4 +506,27 @@ final class ScheduleTest extends TestCase
             'id' => $schedule->id,
         ]);
     }
+
+    public function test_therapist_cannot_delete_billed_schedule(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'billing_status' => BillingStatus::BILLED,
+        ]);
+
+        $response = $this->actingAs($therapist)
+            ->deleteJson(route('therapist.schedule.destroy', $schedule->id));
+
+        $response->assertStatus(422);
+        $response->assertJson([
+            'message' => 'Cannot delete a schedule that has already been billed.',
+        ]);
+
+        $this->assertDatabaseHas('schedules', [
+            'id' => $schedule->id,
+        ]);
+        $schedule->refresh();
+        $this->assertNull($schedule->deleted_at);
+    }
 }

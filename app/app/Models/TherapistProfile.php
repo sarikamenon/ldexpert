@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EmployeeType;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Models\Scopes\TherapistScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,11 +29,12 @@ class TherapistProfile extends Model
         'ld_email',
         'address',
         'comments',
-        'position',
+        'position_id',
         'state',
         'timezone',
         'manager_id',
         'max_weekly_hours',
+        'hourly_rate',
         'dob',
         'default_meeting_location',
     ];
@@ -44,20 +44,27 @@ class TherapistProfile extends Model
         return [
             'employee_type' => EmployeeType::class,
             'title' => TherapistTitle::class,
-            'position' => TherapistPosition::class,
             'max_weekly_hours' => 'integer',
+            'hourly_rate' => 'decimal:2',
             'dob' => 'date',
         ];
     }
 
+    /** @return BelongsTo<User, TherapistProfile> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<User, TherapistProfile> */
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

@@ -44,11 +44,13 @@ class SSAImport extends Model
         ];
     }
 
+    /** @return BelongsTo<User, SSAImport> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<SSAImportRow, SSAImport> */
     public function rows(): HasMany
     {
         return $this->hasMany(SSAImportRow::class, 'ssa_import_id', 'id');

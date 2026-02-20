@@ -17,6 +17,9 @@ class UsTimezones
         'Pacific/Honolulu' => 'Hawaii Time (HT)',
     ];
 
+    /**
+     * @return array<string, string>
+     */
     public static function getTimezones(): array
     {
         return self::TIMEZONES;

@@ -19,6 +19,7 @@ final class ScheduleFilterDTO
         public readonly ?int $therapistId = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromRequest(array $data): self
     {
         return new self(
@@ -45,6 +46,7 @@ final class ScheduleFilterDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

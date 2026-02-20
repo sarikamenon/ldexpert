@@ -14,14 +14,14 @@ final class TherapistFilterDTOTest extends TestCase
         $data = [
             'search' => 'john',
             'status' => 'active',
-            'position' => 'OT',
+            'position_id' => 2,
         ];
 
         $dto = TherapistFilterDTO::fromRequest($data);
 
         $this->assertSame('john', $dto->search);
         $this->assertSame('active', $dto->status);
-        $this->assertSame('OT', $dto->position);
+        $this->assertSame(2, $dto->positionId);
     }
 
     public function test_from_request_handles_optional_fields(): void
@@ -32,7 +32,7 @@ final class TherapistFilterDTOTest extends TestCase
 
         $this->assertNull($dto->search);
         $this->assertNull($dto->status);
-        $this->assertNull($dto->position);
+        $this->assertNull($dto->positionId);
     }
 
     public function test_from_request_handles_partial_data(): void
@@ -51,14 +51,14 @@ final class TherapistFilterDTOTest extends TestCase
         $dto = new TherapistFilterDTO(
             search: 'therapist',
             status: 'inactive',
-            position: 'SLP',
+            positionId: 1,
         );
 
         $array = $dto->toArray();
 
         $this->assertSame('therapist', $array['search']);
         $this->assertSame('inactive', $array['status']);
-        $this->assertSame('SLP', $array['position']);
+        $this->assertSame(1, $array['position_id']);
     }
 
     public function test_to_array_handles_null_values(): void
@@ -66,13 +66,13 @@ final class TherapistFilterDTOTest extends TestCase
         $dto = new TherapistFilterDTO(
             search: null,
             status: null,
-            position: null,
+            positionId: null,
         );
 
         $array = $dto->toArray();
 
         $this->assertNull($array['search']);
         $this->assertNull($array['status']);
-        $this->assertNull($array['position']);
+        $this->assertNull($array['position_id']);
     }
 }

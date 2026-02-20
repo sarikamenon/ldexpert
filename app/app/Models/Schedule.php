@@ -59,36 +59,57 @@ class Schedule extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, Schedule>
+     */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
+    /**
+     * @return BelongsTo<User, Schedule>
+     */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * @return BelongsTo<ServiceSupportAgreement, Schedule>
+     */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
+    /**
+     * @return BelongsTo<Service, Schedule>
+     */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'service_id');
     }
 
+    /**
+     * @return BelongsTo<School, Schedule>
+     */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
     }
 
+    /**
+     * @return BelongsTo<Schedule, Schedule>
+     */
     public function parentSchedule(): BelongsTo
     {
         return $this->belongsTo(Schedule::class, 'parent_schedule_id');
     }
 
+    /**
+     * @return HasMany<Schedule, Schedule>
+     */
     public function occurrences(): HasMany
     {
         return $this->hasMany(Schedule::class, 'parent_schedule_id');

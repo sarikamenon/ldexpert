@@ -15,6 +15,7 @@ final class ContractFilterDTO
         public readonly ?string $endDate,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $status = $data['status'] ?? null;

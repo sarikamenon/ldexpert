@@ -19,11 +19,13 @@ class StudentComment extends Model
         'comment',
     ];
 
+    /** @return BelongsTo<User, StudentComment> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /** @return BelongsTo<User, StudentComment> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');

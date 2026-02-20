@@ -2,6 +2,7 @@
 
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Billing\Services\TherapistBillService;
+use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Services\CompanyInfoService;
 use App\DTOs\SendTherapistBillDTO;
 use App\Enums\TherapistBillStatus;
@@ -19,7 +20,12 @@ beforeEach(function () {
     Mail::fake();
     $this->repository = Mockery::mock(TherapistBillRepositoryInterface::class);
     $this->companyInfoService = new CompanyInfoService;
-    $this->service = new TherapistBillService($this->repository, $this->companyInfoService);
+    $this->ledgerService = Mockery::mock(LedgerService::class);
+    $this->service = new TherapistBillService(
+        $this->repository,
+        $this->companyInfoService,
+        $this->ledgerService,
+    );
 
     // Set up company settings
     Setting::set('company.name', 'LD Expert LLP', 'string', 'company');
@@ -105,6 +111,10 @@ test('therapist bill service sends bill via email', function () {
         'email' => null,
         'message' => null,
     ]);
+
+    $this->ledgerService->shouldReceive('createBillGeneratedEntry')
+        ->once()
+        ->with($bill);
 
     $result = $this->service->sendBill($user, $bill, $dto);
 

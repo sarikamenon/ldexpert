@@ -21,7 +21,7 @@ final class IndexTherapistContractRequest extends FormRequest
             'status' => ['nullable', Rule::in(ContractStatus::values())],
             'search' => ['nullable', 'string', 'max:255'],
             'therapist_ids' => ['nullable', 'array'],
-            'therapist_ids.*' => ['integer', 'exists:therapist_profiles,user_id'],
+            'therapist_ids.*' => ['integer', 'exists:therapist_profiles,id'],
         ];
     }
 }

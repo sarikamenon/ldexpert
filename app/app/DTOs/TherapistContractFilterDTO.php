@@ -9,7 +9,7 @@ use App\Enums\ContractStatus;
 final class TherapistContractFilterDTO
 {
     /**
-     * @param array<int>|null $therapistIds
+     * @param  array<int>|null  $therapistIds
      */
     public function __construct(
         public readonly ?ContractStatus $status,
@@ -18,10 +18,11 @@ final class TherapistContractFilterDTO
         public readonly ?array $therapistIds = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $therapistIds = null;
-        if (!empty($data['therapist_ids']) && is_array($data['therapist_ids'])) {
+        if (! empty($data['therapist_ids']) && is_array($data['therapist_ids'])) {
             $therapistIds = array_map('intval', $data['therapist_ids']);
         }
 

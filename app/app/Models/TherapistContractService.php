@@ -18,13 +18,17 @@ class TherapistContractService extends Model
     protected $casts = [
         'rate' => 'decimal:2',
         'rate_type' => RateType::class,
+        'no_show_rate' => 'decimal:2',
+        'no_show_rate_type' => RateType::class,
     ];
 
+    /** @return BelongsTo<TherapistContract, TherapistContractService> */
     public function contract(): BelongsTo
     {
         return $this->belongsTo(TherapistContract::class, 'therapist_contract_id');
     }
 
+    /** @return BelongsTo<Service, TherapistContractService> */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);

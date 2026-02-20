@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\CompanyInfoService;
 use App\Domain\Invoice\Services\InvoiceService;
@@ -23,7 +24,13 @@ beforeEach(function () {
     $this->repository = Mockery::mock(InvoiceRepositoryInterface::class);
     $this->companyInfoService = new CompanyInfoService;
     $this->schoolRepository = Mockery::mock(SchoolRepositoryInterface::class);
-    $this->service = new InvoiceService($this->repository, $this->companyInfoService, $this->schoolRepository);
+    $this->ledgerService = Mockery::mock(LedgerService::class);
+    $this->service = new InvoiceService(
+        $this->repository,
+        $this->companyInfoService,
+        $this->schoolRepository,
+        $this->ledgerService,
+    );
 
     // Set up company settings
     Setting::set('company.name', 'LD Expert LLP', 'string', 'company');
@@ -162,6 +169,10 @@ test('invoice service sends invoice via email', function () {
         ->once()
         ->with($invoice, $user->id)
         ->andReturn($invoice);
+
+    $this->ledgerService->shouldReceive('createInvoiceGeneratedEntry')
+        ->once()
+        ->with($invoice);
 
     $result = $this->service->sendInvoice($user, $invoice, $dto);
 

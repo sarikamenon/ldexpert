@@ -80,6 +80,7 @@ final class ImportStudentResultDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

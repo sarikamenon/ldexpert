@@ -139,6 +139,7 @@
                                 $variant = match ($statusLabel) {
                                     SessionLogStatus::APPROVED->label() => 'success',
                                     SessionLogStatus::SUBMITTED->label() => 'warning',
+                                    SessionLogStatus::SENT_BACK->label() => 'warning',
                                     SessionLogStatus::CANCELLED->label() => 'danger',
                                     default => 'secondary',
                                 };
@@ -180,7 +181,7 @@
                                 <div class="flex flex-col space-y-1">
                                     @if (!empty($entryInfo['created_date']))
                                         <span class="text-xs text-foreground/60">
-                                            Entered on {{ $entryInfo['created_date'] }}
+                                            {{ $entryInfo['created_date'] }}
                                         </span>
                                     @endif
                                     @if (!empty($entryInfo['entry_difference']))
@@ -203,15 +204,28 @@
                                         <span
                                             class="font-medium text-foreground">{{ $studentServiceSchool['student'] }}</span>
                                     @endif
-                                    @if (!empty($studentServiceSchool['service']))
-                                        <span
-                                            class="text-sm text-foreground/70">{{ $studentServiceSchool['service'] }}</span>
-                                    @endif
                                     @if (!empty($studentServiceSchool['school']))
                                         <span
                                             class="text-xs text-foreground/60 mt-1">{{ $studentServiceSchool['school'] }}</span>
                                     @endif
                                     @if (empty(array_filter($studentServiceSchool)))
+                                        <span class="text-gray-500">-</span>
+                                    @endif
+                                </div>
+                            </td>
+                        @elseif ($key === 'therapist' && is_array($row[$key] ?? null))
+                            <td class="px-4 py-2 text-sm">
+                                @php
+                                    $therapist = $row[$key];
+                                @endphp
+                                <div class="flex flex-col">
+                                    @if (!empty($therapist['name']))
+                                        <span class="font-medium text-foreground">{{ $therapist['name'] }}</span>
+                                    @endif
+                                    @if (!empty($therapist['service']))
+                                        <span class="text-sm text-foreground/70 mt-0.5">{{ $therapist['service'] }}</span>
+                                    @endif
+                                    @if (empty($therapist['name']) && empty($therapist['service']))
                                         <span class="text-gray-500">-</span>
                                     @endif
                                 </div>

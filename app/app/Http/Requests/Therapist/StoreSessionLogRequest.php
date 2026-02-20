@@ -47,7 +47,7 @@ final class StoreSessionLogRequest extends FormRequest
 
         // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
         if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
-            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
+            $start = Carbon::parse($sessionDate.' '.$startTimeInput.':00');
             $end = (clone $start)->addMinutes((int) $durationInput);
 
             $this->merge([
@@ -93,8 +93,8 @@ final class StoreSessionLogRequest extends FormRequest
             'duration_minutes' => [
                 'required',
                 'integer',
-                'min:' . config('session_minutes.min'),
-                'max:' . config('session_minutes.max'),
+                'min:'.config('session_minutes.min'),
+                'max:'.config('session_minutes.max'),
             ],
             'outcome' => ['string', Rule::in(SessionOutcome::values())],
             'notes' => ['required', 'string', 'min:50', 'max:5000'],

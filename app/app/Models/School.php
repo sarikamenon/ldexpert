@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class School extends Model
@@ -51,6 +52,27 @@ class School extends Model
         ];
     }
 
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->display_name ?? $this->full_name,
+        );
+    }
+
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->contact_email ?? $this->invoice_email,
+        );
+    }
+
+    protected function phone(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->contact_phone,
+        );
+    }
+
     protected function state(): Attribute
     {
         return Attribute::make(
@@ -86,19 +108,33 @@ class School extends Model
         return null;
     }
 
+    /** @return BelongsTo<User, School> */
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
 
+    /** @return HasMany<StudentProfile, School> */
     public function studentProfiles(): HasMany
     {
         return $this->hasMany(StudentProfile::class);
     }
 
+    /** @return HasMany<SchoolCalendarEvent, School> */
     public function calendarEvents(): HasMany
     {
         return $this->hasMany(SchoolCalendarEvent::class);
+    }
+
+    /** @return HasMany<Invoice, School> */
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'school_id');
+    }
+
+    public function ledgerEntries(): MorphMany
+    {
+        return $this->morphMany(LedgerEntry::class, 'ledgerable');
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

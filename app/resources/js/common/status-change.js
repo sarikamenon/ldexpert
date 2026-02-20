@@ -7,7 +7,7 @@ const entityConfigs = {
     school: {
         routePrefix: '/admin/schools',
         entityName: 'School',
-        useFormSubmission: true, // Schools use form submission with redirect
+        useFormSubmission: false,
         statusLabels: {
             active: 'Activate',
             inactive: 'Deactivate',

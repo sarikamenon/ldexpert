@@ -124,9 +124,10 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
     public function getTherapistsByPosition(): array
     {
         $therapists = DB::table('therapist_profiles')
-            ->select('position', DB::raw('count(*) as count'))
-            ->whereNull('deleted_at')
-            ->groupBy('position')
+            ->join('positions', 'therapist_profiles.position_id', '=', 'positions.id')
+            ->select('positions.name as position', DB::raw('count(*) as count'))
+            ->whereNull('therapist_profiles.deleted_at')
+            ->groupBy('positions.name')
             ->get();
 
         return [
@@ -188,7 +189,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
     {
         $user = auth()->user();
 
-        return TherapistProfile::with('user')
+        return TherapistProfile::with(['user', 'position'])
             ->latest('created_at')
             ->limit($limit)
             ->get()
@@ -197,7 +198,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
                 return [
                     'id' => $therapist->id,
                     'name' => "{$therapist->first_name} {$therapist->last_name}",
-                    'position' => $therapist->position?->value ?? 'N/A',
+                    'position' => $therapist->position?->name ?? 'N/A',
                     'created_at' => $therapist->created_at_local->format('Y-m-d'),
                 ];
             });

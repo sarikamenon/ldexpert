@@ -16,15 +16,17 @@ final class UpdateTherapistDTO
         public readonly ?string $ldEmail,
         public readonly ?string $address,
         public readonly ?string $comments,
-        public readonly string $position,
+        public readonly int $positionId,
         public readonly string $state,
         public readonly string $timezone,
         public readonly int $managerId,
         public readonly int $maxWeeklyHours,
+        public readonly float $hourlyRate,
         public readonly ?string $dob,
         public readonly ?string $defaultMeetingLocation,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -37,16 +39,18 @@ final class UpdateTherapistDTO
             ldEmail: $data['ld_email'] ?? null,
             address: $data['address'] ?? null,
             comments: $data['comments'] ?? null,
-            position: $data['position'],
+            positionId: (int) $data['position_id'],
             state: $data['state'],
             timezone: $data['timezone'],
             managerId: (int) $data['manager_id'],
             maxWeeklyHours: (int) $data['max_weekly_hours'],
+            hourlyRate: (float) $data['hourly_rate'],
             dob: $data['dob'] ?? null,
             defaultMeetingLocation: $data['default_meeting_location'] ?? null,
         );
     }
 
+    /** @return array<string, mixed> */
     public function toUserArray(): array
     {
         return [
@@ -55,6 +59,7 @@ final class UpdateTherapistDTO
         ];
     }
 
+    /** @return array<string, mixed> */
     public function toProfileArray(): array
     {
         return [
@@ -67,11 +72,12 @@ final class UpdateTherapistDTO
             'ld_email' => $this->ldEmail,
             'address' => $this->address,
             'comments' => $this->comments,
-            'position' => $this->position,
+            'position_id' => $this->positionId,
             'state' => $this->state,
             'timezone' => $this->timezone,
             'manager_id' => $this->managerId,
             'max_weekly_hours' => $this->maxWeeklyHours,
+            'hourly_rate' => $this->hourlyRate,
             'dob' => $this->dob,
             'default_meeting_location' => $this->defaultMeetingLocation,
         ];

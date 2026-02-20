@@ -10,9 +10,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property TherapistBillStatus $status
+ * @property Carbon|null $paid_at
+ * @property float $total_due
+ * @property float $total_paid
+ */
 class TherapistBill extends Model
 {
+    /** @use HasFactory<\Database\Factories\TherapistBillFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -37,6 +45,7 @@ class TherapistBill extends Model
         'company_tax_id',
         'sent_at',
         'sent_by_id',
+        'paid_at',
         'notes',
     ];
 
@@ -52,25 +61,52 @@ class TherapistBill extends Model
             'adjustments_total' => 'decimal:2',
             'total_due' => 'decimal:2',
             'sent_at' => 'datetime',
+            'paid_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
     }
 
+    /**
+     * @return BelongsTo<User, TherapistBill>
+     */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
+    /**
+     * @return HasMany<SessionLog, TherapistBill>
+     */
     public function sessionLogs(): HasMany
     {
         return $this->hasMany(SessionLog::class, 'therapist_bill_id');
     }
 
+    /**
+     * @return BelongsTo<User, TherapistBill>
+     */
     public function sentBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sent_by_id');
+    }
+
+    /**
+     * @return HasMany<TherapistBillPaymentAllocation, TherapistBill>
+     */
+    public function paymentAllocations(): HasMany
+    {
+        return $this->hasMany(TherapistBillPaymentAllocation::class, 'therapist_bill_id');
+    }
+
+    /**
+     * @return HasMany<LedgerEntry, TherapistBill>
+     */
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(LedgerEntry::class, 'reference_id')
+            ->where('reference_type', self::class);
     }
 
     public function isDraft(): bool
@@ -86,5 +122,27 @@ class TherapistBill extends Model
     public function isPaid(): bool
     {
         return $this->status === TherapistBillStatus::PAID;
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->paymentAllocations()->sum('allocated_amount');
+    }
+
+    public function getBalanceRemainingAttribute(): float
+    {
+        return max(0, (float) $this->total_due - $this->getTotalPaidAttribute());
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return $this->getTotalPaidAttribute() >= (float) $this->total_due;
+    }
+
+    public function isPartiallyPaid(): bool
+    {
+        $totalPaid = $this->getTotalPaidAttribute();
+
+        return $totalPaid > 0 && $totalPaid < (float) $this->total_due;
     }
 }

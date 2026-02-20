@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Enums\SSAStatus;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
+use App\Models\SessionLogComment;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -108,11 +110,17 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
 
     public function submit(SessionLog $sessionLog, User $submittedBy): SessionLog
     {
-        $sessionLog->update([
+        $data = [
             'status' => SessionLogStatus::SUBMITTED,
             'submitted_at' => now(),
             'submitted_by_id' => $submittedBy->id,
-        ]);
+        ];
+        // Clear sent-back fields when resubmitting from SENT_BACK
+        if ($sessionLog->status === SessionLogStatus::SENT_BACK) {
+            $data['sent_back_at'] = null;
+            $data['sent_back_by_id'] = null;
+        }
+        $sessionLog->update($data);
         $sessionLog->refresh();
 
         return $sessionLog;
@@ -175,6 +183,26 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         $sessionLog->refresh();
 
         return $sessionLog;
+    }
+
+    public function sendBack(SessionLog $sessionLog, User $sentBackBy, string $comment): SessionLog
+    {
+        return DB::transaction(function () use ($sessionLog, $sentBackBy, $comment): SessionLog {
+            $sessionLog->update([
+                'status' => SessionLogStatus::SENT_BACK,
+                'sent_back_at' => now(),
+                'sent_back_by_id' => $sentBackBy->id,
+            ]);
+            SessionLogComment::create([
+                'session_log_id' => $sessionLog->id,
+                'author_id' => $sentBackBy->id,
+                'comment' => $comment,
+                'type' => SessionLogCommentType::SENT_BACK,
+            ]);
+            $sessionLog->refresh();
+
+            return $sessionLog;
+        });
     }
 
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool

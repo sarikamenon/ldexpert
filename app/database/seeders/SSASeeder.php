@@ -12,11 +12,14 @@ use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
 final class SSASeeder extends Seeder
 {
+    use SeedsSchoolYear;
+
     public function run(): void
     {
         $students = User::where('role', Role::STUDENT)
@@ -51,9 +54,13 @@ final class SSASeeder extends Seeder
             $service = $services->random();
             $frequency = $frequencies[array_rand($frequencies)];
 
-            // Determine dates
+            // Determine dates (cap end_date at current school year so schedules stay within contract coverage)
             $startDate = now()->subMonths(rand(0, 6))->startOfMonth();
             $endDate = $startDate->copy()->addYear();
+            $schoolYearEnd = $this->currentSchoolYear()['end'];
+            if ($endDate->gt($schoolYearEnd)) {
+                $endDate = $schoolYearEnd->copy();
+            }
 
             // Calculate sessions per frequency
             $sessionsPerFrequency = match ($frequency) {

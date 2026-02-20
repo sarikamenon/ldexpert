@@ -11,10 +11,13 @@ use App\Models\SchoolContract;
 use App\Models\SchoolContractService;
 use App\Models\Service;
 use Carbon\Carbon;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
 
 final class SchoolContractSeeder extends Seeder
 {
+    use SeedsSchoolYear;
+
     public function run(): void
     {
         $schoolYear = $this->currentSchoolYear();
@@ -49,21 +52,12 @@ final class SchoolContractSeeder extends Seeder
                     [
                         'rate' => $definition['rate'],
                         'rate_type' => $definition['rate_type'],
+                        'no_show_rate' => $definition['no_show_rate'] ?? 0,
+                        'no_show_rate_type' => $definition['no_show_rate_type'] ?? $definition['rate_type'],
                     ]
                 );
             }
         });
-    }
-
-    private function currentSchoolYear(): array
-    {
-        $today = now();
-        $startYear = $today->month >= 7 ? $today->year : $today->year - 1;
-
-        return [
-            'start' => Carbon::create($startYear, 7, 1)->startOfDay(),
-            'end' => Carbon::create($startYear + 1, 6, 30)->endOfDay(),
-        ];
     }
 
     private function findOrCreateContract(School $school, Carbon $start, Carbon $end): SchoolContract

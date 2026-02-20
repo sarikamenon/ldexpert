@@ -10,8 +10,13 @@ use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
+use App\Domain\Finance\Repositories\FinanceSummaryRepositoryInterface;
+use App\Domain\Finance\Repositories\InvoicePaymentRepositoryInterface;
+use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
+use App\Domain\Position\Repositories\PositionRepositoryInterface;
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
@@ -32,8 +37,12 @@ use App\Http\Middleware\RoleMiddleware;
 use App\Infrastructure\Repositories\EloquentActivityLogRepository;
 use App\Infrastructure\Repositories\EloquentAnalyticsRepository;
 use App\Infrastructure\Repositories\EloquentDashboardRepository;
+use App\Infrastructure\Repositories\EloquentFinanceSummaryRepository;
+use App\Infrastructure\Repositories\EloquentInvoicePaymentRepository;
 use App\Infrastructure\Repositories\EloquentInvoiceRepository;
+use App\Infrastructure\Repositories\EloquentLedgerEntryRepository;
 use App\Infrastructure\Repositories\EloquentNotificationRepository;
+use App\Infrastructure\Repositories\EloquentPositionRepository;
 use App\Infrastructure\Repositories\EloquentScheduleRepository;
 use App\Infrastructure\Repositories\EloquentSchoolCalendarEventRepository;
 use App\Infrastructure\Repositories\EloquentSchoolContractRepository;
@@ -45,6 +54,7 @@ use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Infrastructure\Repositories\EloquentStudentCommentRepository;
 use App\Infrastructure\Repositories\EloquentStudentDocumentRepository;
 use App\Infrastructure\Repositories\EloquentStudentRepository;
+use App\Infrastructure\Repositories\EloquentTherapistBillPaymentRepository;
 use App\Infrastructure\Repositories\EloquentTherapistBillRepository;
 use App\Infrastructure\Repositories\EloquentTherapistContractRepository;
 use App\Infrastructure\Repositories\EloquentTherapistRepository;
@@ -53,6 +63,7 @@ use App\Infrastructure\Services\Storage\LocalStorageService;
 use App\Infrastructure\Services\Storage\S3StorageService;
 use App\Listeners\SendScheduleNotification;
 use App\Models\Invoice;
+use App\Models\Position;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\SchoolCalendarEvent;
@@ -68,6 +79,7 @@ use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use App\Policies\InvoicePolicy;
+use App\Policies\PositionPolicy;
 use App\Policies\SchedulePolicy;
 use App\Policies\SchoolCalendarEventPolicy;
 use App\Policies\SchoolContractPolicy;
@@ -103,6 +115,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SchoolContractRepositoryInterface::class, EloquentSchoolContractRepository::class);
         $this->app->bind(TherapistContractRepositoryInterface::class, EloquentTherapistContractRepository::class);
         $this->app->bind(ServiceRepositoryInterface::class, EloquentServiceRepository::class);
+        $this->app->bind(PositionRepositoryInterface::class, EloquentPositionRepository::class);
         $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
         $this->app->bind(ActivityLogRepositoryInterface::class, EloquentActivityLogRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
@@ -114,6 +127,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SettingsRepositoryInterface::class, EloquentSettingsRepository::class);
         $this->app->bind(NotificationRepositoryInterface::class, EloquentNotificationRepository::class);
         $this->app->bind(SchoolCalendarEventRepositoryInterface::class, EloquentSchoolCalendarEventRepository::class);
+        $this->app->bind(LedgerEntryRepositoryInterface::class, EloquentLedgerEntryRepository::class);
+        $this->app->bind(InvoicePaymentRepositoryInterface::class, EloquentInvoicePaymentRepository::class);
+        $this->app->bind(TherapistBillPaymentRepositoryInterface::class, EloquentTherapistBillPaymentRepository::class);
+        $this->app->bind(FinanceSummaryRepositoryInterface::class, EloquentFinanceSummaryRepository::class);
         $this->app->bind(StorageServiceInterface::class, function (): StorageServiceInterface {
             return match (config('filesystems.default')) {
                 'local' => $this->app->make(LocalStorageService::class),
@@ -145,6 +162,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SchoolContract::class, SchoolContractPolicy::class);
         Gate::policy(TherapistContract::class, TherapistContractPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
+        Gate::policy(Position::class, PositionPolicy::class);
         Gate::policy(ServiceSupportAgreement::class, SSAPolicy::class);
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);

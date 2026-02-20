@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Billing\Services;
 
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
+use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Services\CompanyInfoService;
 use App\DTOs\CreateTherapistBillDTO;
 use App\DTOs\SendTherapistBillDTO;
@@ -22,6 +23,7 @@ final class TherapistBillService
     public function __construct(
         private readonly TherapistBillRepositoryInterface $repository,
         private readonly CompanyInfoService $companyInfoService,
+        private readonly LedgerService $ledgerService,
     ) {}
 
     public function generateBill(User $user, CreateTherapistBillDTO $dto): TherapistBill
@@ -137,20 +139,27 @@ final class TherapistBillService
             throw new \InvalidArgumentException('Bill cannot be sent in its current status.');
         }
 
-        // Determine recipient email
-        $recipientEmail = $dto->email
-            ?? $bill->therapist_email
-            ?? $bill->therapist->email;
+        return DB::transaction(function () use ($user, $bill, $dto) {
+            // Determine recipient email
+            $recipientEmail = $dto->email
+                ?? $bill->therapist_email
+                ?? $bill->therapist->email;
 
-        if (! $recipientEmail) {
-            throw new \InvalidArgumentException('No email address available for sending bill.');
-        }
+            if (! $recipientEmail) {
+                throw new \InvalidArgumentException('No email address available for sending bill.');
+            }
 
-        // Send email with PDF attachment
-        Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
+            // Send email with PDF attachment
+            Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
 
-        // Mark bill as sent
-        return $this->repository->markAsSent($bill, $user->id);
+            // Mark bill as sent
+            $bill = $this->repository->markAsSent($bill, $user->id);
+
+            // Create ledger entry for bill generation
+            $this->ledgerService->createBillGeneratedEntry($bill);
+
+            return $bill;
+        });
     }
 
     public function find(int $id): ?TherapistBill

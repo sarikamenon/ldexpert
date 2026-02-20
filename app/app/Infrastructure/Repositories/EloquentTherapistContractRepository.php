@@ -11,6 +11,7 @@ use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
 use App\Models\TherapistContract;
+use App\Models\TherapistContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -55,6 +56,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                     'service_id' => $dto->serviceId,
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
+                    'no_show_rate' => $dto->noShowRate,
+                    'no_show_rate_type' => $dto->noShowRateType->value,
                 ],
                 $services,
             )
@@ -110,7 +113,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
 
     public function getServiceRate(int $contractId, int $serviceId): ?array
     {
-        $contractService = \App\Models\TherapistContractService::query()
+        $contractService = TherapistContractService::query()
             ->where('therapist_contract_id', $contractId)
             ->where('service_id', $serviceId)
             ->first();
@@ -119,9 +122,14 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
             return null;
         }
 
+        $noShowRate = $contractService->no_show_rate !== null ? (float) $contractService->no_show_rate : null;
+        $noShowRateType = $contractService->no_show_rate_type ?? null;
+
         return [
             'rate_type' => $contractService->rate_type,
             'rate_amount' => (float) $contractService->rate,
+            'no_show_rate' => $noShowRate,
+            'no_show_rate_type' => $noShowRateType,
         ];
     }
 
@@ -149,15 +157,11 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         }
 
         if ($filters->therapistId) {
-            $query->whereHas('therapist', function (Builder $q) use ($filters) {
-                $q->where('user_id', $filters->therapistId);
-            });
+            $query->where('therapist_id', $filters->therapistId);
         }
 
-        if (!empty($filters->therapistIds)) {
-            $query->whereHas('therapist', function (Builder $q) use ($filters) {
-                $q->whereIn('user_id', $filters->therapistIds);
-            });
+        if (! empty($filters->therapistIds)) {
+            $query->whereIn('therapist_id', $filters->therapistIds);
         }
 
         return $query;

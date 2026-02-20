@@ -11,6 +11,7 @@ final class SSAAssignmentDTO
         public readonly ?string $reason,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -19,6 +20,7 @@ final class SSAAssignmentDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

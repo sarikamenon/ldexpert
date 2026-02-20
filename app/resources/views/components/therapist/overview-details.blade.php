@@ -69,6 +69,12 @@
                         {{ $therapist->therapistProfile?->max_weekly_hours ?? '—' }}</dd>
                 </div>
                 <div>
+                    <dt class="text-sm font-medium text-foreground/70">Hourly Rate</dt>
+                    <dd class="mt-1 text-sm text-foreground">
+                        {{ $therapist->therapistProfile?->hourly_rate !== null ? '$' . number_format((float) $therapist->therapistProfile->hourly_rate, 2) : '—' }}
+                    </dd>
+                </div>
+                <div>
                     <dt class="text-sm font-medium text-foreground/70">Date of Birth</dt>
                     <dd class="mt-1 text-sm text-foreground">
                         {{ optional($therapist->therapistProfile?->dob)->format('M d, Y') ?? '—' }}

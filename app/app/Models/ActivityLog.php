@@ -33,6 +33,7 @@ class ActivityLog extends Model
         ];
     }
 
+    /** @return BelongsTo<User, ActivityLog> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

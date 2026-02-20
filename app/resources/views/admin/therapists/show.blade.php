@@ -74,7 +74,7 @@
                         <p class="text-foreground/70">Title</p>
                         <p class="font-semibold">{{ $therapist->therapistProfile?->title?->label() ?? '—' }}</p>
                         <p class="text-foreground/70">Position</p>
-                        <p>{{ $therapist->therapistProfile?->position?->label() ?? '—' }}</p>
+                        <p>{{ $therapist->therapistProfile?->position?->name ?? '—' }}</p>
                     </div>
                     <div class="space-y-1">
                         <p class="text-foreground/70">Manager</p>
@@ -95,6 +95,10 @@
                         <p class="text-foreground/70">Employee Type</p>
                         <p>{{ $therapist->therapistProfile?->employee_type?->label() ?? '—' }}</p>
                     </div>
+                    <div class="space-y-1">
+                        <p class="text-foreground/70">Hourly Rate</p>
+                        <p>{{ $therapist->therapistProfile?->hourly_rate !== null ? '$' . number_format((float) $therapist->therapistProfile->hourly_rate, 2) : '—' }}</p>
+                    </div>
                 </div>
             </x-ui::card>
         </div>
@@ -114,9 +118,8 @@
     @endif
 
     <x-slot name="scripts">
-        @if (($activeTab ?? 'dashboard') === 'dashboard')
-            @vite(['resources/js/pages/admin-therapists-show.js'])
-        @elseif (($activeTab ?? 'dashboard') === 'students')
+        @vite(['resources/js/pages/admin-therapists-show.js'])
+        @if (($activeTab ?? 'dashboard') === 'students')
             @vite(['resources/js/pages/admin-students-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'contracts')
             @vite(['resources/js/pages/admin-contracts-therapists-index.js'])
