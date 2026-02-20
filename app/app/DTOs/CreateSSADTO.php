@@ -28,6 +28,7 @@ final class CreateSSADTO
         public readonly ?int $assignedTherapistId,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $frequency = null;
@@ -37,16 +38,20 @@ final class CreateSSADTO
                 : ServiceFrequency::from($data['frequency']);
         }
 
+        /** @var array<int, mixed> $additionalIds */
+        $additionalIds = $data['additional_service_ids'] ?? [];
+        $additionalServiceIds = collect($additionalIds)
+            ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $value) => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+
         return new self(
             studentId: (int) $data['student_id'],
             primaryServiceId: (int) $data['primary_service_id'],
-            additionalServiceIds: collect($data['additional_service_ids'] ?? [])
-                ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
-                ->map(static fn ($value) => (int) $value)
-                ->filter(static fn (int $value) => $value > 0)
-                ->unique()
-                ->values()
-                ->all(),
+            additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'],
             endDate: $data['end_date'],
             minutesPerSession: (int) $data['minutes_per_session'],
@@ -68,6 +73,7 @@ final class CreateSSADTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [
@@ -77,7 +83,7 @@ final class CreateSSADTO
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             'minutes_per_session' => $this->minutesPerSession,
-            'frequency' => $this->frequency?->value ?? ServiceFrequency::WEEKLY->value,
+            'frequency' => $this->frequency !== null ? $this->frequency->value : ServiceFrequency::WEEKLY->value,
             'sessions_per_frequency' => $this->sessionsPerFrequency ?? ($this->frequency === null ? 1 : null),
             'calculated_minutes' => $this->calculatedMinutes,
             'adjusted_minutes' => $this->adjustedMinutes,

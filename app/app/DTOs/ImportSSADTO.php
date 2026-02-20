@@ -12,6 +12,7 @@ final class ImportSSADTO
         public readonly array $errors = [],
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data, int $rowNumber): self
     {
         return new self(

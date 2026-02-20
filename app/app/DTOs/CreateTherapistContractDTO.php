@@ -21,6 +21,7 @@ final class CreateTherapistContractDTO
         public readonly array $services,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $status = isset($data['status'])

@@ -16,6 +16,7 @@ final class AttachSessionsDTO
     /**
      * @param  array<string, mixed>  $data
      */
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $ids = isset($data['session_log_ids']) && is_array($data['session_log_ids'])
@@ -28,6 +29,7 @@ final class AttachSessionsDTO
     /**
      * @return array<string, mixed>
      */
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

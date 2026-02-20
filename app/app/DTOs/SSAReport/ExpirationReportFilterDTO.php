@@ -14,6 +14,7 @@ final class ExpirationReportFilterDTO
         public readonly ?string $bucket = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $schoolIds = isset($data['school_ids']) && is_array($data['school_ids'])

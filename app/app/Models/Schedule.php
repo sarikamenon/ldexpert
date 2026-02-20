@@ -59,11 +59,17 @@ class Schedule extends Model
         ];
     }
 
+    /**
+     * @return BelongsTo<User, Schedule>
+     */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
+    /**
+     * @return BelongsTo<User, Schedule>
+     */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');

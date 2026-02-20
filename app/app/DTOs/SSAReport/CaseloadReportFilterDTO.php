@@ -17,6 +17,7 @@ final class CaseloadReportFilterDTO
         public readonly ?int $maxMinutesPerWeek = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $schoolIds = isset($data['school_ids']) && is_array($data['school_ids'])
