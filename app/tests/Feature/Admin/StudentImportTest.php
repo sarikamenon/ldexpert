@@ -410,6 +410,48 @@ final class StudentImportTest extends TestCase
         $this->assertEquals('Brittany Gifford', $profile->parent_guardian_name);
     }
 
+    public function test_import_normalizes_formatted_phone_number(): void
+    {
+        Mail::fake();
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Identity ID' => 'RSM002',
+                'Last Name' => 'Smith',
+                'First Name' => 'John',
+                'Gender' => 'Male',
+                'Grade' => '3',
+                'School Name' => $this->school->external_emr_name,
+                'City' => 'Provo',
+                'Zip' => '84606',
+                'Parent Email' => 'parent-phone@example.com',
+                'Parent First Name' => 'Jane',
+                'Parent Last Name' => 'Smith',
+                'Phone' => '(385) 497-0814',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm-students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::RSM->value,
+            ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $import->refresh();
+        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
+
+        $profile = StudentProfile::where('id_number', 'RSM002')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('385-497-0814', $profile->parent_guardian_phone);
+    }
+
     public function test_nova_import_accepts_timezone_display_label(): void
     {
         Mail::fake();
