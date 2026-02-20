@@ -22,6 +22,7 @@ final readonly class RecordInvoicePaymentDTO
     /**
      * @param  array<string, mixed>  $data
      */
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -39,6 +40,7 @@ final readonly class RecordInvoicePaymentDTO
     /**
      * @return array<string, mixed>
      */
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

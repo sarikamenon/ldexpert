@@ -24,6 +24,7 @@ final class UpdateSSADTO
         public readonly ?int $thoMinutes,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $frequency = null;
@@ -61,6 +62,7 @@ final class UpdateSSADTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         $array = [];

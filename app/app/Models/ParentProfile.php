@@ -21,11 +21,13 @@ class ParentProfile extends Model
         'emergency_contact',
     ];
 
+    /** @return BelongsTo<User, ParentProfile> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<StudentProfile, ParentProfile> */
     public function children(): HasMany
     {
         return $this->hasMany(StudentProfile::class, 'parent_id', 'user_id');

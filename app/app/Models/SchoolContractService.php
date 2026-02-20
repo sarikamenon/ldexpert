@@ -22,11 +22,13 @@ class SchoolContractService extends Model
         'no_show_rate_type' => RateType::class,
     ];
 
+    /** @return BelongsTo<SchoolContract, SchoolContractService> */
     public function contract(): BelongsTo
     {
         return $this->belongsTo(SchoolContract::class, 'school_contract_id');
     }
 
+    /** @return BelongsTo<Service, SchoolContractService> */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);

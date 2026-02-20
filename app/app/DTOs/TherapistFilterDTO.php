@@ -27,6 +27,7 @@ final class TherapistFilterDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

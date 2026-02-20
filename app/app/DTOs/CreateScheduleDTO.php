@@ -13,6 +13,7 @@ final class CreateScheduleDTO
         public readonly int $therapistId,
         public readonly ?int $ssaId,
         public readonly int $serviceId,
+        /** @var array<int, int> */
         public readonly array $studentIds,
         public readonly string $scheduleDate,
         public readonly string $startTime,
@@ -21,12 +22,14 @@ final class CreateScheduleDTO
         public readonly ?string $recurrenceEndDate,
         public readonly bool $isGroup,
         public readonly ?int $occurrenceCount,
+        /** @var array<int, string>|null */
         public readonly ?array $occurrenceDates,
         public readonly ?string $notes,
         public readonly ?string $locationDetails,
         public readonly int $durationMinutes,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $recurrenceType = $data['recurrence_type'] instanceof RecurrenceType
@@ -96,15 +99,6 @@ final class CreateScheduleDTO
             $durationMinutes = $providedDurationMinutes;
         }
 
-        // Final validation: ensure durationMinutes is set and is a positive integer
-        // This provides explicit type safety guarantee before passing to constructor
-        if ($durationMinutes === null) {
-            throw new \InvalidArgumentException('duration_minutes must be calculated or provided.');
-        }
-        if (! is_int($durationMinutes) || $durationMinutes <= 0) {
-            throw new \InvalidArgumentException('duration_minutes must be a positive integer.');
-        }
-
         // Final validation: ensure endTime is always a string (non-null)
         // This provides explicit type safety guarantee before passing to constructor
         if ($endTime === null || ! is_string($endTime)) {
@@ -140,6 +134,7 @@ final class CreateScheduleDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

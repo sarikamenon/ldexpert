@@ -21,6 +21,7 @@ final class UtilizationReportFilterDTO
         public readonly int $perPage = 25,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $startDate = isset($data['start_date']) && $data['start_date'] !== ''

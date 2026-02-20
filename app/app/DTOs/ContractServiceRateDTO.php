@@ -16,6 +16,7 @@ final class ContractServiceRateDTO
         public readonly RateType $noShowRateType,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $noShowRateType = $data['no_show_rate_type'] ?? RateType::HOURLY;
@@ -33,6 +34,7 @@ final class ContractServiceRateDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

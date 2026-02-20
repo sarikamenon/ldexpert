@@ -15,6 +15,7 @@ final class SchoolCalendarEventFilterDTO
         public readonly ?SchoolCalendarEventType $eventType,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $eventType = null;
@@ -32,6 +33,7 @@ final class SchoolCalendarEventFilterDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

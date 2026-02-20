@@ -14,6 +14,7 @@ final class SendInvoiceDTO
     /**
      * @param  array<string, mixed>  $data
      */
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -25,6 +26,7 @@ final class SendInvoiceDTO
     /**
      * @return array<string, mixed>
      */
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

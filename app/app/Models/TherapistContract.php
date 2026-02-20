@@ -24,11 +24,13 @@ class TherapistContract extends Model
         'status' => ContractStatus::class,
     ];
 
+    /** @return BelongsTo<TherapistProfile, TherapistContract> */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(TherapistProfile::class);
     }
 
+    /** @return HasMany<TherapistContractService, TherapistContract> */
     public function services(): HasMany
     {
         return $this->hasMany(TherapistContractService::class);

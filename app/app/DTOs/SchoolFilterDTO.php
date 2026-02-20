@@ -14,6 +14,7 @@ final class SchoolFilterDTO
         public readonly bool $includeDeactivated = false,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $statusValue = $data['status'] ?? null;

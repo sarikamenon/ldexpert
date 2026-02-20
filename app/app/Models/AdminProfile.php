@@ -19,6 +19,7 @@ class AdminProfile extends Model
         'phone',
     ];
 
+    /** @return BelongsTo<User, AdminProfile> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

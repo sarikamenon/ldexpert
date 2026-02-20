@@ -18,6 +18,7 @@ final class TherapistContractFilterDTO
         public readonly ?array $therapistIds = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $therapistIds = null;

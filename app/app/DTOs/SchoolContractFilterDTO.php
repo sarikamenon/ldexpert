@@ -18,6 +18,7 @@ final class SchoolContractFilterDTO
         public readonly ?array $schoolIds = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $schoolIds = null;

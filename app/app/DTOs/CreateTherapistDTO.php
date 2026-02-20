@@ -27,6 +27,7 @@ final class CreateTherapistDTO
         public readonly string $password,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -51,6 +52,7 @@ final class CreateTherapistDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toUserArray(): array
     {
         return [
@@ -62,6 +64,7 @@ final class CreateTherapistDTO
         ];
     }
 
+    /** @return array<string, mixed> */
     public function toProfileArray(int $userId): array
     {
         return [

@@ -20,6 +20,7 @@ final class UpdateSchoolContractDTO
         public readonly array $services,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data, ?ContractStatus $existingStatus = null): self
     {
         $status = isset($data['status'])

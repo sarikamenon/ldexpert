@@ -50,11 +50,13 @@ class TherapistProfile extends Model
         ];
     }
 
+    /** @return BelongsTo<User, TherapistProfile> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<User, TherapistProfile> */
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');

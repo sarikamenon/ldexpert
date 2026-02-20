@@ -34,11 +34,13 @@ class StudentImportRow extends Model
         ];
     }
 
+    /** @return BelongsTo<StudentImport, StudentImportRow> */
     public function import(): BelongsTo
     {
         return $this->belongsTo(StudentImport::class, 'student_import_id');
     }
 
+    /** @return BelongsTo<User, StudentImportRow> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');

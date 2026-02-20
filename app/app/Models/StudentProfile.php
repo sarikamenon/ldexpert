@@ -45,21 +45,25 @@ class StudentProfile extends Model
         ];
     }
 
+    /** @return BelongsTo<User, StudentProfile> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<User, StudentProfile> */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_id');
     }
 
+    /** @return BelongsTo<School, StudentProfile> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
+    /** @return HasMany<ServiceSupportAgreement, StudentProfile> */
     public function ssas(): HasMany
     {
         return $this->hasMany(ServiceSupportAgreement::class, 'student_id', 'user_id');

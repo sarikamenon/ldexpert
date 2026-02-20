@@ -26,6 +26,7 @@ final class UpdateTherapistDTO
         public readonly ?string $defaultMeetingLocation,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -49,6 +50,7 @@ final class UpdateTherapistDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toUserArray(): array
     {
         return [
@@ -57,6 +59,7 @@ final class UpdateTherapistDTO
         ];
     }
 
+    /** @return array<string, mixed> */
     public function toProfileArray(): array
     {
         return [

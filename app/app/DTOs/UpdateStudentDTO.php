@@ -27,6 +27,7 @@ final class UpdateStudentDTO
         public readonly ?string $zipCode,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -51,6 +52,7 @@ final class UpdateStudentDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toUserArray(): array
     {
         return [
@@ -59,6 +61,7 @@ final class UpdateStudentDTO
         ];
     }
 
+    /** @return array<string, mixed> */
     public function toProfileArray(): array
     {
         return [

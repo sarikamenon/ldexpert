@@ -34,16 +34,19 @@ class SSAAssignmentHistory extends Model
         ];
     }
 
+    /** @return BelongsTo<ServiceSupportAgreement, SSAAssignmentHistory> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
+    /** @return BelongsTo<User, SSAAssignmentHistory> */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
+    /** @return BelongsTo<User, SSAAssignmentHistory> */
     public function assignedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by');
