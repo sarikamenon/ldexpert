@@ -66,7 +66,7 @@
             </div>
         </div>
 
-        <script type="application/json" id="templatesData">{{ json_encode($templates ?? []) }}</script>
+        <script type="application/json" id="templatesData">@json($templates ?? [])</script>
 
         {{-- Import Form --}}
         <form id="importForm" method="POST" action="{{ route('admin.students.import.store') }}"
