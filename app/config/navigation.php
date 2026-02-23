@@ -125,6 +125,11 @@ return [
                 'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
                 'children' => [
                     [
+                        'label' => 'IRS Report',
+                        'route' => 'admin.finance.irs-report.index',
+                        'active' => 'admin.finance.irs-report.*',
+                    ],
+                    [
                         'label' => 'Dashboard',
                         'route' => 'admin.finance.dashboard',
                         'active' => 'admin.finance.dashboard',

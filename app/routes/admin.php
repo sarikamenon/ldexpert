@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Billing\TherapistBillController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
 use App\Http\Controllers\Admin\ExpenseController;
+use App\Http\Controllers\Admin\Finance\IrsReportController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\InvoicePaymentController;
@@ -137,6 +138,10 @@ Route::middleware('role:admin')
 
         // Finance Dashboard
         Route::get('finance/dashboard', [FinanceDashboardController::class, 'index'])->name('finance.dashboard');
+
+        // IRS Report
+        Route::get('finance/irs-report', [IrsReportController::class, 'index'])->name('finance.irs-report.index');
+        Route::get('finance/irs-report/export', [IrsReportController::class, 'export'])->name('finance.irs-report.export');
 
         // Ledger Accounts
         Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
