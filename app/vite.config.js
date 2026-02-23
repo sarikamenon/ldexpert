@@ -53,6 +53,7 @@ export default defineConfig({
                 'resources/js/pages/admin-expenses-index.js',
                 'resources/js/pages/admin-invoice-payments-index.js',
                 'resources/js/pages/admin-therapist-bill-payments-index.js',
+                'resources/js/pages/admin-finance-irs-report-index.js',
                 'resources/css/therapist-schedule.css',
                 'resources/js/pages/therapist-schedule-calendar.js',
                 'resources/js/pages/therapist-schedule-create.js',
