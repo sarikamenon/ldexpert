@@ -29,8 +29,12 @@ const bindConfirmations = () => {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadDataTablesLibrary();
+    // Server-side pagination is handled by Laravel; hide DataTables paging/info to avoid duplicate footer
     initDataTable('.session-log-table', {
         order: [[0, 'desc']],
+        paging: false,
+        info: false,
+        dom: 'lfrt', // table + length + filter only (no info 'i' or paging 'p')
     });
 
     bindConfirmations();

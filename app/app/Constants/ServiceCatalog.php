@@ -15,7 +15,7 @@ final class ServiceCatalog
      */
     public static function services(): array
     {
-        return [
+        $base = [
             [
                 'name' => 'Individual Speech-Language Therapy (K-5)',
                 'description' => 'Evidence-based articulation and expressive language sessions for elementary students.',
@@ -208,6 +208,134 @@ final class ServiceCatalog
                 'rate_type' => RateType::HOURLY->value,
             ],
         ];
+
+        $overrides = [
+            [
+                'name' => 'Speech Therapy',
+                'description' => 'Direct speech-language therapy services.',
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
+                'delivery_mode' => 'in_person',
+                'is_billable' => true,
+                'min_duration_minutes' => 30,
+                'max_duration_minutes' => 60,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 95.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'Occupational Therapy',
+                'description' => 'Direct occupational therapy services.',
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
+                'delivery_mode' => 'in_person',
+                'is_billable' => true,
+                'min_duration_minutes' => 30,
+                'max_duration_minutes' => 60,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 105.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'IEP Meetings',
+                'description' => 'Indirect service for IEP meeting participation.',
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
+                'delivery_mode' => 'hybrid',
+                'is_billable' => true,
+                'min_duration_minutes' => 30,
+                'max_duration_minutes' => 120,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 85.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'Evaluations (Speech, Occupational)',
+                'description' => 'Direct evaluation services for speech and occupational therapy.',
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => false,
+                'delivery_mode' => 'in_person',
+                'is_billable' => true,
+                'min_duration_minutes' => 60,
+                'max_duration_minutes' => 120,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 120.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'Evaluations - Academic/Cognitive',
+                'description' => 'Direct academic and cognitive evaluation services.',
+                'is_direct_service' => true,
+                'is_group_service' => false,
+                'is_frequency_service' => false,
+                'delivery_mode' => 'in_person',
+                'is_billable' => true,
+                'min_duration_minutes' => 60,
+                'max_duration_minutes' => 180,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 110.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'Scheduling',
+                'description' => 'Indirect service for scheduling and coordination.',
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
+                'delivery_mode' => 'virtual',
+                'is_billable' => true,
+                'min_duration_minutes' => 15,
+                'max_duration_minutes' => 60,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 70.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'IEP Paperwork',
+                'description' => 'Indirect service for IEP documentation and paperwork.',
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
+                'delivery_mode' => 'virtual',
+                'is_billable' => true,
+                'min_duration_minutes' => 30,
+                'max_duration_minutes' => 90,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 85.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+            [
+                'name' => 'Progress Reports',
+                'description' => 'Indirect service for progress reporting and documentation.',
+                'is_direct_service' => false,
+                'is_group_service' => false,
+                'is_frequency_service' => true,
+                'delivery_mode' => 'virtual',
+                'is_billable' => true,
+                'min_duration_minutes' => 30,
+                'max_duration_minutes' => 90,
+                'status' => ServiceStatus::ACTIVE->value,
+                'rate' => 85.00,
+                'rate_type' => RateType::HOURLY->value,
+            ],
+        ];
+
+        $byName = [];
+
+        foreach ($base as $service) {
+            $byName[$service['name']] = $service;
+        }
+
+        foreach ($overrides as $service) {
+            // Second array has priority when names collide.
+            $byName[$service['name']] = $service;
+        }
+
+        return array_values($byName);
     }
 
     /**

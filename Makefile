@@ -3,7 +3,7 @@ PHP_SHELL=$(DC) exec -T app bash -lc
 ARTISAN=$(DC) exec -T app php /var/www/html/app/artisan
 COMPOSER_CMD=$(PHP_SHELL) 'cd /var/www/html/app && composer'
 
-.PHONY: build up down restart logs sh install composer-install composer-update composer-require migrate seed test coverage dusk cs-fix analyse fresh qa assets-build cache-clear send-reminders queue-work
+.PHONY: build up down restart logs sh install composer-install composer-update composer-require migrate seed seed-class test coverage dusk cs-fix analyse fresh qa assets-build cache-clear send-reminders queue-work
 
 build:
 	$(DC) build
@@ -54,6 +54,10 @@ migrate:
 
 seed:
 	$(ARTISAN) db:seed
+
+seed-class:
+	@test -n "$(SEEDER)" || (echo "Usage: make seed-class SEEDER=Database\\Seeders\\MySeeder" && exit 1)
+	$(ARTISAN) db:seed --class="$(SEEDER)"
 
 fresh:
 	$(ARTISAN) migrate:fresh --seed
