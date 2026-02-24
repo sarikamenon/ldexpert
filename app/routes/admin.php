@@ -64,6 +64,7 @@ Route::middleware('role:admin')
         Route::get('students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
+        Route::post('students/data', [StudentController::class, 'data'])->name('students.data');
         Route::resource('students', StudentController::class)->except(['destroy']);
 
         // Student Documents

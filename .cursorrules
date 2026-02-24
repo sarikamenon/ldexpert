@@ -138,6 +138,7 @@ try {
 - Always await `loadDataTablesLibrary()` before initialization
 - Configure table-specific options (ordering, pageLength, columnDefs, etc.)
 - Use DataTables CSS from `resources/css/common/datatables.css`
+- **New list tables MUST use server-side processing**: Do not load all rows in the initial page. Implement a JSON data endpoint (e.g. `POST /admin/{resource}/data`) that accepts DataTables params (`draw`, `start`, `length`, `search`, `order`, `columns`) and returns `{ draw, recordsTotal, recordsFiltered, data }`. Use `serverSide: true` and `ajax: { url, type: 'POST', data }` in init (include CSRF token and filter form values in `ajax.data`). Render the table with an empty tbody. Use POST for the endpoint and enforce a column whitelist for ordering; show loading state (`processing: true`) and handle errors (e.g. SweetAlert2). **Reference implementation**: admin Students list — route `admin.students.data`, `StudentController::data()`, views `admin/students/index.blade.php` and `components/admin/students-list.blade.php`, JS `resources/js/pages/admin-students-index.js`. See `app/docs/DATATABLES_SERVER_SIDE.md` (or `_local_docs/`) for the full contract.
 
 ## Code Organization Patterns
 

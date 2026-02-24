@@ -6,6 +6,10 @@
     'showMetrics' => false,
     'metrics' => null,
     /**
+     * When set, table uses server-side DataTables: empty tbody, data loaded via AJAX from this URL.
+     */
+    'datatableUrl' => null,
+    /**
      * Context controls both layout and routing:
      * - 'index'  : admin index page
      * - 'detail' : admin student detail tab
@@ -90,9 +94,9 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    @if ($students->count() > 0)
+    @if (isset($datatableUrl) || $students->count() > 0)
         <div class="overflow-x-auto">
-            <table id="studentsTable" class="w-full display">
+            <table id="studentsTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -106,6 +110,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!isset($datatableUrl))
                     @foreach ($students as $student)
                         @php
                             $profile = $student->studentProfile;
@@ -232,6 +237,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    @endif
                 </tbody>
             </table>
         </div>

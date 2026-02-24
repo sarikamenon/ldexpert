@@ -55,7 +55,49 @@ final class StudentManagementTest extends TestCase
             ->assertViewHas('metrics')
             ->assertViewHas('filters')
             ->assertViewHas('statuses')
-            ->assertViewHas('schools');
+            ->assertViewHas('schools')
+            ->assertViewHas('datatableUrl');
+    }
+
+    public function test_students_data_returns_datatables_json(): void
+    {
+        $response = $this->actingAs($this->admin)->postJson(route('admin.students.data'), [
+            '_token' => csrf_token(),
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+            'search' => ['value' => '', 'regex' => 'false'],
+            'filter_search' => '',
+            'filter_status' => '',
+            'filter_school_id' => '',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'draw',
+                'recordsTotal',
+                'recordsFiltered',
+                'data' => [
+                    '*' => [
+                        0, 1, 2, 3, 4, 5, 6, 7,
+                    ],
+                ],
+            ]);
+        $this->assertSame(1, $response->json('draw'));
+        $this->assertGreaterThanOrEqual(0, $response->json('recordsTotal'));
+        $this->assertGreaterThanOrEqual(0, $response->json('recordsFiltered'));
+    }
+
+    public function test_students_data_requires_admin(): void
+    {
+        $response = $this->actingAs($this->student)->postJson(route('admin.students.data'), [
+            '_token' => csrf_token(),
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+        ]);
+
+        $response->assertForbidden();
     }
 
     public function test_non_admin_cannot_view_students_index(): void

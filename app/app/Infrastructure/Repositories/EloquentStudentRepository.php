@@ -6,6 +6,7 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\DTOs\ChangeStudentStatusDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\Enums\UserStatus;
 use App\Models\StudentProfile;
@@ -69,6 +70,58 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         }
 
         return $query->orderBy('name')->paginate($filters->perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = User::query()
+            ->where('users.role', 'student')
+            ->leftJoin('student_profiles', 'users.id', '=', 'student_profiles.user_id')
+            ->leftJoin('schools', 'student_profiles.school_id', '=', 'schools.id')
+            ->select('users.*');
+
+        if ($filters->search) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->search($filters->search);
+            });
+        }
+        if ($filters->status) {
+            $baseQuery->where('users.status', $filters->status);
+        }
+        if ($filters->schoolId) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->where('school_id', $filters->schoolId);
+            });
+        }
+
+        $queryForTotal = (clone $baseQuery)->distinct();
+        $recordsTotal = $queryForTotal->count('users.id');
+
+        if ($params->searchValue) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($params) {
+                $q->search($params->searchValue);
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->distinct()->count('users.id');
+
+        $orderColumn = $params->orderColumn ?? 'users.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->distinct()
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User

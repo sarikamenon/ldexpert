@@ -7,6 +7,7 @@ namespace App\Domain\Student\Services;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Mail\WelcomeStudentMail;
@@ -62,6 +63,14 @@ final class StudentService
     public function list(StudentFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->list($filters);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function getMetrics(?string $status = null): array

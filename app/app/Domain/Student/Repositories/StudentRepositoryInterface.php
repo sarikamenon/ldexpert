@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Student\Repositories;
 
 use App\DTOs\ChangeStudentStatusDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -20,6 +21,11 @@ interface StudentRepositoryInterface
     public function find(int $id): ?StudentProfile;
 
     public function list(StudentFilterDTO $filters): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, User>}
+     */
+    public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User;
 
