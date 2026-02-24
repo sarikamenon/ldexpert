@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\SSARowTransformer;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAImportService;
@@ -26,9 +27,12 @@ use App\Http\Requests\Admin\SSA\AssignTherapistRequest;
 use App\Http\Requests\Admin\SSA\ChangeSSAStatusRequest;
 use App\Http\Requests\Admin\SSA\ImportSSAsRequest;
 use App\Http\Requests\Admin\SSA\IndexSSARequest;
+use App\Http\Requests\Admin\SSA\SSADataRequest;
 use App\Http\Requests\Admin\SSA\StoreSSARequest;
 use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAImport;
 use Illuminate\Contracts\View\View;
@@ -41,6 +45,21 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SSAController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'service_support_agreements.id',
+        1 => 'students.name',
+        2 => 'therapists.name',
+        3 => 'service_support_agreements.start_date',
+        4 => 'service_support_agreements.minutes_per_session',
+        5 => 'service_support_agreements.tho_minutes',
+        6 => 'service_support_agreements.status',
+    ];
+
     public function __construct(
         private readonly SSAService $ssaService,
         private readonly SSAImportService $importService,
@@ -55,18 +74,44 @@ final class SSAController extends Controller
         $this->authorize('viewAny', ServiceSupportAgreement::class);
 
         $filters = SSAFilterDTO::fromArray($request->validated());
-        $ssas = $this->ssaService->paginate($filters);
         $metrics = $this->ssaService->metrics();
 
         return view('admin.ssas.index', [
-            'ssas' => $ssas,
+            'ssas' => collect(),
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'statuses' => SSAStatus::cases(),
             'students' => $this->getActiveStudents(),
             'services' => $this->getActiveServices(),
             'therapists' => $this->getActiveTherapists(),
+            'datatableUrl' => route('admin.ssas.data'),
         ]);
+    }
+
+    public function data(SSADataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+            'student_id' => $request->input('filter_student_id'),
+            'service_id' => $request->input('filter_service_id'),
+            'therapist_id' => $request->input('filter_therapist_id'),
+        ];
+        $filters = SSAFilterDTO::fromArray($filterData);
+
+        $result = $this->ssaService->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            [SSARowTransformer::class, 'transform']
+        );
     }
 
     public function create(): View

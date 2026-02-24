@@ -1,15 +1,31 @@
-import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
 import { setupStatusChanges } from '../common/status-change';
 import Swal from 'sweetalert2';
 
 async function initSSATable() {
+    const table = document.getElementById('ssasTable');
+    if (!table) return;
+
+    const dataUrl = table.getAttribute('data-datatable-url');
+    if (!dataUrl) return;
+
+    const form = document.getElementById('ssaFiltersForm');
+
     try {
         await loadDataTablesLibrary();
-        await initDataTable('#ssasTable', {
+        await initServerSideDataTable('#ssasTable', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
             columnDefs: [{ orderable: false, targets: -1 }],
+            getExtraData(d) {
+                if (!form) return;
+                d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
+                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                d.filter_student_id = form.querySelector('[name="student_id"]')?.value ?? '';
+                d.filter_therapist_id = form.querySelector('[name="therapist_id"]')?.value ?? '';
+                d.filter_service_id = form.querySelector('[name="service_id"]')?.value ?? '';
+            },
         });
     } catch (error) {
         console.error('Failed to init SSAs table', error);
@@ -236,6 +252,27 @@ function setupListAssignmentActions() {
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('ssasTable')) {
         initSSATable();
+    }
+
+    const form = document.getElementById('ssaFiltersForm');
+    if (form) {
+        form.addEventListener('change', () => {
+            if (typeof window.jQuery !== 'undefined') {
+                const dt = window.jQuery('#ssasTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
+                }
+            }
+        });
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (typeof window.jQuery !== 'undefined') {
+                const dt = window.jQuery('#ssasTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
+                }
+            }
+        });
     }
 
     setupStatusChanges('ssa', '.change-status-btn', { idAttribute: 'ssa-id' });

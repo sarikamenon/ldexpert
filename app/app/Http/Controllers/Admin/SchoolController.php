@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\DataTables\Transformers\SchoolRowTransformer;
 use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
@@ -31,9 +32,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\School\ChangeSchoolStatusRequest;
 use App\Http\Requests\Admin\School\ExportSchoolsRequest;
 use App\Http\Requests\Admin\School\IndexSchoolRequest;
+use App\Http\Requests\Admin\School\SchoolDataRequest;
 use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
 use App\Http\Requests\Admin\School\UpdateSchoolRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\School;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -44,6 +48,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SchoolController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'schools.id',
+        1 => 'schools.display_name',
+        2 => 'users.name',
+        3 => 'schools.state',
+        4 => 'schools.contact_email',
+        5 => 'schools.status',
+    ];
+
     public function __construct(
         private readonly SchoolService $schoolService,
         private readonly UserService $userService,
@@ -68,10 +86,36 @@ final class SchoolController extends Controller
         $perPage = $request->integer('per_page', 25);
 
         return view('admin.schools.index', [
-            'schools' => $this->schoolService->listSchools($filters, $perPage),
+            'schools' => collect(),
             'metrics' => $this->schoolService->summaryMetrics(),
             'filters' => $filtersPayload,
+            'datatableUrl' => route('admin.schools.data'),
         ] + $this->referenceData());
+    }
+
+    public function data(SchoolDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', School::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+        ];
+        $filters = SchoolFilterDTO::fromArray($filterData);
+
+        $result = $this->schoolService->listForDataTables($filters, $params);
+
+        $result['rows']->load('manager');
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            [SchoolRowTransformer::class, 'transform']
+        );
     }
 
     public function create(): View

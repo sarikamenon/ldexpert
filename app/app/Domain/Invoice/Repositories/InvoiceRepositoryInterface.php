@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Invoice\Repositories;
 
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\Models\Invoice;
 use App\Models\SessionLog;
@@ -19,6 +20,11 @@ interface InvoiceRepositoryInterface
     public function find(int $id): ?Invoice;
 
     public function list(InvoiceFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, Invoice>}
+     */
+    public function listForDataTables(InvoiceFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     /**
      * @param  array<int>  $sessionLogIds

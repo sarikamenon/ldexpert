@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\SSAReport\CaseloadReportFilterDTO;
@@ -27,9 +28,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
 {
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator
     {
-        $query = $this->applyFilters(ServiceSupportAgreement::query(), $filters);
-
-        return $query
+        return $this->applyFilters(ServiceSupportAgreement::query(), $filters)
             ->with([
                 'student',
                 'student.studentProfile.school',
@@ -40,6 +39,50 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->orderBy('created_at', 'desc')
             ->paginate($filters->perPage)
             ->withQueryString();
+    }
+
+    public function listForDataTables(SSAFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters(ServiceSupportAgreement::query(), $filters)
+            ->with([
+                'student',
+                'student.studentProfile.school',
+                'primaryService',
+                'additionalServices',
+                'assignedTherapist',
+            ]);
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('service_support_agreements.id');
+
+        if ($params->searchValue) {
+            $search = '%'.$params->searchValue.'%';
+            $baseQuery->where(function (Builder $q) use ($search) {
+                $q->whereHas('student', function (Builder $studentQuery) use ($search) {
+                    $studentQuery->where('name', 'like', $search);
+                })->orWhereHas('primaryService', function (Builder $serviceQuery) use ($search) {
+                    $serviceQuery->where('name', 'like', $search);
+                });
+            });
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('service_support_agreements.id');
+
+        $orderColumn = $params->orderColumn ?? 'service_support_agreements.id';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function find(int $id): ?ServiceSupportAgreement

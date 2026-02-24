@@ -6,6 +6,7 @@ namespace App\Domain\Position\Repositories;
 
 use App\DTOs\ChangePositionStatusDTO;
 use App\DTOs\CreatePositionDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\PositionFilterDTO;
 use App\DTOs\UpdatePositionDTO;
 use App\Models\Position;
@@ -15,6 +16,11 @@ use Illuminate\Support\Collection;
 interface PositionRepositoryInterface
 {
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:Collection<int,Position>}
+     */
+    public function listForDataTables(PositionFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function all(PositionFilterDTO $filters): Collection;
 

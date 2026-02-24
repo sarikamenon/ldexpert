@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\DTOs\ChangeServiceStatusDTO;
 use App\DTOs\CreateServiceDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ServiceFilterDTO;
 use App\DTOs\UpdateServiceDTO;
 use App\Enums\ServiceStatus;
@@ -30,6 +31,36 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
         return $this->applyFilters(Service::query(), $filters)
             ->orderBy('name')
             ->get();
+    }
+
+    public function listForDataTables(ServiceFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters(Service::query(), $filters);
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('services.id');
+
+        if ($params->searchValue) {
+            $baseQuery->where('name', 'like', '%'.$params->searchValue.'%');
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('services.id');
+
+        $orderColumn = $params->orderColumn ?? 'services.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateServiceDTO $dto): Service

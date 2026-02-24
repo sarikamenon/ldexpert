@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\SchoolStatus;
@@ -22,6 +23,36 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
         return $this->applyFilters($this->baseQuery(), $filters)
             ->orderBy('display_name')
             ->paginate($perPage);
+    }
+
+    public function listForDataTables(SchoolFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters($this->baseQuery(), $filters);
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('schools.id');
+
+        if ($params->searchValue) {
+            $baseQuery->search($params->searchValue);
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('schools.id');
+
+        $orderColumn = $params->orderColumn ?? 'schools.display_name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateSchoolDTO $dto): School

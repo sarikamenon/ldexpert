@@ -6,6 +6,7 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\TherapistRepositoryInterface;
 use App\DTOs\ChangeTherapistStatusDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\Enums\UserStatus;
 use App\Models\TherapistProfile;
@@ -76,6 +77,60 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         }
 
         return $query->orderBy('name')->get();
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listForDataTables(TherapistFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = User::query()
+            ->where('users.role', 'therapist')
+            ->leftJoin('therapist_profiles', 'users.id', '=', 'therapist_profiles.user_id')
+            ->leftJoin('positions', 'therapist_profiles.position_id', '=', 'positions.id')
+            ->leftJoin('users as managers', 'therapist_profiles.manager_id', '=', 'managers.id')
+            ->select('users.*');
+
+        if ($filters->search) {
+            $baseQuery->whereHas('therapistProfile', function ($q) use ($filters) {
+                $q->search($filters->search);
+            });
+        }
+        if ($filters->status) {
+            $baseQuery->where('users.status', $filters->status);
+        }
+        if ($filters->positionId) {
+            $baseQuery->where('therapist_profiles.position_id', $filters->positionId);
+        }
+        if ($filters->schoolId) {
+            $this->applySchoolFilter($baseQuery, $filters->schoolId);
+        }
+
+        $queryForTotal = (clone $baseQuery)->distinct();
+        $recordsTotal = $queryForTotal->count('users.id');
+
+        if ($params->searchValue) {
+            $baseQuery->whereHas('therapistProfile', function ($q) use ($params) {
+                $q->search($params->searchValue);
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->distinct()->count('users.id');
+
+        $orderColumn = $params->orderColumn ?? 'users.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->distinct()
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User

@@ -7,6 +7,7 @@ namespace App\Domain\Service\Services;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\DTOs\ChangeServiceStatusDTO;
 use App\DTOs\CreateServiceDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ServiceFilterDTO;
 use App\DTOs\UpdateServiceDTO;
 use App\Models\Service;
@@ -22,6 +23,14 @@ final class ServiceCatalogService
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);
+    }
+
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Support\Collection<int,Service>}
+     */
+    public function listForDataTables(ServiceFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function all(ServiceFilterDTO $filters): Collection

@@ -7,6 +7,7 @@ namespace App\Domain\Position\Services;
 use App\Domain\Position\Repositories\PositionRepositoryInterface;
 use App\DTOs\ChangePositionStatusDTO;
 use App\DTOs\CreatePositionDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\PositionFilterDTO;
 use App\DTOs\UpdatePositionDTO;
 use App\Models\Position;
@@ -22,6 +23,14 @@ final class PositionCatalogService
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);
+    }
+
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Support\Collection<int,Position>}
+     */
+    public function listForDataTables(PositionFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function all(PositionFilterDTO $filters): Collection

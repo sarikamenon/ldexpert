@@ -7,6 +7,7 @@ namespace App\Domain\Therapist\Services;
 use App\Domain\Therapist\Repositories\TherapistRepositoryInterface;
 use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Mail\WelcomeTherapistMail;
@@ -62,6 +63,14 @@ final class TherapistService
     public function list(TherapistFilterDTO $filters): Collection
     {
         return $this->repository->list($filters);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, \App\Models\User>}
+     */
+    public function listForDataTables(TherapistFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function getMetrics(?string $status = null): array

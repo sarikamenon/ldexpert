@@ -1,16 +1,29 @@
-import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
 import { setupStatusToggles } from '../common/status-change';
 
 async function initSchoolsTable() {
+    const table = document.getElementById('schoolsTable');
+    if (!table) return;
+
+    const dataUrl = table.getAttribute('data-datatable-url');
+    if (!dataUrl) return;
+
+    const form = document.getElementById('schoolFiltersForm');
+
     try {
         await loadDataTablesLibrary();
 
-        await initDataTable('#schoolsTable', {
-            order: [[0, 'asc']],
+        await initServerSideDataTable('#schoolsTable', dataUrl, {
+            order: [[1, 'asc']],
             pageLength: 25,
             columnDefs: [
                 { orderable: false, targets: -1 }
-            ]
+            ],
+            getExtraData(d) {
+                if (!form) return;
+                d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
+                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+            },
         });
     } catch (error) {
         console.error('Failed to init schools table', error);
@@ -28,7 +41,11 @@ function setupExportButton() {
         event.preventDefault();
         const url = new URL(button.href, window.location.origin);
         new FormData(form).forEach((value, key) => {
-            url.searchParams.set(key, value.toString());
+            if (value) {
+                url.searchParams.set(key, value.toString());
+            } else {
+                url.searchParams.delete(key);
+            }
         });
         window.location.href = url.toString();
     });
@@ -42,5 +59,26 @@ document.addEventListener('DOMContentLoaded', () => {
     initSchoolsTable();
     setupStatusToggles('school', '.toggle-status-button', { idAttribute: 'school' });
     setupExportButton();
+
+    const form = document.getElementById('schoolFiltersForm');
+    if (form) {
+        form.addEventListener('change', () => {
+            if (typeof window.jQuery !== 'undefined') {
+                const dt = window.jQuery('#schoolsTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
+                }
+            }
+        });
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (typeof window.jQuery !== 'undefined') {
+                const dt = window.jQuery('#schoolsTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
+                }
+            }
+        });
+    }
 });
 

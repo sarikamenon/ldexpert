@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\DataTables\Transformers\TherapistRowTransformer;
 use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
@@ -32,7 +33,10 @@ use App\Http\Requests\Admin\Therapist\ChangeTherapistStatusRequest;
 use App\Http\Requests\Admin\Therapist\ExportTherapistsRequest;
 use App\Http\Requests\Admin\Therapist\IndexTherapistRequest;
 use App\Http\Requests\Admin\Therapist\StoreTherapistRequest;
+use App\Http\Requests\Admin\Therapist\TherapistDataRequest;
 use App\Http\Requests\Admin\Therapist\UpdateTherapistRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -44,6 +48,19 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class TherapistController extends Controller
 {
+    use DataTablesResponse;
+
+    /** @var array<int, string> Column index => allowed order column */
+    private const ORDER_WHITELIST = [
+        0 => 'users.id',
+        1 => 'users.name',
+        2 => 'users.email',
+        3 => 'managers.name',
+        4 => 'positions.name',
+        5 => 'therapist_profiles.max_weekly_hours',
+        6 => 'users.status',
+    ];
+
     public function __construct(
         private readonly TherapistService $therapistService,
         private readonly UserService $userService,
@@ -61,15 +78,39 @@ final class TherapistController extends Controller
         $this->authorize('viewAny', TherapistProfile::class);
 
         $filters = TherapistFilterDTO::fromRequest($request->validated());
-        $therapists = $this->therapistService->list($filters);
         $metrics = $this->therapistService->getMetrics();
 
         return view('admin.therapists.index', [
-            'therapists' => $therapists,
+            'therapists' => collect(),
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'positions' => $this->positionCatalogService->listActiveForSelect(),
+            'datatableUrl' => route('admin.therapists.data'),
         ]);
+    }
+
+    public function data(TherapistDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', TherapistProfile::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+            'position_id' => $request->input('filter_position_id'),
+        ];
+        $filters = TherapistFilterDTO::fromRequest($filterData);
+
+        $result = $this->therapistService->listForDataTables($filters, $params);
+        $result['rows']->load(['therapistProfile.manager', 'therapistProfile.position']);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            [TherapistRowTransformer::class, 'transform']
+        );
     }
 
     public function create(): View

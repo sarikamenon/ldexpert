@@ -97,7 +97,7 @@ final class ScenarioScheduleSeeder extends Seeder
 
         if (count($dates) < 30) {
             $current = $start->copy();
-            $seen = array_fill_keys(array_map(fn(Carbon $d) => $d->format('Y-m-d'), $dates), true);
+            $seen = array_fill_keys(array_map(fn (Carbon $d) => $d->format('Y-m-d'), $dates), true);
             while (count($dates) < 30) {
                 $key = $current->format('Y-m-d');
                 if ($current->dayOfWeek !== 0 && $current->dayOfWeek !== 6 && ! isset($seen[$key])) {
@@ -112,7 +112,7 @@ final class ScenarioScheduleSeeder extends Seeder
         }
 
         $dates = array_slice(array_values($dates), 0, 30);
-        usort($dates, fn(Carbon $a, Carbon $b) => $a->timestamp <=> $b->timestamp);
+        usort($dates, fn (Carbon $a, Carbon $b) => $a->timestamp <=> $b->timestamp);
 
         return $dates;
     }

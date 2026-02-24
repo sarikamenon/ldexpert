@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Therapist\Repositories;
 
 use App\DTOs\ChangeTherapistStatusDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\Models\TherapistProfile;
 use App\Models\User;
@@ -20,6 +21,11 @@ interface TherapistRepositoryInterface
     public function find(int $id): ?TherapistProfile;
 
     public function list(TherapistFilterDTO $filters): Collection;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listForDataTables(TherapistFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User;
 

@@ -6,6 +6,7 @@ namespace App\Domain\SSA\Repositories;
 
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\UpdateSSADTO;
@@ -16,6 +17,11 @@ use Illuminate\Support\Collection;
 interface SSARepositoryInterface
 {
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:Collection<int,ServiceSupportAgreement>}
+     */
+    public function listForDataTables(SSAFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function find(int $id): ?ServiceSupportAgreement;
 

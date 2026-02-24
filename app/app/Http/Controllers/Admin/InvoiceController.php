@@ -20,14 +20,33 @@ use App\Http\Requests\Admin\Invoice\AttachSessionsRequest;
 use App\Http\Requests\Admin\Invoice\CreateInvoiceRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceIndexRequest;
 use App\Http\Requests\Admin\Invoice\SendInvoiceRequest;
+use App\Http\Requests\Admin\Invoice\InvoiceDataRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
+use App\DataTables\Transformers\InvoiceRowTransformer;
 use App\Models\Invoice;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 final class InvoiceController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const INVOICES_ORDER_WHITELIST = [
+        0 => 'invoice_number',
+        1 => 'school_display_name',
+        2 => 'billing_period_start',
+        3 => 'total',
+        4 => 'status',
+        5 => 'due_date',
+    ];
+
     public function __construct(
         private readonly InvoiceService $invoiceService,
         private readonly InvoicePdfService $pdfService,
@@ -43,15 +62,41 @@ final class InvoiceController extends Controller
         $this->authorize('viewAny', Invoice::class);
 
         $filters = InvoiceFilterDTO::fromArray($request->validated());
-        $perPage = $request->integer('per_page', 15);
-
-        $invoices = $this->invoiceRepository->list($filters, $perPage);
 
         return view('admin.invoices.index', [
-            'invoices' => $invoices,
+            'invoices' => collect(), // Server-side DataTables loads via AJAX
             'filters' => $request->validated(),
             'schools' => $this->schoolRepository->listActiveForSelect(),
+            'datatableUrl' => route('admin.invoices.data'),
         ]);
+    }
+
+    public function data(InvoiceDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::INVOICES_ORDER_WHITELIST);
+
+        $filterData = [
+            'school_id' => $request->input('filter_school_id'),
+            'status' => $request->input('filter_status'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+            'invoice_number' => $request->input('filter_invoice_number'),
+            'per_page' => $params->length,
+        ];
+
+        $filters = InvoiceFilterDTO::fromArray($filterData);
+
+        $result = $this->invoiceService->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (Invoice $invoice): array => InvoiceRowTransformer::transform($invoice),
+        );
     }
 
     public function create(Request $request): View

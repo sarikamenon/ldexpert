@@ -7,6 +7,7 @@ namespace App\Domain\School\Services;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Models\School;
@@ -27,6 +28,14 @@ class SchoolService
     public function listSchools(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->schools->paginate($filters, $perPage);
+    }
+
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Support\Collection<int,School>}
+     */
+    public function listForDataTables(SchoolFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->schools->listForDataTables($filters, $params);
     }
 
     public function createSchool(CreateSchoolDTO $dto): School

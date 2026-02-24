@@ -7,8 +7,10 @@ namespace App\Domain\Invoice\Services;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
+use App\DTOs\InvoiceFilterDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
 use App\Mail\InvoiceMail;
@@ -196,6 +198,14 @@ final class InvoiceService
     public function find(int $id): ?Invoice
     {
         return $this->repository->find($id);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, Invoice>}
+     */
+    public function listForDataTables(InvoiceFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function attachSessionsToDraft(Invoice $invoice, AttachSessionsDTO $dto): Invoice

@@ -40,6 +40,7 @@ Route::middleware('role:admin')
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::get('schools/export', [SchoolController::class, 'export'])->name('schools.export');
+        Route::post('schools/data', [SchoolController::class, 'data'])->name('schools.data');
         Route::patch('schools/{school}/status', [SchoolController::class, 'updateStatus'])->name('schools.status');
         Route::resource('schools', SchoolController::class)->except(['destroy']);
         Route::get('schools/{school}/calendar-events', [SchoolCalendarEventController::class, 'index'])
@@ -52,6 +53,7 @@ Route::middleware('role:admin')
             ->name('schools.calendar-events.destroy');
 
         Route::get('therapists/export', [TherapistController::class, 'export'])->name('therapists.export');
+        Route::post('therapists/data', [TherapistController::class, 'data'])->name('therapists.data');
         Route::patch('therapists/{therapist}/status', [TherapistController::class, 'updateStatus'])->name('therapists.status');
         Route::resource('therapists', TherapistController::class)->except(['destroy']);
 
@@ -76,10 +78,12 @@ Route::middleware('role:admin')
         });
 
         Route::get('services/export', [ServiceController::class, 'export'])->name('services.export');
+        Route::post('services/data', [ServiceController::class, 'data'])->name('services.data');
         Route::patch('services/{service}/status', [ServiceController::class, 'updateStatus'])->name('services.status');
         Route::resource('services', ServiceController::class)->except(['destroy', 'show']);
 
         Route::get('positions/export', [PositionController::class, 'export'])->name('positions.export');
+        Route::post('positions/data', [PositionController::class, 'data'])->name('positions.data');
         Route::patch('positions/{position}/status', [PositionController::class, 'updateStatus'])->name('positions.status');
         Route::resource('positions', PositionController::class)->except(['destroy', 'show']);
 
@@ -90,6 +94,7 @@ Route::middleware('role:admin')
         Route::get('ssas/imports/{import}', [SSAController::class, 'showImportStatus'])->name('ssas.imports.show');
         Route::get('ssas/imports/{import}/status', [SSAController::class, 'showImportStatus'])->name('ssas.imports.status');
         Route::get('ssas/import/template', [SSAController::class, 'downloadTemplate'])->name('ssas.import.template');
+        Route::post('ssas/data', [SSAController::class, 'data'])->name('ssas.data');
         Route::patch('ssas/{ssa}/status', [SSAController::class, 'updateStatus'])->name('ssas.status');
         Route::post('ssas/{ssa}/assign-therapist', [SSAController::class, 'assignTherapist'])->name('ssas.assign-therapist');
         Route::post('ssas/{ssa}/unassign-therapist', [SSAController::class, 'unassignTherapist'])->name('ssas.unassign-therapist');
@@ -155,6 +160,7 @@ Route::middleware('role:admin')
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
 
         // Invoices
+        Route::post('invoices/data', [InvoiceController::class, 'data'])->name('invoices.data');
         Route::get('invoices/{invoice}/download', [InvoiceController::class, 'download'])->name('invoices.download');
         Route::post('invoices/{invoice}/send', [InvoiceController::class, 'send'])->name('invoices.send');
         Route::get('invoices/{invoice}/attach-sessions', [InvoiceController::class, 'attachSessions'])->name('invoices.attach-sessions');

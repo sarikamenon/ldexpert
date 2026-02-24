@@ -1,13 +1,26 @@
-import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
 
 async function initPositionsTable() {
+    const table = document.getElementById('positionsTable');
+    if (!table) return;
+
+    const dataUrl = table.getAttribute('data-datatable-url');
+    if (!dataUrl) return;
+
+    const form = document.getElementById('positionFiltersForm');
+
     try {
         await loadDataTablesLibrary();
-        await initDataTable('#positionsTable', {
+        await initServerSideDataTable('#positionsTable', dataUrl, {
             order: [[0, 'asc']],
             pageLength: 25,
             columnDefs: [{ orderable: false, targets: -1 }],
+            getExtraData(d) {
+                if (!form) return;
+                d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
+                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+            },
         });
     } catch (error) {
         console.error('Failed to init positions table', error);
@@ -52,7 +65,16 @@ function setupStatusToggles() {
 
                 if (response.ok && data.success) {
                     await successToast(data.message);
-                    window.location.reload();
+                    if (typeof window.jQuery !== 'undefined') {
+                        const dt = window.jQuery('#positionsTable').DataTable();
+                        if (dt && dt.ajax && dt.ajax.reload) {
+                            dt.ajax.reload();
+                        } else {
+                            window.location.reload();
+                        }
+                    } else {
+                        window.location.reload();
+                    }
                 } else {
                     errorAlert(data.message || 'Failed to update position status.');
                 }
@@ -73,4 +95,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initPositionsTable();
     setupStatusToggles();
+
+    const form = document.getElementById('positionFiltersForm');
+    if (form) {
+        form.addEventListener('change', () => {
+            if (typeof window.jQuery !== 'undefined') {
+                const dt = window.jQuery('#positionsTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
+                }
+            }
+        });
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (typeof window.jQuery !== 'undefined') {
+                const dt = window.jQuery('#positionsTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
+                }
+            }
+        });
+    }
 });

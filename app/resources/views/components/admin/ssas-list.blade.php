@@ -7,6 +7,10 @@
     'services' => [],
     'showMetrics' => false,
     'metrics' => null,
+    /**
+     * When set, table uses server-side DataTables and loads via AJAX from this URL.
+     */
+    'datatableUrl' => null,
     // context: 'index', 'detail', or 'therapist'
     'context' => 'index',
 ])
@@ -105,9 +109,9 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    @if ($ssas->count() > 0)
+    @if (isset($datatableUrl) || $ssas->count() > 0)
         <div class="overflow-x-auto">
-            <table id="ssasTable" class="w-full display">
+            <table id="ssasTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -120,6 +124,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!isset($datatableUrl))
                     @foreach ($ssas as $ssa)
                         <tr>
                             <td>
@@ -286,6 +291,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    @endif
                 </tbody>
             </table>
         </div>

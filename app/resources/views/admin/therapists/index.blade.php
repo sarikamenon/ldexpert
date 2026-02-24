@@ -9,7 +9,7 @@
     @endif
 
     <x-admin.therapists-list :therapists="$therapists" :filters="$filters" :positions="$positions" :showMetrics="true" :metrics="$metrics"
-        context="index" />
+        :datatable-url="$datatableUrl" context="index" />
 
     <form method="POST" id="therapistStatusForm" class="hidden">
         @csrf
