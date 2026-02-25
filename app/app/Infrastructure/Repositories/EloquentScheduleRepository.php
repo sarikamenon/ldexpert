@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
@@ -253,6 +254,44 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->orderBy('start_time')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, Schedule>}
+     */
+    public function listForDataTablesForStudent(User $student, ScheduleFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->buildStudentScheduleQuery($student, $filters);
+
+        $recordsTotal = (clone $baseQuery)->count();
+
+        if ($params->searchValue) {
+            $sv = $params->searchValue;
+            $baseQuery->where(function ($q) use ($sv) {
+                $q->whereHas('therapist', fn ($q2) => $q2->where('name', 'like', "%{$sv}%"))
+                    ->orWhereHas('service', fn ($q2) => $q2->where('name', 'like', "%{$sv}%"))
+                    ->orWhereHas('school', fn ($q2) => $q2->where('display_name', 'like', "%{$sv}%"));
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count();
+
+        $orderColumn = $params->orderColumn ?? 'schedule_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+        if ($orderColumn !== 'start_time') {
+            $baseQuery->orderBy('start_time', $orderDir);
+        }
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool

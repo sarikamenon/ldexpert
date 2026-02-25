@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Services;
 
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\IrsReportFilterDTO;
+use App\Enums\PaymentMethod;
 use App\Models\TherapistBillPayment;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 final class IrsReportService
@@ -67,14 +70,23 @@ final class IrsReportService
             $profile = $therapist?->therapistProfile;
             $bill = $payment->therapistBill;
 
-            $recipient = $bill?->therapist_name ?? $therapist?->name ?? '-';
+            $recipient = $bill->therapist_name ?? $therapist->name ?? '-';
             $hourlyRate = $profile ? (float) $profile->hourly_rate : 0.0;
-            $paymentMethod = $payment->method instanceof \BackedEnum
-                ? $payment->method->label()
-                : (string) $payment->method;
-            $payrollPeriod = $bill
-                ? $bill->billing_period_start->format('F j').' to '.$bill->billing_period_end->format('F j')
-                : '-';
+
+            $method = $payment->method;
+            if ($method instanceof PaymentMethod) {
+                $paymentMethod = $method->label();
+            } else {
+                $paymentMethod = $method !== null ? (string) $method : '';
+            }
+
+            $billingStart = $bill?->billing_period_start;
+            $billingEnd = $bill?->billing_period_end;
+            if ($billingStart instanceof CarbonInterface && $billingEnd instanceof CarbonInterface) {
+                $payrollPeriod = $billingStart->format('F j').' to '.$billingEnd->format('F j');
+            } else {
+                $payrollPeriod = '-';
+            }
 
             $ytd = $ytdByPaymentId[$payment->id] ?? 0.0;
 
@@ -92,9 +104,9 @@ final class IrsReportService
             $rows[] = [
                 'company_name' => config('finance.company_name', 'The LD Expert, LLC'),
                 'recipient' => $recipient,
-                'payment_date' => $payment->paid_at->format('Y-m-d'),
-                'payment_date_display' => $payment->paid_at->format('m/d/y'),
-                'payment_date_csv' => $payment->paid_at->format('d/m/y'),
+                'payment_date' => $payment->paid_at instanceof CarbonInterface ? $payment->paid_at->format('Y-m-d') : (string) $payment->paid_at,
+                'payment_date_display' => $payment->paid_at instanceof CarbonInterface ? $payment->paid_at->format('m/d/y') : (string) $payment->paid_at,
+                'payment_date_csv' => $payment->paid_at instanceof CarbonInterface ? $payment->paid_at->format('d/m/y') : (string) $payment->paid_at,
                 'payment_method' => $paymentMethod,
                 'hourly_rate' => $hourlyRate,
                 'tax_status' => config('finance.irs_tax_status', '1099-NEC'),
@@ -129,6 +141,52 @@ final class IrsReportService
                 'total_net' => round($totalNet, 2),
                 'row_count' => count($rows),
             ],
+        ];
+    }
+
+    /**
+     * Get report rows for DataTables: same filters as getReportData, then search/sort/slice.
+     *
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: array<int, array<string, mixed>>}
+     */
+    public function getReportDataForDataTables(IrsReportFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $data = $this->getReportData($filters);
+        $rows = $data['rows'];
+        $recordsTotal = count($rows);
+
+        if ($params->searchValue !== null && $params->searchValue !== '') {
+            $sv = mb_strtolower($params->searchValue);
+            $rows = array_values(array_filter($rows, function (array $row) use ($sv): bool {
+                foreach (['recipient', 'payment_date_display', 'payment_method', 'tax_status', 'payroll_period'] as $key) {
+                    if (isset($row[$key]) && str_contains(mb_strtolower((string) $row[$key]), $sv)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
+        $recordsFiltered = count($rows);
+
+        $orderKey = $params->orderColumn ?? 'payment_date';
+        $dir = $params->orderDir === 'desc' ? -1 : 1;
+        usort($rows, function (array $a, array $b) use ($orderKey, $dir): int {
+            $va = $a[$orderKey] ?? '';
+            $vb = $b[$orderKey] ?? '';
+            if (is_numeric($va) && is_numeric($vb)) {
+                return (int) (($va <=> $vb) * $dir);
+            }
+
+            return strcmp((string) $va, (string) $vb) * $dir;
+        });
+
+        $rows = array_slice($rows, $params->start, $params->length);
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
         ];
     }
 

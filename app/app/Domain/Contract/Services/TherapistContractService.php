@@ -7,12 +7,14 @@ namespace App\Domain\Contract\Services;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\DTOs\ChangeContractStatusDTO;
 use App\DTOs\CreateTherapistContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Models\TherapistContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class TherapistContractService
@@ -21,9 +23,18 @@ final class TherapistContractService
         private readonly TherapistContractRepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<TherapistContract> */
     public function paginate(TherapistContractFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->repository->paginate($filters, $perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, TherapistContract>}
+     */
+    public function listForDataTables(TherapistContractFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function metrics(): array

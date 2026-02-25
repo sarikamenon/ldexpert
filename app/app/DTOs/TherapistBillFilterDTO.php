@@ -17,17 +17,14 @@ final class TherapistBillFilterDTO
         public readonly int $perPage = 15,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
-            therapistId: isset($data['therapist_id']) && $data['therapist_id'] !== null
+            therapistId: isset($data['therapist_id'])
                 ? (int) $data['therapist_id']
                 : null,
-            status: isset($data['status']) && $data['status'] !== null
+            status: isset($data['status'])
                 ? TherapistBillStatus::from($data['status'])
                 : null,
             dateFrom: $data['date_from'] ?? null,
@@ -37,9 +34,6 @@ final class TherapistBillFilterDTO
         );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     /** @return array<string, mixed> */
     public function toArray(): array
     {

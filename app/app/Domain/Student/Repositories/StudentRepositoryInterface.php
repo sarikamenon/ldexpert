@@ -27,22 +27,37 @@ interface StudentRepositoryInterface
      */
     public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array;
 
+    /**
+     * @param  array{search?: string|null, status?: string|null}  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, User>}
+     */
+    public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array;
+
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User;
 
     public function getMetrics(?string $status = null): array;
 
+    /**
+     * @return Collection<int, User>
+     */
     public function export(StudentFilterDTO $filters): Collection;
 
     public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator;
 
     public function countStudentsBySchool(int $schoolId): int;
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsBySchool(int $schoolId): Collection;
 
     public function countStudentsByTherapist(int $therapistId): int;
 
     public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator;
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsByTherapist(int $therapistId): Collection;
 
     public function getSchoolIdByUserId(int $userId): ?int;

@@ -21,34 +21,36 @@
     </x-ui::card>
 
     {{-- Summary --}}
+    @if (!empty($summary))
     <x-ui::card class="p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <p class="text-sm text-foreground/70">Total Accounts</p>
-                <p class="text-3xl font-semibold mt-1">{{ $accounts->count() }}</p>
+                <p class="text-3xl font-semibold mt-1">{{ $summary['total_accounts'] ?? 0 }}</p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">
                     Total {{ $accountType === 'schools' ? 'Invoiced' : 'Billed' }}
                 </p>
                 <p class="text-3xl font-semibold mt-1">
-                    ${{ number_format($accounts->sum($accountType === 'schools' ? 'total_invoiced' : 'total_billed'), 2) }}
+                    ${{ number_format($summary['total_invoiced_or_billed'] ?? 0, 2) }}
                 </p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">Total Paid</p>
                 <p class="text-3xl font-semibold mt-1 text-success">
-                    ${{ number_format($accounts->sum('total_paid'), 2) }}
+                    ${{ number_format($summary['total_paid'] ?? 0, 2) }}
                 </p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">Total Outstanding</p>
-                <p class="text-3xl font-semibold mt-1 {{ $accounts->sum('outstanding') > 0 ? 'text-warning' : 'text-success' }}">
-                    ${{ number_format($accounts->sum('outstanding'), 2) }}
+                <p class="text-3xl font-semibold mt-1 {{ ($summary['total_outstanding'] ?? 0) > 0 ? 'text-warning' : 'text-success' }}">
+                    ${{ number_format($summary['total_outstanding'] ?? 0, 2) }}
                 </p>
             </div>
         </div>
     </x-ui::card>
+    @endif
 
     {{-- Accounts Table --}}
     <x-ui::card class="p-6 space-y-4 overflow-hidden">
@@ -61,7 +63,29 @@
                 Export
             </a>
         </div>
-        @if ($accounts->count() > 0)
+        @if (isset($datatableUrl))
+            <div class="overflow-x-auto">
+                <table id="ledgerAccountsTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}" data-filter-type="{{ $accountType }}">
+                    <thead class="bg-background/subtle">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">
+                                {{ $accountType === 'schools' ? 'School' : 'Therapist' }}
+                            </th>
+                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Contact</th>
+                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">
+                                {{ $accountType === 'schools' ? 'Invoiced' : 'Billed' }}
+                            </th>
+                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Paid</th>
+                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Balance</th>
+                            <th class="text-center py-3 px-4 text-sm font-medium text-foreground">Transactions</th>
+                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        @elseif (isset($accounts) && $accounts->count() > 0)
             <div class="overflow-x-auto">
                 <table id="ledgerAccountsTable" class="w-full display">
                     <thead class="bg-background/subtle">
@@ -101,11 +125,11 @@
                                     </div>
                                 </td>
                                 <td class="py-3 px-4 text-sm">
-                                    @if ($account->email)
-                                        <div class="text-foreground">{{ $account->email }}</div>
+                                    @if ($account->email ?? $account->contact_email ?? null)
+                                        <div class="text-foreground">{{ $account->contact_email ?? $account->email }}</div>
                                     @endif
-                                    @if ($account->phone)
-                                        <div class="text-foreground/80 text-xs">{{ $account->phone }}</div>
+                                    @if ($account->contact_phone ?? null)
+                                        <div class="text-foreground/80 text-xs">{{ $account->contact_phone }}</div>
                                     @endif
                                 </td>
                                 <td class="py-3 px-4 text-sm text-right">

@@ -28,6 +28,7 @@ final class StudentDocumentFilterDTO
         );
     }
 
+    /** @param array<string, mixed> $data */
     public static function fromRequest(array $data): self
     {
         return self::fromArray($data);

@@ -36,9 +36,11 @@ final class UpdateSSADTO
 
         $additionalServiceIds = null;
         if (array_key_exists('additional_service_ids', $data)) {
-            $additionalServiceIds = collect($data['additional_service_ids'] ?? [])
-                ->filter(static fn ($value) => $value !== null && $value !== '')
-                ->map(static fn ($value) => (int) $value)
+            /** @var array<int, mixed> $rawIds */
+            $rawIds = $data['additional_service_ids'] ?? [];
+            $additionalServiceIds = collect($rawIds)
+                ->filter(static fn ($value): bool => $value !== null && $value !== '')
+                ->map(static fn ($value): int => (int) $value)
                 ->unique()
                 ->values()
                 ->all();

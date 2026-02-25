@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Analytics\Repositories;
 
+use App\Models\School;
+use App\Models\TherapistProfile;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -23,6 +25,7 @@ interface AnalyticsRepositoryInterface
 
     public function getSchoolsByManager(): array;
 
+    /** @return Collection<int, School> */
     public function getRecentSchoolAdditions(int $limit): Collection;
 
     public function getTherapistProfileCount(): int;
@@ -37,6 +40,7 @@ interface AnalyticsRepositoryInterface
 
     public function getTherapistsGrowthTrend(Carbon $startDate, Carbon $endDate): array;
 
+    /** @return Collection<int, TherapistProfile> */
     public function getRecentTherapistAdditions(int $limit): Collection;
 
     public function getNewSchoolsInPeriod(Carbon $startDate, Carbon $endDate): int;

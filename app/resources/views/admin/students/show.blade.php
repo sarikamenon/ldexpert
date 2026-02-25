@@ -117,9 +117,10 @@
             :services="$services ?? []" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'therapists' && isset($therapists))
         <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []" context="detail" />
-    @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($schedules))
-        <x-admin.schedules-list :schedules="$schedules" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
-            :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($scheduleFilters))
+        <x-admin.schedules-list :schedules="$schedules ?? collect()" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
+            :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail"
+            :datatable-url="$scheduleDatatableUrl ?? null" :student-id="$scheduleStudentId ?? null" />
     @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
         <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []" :filters="$sessionLogFilters ?? []"
             :statuses="$sessionLogStatuses ?? []" context="detail" />

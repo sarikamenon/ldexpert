@@ -14,6 +14,7 @@ final class PositionFilterDTO
         public readonly int $perPage = 25,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $status = $data['status'] ?? null;

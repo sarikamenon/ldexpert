@@ -96,15 +96,15 @@ final class ScheduleController extends Controller
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'student_name' => $schedule->student?->name,
-                'student_password' => $studentProfile?->id_number ?? '-',
-                'parent_name' => $studentProfile?->parent_guardian_name ?? '-',
-                'parent_email' => $studentProfile?->parent_guardian_email ?? '-',
-                'parent_phone' => $studentProfile?->parent_guardian_phone ?? '-',
+                'student_password' => $studentProfile->id_number ?? '-',
+                'parent_name' => $studentProfile->parent_guardian_name ?? '-',
+                'parent_email' => $studentProfile->parent_guardian_email ?? '-',
+                'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
             ];
         });
 
-        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         $calendarStart = $selectedDate->startOfMonth();
@@ -178,7 +178,7 @@ final class ScheduleController extends Controller
         $students = collect([
             (object) [
                 'user_id' => $student?->id,
-                'first_name' => $student?->name ?? '',
+                'first_name' => $student->name ?? '',
                 'last_name' => '',
             ],
         ])->filter(static fn ($studentInfo) => $studentInfo->user_id !== null)->values();
@@ -200,7 +200,7 @@ final class ScheduleController extends Controller
             ],
         ]);
 
-        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         return view('therapist.schedule.create', [
@@ -243,7 +243,7 @@ final class ScheduleController extends Controller
 
         $this->authorize('update', $schedule);
 
-        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         return view('therapist.schedule.edit', [
@@ -320,10 +320,10 @@ final class ScheduleController extends Controller
                     'notes' => $schedule->notes,
                     'location_details' => $schedule->location_details,
                     'student_name' => $schedule->student?->name,
-                    'student_password' => $schedule->student?->studentProfile?->id_number ?? '-',
-                    'parent_name' => $schedule->student?->studentProfile?->parent_guardian_name ?? '-',
-                    'parent_email' => $schedule->student?->studentProfile?->parent_guardian_email ?? '-',
-                    'parent_phone' => $schedule->student?->studentProfile?->parent_guardian_phone ?? '-',
+                    'student_password' => $schedule->student?->studentProfile->id_number ?? '-',
+                    'parent_name' => $schedule->student?->studentProfile->parent_guardian_name ?? '-',
+                    'parent_email' => $schedule->student?->studentProfile->parent_guardian_email ?? '-',
+                    'parent_phone' => $schedule->student?->studentProfile->parent_guardian_phone ?? '-',
                     'edit_url' => route('therapist.schedule.edit', $schedule->id),
                 ];
             })->toArray(),
@@ -452,7 +452,7 @@ final class ScheduleController extends Controller
 
         return redirect()
             ->route('therapist.schedule.calendar', [
-                'date' => $schedule->schedule_date?->format('Y-m-d') ?? $request->input('schedule_date'),
+                'date' => $schedule->schedule_date->format('Y-m-d') ?? $request->input('schedule_date'),
             ])
             ->with('status', 'Schedule created successfully.');
     }
@@ -495,7 +495,7 @@ final class ScheduleController extends Controller
 
         return redirect()
             ->route('therapist.schedule.calendar', [
-                'date' => $updated->schedule_date?->format('Y-m-d') ?? $request->input('schedule_date'),
+                'date' => $updated->schedule_date->format('Y-m-d') ?? $request->input('schedule_date'),
             ])
             ->with('status', 'Schedule updated successfully.');
     }
@@ -636,16 +636,16 @@ final class ScheduleController extends Controller
         return response()->json([
             'schedule' => [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date?->format('Y-m-d'),
-                'schedule_date_formatted' => $schedule->schedule_date?->format('M d, Y'),
-                'start_time' => $schedule->start_time?->format('H:i'),
-                'start_time_formatted' => $schedule->start_time?->format('g:i A'),
-                'end_time' => $schedule->end_time?->format('H:i'),
-                'end_time_formatted' => $schedule->end_time?->format('g:i A'),
+                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
+                'schedule_date_formatted' => $schedule->schedule_date->format('M d, Y'),
+                'start_time' => $schedule->start_time->format('H:i'),
+                'start_time_formatted' => $schedule->start_time->format('g:i A'),
+                'end_time' => $schedule->end_time->format('H:i'),
+                'end_time_formatted' => $schedule->end_time->format('g:i A'),
                 'duration_minutes' => $durationMinutes,
                 'duration_formatted' => $this->formatDuration($durationMinutes),
-                'status' => $schedule->status?->value,
-                'billing_status' => $schedule->billing_status?->value,
+                'status' => $schedule->status->value,
+                'billing_status' => $schedule->billing_status->value,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'service' => [
@@ -654,14 +654,14 @@ final class ScheduleController extends Controller
                 ],
                 'ssa' => $ssa ? [
                     'id' => $ssa->id,
-                    'start_date' => $ssa->start_date?->format('Y-m-d'),
-                    'start_date_formatted' => $ssa->start_date?->format('M d, Y'),
-                    'end_date' => $ssa->end_date?->format('Y-m-d'),
-                    'end_date_formatted' => $ssa->end_date?->format('M d, Y'),
+                    'start_date' => $ssa->start_date->format('Y-m-d'),
+                    'start_date_formatted' => $ssa->start_date->format('M d, Y'),
+                    'end_date' => $ssa->end_date->format('Y-m-d'),
+                    'end_date_formatted' => $ssa->end_date->format('M d, Y'),
                     'minutes_per_session' => $ssa->minutes_per_session,
                     'frequency' => $ssa->frequency?->value,
                     'sessions_per_frequency' => $ssa->sessions_per_frequency,
-                    'status' => $ssa->status?->value,
+                    'status' => $ssa->status->value,
                     'tho_minutes' => $ssa->tho_minutes ?? 0,
                     'served_minutes' => $ssa->served_minutes ?? 0,
                     'service' => [
@@ -673,17 +673,17 @@ final class ScheduleController extends Controller
                     'id' => $schedule->student?->id,
                     'name' => $schedule->student?->name,
                     'email' => $schedule->student?->email,
-                    'id_number' => $studentProfile?->id_number ?? '-',
-                    'timezone' => $studentProfile?->timezone ?? '-',
+                    'id_number' => $studentProfile->id_number ?? '-',
+                    'timezone' => $studentProfile->timezone ?? '-',
                 ],
                 'school' => [
                     'id' => $schedule->school?->id,
-                    'name' => $schedule->school?->display_name ?? $schedule->school?->name,
+                    'name' => $schedule->school->display_name ?? $schedule->school?->name,
                 ],
                 'parent' => [
-                    'name' => $studentProfile?->parent_guardian_name ?? '-',
-                    'email' => $studentProfile?->parent_guardian_email ?? '-',
-                    'phone' => $studentProfile?->parent_guardian_phone ?? '-',
+                    'name' => $studentProfile->parent_guardian_name ?? '-',
+                    'email' => $studentProfile->parent_guardian_email ?? '-',
+                    'phone' => $studentProfile->parent_guardian_phone ?? '-',
                 ],
             ],
         ]);

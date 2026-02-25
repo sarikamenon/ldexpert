@@ -285,11 +285,11 @@ final class TherapistController extends Controller
                     $therapist->id,
                     $therapist->name,
                     $therapist->email,
-                    $profile?->manager?->name ?? '—',
-                    $profile?->phone ?? '—',
-                    $profile?->position?->name ?? '—',
-                    $profile?->employee_type?->value ?? $profile?->employee_type ?? '—',
-                    $therapist->status?->value ?? $therapist->status ?? 'inactive',
+                    $profile?->manager->name ?? '—',
+                    $profile->phone ?? '—',
+                    $profile?->position->name ?? '—',
+                    $profile?->employee_type->value ?? $profile->employee_type ?? '—',
+                    $therapist->status->value ?? $therapist->status ?? 'inactive',
                 ]);
             }
 

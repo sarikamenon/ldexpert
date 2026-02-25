@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateSchoolContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolContractDTO;
 use App\Enums\ContractStatus;
@@ -14,6 +15,7 @@ use App\Models\SchoolContract;
 use App\Models\SchoolContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class EloquentSchoolContractRepository implements SchoolContractRepositoryInterface
 {
@@ -22,6 +24,44 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         return $this->applyFilters($this->baseQuery(), $filters)
             ->orderByDesc('start_date')
             ->paginate($perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SchoolContract>}
+     */
+    public function listForDataTables(SchoolContractFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters($this->baseQuery(), $filters);
+
+        $recordsTotal = (clone $baseQuery)->count('school_contracts.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $baseQuery->where(function (Builder $q) use ($search) {
+                $q->where('school_contracts.id', 'like', '%'.$search.'%')
+                    ->orWhereHas('school', function (Builder $sq) use ($search) {
+                        $sq->where('full_name', 'like', '%'.$search.'%')
+                            ->orWhere('display_name', 'like', '%'.$search.'%');
+                    });
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count('school_contracts.id');
+
+        $orderColumn = $params->orderColumn ?? 'school_contracts.start_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, SchoolContract> $rows */
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateSchoolContractDTO $dto): SchoolContract

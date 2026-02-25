@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Repositories;
 
+use App\DTOs\DataTablesParamsDTO;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -42,4 +43,14 @@ interface SessionLogRepositoryInterface
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection;
 
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
+    public function listForDataTables(array $filters, DataTablesParamsDTO $params): array;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
+    public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array;
 }

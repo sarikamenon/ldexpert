@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Repositories;
 
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Models\Schedule;
@@ -14,6 +15,11 @@ use Illuminate\Support\Collection;
 
 interface ScheduleRepositoryInterface
 {
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, Schedule>}
+     */
+    public function listForDataTablesForStudent(User $student, ScheduleFilterDTO $filters, DataTablesParamsDTO $params): array;
+
     public function getSchedulesForTherapist(User $therapist, ScheduleFilterDTO $filters): Collection;
 
     public function getPendingCount(User $therapist): int;

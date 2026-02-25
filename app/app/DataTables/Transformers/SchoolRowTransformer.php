@@ -16,8 +16,8 @@ final class SchoolRowTransformer
     {
         $showUrl = route('admin.schools.show', $school);
         $editUrl = route('admin.schools.edit', $school);
-        $isActive = ($school->status?->value ?? 'inactive') === 'active';
-        $statusLabel = ucfirst($school->status?->value ?? 'inactive');
+        $isActive = ($school->status->value ?? 'inactive') === 'active';
+        $statusLabel = ucfirst($school->status->value ?? 'inactive');
         $badgeClass = $isActive
             ? 'bg-success/10 text-success border border-success/20'
             : 'bg-danger/10 text-danger border border-danger/20';
@@ -42,7 +42,7 @@ final class SchoolRowTransformer
         $actions = '<div class="flex space-x-1">'
             .'<a href="'.e($showUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors" title="View School">'.$iconView.'</a>'
             .'<a href="'.e($editUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" title="Edit School">'.$iconEdit.'</a>'
-            .'<button type="button" data-school="'.(int) $school->id.'" data-status="'.e($school->status?->value ?? 'inactive').'" class="toggle-status-button inline-flex items-center justify-center w-8 h-8 rounded transition-colors '.$toggleClass.'" title="'.e($toggleTitle).'">'.$toggleIcon.'</button>'
+            .'<button type="button" data-school="'.(int) $school->id.'" data-status="'.e($school->status->value ?? 'inactive').'" class="toggle-status-button inline-flex items-center justify-center w-8 h-8 rounded transition-colors '.$toggleClass.'" title="'.e($toggleTitle).'">'.$toggleIcon.'</button>'
             .'</div>';
 
         $state = $school->state ? UsStates::getStateName($school->state) : '—';
@@ -50,7 +50,7 @@ final class SchoolRowTransformer
         return [
             '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" title="View School">'.(int) $school->id.'</a>',
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($school->display_name).'</a>',
-            e($school->manager?->name ?? '—'),
+            e($school->manager->name ?? '—'),
             e($state),
             e($school->contact_email ?? '—'),
             $statusBadge,

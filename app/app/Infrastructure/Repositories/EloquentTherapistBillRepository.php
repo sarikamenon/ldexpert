@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistBillFilterDTO;
 use App\Enums\SessionLogStatus;
 use App\Enums\TherapistBillStatus;
@@ -53,6 +54,57 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
 
         return $query->orderBy('created_at', 'desc')
             ->paginate($perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, TherapistBill>}
+     */
+    public function listForDataTables(TherapistBillFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = TherapistBill::query()->with(['therapist', 'sessionLogs']);
+
+        if ($filters->therapistId !== null) {
+            $baseQuery->where('therapist_id', $filters->therapistId);
+        }
+        if ($filters->status !== null) {
+            $baseQuery->where('status', $filters->status->value);
+        }
+        if ($filters->dateFrom !== null) {
+            $baseQuery->whereDate('billing_period_start', '>=', $filters->dateFrom);
+        }
+        if ($filters->dateTo !== null) {
+            $baseQuery->whereDate('billing_period_end', '<=', $filters->dateTo);
+        }
+        if ($filters->billNumber !== null) {
+            $baseQuery->where('bill_number', 'like', '%'.$filters->billNumber.'%');
+        }
+
+        $recordsTotal = (clone $baseQuery)->count('therapist_bills.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $baseQuery->where(function ($q) use ($search) {
+                $q->where('bill_number', 'like', '%'.$search.'%')
+                    ->orWhere('therapist_name', 'like', '%'.$search.'%');
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count('therapist_bills.id');
+
+        $orderColumn = $params->orderColumn ?? 'created_at';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, TherapistBill> $rows */
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     /**

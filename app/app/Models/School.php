@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property SchoolStatus $status
+ */
 class School extends Model
 {
     /** @use HasFactory<\Database\Factories\SchoolFactory> */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\SessionLog\Services;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SessionLogIndexDTO;
 use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Support\DateHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 final class SessionLogIndexService
 {
@@ -36,6 +38,22 @@ final class SessionLogIndexService
             'statuses' => SessionLogStatus::cases(),
             'filters' => $dto->toArray(),
         ];
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
+    public function listForDataTables(array $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
+    public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTablesForTherapist($therapist, $filters, $params);
     }
 
     /**
@@ -124,12 +142,12 @@ final class SessionLogIndexService
                         'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
                     ],
                     'student_service_school' => [
-                        'student' => $log->student?->name ?? null,
-                        'school' => $log->school?->display_name ?? null,
+                        'student' => $log->student->name ?? null,
+                        'school' => $log->school->display_name ?? null,
                     ],
                     'therapist' => [
-                        'name' => $log->therapist?->name ?? '-',
-                        'service' => $log->service?->name ?? null,
+                        'name' => $log->therapist->name ?? '-',
+                        'service' => $log->service->name ?? null,
                     ],
                     'school_amount' => $this->formatCurrency($log->school_invoice_amount),
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
@@ -153,8 +171,8 @@ final class SessionLogIndexService
                 $sessionDate = $log->session_date;
                 $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
 
-                $startTime = $log->start_time?->format('g:i A');
-                $endTime = $log->end_time?->format('g:i A');
+                $startTime = $log->start_time->format('g:i A');
+                $endTime = $log->end_time->format('g:i A');
                 $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
                 $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
@@ -170,12 +188,12 @@ final class SessionLogIndexService
                         'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
                     ],
                     'student_service_school' => [
-                        'student' => $log->student?->name ?? null,
-                        'school' => $log->school?->display_name ?? null,
+                        'student' => $log->student->name ?? null,
+                        'school' => $log->school->display_name ?? null,
                     ],
                     'therapist' => [
-                        'name' => $log->therapist?->name ?? '-',
-                        'service' => $log->service?->name ?? null,
+                        'name' => $log->therapist->name ?? '-',
+                        'service' => $log->service->name ?? null,
                     ],
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
                     'status' => $this->getStatusLabel($log),

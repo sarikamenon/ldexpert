@@ -30,7 +30,7 @@ class DashboardController extends Controller
 
         // Get student timezone (from user or student profile, with fallback to UTC)
         $studentTimezone = $student->timezone
-            ?? $student->studentProfile?->timezone
+            ?? $student->studentProfile->timezone
             ?? 'UTC';
 
         // Get today's date range in student's timezone, converted to UTC for querying
@@ -92,8 +92,8 @@ class DashboardController extends Controller
                 'schedule_date' => $scheduleLocal->format('Y-m-d'),
                 'start_time' => $scheduleLocal->format('g:i A'),
                 'end_time' => $endLocal->format('g:i A'),
-                'therapist_name' => $schedule->therapist?->name ?? 'N/A',
-                'service_name' => $schedule->service?->name ?? 'N/A',
+                'therapist_name' => $schedule->therapist->name ?? 'N/A',
+                'service_name' => $schedule->service->name ?? 'N/A',
                 'school' => $schedule->school?->display_name,
                 'location_details' => $schedule->location_details,
                 'notes' => $schedule->notes,

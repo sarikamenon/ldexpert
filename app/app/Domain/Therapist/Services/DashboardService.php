@@ -93,25 +93,25 @@ class DashboardService
 
             return [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date?->format('Y-m-d'),
-                'start_time' => $schedule->start_time?->format('H:i'),
-                'end_time' => $schedule->end_time?->format('H:i'),
+                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
+                'start_time' => $schedule->start_time->format('H:i'),
+                'end_time' => $schedule->end_time->format('H:i'),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id
                     ? route('therapist.students.show', $schedule->student->id)
                     : null,
                 'service' => $schedule->service?->name,
-                'status' => $schedule->status?->value,
-                'billing_status' => $schedule->billing_status?->value,
+                'status' => $schedule->status->value,
+                'billing_status' => $schedule->billing_status->value,
                 'is_group' => $schedule->is_group,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'student_name' => $schedule->student?->name,
-                'student_password' => $studentProfile?->id_number ?? '-',
-                'parent_name' => $studentProfile?->parent_guardian_name ?? '-',
-                'parent_email' => $studentProfile?->parent_guardian_email ?? '-',
-                'parent_phone' => $studentProfile?->parent_guardian_phone ?? '-',
+                'student_password' => $studentProfile->id_number ?? '-',
+                'parent_name' => $studentProfile->parent_guardian_name ?? '-',
+                'parent_email' => $studentProfile->parent_guardian_email ?? '-',
+                'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
             ];
         });

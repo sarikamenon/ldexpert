@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Finance\Services;
 
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\LedgerAccountsFilterDTO;
 use App\Enums\Role;
 use App\Models\School;
@@ -104,6 +105,127 @@ final class LedgerAccountService
         });
 
         return $accounts->sortByDesc('outstanding')->values();
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, School>}
+     */
+    public function listSchoolAccountsForDataTables(LedgerAccountsFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $query = School::query()
+            ->select([
+                'schools.id',
+                'schools.full_name',
+                'schools.display_name',
+                'schools.contact_email',
+                'schools.contact_phone',
+                'schools.created_at',
+            ])
+            ->withCount('invoices');
+
+        if ($filters->search) {
+            $search = $filters->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('schools.full_name', 'like', "%{$search}%")
+                    ->orWhere('schools.display_name', 'like', "%{$search}%")
+                    ->orWhere('schools.contact_email', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsTotal = (clone $query)->count();
+
+        if ($params->searchValue) {
+            $sv = $params->searchValue;
+            $query->where(function ($q) use ($sv) {
+                $q->where('schools.full_name', 'like', "%{$sv}%")
+                    ->orWhere('schools.display_name', 'like', "%{$sv}%")
+                    ->orWhere('schools.contact_email', 'like', "%{$sv}%")
+                    ->orWhere('schools.contact_phone', 'like', "%{$sv}%");
+            });
+        }
+        $recordsFiltered = (clone $query)->count();
+
+        $orderColumn = $params->orderColumn ?? 'schools.display_name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $query->orderBy($orderColumn, $orderDir);
+
+        $rows = $query->skip($params->start)->take($params->length)->get();
+
+        foreach ($rows as $school) {
+            $stats = $this->ledgerEntries->getSchoolStats($school->id);
+            $school->total_invoiced = $stats['total_invoiced'];
+            $school->total_paid = $stats['total_paid'];
+            $school->outstanding = $stats['outstanding'];
+            $school->current_balance = $stats['current_balance'];
+            $school->transaction_count = $stats['transaction_count'];
+        }
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listTherapistAccountsForDataTables(LedgerAccountsFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $query = User::query()
+            ->where('role', Role::THERAPIST)
+            ->select(['users.id', 'users.name', 'users.email', 'users.created_at']);
+
+        if ($filters->search) {
+            $search = $filters->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('users.name', 'like', "%{$search}%")
+                    ->orWhere('users.email', 'like', "%{$search}%");
+            });
+        }
+
+        $recordsTotal = (clone $query)->count();
+
+        if ($params->searchValue) {
+            $sv = $params->searchValue;
+            $query->where(function ($q) use ($sv) {
+                $q->where('users.name', 'like', "%{$sv}%")
+                    ->orWhere('users.email', 'like', "%{$sv}%");
+            });
+        }
+        $recordsFiltered = (clone $query)->count();
+
+        $orderColumn = $params->orderColumn ?? 'users.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $query->orderBy($orderColumn, $orderDir);
+
+        $rows = $query->skip($params->start)->take($params->length)->get();
+
+        foreach ($rows as $user) {
+            $stats = $this->ledgerEntries->getTherapistStats($user->id);
+            $user->total_billed = $stats['total_billed'];
+            $user->total_paid = $stats['total_paid'];
+            $user->outstanding = $stats['outstanding'];
+            $user->current_balance = $stats['current_balance'];
+            $user->transaction_count = $stats['transaction_count'];
+            $user->bills_count = $user->therapistBills()->count();
+        }
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, \App\Models\LedgerEntry>}
+     */
+    public function listEntriesForDataTables(string $type, int $id, DataTablesParamsDTO $params): array
+    {
+        $ledgerableType = $type === 'school' ? School::class : User::class;
+
+        return $this->ledgerEntries->listForDataTables($ledgerableType, $id, $params);
     }
 
     public function calculateAccountStats(object $account, string $type): array

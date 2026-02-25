@@ -7,9 +7,9 @@ namespace App\Domain\Invoice\Services;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
@@ -116,7 +116,7 @@ final class InvoiceService
     }
 
     /**
-     * @param  Collection<SessionLog>  $sessionLogs
+     * @param  Collection<int, SessionLog>  $sessionLogs
      * @return array<string, float>
      */
     public function calculateTotals(Collection $sessionLogs): array

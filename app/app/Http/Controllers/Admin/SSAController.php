@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\SSAImportRowTransformer;
 use App\DataTables\Transformers\SSARowTransformer;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAImportListService;
 use App\Domain\SSA\Services\SSAImportService;
 use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
@@ -28,6 +30,7 @@ use App\Http\Requests\Admin\SSA\ChangeSSAStatusRequest;
 use App\Http\Requests\Admin\SSA\ImportSSAsRequest;
 use App\Http\Requests\Admin\SSA\IndexSSARequest;
 use App\Http\Requests\Admin\SSA\SSADataRequest;
+use App\Http\Requests\Admin\SSA\SSAImportDataRequest;
 use App\Http\Requests\Admin\SSA\StoreSSARequest;
 use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
@@ -50,6 +53,17 @@ final class SSAController extends Controller
     /**
      * @var array<int, string>
      */
+    private const SSA_IMPORTS_ORDER_WHITELIST = [
+        0 => 'ssa_imports.id',
+        1 => 'ssa_imports.type',
+        2 => 'ssa_imports.file_name',
+        4 => 'ssa_imports.status',
+        6 => 'ssa_imports.created_at',
+    ];
+
+    /**
+     * @var array<int, string>
+     */
     private const ORDER_WHITELIST = [
         0 => 'service_support_agreements.id',
         1 => 'students.name',
@@ -67,6 +81,7 @@ final class SSAController extends Controller
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
+        private readonly SSAImportListService $importListService,
     ) {}
 
     public function index(IndexSSARequest $request): View
@@ -406,14 +421,26 @@ final class SSAController extends Controller
     {
         $this->authorize('viewAny', ServiceSupportAgreement::class);
 
-        $imports = SSAImport::query()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(25);
-
         return view('admin.ssas.import-history', [
-            'imports' => $imports,
+            'imports' => collect(),
+            'datatableUrl' => route('admin.ssas.imports.data'),
         ]);
+    }
+
+    public function importHistoryData(SSAImportDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::SSA_IMPORTS_ORDER_WHITELIST);
+        $result = $this->importListService->listForDataTables($params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (SSAImport $import): array => SSAImportRowTransformer::transform($import),
+        );
     }
 
     public function downloadTemplate(Request $request): StreamedResponse

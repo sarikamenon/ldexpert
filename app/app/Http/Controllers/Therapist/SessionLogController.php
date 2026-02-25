@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
-use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\UpdateSessionLogDTO;
+use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
+use App\Http\Requests\Therapist\TherapistSessionLogDataRequest;
 use App\Http\Requests\Therapist\UpdateSessionLogRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +30,17 @@ use Illuminate\View\View;
 
 final class SessionLogController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'session_logs.session_date',
+        4 => 'session_logs.therapist_billable_amount',
+        5 => 'session_logs.status',
+    ];
+
     public function __construct(
         private readonly SessionLogService $sessionLogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
@@ -49,11 +64,8 @@ final class SessionLogController extends Controller
     public function index(SessionLogIndexRequest $request): View
     {
         $therapist = $request->user();
+        $filters = $request->validated();
 
-        $dto = SessionLogIndexDTO::fromArray($request->validated());
-        $viewData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
-
-        // Reference data for filters
         $ssas = $this->ssaService
             ->getActiveSSAsForTherapist($therapist->id)
             ->loadMissing(['student.studentProfile', 'services']);
@@ -74,11 +86,42 @@ final class SessionLogController extends Controller
             ->sortBy('name')
             ->values();
 
-        return view('therapist.session-logs.index', $viewData + [
+        return view('therapist.session-logs.index', [
+            'sessionLogs' => collect(),
+            'columns' => [],
+            'rows' => [],
+            'statuses' => SessionLogStatus::cases(),
+            'filters' => $filters,
             'students' => $students,
             'ssas' => $ssas,
             'services' => $services,
+            'datatableUrl' => route('therapist.session-logs.data'),
         ]);
+    }
+
+    public function data(TherapistSessionLogDataRequest $request): JsonResponse
+    {
+        $therapist = $request->user();
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filters = [
+            'student_id' => $request->input('filter_student_id'),
+            'ssa_id' => $request->input('filter_ssa_id'),
+            'service_id' => $request->input('filter_service_id'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+        ];
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+        $result = $this->sessionLogIndexService->listForDataTablesForTherapist($therapist, $filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (SessionLog $log): array => TherapistSessionLogRowTransformer::transform($log),
+        );
     }
 
     public function create(Request $request, ?Schedule $schedule = null): View

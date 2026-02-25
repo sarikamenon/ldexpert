@@ -10,6 +10,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property TransactionType $transaction_type
+ */
 class LedgerEntry extends Model
 {
     /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<LedgerEntry>> */

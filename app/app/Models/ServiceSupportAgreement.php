@@ -17,6 +17,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $start_date
+ * @property Carbon|null $end_date
+ * @property SSAStatus $status
+ * @property ServiceFrequency|null $frequency
+ */
 class ServiceSupportAgreement extends Model
 {
     use HasFactory;
@@ -162,7 +168,7 @@ class ServiceSupportAgreement extends Model
         $query = $this->newQuery();
         $field ??= $this->getRouteKeyName();
 
-        $route = request()?->route();
+        $route = request()->route();
         $routeName = $route?->getName();
         $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
 

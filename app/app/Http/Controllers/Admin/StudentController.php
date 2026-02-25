@@ -6,6 +6,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\DataTables\Transformers\ScheduleRowTransformer;
+use App\DataTables\Transformers\StudentImportRowTransformer;
 use App\DataTables\Transformers\StudentRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
@@ -14,6 +16,7 @@ use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
+use App\Domain\Student\Services\StudentImportListService;
 use App\Domain\Student\Services\StudentImportService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\ScheduleService;
@@ -38,6 +41,8 @@ use App\Http\Requests\Admin\Student\ImportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\StudentDataRequest;
+use App\Http\Requests\Admin\Student\StudentImportDataRequest;
+use App\Http\Requests\Admin\Student\StudentScheduleDataRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
@@ -67,7 +72,17 @@ final class StudentController extends Controller
         private readonly StudentCommentService $commentService,
         private readonly StudentDocumentService $documentService,
         private readonly PositionCatalogService $positionCatalogService,
+        private readonly StudentImportListService $importListService,
     ) {}
+
+    /** Column index => allowed order column for student imports list. */
+    private const STUDENT_IMPORTS_ORDER_WHITELIST = [
+        0 => 'student_imports.id',
+        1 => 'student_imports.type',
+        2 => 'student_imports.file_name',
+        4 => 'student_imports.status',
+        6 => 'student_imports.created_at',
+    ];
 
     /** Column index => allowed order column (DB/table qualified). */
     private const STUDENTS_ORDER_WHITELIST = [
@@ -78,6 +93,11 @@ final class StudentController extends Controller
         4 => 'student_profiles.grade_level',
         5 => 'student_profiles.date_of_birth',
         6 => 'users.status',
+    ];
+
+    private const STUDENT_SCHEDULES_ORDER_WHITELIST = [
+        0 => 'schedule_date',
+        1 => 'start_time',
     ];
 
     public function index(IndexStudentRequest $request): View
@@ -120,6 +140,35 @@ final class StudentController extends Controller
             $result['recordsFiltered'],
             $result['rows'],
             static fn (User $student): array => StudentRowTransformer::transform($student),
+        );
+    }
+
+    public function scheduleData(StudentScheduleDataRequest $request, User $student): JsonResponse
+    {
+        $this->authorize('view', StudentProfile::class);
+
+        $requestStudentId = (int) $request->input('filter_student_id');
+        if ($requestStudentId !== $student->id) {
+            abort(403, 'Student mismatch.');
+        }
+
+        $filters = ScheduleFilterDTO::fromRequest([
+            'student_id' => $student->id,
+            'date' => $request->input('filter_date'),
+            'status' => $request->input('filter_status'),
+            'billing_status' => $request->input('filter_billing_status'),
+            'ssa_id' => $request->input('filter_ssa_id'),
+            'therapist_id' => $request->input('filter_therapist_id'),
+        ]);
+        $params = DataTablesRequest::fromRequest($request, self::STUDENT_SCHEDULES_ORDER_WHITELIST);
+        $result = $this->scheduleService->listForDataTablesForStudent($student, $filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn ($schedule) => ScheduleRowTransformer::transform($schedule),
         );
     }
 
@@ -210,17 +259,14 @@ final class StudentController extends Controller
             $viewData['therapistFilters'] = $request->query();
             $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
         } elseif ($activeTab === 'schedule') {
-            $filters = ScheduleFilterDTO::fromRequest(
-                array_merge($request->query(), ['student_id' => $student->id])
-            );
-            $perPage = $request->integer('per_page', 15);
-
-            $viewData['schedules'] = $this->scheduleService->paginateForStudent($student, $filters, $perPage);
+            $viewData['schedules'] = collect();
             $viewData['scheduleFilters'] = $request->query();
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
             $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);
             $viewData['therapists'] = $this->therapistService->listTherapistsByStudent($student->id);
+            $viewData['scheduleDatatableUrl'] = route('admin.students.schedules.data', $student);
+            $viewData['scheduleStudentId'] = $student->id;
         } elseif ($activeTab === 'session_logs') {
             $dto = SessionLogIndexDTO::fromArray(
                 array_merge($request->query(), ['student_id' => $student->id])
@@ -296,8 +342,8 @@ final class StudentController extends Controller
                     $student->id,
                     $student->name,
                     $student->email,
-                    $profile?->school?->display_name ?? '—',
-                    $profile?->grade_level ?? '—',
+                    $profile?->school->display_name ?? '—',
+                    $profile->grade_level ?? '—',
                     optional($profile?->date_of_birth)->format('Y-m-d') ?? '—',
                     $student->status?->value ?? $student->status ?? 'inactive',
                 ]);
@@ -382,14 +428,26 @@ final class StudentController extends Controller
     {
         $this->authorize('viewAny', StudentProfile::class);
 
-        $imports = StudentImport::query()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(25);
-
         return view('admin.students.import-history', [
-            'imports' => $imports,
+            'imports' => collect(),
+            'datatableUrl' => route('admin.students.imports.data'),
         ]);
+    }
+
+    public function importHistoryData(StudentImportDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::STUDENT_IMPORTS_ORDER_WHITELIST);
+        $result = $this->importListService->listForDataTables($params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (StudentImport $import): array => StudentImportRowTransformer::transform($import),
+        );
     }
 
     public function downloadTemplate(Request $request): StreamedResponse

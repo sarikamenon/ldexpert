@@ -59,10 +59,10 @@
         </x-ui::filter-toolbar>
 
         <!-- Logs Table -->
-        @if ($logs->count() > 0)
-            <div class="overflow-x-auto">
-                <table id="activityLogsTable" class="w-full display">
-                    <thead>
+        <div class="overflow-x-auto">
+            <table id="activityLogsTable" class="w-full display"
+                data-datatable-url="{{ $datatableUrl ?? route('admin.activity-logs.data') }}">
+                <thead>
                         <tr>
                             <th>ID</th>
                             <th>User</th>
@@ -74,49 +74,11 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($logs as $log)
-                            <tr>
-                                <td>{{ $log->id }}</td>
-                                <td>{{ $log->user?->name ?? 'System' }}</td>
-                                <td>
-                                    <x-ui::badge :variant="$log->action_variant"
-                                        class="inline-flex items-center gap-1 text-xs font-medium capitalize">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-current"></span>
-                                        {{ $log->action_label }}
-                                    </x-ui::badge>
-                                </td>
-                                <td>{{ class_basename($log->model_type) }}</td>
-                                <td class="max-w-md">
-                                    <div class="truncate" title="{{ $log->description }}">
-                                        {{ $log->description }}
-                                    </div>
-                                    @if ($log->formatted_changes)
-                                        <div class="text-xs text-foreground/60 mt-1">
-                                            {{ $log->formatted_changes }}
-                                        </div>
-                                    @endif
-                                </td>
-                                <td>{{ $log->ip_address }}</td>
-                                <td>
-                                    <span title="{{ $log->created_at_local?->format('Y-m-d H:i:s') }}">
-                                        {{ $log->created_at_local?->diffForHumans() }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
                     </tbody>
                 </table>
             </div>
 
-            <div class="mt-4">
-                {{ $logs->links() }}
-            </div>
-
-            <div id="activityLogsStatus" class="sr-only" role="status" aria-live="polite"></div>
-        @else
-            <x-ui::empty-state title="No activity logs found."
-                description="Try broadening your filters or date range to see more activity." />
-        @endif
+        <div id="activityLogsStatus" class="sr-only" role="status" aria-live="polite"></div>
     </x-ui::card>
 
     <x-slot name="scripts">

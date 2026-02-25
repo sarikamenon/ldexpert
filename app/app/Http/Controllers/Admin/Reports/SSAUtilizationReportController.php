@@ -74,7 +74,7 @@ final class SSAUtilizationReportController extends Controller
                 fputcsv($handle, [
                     $ssa->id,
                     $ssa->student->name ?? '—',
-                    $ssa->student?->studentProfile?->school?->display_name ?? '—',
+                    $ssa->student?->studentProfile?->school->display_name ?? '—',
                     $ssa->assignedTherapist->name ?? 'Unassigned',
                     $ssa->primaryService->name ?? '—',
                     $ssa->start_date->format('Y-m-d'),

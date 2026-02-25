@@ -12,6 +12,7 @@ final class UpdateScheduleDTO
     public function __construct(
         public readonly ?int $ssaId,
         public readonly ?int $serviceId,
+        /** @var array<int>|null */
         public readonly ?array $studentIds,
         public readonly ?string $scheduleDate,
         public readonly ?string $startTime,

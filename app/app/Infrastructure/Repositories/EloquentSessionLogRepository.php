@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
@@ -14,6 +15,7 @@ use App\Models\SessionLog;
 use App\Models\SessionLogComment;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -292,5 +294,120 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         }
 
         return $query->paginate($perPage);
+    }
+
+    public function listForDataTables(array $filters, DataTablesParamsDTO $params): array
+    {
+        $query = SessionLog::query()
+            ->with(['student', 'ssa', 'service', 'school', 'therapist'])
+            ->latest('session_date');
+
+        if (! empty($filters['school_id'])) {
+            $query->where('school_id', $filters['school_id']);
+        }
+        if (! empty($filters['student_id'])) {
+            $query->where('student_id', $filters['student_id']);
+        }
+        if (! empty($filters['therapist_id'])) {
+            $query->where('therapist_id', $filters['therapist_id']);
+        }
+        if (! empty($filters['service_id'])) {
+            $query->where('service_id', $filters['service_id']);
+        }
+        if (! empty($filters['ssa_id'])) {
+            $query->where('ssa_id', $filters['ssa_id']);
+        }
+        if (! empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('session_date', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('session_date', '<=', $filters['date_to']);
+        }
+
+        $recordsTotal = (clone $query)->count('session_logs.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('session_logs.id', 'like', '%'.$search.'%')
+                    ->orWhereHas('student', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('school', fn (Builder $b) => $b->where('display_name', 'like', '%'.$search.'%')->orWhere('full_name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('therapist', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('service', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'));
+            });
+        }
+        $recordsFiltered = (clone $query)->count('session_logs.id');
+
+        $orderColumn = $params->orderColumn ?? 'session_logs.session_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $query->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, SessionLog> $rows */
+        $rows = (clone $query)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array
+    {
+        $query = SessionLog::query()
+            ->where('therapist_id', $therapist->id)
+            ->with(['student', 'ssa', 'service', 'school'])
+            ->latest('session_date');
+
+        if (! empty($filters['student_id'])) {
+            $query->where('student_id', $filters['student_id']);
+        }
+        if (! empty($filters['service_id'])) {
+            $query->where('service_id', $filters['service_id']);
+        }
+        if (! empty($filters['ssa_id'])) {
+            $query->where('ssa_id', $filters['ssa_id']);
+        }
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('session_date', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('session_date', '<=', $filters['date_to']);
+        }
+
+        $recordsTotal = (clone $query)->count('session_logs.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $query->where(function (Builder $q) use ($search) {
+                $q->where('session_logs.id', 'like', '%'.$search.'%')
+                    ->orWhereHas('student', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('school', fn (Builder $b) => $b->where('display_name', 'like', '%'.$search.'%')->orWhere('full_name', 'like', '%'.$search.'%'))
+                    ->orWhereHas('service', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'));
+            });
+        }
+        $recordsFiltered = (clone $query)->count('session_logs.id');
+
+        $orderColumn = $params->orderColumn ?? 'session_logs.session_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $query->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, SessionLog> $rows */
+        $rows = (clone $query)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 }

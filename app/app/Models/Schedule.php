@@ -17,6 +17,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
+/**
+ * @property Carbon $schedule_date
+ * @property Carbon $start_time
+ * @property Carbon $end_time
+ * @property Carbon|null $recurrence_end_date
+ * @property ScheduleStatus $status
+ * @property BillingStatus $billing_status
+ * @property RecurrenceType|null $recurrence_type
+ */
 class Schedule extends Model
 {
     use HasFactory, SoftDeletes;

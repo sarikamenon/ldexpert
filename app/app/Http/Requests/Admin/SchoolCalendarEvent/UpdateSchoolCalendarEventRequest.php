@@ -13,9 +13,9 @@ final class UpdateSchoolCalendarEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $role = $this->user()?->role instanceof Role
-            ? $this->user()?->role
-            : Role::tryFrom($this->user()?->role);
+        $role = $this->user()->role instanceof Role
+            ? $this->user()->role
+            : Role::tryFrom($this->user()->role);
 
         return $role === Role::ADMIN;
     }

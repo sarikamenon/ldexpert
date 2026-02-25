@@ -10,7 +10,7 @@
     @endif
 
     <x-admin.school-contracts-list :contracts="$contracts" :filters="$filters" :statuses="$statuses" :schools="$schools"
-        :metrics="$metrics" :show-metrics="true" context="index" />
+        :metrics="$metrics" :show-metrics="true" context="index" :datatable-url="$datatableUrl ?? null" />
 
     @vite(['resources/js/pages/admin-contracts-schools-index.js'])
 </x-admin.layouts.app>

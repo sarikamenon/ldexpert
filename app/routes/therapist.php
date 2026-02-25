@@ -38,9 +38,11 @@ Route::middleware('role:therapist')
 
         // SSA routes
         Route::get('ssas', [SSAController::class, 'index'])->name('ssas.index');
+        Route::post('ssas/data', [SSAController::class, 'data'])->name('ssas.data');
         Route::get('ssas/{ssa}', [SSAController::class, 'show'])->name('ssas.show');
 
         // Student routes
+        Route::post('students/data', [StudentController::class, 'data'])->name('students.data');
         Route::get('students', [StudentController::class, 'index'])->name('students.index');
         Route::get('students/{student}', [StudentController::class, 'show'])->name('students.show');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
@@ -54,6 +56,7 @@ Route::middleware('role:therapist')
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
             Route::get('/', [SessionLogController::class, 'index'])->name('index');
+            Route::post('data', [SessionLogController::class, 'data'])->name('data');
             Route::get('select-ssa', [SessionLogController::class, 'selectSSA'])->name('select-ssa');
             Route::get('create', [SessionLogController::class, 'create'])->name('create');
             Route::get('create/schedule/{schedule}', [SessionLogController::class, 'create'])->name('create.from-schedule');

@@ -10,7 +10,7 @@
 
     {{-- Filters --}}
     <x-ui::card class="p-6 mb-6">
-        <form method="GET" action="{{ route('admin.finance.irs-report.index') }}" class="space-y-4">
+        <form id="irsReportFiltersForm" method="GET" action="{{ route('admin.finance.irs-report.index') }}" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <x-input-label for="date_from" value="Date From" />
@@ -59,7 +59,32 @@
         </form>
     </x-ui::card>
 
-    @if (count($rows) > 0)
+    @if (isset($datatableUrl))
+        <x-ui::card class="p-6 space-y-4">
+            <div class="overflow-x-auto">
+                <table id="irsReportTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Recipient</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Payment Date</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Payment Method</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Hourly Pay Rate</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Tax Status</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Payroll Period</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Regular Pay</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Additional Pay</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Deductions</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">YTD Regular Pay</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Total Gross Pay</th>
+                            <th scope="col" class="px-4 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Total Net Pay</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                    </tbody>
+                </table>
+            </div>
+        </x-ui::card>
+    @elseif (isset($rows) && count($rows) > 0)
         <x-ui::card class="p-6 space-y-4">
             <div class="overflow-x-auto">
                 <table id="irsReportTable" class="w-full display">

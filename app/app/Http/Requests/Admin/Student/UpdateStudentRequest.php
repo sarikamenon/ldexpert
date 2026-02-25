@@ -13,6 +13,6 @@ final class UpdateStudentRequest extends StudentFormRequest
         /** @var User $student */
         $student = $this->route('student');
 
-        return $this->baseRules($student?->id);
+        return $this->baseRules($student->id);
     }
 }
