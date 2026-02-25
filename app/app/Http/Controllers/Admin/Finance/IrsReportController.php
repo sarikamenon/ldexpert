@@ -92,6 +92,9 @@ final class IrsReportController extends Controller
 
         return response()->streamDownload(function () use ($reportData): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
 
             foreach ($reportData['rows'] as $row) {
                 $fmt = fn ($n) => number_format((float) $n, 2);
@@ -140,6 +143,7 @@ final class IrsReportController extends Controller
         ]);
     }
 
+    /** @return Collection<int, \App\Models\User> */
     private function getActiveTherapists(): Collection
     {
         return $this->userService->listActiveTherapistsForSelect();

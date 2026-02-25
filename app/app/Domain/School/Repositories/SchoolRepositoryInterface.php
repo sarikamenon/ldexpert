@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
 
 interface SchoolRepositoryInterface
 {
+    /** @return LengthAwarePaginator<School> */
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator;
 
     /**
@@ -33,10 +34,13 @@ interface SchoolRepositoryInterface
      */
     public function metrics(): array;
 
+    /** @return Collection<int, School> */
     public function export(SchoolFilterDTO $filters): Collection;
 
+    /** @return Collection<int, School> */
     public function listAllForSelect(): Collection;
 
+    /** @return Collection<int, School> */
     public function listActiveForSelect(): Collection;
 
     public function find(int $id): ?School;

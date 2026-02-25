@@ -46,26 +46,46 @@ class StudentImportRow extends Model
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeDone(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::DONE);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeDuplicate(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::DUPLICATE);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeValidationError(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::VALIDATION_ERROR);

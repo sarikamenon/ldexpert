@@ -37,6 +37,7 @@ final class ScheduleService
         private readonly StudentRepositoryInterface $studentRepository,
     ) {}
 
+    /** @return Collection<int, Schedule> */
     public function getSchedules(User $therapist, ScheduleFilterDTO $filters): Collection
     {
         return $this->repository->getSchedulesForTherapist($therapist, $filters);
@@ -63,11 +64,13 @@ final class ScheduleService
         return $this->repository->getPendingCount($therapist);
     }
 
+    /** @return Collection<int, Schedule> */
     public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
     {
         return $this->repository->getPendingSchedules($therapist, $filters);
     }
 
+    /** @return LengthAwarePaginator<Schedule> */
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateForStudent($student, $filters, $perPage);
@@ -81,16 +84,19 @@ final class ScheduleService
         return $this->repository->listForDataTablesForStudent($student, $filters, $params);
     }
 
+    /** @return Collection<int, \App\Models\School> */
     public function getSchools(User $therapist): Collection
     {
         return $this->repository->getSchoolsForTherapist($therapist);
     }
 
+    /** @return Collection<int, User> */
     public function getStudents(User $therapist): Collection
     {
         return $this->repository->getStudentsForTherapist($therapist);
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function getStudentServiceMappings(User $therapist): Collection
     {
         return $this->repository->getStudentServiceMappings($therapist);
@@ -402,15 +408,9 @@ final class ScheduleService
         // Assuming end date is end of the recurrence period (date only)
         $endDate = $parentSchedule->recurrence_end_date;
 
-        $scheduleDate = $parentSchedule->schedule_date instanceof \Carbon\Carbon
-            ? $parentSchedule->schedule_date->format('Y-m-d')
-            : $parentSchedule->schedule_date;
-        $startTime = $parentSchedule->start_time instanceof \Carbon\Carbon
-            ? $parentSchedule->start_time->format('H:i:s')
-            : $parentSchedule->start_time;
-        $endTime = $parentSchedule->end_time instanceof \Carbon\Carbon
-            ? $parentSchedule->end_time->format('H:i:s')
-            : $parentSchedule->end_time;
+        $scheduleDate = $parentSchedule->schedule_date->format('Y-m-d');
+        $startTime = $parentSchedule->start_time->format('H:i:s');
+        $endTime = $parentSchedule->end_time->format('H:i:s');
 
         $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
         $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
@@ -489,23 +489,11 @@ final class ScheduleService
         $occurrences = collect();
 
         // Get time from parent schedule (stored as UTC)
-        $startTime = $parentSchedule->start_time instanceof \Carbon\Carbon
-            ? $parentSchedule->start_time->format('H:i')
-            : ($parentSchedule->start_time instanceof \DateTimeInterface
-                ? $parentSchedule->start_time->format('H:i')
-                : $parentSchedule->start_time);
-        $endTime = $parentSchedule->end_time instanceof \Carbon\Carbon
-            ? $parentSchedule->end_time->format('H:i')
-            : ($parentSchedule->end_time instanceof \DateTimeInterface
-                ? $parentSchedule->end_time->format('H:i')
-                : $parentSchedule->end_time);
+        $startTime = $parentSchedule->start_time->format('H:i');
+        $endTime = $parentSchedule->end_time->format('H:i');
 
         // Format schedule date to ensure it's just a date string
-        $parentScheduleDateStr = $parentSchedule->schedule_date instanceof \Carbon\Carbon
-            ? $parentSchedule->schedule_date->format('Y-m-d')
-            : ($parentSchedule->schedule_date instanceof \DateTimeInterface
-                ? $parentSchedule->schedule_date->format('Y-m-d')
-                : $parentSchedule->schedule_date);
+        $parentScheduleDateStr = $parentSchedule->schedule_date->format('Y-m-d');
 
         // Parse parent schedule date/time to get duration
         $parentUtcStart = Carbon::parse($parentScheduleDateStr.' '.$startTime);

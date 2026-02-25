@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentPositionRepository implements PositionRepositoryInterface
 {
+    /** @return LengthAwarePaginator<Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator
     {
         return $this->applyFilters(Position::query()->with('services'), $filters)
@@ -26,6 +27,7 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
             ->withQueryString();
     }
 
+    /** @return Collection<int, Position> */
     public function all(PositionFilterDTO $filters): Collection
     {
         return $this->applyFilters(Position::query()->with('services'), $filters)
@@ -105,6 +107,7 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
         ];
     }
 
+    /** @return Collection<int, Position> */
     public function listActiveForSelect(): Collection
     {
         return Position::query()
@@ -114,6 +117,10 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
             ->get();
     }
 
+    /**
+     * @param Builder<Position> $query
+     * @return Builder<Position>
+     */
     private function applyFilters(Builder $query, PositionFilterDTO $filters): Builder
     {
         if ($filters->search) {

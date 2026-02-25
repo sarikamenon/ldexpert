@@ -20,6 +20,7 @@ interface TherapistRepositoryInterface
 
     public function find(int $id): ?TherapistProfile;
 
+    /** @return Collection<int, User> */
     public function list(TherapistFilterDTO $filters): Collection;
 
     /**
@@ -31,18 +32,24 @@ interface TherapistRepositoryInterface
 
     public function getMetrics(?string $status = null): array;
 
+    /** @return Collection<int, User> */
     public function export(TherapistFilterDTO $filters): Collection;
 
+    /** @return Collection<int, TherapistProfile> */
     public function listActiveProfilesForSelect(): Collection;
 
     public function countTherapistsBySchool(int $schoolId): int;
 
+    /** @return Collection<int, User> */
     public function listActiveTherapistsBySchool(int $schoolId): Collection;
 
+    /** @return Collection<int, User> */
     public function listActiveTherapists(): Collection;
 
+    /** @return Collection<int, User> */
     public function listTherapistsByStudent(int $studentId): Collection;
 
+    /** @return LengthAwarePaginator<User> */
     public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator;
 
     public function findProfileByUserId(int $userId): ?TherapistProfile;

@@ -124,76 +124,136 @@ class Schedule extends Model
         return $this->hasMany(Schedule::class, 'parent_schedule_id');
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeScheduled(Builder $query): Builder
     {
         return ScheduleScope::scheduled($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return ScheduleScope::completed($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeCancelled(Builder $query): Builder
     {
         return ScheduleScope::cancelled($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopePendingBilling(Builder $query): Builder
     {
         return ScheduleScope::pendingBilling($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeBilled(Builder $query): Builder
     {
         return ScheduleScope::billed($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeNotBillable(Builder $query): Builder
     {
         return ScheduleScope::notBillable($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeWaived(Builder $query): Builder
     {
         return ScheduleScope::waived($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeRecurring(Builder $query): Builder
     {
         return ScheduleScope::recurring($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeSingle(Builder $query): Builder
     {
         return ScheduleScope::single($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeGroup(Builder $query): Builder
     {
         return ScheduleScope::group($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForTherapist(Builder $query, User $therapist): Builder
     {
         return ScheduleScope::forTherapist($query, $this, $therapist);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForStudent(Builder $query, User $student): Builder
     {
         return ScheduleScope::forStudent($query, $this, $student);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForSSA(Builder $query, ServiceSupportAgreement $ssa): Builder
     {
         return ScheduleScope::forSSA($query, $this, $ssa);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeByRecurringBatch(Builder $query, string $batchNumber): Builder
     {
         return ScheduleScope::byRecurringBatch($query, $this, $batchNumber);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeByGroupBatch(Builder $query, string $batchNumber): Builder
     {
         return ScheduleScope::byGroupBatch($query, $this, $batchNumber);

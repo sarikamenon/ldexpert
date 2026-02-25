@@ -170,12 +170,17 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         ];
     }
 
+    /** @return Builder<TherapistContract> */
     private function baseQuery(): Builder
     {
         return TherapistContract::query()
             ->with(['therapist.user', 'services.service']);
     }
 
+    /**
+     * @param Builder<TherapistContract> $query
+     * @return Builder<TherapistContract>
+     */
     private function applyFilters(Builder $query, TherapistContractFilterDTO $filters): Builder
     {
         if ($filters->status instanceof ContractStatus) {

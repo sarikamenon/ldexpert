@@ -109,7 +109,7 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
 
     /**
      * @param  array<int>  $sessionLogIds
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getApprovedSessionLogsForBilling(array $sessionLogIds): Collection
     {
@@ -160,7 +160,7 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getAvailableSessionLogsForBillingCreation(array $filters): Collection
     {

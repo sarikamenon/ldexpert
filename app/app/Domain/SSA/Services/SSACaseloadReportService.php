@@ -29,11 +29,13 @@ final class SSACaseloadReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(CaseloadReportFilterDTO $filters): Collection
     {
         return $this->repository->getCaseloadReport($filters);
     }
 
+    /** @return Collection<int, array<string, mixed>> */
     private function groupByTherapist(Collection $ssas): Collection
     {
         return $ssas

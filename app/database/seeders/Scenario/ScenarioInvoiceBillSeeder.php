@@ -27,9 +27,12 @@ use Illuminate\Support\Collection;
 final class ScenarioInvoiceBillSeeder extends Seeder
 {
     /**
-     * Create biweekly school invoices and half-month therapist bills from approved session logs (2025),
+     * Create biweekly school invoices and half-month therapist bills from approved session logs (2026),
      * then record payments (invoice: 2 weeks after period end; bill: 1 month after period end).
+     * ~15% of invoices and bills are left unpaid (SENT status) to simulate outstanding receivables/payables.
      */
+    private const UNPAID_EVERY_NTH = 6;
+
     public function run(): void
     {
         $admin = User::query()->where('role', Role::ADMIN->value)->first();
@@ -46,7 +49,7 @@ final class ScenarioInvoiceBillSeeder extends Seeder
 
         $logs = SessionLog::query()
             ->where('status', SessionLogStatus::APPROVED->value)
-            ->whereYear('session_date', 2025)
+            ->whereYear('session_date', 2026)
             ->whereNull('invoice_id')
             ->whereNull('therapist_bill_id')
             ->get();
@@ -68,26 +71,30 @@ final class ScenarioInvoiceBillSeeder extends Seeder
                     billingPeriodStart: $startDate,
                     billingPeriodEnd: $endDate,
                     sessionLogIds: $logIds,
-                    notes: 'Scenario 2025 biweekly invoice'
+                    notes: 'Scenario 2026 biweekly invoice'
                 );
                 $invoice = $invoiceService->generateInvoice($admin, $dto);
                 $invoice->update(['due_date' => $dueDate]);
 
-                $paymentDto = RecordInvoicePaymentDTO::fromArray([
-                    'invoice_id' => $invoice->id,
-                    'paid_at' => $paidAt,
-                    'amount' => (float) $invoice->total,
-                    'method' => PaymentMethod::CHECK->value,
-                    'reference' => 'SCEN-INV-'.$invSeq,
-                    'notes' => 'Scenario 2025 payment',
-                    'recorded_by_id' => $admin->id,
-                    'school_id' => $invoice->school_id,
-                ]);
-                $invoicePaymentService->recordPayment($paymentDto);
-                $invoice->update([
-                    'status' => InvoiceStatus::PAID->value,
-                    'paid_at' => $paidAt,
-                ]);
+                if ($invSeq % self::UNPAID_EVERY_NTH === 0) {
+                    $invoice->update(['status' => InvoiceStatus::SENT->value]);
+                } else {
+                    $paymentDto = RecordInvoicePaymentDTO::fromArray([
+                        'invoice_id' => $invoice->id,
+                        'paid_at' => $paidAt,
+                        'amount' => (float) $invoice->total,
+                        'method' => PaymentMethod::CHECK->value,
+                        'reference' => 'SCEN-INV-'.$invSeq,
+                        'notes' => 'Scenario 2026 payment',
+                        'recorded_by_id' => $admin->id,
+                        'school_id' => $invoice->school_id,
+                    ]);
+                    $invoicePaymentService->recordPayment($paymentDto);
+                    $invoice->update([
+                        'status' => InvoiceStatus::PAID->value,
+                        'paid_at' => $paidAt,
+                    ]);
+                }
                 $invSeq++;
             } catch (\Throwable $e) {
                 $this->command?->warn("Invoice skip: {$e->getMessage()}");
@@ -110,25 +117,29 @@ final class ScenarioInvoiceBillSeeder extends Seeder
                     billingPeriodEnd: $end,
                     sessionLogIds: $logIds,
                     dueDate: $dueDate,
-                    notes: 'Scenario 2025 half-month bill'
+                    notes: 'Scenario 2026 half-month bill'
                 );
                 $bill = $billService->generateBill($admin, $dto);
 
-                $paymentDto = RecordTherapistBillPaymentDTO::fromArray([
-                    'therapist_bill_id' => $bill->id,
-                    'paid_at' => $paidAt,
-                    'amount' => (float) $bill->total_due,
-                    'method' => PaymentMethod::DIRECT_DEPOSIT->value,
-                    'reference' => 'SCEN-BILL-'.$billSeq,
-                    'notes' => 'Scenario 2025 payment',
-                    'recorded_by_id' => $admin->id,
-                    'therapist_id' => $bill->therapist_id,
-                ]);
-                $billPaymentService->recordPayment($paymentDto);
-                $bill->update([
-                    'status' => TherapistBillStatus::PAID->value,
-                    'paid_at' => $paidAt,
-                ]);
+                if ($billSeq % self::UNPAID_EVERY_NTH === 0) {
+                    $bill->update(['status' => TherapistBillStatus::SENT->value]);
+                } else {
+                    $paymentDto = RecordTherapistBillPaymentDTO::fromArray([
+                        'therapist_bill_id' => $bill->id,
+                        'paid_at' => $paidAt,
+                        'amount' => (float) $bill->total_due,
+                        'method' => PaymentMethod::DIRECT_DEPOSIT->value,
+                        'reference' => 'SCEN-BILL-'.$billSeq,
+                        'notes' => 'Scenario 2026 payment',
+                        'recorded_by_id' => $admin->id,
+                        'therapist_id' => $bill->therapist_id,
+                    ]);
+                    $billPaymentService->recordPayment($paymentDto);
+                    $bill->update([
+                        'status' => TherapistBillStatus::PAID->value,
+                        'paid_at' => $paidAt,
+                    ]);
+                }
                 $billSeq++;
             } catch (\Throwable $e) {
                 $this->command?->warn("Bill skip: {$e->getMessage()}");
@@ -141,7 +152,7 @@ final class ScenarioInvoiceBillSeeder extends Seeder
      */
     private function groupBySchoolBiweekly(Collection $logs): array
     {
-        $periods = $this->biweeklyPeriods2025();
+        $periods = $this->biweeklyPeriods2026();
         $grouped = [];
         foreach ($logs as $log) {
             if (! $log->school_id || ! $log->is_billable_school) {
@@ -166,11 +177,11 @@ final class ScenarioInvoiceBillSeeder extends Seeder
     /**
      * @return array<int, array{0: string, 1: string}>
      */
-    private function biweeklyPeriods2025(): array
+    private function biweeklyPeriods2026(): array
     {
         $periods = [];
-        $start = Carbon::create(2025, 8, 1);
-        $end = Carbon::create(2025, 12, 31);
+        $start = Carbon::create(2026, 1, 1);
+        $end = Carbon::create(2026, 12, 31);
         $current = $start->copy();
         while ($current->lte($end)) {
             $periodEnd = $current->copy()->addDays(13);

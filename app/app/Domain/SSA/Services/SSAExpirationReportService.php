@@ -29,6 +29,7 @@ final class SSAExpirationReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(ExpirationReportFilterDTO $filters): Collection
     {
         $reportData = $this->repository->getExpirationReport($filters);

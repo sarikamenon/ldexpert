@@ -326,6 +326,9 @@ final class StudentController extends Controller
 
         return response()->streamDownload(function () use ($students): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Name',
@@ -465,6 +468,9 @@ final class StudentController extends Controller
 
         return response()->streamDownload(function () use ($allColumns, $requiredColumns): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
 
             // Write header row
             fputcsv($handle, $allColumns);

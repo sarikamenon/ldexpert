@@ -22,6 +22,7 @@ use Illuminate\Support\Str;
 
 final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 {
+    /** @return Collection<int, Schedule> */
     public function getSchedulesForTherapist(User $therapist, ScheduleFilterDTO $filters): Collection
     {
         $query = Schedule::query()
@@ -55,6 +56,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->count();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
     {
         $query = Schedule::query()
@@ -91,6 +93,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, School> */
     public function getSchoolsForTherapist(User $therapist): Collection
     {
         return School::query()
@@ -107,6 +110,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, User> */
     public function getStudentsForTherapist(User $therapist): Collection
     {
         $studentIds = ServiceSupportAgreement::query()
@@ -121,6 +125,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, array<string, mixed>> */
     public function getStudentServiceMappings(User $therapist): Collection
     {
         $ssas = ServiceSupportAgreement::query()
@@ -202,6 +207,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->first();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getRecurringOccurrences(Schedule $parentSchedule): Collection
     {
         return Schedule::query()
@@ -211,6 +217,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getRecurringOccurrencesByBatch(string $recurringBatchNumber): Collection
     {
         return Schedule::query()
@@ -220,6 +227,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection
     {
         return Schedule::query()
@@ -229,6 +237,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getSchedulesForStudent(User $student, array $filters = []): Collection
     {
         $dto = new ScheduleFilterDTO(
@@ -247,6 +256,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return LengthAwarePaginator<int, Schedule> */
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->buildStudentScheduleQuery($student, $filters)
@@ -405,6 +415,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             });
     }
 
+    /** @return Collection<int, Schedule> */
     public function getSchedulesForReminder(Carbon $start, Carbon $end): Collection
     {
         return $this->getSchedulesInWindow($start, $end);

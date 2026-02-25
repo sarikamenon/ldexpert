@@ -58,6 +58,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->count();
     }
 
+    /** @return Collection<int, User> */
     public function listByRole(string $role): Collection
     {
         return User::query()
@@ -98,6 +99,7 @@ class EloquentUserRepository implements UserRepositoryInterface
         return AdminProfile::create($dto->toArray());
     }
 
+    /** @return Collection<int, User> */
     public function listAdmins(): Collection
     {
         return User::query()
@@ -106,6 +108,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, User> */
     public function listActiveStudentsForSelect(): Collection
     {
         return User::query()
@@ -117,6 +120,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, User> */
     public function listActiveTherapistsForSelect(): Collection
     {
         return User::query()
@@ -142,6 +146,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, User> */
     public function findByIds(array $ids): Collection
     {
         return User::whereIn('id', $ids)->get();

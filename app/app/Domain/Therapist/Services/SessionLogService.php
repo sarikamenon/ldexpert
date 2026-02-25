@@ -32,6 +32,7 @@ final class SessionLogService
         private readonly ServiceRepositoryInterface $serviceRepository,
     ) {}
 
+    /** @return Collection<int, SessionLog> */
     public function getSessionLogs(User $therapist, array $filters = []): Collection
     {
         return $this->repository->getSessionLogsForTherapist($therapist, $filters);
@@ -42,11 +43,13 @@ final class SessionLogService
         return $this->repository->findForTherapist($therapist, $sessionLogId);
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function getActiveSSAsForStudent(int $studentId): Collection
     {
         return $this->repository->getActiveSSAsForStudent($studentId);
     }
 
+    /** @return Collection<int, Collection<int, SessionLog>> */
     public function getSessionLogsByScheduleIds(User $therapist, array $scheduleIds): Collection
     {
         return $this->repository->getSessionLogsByScheduleIds($scheduleIds, $therapist);
@@ -328,8 +331,7 @@ final class SessionLogService
 
     public function cancel(User $user, SessionLog $sessionLog, string $reason): SessionLog
     {
-        $role = $user->role instanceof Role ? $user->role->value : $user->role;
-        $isAdmin = $role === Role::ADMIN->value;
+        $isAdmin = $user->role === Role::ADMIN;
 
         if (! $isAdmin && $sessionLog->therapist_id !== $user->id) {
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');

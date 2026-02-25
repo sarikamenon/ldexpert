@@ -37,6 +37,10 @@ final class Service extends Model
         'status' => ServiceStatus::class,
     ];
 
+    /**
+     * @param  Builder<Service>  $query
+     * @return Builder<Service>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ServiceStatus::ACTIVE);

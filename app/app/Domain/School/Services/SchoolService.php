@@ -25,6 +25,7 @@ class SchoolService
         private readonly ActivityLogService $activityLog
     ) {}
 
+    /** @return LengthAwarePaginator<School> */
     public function listSchools(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->schools->paginate($filters, $perPage);
@@ -94,11 +95,13 @@ class SchoolService
         return $this->schools->metrics();
     }
 
+    /** @return Collection<int, School> */
     public function exportSchools(SchoolFilterDTO $filters): Collection
     {
         return $this->schools->export($filters);
     }
 
+    /** @return Collection<int, School> */
     public function listActiveForSelect(): Collection
     {
         return $this->schools->listActiveForSelect();

@@ -26,6 +26,7 @@ final class SSAUtilizationReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(UtilizationReportFilterDTO $filters): Collection
     {
         // Get all records without pagination for export

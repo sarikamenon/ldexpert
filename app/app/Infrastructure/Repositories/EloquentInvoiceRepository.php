@@ -115,7 +115,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     /**
      * @param  array<int>  $sessionLogIds
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getApprovedSessionLogsForInvoice(array $sessionLogIds): Collection
     {
@@ -166,7 +166,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getAvailableSessionLogsForInvoiceCreation(array $filters): Collection
     {
@@ -259,7 +259,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     /**
      * @param  array<int>  $sessionLogIds
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getSessionLogsForInvoiceUpdate(Invoice $invoice, array $sessionLogIds): Collection
     {

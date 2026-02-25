@@ -20,6 +20,7 @@ final class StudentCommentService
         return $this->repository->create($dto);
     }
 
+    /** @return LengthAwarePaginator<StudentComment> */
     public function listByStudent(int $studentId, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->listByStudent($studentId, $perPage);

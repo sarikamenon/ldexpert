@@ -15,7 +15,7 @@ final class StudentImportListService
     ) {}
 
     /**
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, \App\Models\StudentImport>}
      */
     public function listForDataTables(DataTablesParamsDTO $params): array
     {

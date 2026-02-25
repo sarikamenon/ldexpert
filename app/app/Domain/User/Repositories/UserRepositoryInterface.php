@@ -24,19 +24,24 @@ interface UserRepositoryInterface
 
     public function countNewStudentsThisMonth(): int;
 
+    /** @return Collection<int, User> */
     public function listByRole(string $role): Collection;
 
     public function updateProfile(User $user, array $data): User;
 
+    /** @return Collection<int, User> */
     public function listAdmins(): Collection;
 
+    /** @return Collection<int, User> */
     public function listActiveStudentsForSelect(): Collection;
 
+    /** @return Collection<int, User> */
     public function listActiveTherapistsForSelect(): Collection;
 
     /** @param array<int, int> $serviceIds */
     public function listActiveTherapistsForServices(array $serviceIds): Collection;
 
+    /** @return Collection<int, User> */
     public function findByIds(array $ids): Collection;
 
     public function findById(int $id): ?User;

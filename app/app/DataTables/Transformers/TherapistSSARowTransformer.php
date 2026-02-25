@@ -54,7 +54,7 @@ final class TherapistSSARowTransformer
 
         $dateRangeCell = '<div class="flex flex-col space-y-1">'
             .'<span class="text-sm text-foreground">'.e($ssa->start_date->format('M d, Y')).'</span>'
-            .'<span class="text-sm text-foreground">'.e($ssa->end_date->format('M d, Y')).'</span>'
+            .'<span class="text-sm text-foreground">'.e($ssa->end_date?->format('M d, Y') ?? '—').'</span>'
             .'</div>';
 
         $sessionDetailsCell = '<div class="flex flex-col space-y-1">'

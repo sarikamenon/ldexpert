@@ -20,6 +20,7 @@ final class ServiceCatalogService
         private readonly ServiceRepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<Service> */
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);
@@ -33,6 +34,7 @@ final class ServiceCatalogService
         return $this->repository->listForDataTables($filters, $params);
     }
 
+    /** @return Collection<int, Service> */
     public function all(ServiceFilterDTO $filters): Collection
     {
         return $this->repository->all($filters);
@@ -58,16 +60,19 @@ final class ServiceCatalogService
         return $this->repository->metrics();
     }
 
+    /** @return Collection<int, Service> */
     public function listActiveForSelect(): Collection
     {
         return $this->repository->listActiveForSelect();
     }
 
+    /** @return Collection<int, Service> */
     public function listActiveWithFrequencyFlag(): Collection
     {
         return $this->repository->listActiveWithFrequencyFlag();
     }
 
+    /** @return Collection<int, Service> */
     public function listIndirectServices(): Collection
     {
         return $this->repository->listIndirectServices();

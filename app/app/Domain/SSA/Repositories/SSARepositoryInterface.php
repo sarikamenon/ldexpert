@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 
 interface SSARepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, ServiceSupportAgreement> */
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator;
 
     /**
@@ -37,6 +38,7 @@ interface SSARepositoryInterface
 
     public function unassignTherapist(ServiceSupportAgreement $ssa, ?string $reason = null): ServiceSupportAgreement;
 
+    /** @return Collection<int, \App\Models\SSAAssignmentHistory> */
     public function getAssignmentHistory(ServiceSupportAgreement $ssa): Collection;
 
     /**
@@ -44,26 +46,35 @@ interface SSARepositoryInterface
      */
     public function metrics(): array;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function checkOverlappingSSAs(int $studentId, int $serviceId, string $startDate, string $endDate, ?int $excludeSsaId = null): Collection;
 
     public function hasStudentAssignedToTherapist(int $studentId, int $therapistId): bool;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForMetrics(int $studentId, int $therapistId): Collection;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getActiveSSAsForTherapist(int $therapistId): Collection;
 
     public function findSSAForSchedule(int $ssaId, int $therapistId): ?ServiceSupportAgreement;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForSchoolMetrics(int $schoolId): Collection;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentMetrics(int $studentId): Collection;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentSchedule(int $studentId): Collection;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistMetrics(int $therapistId): Collection;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getAssignedSSAsForTherapist(int $therapistId): Collection;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection;
 
     public function countNewStudentsThisMonth(int $therapistId): int;

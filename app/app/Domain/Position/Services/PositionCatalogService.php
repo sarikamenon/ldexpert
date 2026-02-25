@@ -20,6 +20,7 @@ final class PositionCatalogService
         private readonly PositionRepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);
@@ -33,6 +34,7 @@ final class PositionCatalogService
         return $this->repository->listForDataTables($filters, $params);
     }
 
+    /** @return Collection<int, Position> */
     public function all(PositionFilterDTO $filters): Collection
     {
         return $this->repository->all($filters);
@@ -58,6 +60,7 @@ final class PositionCatalogService
         return $this->repository->metrics();
     }
 
+    /** @return Collection<int, Position> */
     public function listActiveForSelect(): Collection
     {
         return $this->repository->listActiveForSelect();

@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property DocumentType $document_type
+ */
 class StudentDocument extends Model
 {
     use HasFactory, SoftDeletes;

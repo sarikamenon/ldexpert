@@ -61,8 +61,7 @@ final class SessionLogPolicy
 
     public function submit(User $user, SessionLog $sessionLog): bool
     {
-        $role = $user->role instanceof Role ? $user->role->value : $user->role;
-        if ($role !== Role::THERAPIST->value) {
+        if ($user->role !== Role::THERAPIST) {
             return false;
         }
 

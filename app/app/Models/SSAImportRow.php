@@ -48,26 +48,46 @@ class SSAImportRow extends Model
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeDone(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::DONE);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeDuplicate(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::DUPLICATE);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeValidationError(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::VALIDATION_ERROR);

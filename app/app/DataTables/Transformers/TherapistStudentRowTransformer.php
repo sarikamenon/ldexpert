@@ -17,14 +17,8 @@ final class TherapistStudentRowTransformer
     {
         $profile = $student->studentProfile;
         $statusEnum = $student->status;
-        if ($statusEnum instanceof UserStatus) {
-            $isActive = $statusEnum === UserStatus::ACTIVE;
-            $statusLabel = ucfirst($statusEnum->value);
-        } else {
-            $rawStatus = $statusEnum !== null ? (string) $statusEnum : 'inactive';
-            $isActive = $rawStatus === UserStatus::ACTIVE->value;
-            $statusLabel = ucfirst($rawStatus);
-        }
+        $isActive = $statusEnum === UserStatus::ACTIVE;
+        $statusLabel = ucfirst($statusEnum->value);
         $showUrl = route('therapist.students.show', $student);
         $school = $profile?->school;
         $schoolCell = $school ? e($school->display_name) : '—';

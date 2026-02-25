@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
 
 class EloquentSchoolRepository implements SchoolRepositoryInterface
 {
+    /** @return LengthAwarePaginator<School> */
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery(), $filters)
@@ -90,6 +91,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
         ];
     }
 
+    /** @return Collection<int, School> */
     public function export(SchoolFilterDTO $filters): Collection
     {
         return $this->applyFilters($this->baseQuery(), $filters)
@@ -97,6 +99,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, School> */
     public function listAllForSelect(): Collection
     {
         return School::query()
@@ -105,6 +108,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, School> */
     public function listActiveForSelect(): Collection
     {
         return School::query()
@@ -126,11 +130,16 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->first();
     }
 
+    /** @return Builder<School> */
     private function baseQuery(): Builder
     {
         return School::query()->with('manager');
     }
 
+    /**
+     * @param Builder<School> $query
+     * @return Builder<School>
+     */
     private function applyFilters(Builder $query, SchoolFilterDTO $filters): Builder
     {
         $query->search($filters->search);
