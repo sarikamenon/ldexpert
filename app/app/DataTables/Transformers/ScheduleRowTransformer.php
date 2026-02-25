@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\DataTables\Transformers;
 
 use App\Models\Schedule;
+use App\Enums\ScheduleStatus;
+use App\Enums\BillingStatus;
+use Carbon\CarbonInterface;
 
 final class ScheduleRowTransformer
 {
@@ -13,9 +16,21 @@ final class ScheduleRowTransformer
      */
     public static function transform(Schedule $schedule): array
     {
-        $dateCell = $schedule->schedule_date?->format('Y-m-d') ?? '—';
-        $timeCell = $schedule->start_time
-            ? ($schedule->start_time->format('H:i').($schedule->end_time ? ' - '.$schedule->end_time->format('H:i') : ''))
+        $rawDate = $schedule->schedule_date;
+        $dateCell = $rawDate instanceof CarbonInterface
+            ? $rawDate->format('Y-m-d')
+            : ($rawDate !== null ? (string) $rawDate : '—');
+
+        $rawStart = $schedule->start_time;
+        $rawEnd = $schedule->end_time;
+        $startTime = $rawStart instanceof CarbonInterface
+            ? $rawStart->format('H:i')
+            : ($rawStart !== null ? (string) $rawStart : null);
+        $endTime = $rawEnd instanceof CarbonInterface
+            ? $rawEnd->format('H:i')
+            : ($rawEnd !== null ? (string) $rawEnd : null);
+        $timeCell = $startTime !== null
+            ? ($endTime !== null ? $startTime.' - '.$endTime : $startTime)
             : '—';
 
         $therapistCell = $schedule->therapist
@@ -29,12 +44,38 @@ final class ScheduleRowTransformer
         $serviceCell = e($schedule->service?->name ?? '—');
         $schoolCell = e($schedule->school?->display_name ?? '—');
 
-        $statusLabel = $schedule->status?->label() ?? '—';
-        $statusClass = $schedule->status?->value === 'completed' ? 'bg-success/10 text-success border border-success/20' : ($schedule->status?->value === 'cancelled' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-secondary/10 text-secondary border border-secondary/20');
+        $status = $schedule->status;
+        if ($status instanceof ScheduleStatus) {
+            $statusLabel = $status->label();
+            $statusValue = $status->value;
+        } else {
+            $statusLabel = $status !== null ? (string) $status : '—';
+            $statusValue = (string) $status;
+        }
+
+        if ($statusValue === ScheduleStatus::COMPLETED->value) {
+            $statusClass = 'bg-success/10 text-success border border-success/20';
+        } elseif ($statusValue === ScheduleStatus::CANCELLED->value) {
+            $statusClass = 'bg-danger/10 text-danger border border-danger/20';
+        } else {
+            $statusClass = 'bg-secondary/10 text-secondary border border-secondary/20';
+        }
         $statusCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$statusClass.'">'.e($statusLabel).'</span>';
 
-        $billingLabel = $schedule->billing_status?->label() ?? '—';
-        $billingClass = $schedule->billing_status?->value === 'billed' ? 'bg-success/10 text-success border border-success/20' : 'bg-secondary/10 text-secondary border border-secondary/20';
+        $billingStatus = $schedule->billing_status;
+        if ($billingStatus instanceof BillingStatus) {
+            $billingLabel = $billingStatus->label();
+            $billingValue = $billingStatus->value;
+        } else {
+            $billingLabel = $billingStatus !== null ? (string) $billingStatus : '—';
+            $billingValue = (string) $billingStatus;
+        }
+
+        if ($billingValue === BillingStatus::BILLED->value) {
+            $billingClass = 'bg-success/10 text-success border border-success/20';
+        } else {
+            $billingClass = 'bg-secondary/10 text-secondary border border-secondary/20';
+        }
         $billingCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$billingClass.'">'.e($billingLabel).'</span>';
 
         return [

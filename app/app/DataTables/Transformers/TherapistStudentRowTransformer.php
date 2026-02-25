@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\DataTables\Transformers;
 
 use App\Models\User;
+use App\Enums\UserStatus;
+use Carbon\CarbonInterface;
 
 final class TherapistStudentRowTransformer
 {
@@ -14,8 +16,15 @@ final class TherapistStudentRowTransformer
     public static function transform(User $student): array
     {
         $profile = $student->studentProfile;
-        $isActive = ($student->status?->value ?? 'inactive') === 'active';
-        $statusLabel = ucfirst($student->status?->value ?? 'inactive');
+        $statusEnum = $student->status;
+        if ($statusEnum instanceof UserStatus) {
+            $isActive = $statusEnum === UserStatus::ACTIVE;
+            $statusLabel = ucfirst($statusEnum->value);
+        } else {
+            $rawStatus = $statusEnum !== null ? (string) $statusEnum : 'inactive';
+            $isActive = $rawStatus === UserStatus::ACTIVE->value;
+            $statusLabel = ucfirst($rawStatus);
+        }
         $showUrl = route('therapist.students.show', $student);
         $school = $profile?->school;
         $schoolCell = $school ? e($school->display_name) : '—';
@@ -30,10 +39,19 @@ final class TherapistStudentRowTransformer
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($student->name).'</a>',
             e($student->email),
             $schoolCell,
-            e($profile?->grade_level ?? '—'),
-            $profile?->date_of_birth?->format('Y-m-d') ?? '—',
+            e($profile ? $profile->grade_level ?? '—' : '—'),
+            self::formatDateOfBirth($profile?->date_of_birth),
             $statusBadge,
             $actions,
         ];
+    }
+
+    private static function formatDateOfBirth(mixed $date): string
+    {
+        if ($date instanceof CarbonInterface) {
+            return $date->format('Y-m-d');
+        }
+
+        return $date !== null ? (string) $date : '—';
     }
 }

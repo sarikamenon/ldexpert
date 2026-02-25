@@ -138,6 +138,9 @@ class LedgerAccountController extends Controller
 
         return response()->streamDownload(function () use ($accounts, $accountType): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Unable to open output stream.');
+            }
 
             fputcsv($handle, [
                 $accountType === 'schools' ? 'School' : 'Therapist',
@@ -151,8 +154,12 @@ class LedgerAccountController extends Controller
             ]);
 
             foreach ($accounts as $account) {
+                $name = $account instanceof School
+                    ? ($account->display_name ?? $account->full_name ?? ('School #'.$account->id))
+                    : $account->name;
+
                 fputcsv($handle, [
-                    $account->name,
+                    $name,
                     $account->email ?? null,
                     $account->phone ?? null,
                     $accountType === 'schools' ? $account->total_invoiced : $account->total_billed,
@@ -173,7 +180,7 @@ class LedgerAccountController extends Controller
     {
         if ($type === 'school') {
             $account = School::findOrFail($id);
-            $accountName = $account->name;
+            $accountName = $account->display_name ?? $account->full_name ?? ('School #'.$account->id);
             $accountType = 'School';
         } else {
             $account = User::where('role', Role::THERAPIST)->findOrFail($id);
