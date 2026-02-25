@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SessionLogComment extends Model
 {
     
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [

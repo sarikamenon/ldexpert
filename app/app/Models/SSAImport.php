@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SSAImport extends Model
 {
     
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory, SoftDeletes;
 
     protected $table = 'ssa_imports';
