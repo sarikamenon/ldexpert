@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\DataTables\Transformers\TherapistSSARowTransformer;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
@@ -11,12 +12,29 @@ use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\Enums\SSAStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Therapist\TherapistSSADataRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\ServiceSupportAgreement;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class SSAController extends Controller
 {
+    use DataTablesResponse;
+
+    /** @var array<int, string> */
+    private const ORDER_WHITELIST = [
+        0 => 'service_support_agreements.id',
+        1 => 'students.name',
+        2 => 'therapists.name',
+        3 => 'service_support_agreements.start_date',
+        4 => 'service_support_agreements.minutes_per_session',
+        5 => 'service_support_agreements.tho_minutes',
+        6 => 'service_support_agreements.status',
+    ];
+
     public function __construct(
         private readonly SSAService $ssaService,
         private readonly SessionLogIndexService $sessionLogIndexService,
@@ -25,21 +43,35 @@ final class SSAController extends Controller
 
     public function index(Request $request): View
     {
-        $therapist = $request->user();
-
-        // Build filters with therapist constraint
-        $filters = SSAFilterDTO::fromArray(
-            array_merge($request->query(), ['therapist_id' => $therapist->id])
-        );
-
-        // Get SSAs assigned to this therapist
-        $ssas = $this->ssaService->paginate($filters);
-
         return view('therapist.ssas.index', [
-            'ssas' => $ssas,
+            'ssas' => collect(),
             'filters' => $request->query(),
             'statuses' => SSAStatus::cases(),
+            'datatableUrl' => route('therapist.ssas.data'),
         ]);
+    }
+
+    public function data(TherapistSSADataRequest $request): JsonResponse
+    {
+        $therapist = $request->user();
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+            'therapist_id' => $therapist->id,
+        ];
+        $filters = SSAFilterDTO::fromArray($filterData);
+
+        $result = $this->ssaService->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (ServiceSupportAgreement $ssa): array => TherapistSSARowTransformer::transform($ssa),
+        );
     }
 
     public function show(Request $request, ServiceSupportAgreement $ssa): View

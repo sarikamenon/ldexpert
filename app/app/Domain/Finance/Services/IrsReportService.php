@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Services;
 
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\IrsReportFilterDTO;
 use App\Models\TherapistBillPayment;
 use Illuminate\Support\Collection;
@@ -129,6 +130,52 @@ final class IrsReportService
                 'total_net' => round($totalNet, 2),
                 'row_count' => count($rows),
             ],
+        ];
+    }
+
+    /**
+     * Get report rows for DataTables: same filters as getReportData, then search/sort/slice.
+     *
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: array<int, array<string, mixed>>}
+     */
+    public function getReportDataForDataTables(IrsReportFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $data = $this->getReportData($filters);
+        $rows = $data['rows'];
+        $recordsTotal = count($rows);
+
+        if ($params->searchValue !== null && $params->searchValue !== '') {
+            $sv = mb_strtolower($params->searchValue);
+            $rows = array_values(array_filter($rows, function (array $row) use ($sv): bool {
+                foreach (['recipient', 'payment_date_display', 'payment_method', 'tax_status', 'payroll_period'] as $key) {
+                    if (isset($row[$key]) && str_contains(mb_strtolower((string) $row[$key]), $sv)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }));
+        }
+        $recordsFiltered = count($rows);
+
+        $orderKey = $params->orderColumn ?? 'payment_date';
+        $dir = $params->orderDir === 'desc' ? -1 : 1;
+        usort($rows, function (array $a, array $b) use ($orderKey, $dir): int {
+            $va = $a[$orderKey] ?? '';
+            $vb = $b[$orderKey] ?? '';
+            if (is_numeric($va) && is_numeric($vb)) {
+                return (int) (($va <=> $vb) * $dir);
+            }
+
+            return strcmp((string) $va, (string) $vb) * $dir;
+        });
+
+        $rows = array_slice($rows, $params->start, $params->length);
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
         ];
     }
 

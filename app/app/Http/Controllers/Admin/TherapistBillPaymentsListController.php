@@ -4,19 +4,33 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\TherapistBillPaymentRowTransformer;
 use App\Domain\Finance\Services\PaymentsListService;
 use App\DTOs\TherapistBillPaymentFilterDTO;
 use App\Enums\TherapistBillStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Billing\TherapistBillPaymentDataRequest;
 use App\Http\Requests\Admin\Billing\TherapistBillPaymentIndexRequest;
+use App\Http\Support\DataTablesRequest;
 use App\Models\TherapistBill;
 use App\Models\TherapistBillPayment;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class TherapistBillPaymentsListController extends Controller
 {
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'paid_at',
+        1 => 'amount',
+        2 => 'method',
+        3 => 'reference',
+    ];
+
     public function __construct(
         private readonly \App\Domain\Finance\Services\TherapistBillPaymentService $service,
         private readonly PaymentsListService $paymentsListService,
@@ -26,13 +40,39 @@ class TherapistBillPaymentsListController extends Controller
     {
         $this->authorize('viewAny', TherapistBillPayment::class);
 
-        $filters = TherapistBillPaymentFilterDTO::fromArray($request->validated());
-
-        $result = $this->paymentsListService->getTherapistBillPayments($filters);
-
         return view('admin.payments.therapist-bill-payments.index', [
-            'payments' => $result['payments'],
-            'totalAmount' => $result['totalAmount'],
+            'payments' => collect(),
+            'totalAmount' => 0,
+            'datatableUrl' => route('admin.payments.therapist-bills.data'),
+        ]);
+    }
+
+    public function data(TherapistBillPaymentDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', TherapistBillPayment::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'from_date' => $request->input('filter_from_date'),
+            'to_date' => $request->input('filter_to_date'),
+            'method' => $request->input('filter_method'),
+            'search' => $request->input('filter_search'),
+        ];
+        $filters = TherapistBillPaymentFilterDTO::fromArray($filterData);
+
+        $result = $this->paymentsListService->listTherapistBillPaymentsForDataTables($filters, $params);
+        $totalAmount = $this->paymentsListService->getTherapistBillPaymentsTotalAmount($filters);
+
+        $data = $result['rows']->map(
+            static fn (TherapistBillPayment $payment): array => TherapistBillPaymentRowTransformer::transform($payment)
+        )->all();
+
+        return response()->json([
+            'draw' => $params->draw,
+            'recordsTotal' => $result['recordsTotal'],
+            'recordsFiltered' => $result['recordsFiltered'],
+            'data' => $data,
+            'totalAmount' => round($totalAmount, 2),
         ]);
     }
 

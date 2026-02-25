@@ -15,7 +15,7 @@
             @endif
 
             <x-admin.students-list :students="$students" :filters="$filters" :statuses="$statuses" :showMetrics="false"
-                context="therapist" />
+                :datatable-url="$datatableUrl ?? null" context="therapist" />
         </div>
     </div>
 

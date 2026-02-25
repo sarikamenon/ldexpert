@@ -73,6 +73,15 @@ final class StudentService
         return $this->repository->listForDataTables($filters, $params);
     }
 
+    /**
+     * @param  array{search?: string|null, status?: string|null}  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTablesByTherapist($therapistId, $filters, $params);
+    }
+
     public function getMetrics(?string $status = null): array
     {
         return $this->repository->getMetrics($status);

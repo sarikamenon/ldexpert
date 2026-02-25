@@ -124,6 +124,56 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         ];
     }
 
+    /**
+     * @param  array{search?: string|null, status?: string|null}  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     */
+    public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = User::query()
+            ->where('users.role', 'student')
+            ->whereHas('studentProfile.ssas', function ($q) use ($therapistId) {
+                $q->where('assigned_therapist_id', $therapistId);
+            })
+            ->leftJoin('student_profiles', 'users.id', '=', 'student_profiles.user_id')
+            ->leftJoin('schools', 'student_profiles.school_id', '=', 'schools.id')
+            ->select('users.*');
+
+        if (! empty($filters['search'])) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->search($filters['search']);
+            });
+        }
+        if (! empty($filters['status'])) {
+            $baseQuery->where('users.status', $filters['status']);
+        }
+
+        $recordsTotal = (clone $baseQuery)->distinct()->count('users.id');
+
+        if ($params->searchValue) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($params) {
+                $q->search($params->searchValue);
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->distinct()->count('users.id');
+
+        $orderColumn = $params->orderColumn ?? 'users.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->distinct()
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User
     {
         $user->update([

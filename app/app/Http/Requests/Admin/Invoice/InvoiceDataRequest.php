@@ -29,4 +29,3 @@ final class InvoiceDataRequest extends FormRequest
         ];
     }
 }
-

@@ -75,7 +75,7 @@
                 </span>
             </p>
             <p class="text-xs text-foreground/60 mt-1">
-                {{ $ledgerEntries->total() }} transaction(s)
+                {{ $stats['transaction_count'] ?? 0 }} transaction(s)
             </p>
         </x-ui::card>
     </div>
@@ -84,7 +84,26 @@
     <x-ui::card class="p-6 space-y-4">
         <h5 class="text-sm font-semibold text-foreground">Transaction History</h5>
 
-        @if ($ledgerEntries->count() > 0)
+        @if (isset($datatableUrl))
+            <div class="overflow-x-auto">
+                <table id="ledgerTransactionsTable" class="w-full border-collapse ledger-transactions-table display" data-datatable-url="{{ $datatableUrl }}" data-filter-type="{{ $datatableFilterType ?? $type }}" data-filter-id="{{ $datatableFilterId ?? $id }}">
+                        <thead class="bg-background/subtle">
+                            <tr>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Transaction Type</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
+                                <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Debit</th>
+                                <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Credit</th>
+                                <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Balance</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Notes</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Recorded By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+            </div>
+        @elseif ($ledgerEntries->count() > 0)
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse ledger-transactions-table">
                         <thead class="bg-background/subtle">

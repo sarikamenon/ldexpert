@@ -6,16 +6,23 @@ namespace App\Domain\Contract\Repositories;
 
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateSchoolContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolContractDTO;
 use App\Enums\ContractStatus;
 use App\Enums\RateType;
 use App\Models\SchoolContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 interface SchoolContractRepositoryInterface
 {
     public function paginate(SchoolContractFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SchoolContract>}
+     */
+    public function listForDataTables(SchoolContractFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function create(CreateSchoolContractDTO $dto): SchoolContract;
 

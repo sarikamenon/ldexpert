@@ -61,12 +61,14 @@ Route::middleware('role:admin')
         Route::get('students/import', [StudentController::class, 'showImportForm'])->name('students.import');
         Route::post('students/import', [StudentController::class, 'import'])->name('students.import.store');
         Route::get('students/imports', [StudentController::class, 'importHistory'])->name('students.imports.index');
+        Route::post('students/imports/data', [StudentController::class, 'importHistoryData'])->name('students.imports.data');
         Route::get('students/imports/{import}', [StudentController::class, 'showImportStatus'])->name('students.imports.show');
         Route::get('students/imports/{import}/status', [StudentController::class, 'showImportStatus'])->name('students.imports.status');
         Route::get('students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
         Route::post('students/data', [StudentController::class, 'data'])->name('students.data');
+        Route::post('students/{student}/schedules/data', [StudentController::class, 'scheduleData'])->name('students.schedules.data');
         Route::resource('students', StudentController::class)->except(['destroy']);
 
         // Student Documents
@@ -91,6 +93,7 @@ Route::middleware('role:admin')
         Route::get('ssas/import', [SSAController::class, 'showImportForm'])->name('ssas.import');
         Route::post('ssas/import', [SSAController::class, 'import'])->name('ssas.import.store');
         Route::get('ssas/imports', [SSAController::class, 'importHistory'])->name('ssas.imports.index');
+        Route::post('ssas/imports/data', [SSAController::class, 'importHistoryData'])->name('ssas.imports.data');
         Route::get('ssas/imports/{import}', [SSAController::class, 'showImportStatus'])->name('ssas.imports.show');
         Route::get('ssas/imports/{import}/status', [SSAController::class, 'showImportStatus'])->name('ssas.imports.status');
         Route::get('ssas/import/template', [SSAController::class, 'downloadTemplate'])->name('ssas.import.template');
@@ -103,12 +106,14 @@ Route::middleware('role:admin')
         Route::prefix('contracts')
             ->name('contracts.')
             ->group(function () {
+                Route::post('schools/data', [SchoolContractController::class, 'data'])->name('schools.data');
                 Route::patch('schools/{schoolContract}/status', [SchoolContractController::class, 'updateStatus'])
                     ->name('schools.status');
                 Route::resource('schools', SchoolContractController::class)
                     ->parameters(['schools' => 'schoolContract'])
                     ->except(['destroy']);
 
+                Route::post('therapists/data', [TherapistContractController::class, 'data'])->name('therapists.data');
                 Route::patch('therapists/{therapistContract}/status', [TherapistContractController::class, 'updateStatus'])
                     ->name('therapists.status');
                 Route::resource('therapists', TherapistContractController::class)
@@ -118,6 +123,7 @@ Route::middleware('role:admin')
 
         // Activity Logs
         Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
+        Route::post('activity-logs/data', [ActivityLogController::class, 'data'])->name('activity-logs.data');
         Route::get('activity-logs/export', [ActivityLogController::class, 'export'])->name('activity-logs.export');
 
         // Analytics
@@ -135,6 +141,7 @@ Route::middleware('role:admin')
         // Session Logs
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
             Route::get('/', [SessionLogController::class, 'index'])->name('index');
+            Route::post('data', [SessionLogController::class, 'data'])->name('data');
             Route::get('{sessionLog}', [SessionLogController::class, 'show'])->name('show');
             Route::get('{sessionLog}/edit', [SessionLogController::class, 'edit'])->name('edit');
             Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
@@ -151,10 +158,13 @@ Route::middleware('role:admin')
         Route::get('finance/dashboard', [FinanceDashboardController::class, 'index'])->name('finance.dashboard');
 
         // IRS Report
+        Route::post('finance/irs-report/data', [IrsReportController::class, 'data'])->name('finance.irs-report.data');
         Route::get('finance/irs-report', [IrsReportController::class, 'index'])->name('finance.irs-report.index');
         Route::get('finance/irs-report/export', [IrsReportController::class, 'export'])->name('finance.irs-report.export');
 
         // Ledger Accounts
+        Route::post('ledger/accounts/data', [LedgerAccountController::class, 'data'])->name('ledger.accounts.data');
+        Route::post('ledger/accounts/transactions/data', [LedgerAccountController::class, 'transactionsData'])->name('ledger.accounts.transactions.data');
         Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
         Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
@@ -168,6 +178,7 @@ Route::middleware('role:admin')
         Route::resource('invoices', InvoiceController::class);
 
         // Invoice Payments
+        Route::post('payments/invoices/data', [InvoicePaymentsListController::class, 'data'])->name('payments.invoices.data');
         Route::get('payments/invoices', [InvoicePaymentsListController::class, 'index'])->name('payments.invoices.index');
         Route::get('payments/invoices/create', [InvoicePaymentsListController::class, 'create'])->name('payments.invoices.create');
         Route::post('payments/invoices', [InvoicePaymentsListController::class, 'store'])->name('payments.invoices.store');
@@ -177,6 +188,7 @@ Route::middleware('role:admin')
 
         // Therapist Billing
         Route::prefix('billing/therapist-bills')->name('billing.therapist-bills.')->group(function () {
+            Route::post('data', [TherapistBillController::class, 'data'])->name('data');
             Route::get('/', [TherapistBillController::class, 'index'])->name('index');
             Route::get('create', [TherapistBillController::class, 'create'])->name('create');
             Route::post('/', [TherapistBillController::class, 'store'])->name('store');
@@ -186,6 +198,7 @@ Route::middleware('role:admin')
         });
 
         // Therapist Bill Payments
+        Route::post('payments/therapist-bills/data', [TherapistBillPaymentsListController::class, 'data'])->name('payments.therapist-bills.data');
         Route::get('payments/therapist-bills', [TherapistBillPaymentsListController::class, 'index'])->name('payments.therapist-bills.index');
         Route::get('payments/therapist-bills/create', [TherapistBillPaymentsListController::class, 'create'])->name('payments.therapist-bills.create');
         Route::post('payments/therapist-bills', [TherapistBillPaymentsListController::class, 'store'])->name('payments.therapist-bills.store');
@@ -194,9 +207,11 @@ Route::middleware('role:admin')
         Route::delete('billing/therapist-bills/{therapist_bill}/payments/{payment}', [TherapistBillPaymentController::class, 'destroy'])->name('billing.therapist-bills.payments.destroy');
 
         // Expenses
+        Route::post('expenses/data', [ExpenseController::class, 'data'])->name('expenses.data');
         Route::resource('expenses', ExpenseController::class);
 
         // Expense Categories
+        Route::post('settings/expense-categories/data', [ExpenseCategoryController::class, 'data'])->name('settings.expense-categories.data');
         Route::patch('settings/expense-categories/{expenseCategory}/toggle-status', [ExpenseCategoryController::class, 'toggleStatus'])->name('settings.expense-categories.toggle-status');
         Route::resource('settings/expense-categories', ExpenseCategoryController::class)
             ->except(['show', 'destroy'])

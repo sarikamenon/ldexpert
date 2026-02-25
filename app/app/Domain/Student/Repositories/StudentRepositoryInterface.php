@@ -27,6 +27,12 @@ interface StudentRepositoryInterface
      */
     public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array;
 
+    /**
+     * @param  array{search?: string|null, status?: string|null}  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, User>}
+     */
+    public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array;
+
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User;
 
     public function getMetrics(?string $status = null): array;

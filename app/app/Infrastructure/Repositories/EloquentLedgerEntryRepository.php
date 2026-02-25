@@ -5,13 +5,51 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\Enums\TransactionType;
 use App\Models\LedgerEntry;
 use App\Models\School;
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterface
 {
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, LedgerEntry>}
+     */
+    public function listForDataTables(string $ledgerableType, int $ledgerableId, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = LedgerEntry::query()
+            ->where('ledgerable_type', $ledgerableType)
+            ->where('ledgerable_id', $ledgerableId)
+            ->with(['reference', 'recordedBy']);
+
+        $recordsTotal = (clone $baseQuery)->count();
+
+        if ($params->searchValue) {
+            $sv = $params->searchValue;
+            $baseQuery->where(function ($q) use ($sv) {
+                $q->where('notes', 'like', "%{$sv}%");
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count();
+
+        $orderColumn = $params->orderColumn ?? 'ledger_entries.created_at';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
     public function getLastEntryForSchool(int $schoolId): ?LedgerEntry
     {
         return LedgerEntry::where('ledgerable_type', School::class)

@@ -4,18 +4,40 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin\Finance;
 
+use App\DataTables\Transformers\IrsReportRowTransformer;
 use App\Domain\Finance\Services\IrsReportService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\IrsReportFilterDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Finance\IrsReportDataRequest;
 use App\Http\Requests\Admin\Finance\IrsReportRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\TherapistBill;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class IrsReportController extends Controller
 {
+    use DataTablesResponse;
+
+    private const ORDER_WHITELIST = [
+        0 => 'recipient',
+        1 => 'payment_date',
+        2 => 'payment_method',
+        3 => 'hourly_rate',
+        4 => 'tax_status',
+        5 => 'payroll_period',
+        6 => 'regular_pay',
+        7 => 'additional_pay',
+        8 => 'total_deductions',
+        9 => 'ytd_regular_pay',
+        10 => 'total_gross',
+        11 => 'total_net',
+    ];
+
     public function __construct(
         private readonly IrsReportService $reportService,
         private readonly UserService $userService,
@@ -29,11 +51,35 @@ final class IrsReportController extends Controller
         $reportData = $this->reportService->getReportData($filters);
 
         return view('admin.finance.irs-report.index', [
-            'rows' => $reportData['rows'],
+            'rows' => [],
             'summary' => $reportData['summary'],
             'filters' => $request->validated(),
             'therapists' => $this->getActiveTherapists(),
+            'datatableUrl' => route('admin.finance.irs-report.data'),
         ]);
+    }
+
+    public function data(IrsReportDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', TherapistBill::class);
+
+        $filters = IrsReportFilterDTO::fromArray([
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+            'therapist_ids' => $request->input('filter_therapist_ids'),
+        ]);
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $result = $this->reportService->getReportDataForDataTables($filters, $params);
+
+        $transform = static fn (array $row): array => IrsReportRowTransformer::transform($row);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            collect($result['rows']),
+            $transform,
+        );
     }
 
     public function export(IrsReportRequest $request): StreamedResponse

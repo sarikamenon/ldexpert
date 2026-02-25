@@ -8,7 +8,9 @@ use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Services\CompanyInfoService;
 use App\DTOs\CreateTherapistBillDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SendTherapistBillDTO;
+use App\DTOs\TherapistBillFilterDTO;
 use App\Enums\TherapistBillStatus;
 use App\Mail\TherapistBillMail;
 use App\Models\SessionLog;
@@ -25,6 +27,14 @@ final class TherapistBillService
         private readonly CompanyInfoService $companyInfoService,
         private readonly LedgerService $ledgerService,
     ) {}
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, TherapistBill>}
+     */
+    public function listForDataTables(TherapistBillFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
+    }
 
     public function generateBill(User $user, CreateTherapistBillDTO $dto): TherapistBill
     {

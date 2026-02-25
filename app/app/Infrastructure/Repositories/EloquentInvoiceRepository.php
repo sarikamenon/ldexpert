@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\InvoiceFilterDTO;
-use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Enums\InvoiceStatus;
 use App\Enums\SessionLogStatus;
 use App\Models\Invoice;

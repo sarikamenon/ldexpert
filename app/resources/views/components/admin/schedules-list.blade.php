@@ -6,6 +6,10 @@
     'ssas' => [],
     'therapists' => [],
     'context' => 'detail',
+    /** When set, table uses server-side DataTables; empty tbody, load via AJAX. */
+    'datatableUrl' => null,
+    /** Student ID for filter_student_id in data request (when datatableUrl is set). */
+    'studentId' => null,
 ])
 
 <x-ui::card class="p-6 space-y-6">
@@ -76,7 +80,8 @@
     </form>
 
     <div class="overflow-x-auto">
-        <table id="schedulesTable" class="min-w-full divide-y divide-border text-sm">
+        <table id="schedulesTable" class="min-w-full divide-y divide-border text-sm {{ isset($datatableUrl) ? 'display' : '' }}"
+            @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" data-student-id="{{ $studentId }}" data-filter-form="scheduleFiltersForm" @endif>
             <thead class="bg-muted/40">
                 <tr>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Date</th>
@@ -90,6 +95,8 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-border">
+                @if(isset($datatableUrl))
+                @else
                 @forelse ($schedules as $schedule)
                     <tr>
                         <td class="px-3 py-2">{{ optional($schedule->schedule_date)->format('Y-m-d') }}</td>
@@ -137,11 +144,14 @@
                         <td class="px-3 py-6 text-center text-foreground/70" colspan="8">No schedules found</td>
                     </tr>
                 @endforelse
+                @endif
             </tbody>
         </table>
     </div>
 
+    @if(!isset($datatableUrl) && method_exists($schedules, 'links'))
     <div>
         {{ $schedules->withQueryString()->links() }}
     </div>
+    @endif
 </x-ui::card>

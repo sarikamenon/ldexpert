@@ -6,6 +6,7 @@
     'showMetrics' => false,
     'metrics' => null,
     'context' => 'index', // 'index' or 'detail'
+    'datatableUrl' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -67,9 +68,10 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    @if ($contracts->count() > 0)
+    @if (!empty($datatableUrl) || $contracts->count() > 0)
         <div class="overflow-x-auto">
-            <table id="therapistContractsTable" class="w-full display">
+            <table id="therapistContractsTable" class="w-full display"
+                @if (!empty($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -84,7 +86,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($contracts as $contract)
+                    @if (empty($datatableUrl))
+                        @foreach ($contracts as $contract)
                         <tr>
                             <td>
                                 <a href="{{ route('admin.contracts.therapists.show', $contract) }}"
@@ -155,6 +158,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    @endif
                 </tbody>
             </table>
         </div>

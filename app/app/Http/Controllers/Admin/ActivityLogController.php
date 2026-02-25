@@ -4,18 +4,37 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\ActivityLogRowTransformer;
 use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Domain\User\Services\UserService;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ActivityLog\ActivityLogDataRequest;
 use App\Http\Requests\Admin\ActivityLog\ExportActivityLogsRequest;
 use App\Http\Requests\Admin\ActivityLog\IndexActivityLogRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
+use App\Models\ActivityLog;
 use Illuminate\Contracts\View\View;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
+use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ActivityLogController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'activity_logs.id',
+        1 => 'users.name',
+        2 => 'activity_logs.action',
+        3 => 'activity_logs.model_type',
+        4 => 'activity_logs.description',
+        5 => 'activity_logs.ip_address',
+        6 => 'activity_logs.created_at',
+    ];
+
     public function __construct(
         private readonly ActivityLogRepositoryInterface $activityLogs,
         private readonly UserService $userService,
@@ -24,41 +43,44 @@ final class ActivityLogController extends Controller
     public function index(IndexActivityLogRequest $request): View
     {
         $filters = $request->validated();
-        $perPage = $request->integer('per_page', 25);
-        /** @var LengthAwarePaginator $logs */
-        $logs = $this->activityLogs->paginate($filters, $perPage);
-
-        $logs->setCollection(
-            $logs->getCollection()
-                ->withUserTimezone($request->user())
-        );
-
         $users = $this->userService->listAdmins();
-
         $actions = $this->activityLogs->distinctActions();
         $modelTypes = $this->activityLogs->distinctModelTypes();
 
-        $logs->getCollection()->transform(function ($log) {
-            $actionKey = $log->action ?? 'activity';
-            $log->action_label = Str::headline($actionKey);
-            $log->action_variant = match (true) {
-                str_contains($actionKey, 'created') => 'success',
-                str_contains($actionKey, 'updated') => 'primary',
-                str_contains($actionKey, 'deleted') => 'danger',
-                str_contains($actionKey, 'status') => 'warning',
-                default => 'secondary',
-            };
-
-            return $log;
-        });
-
         return view('admin.activity-logs.index', [
-            'logs' => $logs,
+            'logs' => collect(),
             'users' => $users,
             'actions' => $actions,
             'modelTypes' => $modelTypes,
             'filters' => $filters,
+            'datatableUrl' => route('admin.activity-logs.data'),
         ]);
+    }
+
+    public function data(ActivityLogDataRequest $request): JsonResponse
+    {
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filters = [
+            'user_id' => $request->input('filter_user_id'),
+            'action' => $request->input('filter_action'),
+            'model_type' => $request->input('filter_model_type'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+            'search' => $request->input('filter_search'),
+        ];
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+        $result = $this->activityLogs->listForDataTables($filters, $params);
+
+        $rows = $result['rows']->withUserTimezone($request->user());
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $rows,
+            static fn (ActivityLog $log): array => ActivityLogRowTransformer::transform($log),
+        );
     }
 
     public function export(ExportActivityLogsRequest $request): StreamedResponse

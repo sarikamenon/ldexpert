@@ -134,11 +134,13 @@ try {
 ## DataTables Integration
 
 - Use the common DataTables module: `resources/js/common/datatables.js`
-- Import and initialize with `initDataTable()` helper
 - Always await `loadDataTablesLibrary()` before initialization
-- Configure table-specific options (ordering, pageLength, columnDefs, etc.)
 - Use DataTables CSS from `resources/css/common/datatables.css`
-- **New list tables MUST use server-side processing**: Do not load all rows in the initial page. Implement a JSON data endpoint (e.g. `POST /admin/{resource}/data`) that accepts DataTables params (`draw`, `start`, `length`, `search`, `order`, `columns`) and returns `{ draw, recordsTotal, recordsFiltered, data }`. Use `serverSide: true` and `ajax: { url, type: 'POST', data }` in init (include CSRF token and filter form values in `ajax.data`). Render the table with an empty tbody. Use POST for the endpoint and enforce a column whitelist for ordering; show loading state (`processing: true`) and handle errors (e.g. SweetAlert2). **Reference implementation**: admin Students list — route `admin.students.data`, `StudentController::data()`, views `admin/students/index.blade.php` and `components/admin/students-list.blade.php`, JS `resources/js/pages/admin-students-index.js`. See `app/docs/DATATABLES_SERVER_SIDE.md` (or `_local_docs/`) for the full contract.
+- **New list tables MUST use server-side processing** with the shared pattern:
+  - **Backend**: Use `DataTablesRequest::fromRequest($request, ORDER_WHITELIST)` to build params; use an entity-specific `*DataRequest` Form Request for filter validation (`filter_*` keys); call a repository/service `listForDataTables(FilterDTO, DataTablesParamsDTO)`; return JSON via `DataTablesResponse::dataTablesResponse()` or a custom response. **Controllers must not build DataTables JSON or row HTML inline** — use an `App\DataTables\Transformers\XxxRowTransformer` with a static `transform($model): array` that returns one HTML string per column.
+  - **Frontend**: Use `initServerSideDataTable(selector, dataUrl, { order, pageLength, columnDefs, getExtraData(d) { ... } })` from `resources/js/common/datatables.js`. Read `data-datatable-url` from the table; pass filter form values in `getExtraData(d)`. Wire filter form `change`/`submit` to reload the table.
+  - **Views**: Render the table with an empty `<tbody></tbody>` and set `data-datatable-url="{{ $datatableUrl }}"` when using server-side; pass `datatableUrl` from the controller (e.g. `route('admin.students.data')`).
+- Use **POST** for the data endpoint (CSRF); enforce a **column whitelist** for ordering. See `app/docs/DATATABLES_SERVER_SIDE.md` for the contract and list of migrated entities.
 
 ## Code Organization Patterns
 

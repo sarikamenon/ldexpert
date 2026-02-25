@@ -10,6 +10,7 @@ use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateScheduleDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
@@ -70,6 +71,14 @@ final class ScheduleService
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateForStudent($student, $filters, $perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, \App\Models\Schedule>}
+     */
+    public function listForDataTablesForStudent(User $student, ScheduleFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTablesForStudent($student, $filters, $params);
     }
 
     public function getSchools(User $therapist): Collection

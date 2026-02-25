@@ -7,12 +7,14 @@ namespace App\Domain\Contract\Services;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\DTOs\ChangeContractStatusDTO;
 use App\DTOs\CreateSchoolContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolContractDTO;
 use App\Enums\ContractStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Models\SchoolContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class SchoolContractService
@@ -24,6 +26,14 @@ final class SchoolContractService
     public function paginate(SchoolContractFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->repository->paginate($filters, $perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SchoolContract>}
+     */
+    public function listForDataTables(SchoolContractFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function metrics(): array

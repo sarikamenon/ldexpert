@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Repositories;
 
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistBillFilterDTO;
 use App\Models\SessionLog;
 use App\Models\TherapistBill;
@@ -17,6 +18,11 @@ interface TherapistBillRepositoryInterface
     public function find(int $id): ?TherapistBill;
 
     public function list(TherapistBillFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, TherapistBill>}
+     */
+    public function listForDataTables(TherapistBillFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     /**
      * @param  array<int>  $sessionLogIds

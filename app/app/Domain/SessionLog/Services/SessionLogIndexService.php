@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\SessionLog\Services;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SessionLogIndexDTO;
 use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
@@ -12,6 +13,7 @@ use App\Models\User;
 use App\Support\DateHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 final class SessionLogIndexService
 {
@@ -36,6 +38,22 @@ final class SessionLogIndexService
             'statuses' => SessionLogStatus::cases(),
             'filters' => $dto->toArray(),
         ];
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
+    public function listForDataTables(array $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
+    public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTablesForTherapist($therapist, $filters, $params);
     }
 
     /**
