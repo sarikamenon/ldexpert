@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class SSAImportRow extends Model
 {
     
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
     protected $table = 'ssa_import_rows';

@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class ActivityLog extends Model
 {
     
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
     protected $fillable = [
