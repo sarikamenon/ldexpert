@@ -31,6 +31,7 @@ use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAImport;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -122,7 +123,6 @@ final class SSAController extends Controller
                 'assignmentHistory.assignedBy',
             ]);
             $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
-            $viewData['therapists'] = $this->getActiveTherapists();
         } elseif ($activeTab === 'session_logs') {
             $dto = SessionLogIndexDTO::fromArray(
                 array_merge($request->query(), ['ssa_id' => $ssa->id])
@@ -287,6 +287,24 @@ final class SSAController extends Controller
     private function getActiveTherapists(): Collection
     {
         return $this->userService->listActiveTherapistsForSelect();
+    }
+
+    public function therapistsForService(Request $request): JsonResponse
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $serviceIds = array_filter(
+            array_map('intval', (array) $request->query('service_ids', [])),
+            fn (int $id): bool => $id > 0,
+        );
+
+        $therapists = $serviceIds !== []
+            ? $this->userService->listActiveTherapistsForServices($serviceIds)
+            : $this->userService->listActiveTherapistsForSelect();
+
+        return response()->json(
+            $therapists->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name])->values()
+        );
     }
 
     public function showImportForm(): View

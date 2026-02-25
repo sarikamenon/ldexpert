@@ -128,6 +128,20 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    /** @param array<int, int> $serviceIds */
+    public function listActiveTherapistsForServices(array $serviceIds): Collection
+    {
+        return User::query()
+            ->where('role', Role::THERAPIST->value)
+            ->where('status', \App\Enums\UserStatus::ACTIVE->value)
+            ->whereHas('therapistProfile.position.services', function ($query) use ($serviceIds): void {
+                $query->whereIn('services.id', $serviceIds);
+            })
+            ->select(['id', 'name', 'email'])
+            ->orderBy('name')
+            ->get();
+    }
+
     public function findByIds(array $ids): Collection
     {
         return User::whereIn('id', $ids)->get();

@@ -82,6 +82,7 @@ Route::middleware('role:admin')
         Route::patch('positions/{position}/status', [PositionController::class, 'updateStatus'])->name('positions.status');
         Route::resource('positions', PositionController::class)->except(['destroy', 'show']);
 
+        Route::get('ssas/therapists-for-service', [SSAController::class, 'therapistsForService'])->name('ssas.therapists-for-service');
         Route::get('ssas/export', [SSAController::class, 'export'])->name('ssas.export');
         Route::get('ssas/import', [SSAController::class, 'showImportForm'])->name('ssas.import');
         Route::post('ssas/import', [SSAController::class, 'import'])->name('ssas.import.store');
