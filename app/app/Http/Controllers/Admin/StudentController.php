@@ -342,8 +342,8 @@ final class StudentController extends Controller
                     $student->id,
                     $student->name,
                     $student->email,
-                    $profile?->school?->display_name ?? '—',
-                    $profile?->grade_level ?? '—',
+                    $profile?->school->display_name ?? '—',
+                    $profile->grade_level ?? '—',
                     optional($profile?->date_of_birth)->format('Y-m-d') ?? '—',
                     $student->status?->value ?? $student->status ?? 'inactive',
                 ]);

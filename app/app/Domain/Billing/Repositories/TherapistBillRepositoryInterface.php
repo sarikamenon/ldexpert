@@ -17,6 +17,7 @@ interface TherapistBillRepositoryInterface
 
     public function find(int $id): ?TherapistBill;
 
+    /** @return LengthAwarePaginator<TherapistBill> */
     public function list(TherapistBillFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 
     /**
@@ -26,7 +27,7 @@ interface TherapistBillRepositoryInterface
 
     /**
      * @param  array<int>  $sessionLogIds
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getApprovedSessionLogsForBilling(array $sessionLogIds): Collection;
 
@@ -43,7 +44,7 @@ interface TherapistBillRepositoryInterface
      * Get available session logs for bill creation with filters
      *
      * @param  array<string, mixed>  $filters
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getAvailableSessionLogsForBillingCreation(array $filters): Collection;
 
@@ -51,12 +52,14 @@ interface TherapistBillRepositoryInterface
      * Get unique therapist IDs from available session logs
      *
      * @param  array<string, mixed>  $filters
-     * @return Collection<int>
+     * @return Collection<int, int>
      */
     public function getAvailableTherapistIdsForBillingCreation(array $filters): Collection;
 
     /**
      * Get bills by therapist with filters
+     *
+     * @return LengthAwarePaginator<TherapistBill>
      */
     public function getBillsByTherapist(int $therapistId, TherapistBillFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 }

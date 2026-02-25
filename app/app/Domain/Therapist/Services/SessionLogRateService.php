@@ -144,7 +144,7 @@ class SessionLogRateService
         SessionOutcome $outcome = SessionOutcome::SERVICES_ADMINISTERED
     ): array {
         $school = $schoolId ? $this->schoolRepository->find($schoolId) : null;
-        $isPrivateStudent = $school?->is_private_student ?? false;
+        $isPrivateStudent = $school->is_private_student ?? false;
 
         $therapistRate = $this->getTherapistRate($therapistUserId, $serviceId, $sessionDate);
         $schoolRate = $this->getSchoolRate($schoolId, $serviceId, $sessionDate);

@@ -24,7 +24,7 @@ final class TherapistSSARowTransformer
                 .e($ssa->student->name).'</a>'
             : '<span class="font-medium text-foreground/50">Unknown Student</span>';
 
-        $primaryService = $ssa->primaryService?->name ?? '—';
+        $primaryService = $ssa->primaryService->name ?? '—';
 
         $additionalServices = '';
         if ($ssa->additionalServices->isNotEmpty()) {

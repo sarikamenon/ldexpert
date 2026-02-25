@@ -70,7 +70,7 @@ final class IrsReportService
             $profile = $therapist?->therapistProfile;
             $bill = $payment->therapistBill;
 
-            $recipient = $bill?->therapist_name ?? $therapist?->name ?? '-';
+            $recipient = $bill->therapist_name ?? $therapist->name ?? '-';
             $hourlyRate = $profile ? (float) $profile->hourly_rate : 0.0;
 
             $method = $payment->method;

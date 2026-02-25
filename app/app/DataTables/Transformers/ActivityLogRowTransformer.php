@@ -15,7 +15,7 @@ final class ActivityLogRowTransformer
     public static function transform(ActivityLog $log): array
     {
         $idCell = (string) $log->id;
-        $userCell = e($log->user?->name ?? 'System');
+        $userCell = e($log->user->name ?? 'System');
 
         $actionKey = $log->action ?? 'activity';
         $actionLabel = Str::headline($actionKey);

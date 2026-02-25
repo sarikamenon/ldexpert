@@ -142,12 +142,12 @@ final class SessionLogIndexService
                         'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
                     ],
                     'student_service_school' => [
-                        'student' => $log->student?->name ?? null,
-                        'school' => $log->school?->display_name ?? null,
+                        'student' => $log->student->name ?? null,
+                        'school' => $log->school->display_name ?? null,
                     ],
                     'therapist' => [
-                        'name' => $log->therapist?->name ?? '-',
-                        'service' => $log->service?->name ?? null,
+                        'name' => $log->therapist->name ?? '-',
+                        'service' => $log->service->name ?? null,
                     ],
                     'school_amount' => $this->formatCurrency($log->school_invoice_amount),
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
@@ -171,8 +171,8 @@ final class SessionLogIndexService
                 $sessionDate = $log->session_date;
                 $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
 
-                $startTime = $log->start_time?->format('g:i A');
-                $endTime = $log->end_time?->format('g:i A');
+                $startTime = $log->start_time->format('g:i A');
+                $endTime = $log->end_time->format('g:i A');
                 $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
                 $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
@@ -188,12 +188,12 @@ final class SessionLogIndexService
                         'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
                     ],
                     'student_service_school' => [
-                        'student' => $log->student?->name ?? null,
-                        'school' => $log->school?->display_name ?? null,
+                        'student' => $log->student->name ?? null,
+                        'school' => $log->school->display_name ?? null,
                     ],
                     'therapist' => [
-                        'name' => $log->therapist?->name ?? '-',
-                        'service' => $log->service?->name ?? null,
+                        'name' => $log->therapist->name ?? '-',
+                        'service' => $log->service->name ?? null,
                     ],
                     'therapist_amount' => $this->formatCurrency($log->therapist_billable_amount),
                     'status' => $this->getStatusLabel($log),

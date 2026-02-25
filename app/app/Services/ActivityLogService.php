@@ -16,6 +16,9 @@ class ActivityLogService
         private readonly ActivityLogRepositoryInterface $activityLogs,
     ) {}
 
+    /**
+     * @param  array<string, mixed>|null  $changes
+     */
     public function log(
         string $action,
         Model $model,
@@ -39,6 +42,9 @@ class ActivityLogService
         return $this->log('created', $model, null, $description);
     }
 
+    /**
+     * @param  array<string, mixed>  $changes
+     */
     public function logUpdated(Model $model, array $changes, ?string $description = null): ActivityLog
     {
         return $this->log('updated', $model, $changes, $description);
@@ -65,6 +71,11 @@ class ActivityLogService
         return $this->log('status_changed', $model, $changes);
     }
 
+    /**
+     * @param  class-string<Model>  $modelType
+     * @param  array<int, int>  $ids
+     * @param  array<string, mixed>|null  $metadata
+     */
     public function logBulkAction(string $action, string $modelType, array $ids, ?array $metadata = null): ActivityLog
     {
         $model = new $modelType;
@@ -101,6 +112,9 @@ class ActivityLogService
         };
     }
 
+    /**
+     * @return Collection<int, ActivityLog>
+     */
     public function recent(int $limit = 5): Collection
     {
         return $this->activityLogs->recent($limit);

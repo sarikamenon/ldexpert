@@ -16,9 +16,9 @@ final class SSAImportRowTransformer
         $idCell = '#'.(int) $import->id;
         $typeCell = e($import->type->value ?? '');
         $fileNameCell = e($import->file_name ?? '—');
-        $userCell = e($import->user?->name ?? '—');
+        $userCell = e($import->user->name ?? '—');
 
-        $statusValue = $import->status?->value ?? '';
+        $statusValue = $import->status->value ?? '';
         $statusClasses = match ($statusValue) {
             'completed' => 'bg-success/10 text-success border border-success/20',
             'failed' => 'bg-danger/10 text-danger border border-danger/20',

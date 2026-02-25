@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
-use App\Models\User;
 use App\Enums\UserStatus;
+use App\Models\User;
 use Carbon\CarbonInterface;
 
 final class TherapistStudentRowTransformer

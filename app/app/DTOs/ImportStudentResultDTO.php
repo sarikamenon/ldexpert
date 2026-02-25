@@ -6,6 +6,10 @@ namespace App\DTOs;
 
 final class ImportStudentResultDTO
 {
+    /**
+     * @param list<array{row: int, errors: list<string>}> $errors
+     * @param list<array{row: int, reason: string}> $skippedRows
+     */
     public function __construct(
         public readonly int $totalRows = 0,
         public readonly int $successCount = 0,
@@ -62,6 +66,7 @@ final class ImportStudentResultDTO
         );
     }
 
+    /** @param list<string> $errors */
     public function withError(int $rowNumber, array $errors): self
     {
         $errorList = $this->errors;

@@ -17,17 +17,14 @@ final class InvoiceFilterDTO
         public readonly int $perPage = 15,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
-            schoolId: isset($data['school_id']) && $data['school_id'] !== null
+            schoolId: isset($data['school_id'])
                 ? (int) $data['school_id']
                 : null,
-            status: isset($data['status']) && $data['status'] !== null
+            status: isset($data['status'])
                 ? InvoiceStatus::from($data['status'])
                 : null,
             dateFrom: $data['date_from'] ?? null,
@@ -37,9 +34,6 @@ final class InvoiceFilterDTO
         );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     /** @return array<string, mixed> */
     public function toArray(): array
     {

@@ -17,6 +17,7 @@ use Illuminate\Support\Collection;
 
 interface TherapistContractRepositoryInterface
 {
+    /** @return LengthAwarePaginator<TherapistContract> */
     public function paginate(TherapistContractFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 
     /**

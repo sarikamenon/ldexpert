@@ -28,7 +28,7 @@ final class PaymentsListService
             $this->applyInvoicePaymentSearch($query, $filters->search);
         }
 
-        /** @var LengthAwarePaginator $payments */
+        /** @var LengthAwarePaginator<InvoicePayment> $payments */
         $payments = $query->paginate(25)->withQueryString();
 
         $totalAmount = $this->getInvoicePaymentsTotalAmount($filters);
@@ -89,6 +89,9 @@ final class PaymentsListService
         return (float) $query->sum('amount');
     }
 
+    /**
+     * @param  Builder<InvoicePayment>  $query
+     */
     private function applyInvoicePaymentSearch(Builder $query, string $search): void
     {
         $query->where(function (Builder $q) use ($search) {
@@ -116,7 +119,7 @@ final class PaymentsListService
             $this->applyTherapistBillPaymentSearch($query, $filters->search);
         }
 
-        /** @var LengthAwarePaginator $payments */
+        /** @var LengthAwarePaginator<TherapistBillPayment> $payments */
         $payments = $query->paginate(25)->withQueryString();
 
         $totalAmount = $this->getTherapistBillPaymentsTotalAmount($filters);
@@ -176,6 +179,9 @@ final class PaymentsListService
         return (float) $query->sum('amount');
     }
 
+    /**
+     * @param  Builder<TherapistBillPayment>  $query
+     */
     private function applyTherapistBillPaymentSearch(Builder $query, string $search): void
     {
         $query->where(function (Builder $q) use ($search) {
@@ -189,6 +195,9 @@ final class PaymentsListService
         });
     }
 
+    /**
+     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     */
     private function applyCommonFilters(Builder $query, ?string $fromDate, ?string $toDate, ?string $method): void
     {
         if ($fromDate) {

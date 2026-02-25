@@ -16,6 +16,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $session_date
+ * @property Carbon $start_time
+ * @property Carbon $end_time
+ */
 class SessionLog extends Model
 {
     use HasFactory, SoftDeletes;
@@ -241,7 +246,7 @@ class SessionLog extends Model
 
         // Try to convert string to enum
         $enum = SessionLogStatus::tryFrom((string) $value);
-        $this->attributes['status'] = $enum?->value ?? $value;
+        $this->attributes['status'] = $enum->value ?? $value;
     }
 
     public function canEdit(): bool
@@ -274,7 +279,7 @@ class SessionLog extends Model
         $query = $this->newQuery();
         $field ??= $this->getRouteKeyName();
 
-        $route = request()?->route();
+        $route = request()->route();
         $routeName = $route?->getName();
         $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
 

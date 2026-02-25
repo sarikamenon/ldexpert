@@ -25,12 +25,12 @@ class TherapistProfilePolicy
         return $this->isAdmin($user);
     }
 
-    public function update(User $user, $therapistProfile = null): bool
+    public function update(User $user, ?TherapistProfile $therapistProfile = null): bool
     {
         return $this->isAdmin($user);
     }
 
-    public function changeStatus(User $user, $therapistProfile = null): bool
+    public function changeStatus(User $user, ?TherapistProfile $therapistProfile = null): bool
     {
         return $this->isAdmin($user);
     }

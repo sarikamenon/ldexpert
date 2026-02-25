@@ -13,8 +13,10 @@ interface ActivityLogRepositoryInterface
 {
     public function create(array $attributes): ActivityLog;
 
+    /** @return Collection<int, ActivityLog> */
     public function recent(int $limit = 5): Collection;
 
+    /** @return LengthAwarePaginator<ActivityLog> */
     public function paginate(array $filters, int $perPage): LengthAwarePaginator;
 
     /**
@@ -22,9 +24,12 @@ interface ActivityLogRepositoryInterface
      */
     public function listForDataTables(array $filters, DataTablesParamsDTO $params): array;
 
+    /** @return Collection<int, ActivityLog> */
     public function all(array $filters): Collection;
 
+    /** @return Collection<int, string> */
     public function distinctActions(): Collection;
 
+    /** @return Collection<int, string> */
     public function distinctModelTypes(): Collection;
 }

@@ -14,8 +14,8 @@ final class StudentRowTransformer
     public static function transform(User $student): array
     {
         $profile = $student->studentProfile;
-        $isActive = ($student->status?->value ?? 'inactive') === 'active';
-        $statusLabel = ucfirst($student->status?->value ?? 'inactive');
+        $isActive = ($student->status->value ?? 'inactive') === 'active';
+        $statusLabel = ucfirst($student->status->value ?? 'inactive');
         $showUrl = route('admin.students.show', $student);
         $editUrl = route('admin.students.edit', $student);
         $school = $profile?->school;
@@ -35,14 +35,14 @@ final class StudentRowTransformer
         $actions = '<div class="flex space-x-1">'
             .'<a href="'.e($showUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors" title="View Student">'.$iconView.'</a>'
             .'<a href="'.e($editUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" title="Edit Student" dusk="edit-student-'.(int) $student->id.'">'.$iconEdit.'</a>'
-            .'<button type="button" data-student="'.(int) $student->id.'" data-status="'.e($student->status?->value ?? 'inactive').'" dusk="student-status-toggle-'.(int) $student->id.'" class="toggle-student-status inline-flex items-center justify-center w-8 h-8 rounded transition-colors '.$toggleClass.'" title="'.e($toggleTitle).'">'.$toggleIcon.'</button></div>';
+            .'<button type="button" data-student="'.(int) $student->id.'" data-status="'.e($student->status->value ?? 'inactive').'" dusk="student-status-toggle-'.(int) $student->id.'" class="toggle-student-status inline-flex items-center justify-center w-8 h-8 rounded transition-colors '.$toggleClass.'" title="'.e($toggleTitle).'">'.$toggleIcon.'</button></div>';
 
         return [
             '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90" title="View Student" aria-label="View student '.e($student->name).'">'.(int) $student->id.'</a>',
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($student->name).'</a>',
             e($student->email),
             $schoolCell,
-            e($profile?->grade_level ?? '—'),
+            e($profile->grade_level ?? '—'),
             $profile?->date_of_birth?->format('Y-m-d') ?? '—',
             $statusBadge,
             $actions,

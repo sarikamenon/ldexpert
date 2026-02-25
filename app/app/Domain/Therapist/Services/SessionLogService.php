@@ -74,7 +74,7 @@ final class SessionLogService
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
-            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile?->school_id ?? null;
+            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
 
             $this->assertScheduleNotBilled($schedule);
@@ -145,7 +145,7 @@ final class SessionLogService
             $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
-            $schoolId = $dto->schoolId ?? $ssa->student->studentProfile?->school_id ?? null;
+            $schoolId = $dto->schoolId ?? $ssa->student->studentProfile->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
 
@@ -191,7 +191,7 @@ final class SessionLogService
     public function update(User $therapist, SessionLog $sessionLog, UpdateSessionLogDTO $dto): SessionLog
     {
         return DB::transaction(function () use ($therapist, $sessionLog, $dto): SessionLog {
-            $isAdmin = $therapist->role?->value === 'admin';
+            $isAdmin = $therapist->role->value === 'admin';
 
             if (! $isAdmin && $sessionLog->therapist_id !== $therapist->id) {
                 throw new \InvalidArgumentException('Therapist does not have access to this session log.');
@@ -213,7 +213,7 @@ final class SessionLogService
             }
 
             $durationChanged = isset($data['duration_minutes']) || isset($data['start_time']) || isset($data['end_time']);
-            $outcomeChanged = isset($data['outcome']) && ($data['outcome'] !== ($sessionLog->outcome?->value ?? $sessionLog->getRawOriginal('outcome')));
+            $outcomeChanged = isset($data['outcome']) && ($data['outcome'] !== ($sessionLog->outcome->value ?? $sessionLog->getRawOriginal('outcome')));
             $schoolIdChanged = array_key_exists('school_id', $data) && (int) ($data['school_id'] ?? 0) !== (int) $sessionLog->school_id;
 
             $shouldRecalculateBilling = ($durationChanged || $outcomeChanged || $schoolIdChanged) && ! ($dto->isRateOverride ?? false);

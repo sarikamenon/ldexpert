@@ -37,18 +37,27 @@ interface StudentRepositoryInterface
 
     public function getMetrics(?string $status = null): array;
 
+    /**
+     * @return Collection<int, User>
+     */
     public function export(StudentFilterDTO $filters): Collection;
 
     public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator;
 
     public function countStudentsBySchool(int $schoolId): int;
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsBySchool(int $schoolId): Collection;
 
     public function countStudentsByTherapist(int $therapistId): int;
 
     public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator;
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsByTherapist(int $therapistId): Collection;
 
     public function getSchoolIdByUserId(int $userId): ?int;

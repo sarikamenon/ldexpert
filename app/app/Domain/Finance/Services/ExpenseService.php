@@ -79,6 +79,9 @@ class ExpenseService
         return (float) $query->sum('amount');
     }
 
+    /**
+     * @param  Builder<Expense>  $query
+     */
     private function applyExpenseSearch(Builder $query, string $search): void
     {
         $query->where(function (Builder $q) use ($search) {

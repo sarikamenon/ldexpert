@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property SSAImportStatus $status
+ * @property SSAImportType $type
+ */
 class SSAImport extends Model
 {
     use HasFactory, SoftDeletes;

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
-use App\Models\Schedule;
-use App\Enums\ScheduleStatus;
 use App\Enums\BillingStatus;
+use App\Enums\ScheduleStatus;
+use App\Models\Schedule;
 use Carbon\CarbonInterface;
 
 final class ScheduleRowTransformer
@@ -41,8 +41,8 @@ final class ScheduleRowTransformer
             ? '<a href="'.e(route('admin.ssas.show', $schedule->ssa)).'" class="text-primary hover:underline">#'.(int) $schedule->ssa->id.'</a>'
             : '—';
 
-        $serviceCell = e($schedule->service?->name ?? '—');
-        $schoolCell = e($schedule->school?->display_name ?? '—');
+        $serviceCell = e($schedule->service->name ?? '—');
+        $schoolCell = e($schedule->school->display_name ?? '—');
 
         $status = $schedule->status;
         if ($status instanceof ScheduleStatus) {

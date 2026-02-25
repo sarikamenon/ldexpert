@@ -14,13 +14,13 @@ final class TherapistRowTransformer
     public static function transform(User $therapist): array
     {
         $profile = $therapist->therapistProfile;
-        $isActive = ($therapist->status?->value ?? 'inactive') === 'active';
-        $statusLabel = ucfirst($therapist->status?->value ?? 'inactive');
+        $isActive = ($therapist->status->value ?? 'inactive') === 'active';
+        $statusLabel = ucfirst($therapist->status->value ?? 'inactive');
         $showUrl = route('admin.therapists.show', $therapist);
         $editUrl = route('admin.therapists.edit', $therapist);
-        $managerName = $profile?->manager?->name ?? '—';
-        $positionName = $profile?->position?->name ?? '—';
-        $maxHours = $profile?->max_weekly_hours ?? '—';
+        $managerName = $profile?->manager->name ?? '—';
+        $positionName = $profile?->position->name ?? '—';
+        $maxHours = $profile->max_weekly_hours ?? '—';
         $badgeClass = $isActive ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20';
         $statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.$statusLabel.'</span>';
         $toggleTitle = $isActive ? 'Deactivate Therapist' : 'Activate Therapist';
@@ -33,7 +33,7 @@ final class TherapistRowTransformer
         $actions = '<div class="flex space-x-1">'
             .'<a href="'.e($showUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors" title="View Therapist" dusk="view-therapist-'.(int) $therapist->id.'">'.$iconView.'</a>'
             .'<a href="'.e($editUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors" title="Edit Therapist" dusk="edit-therapist-'.(int) $therapist->id.'">'.$iconEdit.'</a>'
-            .'<button type="button" data-therapist="'.(int) $therapist->id.'" data-status="'.e($therapist->status?->value ?? 'inactive').'" dusk="status-toggle-'.(int) $therapist->id.'" class="toggle-status-button inline-flex items-center justify-center w-8 h-8 rounded transition-colors '.$toggleClass.'" title="'.e($toggleTitle).'">'.$toggleIcon.'</button></div>';
+            .'<button type="button" data-therapist="'.(int) $therapist->id.'" data-status="'.e($therapist->status->value ?? 'inactive').'" dusk="status-toggle-'.(int) $therapist->id.'" class="toggle-status-button inline-flex items-center justify-center w-8 h-8 rounded transition-colors '.$toggleClass.'" title="'.e($toggleTitle).'">'.$toggleIcon.'</button></div>';
 
         return [
             '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90" title="View Therapist">'.(int) $therapist->id.'</a>',

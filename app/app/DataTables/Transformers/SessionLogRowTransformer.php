@@ -46,8 +46,8 @@ final class SessionLogRowTransformer
         }
         $entryInfoCell .= '</div>';
 
-        $studentName = $log->student?->name ?? null;
-        $schoolName = $log->school?->display_name ?? null;
+        $studentName = $log->student->name ?? null;
+        $schoolName = $log->school->display_name ?? null;
         $studentSchoolCell = '<div class="flex flex-col">';
         if ($studentName) {
             $studentSchoolCell .= '<span class="font-medium text-foreground">'.e($studentName).'</span>';
@@ -60,8 +60,8 @@ final class SessionLogRowTransformer
         }
         $studentSchoolCell .= '</div>';
 
-        $therapistName = $log->therapist?->name ?? '-';
-        $serviceName = $log->service?->name ?? null;
+        $therapistName = $log->therapist->name ?? '-';
+        $serviceName = $log->service->name ?? null;
         $therapistCell = '<div class="flex flex-col">';
         $therapistCell .= '<span class="font-medium text-foreground">'.e($therapistName).'</span>';
         if ($serviceName) {

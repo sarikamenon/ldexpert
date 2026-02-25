@@ -116,7 +116,7 @@ final class InvoiceService
     }
 
     /**
-     * @param  Collection<SessionLog>  $sessionLogs
+     * @param  Collection<int, SessionLog>  $sessionLogs
      * @return array<string, float>
      */
     public function calculateTotals(Collection $sessionLogs): array

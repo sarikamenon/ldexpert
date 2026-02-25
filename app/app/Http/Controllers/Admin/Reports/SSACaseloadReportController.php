@@ -64,7 +64,7 @@ final class SSACaseloadReportController extends Controller
             foreach ($ssas as $ssa) {
                 fputcsv($handle, [
                     $ssa->assignedTherapist->name ?? 'Unassigned',
-                    $ssa->student?->studentProfile?->school?->display_name ?? '—',
+                    $ssa->student?->studentProfile?->school->display_name ?? '—',
                     $ssa->student->name ?? '—',
                     $ssa->primaryService->name ?? '—',
                     '', // Active SSA count would need aggregation

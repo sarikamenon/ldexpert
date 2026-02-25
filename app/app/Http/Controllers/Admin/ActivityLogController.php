@@ -105,7 +105,7 @@ final class ActivityLogController extends Controller
             foreach ($logs as $log) {
                 fputcsv($handle, [
                     $log->id,
-                    $log->user?->name ?? 'System',
+                    $log->user->name ?? 'System',
                     $log->action,
                     class_basename($log->model_type),
                     $log->description,

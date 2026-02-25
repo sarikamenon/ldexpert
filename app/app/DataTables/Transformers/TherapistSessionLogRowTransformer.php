@@ -17,8 +17,8 @@ final class TherapistSessionLogRowTransformer
         $sessionDate = $log->session_date;
         $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : null;
 
-        $startTime = $log->start_time?->format('g:i A');
-        $endTime = $log->end_time?->format('g:i A');
+        $startTime = $log->start_time->format('g:i A');
+        $endTime = $log->end_time->format('g:i A');
         $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
@@ -37,8 +37,8 @@ final class TherapistSessionLogRowTransformer
         }
         $dateTimeCell .= '</div>';
 
-        $studentName = $log->student?->name ?? null;
-        $schoolName = $log->school?->display_name ?? null;
+        $studentName = $log->student->name ?? null;
+        $schoolName = $log->school->display_name ?? null;
         $studentSchoolCell = '<div class="flex flex-col">';
         if ($studentName) {
             $studentSchoolCell .= '<span class="font-medium text-foreground">'.e($studentName).'</span>';
@@ -51,7 +51,7 @@ final class TherapistSessionLogRowTransformer
         }
         $studentSchoolCell .= '</div>';
 
-        $serviceCell = e($log->service?->name ?? '—');
+        $serviceCell = e($log->service->name ?? '—');
 
         $entryCreated = $createdAt ? $createdAt->format('M d, Y') : null;
         $entryDiff = DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt);

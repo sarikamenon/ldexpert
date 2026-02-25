@@ -18,13 +18,13 @@ final class InvoicePaymentRowTransformer
         $invoiceCell = '—';
         if ($payment->invoice) {
             $showUrl = route('admin.invoices.show', $payment->invoice);
-            $schoolName = $payment->school?->name ?? $payment->invoice->school_name ?? '—';
+            $schoolName = $payment->school->name ?? $payment->invoice->school_name ?? '—';
             $invoiceCell = '<a href="'.e($showUrl).'" class="text-primary hover:underline">'.e($payment->invoice->invoice_number).'</a>'
                 .' <span class="text-foreground/60">— '.e($schoolName).'</span>';
         }
 
         $amount = '$'.number_format((float) $payment->amount, 2);
-        $methodLabel = $payment->method?->label() ?? '—';
+        $methodLabel = $payment->method->label() ?? '—';
         $methodBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">'.e($methodLabel).'</span>';
         $reference = e($payment->reference ?? '—');
         $recordedBy = e($payment->recordedBy->name ?? 'System');

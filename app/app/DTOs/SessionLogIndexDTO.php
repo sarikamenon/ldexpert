@@ -29,9 +29,6 @@ final class SessionLogIndexDTO
         return (int) $value;
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
@@ -41,7 +38,7 @@ final class SessionLogIndexDTO
             therapistId: self::nullableInt($data['therapist_id'] ?? null),
             serviceId: self::nullableInt($data['service_id'] ?? null),
             ssaId: self::nullableInt($data['ssa_id'] ?? null),
-            status: isset($data['status']) && $data['status'] !== null
+            status: isset($data['status'])
                 ? SessionLogStatus::from($data['status'])
                 : null,
             dateFrom: $data['date_from'] ?? null,
@@ -50,9 +47,6 @@ final class SessionLogIndexDTO
         );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
     /** @return array<string, mixed> */
     public function toArray(): array
     {

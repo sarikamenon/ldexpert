@@ -26,7 +26,7 @@ final class TherapistContractRowTransformer
         $endDate = $contract->end_date ? $contract->end_date->format('M d, Y') : '—';
         $servicesCount = (int) $contract->services->count();
         $statusValue = $contract->status !== null ? (string) $contract->status->value : null;
-        $statusLabel = $contract->status?->label() ?? '—';
+        $statusLabel = $contract->status->label() ?? '—';
         $badgeClass = $statusValue === ContractStatus::ACTIVE->value
             ? 'bg-success/10 text-success border border-success/20'
             : 'bg-danger/10 text-danger border border-danger/20';

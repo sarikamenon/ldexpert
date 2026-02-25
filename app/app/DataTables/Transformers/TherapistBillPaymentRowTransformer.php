@@ -18,13 +18,13 @@ final class TherapistBillPaymentRowTransformer
         $billCell = '—';
         if ($payment->therapistBill) {
             $showUrl = route('admin.billing.therapist-bills.show', $payment->therapistBill);
-            $therapistName = $payment->therapist?->name ?? $payment->therapistBill->therapist_name ?? '—';
+            $therapistName = $payment->therapist->name ?? $payment->therapistBill->therapist_name ?? '—';
             $billCell = '<a href="'.e($showUrl).'" class="text-primary hover:underline">'.e($payment->therapistBill->bill_number).'</a>'
                 .' <span class="text-foreground/60">— '.e($therapistName).'</span>';
         }
 
         $amount = '$'.number_format((float) $payment->amount, 2);
-        $methodLabel = $payment->method?->label() ?? '—';
+        $methodLabel = $payment->method->label() ?? '—';
         $methodBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">'.e($methodLabel).'</span>';
         $reference = e($payment->reference ?? '—');
         $recordedBy = e($payment->recordedBy->name ?? 'System');

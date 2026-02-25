@@ -13,6 +13,18 @@ class AnalyticsService
         private readonly AnalyticsRepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     inactive: int,
+     *     by_state: array<string, int>,
+     *     by_type: array<string, int>,
+     *     growth_trend: array<int, array<string, mixed>>,
+     *     by_manager: array<string, int>,
+     *     recent_additions: array<int, array<string, mixed>>
+     * }
+     */
     public function getSchoolsAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subDays(30);
@@ -30,6 +42,17 @@ class AnalyticsService
         ];
     }
 
+    /**
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     by_position: array<string, int>,
+     *     by_employee_type: array<string, int>,
+     *     by_state: array<string, int>,
+     *     growth_trend: array<int, array<string, mixed>>,
+     *     recent_additions: array<int, array<string, mixed>>
+     * }
+     */
     public function getTherapistsAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subDays(30);
@@ -46,6 +69,26 @@ class AnalyticsService
         ];
     }
 
+    /**
+     * @return array{
+     *     schools: array{
+     *         total: int,
+     *         active: int,
+     *         new_this_period: int
+     *     },
+     *     therapists: array{
+     *         total: int,
+     *         active: int,
+     *         new_this_period: int
+     *     },
+     *     users: array{
+     *         total: int,
+     *         active: int,
+     *         by_role: array<string, int>
+     *     },
+     *     activity_summary: array<string, int|float>
+     * }
+     */
     public function getOverallAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subDays(30);

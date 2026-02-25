@@ -97,11 +97,17 @@ final class StudentService
         return $this->repository->countStudentsBySchool($schoolId);
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsBySchool(int $schoolId): Collection
     {
         return $this->repository->listActiveStudentsBySchool($schoolId);
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function export(StudentFilterDTO $filters): Collection
     {
         return $this->repository->export($filters);
@@ -122,6 +128,9 @@ final class StudentService
         return $this->repository->listStudentsByTherapist($therapistId, $search, $status, $perPage);
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsByTherapist(int $therapistId): Collection
     {
         return $this->repository->listActiveStudentsByTherapist($therapistId);

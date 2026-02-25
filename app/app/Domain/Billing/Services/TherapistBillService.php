@@ -96,7 +96,7 @@ final class TherapistBillService
     }
 
     /**
-     * @param  Collection<SessionLog>  $sessionLogs
+     * @param  Collection<int, SessionLog>  $sessionLogs
      * @return array<string, float>
      */
     public function calculateTotals(Collection $sessionLogs): array
@@ -121,7 +121,7 @@ final class TherapistBillService
 
         return [
             'therapist_name' => $therapist->name,
-            'therapist_email' => $profile?->personal_email ?? $therapist->email,
+            'therapist_email' => $profile->personal_email ?? $therapist->email,
             'therapist_phone' => $profile?->phone,
             'therapist_address' => $profile?->address,
         ];

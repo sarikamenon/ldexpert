@@ -191,7 +191,7 @@ final class StoreSessionLogRequest extends FormRequest
 
             if ($scheduleId) {
                 $schedule = Schedule::find($scheduleId);
-                $schoolId = $schedule?->school_id
+                $schoolId = $schedule->school_id
                     ?? ($schedule?->student_id ? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id) : null);
             }
 

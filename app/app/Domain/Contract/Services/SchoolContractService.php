@@ -23,6 +23,7 @@ final class SchoolContractService
         private readonly SchoolContractRepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<SchoolContract> */
     public function paginate(SchoolContractFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->repository->paginate($filters, $perPage);

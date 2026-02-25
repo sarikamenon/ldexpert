@@ -204,6 +204,9 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         ];
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function export(StudentFilterDTO $filters): Collection
     {
         $query = User::query()
@@ -269,6 +272,9 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             ->count();
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsBySchool(int $schoolId): Collection
     {
         return User::query()
@@ -309,6 +315,9 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return $query->orderBy('name')->paginate($perPage);
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsByTherapist(int $therapistId): Collection
     {
         return User::query()
