@@ -153,7 +153,7 @@ final class TherapistBillService
             // Determine recipient email
             $recipientEmail = $dto->email
                 ?? $bill->therapist_email
-                ?? $bill->therapist->email;
+                ?? $bill->therapist?->email;
 
             if (! $recipientEmail) {
                 throw new \InvalidArgumentException('No email address available for sending bill.');

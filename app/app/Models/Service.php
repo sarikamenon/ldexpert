@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Service extends Model
 {
+    /** @use HasFactory<\Database\Factories\ServiceFactory> */
     use HasFactory;
     use SoftDeletes;
 

@@ -28,7 +28,7 @@ final class PaymentsListService
             $this->applyInvoicePaymentSearch($query, $filters->search);
         }
 
-        /** @var LengthAwarePaginator<InvoicePayment> $payments */
+        /** @var LengthAwarePaginator<int, InvoicePayment> $payments */
         $payments = $query->paginate(25)->withQueryString();
 
         $totalAmount = $this->getInvoicePaymentsTotalAmount($filters);
@@ -119,7 +119,7 @@ final class PaymentsListService
             $this->applyTherapistBillPaymentSearch($query, $filters->search);
         }
 
-        /** @var LengthAwarePaginator<TherapistBillPayment> $payments */
+        /** @var LengthAwarePaginator<int, TherapistBillPayment> $payments */
         $payments = $query->paginate(25)->withQueryString();
 
         $totalAmount = $this->getTherapistBillPaymentsTotalAmount($filters);

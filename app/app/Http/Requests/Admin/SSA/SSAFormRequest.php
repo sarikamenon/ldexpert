@@ -84,6 +84,7 @@ abstract class SSAFormRequest extends FormRequest
             $primaryServiceId = $this->input('primary_service_id');
 
             if ($primaryServiceId) {
+                /** @var Service|null $service */
                 $service = Service::find($primaryServiceId);
 
                 if ($service && $service->is_frequency_service) {

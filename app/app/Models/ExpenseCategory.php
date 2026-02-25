@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ExpenseCategory extends Model
 {
+    /** @use HasFactory<\Database\Factories\ExpenseCategoryFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -27,7 +28,7 @@ class ExpenseCategory extends Model
         ];
     }
 
-    /** @return HasMany<Expense, ExpenseCategory> */
+    /** @return HasMany<Expense, $this> */
     public function expenses(): HasMany
     {
         return $this->hasMany(Expense::class, 'expense_category_id');

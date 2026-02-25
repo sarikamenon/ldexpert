@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentServiceRepository implements ServiceRepositoryInterface
 {
-    /** @return LengthAwarePaginator<Service> */
+    /** @return LengthAwarePaginator<int, Service> */
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator
     {
         return $this->applyFilters(Service::query(), $filters)

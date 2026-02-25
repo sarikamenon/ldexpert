@@ -11,9 +11,11 @@ final class StoreStudentCommentRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        /** @var \App\Models\User $user */
+        $user = $this->user();
         $student = $this->route('student');
 
-        return $this->user()->can('create', [StudentComment::class, $student]);
+        return $user->can('create', [StudentComment::class, $student]);
     }
 
     public function rules(): array

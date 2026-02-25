@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 
 interface ServiceRepositoryInterface
 {
-    /** @return LengthAwarePaginator<Service> */
+    /** @return LengthAwarePaginator<int, Service> */
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator;
 
     /**

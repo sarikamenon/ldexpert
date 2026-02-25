@@ -19,9 +19,11 @@ final class StudentCommentController extends Controller
 
     public function store(StoreStudentCommentRequest $request, User $student): JsonResponse
     {
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = CreateStudentCommentDTO::fromArray([
             'student_id' => $student->id,
-            'author_id' => $request->user()->id,
+            'author_id' => $user->id,
             'comment' => $request->validated()['comment'],
         ]);
 

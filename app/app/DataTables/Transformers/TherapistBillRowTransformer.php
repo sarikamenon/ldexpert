@@ -29,7 +29,6 @@ final class TherapistBillRowTransformer
             TherapistBillStatus::DRAFT => 'bg-secondary/10 text-secondary border border-secondary/20',
             TherapistBillStatus::SENT => 'bg-primary/10 text-primary border border-primary/20',
             TherapistBillStatus::PAID => 'bg-success/10 text-success border border-success/20',
-            default => 'bg-secondary/10 text-secondary border border-secondary/20',
         };
         $statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.e($statusLabel).'</span>';
         $dueDate = $bill->due_date ? $bill->due_date->format('M d, Y') : '—';

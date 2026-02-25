@@ -15,13 +15,11 @@ final class ScheduleRowTransformer
      */
     public static function transform(Schedule $schedule): array
     {
-        $dateCell = $schedule->schedule_date?->format('Y-m-d') ?? '—';
+        $dateCell = $schedule->schedule_date->format('Y-m-d');
 
-        $startTime = $schedule->start_time?->format('H:i');
-        $endTime = $schedule->end_time?->format('H:i');
-        $timeCell = $startTime !== null
-            ? ($endTime !== null ? $startTime.' - '.$endTime : $startTime)
-            : '—';
+        $startTime = $schedule->start_time->format('H:i');
+        $endTime = $schedule->end_time->format('H:i');
+        $timeCell = $startTime.' - '.$endTime;
 
         $therapistCell = $schedule->therapist
             ? '<a href="'.e(route('admin.therapists.show', $schedule->therapist)).'" class="text-primary hover:underline">'.e($schedule->therapist->name).'</a>'

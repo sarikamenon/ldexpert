@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Expense extends Model
 {
+    /** @use HasFactory<\Database\Factories\ExpenseFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -39,18 +40,19 @@ class Expense extends Model
         ];
     }
 
-    /** @return BelongsTo<ExpenseCategory, Expense> */
+    /** @return BelongsTo<ExpenseCategory, $this> */
     public function category(): BelongsTo
     {
         return $this->belongsTo(ExpenseCategory::class, 'expense_category_id');
     }
 
-    /** @return BelongsTo<User, Expense> */
+    /** @return BelongsTo<User, $this> */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_id');
     }
 
+    /** @return MorphMany<\App\Models\LedgerEntry, $this> */
     public function ledgerEntries(): MorphMany
     {
         return $this->morphMany(LedgerEntry::class, 'reference');

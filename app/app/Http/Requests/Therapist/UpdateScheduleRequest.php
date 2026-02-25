@@ -19,6 +19,7 @@ final class UpdateScheduleRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        /** @var Schedule|null $schedule */
         $schedule = Schedule::find($this->route('id'));
 
         return $schedule && $schedule->therapist_id === $this->user()?->id;
@@ -91,12 +92,13 @@ final class UpdateScheduleRequest extends FormRequest
             }
 
             // Validate students are assigned to therapist if provided
-            if ($studentIds && is_array($studentIds) && ! empty($studentIds)) {
+            if ($studentIds && is_array($studentIds)) {
                 if (! $repository->validateTherapistAccessToStudents($therapist, array_map('intval', $studentIds))) {
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
                 }
             }
 
+            /** @var Schedule|null $schedule */
             $schedule = Schedule::find($this->route('id'));
             if ($schedule) {
                 $calendarService = app(SchoolCalendarService::class);

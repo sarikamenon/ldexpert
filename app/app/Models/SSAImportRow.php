@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SSAImportRow extends Model
 {
+    
     use HasFactory;
 
     protected $table = 'ssa_import_rows';
@@ -36,13 +37,13 @@ class SSAImportRow extends Model
         ];
     }
 
-    /** @return BelongsTo<SSAImport, SSAImportRow> */
+    /** @return BelongsTo<SSAImport, $this> */
     public function ssaImport(): BelongsTo
     {
         return $this->belongsTo(SSAImport::class, 'ssa_import_id');
     }
 
-    /** @return BelongsTo<ServiceSupportAgreement, SSAImportRow> */
+    /** @return BelongsTo<ServiceSupportAgreement, $this> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');

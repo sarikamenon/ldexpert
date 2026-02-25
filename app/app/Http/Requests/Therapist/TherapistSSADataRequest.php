@@ -22,7 +22,7 @@ final class TherapistSSADataRequest extends FormRequest
     {
         return [
             'filter_search' => ['nullable', 'string', 'max:255'],
-            'filter_status' => ['nullable', Rule::in(SSAStatus::values())],
+            'filter_status' => ['nullable', Rule::in(array_column(SSAStatus::cases(), 'value'))],
         ];
     }
 }

@@ -47,7 +47,7 @@ final class ServiceRowTransformer
 
         $isActive = $service->status === ServiceStatus::ACTIVE;
         $statusVariant = $isActive ? 'success' : 'secondary';
-        $statusLabel = $service->status->label() ?? 'Unknown';
+        $statusLabel = $service->status->label();
         $statusCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '
             .($isActive ? 'bg-success/10 text-success border border-success/20' : 'bg-secondary/10 text-foreground border border-secondary/20').'"
         >'.e($statusLabel).'</span>';

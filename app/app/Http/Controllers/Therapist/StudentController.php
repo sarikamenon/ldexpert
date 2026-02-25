@@ -58,6 +58,7 @@ final class StudentController extends Controller
 
     public function data(TherapistStudentDataRequest $request): JsonResponse
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $params = DataTablesRequest::fromRequest($request, self::STUDENTS_ORDER_WHITELIST);
         $filters = [
@@ -78,6 +79,7 @@ final class StudentController extends Controller
 
     public function show(Request $request, \App\Models\User $student): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         // Ensure student has SSAs assigned to this therapist

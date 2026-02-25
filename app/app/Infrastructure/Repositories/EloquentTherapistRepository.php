@@ -140,7 +140,10 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             'status' => $dto->status,
         ]);
 
-        return $user->fresh();
+        /** @var User $freshUser */
+        $freshUser = $user->fresh();
+
+        return $freshUser;
     }
 
     public function getMetrics(?string $status = null): array
@@ -282,7 +285,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->get();
     }
 
-    /** @return LengthAwarePaginator<User> */
+    /** @return LengthAwarePaginator<int, User> */
     public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()

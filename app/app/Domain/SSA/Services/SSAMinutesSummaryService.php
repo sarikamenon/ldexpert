@@ -63,11 +63,9 @@ final class SSAMinutesSummaryService
             ->get();
 
         return (int) $logs->sum(static function (SessionLog $log): int {
-            if ($log->tho_minutes !== null) {
-                return (int) $log->tho_minutes;
-            }
-
-            return (int) ($log->duration_minutes ?? 0);
+            return $log->tho_minutes > 0
+                ? $log->tho_minutes
+                : $log->duration_minutes;
         });
     }
 

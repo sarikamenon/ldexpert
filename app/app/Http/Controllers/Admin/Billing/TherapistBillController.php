@@ -156,7 +156,9 @@ final class TherapistBillController extends Controller
         $dto = CreateTherapistBillDTO::fromArray($request->validated());
 
         try {
-            $bill = $this->billService->generateBill($request->user(), $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $bill = $this->billService->generateBill($user, $dto);
 
             return redirect()
                 ->route('admin.billing.therapist-bills.show', $bill)
@@ -193,7 +195,9 @@ final class TherapistBillController extends Controller
         $dto = SendTherapistBillDTO::fromArray($request->validated());
 
         try {
-            $this->billService->sendBill($request->user(), $bill, $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->billService->sendBill($user, $bill, $dto);
 
             return redirect()
                 ->route('admin.billing.therapist-bills.show', $bill)

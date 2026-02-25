@@ -18,7 +18,9 @@ final class StoreStudentCommentRequest extends FormRequest
 
     public function authorize(): bool
     {
+        /** @var \App\Models\User $student */
         $student = $this->route('student');
+        /** @var \App\Models\User $therapist */
         $therapist = $this->user();
 
         // Verify therapist has access to this student

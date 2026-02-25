@@ -17,6 +17,7 @@ use App\Enums\ServiceStatus;
 use App\Enums\SSAImportRowStatus;
 use App\Enums\SSAImportStatus;
 use App\Enums\SSAImportType;
+use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Jobs\ProcessSSAImportJob;
 use App\Models\School;
@@ -302,7 +303,7 @@ final class SSAImportService
     public function lookupTherapist(string $email): ?User
     {
         $user = $this->userRepository->findByEmail($email);
-        if ($user && $user->role === 'therapist' && $user->status === UserStatus::ACTIVE) {
+        if ($user && $user->role === Role::THERAPIST && $user->status === UserStatus::ACTIVE) {
             return $user;
         }
 
@@ -314,7 +315,7 @@ final class SSAImportService
         $errors = [];
 
         $fileContent = $this->storageService->get($import->file_path);
-        if ($fileContent === false) {
+        if ($fileContent === null) {
             return ['Unable to read file from storage.'];
         }
 
@@ -331,7 +332,7 @@ final class SSAImportService
         $headers = fgetcsv($tempFile);
         fclose($tempFile);
 
-        if ($headers === false || empty($headers)) {
+        if ($headers === false) {
             return ['File appears to be empty or invalid.'];
         }
 
@@ -368,7 +369,7 @@ final class SSAImportService
         $rows = [];
 
         $fileContent = $this->storageService->get($filePath);
-        if ($fileContent === false) {
+        if ($fileContent === null) {
             return [];
         }
 
@@ -383,7 +384,7 @@ final class SSAImportService
 
         // Read headers
         $headers = fgetcsv($tempFile);
-        if ($headers === false || empty($headers)) {
+        if ($headers === false) {
             fclose($tempFile);
 
             return [];

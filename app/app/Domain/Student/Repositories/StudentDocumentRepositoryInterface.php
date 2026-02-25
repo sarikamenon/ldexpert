@@ -15,7 +15,7 @@ interface StudentDocumentRepositoryInterface
 
     public function find(int $id): ?StudentDocument;
 
-    /** @return LengthAwarePaginator<StudentDocument> */
+    /** @return LengthAwarePaginator<int, StudentDocument> */
     public function list(StudentDocumentFilterDTO $filters): LengthAwarePaginator;
 
     /** @return Collection<int, StudentDocument> */

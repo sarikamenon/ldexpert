@@ -7,6 +7,7 @@ namespace App\Domain\SSA\Services;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\DTOs\SSAReport\CaseloadReportFilterDTO;
 use App\Enums\ServiceFrequency;
+use App\Models\ServiceSupportAgreement;
 use Illuminate\Support\Collection;
 
 final class SSACaseloadReportService
@@ -88,7 +89,7 @@ final class SSACaseloadReportService
         ];
     }
 
-    private function calculateMinutesPerWeek($ssa): float
+    private function calculateMinutesPerWeek(ServiceSupportAgreement $ssa): float
     {
         if (! $ssa->frequency || ! $ssa->sessions_per_frequency) {
             return 0;

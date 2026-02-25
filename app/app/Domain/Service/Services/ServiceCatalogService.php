@@ -20,7 +20,7 @@ final class ServiceCatalogService
         private readonly ServiceRepositoryInterface $repository,
     ) {}
 
-    /** @return LengthAwarePaginator<Service> */
+    /** @return LengthAwarePaginator<int, Service> */
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);

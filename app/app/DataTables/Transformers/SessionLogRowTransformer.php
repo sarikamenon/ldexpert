@@ -18,17 +18,12 @@ final class SessionLogRowTransformer
         $sessionDate = $log->session_date;
         $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : null;
 
-        $dateTimeDate = $sessionDate ? $sessionDate->format('M d, Y') : null;
+        $dateTimeDate = $sessionDate->format('M d, Y');
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
-        $dateTimeCell = '<div class="flex flex-col space-y-1">';
-        if ($dateTimeDate) {
-            $dateTimeCell .= '<span class="text-foreground font-medium">'.e($dateTimeDate).'</span>';
-        }
+        $dateTimeCell = '<div class="flex flex-col space-y-1">'
+            .'<span class="text-foreground font-medium">'.e($dateTimeDate).'</span>';
         if ($duration) {
             $dateTimeCell .= '<span class="text-xs text-foreground/60">'.e($duration).'</span>';
-        }
-        if (! $dateTimeDate && ! $duration) {
-            $dateTimeCell .= '<span class="text-gray-500">-</span>';
         }
         $dateTimeCell .= '</div>';
 

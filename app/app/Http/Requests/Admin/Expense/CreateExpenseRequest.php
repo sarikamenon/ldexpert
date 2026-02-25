@@ -10,7 +10,10 @@ class CreateExpenseRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', \App\Models\Expense::class);
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+
+        return $user->can('create', \App\Models\Expense::class);
     }
 
     /**

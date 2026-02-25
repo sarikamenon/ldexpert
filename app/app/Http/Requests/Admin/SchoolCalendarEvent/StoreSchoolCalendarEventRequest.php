@@ -13,9 +13,11 @@ final class StoreSchoolCalendarEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $role = $this->user()->role instanceof Role
-            ? $this->user()->role
-            : Role::tryFrom($this->user()->role);
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+        $role = $user->role instanceof Role
+            ? $user->role
+            : Role::tryFrom($user->role);
 
         return $role === Role::ADMIN;
     }

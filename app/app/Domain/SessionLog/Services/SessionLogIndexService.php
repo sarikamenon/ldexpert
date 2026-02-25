@@ -173,7 +173,7 @@ final class SessionLogIndexService
 
                 $startTime = $log->start_time->format('g:i A');
                 $endTime = $log->end_time->format('g:i A');
-                $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
+                $timeRange = "{$startTime} - {$endTime}";
                 $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
                 return [

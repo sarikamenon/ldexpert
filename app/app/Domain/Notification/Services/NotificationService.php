@@ -16,7 +16,7 @@ final class NotificationService
         private readonly NotificationRepositoryInterface $repository,
     ) {}
 
-    /** @return LengthAwarePaginator<DatabaseNotification> */
+    /** @return LengthAwarePaginator<int, DatabaseNotification> */
     public function paginate(User $user, int $perPage = 20): LengthAwarePaginator
     {
         return $this->repository->paginate($user, $perPage);

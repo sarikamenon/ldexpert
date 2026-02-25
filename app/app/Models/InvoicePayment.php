@@ -46,7 +46,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return BelongsTo<User, InvoicePayment>
+     * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
     {
@@ -54,7 +54,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return BelongsTo<School, InvoicePayment>
+     * @return BelongsTo<School, $this>
      */
     public function school(): BelongsTo
     {
@@ -62,7 +62,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return MorphMany<LedgerEntry, InvoicePayment>
+     * @return MorphMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): MorphMany
     {
@@ -70,7 +70,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return HasMany<InvoicePaymentAllocation, InvoicePayment>
+     * @return HasMany<InvoicePaymentAllocation, $this>
      */
     public function allocations(): HasMany
     {
@@ -80,7 +80,7 @@ class InvoicePayment extends Model
     /**
      * Single invoice this payment is for (1:1).
      *
-     * @return BelongsTo<Invoice, InvoicePayment>
+     * @return BelongsTo<Invoice, $this>
      */
     public function invoice(): BelongsTo
     {

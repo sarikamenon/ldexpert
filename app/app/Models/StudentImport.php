@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class StudentImport extends Model
 {
+    
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -46,13 +47,13 @@ class StudentImport extends Model
         ];
     }
 
-    /** @return BelongsTo<User, StudentImport> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** @return HasMany<StudentImportRow, StudentImport> */
+    /** @return HasMany<StudentImportRow, $this> */
     public function rows(): HasMany
     {
         return $this->hasMany(StudentImportRow::class);

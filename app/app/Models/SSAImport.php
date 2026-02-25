@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class SSAImport extends Model
 {
+    
     use HasFactory, SoftDeletes;
 
     protected $table = 'ssa_imports';
@@ -48,13 +49,13 @@ class SSAImport extends Model
         ];
     }
 
-    /** @return BelongsTo<User, SSAImport> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** @return HasMany<SSAImportRow, SSAImport> */
+    /** @return HasMany<SSAImportRow, $this> */
     public function rows(): HasMany
     {
         return $this->hasMany(SSAImportRow::class, 'ssa_import_id', 'id');

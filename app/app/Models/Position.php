@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Position extends Model
 {
+    /** @use HasFactory<\Database\Factories\PositionFactory> */
     use HasFactory;
     use SoftDeletes;
 
@@ -23,11 +24,13 @@ final class Position extends Model
         'status' => PositionStatus::class,
     ];
 
+    /** @return HasMany<\App\Models\TherapistProfile, $this> */
     public function therapistProfiles(): HasMany
     {
         return $this->hasMany(TherapistProfile::class);
     }
 
+    /** @return BelongsToMany<\App\Models\Service, $this> */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class);

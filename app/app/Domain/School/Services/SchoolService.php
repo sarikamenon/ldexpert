@@ -25,7 +25,7 @@ class SchoolService
         private readonly ActivityLogService $activityLog
     ) {}
 
-    /** @return LengthAwarePaginator<School> */
+    /** @return LengthAwarePaginator<int, School> */
     public function listSchools(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->schools->paginate($filters, $perPage);
@@ -76,7 +76,7 @@ class SchoolService
     public function changeStatus(School $school, ChangeSchoolStatusDTO $dto): School
     {
         return $this->wrapWrite(function () use ($school, $dto) {
-            $oldStatus = $school->status?->value ?? 'unknown';
+            $oldStatus = $school->status->value;
             $updatedSchool = $this->schools->changeStatus($school, $dto);
 
             $this->activityLog->logStatusChanged(

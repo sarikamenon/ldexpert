@@ -18,7 +18,10 @@ final class AttachSessionsRequest extends FormRequest
             return false;
         }
 
-        return $this->user()->can('update', $invoice);
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+
+        return $user->can('update', $invoice);
     }
 
     /**

@@ -188,7 +188,7 @@ final class StudentImportService
         $errors = [];
 
         $fileContent = $this->storageService->get($import->file_path);
-        if ($fileContent === false) {
+        if ($fileContent === null) {
             return ['Unable to read file from storage.'];
         }
 
@@ -205,7 +205,7 @@ final class StudentImportService
         $headers = fgetcsv($tempFile);
         fclose($tempFile);
 
-        if ($headers === false || empty($headers)) {
+        if ($headers === false) {
             return ['File appears to be empty or invalid.'];
         }
 
@@ -234,7 +234,7 @@ final class StudentImportService
         $rows = [];
 
         $fileContent = $this->storageService->get($filePath);
-        if ($fileContent === false) {
+        if ($fileContent === null) {
             return [];
         }
 
@@ -249,7 +249,7 @@ final class StudentImportService
 
         // Read headers
         $headers = fgetcsv($tempFile);
-        if ($headers === false || empty($headers)) {
+        if ($headers === false) {
             fclose($tempFile);
 
             return [];

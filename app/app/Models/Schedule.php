@@ -28,6 +28,7 @@ use Illuminate\Support\Collection;
  */
 class Schedule extends Model
 {
+    /** @use HasFactory<\Database\Factories\ScheduleFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -69,7 +70,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<User, Schedule>
+     * @return BelongsTo<User, $this>
      */
     public function therapist(): BelongsTo
     {
@@ -77,7 +78,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<User, Schedule>
+     * @return BelongsTo<User, $this>
      */
     public function student(): BelongsTo
     {
@@ -85,7 +86,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<ServiceSupportAgreement, Schedule>
+     * @return BelongsTo<ServiceSupportAgreement, $this>
      */
     public function ssa(): BelongsTo
     {
@@ -93,7 +94,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<Service, Schedule>
+     * @return BelongsTo<Service, $this>
      */
     public function service(): BelongsTo
     {
@@ -101,7 +102,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<School, Schedule>
+     * @return BelongsTo<School, $this>
      */
     public function school(): BelongsTo
     {
@@ -109,7 +110,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<Schedule, Schedule>
+     * @return BelongsTo<Schedule, $this>
      */
     public function parentSchedule(): BelongsTo
     {
@@ -117,7 +118,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return HasMany<Schedule, Schedule>
+     * @return HasMany<Schedule, $this>
      */
     public function occurrences(): HasMany
     {

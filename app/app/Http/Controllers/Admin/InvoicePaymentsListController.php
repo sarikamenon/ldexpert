@@ -97,7 +97,9 @@ class InvoicePaymentsListController extends Controller
         $this->authorize('viewAny', InvoicePayment::class);
 
         $data = $request->validated();
-        $data['recorded_by_id'] = $request->user()->id;
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $data['recorded_by_id'] = $user->id;
 
         $dto = \App\DTOs\RecordInvoicePaymentDTO::fromArray($data);
 

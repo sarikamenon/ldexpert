@@ -16,7 +16,9 @@ final class EloquentSettingsRepository implements SettingsRepositoryInterface
         $settings = Setting::where('group', $group)->get();
 
         return $settings->mapWithKeys(function ($setting) {
-            $value = $setting->is_encrypted ? Crypt::decryptString($setting->value) : $setting->value;
+            /** @var string $rawValue */
+            $rawValue = $setting->value ?? '';
+            $value = $setting->is_encrypted ? Crypt::decryptString($rawValue) : $rawValue;
 
             $value = match ($setting->type) {
                 'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
@@ -38,7 +40,7 @@ final class EloquentSettingsRepository implements SettingsRepositoryInterface
         };
 
         if ($isEncrypted) {
-            $valueToStore = Crypt::encryptString($valueToStore);
+            $valueToStore = Crypt::encryptString((string) $valueToStore);
         }
 
         $setting = Setting::updateOrCreate(

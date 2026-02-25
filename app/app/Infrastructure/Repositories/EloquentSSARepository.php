@@ -402,12 +402,6 @@ final class EloquentSSARepository implements SSARepositoryInterface
     {
         $primaryServiceId = $ssa->primary_service_id;
 
-        if ($primaryServiceId === null) {
-            $ssa->services()->detach();
-
-            return;
-        }
-
         $additionalIds = $additionalServiceIds;
 
         if ($additionalIds === null) {

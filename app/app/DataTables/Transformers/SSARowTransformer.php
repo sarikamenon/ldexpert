@@ -67,7 +67,7 @@ final class SSARowTransformer
             .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">Minutes:</span>'
             .'<span class="text-sm text-foreground">'.(int) $ssa->minutes_per_session.' x '.(int) $ssa->sessions_per_frequency.'</span></div>'
             .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">Frequency:</span>'
-            .'<span class="text-sm text-foreground">'.e($ssa->frequency->label()).'</span></div>'
+            .'<span class="text-sm text-foreground">'.e($ssa->frequency?->label() ?? '—').'</span></div>'
             .'</div>';
 
         $tho = number_format((float) $ssa->tho_minutes);
@@ -86,7 +86,6 @@ final class SSARowTransformer
             SSAStatus::PENDING => 'warning',
             SSAStatus::COMPLETED => 'primary',
             SSAStatus::DEACTIVATED => 'secondary',
-            default => 'secondary',
         };
 
         $minutesStatusCell .= '<div><span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '

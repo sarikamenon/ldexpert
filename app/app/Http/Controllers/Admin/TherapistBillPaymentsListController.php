@@ -97,7 +97,9 @@ class TherapistBillPaymentsListController extends Controller
         $this->authorize('viewAny', TherapistBillPayment::class);
 
         $data = $request->validated();
-        $data['recorded_by_id'] = $request->user()->id;
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $data['recorded_by_id'] = $user->id;
 
         $dto = \App\DTOs\RecordTherapistBillPaymentDTO::fromArray($data);
 

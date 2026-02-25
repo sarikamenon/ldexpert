@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 
 class EloquentSchoolRepository implements SchoolRepositoryInterface
 {
-    /** @return LengthAwarePaginator<School> */
+    /** @return LengthAwarePaginator<int, School> */
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery(), $filters)

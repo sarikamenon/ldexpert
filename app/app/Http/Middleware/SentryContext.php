@@ -19,6 +19,7 @@ class SentryContext
     public function handle(Request $request, Closure $next): Response
     {
         if (app()->bound('sentry') && Auth::check()) {
+            /** @var \App\Models\User $user */
             $user = Auth::user();
             app('sentry')->configureScope(function (\Sentry\State\Scope $scope) use ($user): void {
                 $scope->setUser([

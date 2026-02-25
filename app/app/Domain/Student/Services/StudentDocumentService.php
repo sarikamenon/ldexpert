@@ -46,7 +46,7 @@ final class StudentDocumentService
         return $this->repository->create($data);
     }
 
-    /** @return LengthAwarePaginator<StudentDocument> */
+    /** @return LengthAwarePaginator<int, StudentDocument> */
     public function list(StudentDocumentFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->list($filters);

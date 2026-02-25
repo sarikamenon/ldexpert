@@ -20,7 +20,7 @@ final class PositionCatalogService
         private readonly PositionRepositoryInterface $repository,
     ) {}
 
-    /** @return LengthAwarePaginator<Position> */
+    /** @return LengthAwarePaginator<int, Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);

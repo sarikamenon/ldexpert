@@ -293,7 +293,7 @@ final class SchoolController extends Controller
                     $school->state,
                     $school->contact_email,
                     $school->timezone,
-                    $school->status?->value ?? $school->status,
+                    $school->status->value,
                 ]);
             }
 

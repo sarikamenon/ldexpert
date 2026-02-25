@@ -74,7 +74,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBill>
+     * @return BelongsTo<User, $this>
      */
     public function therapist(): BelongsTo
     {
@@ -82,7 +82,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return HasMany<SessionLog, TherapistBill>
+     * @return HasMany<SessionLog, $this>
      */
     public function sessionLogs(): HasMany
     {
@@ -90,7 +90,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBill>
+     * @return BelongsTo<User, $this>
      */
     public function sentBy(): BelongsTo
     {
@@ -98,7 +98,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return HasMany<TherapistBillPaymentAllocation, TherapistBill>
+     * @return HasMany<TherapistBillPaymentAllocation, $this>
      */
     public function paymentAllocations(): HasMany
     {
@@ -106,7 +106,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return HasMany<LedgerEntry, TherapistBill>
+     * @return HasMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): HasMany
     {

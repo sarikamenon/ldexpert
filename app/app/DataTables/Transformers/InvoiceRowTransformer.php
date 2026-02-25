@@ -33,7 +33,6 @@ final class InvoiceRowTransformer
             InvoiceStatus::DRAFT => 'bg-secondary/10 text-secondary border border-secondary/20',
             InvoiceStatus::SENT => 'bg-primary/10 text-primary border border-primary/20',
             InvoiceStatus::PAID => 'bg-success/10 text-success border border-success/20',
-            default => 'bg-secondary/10 text-secondary border border-secondary/20',
         };
         $statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.e($statusLabel).'</span>';
 

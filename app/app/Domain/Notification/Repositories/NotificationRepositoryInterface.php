@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 
 interface NotificationRepositoryInterface
 {
-    /** @return LengthAwarePaginator<DatabaseNotification> */
+    /** @return LengthAwarePaginator<int, DatabaseNotification> */
     public function paginate(User $user, int $perPage = 20): LengthAwarePaginator;
 
     /** @return Collection<int, DatabaseNotification> */

@@ -53,6 +53,7 @@ final class SSAController extends Controller
 
     public function data(TherapistSSADataRequest $request): JsonResponse
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
@@ -76,6 +77,7 @@ final class SSAController extends Controller
 
     public function show(Request $request, ServiceSupportAgreement $ssa): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         // Ensure therapist can only view SSAs assigned to them

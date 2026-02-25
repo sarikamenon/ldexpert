@@ -79,7 +79,7 @@ class Invoice extends Model
     }
 
     /**
-     * @return BelongsTo<School, Invoice>
+     * @return BelongsTo<School, $this>
      */
     public function school(): BelongsTo
     {
@@ -87,7 +87,7 @@ class Invoice extends Model
     }
 
     /**
-     * @return HasMany<SessionLog, Invoice>
+     * @return HasMany<SessionLog, $this>
      */
     public function sessionLogs(): HasMany
     {
@@ -95,7 +95,7 @@ class Invoice extends Model
     }
 
     /**
-     * @return BelongsTo<User, Invoice>
+     * @return BelongsTo<User, $this>
      */
     public function sentBy(): BelongsTo
     {
@@ -103,7 +103,7 @@ class Invoice extends Model
     }
 
     /**
-     * @return HasMany<InvoicePaymentAllocation, Invoice>
+     * @return HasMany<InvoicePaymentAllocation, $this>
      */
     public function paymentAllocations(): HasMany
     {
@@ -111,7 +111,7 @@ class Invoice extends Model
     }
 
     /**
-     * @return HasMany<LedgerEntry, Invoice>
+     * @return HasMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): HasMany
     {
