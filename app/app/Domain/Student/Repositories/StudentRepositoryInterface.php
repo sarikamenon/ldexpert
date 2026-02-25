@@ -20,6 +20,7 @@ interface StudentRepositoryInterface
 
     public function find(int $id): ?StudentProfile;
 
+    /** @return LengthAwarePaginator<User> */
     public function list(StudentFilterDTO $filters): LengthAwarePaginator;
 
     /**
@@ -42,6 +43,7 @@ interface StudentRepositoryInterface
      */
     public function export(StudentFilterDTO $filters): Collection;
 
+    /** @return LengthAwarePaginator<User> */
     public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator;
 
     public function countStudentsBySchool(int $schoolId): int;
@@ -53,6 +55,7 @@ interface StudentRepositoryInterface
 
     public function countStudentsByTherapist(int $therapistId): int;
 
+    /** @return LengthAwarePaginator<User> */
     public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator;
 
     /**

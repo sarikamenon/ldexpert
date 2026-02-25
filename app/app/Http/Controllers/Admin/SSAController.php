@@ -296,6 +296,9 @@ final class SSAController extends Controller
 
         return response()->streamDownload(function () use ($ssas): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Student',
@@ -334,16 +337,19 @@ final class SSAController extends Controller
         ]);
     }
 
+    /** @return Collection<int, \App\Models\User> */
     private function getActiveStudents(): Collection
     {
         return $this->userService->listActiveStudentsForSelect();
     }
 
+    /** @return Collection<int, \App\Models\Service> */
     private function getActiveServices(): Collection
     {
         return $this->serviceCatalogService->listActiveWithFrequencyFlag();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     private function getActiveTherapists(): Collection
     {
         return $this->userService->listActiveTherapistsForSelect();
@@ -458,6 +464,9 @@ final class SSAController extends Controller
 
         return response()->streamDownload(function () use ($allColumns): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, $allColumns);
             fclose($handle);
         }, $filename, [

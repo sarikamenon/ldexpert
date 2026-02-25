@@ -12,6 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property \Carbon\Carbon|null $date_of_birth
+ */
 class StudentProfile extends Model
 {
     use HasFactory, SoftDeletes;
@@ -69,16 +72,28 @@ class StudentProfile extends Model
         return $this->hasMany(ServiceSupportAgreement::class, 'student_id', 'user_id');
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return StudentScope::search($query, $term);
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return StudentScope::active($query, $this);
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
     public function scopeInactive(Builder $query): Builder
     {
         return StudentScope::inactive($query, $this);

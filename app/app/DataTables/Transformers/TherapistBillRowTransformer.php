@@ -24,13 +24,11 @@ final class TherapistBillRowTransformer
             : '—';
         $total = '$'.number_format((float) $bill->total_due, 2);
 
-        $statusValue = $bill->status !== null ? (string) $bill->status : null;
-        $statusEnum = $statusValue !== null ? TherapistBillStatus::from($statusValue) : null;
-        $statusLabel = $statusEnum?->label() ?? '—';
-        $badgeClass = match ($statusValue) {
-            TherapistBillStatus::DRAFT->value => 'bg-secondary/10 text-secondary border border-secondary/20',
-            TherapistBillStatus::SENT->value => 'bg-primary/10 text-primary border border-primary/20',
-            TherapistBillStatus::PAID->value => 'bg-success/10 text-success border border-success/20',
+        $statusLabel = $bill->status->label();
+        $badgeClass = match ($bill->status) {
+            TherapistBillStatus::DRAFT => 'bg-secondary/10 text-secondary border border-secondary/20',
+            TherapistBillStatus::SENT => 'bg-primary/10 text-primary border border-primary/20',
+            TherapistBillStatus::PAID => 'bg-success/10 text-success border border-success/20',
             default => 'bg-secondary/10 text-secondary border border-secondary/20',
         };
         $statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.e($statusLabel).'</span>';

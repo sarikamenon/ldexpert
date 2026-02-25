@@ -48,6 +48,7 @@ class UserService
         return $user->fresh();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listByRole(Role $role): Collection
     {
         return $this->repository->listByRole($role->value);
@@ -58,16 +59,19 @@ class UserService
         return $this->repository->updateProfile($user, $data);
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listAdmins(): Collection
     {
         return $this->repository->listAdmins();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listActiveStudentsForSelect(): Collection
     {
         return $this->repository->listActiveStudentsForSelect();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listActiveTherapistsForSelect(): Collection
     {
         return $this->repository->listActiveTherapistsForSelect();

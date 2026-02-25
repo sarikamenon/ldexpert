@@ -8,7 +8,6 @@ use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\DataTablesParamsDTO;
 use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
-use App\Enums\SessionOutcome;
 use App\Enums\SSAStatus;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
@@ -30,6 +29,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->first();
     }
 
+    /** @return Collection<int, SessionLog> */
     public function getSessionLogsForTherapist(User $therapist, array $filters = []): Collection
     {
         $query = SessionLog::query()
@@ -61,6 +61,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
+    /** @return LengthAwarePaginator<SessionLog> */
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()
@@ -145,9 +146,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $thoMinutes = 0;
             if ($sessionLog->service && $sessionLog->outcome) {
                 $service = $sessionLog->service;
-                $outcome = $sessionLog->outcome instanceof SessionOutcome
-                    ? $sessionLog->outcome
-                    : SessionOutcome::from($sessionLog->outcome);
+                $outcome = $sessionLog->outcome;
 
                 // Check if service allows THO inclusion and outcome should include THO
                 if ($service->include_in_tho && $outcome->shouldIncludeInTho()) {
@@ -225,6 +224,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->exists();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getActiveSSAsForStudent(int $studentId): Collection
     {
         return ServiceSupportAgreement::query()
@@ -235,6 +235,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
+    /** @return Collection<int, SessionLog> */
     public function getSessionLogsForSchedule(int $scheduleId): Collection
     {
         return SessionLog::query()
@@ -243,6 +244,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
+    /** @return Collection<int, Collection<int, SessionLog>> */
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection
     {
         $query = SessionLog::query()
@@ -255,6 +257,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         return $query->get()->groupBy('schedule_id');
     }
 
+    /** @return LengthAwarePaginator<SessionLog> */
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()

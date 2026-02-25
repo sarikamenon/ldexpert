@@ -48,16 +48,19 @@ final class ScenarioTherapistContractSeeder extends Seeder
     }
 
     /**
+     * Therapist rates are 75% of catalog (school) rates so the agency retains a ~25% margin.
+     *
      * @return array<string, array{rate: float, rate_type: string}>
      */
     private function rateMap(): array
     {
+        $margin = 0.75;
         $map = [];
         foreach (ServiceCatalog::services() as $row) {
             $map[$row['name']] = [
-                'rate' => (float) $row['rate'],
+                'rate' => round((float) $row['rate'] * $margin, 2),
                 'rate_type' => $row['rate_type'],
-                'no_show_rate' => (float) ($row['no_show_rate'] ?? 0),
+                'no_show_rate' => round((float) ($row['no_show_rate'] ?? 0) * $margin, 2),
                 'no_show_rate_type' => $row['no_show_rate_type'] ?? $row['rate_type'],
             ];
         }

@@ -15,7 +15,7 @@ final class SSAImportListService
     ) {}
 
     /**
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, \App\Models\SSAImport>}
      */
     public function listForDataTables(DataTablesParamsDTO $params): array
     {

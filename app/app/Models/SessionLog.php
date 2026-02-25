@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon $session_date
  * @property Carbon $start_time
  * @property Carbon $end_time
+ * @property SessionOutcome|null $outcome
  */
 class SessionLog extends Model
 {
@@ -288,9 +289,7 @@ class SessionLog extends Model
         $user = $auth->user();
 
         if ($isTherapistRoute && $user instanceof User) {
-            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
-
-            if ($role === Role::THERAPIST) {
+            if ($user->role === Role::THERAPIST) {
                 $query->where('therapist_id', $user->id);
             }
         }

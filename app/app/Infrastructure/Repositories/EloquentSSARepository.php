@@ -26,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentSSARepository implements SSARepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, ServiceSupportAgreement> */
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator
     {
         return $this->applyFilters(ServiceSupportAgreement::query(), $filters)
@@ -228,6 +229,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         });
     }
 
+    /** @return Collection<int, SSAAssignmentHistory> */
     public function getAssignmentHistory(ServiceSupportAgreement $ssa): Collection
     {
         return SSAAssignmentHistory::where('ssa_id', $ssa->id)
@@ -253,6 +255,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         ];
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function checkOverlappingSSAs(int $studentId, int $serviceId, string $startDate, string $endDate, ?int $excludeSsaId = null): Collection
     {
         $start = Carbon::parse($startDate);
@@ -284,6 +287,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->exists();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
     {
         return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
@@ -292,6 +296,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getActiveSSAsForTherapist(int $therapistId): Collection
     {
         return ServiceSupportAgreement::query()
@@ -312,6 +317,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->first();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForSchoolMetrics(int $schoolId): Collection
     {
         return ServiceSupportAgreement::with(['student', 'primaryService', 'assignedTherapist'])
@@ -319,6 +325,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentMetrics(int $studentId): Collection
     {
         return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
@@ -326,6 +333,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentSchedule(int $studentId): Collection
     {
         return ServiceSupportAgreement::query()
@@ -334,6 +342,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->get(['id', 'student_id', 'assigned_therapist_id', 'primary_service_id', 'status']);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistMetrics(int $therapistId): Collection
     {
         return ServiceSupportAgreement::with(['student', 'primaryService'])
@@ -341,6 +350,10 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->get();
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     private function applyFilters(Builder $query, SSAFilterDTO $filters): Builder
     {
         if ($filters->search) {
@@ -422,6 +435,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         $ssa->services()->sync($payload);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getAssignedSSAsForTherapist(int $therapistId): Collection
     {
         return ServiceSupportAgreement::query()
@@ -429,6 +443,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection
     {
         return ServiceSupportAgreement::query()
@@ -449,6 +464,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->count('student_id');
     }
 
+    /** @return LengthAwarePaginator<int, ServiceSupportAgreement> */
     public function getUtilizationReport(UtilizationReportFilterDTO $filters): LengthAwarePaginator
     {
         $query = ServiceSupportAgreement::query()
@@ -504,6 +520,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             ->withQueryString();
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getCaseloadReport(CaseloadReportFilterDTO $filters): Collection
     {
         $query = ServiceSupportAgreement::query()

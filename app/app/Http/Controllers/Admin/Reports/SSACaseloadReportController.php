@@ -51,6 +51,9 @@ final class SSACaseloadReportController extends Controller
 
         return response()->streamDownload(function () use ($ssas): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'Therapist Name',
                 'School',
@@ -79,6 +82,7 @@ final class SSACaseloadReportController extends Controller
         ]);
     }
 
+    /** @return Collection<int, \App\Models\School> */
     private function getActiveSchools(): Collection
     {
         return \App\Models\School::query()
@@ -87,11 +91,13 @@ final class SSACaseloadReportController extends Controller
             ->get(['id', 'display_name']);
     }
 
+    /** @return Collection<int, \App\Models\User> */
     private function getActiveTherapists(): Collection
     {
         return $this->userService->listActiveTherapistsForSelect();
     }
 
+    /** @return Collection<int, \App\Models\Service> */
     private function getActiveServices(): Collection
     {
         return $this->serviceCatalogService->listActiveForSelect();

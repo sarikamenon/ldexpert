@@ -92,6 +92,9 @@ final class ActivityLogController extends Controller
 
         return response()->streamDownload(function () use ($logs): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'User',

@@ -24,6 +24,7 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
         return StudentDocument::with(['uploadedBy', 'documentable'])->find($id);
     }
 
+    /** @return LengthAwarePaginator<StudentDocument> */
     public function list(StudentDocumentFilterDTO $filters): LengthAwarePaginator
     {
         $query = StudentDocument::query()
@@ -63,6 +64,7 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
             ->paginate($filters->perPage, ['*'], 'page', $filters->page);
     }
 
+    /** @return Collection<int, StudentDocument> */
     public function listByStudent(int $studentId): Collection
     {
         return StudentDocument::query()
@@ -79,6 +81,7 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
             ->get();
     }
 
+    /** @return Collection<int, StudentDocument> */
     public function listBySessionLog(int $sessionLogId): Collection
     {
         return StudentDocument::query()

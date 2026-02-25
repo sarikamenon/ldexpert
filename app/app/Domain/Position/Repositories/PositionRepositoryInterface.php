@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
 
 interface PositionRepositoryInterface
 {
+    /** @return LengthAwarePaginator<Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator;
 
     /**
@@ -22,6 +23,7 @@ interface PositionRepositoryInterface
      */
     public function listForDataTables(PositionFilterDTO $filters, DataTablesParamsDTO $params): array;
 
+    /** @return Collection<int, Position> */
     public function all(PositionFilterDTO $filters): Collection;
 
     public function create(CreatePositionDTO $dto): Position;
@@ -35,5 +37,6 @@ interface PositionRepositoryInterface
      */
     public function metrics(): array;
 
+    /** @return Collection<int, Position> */
     public function listActiveForSelect(): Collection;
 }

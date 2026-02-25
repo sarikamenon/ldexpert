@@ -60,21 +60,37 @@ class SSAImport extends Model
         return $this->hasMany(SSAImportRow::class, 'ssa_import_id', 'id');
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopeFailed(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::FAILED);

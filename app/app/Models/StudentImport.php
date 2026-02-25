@@ -58,21 +58,37 @@ class StudentImport extends Model
         return $this->hasMany(StudentImportRow::class);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopeFailed(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::FAILED);

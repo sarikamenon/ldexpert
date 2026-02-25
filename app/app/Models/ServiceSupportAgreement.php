@@ -104,31 +104,55 @@ class ServiceSupportAgreement extends Model
         return $this->hasMany(SSAAssignmentHistory::class, 'ssa_id')->orderBy('created_at', 'desc');
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::ACTIVE);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeDeactivated(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::DEACTIVATED);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeAssigned(Builder $query): Builder
     {
         return $query->whereNotNull('assigned_therapist_id');
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeUnassigned(Builder $query): Builder
     {
         return $query->whereNull('assigned_therapist_id');
@@ -177,9 +201,7 @@ class ServiceSupportAgreement extends Model
         $user = $auth->user();
 
         if ($isTherapistRoute && $user instanceof User) {
-            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
-
-            if ($role === Role::THERAPIST) {
+            if ($user->role === Role::THERAPIST) {
                 $query->where('assigned_therapist_id', $user->id);
             }
         }

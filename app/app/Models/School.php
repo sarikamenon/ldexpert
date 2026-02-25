@@ -140,21 +140,37 @@ class School extends Model
         return $this->morphMany(LedgerEntry::class, 'ledgerable');
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return SchoolScope::search($query, $term);
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeStatus(Builder $query, ?SchoolStatus $status): Builder
     {
         return SchoolScope::status($query, $status);
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return SchoolScope::active($query, $query->getModel());
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeInactive(Builder $query): Builder
     {
         return SchoolScope::inactive($query, $query->getModel());

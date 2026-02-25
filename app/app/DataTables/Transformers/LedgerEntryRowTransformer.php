@@ -31,31 +31,30 @@ final class LedgerEntryRowTransformer
         $typeCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'
             .e($entry->transaction_type->label()).'</span>';
 
+        /** @var \Illuminate\Database\Eloquent\Model|null $ref */
         $ref = $entry->reference;
         $refType = $entry->reference_type;
         if ($ref) {
             if ($refType === 'App\\Models\\Invoice') {
-                $invoiceId = is_object($ref) ? $ref->id : ($ref['id'] ?? $entry->reference_id ?? null);
-                $refCell = $invoiceId
-                    ? '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoiceId])).'" class="text-primary hover:underline">Invoice #'.e(is_object($ref) ? $ref->invoice_number : ($ref['invoice_number'] ?? (string) $invoiceId)).'</a>'
-                    : 'Invoice #'.($entry->reference_id ?? 'N/A');
+                /** @var \App\Models\Invoice $ref */
+                $refCell = '<a href="'.e(route('admin.invoices.show', ['invoice' => $ref->id])).'" class="text-primary hover:underline">Invoice #'.e($ref->invoice_number ?? (string) $ref->id).'</a>';
             } elseif ($refType === 'App\\Models\\TherapistBill') {
-                $billId = is_object($ref) ? $ref->id : ($ref['id'] ?? $entry->reference_id ?? null);
-                $refCell = $billId
-                    ? '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $billId])).'" class="text-primary hover:underline">Bill #'.e(is_object($ref) ? $ref->bill_number : ($ref['bill_number'] ?? (string) $billId)).'</a>'
-                    : 'Bill #'.($entry->reference_id ?? 'N/A');
+                /** @var \App\Models\TherapistBill $ref */
+                $refCell = '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $ref->id])).'" class="text-primary hover:underline">Bill #'.e($ref->bill_number ?? (string) $ref->id).'</a>';
             } elseif ($refType === 'App\\Models\\InvoicePayment') {
-                $invoiceFromPayment = is_object($ref) ? $ref->invoice()->first()?->id : null;
+                /** @var \App\Models\InvoicePayment $ref */
+                $invoiceFromPayment = $ref->invoice()->first()?->id;
                 $refCell = $invoiceFromPayment
-                    ? '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoiceFromPayment])).'" class="text-primary hover:underline">Payment #'.($ref->id ?? $entry->reference_id ?? '').'</a>'
+                    ? '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoiceFromPayment])).'" class="text-primary hover:underline">Payment #'.$ref->id.'</a>'
                     : 'Payment #'.($entry->reference_id ?? 'N/A');
             } elseif ($refType === 'App\\Models\\TherapistBillPayment') {
-                $billFromPayment = is_object($ref) ? $ref->therapistBill()->first()?->id : null;
+                /** @var \App\Models\TherapistBillPayment $ref */
+                $billFromPayment = $ref->therapistBill()->first()?->id;
                 $refCell = $billFromPayment
-                    ? '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $billFromPayment])).'" class="text-primary hover:underline">Payment #'.($ref->id ?? $entry->reference_id ?? '').'</a>'
+                    ? '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $billFromPayment])).'" class="text-primary hover:underline">Payment #'.$ref->id.'</a>'
                     : 'Payment #'.($entry->reference_id ?? 'N/A');
             } else {
-                $refCell = e(class_basename($refType)).' #'.($entry->reference_id ?? '');
+                $refCell = e(class_basename($refType ?? '')).' #'.($entry->reference_id ?? '');
             }
         } else {
             $refCell = '<span class="text-foreground/40">—</span>';

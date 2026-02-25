@@ -14,8 +14,10 @@ interface SessionLogRepositoryInterface
 {
     public function findForTherapist(User $therapist, int $sessionLogId): ?SessionLog;
 
+    /** @return Collection<int, SessionLog> */
     public function getSessionLogsForTherapist(User $therapist, array $filters = []): Collection;
 
+    /** @return LengthAwarePaginator<SessionLog> */
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     public function create(array $data): SessionLog;
@@ -36,12 +38,16 @@ interface SessionLogRepositoryInterface
 
     public function validateTherapistAccessToStudent(User $therapist, int $studentId): bool;
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function getActiveSSAsForStudent(int $studentId): Collection;
 
+    /** @return Collection<int, SessionLog> */
     public function getSessionLogsForSchedule(int $scheduleId): Collection;
 
+    /** @return Collection<int, Collection<int, SessionLog>> */
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection;
 
+    /** @return LengthAwarePaginator<SessionLog> */
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     /**

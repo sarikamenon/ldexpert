@@ -268,6 +268,9 @@ final class TherapistController extends Controller
 
         return response()->streamDownload(function () use ($therapists): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Name',

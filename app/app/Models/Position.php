@@ -33,6 +33,10 @@ final class Position extends Model
         return $this->belongsToMany(Service::class);
     }
 
+    /**
+     * @param  Builder<Position>  $query
+     * @return Builder<Position>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', PositionStatus::ACTIVE);

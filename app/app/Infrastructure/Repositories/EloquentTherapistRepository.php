@@ -48,6 +48,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         return TherapistProfile::with(['user', 'manager', 'position'])->find($id);
     }
 
+    /** @return Collection<int, User> */
     public function list(TherapistFilterDTO $filters): Collection
     {
         $query = User::query()
@@ -161,6 +162,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         ];
     }
 
+    /** @return Collection<int, User> */
     public function export(TherapistFilterDTO $filters): Collection
     {
         $query = User::query()
@@ -192,6 +194,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         return $query->orderBy('name')->get();
     }
 
+    /** @return Collection<int, TherapistProfile> */
     public function listActiveProfilesForSelect(): Collection
     {
         return TherapistProfile::query()
@@ -217,6 +220,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->count('users.id');
     }
 
+    /** @return Collection<int, User> */
     public function listActiveTherapistsBySchool(int $schoolId): Collection
     {
         return User::query()
@@ -235,6 +239,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->get();
     }
 
+    /** @param Builder<User> $query */
     private function applySchoolFilter(Builder $query, int $schoolId): void
     {
         $query->where(function ($builder) use ($schoolId) {
@@ -253,6 +258,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->first();
     }
 
+    /** @return Collection<int, User> */
     public function listActiveTherapists(): Collection
     {
         return User::query()
@@ -263,6 +269,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, User> */
     public function listTherapistsByStudent(int $studentId): Collection
     {
         return User::query()
@@ -275,6 +282,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             ->get();
     }
 
+    /** @return LengthAwarePaginator<User> */
     public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()

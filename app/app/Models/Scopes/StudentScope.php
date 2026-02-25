@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace App\Models\Scopes;
 
 use App\Enums\UserStatus;
+use App\Models\StudentProfile;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class StudentScope extends BaseModelScope
 {
+    /**
+     * @param  Builder<StudentProfile>  $builder
+     * @return Builder<StudentProfile>
+     */
     public static function search(Builder $builder, ?string $term): Builder
     {
         if (! $term) {
@@ -30,6 +35,10 @@ final class StudentScope extends BaseModelScope
         });
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $builder
+     * @return Builder<StudentProfile>
+     */
     public static function active(Builder $builder, Model $model, string $column = 'status'): Builder
     {
         return $builder->whereHas('user', function (Builder $query) {
@@ -37,6 +46,10 @@ final class StudentScope extends BaseModelScope
         });
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $builder
+     * @return Builder<StudentProfile>
+     */
     public static function inactive(Builder $builder, Model $model, string $column = 'status'): Builder
     {
         return $builder->whereHas('user', function (Builder $query) {

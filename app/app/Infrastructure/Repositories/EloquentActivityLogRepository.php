@@ -106,11 +106,13 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
             ->values();
     }
 
+    /** @return Builder<ActivityLog> */
     private function baseQuery(): Builder
     {
         return ActivityLog::with('user')->latest('created_at');
     }
 
+    /** @param Builder<ActivityLog> $query */
     private function applyFilters(Builder $query, array $filters): void
     {
         if (! empty($filters['user_id'])) {

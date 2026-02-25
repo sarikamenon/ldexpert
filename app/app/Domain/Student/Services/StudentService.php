@@ -60,6 +60,7 @@ final class StudentService
         return $this->repository->changeStatus($user, $dto);
     }
 
+    /** @return LengthAwarePaginator<User> */
     public function list(StudentFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->list($filters);
@@ -87,6 +88,7 @@ final class StudentService
         return $this->repository->getMetrics($status);
     }
 
+    /** @return LengthAwarePaginator<User> */
     public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->listByTherapist($therapistId, $search, $status, $perPage);
@@ -123,6 +125,7 @@ final class StudentService
         return $this->repository->countStudentsByTherapist($therapistId);
     }
 
+    /** @return LengthAwarePaginator<User> */
     public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->listStudentsByTherapist($therapistId, $search, $status, $perPage);

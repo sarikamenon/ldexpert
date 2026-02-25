@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property TransactionType $transaction_type
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  */
 class LedgerEntry extends Model
 {

@@ -25,6 +25,7 @@ final class SSAService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<ServiceSupportAgreement> */
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);
@@ -65,7 +66,7 @@ final class SSAService
     public function update(ServiceSupportAgreement $ssa, UpdateSSADTO $dto): ServiceSupportAgreement
     {
         $startDate = $dto->startDate ?? $ssa->start_date->format('Y-m-d');
-        $endDate = $dto->endDate ?? $ssa->end_date->format('Y-m-d');
+        $endDate = $dto->endDate ?? $ssa->end_date?->format('Y-m-d');
 
         // Check for overlapping SSAs (excluding current SSA)
         if ($dto->startDate || $dto->endDate) {
@@ -125,6 +126,7 @@ final class SSAService
         return $this->repository->unassignTherapist($ssa, $reason);
     }
 
+    /** @return Collection<int, \App\Models\SSAAssignmentHistory> */
     public function getAssignmentHistory(ServiceSupportAgreement $ssa): Collection
     {
         return $this->repository->getAssignmentHistory($ssa);
@@ -165,11 +167,13 @@ final class SSAService
         return $this->repository->hasStudentAssignedToTherapist($studentId, $therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
     {
         return $this->repository->getSSAsForMetrics($studentId, $therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getActiveSSAsForTherapist(int $therapistId): Collection
     {
         return $this->repository->getActiveSSAsForTherapist($therapistId);
@@ -180,31 +184,37 @@ final class SSAService
         return $this->repository->findSSAForSchedule($ssaId, $therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForSchoolMetrics(int $schoolId): Collection
     {
         return $this->repository->getSSAsForSchoolMetrics($schoolId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentMetrics(int $studentId): Collection
     {
         return $this->repository->getSSAsForStudentMetrics($studentId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentSchedule(int $studentId): Collection
     {
         return $this->repository->getSSAsForStudentSchedule($studentId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistMetrics(int $therapistId): Collection
     {
         return $this->repository->getSSAsForTherapistMetrics($therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getAssignedSSAsForTherapist(int $therapistId): Collection
     {
         return $this->repository->getAssignedSSAsForTherapist($therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection
     {
         return $this->repository->getSSAsForTherapistDashboard($therapistId, $limit);

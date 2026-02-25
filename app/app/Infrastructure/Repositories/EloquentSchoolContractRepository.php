@@ -173,12 +173,17 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         ];
     }
 
+    /** @return Builder<SchoolContract> */
     private function baseQuery(): Builder
     {
         return SchoolContract::query()
             ->with(['school', 'services.service']);
     }
 
+    /**
+     * @param Builder<SchoolContract> $query
+     * @return Builder<SchoolContract>
+     */
     private function applyFilters(Builder $query, SchoolContractFilterDTO $filters): Builder
     {
         if ($filters->status instanceof ContractStatus) {

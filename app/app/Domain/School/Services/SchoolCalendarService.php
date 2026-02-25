@@ -18,6 +18,7 @@ final class SchoolCalendarService
         private readonly SchoolCalendarEventRepositoryInterface $repository,
     ) {}
 
+    /** @return Collection<int, SchoolCalendarEvent> */
     public function listBySchoolAndRange(int $schoolId, CarbonInterface $start, CarbonInterface $end): Collection
     {
         return $this->repository->listBySchoolAndRange($schoolId, $start, $end);
@@ -26,6 +27,7 @@ final class SchoolCalendarService
     /**
      * @param  array<int>  $schoolIds
      */
+    /** @return Collection<int, SchoolCalendarEvent> */
     public function listBySchoolsAndRange(array $schoolIds, CarbonInterface $start, CarbonInterface $end): Collection
     {
         return $this->repository->listBySchoolsAndRange($schoolIds, $start, $end);
@@ -36,6 +38,7 @@ final class SchoolCalendarService
         return $this->repository->hasHolidayOnDate($schoolId, $date);
     }
 
+    /** @return Collection<int, SchoolCalendarEvent> */
     public function listHolidayEventsBySchoolAndRange(int $schoolId, CarbonInterface $start, CarbonInterface $end): Collection
     {
         return $this->repository

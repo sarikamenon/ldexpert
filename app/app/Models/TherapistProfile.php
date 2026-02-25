@@ -67,16 +67,28 @@ class TherapistProfile extends Model
         return $this->belongsTo(Position::class);
     }
 
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return TherapistScope::search($query, $term);
     }
 
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return TherapistScope::active($query, $this);
     }
 
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
     public function scopeInactive(Builder $query): Builder
     {
         return TherapistScope::inactive($query, $this);

@@ -18,6 +18,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentServiceRepository implements ServiceRepositoryInterface
 {
+    /** @return LengthAwarePaginator<Service> */
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator
     {
         return $this->applyFilters(Service::query(), $filters)
@@ -26,6 +27,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->withQueryString();
     }
 
+    /** @return Collection<int, Service> */
     public function all(ServiceFilterDTO $filters): Collection
     {
         return $this->applyFilters(Service::query(), $filters)
@@ -95,6 +97,10 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
         ];
     }
 
+    /**
+     * @param Builder<Service> $query
+     * @return Builder<Service>
+     */
     private function applyFilters(Builder $query, ServiceFilterDTO $filters): Builder
     {
         if ($filters->search) {
@@ -124,6 +130,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
         return $query;
     }
 
+    /** @return Collection<int, Service> */
     public function listActiveForSelect(): Collection
     {
         return Service::query()
@@ -133,6 +140,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Service> */
     public function listActiveWithFrequencyFlag(): Collection
     {
         return Service::query()
@@ -142,6 +150,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Service> */
     public function listIndirectServices(): Collection
     {
         return Service::query()

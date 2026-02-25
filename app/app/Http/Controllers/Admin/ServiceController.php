@@ -155,6 +155,9 @@ final class ServiceController extends Controller
 
         return response()->streamDownload(function () use ($services): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Name',

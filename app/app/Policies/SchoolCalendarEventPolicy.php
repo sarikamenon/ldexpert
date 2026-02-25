@@ -37,8 +37,6 @@ class SchoolCalendarEventPolicy
 
     private function isAdmin(User $user): bool
     {
-        $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
-
-        return $role === Role::ADMIN;
+        return $user->role === Role::ADMIN;
     }
 }

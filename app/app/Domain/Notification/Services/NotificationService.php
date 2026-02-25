@@ -16,11 +16,13 @@ final class NotificationService
         private readonly NotificationRepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<DatabaseNotification> */
     public function paginate(User $user, int $perPage = 20): LengthAwarePaginator
     {
         return $this->repository->paginate($user, $perPage);
     }
 
+    /** @return Collection<int, DatabaseNotification> */
     public function getUnread(User $user, int $limit = 10): Collection
     {
         return $this->repository->getUnread($user, $limit);

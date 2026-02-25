@@ -17,6 +17,7 @@ final class EloquentNotificationRepository implements NotificationRepositoryInte
         return $user->notifications()->paginate($perPage);
     }
 
+    /** @return Collection<int, DatabaseNotification> */
     public function getUnread(User $user, int $limit = 10): Collection
     {
         return $user->unreadNotifications()->take($limit)->get();

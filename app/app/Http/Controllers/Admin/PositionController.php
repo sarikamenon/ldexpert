@@ -159,6 +159,9 @@ final class PositionController extends Controller
 
         return response()->streamDownload(function () use ($positions): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Name',
