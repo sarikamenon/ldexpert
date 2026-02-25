@@ -78,7 +78,10 @@ class EloquentUserRepository implements UserRepositoryInterface
 
         $user->save();
 
-        return $user->fresh();
+        /** @var User $freshUser */
+        $freshUser = $user->fresh();
+
+        return $freshUser;
     }
 
     public function createTherapistProfile(CreateTherapistProfileDTO $dto): TherapistProfile

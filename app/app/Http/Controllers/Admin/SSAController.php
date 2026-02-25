@@ -394,9 +394,11 @@ final class SSAController extends Controller
         $validated = $request->validated();
         $type = SSAImportType::from($validated['type'] ?? SSAImportType::NOVA->value);
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = StoreSSAImportDTO::fromArray([
             'file' => $request->file('file'),
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => $type->value,
         ]);
 

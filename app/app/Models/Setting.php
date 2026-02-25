@@ -36,7 +36,9 @@ class Setting extends Model
                 return $default;
             }
 
-            $value = $setting->is_encrypted ? Crypt::decryptString($setting->value) : $setting->value;
+            /** @var string $rawValue */
+            $rawValue = $setting->value ?? '';
+            $value = $setting->is_encrypted ? Crypt::decryptString($rawValue) : $rawValue;
 
             return match ($setting->type) {
                 'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
@@ -56,7 +58,7 @@ class Setting extends Model
         };
 
         if ($isEncrypted) {
-            $valueToStore = Crypt::encryptString($valueToStore);
+            $valueToStore = Crypt::encryptString((string) $valueToStore);
         }
 
         $setting = self::updateOrCreate(
@@ -79,7 +81,9 @@ class Setting extends Model
         $settings = self::where('group', $group)->get();
 
         return $settings->mapWithKeys(function ($setting) {
-            $value = $setting->is_encrypted ? Crypt::decryptString($setting->value) : $setting->value;
+            /** @var string $rawValue */
+            $rawValue = $setting->value ?? '';
+            $value = $setting->is_encrypted ? Crypt::decryptString($rawValue) : $rawValue;
 
             $value = match ($setting->type) {
                 'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),

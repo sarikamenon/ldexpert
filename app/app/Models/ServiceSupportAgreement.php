@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ServiceSupportAgreement extends Model
 {
+    /** @use HasFactory<\Database\Factories\ServiceSupportAgreementFactory> */
     use HasFactory;
     use SoftDeletes;
 
@@ -64,19 +65,19 @@ class ServiceSupportAgreement extends Model
         ];
     }
 
-    /** @return BelongsTo<User, ServiceSupportAgreement> */
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
-    /** @return BelongsTo<Service, ServiceSupportAgreement> */
+    /** @return BelongsTo<Service, $this> */
     public function primaryService(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'primary_service_id');
     }
 
-    /** @return BelongsToMany<Service, ServiceSupportAgreement> */
+    /** @return BelongsToMany<Service, $this> */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'ssa_services', 'ssa_id', 'service_id')
@@ -86,19 +87,19 @@ class ServiceSupportAgreement extends Model
             ->withTimestamps();
     }
 
-    /** @return BelongsToMany<Service, ServiceSupportAgreement> */
+    /** @return BelongsToMany<Service, $this> */
     public function additionalServices(): BelongsToMany
     {
         return $this->services()->wherePivot('is_primary', false);
     }
 
-    /** @return BelongsTo<User, ServiceSupportAgreement> */
+    /** @return BelongsTo<User, $this> */
     public function assignedTherapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_therapist_id');
     }
 
-    /** @return HasMany<SSAAssignmentHistory, ServiceSupportAgreement> */
+    /** @return HasMany<SSAAssignmentHistory, $this> */
     public function assignmentHistory(): HasMany
     {
         return $this->hasMany(SSAAssignmentHistory::class, 'ssa_id')->orderBy('created_at', 'desc');
@@ -174,6 +175,7 @@ class ServiceSupportAgreement extends Model
             ServiceFrequency::BI_WEEKLY => 26 / 365,
             ServiceFrequency::MONTHLY => 12 / 365,
             ServiceFrequency::QUARTERLY => 4 / 365,
+            null => 0,
         };
 
         $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);

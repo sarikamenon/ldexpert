@@ -19,21 +19,14 @@ final class TherapistSessionLogRowTransformer
 
         $startTime = $log->start_time->format('g:i A');
         $endTime = $log->end_time->format('g:i A');
-        $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
+        $timeRange = "{$startTime} - {$endTime}";
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
-        $dateTimeCell = '<div class="flex flex-col space-y-1">';
-        if ($sessionDate) {
-            $dateTimeCell .= '<span class="text-foreground font-medium">'.e($sessionDate->format('M d, Y')).'</span>';
-        }
-        if ($timeRange) {
-            $dateTimeCell .= '<span class="text-foreground">'.e($timeRange).'</span>';
-        }
+        $dateTimeCell = '<div class="flex flex-col space-y-1">'
+            .'<span class="text-foreground font-medium">'.e($sessionDate->format('M d, Y')).'</span>'
+            .'<span class="text-foreground">'.e($timeRange).'</span>';
         if ($duration) {
             $dateTimeCell .= '<span class="text-xs text-foreground/60">'.e($duration).'</span>';
-        }
-        if (! $sessionDate && ! $timeRange && ! $duration) {
-            $dateTimeCell .= '<span class="text-gray-500">-</span>';
         }
         $dateTimeCell .= '</div>';
 

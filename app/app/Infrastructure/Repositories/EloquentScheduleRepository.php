@@ -161,12 +161,15 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                     continue;
                 }
 
+                /** @var \App\Models\Pivots\SSAService|null $pivot */
+                $pivot = $service->pivot;
+
                 $mappings[$studentId]['services'][] = [
                     'ssa_id' => $ssa->id,
                     'service_id' => $service->id,
                     'service_name' => $service->name,
                     'is_group_service' => $service->is_group_service,
-                    'is_primary' => (bool) $service->pivot?->is_primary,
+                    'is_primary' => (bool) $pivot?->is_primary,
                 ];
             }
         }

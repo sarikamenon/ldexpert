@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SchoolContract extends Model
 {
+    
     use HasFactory;
     use SoftDeletes;
 
@@ -24,13 +25,13 @@ class SchoolContract extends Model
         'status' => ContractStatus::class,
     ];
 
-    /** @return BelongsTo<School, SchoolContract> */
+    /** @return BelongsTo<School, $this> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
-    /** @return HasMany<SchoolContractService, SchoolContract> */
+    /** @return HasMany<SchoolContractService, $this> */
     public function services(): HasMany
     {
         return $this->hasMany(SchoolContractService::class);

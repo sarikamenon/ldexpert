@@ -16,7 +16,7 @@ interface ActivityLogRepositoryInterface
     /** @return Collection<int, ActivityLog> */
     public function recent(int $limit = 5): Collection;
 
-    /** @return LengthAwarePaginator<ActivityLog> */
+    /** @return LengthAwarePaginator<int, ActivityLog> */
     public function paginate(array $filters, int $perPage): LengthAwarePaginator;
 
     /**

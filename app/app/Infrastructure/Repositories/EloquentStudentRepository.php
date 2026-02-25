@@ -47,7 +47,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return StudentProfile::with(['user', 'school', 'parent'])->find($id);
     }
 
-    /** @return LengthAwarePaginator<User> */
+    /** @return LengthAwarePaginator<int, User> */
     public function list(StudentFilterDTO $filters): LengthAwarePaginator
     {
         $query = User::query()
@@ -181,7 +181,10 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             'status' => $dto->status,
         ]);
 
-        return $user->fresh();
+        /** @var User $freshUser */
+        $freshUser = $user->fresh();
+
+        return $freshUser;
     }
 
     public function getMetrics(?string $status = null): array
@@ -233,7 +236,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return $query->orderBy('name')->get();
     }
 
-    /** @return LengthAwarePaginator<User> */
+    /** @return LengthAwarePaginator<int, User> */
     public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()
@@ -296,7 +299,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             ->count();
     }
 
-    /** @return LengthAwarePaginator<User> */
+    /** @return LengthAwarePaginator<int, User> */
     public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()

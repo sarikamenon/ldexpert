@@ -25,7 +25,7 @@ final class SSAService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
-    /** @return LengthAwarePaginator<ServiceSupportAgreement> */
+    /** @return LengthAwarePaginator<int, ServiceSupportAgreement> */
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);

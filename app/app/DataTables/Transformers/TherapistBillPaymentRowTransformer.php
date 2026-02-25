@@ -13,7 +13,7 @@ final class TherapistBillPaymentRowTransformer
      */
     public static function transform(TherapistBillPayment $payment): array
     {
-        $date = $payment->paid_at ? $payment->paid_at->format('M d, Y') : '—';
+        $date = $payment->paid_at->format('M d, Y');
 
         $billCell = '—';
         if ($payment->therapistBill) {
@@ -24,7 +24,7 @@ final class TherapistBillPaymentRowTransformer
         }
 
         $amount = '$'.number_format((float) $payment->amount, 2);
-        $methodLabel = $payment->method->label() ?? '—';
+        $methodLabel = $payment->method->label();
         $methodBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">'.e($methodLabel).'</span>';
         $reference = e($payment->reference ?? '—');
         $recordedBy = e($payment->recordedBy->name ?? 'System');

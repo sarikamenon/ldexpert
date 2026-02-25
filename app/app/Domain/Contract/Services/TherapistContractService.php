@@ -23,7 +23,7 @@ final class TherapistContractService
         private readonly TherapistContractRepositoryInterface $repository,
     ) {}
 
-    /** @return LengthAwarePaginator<TherapistContract> */
+    /** @return LengthAwarePaginator<int, TherapistContract> */
     public function paginate(TherapistContractFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->repository->paginate($filters, $perPage);

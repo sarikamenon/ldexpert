@@ -21,6 +21,7 @@ final class StudentCommentController extends Controller
 
     public function store(StoreStudentCommentRequest $request, User $student): JsonResponse
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         // Verify therapist has access to this student

@@ -17,7 +17,7 @@ interface SessionLogRepositoryInterface
     /** @return Collection<int, SessionLog> */
     public function getSessionLogsForTherapist(User $therapist, array $filters = []): Collection;
 
-    /** @return LengthAwarePaginator<SessionLog> */
+    /** @return LengthAwarePaginator<int, SessionLog> */
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     public function create(array $data): SessionLog;
@@ -47,7 +47,7 @@ interface SessionLogRepositoryInterface
     /** @return Collection<int, Collection<int, SessionLog>> */
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection;
 
-    /** @return LengthAwarePaginator<SessionLog> */
+    /** @return LengthAwarePaginator<int, SessionLog> */
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     /**

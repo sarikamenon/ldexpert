@@ -25,10 +25,12 @@ final class SessionLogDocumentController extends Controller
 
         $validated = $request->validated();
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = CreateStudentDocumentDTO::fromArray([
             'documentable_type' => SessionLog::class,
             'documentable_id' => $sessionLog->id,
-            'uploaded_by_id' => $request->user()->id,
+            'uploaded_by_id' => $user->id,
             'document_type' => $validated['document_type'],
             'file' => $request->file('file'),
             'description' => $validated['description'] ?? null,

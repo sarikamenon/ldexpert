@@ -139,7 +139,9 @@ final class SessionLogController extends Controller
         $dto = \App\DTOs\UpdateSessionLogDTO::fromArray($data);
 
         try {
-            $this->service->update($request->user(), $sessionLog, $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->service->update($user, $sessionLog, $dto);
 
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)
@@ -156,7 +158,9 @@ final class SessionLogController extends Controller
         $this->authorize('approve', $sessionLog);
 
         try {
-            $this->service->approve($request->user(), $sessionLog);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->service->approve($user, $sessionLog);
 
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)
@@ -171,7 +175,9 @@ final class SessionLogController extends Controller
     public function sendBack(SendBackSessionLogRequest $request, SessionLog $sessionLog): RedirectResponse
     {
         try {
-            $this->service->sendBack($request->user(), $sessionLog, $request->validated('comment'));
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->service->sendBack($user, $sessionLog, $request->validated('comment'));
 
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)
@@ -190,7 +196,9 @@ final class SessionLogController extends Controller
         $reason = $request->input('cancellation_reason', 'Cancelled by admin');
 
         try {
-            $this->service->cancel($request->user(), $sessionLog, $reason);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->service->cancel($user, $sessionLog, $reason);
 
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)

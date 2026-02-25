@@ -23,7 +23,7 @@ final class PositionRowTransformer
             : '<span class="text-sm text-foreground/50">No services</span>';
 
         $isActive = $position->status === PositionStatus::ACTIVE;
-        $statusLabel = $position->status->label() ?? 'Unknown';
+        $statusLabel = $position->status->label();
         $statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '
             .($isActive ? 'bg-success/10 text-success border border-success/20' : 'bg-secondary/10 text-foreground border border-secondary/20').'"
         >'.e($statusLabel).'</span>';

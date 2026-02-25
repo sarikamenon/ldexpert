@@ -122,10 +122,10 @@ class DashboardService
         $completed = $ssaDistribution->get(SSAStatus::COMPLETED->value);
         $deactivated = $ssaDistribution->get(SSAStatus::DEACTIVATED->value);
         $ssaDistributionData = [
-            'Pending' => $pending !== null ? $pending->count : 0,
-            'Active' => $active !== null ? $active->count : 0,
-            'Completed' => $completed !== null ? $completed->count : 0,
-            'Deactivated' => $deactivated !== null ? $deactivated->count : 0,
+            'Pending' => $pending !== null ? (int) $pending->getAttribute('count') : 0,
+            'Active' => $active !== null ? (int) $active->getAttribute('count') : 0,
+            'Completed' => $completed !== null ? (int) $completed->getAttribute('count') : 0,
+            'Deactivated' => $deactivated !== null ? (int) $deactivated->getAttribute('count') : 0,
         ];
 
         return [
@@ -164,6 +164,8 @@ class DashboardService
     /** @return array<int, array<string, mixed>> */
     public function getUpcomingEvents(): array
     {
+        /** @var \App\Models\User $currentUser */
+        $currentUser = Auth::user();
         $events = [];
 
         $expiringSSAs = $this->repository->getExpiringSSAs(30, 4);
@@ -181,7 +183,7 @@ class DashboardService
                 'title' => 'SSA Expiring',
                 'entity' => "{$studentName} - {$serviceName}",
                 'due_date' => $ssa->end_date,
-                'due_date_local' => $this->userTimezoneService->toUserTimezone($ssa->end_date, Auth::user()),
+                'due_date_local' => $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser),
                 'priority' => $priority,
             ];
         }
@@ -197,7 +199,7 @@ class DashboardService
                     'title' => 'Contract Expiring',
                     'entity' => "School Contract - {$contract->school->display_name}",
                     'due_date' => $contract->end_date,
-                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, Auth::user()),
+                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
                     'priority' => $priority,
                 ];
             }

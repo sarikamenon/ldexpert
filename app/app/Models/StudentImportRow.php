@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentImportRow extends Model
 {
+    
     use HasFactory;
 
     protected $fillable = [
@@ -34,13 +35,13 @@ class StudentImportRow extends Model
         ];
     }
 
-    /** @return BelongsTo<StudentImport, StudentImportRow> */
+    /** @return BelongsTo<StudentImport, $this> */
     public function import(): BelongsTo
     {
         return $this->belongsTo(StudentImport::class, 'student_import_id');
     }
 
-    /** @return BelongsTo<User, StudentImportRow> */
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');

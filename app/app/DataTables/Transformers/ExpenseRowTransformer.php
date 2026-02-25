@@ -15,7 +15,7 @@ final class ExpenseRowTransformer
      */
     public static function transform(Expense $expense): array
     {
-        $date = $expense->expense_date ? $expense->expense_date->format('M d, Y') : '—';
+        $date = $expense->expense_date->format('M d, Y');
         $categoryName = $expense->category ? e($expense->category->name) : '—';
         $vendor = e($expense->vendor_payee ?? '—');
         $description = e(Str::limit($expense->description ?? '—', 50));

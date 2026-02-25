@@ -121,7 +121,9 @@ final class InvoiceController extends Controller
         $dto = CreateInvoiceDTO::fromArray($request->validated());
 
         try {
-            $invoice = $this->invoiceService->generateInvoice($request->user(), $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $invoice = $this->invoiceService->generateInvoice($user, $dto);
 
             if ($invoice->sessionLogs->isEmpty()) {
                 return redirect()
@@ -164,7 +166,9 @@ final class InvoiceController extends Controller
         $dto = SendInvoiceDTO::fromArray($request->validated());
 
         try {
-            $this->invoiceService->sendInvoice($request->user(), $invoice, $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->invoiceService->sendInvoice($user, $invoice, $dto);
 
             return redirect()
                 ->route('admin.invoices.show', $invoice)
@@ -185,7 +189,7 @@ final class InvoiceController extends Controller
         return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
     }
 
-    public function attachSessions(Request $request, Invoice $invoice): View|RedirectResponse
+    public function attachSessions(Request $request, Invoice $invoice): View
     {
         $this->authorize('update', $invoice);
 

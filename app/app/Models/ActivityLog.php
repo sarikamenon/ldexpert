@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ActivityLog extends Model
 {
+    
     use HasFactory;
 
     protected $fillable = [
@@ -33,12 +34,13 @@ class ActivityLog extends Model
         ];
     }
 
-    /** @return BelongsTo<User, ActivityLog> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return MorphTo<\Illuminate\Database\Eloquent\Model, $this> */
     public function subject(): MorphTo
     {
         return $this->morphTo('model');

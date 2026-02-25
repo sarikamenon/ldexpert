@@ -29,7 +29,7 @@ class TherapistBillPaymentAllocation extends Model
     }
 
     /**
-     * @return BelongsTo<TherapistBill, TherapistBillPaymentAllocation>
+     * @return BelongsTo<TherapistBill, $this>
      */
     public function therapistBill(): BelongsTo
     {
@@ -37,7 +37,7 @@ class TherapistBillPaymentAllocation extends Model
     }
 
     /**
-     * @return BelongsTo<TherapistBillPayment, TherapistBillPaymentAllocation>
+     * @return BelongsTo<TherapistBillPayment, $this>
      */
     public function payment(): BelongsTo
     {

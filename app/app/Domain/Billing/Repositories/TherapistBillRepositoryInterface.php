@@ -17,7 +17,7 @@ interface TherapistBillRepositoryInterface
 
     public function find(int $id): ?TherapistBill;
 
-    /** @return LengthAwarePaginator<TherapistBill> */
+    /** @return LengthAwarePaginator<int, TherapistBill> */
     public function list(TherapistBillFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 
     /**
@@ -59,7 +59,7 @@ interface TherapistBillRepositoryInterface
     /**
      * Get bills by therapist with filters
      *
-     * @return LengthAwarePaginator<TherapistBill>
+     * @return LengthAwarePaginator<int, TherapistBill>
      */
     public function getBillsByTherapist(int $therapistId, TherapistBillFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 }

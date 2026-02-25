@@ -10,7 +10,10 @@ class UpdateExpenseRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('update', $this->route('expense'));
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+
+        return $user->can('update', $this->route('expense'));
     }
 
     /**

@@ -61,7 +61,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
-    /** @return LengthAwarePaginator<SessionLog> */
+    /** @return LengthAwarePaginator<int, SessionLog> */
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()
@@ -257,7 +257,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         return $query->get()->groupBy('schedule_id');
     }
 
-    /** @return LengthAwarePaginator<SessionLog> */
+    /** @return LengthAwarePaginator<int, SessionLog> */
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()

@@ -29,7 +29,7 @@ class InvoicePaymentAllocation extends Model
     }
 
     /**
-     * @return BelongsTo<Invoice, InvoicePaymentAllocation>
+     * @return BelongsTo<Invoice, $this>
      */
     public function invoice(): BelongsTo
     {
@@ -37,7 +37,7 @@ class InvoicePaymentAllocation extends Model
     }
 
     /**
-     * @return BelongsTo<InvoicePayment, InvoicePaymentAllocation>
+     * @return BelongsTo<InvoicePayment, $this>
      */
     public function payment(): BelongsTo
     {

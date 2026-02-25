@@ -10,7 +10,7 @@ interface StorageServiceInterface
 {
     public function put(string $path, string $contents): void;
 
-    public function get(string $path): string|false;
+    public function get(string $path): ?string;
 
     public function exists(string $path): bool;
 

@@ -53,14 +53,14 @@ final class LedgerAccountService
             });
         }
 
-        $accounts = $query->get()->map(function ($school) {
+        $accounts = $query->get()->map(function (School $school) {
             $stats = $this->ledgerEntries->getSchoolStats($school->id);
 
-            $school->total_invoiced = $stats['total_invoiced'];
-            $school->total_paid = $stats['total_paid'];
-            $school->outstanding = $stats['outstanding'];
-            $school->current_balance = $stats['current_balance'];
-            $school->transaction_count = $stats['transaction_count'];
+            $school->setAttribute('total_invoiced', $stats['total_invoiced']);
+            $school->setAttribute('total_paid', $stats['total_paid']);
+            $school->setAttribute('outstanding', $stats['outstanding']);
+            $school->setAttribute('current_balance', $stats['current_balance']);
+            $school->setAttribute('transaction_count', $stats['transaction_count']);
 
             return $school;
         });
@@ -94,12 +94,12 @@ final class LedgerAccountService
         $accounts = $query->get()->map(function (User $therapist) {
             $stats = $this->ledgerEntries->getTherapistStats($therapist->id);
 
-            $therapist->total_billed = $stats['total_billed'];
-            $therapist->total_paid = $stats['total_paid'];
-            $therapist->outstanding = $stats['outstanding'];
-            $therapist->current_balance = $stats['current_balance'];
-            $therapist->transaction_count = $stats['transaction_count'];
-            $therapist->bills_count = $therapist->therapistBills()->count();
+            $therapist->setAttribute('total_billed', $stats['total_billed']);
+            $therapist->setAttribute('total_paid', $stats['total_paid']);
+            $therapist->setAttribute('outstanding', $stats['outstanding']);
+            $therapist->setAttribute('current_balance', $stats['current_balance']);
+            $therapist->setAttribute('transaction_count', $stats['transaction_count']);
+            $therapist->setAttribute('bills_count', $therapist->therapistBills()->count());
 
             return $therapist;
         });
@@ -153,11 +153,11 @@ final class LedgerAccountService
 
         foreach ($rows as $school) {
             $stats = $this->ledgerEntries->getSchoolStats($school->id);
-            $school->total_invoiced = $stats['total_invoiced'];
-            $school->total_paid = $stats['total_paid'];
-            $school->outstanding = $stats['outstanding'];
-            $school->current_balance = $stats['current_balance'];
-            $school->transaction_count = $stats['transaction_count'];
+            $school->setAttribute('total_invoiced', $stats['total_invoiced']);
+            $school->setAttribute('total_paid', $stats['total_paid']);
+            $school->setAttribute('outstanding', $stats['outstanding']);
+            $school->setAttribute('current_balance', $stats['current_balance']);
+            $school->setAttribute('transaction_count', $stats['transaction_count']);
         }
 
         return [
@@ -203,12 +203,12 @@ final class LedgerAccountService
 
         foreach ($rows as $user) {
             $stats = $this->ledgerEntries->getTherapistStats($user->id);
-            $user->total_billed = $stats['total_billed'];
-            $user->total_paid = $stats['total_paid'];
-            $user->outstanding = $stats['outstanding'];
-            $user->current_balance = $stats['current_balance'];
-            $user->transaction_count = $stats['transaction_count'];
-            $user->bills_count = $user->therapistBills()->count();
+            $user->setAttribute('total_billed', $stats['total_billed']);
+            $user->setAttribute('total_paid', $stats['total_paid']);
+            $user->setAttribute('outstanding', $stats['outstanding']);
+            $user->setAttribute('current_balance', $stats['current_balance']);
+            $user->setAttribute('transaction_count', $stats['transaction_count']);
+            $user->setAttribute('bills_count', $user->therapistBills()->count());
         }
 
         return [

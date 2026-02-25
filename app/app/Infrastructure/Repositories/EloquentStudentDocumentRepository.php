@@ -24,7 +24,7 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
         return StudentDocument::with(['uploadedBy', 'documentable'])->find($id);
     }
 
-    /** @return LengthAwarePaginator<StudentDocument> */
+    /** @return LengthAwarePaginator<int, StudentDocument> */
     public function list(StudentDocumentFilterDTO $filters): LengthAwarePaginator
     {
         $query = StudentDocument::query()

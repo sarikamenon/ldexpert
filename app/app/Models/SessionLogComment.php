@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SessionLogComment extends Model
 {
+    
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -28,13 +29,13 @@ class SessionLogComment extends Model
         ];
     }
 
-    /** @return BelongsTo<SessionLog, SessionLogComment> */
+    /** @return BelongsTo<SessionLog, $this> */
     public function sessionLog(): BelongsTo
     {
         return $this->belongsTo(SessionLog::class, 'session_log_id');
     }
 
-    /** @return BelongsTo<User, SessionLogComment> */
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');

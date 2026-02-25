@@ -46,7 +46,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBillPayment>
+     * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
     {
@@ -54,7 +54,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBillPayment>
+     * @return BelongsTo<User, $this>
      */
     public function therapist(): BelongsTo
     {
@@ -62,7 +62,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return MorphMany<LedgerEntry, TherapistBillPayment>
+     * @return MorphMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): MorphMany
     {
@@ -70,7 +70,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return HasMany<TherapistBillPaymentAllocation, TherapistBillPayment>
+     * @return HasMany<TherapistBillPaymentAllocation, $this>
      */
     public function allocations(): HasMany
     {
@@ -80,7 +80,7 @@ class TherapistBillPayment extends Model
     /**
      * Single therapist bill this payment is for (1:1).
      *
-     * @return BelongsTo<TherapistBill, TherapistBillPayment>
+     * @return BelongsTo<TherapistBill, $this>
      */
     public function therapistBill(): BelongsTo
     {

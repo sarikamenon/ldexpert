@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TherapistContractService extends Model
 {
+    
     use HasFactory;
 
     protected $guarded = [];
@@ -22,13 +23,13 @@ class TherapistContractService extends Model
         'no_show_rate_type' => RateType::class,
     ];
 
-    /** @return BelongsTo<TherapistContract, TherapistContractService> */
+    /** @return BelongsTo<TherapistContract, $this> */
     public function contract(): BelongsTo
     {
         return $this->belongsTo(TherapistContract::class, 'therapist_contract_id');
     }
 
-    /** @return BelongsTo<Service, TherapistContractService> */
+    /** @return BelongsTo<Service, $this> */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);

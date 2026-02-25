@@ -348,7 +348,7 @@ final class StudentController extends Controller
                     $profile?->school->display_name ?? '—',
                     $profile->grade_level ?? '—',
                     optional($profile?->date_of_birth)->format('Y-m-d') ?? '—',
-                    $student->status?->value ?? $student->status ?? 'inactive',
+                    $student->status->value,
                 ]);
             }
 
@@ -380,9 +380,11 @@ final class StudentController extends Controller
         $validated = $request->validated();
         $type = StudentImportType::from($validated['type'] ?? StudentImportType::NOVA->value);
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = StoreStudentImportDTO::fromArray([
             'file' => $request->file('file'),
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => $type->value,
         ]);
 

@@ -44,7 +44,7 @@ class LedgerEntry extends Model
     }
 
     /**
-     * @return MorphTo<Model, LedgerEntry>
+     * @return MorphTo<Model, $this>
      */
     public function ledgerable(): MorphTo
     {
@@ -52,7 +52,7 @@ class LedgerEntry extends Model
     }
 
     /**
-     * @return MorphTo<Model, LedgerEntry>
+     * @return MorphTo<Model, $this>
      */
     public function reference(): MorphTo
     {
@@ -60,7 +60,7 @@ class LedgerEntry extends Model
     }
 
     /**
-     * @return BelongsTo<User, LedgerEntry>
+     * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
     {

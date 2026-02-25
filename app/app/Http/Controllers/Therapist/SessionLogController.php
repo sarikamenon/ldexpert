@@ -50,6 +50,7 @@ final class SessionLogController extends Controller
 
     public function selectSSA(Request $request): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         $ssas = $this->ssaService
@@ -63,6 +64,7 @@ final class SessionLogController extends Controller
 
     public function index(SessionLogIndexRequest $request): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $filters = $request->validated();
 
@@ -101,6 +103,7 @@ final class SessionLogController extends Controller
 
     public function data(TherapistSessionLogDataRequest $request): JsonResponse
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
@@ -126,6 +129,7 @@ final class SessionLogController extends Controller
 
     public function create(Request $request, ?Schedule $schedule = null): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         // If schedule provided, validate access
@@ -190,6 +194,7 @@ final class SessionLogController extends Controller
 
     public function store(StoreSessionLogRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $data = $request->validated();
 
@@ -256,6 +261,7 @@ final class SessionLogController extends Controller
     {
         $this->authorize('update', $sessionLog);
 
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $data = $request->validated();
 
@@ -278,6 +284,7 @@ final class SessionLogController extends Controller
     {
         $this->authorize('submit', $sessionLog);
 
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         try {
@@ -297,6 +304,7 @@ final class SessionLogController extends Controller
     {
         $this->authorize('cancel', $sessionLog);
 
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $reason = $request->input('cancellation_reason', 'Cancelled by therapist');
 

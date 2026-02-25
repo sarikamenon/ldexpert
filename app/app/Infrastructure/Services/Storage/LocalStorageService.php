@@ -15,7 +15,7 @@ final class LocalStorageService implements StorageServiceInterface
         Storage::disk('local')->put($path, $contents);
     }
 
-    public function get(string $path): string|false
+    public function get(string $path): ?string
     {
         return Storage::disk('local')->get($path);
     }

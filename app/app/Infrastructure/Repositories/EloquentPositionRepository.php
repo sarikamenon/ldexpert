@@ -18,7 +18,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentPositionRepository implements PositionRepositoryInterface
 {
-    /** @return LengthAwarePaginator<Position> */
+    /** @return LengthAwarePaginator<int, Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator
     {
         return $this->applyFilters(Position::query()->with('services'), $filters)

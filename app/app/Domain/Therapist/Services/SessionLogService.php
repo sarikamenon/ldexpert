@@ -337,7 +337,7 @@ final class SessionLogService
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
-        if (! $sessionLog->status->canCancel()) {
+        if (! $sessionLog->status?->canCancel()) {
             throw new \InvalidArgumentException('Session log cannot be cancelled in its current status.');
         }
 

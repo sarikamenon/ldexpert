@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 
 interface SchoolRepositoryInterface
 {
-    /** @return LengthAwarePaginator<School> */
+    /** @return LengthAwarePaginator<int, School> */
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator;
 
     /**

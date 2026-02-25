@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class StudentProfile extends Model
 {
+    /** @use HasFactory<\Database\Factories\StudentProfileFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -48,25 +49,25 @@ class StudentProfile extends Model
         ];
     }
 
-    /** @return BelongsTo<User, StudentProfile> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** @return BelongsTo<User, StudentProfile> */
+    /** @return BelongsTo<User, $this> */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_id');
     }
 
-    /** @return BelongsTo<School, StudentProfile> */
+    /** @return BelongsTo<School, $this> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
-    /** @return HasMany<ServiceSupportAgreement, StudentProfile> */
+    /** @return HasMany<ServiceSupportAgreement, $this> */
     public function ssas(): HasMany
     {
         return $this->hasMany(ServiceSupportAgreement::class, 'student_id', 'user_id');

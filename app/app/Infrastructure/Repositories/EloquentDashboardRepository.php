@@ -234,8 +234,8 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
                 })
                 ->sum('served_minutes');
 
-            $thoMinutes[] = (int) ($thoSum ?? 0);
-            $servedMinutes[] = (int) ($servedSum ?? 0);
+            $thoMinutes[] = (int) $thoSum;
+            $servedMinutes[] = (int) $servedSum;
         }
 
         return [

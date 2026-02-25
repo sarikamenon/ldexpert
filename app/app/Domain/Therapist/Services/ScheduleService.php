@@ -70,7 +70,7 @@ final class ScheduleService
         return $this->repository->getPendingSchedules($therapist, $filters);
     }
 
-    /** @return LengthAwarePaginator<Schedule> */
+    /** @return LengthAwarePaginator<int, Schedule> */
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateForStudent($student, $filters, $perPage);
@@ -399,6 +399,7 @@ final class ScheduleService
             return collect([]);
         }
 
+        /** @var User $therapist */
         $therapist = $this->userRepository->findById($parentSchedule->therapist_id);
         $students = $this->userRepository->findByIds($studentIds);
 
@@ -641,7 +642,7 @@ final class ScheduleService
         if ($this->repository->hasOverlap($user, $date, $startTime, $endTime, $excludeScheduleId)) {
             $message = $isTherapist
                 ? 'You already have another schedule at this time. Please choose a different time.'
-                : sprintf('The student already has another schedule at this time. Please choose a different time.', $user->name ?? 'Student');
+                : 'The student already has another schedule at this time. Please choose a different time.';
 
             throw new ScheduleOverlapException($message);
         }

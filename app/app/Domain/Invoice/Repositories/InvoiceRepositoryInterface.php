@@ -19,7 +19,7 @@ interface InvoiceRepositoryInterface
 
     public function find(int $id): ?Invoice;
 
-    /** @return LengthAwarePaginator<Invoice> */
+    /** @return LengthAwarePaginator<int, Invoice> */
     public function list(InvoiceFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
 
     /**

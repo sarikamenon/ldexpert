@@ -162,7 +162,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             return null;
         }
 
-        $noShowRate = $contractService->no_show_rate !== null ? (float) $contractService->no_show_rate : null;
+        $noShowRate = (float) $contractService->no_show_rate;
         $noShowRateType = $contractService->no_show_rate_type ?? null;
 
         return [

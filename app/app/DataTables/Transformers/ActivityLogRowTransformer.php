@@ -34,7 +34,7 @@ final class ActivityLogRowTransformer
             'warning' => 'bg-warning/10 text-warning border border-warning/20',
             'secondary' => 'bg-secondary/10 text-secondary border border-secondary/20',
         ];
-        $spanClass = $variantMap[$variant] ?? $variantMap['secondary'];
+        $spanClass = $variantMap[$variant];
         $actionCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base '.$spanClass.' '.$badgeClass.'"><span class="h-1.5 w-1.5 rounded-full bg-current"></span> '.e($actionLabel).'</span>';
 
         $modelCell = e($log->model_type ? class_basename($log->model_type) : '—');
