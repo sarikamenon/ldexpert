@@ -7,7 +7,7 @@ namespace App\Http\Requests\Admin\Finance;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class IrsReportRequest extends FormRequest
+final class PayStubDownloadRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,11 +17,11 @@ final class IrsReportRequest extends FormRequest
     /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
+        $currentYear = (int) date('Y');
+
         return [
-            'therapist_ids' => ['nullable', 'array'],
-            'therapist_ids.*' => ['integer', Rule::exists('users', 'id')],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            'year' => ['required', 'integer', 'min:2026', 'max:'.$currentYear],
+            'therapist_id' => ['required', 'integer', Rule::exists('users', 'id')],
         ];
     }
 }
