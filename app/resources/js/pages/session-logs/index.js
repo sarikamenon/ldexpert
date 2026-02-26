@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     d.filter_therapist_id = form.querySelector('[name="therapist_id"]')?.value ?? '';
                     d.filter_ssa_id = form.querySelector('[name="ssa_id"]')?.value ?? '';
                     d.filter_service_id = form.querySelector('[name="service_id"]')?.value ?? '';
+                    d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
                     d.filter_date_from = form.querySelector('[name="date_from"]')?.value ?? '';
                     d.filter_date_to = form.querySelector('[name="date_to"]')?.value ?? '';
                 }
