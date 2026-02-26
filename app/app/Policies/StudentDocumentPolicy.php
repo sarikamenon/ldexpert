@@ -51,7 +51,7 @@ class StudentDocumentPolicy
         return false;
     }
 
-    public function create(User $user, $documentable = null): bool
+    public function create(User $user, mixed $documentable = null): bool
     {
         if ($this->isAdmin($user)) {
             // Admin can create documents for students

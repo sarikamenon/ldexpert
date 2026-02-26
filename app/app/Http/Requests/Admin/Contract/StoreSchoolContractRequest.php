@@ -9,6 +9,7 @@ use Illuminate\Validation\Rule;
 
 final class StoreSchoolContractRequest extends SchoolContractFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

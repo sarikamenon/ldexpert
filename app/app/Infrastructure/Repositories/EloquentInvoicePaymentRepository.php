@@ -10,11 +10,13 @@ use App\Models\InvoicePaymentAllocation;
 
 final class EloquentInvoicePaymentRepository implements InvoicePaymentRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function createPayment(array $data): InvoicePayment
     {
         return InvoicePayment::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function createAllocation(array $data): InvoicePaymentAllocation
     {
         return InvoicePaymentAllocation::create($data);

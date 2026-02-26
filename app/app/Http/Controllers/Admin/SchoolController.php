@@ -9,7 +9,6 @@ use App\Constants\UsTimezones;
 use App\DataTables\Transformers\SchoolRowTransformer;
 use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\Position\Services\PositionCatalogService;
-use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
@@ -69,7 +68,6 @@ final class SchoolController extends Controller
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
         private readonly SchoolContractService $schoolContractService,
-        private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly PositionCatalogService $positionCatalogService,
     ) {}
@@ -303,6 +301,7 @@ final class SchoolController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formPayload(SchoolFormRequest $request): array
     {
         $validated = $request->validated();
@@ -312,6 +311,7 @@ final class SchoolController extends Controller
         return $validated;
     }
 
+    /** @return array<string, mixed> */
     private function referenceData(): array
     {
         return [

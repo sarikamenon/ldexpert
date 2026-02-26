@@ -7,8 +7,8 @@ namespace App\DTOs;
 final class ImportStudentDTO
 {
     /**
-     * @param array<string, mixed> $data
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $errors
      */
     public function __construct(
         public readonly array $data,

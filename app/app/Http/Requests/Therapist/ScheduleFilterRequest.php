@@ -13,6 +13,7 @@ final class ScheduleFilterRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

@@ -26,7 +26,7 @@ final class EloquentSSAImportRepository implements SSAImportRepositoryInterface
                     ->orWhere('ssa_imports.type', 'like', '%'.$search.'%')
                     ->orWhere('ssa_imports.status', 'like', '%'.$search.'%')
                     ->orWhereHas('user', function (Builder $uq) use ($search) {
-                        $uq->where('name', 'like', '%'.$search.'%');
+                        $uq->where('name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }

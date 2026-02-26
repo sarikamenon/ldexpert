@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\SSA;
 
 final class StoreSSARequest extends SSAFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return $this->baseRules();

@@ -49,8 +49,10 @@ final class ActivityLogRowTransformer
 
         $ipCell = e($log->ip_address ?? '—');
 
-        $dateTitle = $log->created_at_local?->format('Y-m-d H:i:s') ?? '';
-        $dateLabel = $log->created_at_local ? $log->created_at_local->diffForHumans() : '—';
+        /** @var \Carbon\Carbon|null $createdAtLocal */
+        $createdAtLocal = $log->getAttribute('created_at_local');
+        $dateTitle = $createdAtLocal?->format('Y-m-d H:i:s') ?? '';
+        $dateLabel = $createdAtLocal ? $createdAtLocal->diffForHumans() : '—';
         $dateCell = '<span title="'.e($dateTitle).'">'.e($dateLabel).'</span>';
 
         return [

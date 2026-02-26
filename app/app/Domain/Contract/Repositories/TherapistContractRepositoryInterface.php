@@ -38,6 +38,7 @@ interface TherapistContractRepositoryInterface
 
     public function hasOverlap(int $therapistId, string $startDate, string $endDate, ?int $ignoreId = null): bool;
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array;
 
     public function findActiveContractForDate(int $therapistId, string $date): ?TherapistContract;

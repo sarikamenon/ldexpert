@@ -32,7 +32,10 @@ final class SessionLogService
         private readonly ServiceRepositoryInterface $serviceRepository,
     ) {}
 
-    /** @return Collection<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, SessionLog>
+     */
     public function getSessionLogs(User $therapist, array $filters = []): Collection
     {
         return $this->repository->getSessionLogsForTherapist($therapist, $filters);
@@ -49,7 +52,10 @@ final class SessionLogService
         return $this->repository->getActiveSSAsForStudent($studentId);
     }
 
-    /** @return Collection<int, Collection<int, SessionLog>> */
+    /**
+     * @param  array<int, int>  $scheduleIds
+     * @return Collection<int|string, Collection<int, SessionLog>>
+     */
     public function getSessionLogsByScheduleIds(User $therapist, array $scheduleIds): Collection
     {
         return $this->repository->getSessionLogsByScheduleIds($scheduleIds, $therapist);
@@ -344,11 +350,11 @@ final class SessionLogService
         return $this->repository->cancel($sessionLog, $reason);
     }
 
-    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, \DateTimeInterface $ssaEnd): void
+    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, ?\DateTimeInterface $ssaEnd): void
     {
         $date = Carbon::parse($sessionDate);
 
-        if ($date->lt(Carbon::parse($ssaStart)) || $date->gt(Carbon::parse($ssaEnd))) {
+        if ($date->lt(Carbon::parse($ssaStart)) || ($ssaEnd !== null && $date->gt(Carbon::parse($ssaEnd)))) {
             throw new \InvalidArgumentException('Session date must be within the SSA start and end dates.');
         }
     }
@@ -364,6 +370,9 @@ final class SessionLogService
         }
     }
 
+    /**
+     * @param  array<string, array<string, mixed>>  $billing
+     */
     private function assertBillingDataComplete(array $billing): void
     {
         if (! $billing['therapist']['contract_id']) {

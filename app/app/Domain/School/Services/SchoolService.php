@@ -32,7 +32,7 @@ class SchoolService
     }
 
     /**
-     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Support\Collection<int,School>}
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Database\Eloquent\Collection<int,School>}
      */
     public function listForDataTables(SchoolFilterDTO $filters, DataTablesParamsDTO $params): array
     {
@@ -41,6 +41,7 @@ class SchoolService
 
     public function createSchool(CreateSchoolDTO $dto): School
     {
+        /** @var School */
         return $this->wrapWrite(function () use ($dto) {
             $school = $this->schools->create($dto);
             $this->activityLog->logCreated($school);
@@ -51,6 +52,7 @@ class SchoolService
 
     public function updateSchool(School $school, UpdateSchoolDTO $dto): School
     {
+        /** @var School */
         return $this->wrapWrite(function () use ($school, $dto) {
             $originalAttributes = $school->getOriginal();
             $updatedSchool = $this->schools->update($school, $dto);
@@ -75,6 +77,7 @@ class SchoolService
 
     public function changeStatus(School $school, ChangeSchoolStatusDTO $dto): School
     {
+        /** @var School */
         return $this->wrapWrite(function () use ($school, $dto) {
             $oldStatus = $school->status->value;
             $updatedSchool = $this->schools->changeStatus($school, $dto);
@@ -90,6 +93,7 @@ class SchoolService
         });
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function summaryMetrics(): array
     {
         return $this->schools->metrics();

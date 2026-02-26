@@ -8,6 +8,7 @@ use Illuminate\Validation\Rule;
 
 final class StoreTherapistContractRequest extends TherapistContractFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

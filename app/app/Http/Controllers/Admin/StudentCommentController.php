@@ -35,9 +35,9 @@ final class StudentCommentController extends Controller
             'comment' => [
                 'id' => $comment->id,
                 'comment' => $comment->comment,
-                'author_name' => $comment->author->name,
-                'author_role' => $comment->author->role->value,
-                'created_at' => $comment->created_at->toIso8601String(),
+                'author_name' => $comment->author?->name,
+                'author_role' => $comment->author?->role?->value,
+                'created_at' => $comment->created_at?->toIso8601String(),
             ],
         ]);
     }

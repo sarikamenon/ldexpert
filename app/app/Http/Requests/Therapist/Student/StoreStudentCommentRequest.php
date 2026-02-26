@@ -31,6 +31,7 @@ final class StoreStudentCommentRequest extends FormRequest
         return $therapist->can('create', [StudentComment::class, $student]);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

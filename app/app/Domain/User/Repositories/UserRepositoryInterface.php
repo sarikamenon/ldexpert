@@ -27,6 +27,7 @@ interface UserRepositoryInterface
     /** @return Collection<int, User> */
     public function listByRole(string $role): Collection;
 
+    /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User;
 
     /** @return Collection<int, User> */
@@ -38,11 +39,15 @@ interface UserRepositoryInterface
     /** @return Collection<int, User> */
     public function listActiveTherapistsForSelect(): Collection;
 
-    /** @return Collection<int, User> */
+    /**
+     * @param  array<int, int>  $ids
+     * @return Collection<int, User>
+     */
     public function findByIds(array $ids): Collection;
 
     public function findById(int $id): ?User;
 
+    /** @param array<int, int> $studentIds */
     public function countActiveStudentsByIds(array $studentIds): int;
 
     public function createTherapistProfile(CreateTherapistProfileDTO $dto): TherapistProfile;

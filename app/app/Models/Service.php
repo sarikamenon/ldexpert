@@ -14,6 +14,7 @@ final class Service extends Model
 {
     /** @use HasFactory<\Database\Factories\ServiceFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     public const DELIVERY_MODE_OPTIONS = [

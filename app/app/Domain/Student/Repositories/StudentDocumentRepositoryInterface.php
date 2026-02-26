@@ -11,6 +11,7 @@ use Illuminate\Support\Collection;
 
 interface StudentDocumentRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): StudentDocument;
 
     public function find(int $id): ?StudentDocument;

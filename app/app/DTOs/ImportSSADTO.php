@@ -7,8 +7,8 @@ namespace App\DTOs;
 final class ImportSSADTO
 {
     /**
-     * @param array<string, mixed> $data
-     * @param list<string> $errors
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $errors
      */
     public function __construct(
         public readonly array $data,

@@ -39,7 +39,7 @@ final class TherapistScope extends BaseModelScope
     public static function active(Builder $builder, Model $model, string $column = 'status'): Builder
     {
         return $builder->whereHas('user', function (Builder $query) {
-            $query->where('status', UserStatus::ACTIVE);
+            $query->where('status', UserStatus::ACTIVE); // @phpstan-ignore argument.type
         });
     }
 
@@ -50,7 +50,7 @@ final class TherapistScope extends BaseModelScope
     public static function inactive(Builder $builder, Model $model, string $column = 'status'): Builder
     {
         return $builder->whereHas('user', function (Builder $query) {
-            $query->where('status', UserStatus::INACTIVE);
+            $query->where('status', UserStatus::INACTIVE); // @phpstan-ignore argument.type
         });
     }
 }

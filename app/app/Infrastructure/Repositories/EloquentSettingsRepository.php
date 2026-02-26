@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Crypt;
 
 final class EloquentSettingsRepository implements SettingsRepositoryInterface
 {
+    /** @return array<string, mixed> */
     public function getGroup(string $group): array
     {
         $settings = Setting::where('group', $group)->get();

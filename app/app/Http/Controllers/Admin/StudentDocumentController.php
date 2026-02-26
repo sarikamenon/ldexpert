@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Services\StudentDocumentService;
-use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\CreateStudentDocumentDTO;
 use App\DTOs\StudentDocumentFilterDTO;
 use App\Enums\DocumentType;
@@ -24,8 +22,6 @@ final class StudentDocumentController extends Controller
 {
     public function __construct(
         private readonly StudentDocumentService $documentService,
-        private readonly SchoolRepositoryInterface $schoolRepository,
-        private readonly TherapistService $therapistService,
     ) {}
 
     public function index(StudentDocumentIndexRequest $request): View
@@ -77,8 +73,8 @@ final class StudentDocumentController extends Controller
                     'id' => $document->id,
                     'file_name' => $document->file_name,
                     'document_type' => $document->document_type->label(),
-                    'uploaded_by_name' => $document->uploadedBy->name,
-                    'created_at' => $document->created_at->toIso8601String(),
+                    'uploaded_by_name' => $document->uploadedBy?->name,
+                    'created_at' => $document->created_at?->toIso8601String(),
                 ],
             ]);
         }
@@ -107,6 +103,7 @@ final class StudentDocumentController extends Controller
         ]);
     }
 
+    /** @return array<int, array{id: int, name: string}> */
     private function getStudentsForFilter(): array
     {
         // Get all students who have documents
@@ -141,6 +138,7 @@ final class StudentDocumentController extends Controller
             ->toArray();
     }
 
+    /** @return array<int, array{id: int, name: string}> */
     private function getUploadedByUsersForFilter(): array
     {
         $userIds = StudentDocument::query()

@@ -38,6 +38,7 @@ interface SchoolContractRepositoryInterface
 
     public function hasOverlap(int $schoolId, string $startDate, string $endDate, ?int $ignoreId = null): bool;
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array;
 
     public function findActiveContractForDate(int $schoolId, string $date): ?SchoolContract;

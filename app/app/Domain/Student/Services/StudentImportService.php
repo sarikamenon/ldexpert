@@ -89,6 +89,10 @@ final class StudentImportService
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $rowData
+     * @param  array<string, mixed>  $template
+     */
     public function processRow(StudentImport $import, int $rowNumber, array $rowData, array $template): void
     {
         $importRow = StudentImportRow::where('student_import_id', $import->id)
@@ -183,6 +187,10 @@ final class StudentImportService
         return $this->schoolRepository->findByExternalEmrName($externalEmrName);
     }
 
+    /**
+     * @param  array<string, mixed>  $template
+     * @return array<int, string>
+     */
     public function validateFileStructure(StudentImport $import, array $template): array
     {
         $errors = [];
@@ -210,7 +218,7 @@ final class StudentImportService
         }
 
         // Normalize headers
-        $headers = array_map('trim', $headers);
+        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
 
         // Check required columns
         $requiredColumns = $template['required_columns'] ?? [];
@@ -229,6 +237,9 @@ final class StudentImportService
         return $errors;
     }
 
+    /**
+     * @return array<int, array<string, string>>
+     */
     public function parseCsvFromStorage(string $filePath): array
     {
         $rows = [];
@@ -256,7 +267,7 @@ final class StudentImportService
         }
 
         // Normalize headers
-        $headers = array_map('trim', $headers);
+        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
 
         // Parse data rows
         while (($row = fgetcsv($tempFile)) !== false) {
@@ -279,6 +290,11 @@ final class StudentImportService
         return $rows;
     }
 
+    /**
+     * @param  array<string, mixed>  $rowData
+     * @param  array<string, mixed>  $template
+     * @return array<string, string>
+     */
     public function mapColumns(array $rowData, array $template): array
     {
         $mapped = [];
@@ -293,6 +309,9 @@ final class StudentImportService
         return $mapped;
     }
 
+    /**
+     * @return array<int, string>
+     */
     public function validateRow(ImportStudentDTO $dto, int $schoolId): array
     {
         $data = $dto->data;
@@ -342,6 +361,9 @@ final class StudentImportService
         return $errors;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     public function checkDuplicate(array $data, int $schoolId): ?string
     {
         // Check by email (globally unique)
@@ -363,6 +385,9 @@ final class StudentImportService
         return null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getTemplate(\App\Enums\StudentImportType $type): array
     {
         $config = config('student-import');
@@ -379,7 +404,7 @@ final class StudentImportService
 
         $path = config('student-import.s3.path_prefix', 'student-imports')."/{$year}/{$month}/{$filename}";
 
-        $this->storageService->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 
         return $path;
     }

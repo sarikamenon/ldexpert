@@ -25,7 +25,7 @@ class EloquentUserRepository implements UserRepositoryInterface
         $user->name = $dto->name;
         $user->email = $dto->email;
         $user->password = Hash::make($dto->password);
-        $user->role = $role;
+        $user->role = Role::from($role);
         $user->save();
 
         return $user;
@@ -67,6 +67,7 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
+    /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User
     {
         $user->fill($data);
@@ -135,7 +136,10 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
-    /** @return Collection<int, User> */
+    /**
+     * @param  array<int, int>  $ids
+     * @return Collection<int, User>
+     */
     public function findByIds(array $ids): Collection
     {
         return User::whereIn('id', $ids)->get();
@@ -146,6 +150,7 @@ class EloquentUserRepository implements UserRepositoryInterface
         return User::find($id);
     }
 
+    /** @param array<int, int> $studentIds */
     public function countActiveStudentsByIds(array $studentIds): int
     {
         return User::query()

@@ -8,6 +8,7 @@ use App\Models\Service;
 
 final class UpdateServiceRequest extends ServiceFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         /** @var Service|null $service */

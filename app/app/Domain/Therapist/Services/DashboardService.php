@@ -24,6 +24,9 @@ class DashboardService
         private readonly ScheduleRepositoryInterface $scheduleRepository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getDashboardMetrics(User $therapist): array
     {
         $assignedSSAs = $this->ssaRepository->getAssignedSSAsForTherapist($therapist->id);
@@ -88,6 +91,7 @@ class DashboardService
      */
     private function formatSchedulesForDashboard(Collection $schedules): Collection
     {
+        /** @var Collection<int, array<string, mixed>> */
         return $schedules->map(function (Schedule $schedule): array {
             $studentProfile = $schedule->student?->studentProfile;
 

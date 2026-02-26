@@ -286,6 +286,7 @@ final class SSAController extends Controller
         ]);
     }
 
+    /** @return \Symfony\Component\HttpFoundation\StreamedResponse */
     public function export(IndexSSARequest $request)
     {
         $this->authorize('viewAny', ServiceSupportAgreement::class);
@@ -314,16 +315,16 @@ final class SSAController extends Controller
                 'Status',
             ]);
 
-            foreach ($ssas as $ssa) {
+            foreach ($ssas->items() as $ssa) {
                 fputcsv($handle, [
                     $ssa->id,
                     $ssa->student->name ?? '—',
                     $ssa->primaryService->name ?? '—',
                     $ssa->assignedTherapist->name ?? 'Unassigned',
                     $ssa->start_date->format('Y-m-d'),
-                    $ssa->end_date->format('Y-m-d'),
+                    $ssa->end_date?->format('Y-m-d') ?? '',
                     $ssa->minutes_per_session,
-                    $ssa->frequency->label(),
+                    $ssa->frequency?->label() ?? '',
                     $ssa->sessions_per_frequency,
                     $ssa->tho_minutes,
                     $ssa->served_minutes,
@@ -476,6 +477,7 @@ final class SSAController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formData(): array
     {
         return [

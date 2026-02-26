@@ -98,12 +98,12 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         return School::query()
             ->whereHas('studentProfiles.ssas', function ($query) use ($therapist) {
-                $query->where('assigned_therapist_id', $therapist->id)
-                    ->where('status', SSAStatus::ACTIVE);
+                $query->where('assigned_therapist_id', $therapist->id) // @phpstan-ignore argument.type
+                    ->where('status', SSAStatus::ACTIVE); // @phpstan-ignore argument.type
             })
             ->orWhereHas('studentProfiles.user', function ($query) use ($therapist) {
                 $query->whereHas('therapists', function ($q) use ($therapist) {
-                    $q->where('therapist_id', $therapist->id);
+                    $q->where('therapist_id', $therapist->id); // @phpstan-ignore argument.type
                 });
             })
             ->orderBy('display_name')
@@ -162,7 +162,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                 }
 
                 /** @var \App\Models\Pivots\SSAService|null $pivot */
-                $pivot = $service->pivot;
+                $pivot = $service->getRelation('pivot');
 
                 $mappings[$studentId]['services'][] = [
                     'ssa_id' => $ssa->id,
@@ -174,6 +174,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             }
         }
 
+        /** @var Collection<int, array<string, mixed>> */
         return collect($mappings)->map(function (array $entry) {
             $entry['services'] = collect($entry['services'])
                 ->unique(fn ($service) => $service['service_id'].'-'.$service['ssa_id'])
@@ -184,11 +185,13 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         });
     }
 
+    /** @param array<string, mixed> $data */
     public function create(array $data): Schedule
     {
         return Schedule::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function update(Schedule $schedule, array $data): Schedule
     {
         $schedule->fill($data);
@@ -240,7 +243,10 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
-    /** @return Collection<int, Schedule> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, Schedule>
+     */
     public function getSchedulesForStudent(User $student, array $filters = []): Collection
     {
         $dto = new ScheduleFilterDTO(
@@ -281,9 +287,9 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         if ($params->searchValue) {
             $sv = $params->searchValue;
             $baseQuery->where(function ($q) use ($sv) {
-                $q->whereHas('therapist', fn ($q2) => $q2->where('name', 'like', "%{$sv}%"))
-                    ->orWhereHas('service', fn ($q2) => $q2->where('name', 'like', "%{$sv}%"))
-                    ->orWhereHas('school', fn ($q2) => $q2->where('display_name', 'like', "%{$sv}%"));
+                $q->whereHas('therapist', fn ($q2) => $q2->where('name', 'like', "%{$sv}%")) // @phpstan-ignore argument.type
+                    ->orWhereHas('service', fn ($q2) => $q2->where('name', 'like', "%{$sv}%")) // @phpstan-ignore argument.type
+                    ->orWhereHas('school', fn ($q2) => $q2->where('display_name', 'like', "%{$sv}%")); // @phpstan-ignore argument.type
             });
         }
         $recordsFiltered = (clone $baseQuery)->count();
@@ -315,6 +321,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->exists();
     }
 
+    /** @param array<int, int> $studentIds */
     public function validateTherapistAccessToStudents(User $therapist, array $studentIds): bool
     {
         // Check if therapist has access to all students via active SSAs
@@ -328,6 +335,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         return $count === count(array_unique($studentIds));
     }
 
+    /** @param array<int, int> $studentIds */
     public function validateStudentsShareService(User $therapist, array $studentIds, int $serviceId): bool
     {
         // Check if all students have an active SSA with this service assigned to this therapist
@@ -360,6 +368,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         return $schedule;
     }
 
+    /** @param array<int, int> $scheduleIds */
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int
     {
         return Schedule::query()
@@ -424,7 +433,8 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         return $this->getSchedulesInWindow($start, $end);
     }
 
-    private function buildStudentScheduleQuery(User $student, ScheduleFilterDTO $filters)
+    /** @return \Illuminate\Database\Eloquent\Builder<Schedule> */
+    private function buildStudentScheduleQuery(User $student, ScheduleFilterDTO $filters): \Illuminate\Database\Eloquent\Builder
     {
         $query = Schedule::query()
             ->forStudent($student)

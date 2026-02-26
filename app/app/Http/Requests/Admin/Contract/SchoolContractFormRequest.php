@@ -16,6 +16,7 @@ abstract class SchoolContractFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(): array
     {
         return [
@@ -38,6 +39,7 @@ abstract class SchoolContractFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

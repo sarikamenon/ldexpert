@@ -199,8 +199,8 @@ final class InvoiceController extends Controller
 
         $filters = [
             'school_id' => $invoice->school_id,
-            'date_from' => $request->input('date_from', $invoice->billing_period_start->format('Y-m-d')),
-            'date_to' => $request->input('date_to', $invoice->billing_period_end->format('Y-m-d')),
+            'date_from' => $request->input('date_from', $invoice->billing_period_start?->format('Y-m-d')),
+            'date_to' => $request->input('date_to', $invoice->billing_period_end?->format('Y-m-d')),
             'therapist_id' => $request->input('therapist_id'),
             'student_id' => $request->input('student_id'),
             'service_id' => $request->input('service_id'),
@@ -214,9 +214,10 @@ final class InvoiceController extends Controller
         $availableSessionLogs = $this->invoiceRepository->getAvailableSessionLogsForInvoiceCreation($filters);
         $attachedIds = $attachedSessionLogs->pluck('id')->all();
 
-        $therapists = $this->therapistService->listActiveTherapistsBySchool($invoice->school_id);
-        $students = $this->studentService->listActiveStudentsBySchool($invoice->school_id);
-        $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool($invoice->school_id);
+        $schoolId = (int) $invoice->school_id;
+        $therapists = $this->therapistService->listActiveTherapistsBySchool($schoolId);
+        $students = $this->studentService->listActiveStudentsBySchool($schoolId);
+        $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool($schoolId);
         $services = $serviceIds->isNotEmpty()
             ? $this->serviceCatalogService->listActiveForSelect()->whereIn('id', $serviceIds->toArray())
             : collect();

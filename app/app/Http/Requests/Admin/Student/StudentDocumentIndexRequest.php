@@ -19,6 +19,7 @@ final class StudentDocumentIndexRequest extends FormRequest
         return $user->can('viewAny', StudentDocument::class);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

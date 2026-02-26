@@ -17,6 +17,7 @@ class TherapistProfile extends Model
 {
     /** @use HasFactory<\Database\Factories\TherapistProfileFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [

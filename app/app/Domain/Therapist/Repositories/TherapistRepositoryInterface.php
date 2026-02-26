@@ -10,12 +10,21 @@ use App\DTOs\TherapistFilterDTO;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 interface TherapistRepositoryInterface
 {
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  array<string, mixed>  $profileData
+     */
     public function create(array $userData, array $profileData): TherapistProfile;
 
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  array<string, mixed>  $profileData
+     */
     public function update(User $user, array $userData, array $profileData): TherapistProfile;
 
     public function find(int $id): ?TherapistProfile;
@@ -24,12 +33,13 @@ interface TherapistRepositoryInterface
     public function list(TherapistFilterDTO $filters): Collection;
 
     /**
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
      */
     public function listForDataTables(TherapistFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User;
 
+    /** @return array<string, int> */
     public function getMetrics(?string $status = null): array;
 
     /** @return Collection<int, User> */

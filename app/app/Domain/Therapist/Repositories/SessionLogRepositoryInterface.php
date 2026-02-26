@@ -14,14 +14,22 @@ interface SessionLogRepositoryInterface
 {
     public function findForTherapist(User $therapist, int $sessionLogId): ?SessionLog;
 
-    /** @return Collection<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, SessionLog>
+     */
     public function getSessionLogsForTherapist(User $therapist, array $filters = []): Collection;
 
-    /** @return LengthAwarePaginator<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, SessionLog>
+     */
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
+    /** @param array<string, mixed> $data */
     public function create(array $data): SessionLog;
 
+    /** @param array<string, mixed> $data */
     public function update(SessionLog $sessionLog, array $data): SessionLog;
 
     public function delete(SessionLog $sessionLog): void;
@@ -44,18 +52,26 @@ interface SessionLogRepositoryInterface
     /** @return Collection<int, SessionLog> */
     public function getSessionLogsForSchedule(int $scheduleId): Collection;
 
-    /** @return Collection<int, Collection<int, SessionLog>> */
+    /**
+     * @param  array<int, int>  $scheduleIds
+     * @return Collection<int|string, Collection<int, SessionLog>>
+     */
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection;
 
-    /** @return LengthAwarePaginator<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, SessionLog>
+     */
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator;
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
      */
     public function listForDataTables(array $filters, DataTablesParamsDTO $params): array;
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
      */
     public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array;

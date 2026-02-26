@@ -84,14 +84,20 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
             $position->services()->sync($dto->serviceIds);
         }
 
-        return $position->fresh('services');
+        /** @var Position $freshPosition */
+        $freshPosition = $position->fresh('services');
+
+        return $freshPosition;
     }
 
     public function changeStatus(Position $position, ChangePositionStatusDTO $dto): Position
     {
         $position->update($dto->toArray());
 
-        return $position->fresh();
+        /** @var Position $freshPosition */
+        $freshPosition = $position->fresh();
+
+        return $freshPosition;
     }
 
     public function metrics(): array
@@ -118,7 +124,7 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
     }
 
     /**
-     * @param Builder<Position> $query
+     * @param  Builder<Position>  $query
      * @return Builder<Position>
      */
     private function applyFilters(Builder $query, PositionFilterDTO $filters): Builder

@@ -35,7 +35,7 @@ final class AttachSessionsRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
         $validator->after(function ($validator) {
             $invoice = $this->route('invoice');

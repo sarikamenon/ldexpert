@@ -16,6 +16,7 @@ class UpdatePasswordRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

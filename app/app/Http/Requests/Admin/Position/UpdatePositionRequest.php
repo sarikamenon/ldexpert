@@ -8,6 +8,7 @@ use App\Models\Position;
 
 final class UpdatePositionRequest extends PositionFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         /** @var Position|null $position */
@@ -19,6 +20,7 @@ final class UpdatePositionRequest extends PositionFormRequest
         ]);
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

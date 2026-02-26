@@ -27,6 +27,7 @@ final class StoreSessionLogDocumentRequest extends FormRequest
         return $user->can('create', [StudentDocument::class, $sessionLog]);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

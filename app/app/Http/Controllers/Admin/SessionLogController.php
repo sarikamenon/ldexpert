@@ -7,9 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\Transformers\SessionLogRowTransformer;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
-use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
-use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\Domain\User\Services\UserService;
 use App\Http\Controllers\Controller;
@@ -40,12 +38,10 @@ final class SessionLogController extends Controller
     ];
 
     public function __construct(
-        private readonly SessionLogRepositoryInterface $repository,
         private readonly SessionLogService $service,
         private readonly SessionLogIndexService $indexService,
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly SSAService $ssaService,
         private readonly StudentDocumentService $documentService,
     ) {}
 

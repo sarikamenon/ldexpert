@@ -97,7 +97,7 @@ final class StudentDocumentService
 
         $path = "student-documents/{$year}/{$month}/{$filename}";
 
-        $this->storageService->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 
         return $path;
     }

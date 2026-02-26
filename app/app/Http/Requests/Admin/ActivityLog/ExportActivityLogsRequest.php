@@ -13,6 +13,7 @@ class ExportActivityLogsRequest extends FormRequest
         return $this->user()?->role->value === 'admin';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

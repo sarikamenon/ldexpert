@@ -173,6 +173,7 @@ final class SchoolContractController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formData(): array
     {
         return [

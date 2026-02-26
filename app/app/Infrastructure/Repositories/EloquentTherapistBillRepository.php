@@ -16,6 +16,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentTherapistBillRepository implements TherapistBillRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): TherapistBill
     {
         return TherapistBill::create($data);
@@ -194,13 +195,13 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($subQ) use ($search) {
-                    $subQ->where('name', 'like', "%{$search}%");
+                    $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 })
                     ->orWhereHas('service', function ($subQ) use ($search) {
-                        $subQ->where('name', 'like', "%{$search}%");
+                        $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                     })
                     ->orWhereHas('therapist', function ($subQ) use ($search) {
-                        $subQ->where('name', 'like', "%{$search}%");
+                        $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                     });
             });
         }

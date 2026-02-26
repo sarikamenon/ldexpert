@@ -24,6 +24,7 @@ final class UpdateSSARequest extends FormRequest
         }
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
@@ -54,6 +55,7 @@ final class UpdateSSARequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

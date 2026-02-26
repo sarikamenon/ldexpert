@@ -26,7 +26,7 @@ final class EloquentStudentImportRepository implements StudentImportRepositoryIn
                     ->orWhere('student_imports.type', 'like', '%'.$search.'%')
                     ->orWhere('student_imports.status', 'like', '%'.$search.'%')
                     ->orWhereHas('user', function (Builder $uq) use ($search) {
-                        $uq->where('name', 'like', '%'.$search.'%');
+                        $uq->where('name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }

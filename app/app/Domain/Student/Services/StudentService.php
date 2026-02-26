@@ -14,6 +14,7 @@ use App\Mail\WelcomeStudentMail;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -67,7 +68,7 @@ final class StudentService
     }
 
     /**
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
      */
     public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array
     {
@@ -76,13 +77,14 @@ final class StudentService
 
     /**
      * @param  array{search?: string|null, status?: string|null}  $filters
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, User>}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
      */
     public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array
     {
         return $this->repository->listForDataTablesByTherapist($therapistId, $filters, $params);
     }
 
+    /** @return array<string, int> */
     public function getMetrics(?string $status = null): array
     {
         return $this->repository->getMetrics($status);

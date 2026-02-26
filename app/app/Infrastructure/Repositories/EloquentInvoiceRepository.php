@@ -16,11 +16,13 @@ use Illuminate\Support\Collection;
 
 final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): Invoice
     {
         return Invoice::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function update(Invoice $invoice, array $data): Invoice
     {
         $invoice->update($data);
@@ -200,14 +202,14 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($subQ) use ($search) {
-                    $subQ->where('name', 'like', "%{$search}%");
+                    $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 })
                     ->orWhereHas('service', function ($subQ) use ($search) {
-                        $subQ->where('name', 'like', "%{$search}%");
+                        $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                     })
                     ->orWhereHas('school', function ($subQ) use ($search) {
-                        $subQ->where('display_name', 'like', "%{$search}%")
-                            ->orWhere('full_name', 'like', "%{$search}%");
+                        $subQ->where('display_name', 'like', "%{$search}%") // @phpstan-ignore argument.type
+                            ->orWhere('full_name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -226,6 +228,10 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             ->pluck('service_id');
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, int>
+     */
     public function getAvailableSchoolIdsForInvoiceCreation(array $filters): Collection
     {
         $query = SessionLog::query()

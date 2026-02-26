@@ -16,6 +16,7 @@ abstract class StudentFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $ignoreUserId = null): array
     {
         $emailRule = Rule::unique('users', 'email');
@@ -45,6 +46,7 @@ abstract class StudentFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

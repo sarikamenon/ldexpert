@@ -495,6 +495,7 @@ final class StudentController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function referenceData(): array
     {
         return [

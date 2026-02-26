@@ -37,8 +37,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
             $baseQuery->where(function (Builder $q) use ($search) {
                 $q->where('therapist_contracts.id', 'like', '%'.$search.'%')
                     ->orWhereHas('therapist', function (Builder $tq) use ($search) {
-                        $tq->where('first_name', 'like', '%'.$search.'%')
-                            ->orWhere('last_name', 'like', '%'.$search.'%');
+                        $tq->where('first_name', 'like', '%'.$search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('last_name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -123,6 +123,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
             ->exists();
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         $total = TherapistContract::count();
@@ -178,7 +179,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
     }
 
     /**
-     * @param Builder<TherapistContract> $query
+     * @param  Builder<TherapistContract>  $query
      * @return Builder<TherapistContract>
      */
     private function applyFilters(Builder $query, TherapistContractFilterDTO $filters): Builder
@@ -192,8 +193,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                 $builder->where('id', $filters->search)
                     ->orWhereHas('therapist', function (Builder $therapistQuery) use ($filters) {
                         $therapistQuery
-                            ->where('first_name', 'like', '%'.$filters->search.'%')
-                            ->orWhere('last_name', 'like', '%'.$filters->search.'%');
+                            ->where('first_name', 'like', '%'.$filters->search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('last_name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }

@@ -9,7 +9,6 @@ use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Billing\Services\TherapistBillPdfService;
 use App\Domain\Billing\Services\TherapistBillService;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\CreateTherapistBillDTO;
 use App\DTOs\SendTherapistBillDTO;
@@ -49,7 +48,6 @@ final class TherapistBillController extends Controller
         private readonly TherapistBillPdfService $pdfService,
         private readonly TherapistBillRepositoryInterface $billRepository,
         private readonly TherapistService $therapistService,
-        private readonly StudentService $studentService,
         private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 

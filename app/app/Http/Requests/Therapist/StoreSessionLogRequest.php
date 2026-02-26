@@ -31,7 +31,8 @@ final class StoreSessionLogRequest extends FormRequest
         // When SSA is selected but student is not explicitly provided, infer student from SSA.
         $ssaId = $this->input('ssa_id');
         if ($ssaId && ! $this->filled('student_id')) {
-            $ssa = ServiceSupportAgreement::find($ssaId);
+            /** @var ServiceSupportAgreement|null $ssa */
+            $ssa = ServiceSupportAgreement::find((int) $ssaId);
 
             if ($ssa) {
                 $this->merge([
@@ -79,6 +80,7 @@ final class StoreSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $rules = [
@@ -107,6 +109,7 @@ final class StoreSessionLogRequest extends FormRequest
         return $rules;
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -165,7 +168,7 @@ final class StoreSessionLogRequest extends FormRequest
                 $sessionDate = $this->input('session_date');
                 if ($sessionDate) {
                     $session = Carbon::parse($sessionDate);
-                    if ($session->lt($ssa->start_date) || $session->gt($ssa->end_date)) {
+                    if ($session->lt($ssa->start_date) || ($ssa->end_date !== null && $session->gt($ssa->end_date))) {
                         $validator->errors()->add('session_date', 'Session date must fall within the SSA start and end dates.');
                     }
                 }

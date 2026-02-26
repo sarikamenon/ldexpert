@@ -15,13 +15,11 @@ final class StoreSchoolCalendarEventRequest extends FormRequest
     {
         /** @var \App\Models\User $user */
         $user = $this->user();
-        $role = $user->role instanceof Role
-            ? $user->role
-            : Role::tryFrom($user->role);
 
-        return $role === Role::ADMIN;
+        return $user->role === Role::ADMIN;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [
@@ -33,6 +31,7 @@ final class StoreSchoolCalendarEventRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

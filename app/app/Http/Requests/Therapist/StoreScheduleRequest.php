@@ -21,6 +21,7 @@ final class StoreScheduleRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $recurrenceTypes = array_map(
@@ -52,6 +53,7 @@ final class StoreScheduleRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

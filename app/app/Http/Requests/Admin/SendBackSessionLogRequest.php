@@ -16,6 +16,7 @@ final class SendBackSessionLogRequest extends FormRequest
         return $sessionLog !== null && ($this->user()?->can('sendBack', $sessionLog) ?? false);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [
@@ -23,6 +24,7 @@ final class SendBackSessionLogRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
