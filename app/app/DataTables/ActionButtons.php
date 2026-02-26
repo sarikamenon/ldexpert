@@ -18,7 +18,7 @@ final class ActionButtons
 
     private const ICON_EDIT = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
 
-    private const ICON_DOWNLOAD = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"></path><path d="M12 12v9"></path><path d="M8 16l4 4 4-4"></path><path d="M12 3v9"></path></svg>';
+    private const ICON_DOWNLOAD = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
 
     private const ICON_DELETE = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg>';
 
@@ -38,6 +38,8 @@ final class ActionButtons
     private const VARIANT_VIEW = 'bg-background text-foreground border border-border hover:bg-background/subtle';
 
     private const VARIANT_PRIMARY = 'bg-primary text-primary-foreground hover:bg-primary/90';
+
+    private const VARIANT_SECONDARY = 'bg-secondary text-secondary-foreground hover:bg-secondary/90';
 
     private const VARIANT_SUCCESS = 'bg-success text-success-foreground hover:bg-success/90';
 
@@ -72,7 +74,7 @@ final class ActionButtons
      */
     public static function edit(string $url, string $label = 'Edit', array $attrs = []): string
     {
-        return self::link($url, self::ICON_EDIT, self::VARIANT_SUCCESS, $label, $attrs);
+        return self::link($url, self::ICON_EDIT, self::VARIANT_SECONDARY, $label, $attrs);
     }
 
     /**
@@ -82,7 +84,7 @@ final class ActionButtons
      */
     public static function download(string $url, string $label = 'Download PDF', array $attrs = []): string
     {
-        return self::link($url, self::ICON_DOWNLOAD, self::VARIANT_PRIMARY, $label, $attrs);
+        return self::link($url, self::ICON_DOWNLOAD, self::VARIANT_SECONDARY, $label, $attrs);
     }
 
     /**

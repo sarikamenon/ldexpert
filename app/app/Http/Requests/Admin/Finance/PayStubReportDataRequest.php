@@ -19,7 +19,7 @@ final class PayStubReportDataRequest extends FormRequest
         $currentYear = (int) date('Y');
 
         return [
-            'filter_year' => ['required', 'integer', 'min:2026', 'max:'.$currentYear],
+            'filter_year' => ['required', 'integer', 'min:2025', 'max:'.$currentYear],
         ];
     }
 }

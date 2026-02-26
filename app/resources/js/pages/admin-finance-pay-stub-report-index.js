@@ -24,13 +24,12 @@ async function initPayStubTable() {
             },
         });
 
-        if (yearSelect) {
-            yearSelect.addEventListener('change', () => {
-                if (typeof window.jQuery !== 'undefined') {
-                    const dt = window.jQuery('#payStubTable').DataTable();
-                    if (dt && dt.ajax && dt.ajax.reload) {
-                        dt.ajax.reload();
-                    }
+        // Use jQuery for change event since Select2 triggers jQuery events
+        if (yearSelect && typeof window.jQuery !== 'undefined') {
+            window.jQuery(yearSelect).on('change', () => {
+                const dt = window.jQuery('#payStubTable').DataTable();
+                if (dt && dt.ajax && dt.ajax.reload) {
+                    dt.ajax.reload();
                 }
             });
         }
