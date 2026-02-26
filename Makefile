@@ -78,7 +78,7 @@ cs-fix:
 	$(PHP_SHELL) 'cd /var/www/html/app && vendor/bin/pint'
 
 analyse:
-	$(PHP_SHELL) 'cd /var/www/html/app && vendor/bin/phpstan analyse'
+	$(PHP_SHELL) 'cd /var/www/html/app && vendor/bin/phpstan analyse --memory-limit=512M'
 
 qa:
 	$(DC) exec -T app bash -lc 'cd /var/www/html/app && vendor/bin/pint --test'

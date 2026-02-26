@@ -58,7 +58,7 @@ final class ActionButtons
     /**
      * View button (link).
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     public static function view(string $url, string $label = 'View', array $attrs = []): string
     {
@@ -68,7 +68,7 @@ final class ActionButtons
     /**
      * Edit button (link).
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     public static function edit(string $url, string $label = 'Edit', array $attrs = []): string
     {
@@ -78,7 +78,7 @@ final class ActionButtons
     /**
      * Download button (link).
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     public static function download(string $url, string $label = 'Download PDF', array $attrs = []): string
     {
@@ -88,7 +88,7 @@ final class ActionButtons
     /**
      * Activate button (generic button element).
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     public static function activate(string $label = 'Activate', array $attrs = []): string
     {
@@ -98,7 +98,7 @@ final class ActionButtons
     /**
      * Deactivate button (generic button element).
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     public static function deactivate(string $label = 'Deactivate', array $attrs = []): string
     {
@@ -108,7 +108,7 @@ final class ActionButtons
     /**
      * Delete button inside a POST form with method spoofing.
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     public static function delete(
         string $actionUrl,
@@ -188,7 +188,7 @@ final class ActionButtons
     /**
      * Render an anchor (<a>) action button.
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     private static function link(string $url, string $icon, string $variant, string $title, array $attrs = []): string
     {
@@ -201,7 +201,7 @@ final class ActionButtons
     /**
      * Render a <button> action button (no form).
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     private static function button(string $icon, string $variant, string $title, array $attrs = []): string
     {
@@ -214,7 +214,7 @@ final class ActionButtons
     /**
      * Render a <form> containing a single action button.
      *
-     * @param  array<string, string>  $attrs
+     * @param  array<string, string|int|null>  $attrs
      */
     private static function formButton(
         string $actionUrl,
@@ -242,6 +242,8 @@ final class ActionButtons
 
     /**
      * Build the full class string, merging BTN_BASE + variant + any extra 'class' attr.
+     *
+     * @param  array<string, string|int|null>  $attrs
      */
     private static function buildClasses(string $variant, array &$attrs): string
     {
@@ -256,11 +258,13 @@ final class ActionButtons
 
     /**
      * Extract and remove a custom key from attrs, returning its value or a default.
+     *
+     * @param  array<string, string|int|null>  $attrs
      */
     private static function extractAttr(array &$attrs, string $key, string $default = ''): string
     {
         if (isset($attrs[$key])) {
-            $value = $attrs[$key];
+            $value = (string) $attrs[$key];
             unset($attrs[$key]);
 
             return $value;
@@ -271,6 +275,8 @@ final class ActionButtons
 
     /**
      * Render extra HTML attributes from a key-value array.
+     *
+     * @param  array<string, string|int|null>  $attrs
      */
     private static function renderAttrs(array $attrs): string
     {
