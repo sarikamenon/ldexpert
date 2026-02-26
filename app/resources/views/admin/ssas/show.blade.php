@@ -38,6 +38,17 @@
                         Will activate when therapist is assigned
                     @endif
                 </span>
+            @elseif ($ssa->status === \App\Enums\SSAStatus::DEACTIVATED)
+                @if ($ssa->canBeActivated())
+                    <x-ui::button variant="success" class="change-status-btn" data-ssa-id="{{ $ssa->id }}"
+                        data-status="active">
+                        Activate
+                    </x-ui::button>
+                @else
+                    <span class="text-sm text-foreground/70">
+                        Assign a therapist to reactivate this SSA
+                    </span>
+                @endif
             @endif
         </x-slot>
     </x-ui::show-header>

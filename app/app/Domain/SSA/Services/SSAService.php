@@ -91,10 +91,17 @@ final class SSAService
 
     public function changeStatus(ServiceSupportAgreement $ssa, ChangeSSAStatusDTO $dto): ServiceSupportAgreement
     {
-        // Cannot change status if already completed or deactivated
-        if (in_array($ssa->status, [SSAStatus::COMPLETED, SSAStatus::DEACTIVATED], true)) {
+        // COMPLETED is always terminal — no transitions allowed
+        if ($ssa->status === SSAStatus::COMPLETED) {
             throw ValidationException::withMessages([
-                'status' => 'Cannot change status of a completed or deactivated SSA.',
+                'status' => 'Cannot change status of a completed SSA.',
+            ]);
+        }
+
+        // DEACTIVATED can only transition to ACTIVE (reactivation)
+        if ($ssa->status === SSAStatus::DEACTIVATED && $dto->status !== SSAStatus::ACTIVE) {
+            throw ValidationException::withMessages([
+                'status' => 'A deactivated SSA can only be reactivated.',
             ]);
         }
 
