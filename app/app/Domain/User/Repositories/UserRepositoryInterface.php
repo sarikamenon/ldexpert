@@ -39,7 +39,10 @@ interface UserRepositoryInterface
     /** @return Collection<int, User> */
     public function listActiveTherapistsForSelect(): Collection;
 
-    /** @param array<int, int> $serviceIds */
+    /**
+     * @param  array<int, int>  $serviceIds
+     * @return Collection<int, User>
+     */
     public function listActiveTherapistsForServices(array $serviceIds): Collection;
 
     /**

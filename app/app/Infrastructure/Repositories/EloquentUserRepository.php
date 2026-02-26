@@ -136,7 +136,10 @@ class EloquentUserRepository implements UserRepositoryInterface
             ->get();
     }
 
-    /** @param array<int, int> $serviceIds */
+    /**
+     * @param  array<int, int>  $serviceIds
+     * @return Collection<int, User>
+     */
     public function listActiveTherapistsForServices(array $serviceIds): Collection
     {
         return User::query()

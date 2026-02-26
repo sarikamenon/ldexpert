@@ -34,6 +34,7 @@ final class ActionButtons
 
     // ── Variant CSS classes ────────────────────────────────────
 
+    /** @phpstan-ignore classConstant.unused */
     private const VARIANT_VIEW = 'bg-background text-foreground border border-border hover:bg-background/subtle';
 
     private const VARIANT_PRIMARY = 'bg-primary text-primary-foreground hover:bg-primary/90';
@@ -56,6 +57,8 @@ final class ActionButtons
 
     /**
      * View button (link).
+     *
+     * @param  array<string, string>  $attrs
      */
     public static function view(string $url, string $label = 'View', array $attrs = []): string
     {
@@ -64,6 +67,8 @@ final class ActionButtons
 
     /**
      * Edit button (link).
+     *
+     * @param  array<string, string>  $attrs
      */
     public static function edit(string $url, string $label = 'Edit', array $attrs = []): string
     {
@@ -72,6 +77,8 @@ final class ActionButtons
 
     /**
      * Download button (link).
+     *
+     * @param  array<string, string>  $attrs
      */
     public static function download(string $url, string $label = 'Download PDF', array $attrs = []): string
     {
@@ -80,6 +87,8 @@ final class ActionButtons
 
     /**
      * Activate button (generic button element).
+     *
+     * @param  array<string, string>  $attrs
      */
     public static function activate(string $label = 'Activate', array $attrs = []): string
     {
@@ -88,6 +97,8 @@ final class ActionButtons
 
     /**
      * Deactivate button (generic button element).
+     *
+     * @param  array<string, string>  $attrs
      */
     public static function deactivate(string $label = 'Deactivate', array $attrs = []): string
     {
@@ -96,6 +107,8 @@ final class ActionButtons
 
     /**
      * Delete button inside a POST form with method spoofing.
+     *
+     * @param  array<string, string>  $attrs
      */
     public static function delete(
         string $actionUrl,
@@ -174,6 +187,8 @@ final class ActionButtons
 
     /**
      * Render an anchor (<a>) action button.
+     *
+     * @param  array<string, string>  $attrs
      */
     private static function link(string $url, string $icon, string $variant, string $title, array $attrs = []): string
     {
@@ -185,6 +200,8 @@ final class ActionButtons
 
     /**
      * Render a <button> action button (no form).
+     *
+     * @param  array<string, string>  $attrs
      */
     private static function button(string $icon, string $variant, string $title, array $attrs = []): string
     {
@@ -196,6 +213,8 @@ final class ActionButtons
 
     /**
      * Render a <form> containing a single action button.
+     *
+     * @param  array<string, string>  $attrs
      */
     private static function formButton(
         string $actionUrl,
