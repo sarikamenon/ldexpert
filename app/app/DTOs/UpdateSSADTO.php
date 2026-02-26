@@ -9,6 +9,7 @@ use App\Enums\ServiceFrequency;
 final class UpdateSSADTO
 {
     public function __construct(
+        public readonly ?int $assignedTherapistId,
         /**
          * @var array<int>|null
          */
@@ -47,6 +48,9 @@ final class UpdateSSADTO
         }
 
         return new self(
+            assignedTherapistId: array_key_exists('assigned_therapist_id', $data)
+                ? ($data['assigned_therapist_id'] !== null && $data['assigned_therapist_id'] !== '' ? (int) $data['assigned_therapist_id'] : null)
+                : -1,
             additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'] ?? null,
             endDate: $data['end_date'] ?? null,
@@ -69,6 +73,9 @@ final class UpdateSSADTO
     {
         $array = [];
 
+        if ($this->assignedTherapistId !== -1) {
+            $array['assigned_therapist_id'] = $this->assignedTherapistId;
+        }
         if ($this->startDate !== null) {
             $array['start_date'] = $this->startDate;
         }

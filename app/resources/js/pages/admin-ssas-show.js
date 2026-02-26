@@ -90,6 +90,24 @@ function initDeliveryProgressChart() {
     });
 }
 
+// Fetch therapists filtered by service IDs
+async function fetchFilteredTherapists(serviceIds, csrfToken) {
+    const urlEl = document.getElementById('therapists-for-service-url');
+    if (!urlEl) return null;
+
+    const baseUrl = JSON.parse(urlEl.textContent);
+    const params = new URLSearchParams();
+    serviceIds.forEach((id) => params.append('service_ids[]', id));
+    const url = serviceIds.length ? `${baseUrl}?${params.toString()}` : baseUrl;
+
+    const response = await fetch(url, {
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    });
+
+    if (!response.ok) return null;
+    return response.json();
+}
+
 // Setup assignment actions
 function setupAssignmentActions() {
     const assignBtn = document.getElementById('assignTherapistBtn');
@@ -100,20 +118,21 @@ function setupAssignmentActions() {
         assignBtn.addEventListener('click', async () => {
             const ssaId = assignBtn.dataset.ssaId;
 
-            // Get therapists from a hidden select or fetch from page
-            const therapistSelect = document.getElementById('therapist_select_for_assignment');
-            if (!therapistSelect) {
-                errorAlert('Therapist list not available. Please refresh the page.');
+            // Get SSA service IDs and fetch filtered therapists
+            const serviceIdsEl = document.getElementById('ssa-service-ids');
+            const serviceIds = serviceIdsEl ? JSON.parse(serviceIdsEl.textContent) : [];
+
+            showLoading('Loading therapists...');
+            const therapists = await fetchFilteredTherapists(serviceIds, csrfToken);
+            closeAlert();
+
+            if (!therapists || therapists.length === 0) {
+                errorAlert('No therapists available for the services in this SSA.');
                 return;
             }
 
-            // Build options object for SweetAlert2
             const inputOptions = new Map();
-            Array.from(therapistSelect.options).forEach((option) => {
-                if (option.value) {
-                    inputOptions.set(option.value, option.text);
-                }
-            });
+            therapists.forEach((t) => inputOptions.set(String(t.id), t.name));
 
             const result = await Swal.fire({
                 title: 'Assign Therapist?',

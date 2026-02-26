@@ -29,6 +29,7 @@ final class UpdateSSARequest extends FormRequest
         $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
 
         return [
+            'assigned_therapist_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'additional_service_ids' => ['nullable', 'array'],
             'additional_service_ids.*' => [
                 'integer',

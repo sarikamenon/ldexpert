@@ -213,6 +213,9 @@
                 @json(['id' => $ssa->primaryService->id, 'supports_frequency' => $ssa->primaryService->is_frequency_service])
             </script>
         @endif
+        <script type="application/json" id="therapists-for-service-url">
+            @json(route('admin.ssas.therapists-for-service'))
+        </script>
     </x-ui::card>
 
     <div class="flex justify-end gap-3">

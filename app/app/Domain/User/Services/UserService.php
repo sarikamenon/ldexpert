@@ -72,4 +72,10 @@ class UserService
     {
         return $this->repository->listActiveTherapistsForSelect();
     }
+
+    /** @param array<int, int> $serviceIds */
+    public function listActiveTherapistsForServices(array $serviceIds): Collection
+    {
+        return $this->repository->listActiveTherapistsForServices($serviceIds);
+    }
 }

@@ -193,7 +193,12 @@
                                     </a>
                                 @elseif ($context !== 'therapist')
                                     <x-ui::button type="button" class="assign-therapist-btn" size="sm"
-                                        data-ssa-id="{{ $ssa->id }}" title="Assign Therapist">
+                                        data-ssa-id="{{ $ssa->id }}"
+                                        data-service-ids="{{ json_encode(array_merge(
+                                            [$ssa->primary_service_id],
+                                            $ssa->additionalServices->pluck('id')->all()
+                                        )) }}"
+                                        title="Assign Therapist">
                                         Assign
                                     </x-ui::button>
                                 @else
@@ -303,10 +308,7 @@
     @endif
 </x-ui::card>
 
-{{-- Hidden select for therapist assignment (used by admin-ssas-index.js) --}}
-<select id="therapist_select_for_assignment" class="hidden">
-    <option value="">Select a therapist</option>
-    @foreach ($therapists ?? [] as $therapist)
-        <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
-    @endforeach
-</select>
+{{-- Endpoint URL for therapist assignment AJAX (used by admin-ssas-index.js) --}}
+<script type="application/json" id="therapists-for-service-url">
+    @json(route('admin.ssas.therapists-for-service'))
+</script>

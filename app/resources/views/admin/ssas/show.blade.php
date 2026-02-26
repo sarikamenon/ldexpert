@@ -150,13 +150,16 @@
                 @endif
             </div>
 
-            {{-- Hidden select for therapist assignment --}}
-            <select id="therapist_select_for_assignment" class="hidden">
-                <option value="">Select a therapist</option>
-                @foreach ($therapists ?? [] as $therapist)
-                    <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
-                @endforeach
-            </select>
+            {{-- Data for therapist assignment AJAX --}}
+            <script type="application/json" id="therapists-for-service-url">
+                @json(route('admin.ssas.therapists-for-service'))
+            </script>
+            <script type="application/json" id="ssa-service-ids">
+                @json(array_merge(
+                    [$ssa->primary_service_id],
+                    $ssa->additionalServices->pluck('id')->all()
+                ))
+            </script>
 
             @if ($assignmentHistory->count() > 0)
                 <div class="space-y-4">

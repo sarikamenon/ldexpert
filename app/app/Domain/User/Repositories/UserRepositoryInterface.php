@@ -34,6 +34,9 @@ interface UserRepositoryInterface
 
     public function listActiveTherapistsForSelect(): Collection;
 
+    /** @param array<int, int> $serviceIds */
+    public function listActiveTherapistsForServices(array $serviceIds): Collection;
+
     public function findByIds(array $ids): Collection;
 
     public function findById(int $id): ?User;
