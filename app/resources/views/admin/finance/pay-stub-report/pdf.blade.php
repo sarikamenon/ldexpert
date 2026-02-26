@@ -237,7 +237,7 @@
                         <td class="amount">${{ number_format($row['total_deductions'], 2) }}</td>
                         <td></td>
                         <td>Total Net Pay</td>
-                        <td class="amount">${{ number_format($row['total_net'], 2) }}</td>
+                        <td class="amount">${{ number_format($row['ytd_total_net'], 2) }}</td>
                     </tr>
                 </tfoot>
             </table>

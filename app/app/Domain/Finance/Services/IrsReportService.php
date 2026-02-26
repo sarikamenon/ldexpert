@@ -119,6 +119,7 @@ final class IrsReportService
                 'ytd_additional_pay' => 0.0,
                 'ytd_federal_tax' => 0.0,
                 'ytd_federal_med_tax' => 0.0,
+                'ytd_total_net' => $ytd,
                 'total_gross' => $rowTotalGross,
                 'total_deductions' => $totalDeductions,
                 'total_net' => $netPay,
