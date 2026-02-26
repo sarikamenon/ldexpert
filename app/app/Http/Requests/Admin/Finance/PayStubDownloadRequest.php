@@ -20,7 +20,7 @@ final class PayStubDownloadRequest extends FormRequest
         $currentYear = (int) date('Y');
 
         return [
-            'year' => ['required', 'integer', 'min:2026', 'max:'.$currentYear],
+            'year' => ['required', 'integer', 'min:2025', 'max:'.$currentYear],
             'therapist_id' => ['required', 'integer', Rule::exists('users', 'id')],
         ];
     }
