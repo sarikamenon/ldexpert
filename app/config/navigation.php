@@ -125,11 +125,6 @@ return [
                 'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
                 'children' => [
                     [
-                        'label' => 'IRS Report',
-                        'route' => 'admin.finance.irs-report.index',
-                        'active' => 'admin.finance.irs-report.*',
-                    ],
-                    [
                         'label' => 'Dashboard',
                         'route' => 'admin.finance.dashboard',
                         'active' => 'admin.finance.dashboard',
@@ -164,6 +159,11 @@ return [
                         'label' => 'Expenses',
                         'route' => 'admin.expenses.index',
                         'active' => ['admin.expenses.*'],
+                    ],
+                    [
+                        'label' => 'Pay Stub Report',
+                        'route' => 'admin.finance.pay-stub-report.index',
+                        'active' => 'admin.finance.pay-stub-report.*',
                     ],
                 ],
             ],

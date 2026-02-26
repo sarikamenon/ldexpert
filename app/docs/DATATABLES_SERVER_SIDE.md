@@ -69,7 +69,7 @@ List tables in this project use **server-side processing**: paging, search, orde
 | Students (therapist) | `therapist.students.data` | `StudentController::data()` (Therapist) | `TherapistStudentRowTransformer` |
 | Ledger accounts | `admin.ledger.accounts.data` | `LedgerAccountController::data()` | `LedgerAccountRowTransformer` |
 | Ledger account transactions | `admin.ledger.accounts.transactions.data` | `LedgerAccountController::transactionsData()` | `LedgerEntryRowTransformer` |
-| IRS report | `admin.finance.irs-report.data` | `IrsReportController::data()` | `IrsReportRowTransformer` |
+| Pay Stub report | `admin.finance.pay-stub-report.data` | `PayStubReportController::data()` | `PayStubReportRowTransformer` |
 | Student schedules (admin student detail) | `admin.students.schedules.data` | `StudentController::scheduleData()` | `ScheduleRowTransformer` |
 
 ## Reference implementation: Admin Students list

@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\Billing\TherapistBillController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExpenseCategoryController;
 use App\Http\Controllers\Admin\ExpenseController;
-use App\Http\Controllers\Admin\Finance\IrsReportController;
+use App\Http\Controllers\Admin\Finance\PayStubReportController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\InvoicePaymentController;
@@ -158,10 +158,10 @@ Route::middleware('role:admin')
         // Finance Dashboard
         Route::get('finance/dashboard', [FinanceDashboardController::class, 'index'])->name('finance.dashboard');
 
-        // IRS Report
-        Route::post('finance/irs-report/data', [IrsReportController::class, 'data'])->name('finance.irs-report.data');
-        Route::get('finance/irs-report', [IrsReportController::class, 'index'])->name('finance.irs-report.index');
-        Route::get('finance/irs-report/export', [IrsReportController::class, 'export'])->name('finance.irs-report.export');
+        // Pay Stub Report
+        Route::post('finance/pay-stub-report/data', [PayStubReportController::class, 'data'])->name('finance.pay-stub-report.data');
+        Route::get('finance/pay-stub-report/download', [PayStubReportController::class, 'download'])->name('finance.pay-stub-report.download');
+        Route::get('finance/pay-stub-report', [PayStubReportController::class, 'index'])->name('finance.pay-stub-report.index');
 
         // Ledger Accounts
         Route::post('ledger/accounts/data', [LedgerAccountController::class, 'data'])->name('ledger.accounts.data');
