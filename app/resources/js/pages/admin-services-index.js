@@ -31,63 +31,63 @@ async function initServicesTable() {
 }
 
 function setupStatusToggles() {
-    const buttons = document.querySelectorAll('.toggle-service-status');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    // Use event delegation so dynamically-loaded DataTable rows are handled
+    document.body.addEventListener('click', async (event) => {
+        const button = event.target.closest('.toggle-service-status');
+        if (!button) return;
 
-    buttons.forEach((button) => {
-        button.addEventListener('click', async () => {
-            const serviceId = button.dataset.service;
-            const currentStatus = button.dataset.status;
-            const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            const action = nextStatus === 'active' ? 'activate' : 'deactivate';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const serviceId = button.dataset.service;
+        const currentStatus = button.dataset.status;
+        const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const action = nextStatus === 'active' ? 'activate' : 'deactivate';
 
-            const result = await confirmDialog({
-                title: `${action.charAt(0).toUpperCase() + action.slice(1)} Service?`,
-                text: `You are about to ${action} this service.`,
-                icon: 'warning',
-                confirmButtonText: `Yes, ${action}`,
+        const result = await confirmDialog({
+            title: `${action.charAt(0).toUpperCase() + action.slice(1)} Service?`,
+            text: `You are about to ${action} this service.`,
+            icon: 'warning',
+            confirmButtonText: `Yes, ${action}`,
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            showLoading('Updating service status...');
+            const response = await fetch(`/admin/services/${serviceId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ status: nextStatus }),
             });
 
-            if (!result.isConfirmed) {
-                return;
-            }
+            const data = await response.json();
 
-            try {
-                showLoading('Updating service status...');
-                const response = await fetch(`/admin/services/${serviceId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        Accept: 'application/json',
-                    },
-                    body: JSON.stringify({ status: nextStatus }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    await successToast(data.message);
-                    if (typeof window.jQuery !== 'undefined') {
-                        const dt = window.jQuery('#servicesTable').DataTable();
-                        if (dt && dt.ajax && dt.ajax.reload) {
-                            dt.ajax.reload();
-                        } else {
-                            window.location.reload();
-                        }
+            if (response.ok && data.success) {
+                await successToast(data.message);
+                if (typeof window.jQuery !== 'undefined') {
+                    const dt = window.jQuery('#servicesTable').DataTable();
+                    if (dt && dt.ajax && dt.ajax.reload) {
+                        dt.ajax.reload();
                     } else {
                         window.location.reload();
                     }
                 } else {
-                    errorAlert(data.message || 'Failed to update service status.');
+                    window.location.reload();
                 }
-            } catch (error) {
-                console.error('Failed to update service status', error);
-                errorAlert('An unexpected error occurred.');
-            } finally {
-                closeAlert();
+            } else {
+                errorAlert(data.message || 'Failed to update service status.');
             }
-        });
+        } catch (error) {
+            console.error('Failed to update service status', error);
+            errorAlert('An unexpected error occurred.');
+        } finally {
+            closeAlert();
+        }
     });
 }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
 use App\Models\School;
 use App\Models\User;
 
@@ -64,9 +65,9 @@ final class LedgerAccountRowTransformer
         $transactionsCell = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary-700">'
             .(int) $txCount.'</span>';
 
-        $iconView = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-        $actionsCell = '<div class="flex items-center justify-end">'
-            .'<a href="'.e($ledgerShowUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" title="View Ledger" aria-label="View ledger for '.e($name).'">'.$iconView.'</a></div>';
+        $actionsCell = ActionButtons::wrap(
+            ActionButtons::view($ledgerShowUrl, 'View Ledger'),
+        );
 
         return [
             $nameCell,

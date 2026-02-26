@@ -28,63 +28,63 @@ async function initPositionsTable() {
 }
 
 function setupStatusToggles() {
-    const buttons = document.querySelectorAll('.toggle-position-status');
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    // Use event delegation so dynamically-loaded DataTable rows are handled
+    document.body.addEventListener('click', async (event) => {
+        const button = event.target.closest('.toggle-position-status');
+        if (!button) return;
 
-    buttons.forEach((button) => {
-        button.addEventListener('click', async () => {
-            const positionId = button.dataset.position;
-            const currentStatus = button.dataset.status;
-            const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            const action = nextStatus === 'active' ? 'activate' : 'deactivate';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const positionId = button.dataset.position;
+        const currentStatus = button.dataset.status;
+        const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const action = nextStatus === 'active' ? 'activate' : 'deactivate';
 
-            const result = await confirmDialog({
-                title: `${action.charAt(0).toUpperCase() + action.slice(1)} Position?`,
-                text: `You are about to ${action} this position.`,
-                icon: 'warning',
-                confirmButtonText: `Yes, ${action}`,
+        const result = await confirmDialog({
+            title: `${action.charAt(0).toUpperCase() + action.slice(1)} Position?`,
+            text: `You are about to ${action} this position.`,
+            icon: 'warning',
+            confirmButtonText: `Yes, ${action}`,
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            showLoading('Updating position status...');
+            const response = await fetch(`/admin/positions/${positionId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    Accept: 'application/json',
+                },
+                body: JSON.stringify({ status: nextStatus }),
             });
 
-            if (!result.isConfirmed) {
-                return;
-            }
+            const data = await response.json();
 
-            try {
-                showLoading('Updating position status...');
-                const response = await fetch(`/admin/positions/${positionId}/status`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        Accept: 'application/json',
-                    },
-                    body: JSON.stringify({ status: nextStatus }),
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    await successToast(data.message);
-                    if (typeof window.jQuery !== 'undefined') {
-                        const dt = window.jQuery('#positionsTable').DataTable();
-                        if (dt && dt.ajax && dt.ajax.reload) {
-                            dt.ajax.reload();
-                        } else {
-                            window.location.reload();
-                        }
+            if (response.ok && data.success) {
+                await successToast(data.message);
+                if (typeof window.jQuery !== 'undefined') {
+                    const dt = window.jQuery('#positionsTable').DataTable();
+                    if (dt && dt.ajax && dt.ajax.reload) {
+                        dt.ajax.reload();
                     } else {
                         window.location.reload();
                     }
                 } else {
-                    errorAlert(data.message || 'Failed to update position status.');
+                    window.location.reload();
                 }
-            } catch (error) {
-                console.error('Failed to update position status', error);
-                errorAlert('An unexpected error occurred.');
-            } finally {
-                closeAlert();
+            } else {
+                errorAlert(data.message || 'Failed to update position status.');
             }
-        });
+        } catch (error) {
+            console.error('Failed to update position status', error);
+            errorAlert('An unexpected error occurred.');
+        } finally {
+            closeAlert();
+        }
     });
 }
 

@@ -92,14 +92,17 @@
         <x-school.overview-details :school="$school" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'students' && isset($students))
         <x-admin.students-list :students="$students" :filters="$studentFilters ?? []" :schools="$schools ?? []" :statuses="$statuses ?? []"
-            context="detail" />
+            :datatable-url="$datatableUrl ?? null" :school-id="$schoolId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'therapists' && isset($therapists))
-        <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []" context="detail" />
+        <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []"
+            :datatable-url="$datatableUrl ?? null" :school-id="$schoolId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'contracts' && isset($contracts))
-        <x-admin.school-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []" context="detail" />
+        <x-admin.school-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :school-id="$schoolId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []"
-            :therapists="$therapists ?? []" :services="$services ?? []" context="detail" />
+            :therapists="$therapists ?? []" :services="$services ?? []"
+            :datatable-url="$datatableUrl ?? null" :school-id="$schoolId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'calendar')
         @include('admin.schools._calendar-events', [
             'school' => $school,

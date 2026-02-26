@@ -27,6 +27,7 @@ final class SSADataRequest extends FormRequest
             'filter_student_id' => ['nullable', 'integer'],
             'filter_service_id' => ['nullable', 'integer'],
             'filter_therapist_id' => ['nullable', 'integer'],
+            'filter_school_id' => ['nullable', 'integer', 'exists:schools,id'],
         ];
     }
 }

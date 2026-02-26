@@ -7,6 +7,7 @@
     'metrics' => null,
     'context' => 'index', // 'index' or 'detail'
     'datatableUrl' => null,
+    'therapistId' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -58,6 +59,9 @@
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="contracts">
             @endif
+            @if ($therapistId)
+                <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
+            @endif
         </x-slot:filters>
 
         <x-slot:actions>
@@ -71,11 +75,12 @@
     @if (!empty($datatableUrl) || $contracts->count() > 0)
         <div class="overflow-x-auto">
             <table id="therapistContractsTable" class="w-full display"
-                @if (!empty($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
+                @if (!empty($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif
+                @if ($context === 'detail' && !empty($datatableUrl)) data-hide-therapist-column="true" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
-                        @if ($context !== 'detail')
+                        @if ($context !== 'detail' || !empty($datatableUrl))
                             <th>Therapist</th>
                         @endif
                         <th>Start Date</th>

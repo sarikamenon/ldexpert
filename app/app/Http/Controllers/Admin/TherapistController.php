@@ -7,20 +7,15 @@ namespace App\Http\Controllers\Admin;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\DataTables\Transformers\TherapistRowTransformer;
-use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
-use App\DTOs\SessionLogIndexDTO;
-use App\DTOs\SSAFilterDTO;
-use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Enums\EmployeeType;
@@ -66,10 +61,8 @@ final class TherapistController extends Controller
         private readonly UserService $userService,
         private readonly StudentService $studentService,
         private readonly SSAService $ssaService,
-        private readonly TherapistContractService $therapistContractService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly PositionCatalogService $positionCatalogService,
     ) {}
 
@@ -98,6 +91,8 @@ final class TherapistController extends Controller
             'search' => $request->input('filter_search'),
             'status' => $request->input('filter_status'),
             'position_id' => $request->input('filter_position_id'),
+            'school_id' => $request->input('filter_school_id'),
+            'student_id' => $request->input('filter_student_id'),
         ];
         $filters = TherapistFilterDTO::fromRequest($filterData);
 
@@ -186,44 +181,33 @@ final class TherapistController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'students') {
-            $viewData['students'] = $this->studentService->listStudentsByTherapist(
-                $therapist->id,
-                $request->query('search'),
-                $request->query('status'),
-                $request->integer('per_page', 15)
-            );
+            $viewData['students'] = collect();
             $viewData['studentFilters'] = $request->query();
             $viewData['schools'] = $this->schoolRepository->listAllForSelect();
             $viewData['statuses'] = UserStatus::cases();
+            $viewData['datatableUrl'] = route('admin.students.data');
+            $viewData['therapistId'] = $therapist->id;
         } elseif ($activeTab === 'ssas') {
-            $filters = SSAFilterDTO::fromArray(
-                array_merge($request->query(), ['therapist_id' => $therapist->id])
-            );
-            $viewData['ssas'] = $this->ssaService->paginate($filters);
+            $viewData['ssas'] = collect();
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
             $viewData['students'] = $this->studentService->listActiveStudentsByTherapist($therapist->id);
             // Don't show therapist filter in therapist detail view as it's redundant
             $viewData['therapists'] = [];
             $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
+            $viewData['datatableUrl'] = route('admin.ssas.data');
+            $viewData['therapistId'] = $therapist->id;
         } elseif ($activeTab === 'contracts') {
-            $filters = TherapistContractFilterDTO::fromArray(
-                array_merge($request->query(), ['therapist_id' => $therapist->id])
-            );
-            $viewData['contracts'] = $this->therapistContractService->paginate($filters);
+            $viewData['contracts'] = collect();
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
+            $viewData['datatableUrl'] = route('admin.contracts.therapists.data');
+            $viewData['therapistId'] = $therapist->id;
         } elseif ($activeTab === 'session_logs') {
-            $dto = SessionLogIndexDTO::fromArray(
-                array_merge($request->query(), ['therapist_id' => $therapist->id])
-            );
-            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
-
-            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
-            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
-            $viewData['sessionLogRows'] = $sessionLogData['rows'];
-            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
+            $viewData['datatableUrl'] = route('admin.session-logs.data');
+            $viewData['therapistId'] = $therapist->id;
         }
 
         return view('admin.therapists.show', $viewData);

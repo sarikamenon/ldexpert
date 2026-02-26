@@ -118,6 +118,11 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
         if ($filters->schoolId) {
             $this->applySchoolFilter($baseQuery, $filters->schoolId);
         }
+        if ($filters->studentId) {
+            $baseQuery->whereHas('assignedSSAs', function ($q) use ($filters) {
+                $q->where('student_id', $filters->studentId); // @phpstan-ignore argument.type
+            });
+        }
 
         $queryForTotal = (clone $baseQuery)->distinct();
         $recordsTotal = $queryForTotal->count('users.id');

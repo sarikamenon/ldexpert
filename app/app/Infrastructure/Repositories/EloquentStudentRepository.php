@@ -109,6 +109,11 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
                 $q->where('school_id', $filters->schoolId); // @phpstan-ignore argument.type
             });
         }
+        if ($filters->therapistId) {
+            $baseQuery->whereHas('studentProfile.ssas', function ($q) use ($filters) {
+                $q->where('assigned_therapist_id', $filters->therapistId); // @phpstan-ignore argument.type
+            });
+        }
 
         $queryForTotal = (clone $baseQuery)->distinct();
         $recordsTotal = $queryForTotal->count('users.id');

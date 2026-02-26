@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await initServerSideDataTable(table.id ? `#${table.id}` : '.session-log-table', dataUrl, {
             order: [[0, 'desc']],
-            pageLength: 15,
+            pageLength: 25,
             columnDefs: [{ orderable: false, targets: -1 }],
             getExtraData(d) {
                 if (!form) return;

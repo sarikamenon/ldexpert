@@ -31,8 +31,8 @@ export function initDataTable(selector, customOptions = {}) {
                 console.log('Initializing DataTable for:', selector);
                 
                 const defaultOptions = {
-                    pageLength: 10,
-                    lengthMenu: [5, 10, 25, 50, 100],
+                    pageLength: 25,
+                    lengthMenu: [10, 25, 50, 100],
                     order: [],
                     columnDefs: [{
                         orderable: false,

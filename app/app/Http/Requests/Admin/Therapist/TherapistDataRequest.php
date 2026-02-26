@@ -22,6 +22,8 @@ final class TherapistDataRequest extends FormRequest
             'filter_search' => ['nullable', 'string', 'max:255'],
             'filter_status' => ['nullable', Rule::in(UserStatus::values())],
             'filter_position_id' => ['nullable', 'integer', 'exists:positions,id'],
+            'filter_school_id' => ['nullable', 'integer', 'exists:schools,id'],
+            'filter_student_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 }

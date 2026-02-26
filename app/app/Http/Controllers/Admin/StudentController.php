@@ -12,7 +12,6 @@ use App\DataTables\Transformers\StudentRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
@@ -24,7 +23,6 @@ use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
-use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\StoreStudentImportDTO;
 use App\DTOs\StudentFilterDTO;
@@ -68,7 +66,6 @@ final class StudentController extends Controller
         private readonly SSAService $ssaService,
         private readonly ScheduleService $scheduleService,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly StudentCommentService $commentService,
         private readonly StudentDocumentService $documentService,
         private readonly PositionCatalogService $positionCatalogService,
@@ -127,6 +124,7 @@ final class StudentController extends Controller
             'search' => $request->input('filter_search'),
             'status' => $request->input('filter_status'),
             'school_id' => $request->input('filter_school_id'),
+            'therapist_id' => $request->input('filter_therapist_id'),
             'per_page' => $params->length,
         ];
         $filters = StudentFilterDTO::fromRequest($filterData);
@@ -238,26 +236,21 @@ final class StudentController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'ssas') {
-            $filters = SSAFilterDTO::fromArray(
-                array_merge($request->query(), ['student_id' => $student->id])
-            );
-            $viewData['ssas'] = $this->ssaService->paginate($filters);
+            $viewData['ssas'] = collect();
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
             // Don't show student filter in student detail view as it's redundant
             $viewData['students'] = [];
             $viewData['therapists'] = $this->therapistService->listActiveTherapists();
             $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
+            $viewData['datatableUrl'] = route('admin.ssas.data');
+            $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'therapists') {
-            $viewData['therapists'] = $this->therapistService->paginateTherapistsByStudent(
-                $student->id,
-                $request->query('search'),
-                $request->query('status'),
-                $request->query('position_id') ? (int) $request->query('position_id') : null,
-                $request->integer('per_page', 15)
-            );
+            $viewData['therapists'] = collect();
             $viewData['therapistFilters'] = $request->query();
             $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
+            $viewData['datatableUrl'] = route('admin.therapists.data');
+            $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'schedule') {
             $viewData['schedules'] = collect();
             $viewData['scheduleFilters'] = $request->query();
@@ -268,16 +261,10 @@ final class StudentController extends Controller
             $viewData['scheduleDatatableUrl'] = route('admin.students.schedules.data', $student);
             $viewData['scheduleStudentId'] = $student->id;
         } elseif ($activeTab === 'session_logs') {
-            $dto = SessionLogIndexDTO::fromArray(
-                array_merge($request->query(), ['student_id' => $student->id])
-            );
-            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
-
-            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
-            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
-            $viewData['sessionLogRows'] = $sessionLogData['rows'];
-            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
+            $viewData['datatableUrl'] = route('admin.session-logs.data');
+            $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {

@@ -212,9 +212,9 @@
                 <p class="text-foreground/70 text-center py-4">No assignment history available.</p>
             @endif
         </x-ui::card>
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+        <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :ssa-id="$ssaId ?? null" context="detail" />
     @endif
 
     <x-slot name="scripts">

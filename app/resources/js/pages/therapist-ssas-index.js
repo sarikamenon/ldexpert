@@ -20,6 +20,7 @@ async function initSSATable() {
                 if (!form) return;
                 d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
                 d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                d.filter_student_id = form.querySelector('[name="student_id"]')?.value ?? '';
             },
         });
     } catch (error) {

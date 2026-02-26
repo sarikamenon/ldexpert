@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
 use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Support\DateHelper;
@@ -83,18 +84,14 @@ final class SessionLogRowTransformer
         $statusCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.e($statusLabel).'</span>';
 
         $viewUrl = route('admin.session-logs.show', $log);
-        $actionsCell = '<div class="flex items-center gap-1">';
-        $actionsCell .= '<a href="'.e($viewUrl).'" class="inline-flex items-center justify-center w-8 h-8 rounded transition-colors border border-border text-foreground hover:bg-background/subtle" title="View">';
-        $actionsCell .= '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>';
+        $buttons = [ActionButtons::view($viewUrl, 'View')];
 
         if ($log->status === SessionLogStatus::SUBMITTED) {
-            $approveUrl = route('admin.session-logs.approve', $log);
-            $cancelUrl = route('admin.session-logs.cancel', $log);
-            $token = e(csrf_token());
-            $actionsCell .= '<form method="POST" action="'.e($approveUrl).'" class="inline"><input type="hidden" name="_token" value="'.$token.'"><button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded transition-colors bg-primary text-primary-foreground hover:bg-primary/90" title="Approve" data-confirm-title="Approve session?" data-confirm-text="This will mark the session as approved." data-confirm-icon="question"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg></button></form>';
-            $actionsCell .= '<form method="POST" action="'.e($cancelUrl).'" class="inline"><input type="hidden" name="_token" value="'.$token.'"><button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded transition-colors border border-primary text-primary hover:bg-primary/10" title="Cancel" data-confirm-title="Cancel session?" data-confirm-text="This will cancel the submitted session." data-confirm-icon="warning"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button></form>';
+            $buttons[] = ActionButtons::approve(route('admin.session-logs.approve', $log));
+            $buttons[] = ActionButtons::cancel(route('admin.session-logs.cancel', $log));
         }
-        $actionsCell .= '</div>';
+
+        $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [
             $dateTimeCell,

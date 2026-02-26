@@ -15,7 +15,7 @@ async function initExpenseCategoriesTable() {
 
         await initServerSideDataTable('#expenseCategoriesTable', dataUrl, {
             order: [[0, 'asc']],
-            pageLength: 10,
+            pageLength: 25,
             columnDefs: [
                 { orderable: false, targets: -1 },
             ],

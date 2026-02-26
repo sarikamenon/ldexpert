@@ -105,16 +105,17 @@
     @elseif (($activeTab ?? 'dashboard') === 'overview')
         <x-therapist.overview-details :therapist="$therapist" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'contracts' && isset($contracts))
-        <x-admin.therapist-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []" context="detail" />
+        <x-admin.therapist-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
-            :services="$services ?? []" context="detail" />
+            :services="$services ?? []" :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'students' && isset($students))
         <x-admin.students-list :students="$students" :filters="$studentFilters ?? []" :schools="$schools ?? []" :statuses="$statuses ?? []"
-            context="detail" />
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+            :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+        <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
     @endif
 
     <x-slot name="scripts">

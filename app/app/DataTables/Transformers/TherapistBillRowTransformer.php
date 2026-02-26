@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
 use App\Enums\TherapistBillStatus;
 use App\Models\TherapistBill;
 
@@ -33,12 +34,10 @@ final class TherapistBillRowTransformer
         $statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.e($statusLabel).'</span>';
         $dueDate = $bill->due_date ? $bill->due_date->format('M d, Y') : '—';
 
-        $iconView = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-        $iconDownload = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1"></path><path d="M12 12v9"></path><path d="M8 16l4 4 4-4"></path><path d="M12 3v9"></path></svg>';
-        $actions = '<div class="flex space-x-1">'
-            .'<a href="'.e($showUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" title="View Bill" aria-label="View bill '.e($bill->bill_number).'">'.$iconView.'</a>'
-            .'<a href="'.e($downloadUrl).'" class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" title="Download PDF" aria-label="Download bill '.e($bill->bill_number).' as PDF">'.$iconDownload.'</a>'
-            .'</div>';
+        $actions = ActionButtons::wrap(
+            ActionButtons::view($showUrl, 'View Bill'),
+            ActionButtons::download($downloadUrl, 'Download PDF'),
+        );
 
         return [
             $billNumberBtn,
