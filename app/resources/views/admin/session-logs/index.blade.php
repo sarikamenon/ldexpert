@@ -47,6 +47,15 @@
                     @endforeach
                 </x-ui::select>
 
+                <x-ui::select name="status" placeholder="All Statuses" :inline="true" class="w-36">
+                    <option value="">All Statuses</option>
+                    @foreach ($statuses ?? [] as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                            {{ $status->label() }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+
                 <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
                     title="From Date" class="w-36" />
 
