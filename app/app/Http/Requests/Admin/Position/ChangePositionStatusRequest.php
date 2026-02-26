@@ -15,6 +15,7 @@ final class ChangePositionStatusRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $statuses = array_map(static fn (PositionStatus $status) => $status->value, PositionStatus::cases());

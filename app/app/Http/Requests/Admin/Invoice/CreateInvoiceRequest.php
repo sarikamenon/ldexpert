@@ -47,7 +47,7 @@ final class CreateInvoiceRequest extends FormRequest
     /**
      * Configure the validator instance.
      */
-    public function withValidator($validator): void
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
         $validator->after(function ($validator) {
             if ($this->has('school_id') && $this->has('session_log_ids')) {

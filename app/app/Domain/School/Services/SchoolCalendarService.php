@@ -26,8 +26,8 @@ final class SchoolCalendarService
 
     /**
      * @param  array<int>  $schoolIds
+     * @return Collection<int, SchoolCalendarEvent>
      */
-    /** @return Collection<int, SchoolCalendarEvent> */
     public function listBySchoolsAndRange(array $schoolIds, CarbonInterface $start, CarbonInterface $end): Collection
     {
         return $this->repository->listBySchoolsAndRange($schoolIds, $start, $end);

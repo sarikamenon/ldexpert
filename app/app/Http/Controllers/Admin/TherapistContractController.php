@@ -174,6 +174,7 @@ final class TherapistContractController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formData(): array
     {
         return [

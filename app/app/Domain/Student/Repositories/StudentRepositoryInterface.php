@@ -10,12 +10,21 @@ use App\DTOs\StudentFilterDTO;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 interface StudentRepositoryInterface
 {
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  array<string, mixed>  $profileData
+     */
     public function create(array $userData, array $profileData): StudentProfile;
 
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  array<string, mixed>  $profileData
+     */
     public function update(User $user, array $userData, array $profileData): StudentProfile;
 
     public function find(int $id): ?StudentProfile;
@@ -24,18 +33,19 @@ interface StudentRepositoryInterface
     public function list(StudentFilterDTO $filters): LengthAwarePaginator;
 
     /**
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, User>}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
      */
     public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     /**
      * @param  array{search?: string|null, status?: string|null}  $filters
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, User>}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
      */
     public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array;
 
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User;
 
+    /** @return array<string, int> */
     public function getMetrics(?string $status = null): array;
 
     /**

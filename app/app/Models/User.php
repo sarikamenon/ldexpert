@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
  * @property Role $role
  * @property UserStatus $status
  */
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -105,7 +106,7 @@ class User extends Authenticatable
     /**
      * Get the profile based on user role.
      */
-    public function getProfileAttribute()
+    public function getProfileAttribute(): TherapistProfile|StudentProfile|ParentProfile|AdminProfile|null
     {
         return match ($this->role) {
             Role::THERAPIST => $this->therapistProfile,
@@ -118,7 +119,7 @@ class User extends Authenticatable
     /**
      * Get the students for a therapist.
      *
-     * @return BelongsToMany<User, $this>
+     * @return BelongsToMany<User, $this, TherapistStudent, 'pivot'>
      */
     public function students(): BelongsToMany
     {
@@ -135,7 +136,7 @@ class User extends Authenticatable
     /**
      * Get the therapists for a student.
      *
-     * @return BelongsToMany<User, $this>
+     * @return BelongsToMany<User, $this, TherapistStudent, 'pivot'>
      */
     public function therapists(): BelongsToMany
     {

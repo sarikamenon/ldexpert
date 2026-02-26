@@ -9,8 +9,10 @@ use App\Models\InvoicePaymentAllocation;
 
 interface InvoicePaymentRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function createPayment(array $data): InvoicePayment;
 
+    /** @param array<string, mixed> $data */
     public function createAllocation(array $data): InvoicePaymentAllocation;
 
     public function deleteAllocationsForPayment(InvoicePayment $payment): void;

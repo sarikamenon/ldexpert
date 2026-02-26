@@ -18,6 +18,7 @@ final class StoreStudentCommentRequest extends FormRequest
         return $user->can('create', [StudentComment::class, $student]);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

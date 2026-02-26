@@ -5,19 +5,18 @@ declare(strict_types=1);
 namespace App\Domain\SSA\Services;
 
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateSSADTO;
 use App\DTOs\StoreSSAImportDTO;
+use App\Enums\Role;
 use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAImportRowStatus;
 use App\Enums\SSAImportStatus;
 use App\Enums\SSAImportType;
-use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Jobs\ProcessSSAImportJob;
 use App\Models\School;
@@ -35,7 +34,6 @@ final class SSAImportService
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly SSAService $ssaService,
         private readonly StudentRepositoryInterface $studentRepository,
-        private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly StorageServiceInterface $storageService,
@@ -100,6 +98,10 @@ final class SSAImportService
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $rowData
+     * @param  array<string, mixed>  $template
+     */
     public function processRow(SSAImport $import, int $rowNumber, array $rowData, array $template): void
     {
         $importRow = SSAImportRow::where('ssa_import_id', $import->id)
@@ -220,7 +222,7 @@ final class SSAImportService
             }
 
             // Check for duplicates (overlapping SSAs)
-            $duplicateCheck = $this->checkDuplicate($student->id, $primaryService->id, $mappedData['start_date'], $mappedData['end_date']);
+            $duplicateCheck = $this->checkDuplicate($student->id, $primaryService->id, (string) $mappedData['start_date'], (string) $mappedData['end_date']);
             if ($duplicateCheck !== null) {
                 $importRow->update([
                     'status' => SSAImportRowStatus::DUPLICATE,
@@ -268,6 +270,9 @@ final class SSAImportService
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $mappedData
+     */
     public function lookupStudent(array $mappedData): ?User
     {
         // Try email first
@@ -310,6 +315,10 @@ final class SSAImportService
         return null;
     }
 
+    /**
+     * @param  array<string, mixed>  $template
+     * @return array<int, string>
+     */
     public function validateFileStructure(SSAImport $import, array $template): array
     {
         $errors = [];
@@ -337,7 +346,7 @@ final class SSAImportService
         }
 
         // Normalize headers
-        $headers = array_map('trim', $headers);
+        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
 
         $errors = [];
 
@@ -364,6 +373,9 @@ final class SSAImportService
         return $errors;
     }
 
+    /**
+     * @return array<int, array<string, string>>
+     */
     public function parseCsvFromStorage(string $filePath): array
     {
         $rows = [];
@@ -391,7 +403,7 @@ final class SSAImportService
         }
 
         // Normalize headers
-        $headers = array_map('trim', $headers);
+        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
 
         // Parse data rows
         while (($row = fgetcsv($tempFile)) !== false) {
@@ -414,6 +426,11 @@ final class SSAImportService
         return $rows;
     }
 
+    /**
+     * @param  array<string, mixed>  $rowData
+     * @param  array<string, mixed>  $template
+     * @return array<string, string>
+     */
     public function mapColumns(array $rowData, array $template): array
     {
         $mapped = [];
@@ -428,6 +445,11 @@ final class SSAImportService
         return $mapped;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<int, int>  $additionalServiceIds
+     * @return array<int, string>
+     */
     public function validateRowData(array $data, Service $primaryService, array $additionalServiceIds): array
     {
         $errors = [];
@@ -499,6 +521,9 @@ final class SSAImportService
         return null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getTemplate(SSAImportType $type): array
     {
         $config = config('ssa-import');
@@ -515,7 +540,7 @@ final class SSAImportService
 
         $path = config('ssa-import.s3.path_prefix', 'ssa-imports')."/{$year}/{$month}/{$filename}";
 
-        $this->storageService->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 
         return $path;
     }

@@ -26,6 +26,7 @@ abstract class SSAFormRequest extends FormRequest
         }
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(): array
     {
         $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
@@ -67,6 +68,7 @@ abstract class SSAFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

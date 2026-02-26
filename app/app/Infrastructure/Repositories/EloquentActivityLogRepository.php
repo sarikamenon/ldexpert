@@ -13,11 +13,13 @@ use Illuminate\Support\Collection;
 
 final class EloquentActivityLogRepository implements ActivityLogRepositoryInterface
 {
+    /** @param array<string, mixed> $attributes */
     public function create(array $attributes): ActivityLog
     {
         return ActivityLog::create($attributes);
     }
 
+    /** @return Collection<int, ActivityLog> */
     public function recent(int $limit = 5): Collection
     {
         return ActivityLog::with('user')
@@ -26,6 +28,10 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
             ->get();
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, ActivityLog>
+     */
     public function paginate(array $filters, int $perPage): LengthAwarePaginator
     {
         $query = $this->baseQuery();
@@ -35,6 +41,10 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
         return $query->paginate($perPage)->withQueryString();
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, ActivityLog>}
+     */
     public function listForDataTables(array $filters, DataTablesParamsDTO $params): array
     {
         $baseQuery = $this->baseQuery();
@@ -49,7 +59,7 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
                     ->orWhere('activity_logs.action', 'like', '%'.$search.'%')
                     ->orWhere('activity_logs.model_type', 'like', '%'.$search.'%')
                     ->orWhereHas('user', function (Builder $uq) use ($search) {
-                        $uq->where('name', 'like', '%'.$search.'%');
+                        $uq->where('name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -79,6 +89,10 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, ActivityLog>
+     */
     public function all(array $filters): Collection
     {
         $query = $this->baseQuery();
@@ -88,6 +102,7 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
         return $query->get();
     }
 
+    /** @return Collection<int, string> */
     public function distinctActions(): Collection
     {
         return ActivityLog::distinct()
@@ -96,8 +111,10 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
             ->values();
     }
 
+    /** @return Collection<int, string> */
     public function distinctModelTypes(): Collection
     {
+        /** @var Collection<int, string> */
         return ActivityLog::distinct()
             ->pluck('model_type')
             ->map(static fn (?string $type) => $type ? class_basename($type) : null)
@@ -112,7 +129,10 @@ final class EloquentActivityLogRepository implements ActivityLogRepositoryInterf
         return ActivityLog::with('user')->latest('created_at');
     }
 
-    /** @param Builder<ActivityLog> $query */
+    /**
+     * @param  Builder<ActivityLog>  $query
+     * @param  array<string, mixed>  $filters
+     */
     private function applyFilters(Builder $query, array $filters): void
     {
         if (! empty($filters['user_id'])) {

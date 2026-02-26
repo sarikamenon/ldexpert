@@ -7,8 +7,8 @@ namespace App\DTOs;
 final class ImportStudentResultDTO
 {
     /**
-     * @param list<array{row: int, errors: list<string>}> $errors
-     * @param list<array{row: int, reason: string}> $skippedRows
+     * @param  list<array{row: int, errors: list<string>}>  $errors
+     * @param  list<array{row: int, reason: string}>  $skippedRows
      */
     public function __construct(
         public readonly int $totalRows = 0,

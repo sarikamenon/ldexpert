@@ -25,6 +25,7 @@ final class UpdateScheduleRequest extends FormRequest
         return $schedule && $schedule->therapist_id === $this->user()?->id;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $recurrenceTypes = array_map(
@@ -60,6 +61,7 @@ final class UpdateScheduleRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

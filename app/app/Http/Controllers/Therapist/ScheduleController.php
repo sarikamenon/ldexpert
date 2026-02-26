@@ -188,7 +188,7 @@ final class ScheduleController extends Controller
         $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
         $serviceOptions = $ssaServices->map(function (Service $service) {
             /** @var \App\Models\Pivots\SSAService|null $pivot */
-            $pivot = $service->pivot;
+            $pivot = $service->getRelation('pivot');
 
             return [
                 'service_id' => $service->id,
@@ -310,8 +310,8 @@ final class ScheduleController extends Controller
                     'school' => $schedule->school?->display_name,
                     'student' => $schedule->student?->name,
                     'service' => $schedule->service?->name,
-                    'status' => $schedule->status?->value,
-                    'billing_status' => $schedule->billing_status?->value,
+                    'status' => $schedule->status->value,
+                    'billing_status' => $schedule->billing_status->value,
                     'is_group' => $schedule->is_group,
                     'is_past' => $isPast,
                     'is_billed' => $isBilled,
@@ -398,9 +398,7 @@ final class ScheduleController extends Controller
         $services = $ssas
             ->flatMap(function ($ssa) {
                 $allServices = collect([$ssa->primaryService])->filter();
-                if ($ssa->services) {
-                    $allServices = $allServices->merge($ssa->services);
-                }
+                $allServices = $allServices->merge($ssa->services);
 
                 return $allServices;
             })

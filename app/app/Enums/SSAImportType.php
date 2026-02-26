@@ -10,6 +10,7 @@ enum SSAImportType: string
     case RSM = 'RSM';
     case MARVIN = 'MARVIN';
 
+    /** @return array<int, string> */
     public static function values(): array
     {
         return array_column(self::cases(), 'value');

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\Contract;
 
 final class UpdateSchoolContractRequest extends SchoolContractFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return $this->baseRules();

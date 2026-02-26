@@ -40,8 +40,8 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $baseQuery->where(function (Builder $q) use ($search) {
                 $q->where('school_contracts.id', 'like', '%'.$search.'%')
                     ->orWhereHas('school', function (Builder $sq) use ($search) {
-                        $sq->where('full_name', 'like', '%'.$search.'%')
-                            ->orWhere('display_name', 'like', '%'.$search.'%');
+                        $sq->where('full_name', 'like', '%'.$search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('display_name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -126,6 +126,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             ->exists();
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         $total = SchoolContract::count();
@@ -181,7 +182,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
     }
 
     /**
-     * @param Builder<SchoolContract> $query
+     * @param  Builder<SchoolContract>  $query
      * @return Builder<SchoolContract>
      */
     private function applyFilters(Builder $query, SchoolContractFilterDTO $filters): Builder
@@ -194,8 +195,8 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $query->where(function (Builder $builder) use ($filters) {
                 $builder->where('id', $filters->search)
                     ->orWhereHas('school', function (Builder $schoolQuery) use ($filters) {
-                        $schoolQuery->where('full_name', 'like', '%'.$filters->search.'%')
-                            ->orWhere('display_name', 'like', '%'.$filters->search.'%');
+                        $schoolQuery->where('full_name', 'like', '%'.$filters->search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('display_name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }

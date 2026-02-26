@@ -27,6 +27,7 @@ class ServiceSupportAgreement extends Model
 {
     /** @use HasFactory<\Database\Factories\ServiceSupportAgreementFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -77,7 +78,7 @@ class ServiceSupportAgreement extends Model
         return $this->belongsTo(Service::class, 'primary_service_id');
     }
 
-    /** @return BelongsToMany<Service, $this> */
+    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'ssa_services', 'ssa_id', 'service_id')
@@ -87,7 +88,7 @@ class ServiceSupportAgreement extends Model
             ->withTimestamps();
     }
 
-    /** @return BelongsToMany<Service, $this> */
+    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
     public function additionalServices(): BelongsToMany
     {
         return $this->services()->wherePivot('is_primary', false);

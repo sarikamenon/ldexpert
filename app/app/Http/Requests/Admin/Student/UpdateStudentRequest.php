@@ -8,6 +8,7 @@ use App\Models\User;
 
 final class UpdateStudentRequest extends StudentFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         /** @var User $student */

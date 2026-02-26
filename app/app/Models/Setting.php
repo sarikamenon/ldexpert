@@ -76,6 +76,7 @@ class Setting extends Model
         return $setting;
     }
 
+    /** @return array<string, mixed> */
     public static function getGroup(string $group): array
     {
         $settings = self::where('group', $group)->get();

@@ -67,13 +67,14 @@ final class TherapistService
     }
 
     /**
-     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, \App\Models\User>}
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Database\Eloquent\Collection<int, \App\Models\User>}
      */
     public function listForDataTables(TherapistFilterDTO $filters, DataTablesParamsDTO $params): array
     {
         return $this->repository->listForDataTables($filters, $params);
     }
 
+    /** @return array<string, int> */
     public function getMetrics(?string $status = null): array
     {
         return $this->repository->getMetrics($status);

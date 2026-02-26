@@ -23,6 +23,7 @@ use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +49,9 @@ final class ScheduleService
         return $this->repository->findForTherapist($therapist, $scheduleId);
     }
 
+    /**
+     * @param  array<int, string>  $relations
+     */
     public function findForTherapistWithRelations(User $therapist, int $scheduleId, array $relations = []): ?Schedule
     {
         $schedule = $this->repository->findForTherapist($therapist, $scheduleId);
@@ -96,7 +100,7 @@ final class ScheduleService
         return $this->repository->getStudentsForTherapist($therapist);
     }
 
-    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
+    /** @return Collection<int, array<string, mixed>> */
     public function getStudentServiceMappings(User $therapist): Collection
     {
         return $this->repository->getStudentServiceMappings($therapist);
@@ -395,9 +399,11 @@ final class ScheduleService
      */
     public function generateRecurringOccurrences(Schedule $parentSchedule, array $studentIds, bool $isGroup): Collection
     {
-        if ($parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
+        if (! $parentSchedule->recurrence_type || $parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
             return collect([]);
         }
+
+        $recurrenceType = $parentSchedule->recurrence_type;
 
         /** @var User $therapist */
         $therapist = $this->userRepository->findById($parentSchedule->therapist_id);
@@ -426,8 +432,8 @@ final class ScheduleService
         $currentEnd = $localEnd->copy();
 
         // First occurrence is the parent; start generating from next interval
-        $currentStart = $this->nextRecurrenceDate($currentStart, $parentSchedule->recurrence_type);
-        $currentEnd = $this->nextRecurrenceDate($currentEnd, $parentSchedule->recurrence_type);
+        $currentStart = $this->nextRecurrenceDate($currentStart, $recurrenceType);
+        $currentEnd = $this->nextRecurrenceDate($currentEnd, $recurrenceType);
 
         while ($currentStart->format('Y-m-d') <= $endDate->format('Y-m-d')) {
             // Convert current Local occurrence to UTC for storage/validation
@@ -469,8 +475,8 @@ final class ScheduleService
                 ]));
             }
 
-            $currentStart = $this->nextRecurrenceDate($currentStart, $parentSchedule->recurrence_type);
-            $currentEnd = $this->nextRecurrenceDate($currentEnd, $parentSchedule->recurrence_type);
+            $currentStart = $this->nextRecurrenceDate($currentStart, $recurrenceType);
+            $currentEnd = $this->nextRecurrenceDate($currentEnd, $recurrenceType);
         }
 
         return $occurrences;
@@ -586,7 +592,7 @@ final class ScheduleService
         return $cursor->toDateString();
     }
 
-    private function nextRecurrenceDate(Carbon $date, RecurrenceType $type): Carbon
+    private function nextRecurrenceDate(CarbonInterface $date, RecurrenceType $type): CarbonInterface
     {
         return match ($type) {
             RecurrenceType::DAILY => $date->copy()->addDay(),
@@ -615,6 +621,9 @@ final class ScheduleService
         });
     }
 
+    /**
+     * @param  array<int, int>  $scheduleIds
+     */
     public function bulkUpdateBillingStatus(User $therapist, array $scheduleIds, BillingStatus $status): int
     {
         return DB::transaction(function () use ($therapist, $scheduleIds, $status): int {

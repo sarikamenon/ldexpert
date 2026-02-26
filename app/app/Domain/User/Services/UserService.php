@@ -24,6 +24,7 @@ class UserService
         return $this->repository->create($dto, $role);
     }
 
+    /** @param array<string, mixed> $profileData */
     public function createWithProfile(CreateUserDTO $dto, string $role, array $profileData = []): User
     {
         $user = $this->repository->create($dto, $role);
@@ -45,7 +46,10 @@ class UserService
             default => null,
         };
 
-        return $user->fresh();
+        /** @var User $freshUser */
+        $freshUser = $user->fresh();
+
+        return $freshUser;
     }
 
     /** @return Collection<int, \App\Models\User> */
@@ -54,6 +58,7 @@ class UserService
         return $this->repository->listByRole($role->value);
     }
 
+    /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User
     {
         return $this->repository->updateProfile($user, $data);

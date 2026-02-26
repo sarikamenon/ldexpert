@@ -18,10 +18,10 @@ class AnalyticsService
      *     total: int,
      *     active: int,
      *     inactive: int,
-     *     by_state: array<string, int>,
-     *     by_type: array<string, int>,
-     *     growth_trend: array<int, array<string, mixed>>,
-     *     by_manager: array<string, int>,
+     *     by_state: array<string, array<int, mixed>>,
+     *     by_type: array<string, array<int, mixed>>,
+     *     growth_trend: array<string, array<int, mixed>>,
+     *     by_manager: array<string, array<int, mixed>>,
      *     recent_additions: array<int, array<string, mixed>>
      * }
      */
@@ -46,10 +46,10 @@ class AnalyticsService
      * @return array{
      *     total: int,
      *     active: int,
-     *     by_position: array<string, int>,
-     *     by_employee_type: array<string, int>,
-     *     by_state: array<string, int>,
-     *     growth_trend: array<int, array<string, mixed>>,
+     *     by_position: array<string, array<int, mixed>>,
+     *     by_employee_type: array<string, array<int, mixed>>,
+     *     by_state: array<string, array<int, mixed>>,
+     *     growth_trend: array<string, array<int, mixed>>,
      *     recent_additions: array<int, array<string, mixed>>
      * }
      */
@@ -84,9 +84,9 @@ class AnalyticsService
      *     users: array{
      *         total: int,
      *         active: int,
-     *         by_role: array<string, int>
+     *         by_role: array<string, array<int, mixed>>
      *     },
-     *     activity_summary: array<string, int|float>
+     *     activity_summary: array<string, array<int, mixed>>
      * }
      */
     public function getOverallAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array

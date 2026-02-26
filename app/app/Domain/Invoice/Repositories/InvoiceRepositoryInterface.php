@@ -13,8 +13,10 @@ use Illuminate\Support\Collection;
 
 interface InvoiceRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): Invoice;
 
+    /** @param array<string, mixed> $data */
     public function update(Invoice $invoice, array $data): Invoice;
 
     public function find(int $id): ?Invoice;

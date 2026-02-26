@@ -59,8 +59,10 @@ interface DashboardRepositoryInterface
     /** @return Collection<string, ServiceSupportAgreement> */
     public function getSSAStatusDistribution(): Collection;
 
+    /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array;
 
+    /** @return array<string, array<int, mixed>> */
     public function getUtilizationTrendData(): array;
 
     /** @return Collection<int, ServiceSupportAgreement> */

@@ -52,6 +52,7 @@ final class AnalyticsController extends Controller
         ]);
     }
 
+    /** @return array{0: Carbon, 1: Carbon} */
     private function getDateRange(AnalyticsFilterRequest $request): array
     {
         $dateRange = $request->input('date_range', 'last_30_days');

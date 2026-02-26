@@ -46,8 +46,8 @@ final class SessionLogDocumentController extends Controller
                 'id' => $document->id,
                 'file_name' => $document->file_name,
                 'document_type' => $document->document_type->label(),
-                'uploaded_by_name' => $document->uploadedBy->name,
-                'created_at' => $document->created_at->toIso8601String(),
+                'uploaded_by_name' => $document->uploadedBy?->name,
+                'created_at' => $document->created_at?->toIso8601String(),
             ],
         ]);
     }

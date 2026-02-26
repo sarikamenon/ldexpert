@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\SSA\Services;
 
-use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
-use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\SSAMinutesSummaryDTO;
 use App\Enums\ScheduleStatus;
 use App\Enums\SessionLogStatus;
@@ -15,10 +13,7 @@ use App\Models\SessionLog;
 
 final class SSAMinutesSummaryService
 {
-    public function __construct(
-        private readonly ScheduleRepositoryInterface $scheduleRepository,
-        private readonly SessionLogRepositoryInterface $sessionLogRepository,
-    ) {}
+    public function __construct() {}
 
     public function getMinutesSummaryForSSA(ServiceSupportAgreement $ssa): SSAMinutesSummaryDTO
     {

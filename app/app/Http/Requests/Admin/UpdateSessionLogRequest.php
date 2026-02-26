@@ -15,6 +15,7 @@ final class UpdateSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'admin';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $rateTypes = RateType::values();

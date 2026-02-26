@@ -74,14 +74,20 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
     {
         $service->update($dto->toArray());
 
-        return $service->fresh();
+        /** @var Service $freshService */
+        $freshService = $service->fresh();
+
+        return $freshService;
     }
 
     public function changeStatus(Service $service, ChangeServiceStatusDTO $dto): Service
     {
         $service->update($dto->toArray());
 
-        return $service->fresh();
+        /** @var Service $freshService */
+        $freshService = $service->fresh();
+
+        return $freshService;
     }
 
     public function metrics(): array
@@ -98,7 +104,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
     }
 
     /**
-     * @param Builder<Service> $query
+     * @param  Builder<Service>  $query
      * @return Builder<Service>
      */
     private function applyFilters(Builder $query, ServiceFilterDTO $filters): Builder

@@ -11,6 +11,7 @@ use App\DTOs\SchoolFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Models\School;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 interface SchoolRepositoryInterface
@@ -19,7 +20,7 @@ interface SchoolRepositoryInterface
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator;
 
     /**
-     * @return array{recordsTotal:int,recordsFiltered:int,rows:Collection<int,School>}
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:EloquentCollection<int,School>}
      */
     public function listForDataTables(SchoolFilterDTO $filters, DataTablesParamsDTO $params): array;
 

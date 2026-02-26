@@ -25,6 +25,7 @@ final class StoreStudentDocumentRequest extends FormRequest
         return $user->can('create', [StudentDocument::class, $student]);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

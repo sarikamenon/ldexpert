@@ -29,7 +29,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->first();
     }
 
-    /** @return Collection<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, SessionLog>
+     */
     public function getSessionLogsForTherapist(User $therapist, array $filters = []): Collection
     {
         $query = SessionLog::query()
@@ -61,7 +64,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
-    /** @return LengthAwarePaginator<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, SessionLog>
+     */
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()
@@ -93,11 +99,13 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->paginate($perPage);
     }
 
+    /** @param array<string, mixed> $data */
     public function create(array $data): SessionLog
     {
         return SessionLog::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function update(SessionLog $sessionLog, array $data): SessionLog
     {
         $sessionLog->update($data);
@@ -244,7 +252,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->get();
     }
 
-    /** @return Collection<int, Collection<int, SessionLog>> */
+    /**
+     * @param  array<int, int>  $scheduleIds
+     * @return Collection<int|string, Collection<int, SessionLog>>
+     */
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection
     {
         $query = SessionLog::query()
@@ -254,10 +265,14 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $query->where('therapist_id', $therapist->id);
         }
 
+        /** @var Collection<int|string, Collection<int, SessionLog>> */
         return $query->get()->groupBy('schedule_id');
     }
 
-    /** @return LengthAwarePaginator<int, SessionLog> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return LengthAwarePaginator<int, SessionLog>
+     */
     public function paginateForAdmin(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()
@@ -299,6 +314,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         return $query->paginate($perPage);
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
     public function listForDataTables(array $filters, DataTablesParamsDTO $params): array
     {
         $query = SessionLog::query()
@@ -336,10 +355,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $search = $params->searchValue;
             $query->where(function (Builder $q) use ($search) {
                 $q->where('session_logs.id', 'like', '%'.$search.'%')
-                    ->orWhereHas('student', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('school', fn (Builder $b) => $b->where('display_name', 'like', '%'.$search.'%')->orWhere('full_name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('therapist', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('service', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'));
+                    ->orWhereHas('student', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%')) // @phpstan-ignore argument.type
+                    ->orWhereHas('school', fn (Builder $b) => $b->where('display_name', 'like', '%'.$search.'%')->orWhere('full_name', 'like', '%'.$search.'%')) // @phpstan-ignore argument.type, argument.type
+                    ->orWhereHas('therapist', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%')) // @phpstan-ignore argument.type
+                    ->orWhereHas('service', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%')); // @phpstan-ignore argument.type
             });
         }
         $recordsFiltered = (clone $query)->count('session_logs.id');
@@ -361,6 +380,10 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
+     */
     public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array
     {
         $query = SessionLog::query()
@@ -390,9 +413,9 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $search = $params->searchValue;
             $query->where(function (Builder $q) use ($search) {
                 $q->where('session_logs.id', 'like', '%'.$search.'%')
-                    ->orWhereHas('student', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('school', fn (Builder $b) => $b->where('display_name', 'like', '%'.$search.'%')->orWhere('full_name', 'like', '%'.$search.'%'))
-                    ->orWhereHas('service', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%'));
+                    ->orWhereHas('student', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%')) // @phpstan-ignore argument.type
+                    ->orWhereHas('school', fn (Builder $b) => $b->where('display_name', 'like', '%'.$search.'%')->orWhere('full_name', 'like', '%'.$search.'%')) // @phpstan-ignore argument.type, argument.type
+                    ->orWhereHas('service', fn (Builder $b) => $b->where('name', 'like', '%'.$search.'%')); // @phpstan-ignore argument.type
             });
         }
         $recordsFiltered = (clone $query)->count('session_logs.id');

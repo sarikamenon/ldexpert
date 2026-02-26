@@ -206,6 +206,7 @@ final class SessionLogController extends Controller
             // Check if schedule is provided
             $schedule = null;
             if (isset($data['schedule_id'])) {
+                /** @var Schedule $schedule */
                 $schedule = Schedule::findOrFail($data['schedule_id']);
                 $sessionLog = $this->sessionLogService->createFromSchedule($therapist, $schedule, $dto);
             } else {

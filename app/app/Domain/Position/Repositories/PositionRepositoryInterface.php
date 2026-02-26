@@ -11,6 +11,7 @@ use App\DTOs\PositionFilterDTO;
 use App\DTOs\UpdatePositionDTO;
 use App\Models\Position;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 interface PositionRepositoryInterface
@@ -19,7 +20,7 @@ interface PositionRepositoryInterface
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator;
 
     /**
-     * @return array{recordsTotal:int,recordsFiltered:int,rows:Collection<int,Position>}
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:EloquentCollection<int,Position>}
      */
     public function listForDataTables(PositionFilterDTO $filters, DataTablesParamsDTO $params): array;
 

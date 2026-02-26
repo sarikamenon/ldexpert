@@ -10,6 +10,7 @@ enum SchoolType: string
     case BRICK_MORTAR = 'Brick Mortar';
     case BLENDED = 'Blended';
 
+    /** @return array<int, string> */
     public static function values(): array
     {
         return array_column(self::cases(), 'value');

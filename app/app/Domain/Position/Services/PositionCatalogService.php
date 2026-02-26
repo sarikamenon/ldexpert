@@ -27,7 +27,7 @@ final class PositionCatalogService
     }
 
     /**
-     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Support\Collection<int,Position>}
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Database\Eloquent\Collection<int,Position>}
      */
     public function listForDataTables(PositionFilterDTO $filters, DataTablesParamsDTO $params): array
     {
@@ -55,6 +55,7 @@ final class PositionCatalogService
         return $this->repository->changeStatus($position, $dto);
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         return $this->repository->metrics();

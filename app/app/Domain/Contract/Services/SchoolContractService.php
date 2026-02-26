@@ -37,6 +37,7 @@ final class SchoolContractService
         return $this->repository->listForDataTables($filters, $params);
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         return $this->repository->metrics();

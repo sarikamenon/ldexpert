@@ -16,6 +16,7 @@ use App\Exceptions\ContractOverlapException;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -132,6 +133,9 @@ final class SSAService
         return $this->repository->getAssignmentHistory($ssa);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function metrics(): array
     {
         return $this->repository->metrics();
@@ -173,8 +177,8 @@ final class SSAService
         return $this->repository->getSSAsForMetrics($studentId, $therapistId);
     }
 
-    /** @return Collection<int, ServiceSupportAgreement> */
-    public function getActiveSSAsForTherapist(int $therapistId): Collection
+    /** @return EloquentCollection<int, ServiceSupportAgreement> */
+    public function getActiveSSAsForTherapist(int $therapistId): EloquentCollection
     {
         return $this->repository->getActiveSSAsForTherapist($therapistId);
     }

@@ -9,9 +9,9 @@ use App\Enums\SSAStatus;
 final class CaseloadReportFilterDTO
 {
     /**
-     * @param array<int>|null $schoolIds
-     * @param array<int>|null $therapistIds
-     * @param array<int>|null $serviceIds
+     * @param  array<int>|null  $schoolIds
+     * @param  array<int>|null  $therapistIds
+     * @param  array<int>|null  $serviceIds
      */
     public function __construct(
         public readonly ?array $schoolIds = null,

@@ -15,6 +15,9 @@ use Illuminate\Support\Collection;
 
 final class PaymentsListService
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function getInvoicePayments(InvoicePaymentFilterDTO $filters): array
     {
         $query = InvoicePayment::query()
@@ -97,15 +100,18 @@ final class PaymentsListService
         $query->where(function (Builder $q) use ($search) {
             $q->where('invoice_payments.reference', 'like', "%{$search}%")
                 ->orWhereHas('invoice.school', function (Builder $sq) use ($search) {
-                    $sq->where('display_name', 'like', "%{$search}%")
-                        ->orWhere('full_name', 'like', "%{$search}%");
+                    $sq->where('display_name', 'like', "%{$search}%") // @phpstan-ignore argument.type
+                        ->orWhere('full_name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 })
                 ->orWhereHas('invoice', function (Builder $sq) use ($search) {
-                    $sq->where('invoice_number', 'like', "%{$search}%");
+                    $sq->where('invoice_number', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 });
         });
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getTherapistBillPayments(TherapistBillPaymentFilterDTO $filters): array
     {
         $query = TherapistBillPayment::query()
@@ -187,29 +193,31 @@ final class PaymentsListService
         $query->where(function (Builder $q) use ($search) {
             $q->where('therapist_bill_payments.reference', 'like', "%{$search}%")
                 ->orWhereHas('therapistBill.therapist', function (Builder $sq) use ($search) {
-                    $sq->where('name', 'like', "%{$search}%");
+                    $sq->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 })
                 ->orWhereHas('therapistBill', function (Builder $sq) use ($search) {
-                    $sq->where('bill_number', 'like', "%{$search}%");
+                    $sq->where('bill_number', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 });
         });
     }
 
     /**
-     * @param  Builder<\Illuminate\Database\Eloquent\Model>  $query
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  Builder<TModel>  $query
      */
     private function applyCommonFilters(Builder $query, ?string $fromDate, ?string $toDate, ?string $method): void
     {
         if ($fromDate) {
-            $query->where('paid_at', '>=', $fromDate);
+            $query->where('paid_at', '>=', $fromDate); // @phpstan-ignore argument.type
         }
 
         if ($toDate) {
-            $query->where('paid_at', '<=', $toDate);
+            $query->where('paid_at', '<=', $toDate); // @phpstan-ignore argument.type
         }
 
         if ($method) {
-            $query->where('method', $method);
+            $query->where('method', $method); // @phpstan-ignore argument.type
         }
     }
 }

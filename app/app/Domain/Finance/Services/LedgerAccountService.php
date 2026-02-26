@@ -228,6 +228,7 @@ final class LedgerAccountService
         return $this->ledgerEntries->listForDataTables($ledgerableType, $id, $params);
     }
 
+    /** @return array<string, mixed> */
     public function calculateAccountStats(object $account, string $type): array
     {
         if ($type === 'school' && $account instanceof School) {

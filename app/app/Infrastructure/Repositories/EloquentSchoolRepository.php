@@ -137,7 +137,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
     }
 
     /**
-     * @param Builder<School> $query
+     * @param  Builder<School>  $query
      * @return Builder<School>
      */
     private function applyFilters(Builder $query, SchoolFilterDTO $filters): Builder

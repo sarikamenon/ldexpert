@@ -61,6 +61,7 @@ final class UpdateSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $rules = [
@@ -90,6 +91,7 @@ final class UpdateSessionLogRequest extends FormRequest
         return $rules;
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -103,6 +105,7 @@ final class UpdateSessionLogRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
+            /** @var \App\Models\SessionLog|null $sessionLog */
             $sessionLog = $this->route('sessionLog');
 
             if (! $sessionLog) {

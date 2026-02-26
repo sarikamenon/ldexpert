@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 
 interface TherapistBillRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): TherapistBill;
 
     public function find(int $id): ?TherapistBill;

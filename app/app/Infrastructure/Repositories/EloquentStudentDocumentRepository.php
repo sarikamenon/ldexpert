@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentStudentDocumentRepository implements StudentDocumentRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): StudentDocument
     {
         return StudentDocument::create($data);
@@ -37,7 +38,7 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
                     $subQ->where('documentable_type', User::class)
                         ->where('documentable_id', $filters->studentId);
                 })->orWhereHasMorph('documentable', [SessionLog::class], function ($subQ) use ($filters) {
-                    $subQ->where('student_id', $filters->studentId);
+                    $subQ->where('student_id', $filters->studentId); // @phpstan-ignore argument.type
                 });
             });
         }
@@ -73,7 +74,7 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
                     $subQ->where('documentable_type', User::class)
                         ->where('documentable_id', $studentId);
                 })->orWhereHasMorph('documentable', [SessionLog::class], function ($subQ) use ($studentId) {
-                    $subQ->where('student_id', $studentId);
+                    $subQ->where('student_id', $studentId); // @phpstan-ignore argument.type
                 });
             })
             ->with(['uploadedBy', 'documentable'])
@@ -94,6 +95,6 @@ final class EloquentStudentDocumentRepository implements StudentDocumentReposito
 
     public function delete(StudentDocument $document): bool
     {
-        return $document->delete();
+        return (bool) $document->delete();
     }
 }

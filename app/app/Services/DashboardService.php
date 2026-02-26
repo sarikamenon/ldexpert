@@ -174,7 +174,7 @@ class DashboardService
             $daysUntilExpiry = now()->diffInDays($ssa->end_date);
             $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
 
-            $studentName = $ssa->student->studentProfile
+            $studentName = $ssa->student?->studentProfile
                 ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
                 : 'Student';
             $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
@@ -183,7 +183,7 @@ class DashboardService
                 'title' => 'SSA Expiring',
                 'entity' => "{$studentName} - {$serviceName}",
                 'due_date' => $ssa->end_date,
-                'due_date_local' => $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser),
+                'due_date_local' => $ssa->end_date ? $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser) : null,
                 'priority' => $priority,
             ];
         }
@@ -197,7 +197,7 @@ class DashboardService
 
                 $events[] = [
                     'title' => 'Contract Expiring',
-                    'entity' => "School Contract - {$contract->school->display_name}",
+                    'entity' => "School Contract - {$contract->school?->display_name}",
                     'due_date' => $contract->end_date,
                     'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
                     'priority' => $priority,

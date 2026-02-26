@@ -41,6 +41,7 @@ final class SessionLogIndexService
     }
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
      */
     public function listForDataTables(array $filters, DataTablesParamsDTO $params): array
@@ -49,6 +50,7 @@ final class SessionLogIndexService
     }
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
      */
     public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array

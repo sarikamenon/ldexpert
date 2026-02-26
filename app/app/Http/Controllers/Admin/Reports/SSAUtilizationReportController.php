@@ -81,7 +81,7 @@ final class SSAUtilizationReportController extends Controller
                     $ssa->assignedTherapist->name ?? 'Unassigned',
                     $ssa->primaryService->name ?? '—',
                     $ssa->start_date->format('Y-m-d'),
-                    $ssa->end_date->format('Y-m-d'),
+                    $ssa->end_date?->format('Y-m-d') ?? '',
                     $tho,
                     $served,
                     $utilization,

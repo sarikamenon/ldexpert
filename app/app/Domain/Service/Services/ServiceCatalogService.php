@@ -55,6 +55,7 @@ final class ServiceCatalogService
         return $this->repository->changeStatus($service, $dto);
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         return $this->repository->metrics();

@@ -37,10 +37,13 @@ interface ScheduleRepositoryInterface
     /** @return Collection<int, array<string, mixed>> */
     public function getStudentServiceMappings(User $therapist): Collection;
 
+    /** @param array<int, int> $studentIds */
     public function validateStudentsShareService(User $therapist, array $studentIds, int $serviceId): bool;
 
+    /** @param array<string, mixed> $data */
     public function create(array $data): Schedule;
 
+    /** @param array<string, mixed> $data */
     public function update(Schedule $schedule, array $data): Schedule;
 
     public function delete(Schedule $schedule): void;
@@ -56,7 +59,10 @@ interface ScheduleRepositoryInterface
     /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection;
 
-    /** @return Collection<int, Schedule> */
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, Schedule>
+     */
     public function getSchedulesForStudent(User $student, array $filters = []): Collection;
 
     /** @return LengthAwarePaginator<int, Schedule> */
@@ -64,12 +70,14 @@ interface ScheduleRepositoryInterface
 
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool;
 
+    /** @param array<int, int> $studentIds */
     public function validateTherapistAccessToStudents(User $therapist, array $studentIds): bool;
 
     public function generateBatchNumber(string $type = 'recurring'): string;
 
     public function updateBillingStatus(Schedule $schedule, BillingStatus $status): Schedule;
 
+    /** @param array<int, int> $scheduleIds */
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int;
 
     public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool;

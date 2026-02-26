@@ -10,11 +10,13 @@ use App\Models\TherapistBillPaymentAllocation;
 
 final class EloquentTherapistBillPaymentRepository implements TherapistBillPaymentRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function createPayment(array $data): TherapistBillPayment
     {
         return TherapistBillPayment::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function createAllocation(array $data): TherapistBillPaymentAllocation
     {
         return TherapistBillPaymentAllocation::create($data);

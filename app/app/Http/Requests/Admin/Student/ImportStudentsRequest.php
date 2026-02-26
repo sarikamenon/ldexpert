@@ -15,6 +15,7 @@ final class ImportStudentsRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $maxSize = config('student-import.settings.max_file_size', 10240);
@@ -36,6 +37,7 @@ final class ImportStudentsRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

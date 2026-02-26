@@ -31,6 +31,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         return School::where('status', SchoolStatus::INACTIVE)->count();
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getSchoolsByState(): array
     {
         $schools = DB::table('schools')
@@ -45,6 +46,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getSchoolsByType(): array
     {
         $schools = DB::table('schools')
@@ -58,6 +60,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getSchoolsGrowthTrend(Carbon $startDate, Carbon $endDate): array
     {
         $schools = DB::table('schools')
@@ -76,6 +79,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getSchoolsByManager(): array
     {
         $schools = DB::table('schools')
@@ -92,6 +96,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return Collection<int, array<string, mixed>> */
     public function getRecentSchoolAdditions(int $limit): Collection
     {
         $user = auth()->user();
@@ -121,6 +126,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         return TherapistProfile::active()->count();
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array
     {
         $therapists = DB::table('therapist_profiles')
@@ -136,6 +142,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getTherapistsByEmployeeType(): array
     {
         $therapists = DB::table('therapist_profiles')
@@ -150,6 +157,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getTherapistsByState(): array
     {
         $therapists = DB::table('therapist_profiles')
@@ -166,6 +174,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getTherapistsGrowthTrend(Carbon $startDate, Carbon $endDate): array
     {
         $therapists = DB::table('therapist_profiles')
@@ -185,6 +194,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return Collection<int, array<string, mixed>> */
     public function getRecentTherapistAdditions(int $limit): Collection
     {
         $user = auth()->user();
@@ -224,6 +234,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         return User::where('status', UserStatus::ACTIVE)->count();
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getUsersByRole(): array
     {
         $users = DB::table('users')
@@ -238,6 +249,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
+    /** @return array<string, array<int, mixed>> */
     public function getActivitySummary(Carbon $startDate, Carbon $endDate): array
     {
         $activities = DB::table('activity_logs')

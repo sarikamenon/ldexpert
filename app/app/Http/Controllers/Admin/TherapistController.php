@@ -291,8 +291,8 @@ final class TherapistController extends Controller
                     $profile?->manager->name ?? '—',
                     $profile->phone ?? '—',
                     $profile?->position->name ?? '—',
-                    $profile?->employee_type->value ?? $profile->employee_type ?? '—',
-                    $therapist->status->value ?? $therapist->status ?? 'inactive',
+                    $profile?->employee_type->value ?? '—', // @phpstan-ignore property.nonObject
+                    $therapist->status->value,
                 ]);
             }
 
@@ -302,6 +302,7 @@ final class TherapistController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function referenceData(): array
     {
         return [
