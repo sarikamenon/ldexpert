@@ -11,7 +11,7 @@ async function initScheduleTable() {
             const form = document.getElementById(table.getAttribute('data-filter-form') || 'scheduleFiltersForm');
             await initServerSideDataTable('#schedulesTable', dataUrl, {
                 order: [[0, 'desc']],
-                pageLength: 15,
+                pageLength: 25,
                 getExtraData(d) {
                     d.filter_student_id = table.getAttribute('data-student-id') || '';
                     if (!form) return;

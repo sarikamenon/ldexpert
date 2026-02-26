@@ -8,20 +8,29 @@ async function initSchoolContractsTable() {
     const dataUrl = table.getAttribute('data-datatable-url');
     if (!dataUrl) return;
 
+    const hideSchoolColumn = table.hasAttribute('data-hide-school-column');
+
     try {
         await loadDataTablesLibrary();
 
         const form = document.getElementById('schoolContractsFiltersForm');
 
+        const columnDefs = [
+            { orderable: false, targets: -1 },
+        ];
+
+        if (hideSchoolColumn) {
+            columnDefs.push({ visible: false, targets: 1 });
+        }
+
         await initServerSideDataTable('#schoolContractsTable', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
-            columnDefs: [
-                { orderable: false, targets: -1 },
-            ],
+            columnDefs,
             getExtraData(d) {
                 if (!form) return;
                 d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                d.filter_school_id = form.querySelector('[name="school_id"]')?.value ?? '';
                 const formData = new FormData(form);
                 d.filter_school_ids = Array.from(formData.getAll('school_ids[]') || []);
             },

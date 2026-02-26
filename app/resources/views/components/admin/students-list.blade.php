@@ -16,6 +16,8 @@
      * - 'therapist' : therapist-facing students list
      */
     'context' => 'index',
+    'schoolId' => null,
+    'therapistId' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -42,6 +44,13 @@
         <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="students">
+            @endif
+
+            @if ($schoolId)
+                <input type="hidden" name="school_id" value="{{ $schoolId }}">
+            @endif
+            @if ($therapistId)
+                <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
             @endif
 
             <x-ui::input type="text" name="search" class="w-64" placeholder="Search students"

@@ -17,7 +17,7 @@ window.jQuery(function ($) {
         await loadDataTablesLibrary();
         await initDataTable('.expense-categories-table', {
             order: [[0, 'asc']],
-            pageLength: 10,
+            pageLength: 25,
             columnDefs: [
                 { orderable: false, targets: -1 },
             ],

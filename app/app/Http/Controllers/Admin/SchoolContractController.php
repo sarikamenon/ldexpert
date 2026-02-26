@@ -70,6 +70,7 @@ final class SchoolContractController extends Controller
         $filterData = [
             'status' => $request->input('filter_status'),
             'school_ids' => $request->input('filter_school_ids', []),
+            'school_id' => $request->input('filter_school_id'),
         ];
         $filters = SchoolContractFilterDTO::fromArray($filterData);
 

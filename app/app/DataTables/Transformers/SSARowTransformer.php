@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
 use App\Enums\SSAStatus;
 use App\Models\ServiceSupportAgreement;
 
@@ -97,13 +98,9 @@ final class SSARowTransformer
             }
         .'">'.e($ssa->status->label()).'</span></div></div>';
 
-        $viewIcon = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
-
-        $actionsCell = '<div class="flex items-center gap-2">'
-            .'<a href="'.e($adminShowUrl).'" class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring" title="View SSA" aria-label="View SSA '.(int) $ssa->id.'">'
-            .$viewIcon
-            .'</a>'
-            .'</div>';
+        $actionsCell = ActionButtons::wrap(
+            ActionButtons::view($adminShowUrl, 'View SSA'),
+        );
 
         return [
             $idCell,

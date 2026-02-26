@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\Transformers\SSAImportRowTransformer;
 use App\DataTables\Transformers\SSARowTransformer;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAImportListService;
 use App\Domain\SSA\Services\SSAImportService;
 use App\Domain\SSA\Services\SSAMinutesSummaryService;
@@ -15,7 +14,6 @@ use App\Domain\SSA\Services\SSAService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
-use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\StoreSSAImportDTO;
@@ -79,7 +77,6 @@ final class SSAController extends Controller
         private readonly SSAImportService $importService,
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
         private readonly SSAImportListService $importListService,
     ) {}
@@ -115,6 +112,7 @@ final class SSAController extends Controller
             'student_id' => $request->input('filter_student_id'),
             'service_id' => $request->input('filter_service_id'),
             'therapist_id' => $request->input('filter_therapist_id'),
+            'school_id' => $request->input('filter_school_id'),
         ];
         $filters = SSAFilterDTO::fromArray($filterData);
 
@@ -184,16 +182,10 @@ final class SSAController extends Controller
             $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
             $viewData['therapists'] = $this->getActiveTherapists();
         } elseif ($activeTab === 'session_logs') {
-            $dto = SessionLogIndexDTO::fromArray(
-                array_merge($request->query(), ['ssa_id' => $ssa->id])
-            );
-            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
-
-            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
-            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
-            $viewData['sessionLogRows'] = $sessionLogData['rows'];
-            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
+            $viewData['datatableUrl'] = route('admin.session-logs.data');
+            $viewData['ssaId'] = $ssa->id;
         }
 
         if ($activeTab === 'dashboard') {

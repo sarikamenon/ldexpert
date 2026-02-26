@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
 use App\Enums\ServiceStatus;
 use App\Models\Service;
 use Illuminate\Support\Str;
@@ -52,20 +53,15 @@ final class ServiceRowTransformer
             .($isActive ? 'bg-success/10 text-success border border-success/20' : 'bg-secondary/10 text-foreground border border-secondary/20').'"
         >'.e($statusLabel).'</span>';
 
-        $nextStatus = $isActive ? 'inactive' : 'active';
-        $buttonLabel = $isActive ? 'Deactivate' : 'Activate';
-        $buttonClass = $isActive
-            ? 'bg-danger text-danger-foreground hover:bg-danger/90'
-            : 'bg-success text-success-foreground hover:bg-success/90';
+        $toggleAttrs = ['data-service' => (int) $service->id, 'data-status' => e($service->status->value), 'class' => 'toggle-service-status'];
+        $toggleBtn = $isActive
+            ? ActionButtons::deactivate('Deactivate Service', $toggleAttrs)
+            : ActionButtons::activate('Activate Service', $toggleAttrs);
 
-        $actionsCell = '<div class="flex items-center gap-2">'
-            .'<a href="'.e($editUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors">Edit</a>'
-            .'<button type="button" class="toggle-service-status inline-flex items-center justify-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors '
-            .$buttonClass
-            .'" data-service="'.(int) $service->id.'" data-status="'.e($service->status->value).'">'
-            .e($buttonLabel)
-            .'</button>'
-            .'</div>';
+        $actionsCell = ActionButtons::wrap(
+            ActionButtons::edit($editUrl, 'Edit Service'),
+            $toggleBtn,
+        );
 
         return [
             $nameCell,

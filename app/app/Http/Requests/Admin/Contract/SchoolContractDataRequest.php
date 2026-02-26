@@ -24,6 +24,7 @@ final class SchoolContractDataRequest extends FormRequest
             'filter_status' => ['nullable', Rule::in(ContractStatus::values())],
             'filter_school_ids' => ['nullable', 'array'],
             'filter_school_ids.*' => ['integer', Rule::exists('schools', 'id')],
+            'filter_school_id' => ['nullable', 'integer', 'exists:schools,id'],
         ];
     }
 }

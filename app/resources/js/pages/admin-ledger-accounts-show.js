@@ -13,7 +13,7 @@ window.jQuery(function ($) {
             const selector = table.id ? `#${table.id}` : '.ledger-transactions-table';
             await initServerSideDataTable(selector, dataUrl, {
                 order: [[0, 'desc']],
-                pageLength: 10,
+                pageLength: 25,
                 columnDefs: [
                     { orderable: false, targets: [2, 3, 4, 5, 7] },
                 ],
@@ -25,7 +25,7 @@ window.jQuery(function ($) {
         } else {
             await initDataTable('.ledger-transactions-table', {
                 order: [[0, 'desc']],
-                pageLength: 10,
+                pageLength: 25,
                 columnDefs: [
                     { orderable: false, targets: -1 },
                 ],

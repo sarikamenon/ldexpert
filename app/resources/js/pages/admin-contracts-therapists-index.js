@@ -8,21 +8,30 @@ async function initTherapistContractsTable() {
     const dataUrl = table.getAttribute('data-datatable-url');
     if (!dataUrl) return;
 
+    const hideTherapistColumn = table.hasAttribute('data-hide-therapist-column');
+
     try {
         await loadDataTablesLibrary();
 
         const form = document.getElementById('therapistContractsListFiltersForm');
 
+        const columnDefs = [
+            { orderable: false, targets: -1 },
+        ];
+
+        if (hideTherapistColumn) {
+            columnDefs.push({ visible: false, targets: 1 });
+        }
+
         await initServerSideDataTable('#therapistContractsTable', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
-            columnDefs: [
-                { orderable: false, targets: -1 },
-            ],
+            columnDefs,
             getExtraData(d) {
                 if (!form) return;
                 d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
                 d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
+                d.filter_therapist_id = form.querySelector('[name="therapist_id"]')?.value ?? '';
                 const formData = new FormData(form);
                 d.filter_therapist_ids = Array.from(formData.getAll('therapist_ids[]') || []);
             },

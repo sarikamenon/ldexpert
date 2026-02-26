@@ -17,11 +17,7 @@ use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
-use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\SchoolFilterDTO;
-use App\DTOs\SSAFilterDTO;
-use App\DTOs\StudentFilterDTO;
-use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\Role;
 use App\Enums\SchoolType;
@@ -213,38 +209,33 @@ final class SchoolController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'students') {
-            $filters = StudentFilterDTO::fromRequest(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['students'] = $this->studentService->list($filters);
+            $viewData['students'] = collect();
             $viewData['studentFilters'] = $request->query();
-            // Don't show school filter in school detail view as it's redundant
             $viewData['schools'] = [];
             $viewData['statuses'] = UserStatus::cases();
+            $viewData['datatableUrl'] = route('admin.students.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'therapists') {
-            $filters = TherapistFilterDTO::fromRequest(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['therapists'] = $this->therapistService->list($filters);
+            $viewData['therapists'] = collect();
             $viewData['therapistFilters'] = $request->query();
             $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
+            $viewData['datatableUrl'] = route('admin.therapists.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'ssas') {
-            $filters = SSAFilterDTO::fromArray(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['ssas'] = $this->ssaService->paginate($filters);
+            $viewData['ssas'] = collect();
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
             $viewData['students'] = $this->studentService->listActiveStudentsBySchool($school->id);
             $viewData['therapists'] = $this->therapistService->listActiveTherapistsBySchool($school->id);
             $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
+            $viewData['datatableUrl'] = route('admin.ssas.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'contracts') {
-            $filters = SchoolContractFilterDTO::fromArray(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['contracts'] = $this->schoolContractService->paginate($filters);
+            $viewData['contracts'] = collect();
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
+            $viewData['datatableUrl'] = route('admin.contracts.schools.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'calendar') {
             $viewData['selectedDate'] = $request->query('date')
                 ? CarbonImmutable::parse((string) $request->query('date'))

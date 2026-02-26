@@ -9,6 +9,8 @@
      */
     'datatableUrl' => null,
     'context' => 'index', // 'index' or 'detail'
+    'schoolId' => null,
+    'studentId' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -35,6 +37,13 @@
         <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="therapists">
+            @endif
+
+            @if ($schoolId)
+                <input type="hidden" name="school_id" value="{{ $schoolId }}">
+            @endif
+            @if ($studentId)
+                <input type="hidden" name="student_id" value="{{ $studentId }}">
             @endif
 
             <x-ui::input type="text" name="search" class="w-64" placeholder="Search therapists"

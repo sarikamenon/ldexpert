@@ -25,6 +25,7 @@ async function initSSATable() {
                 d.filter_student_id = form.querySelector('[name="student_id"]')?.value ?? '';
                 d.filter_therapist_id = form.querySelector('[name="therapist_id"]')?.value ?? '';
                 d.filter_service_id = form.querySelector('[name="service_id"]')?.value ?? '';
+                d.filter_school_id = form.querySelector('[name="school_id"]')?.value ?? '';
             },
         });
     } catch (error) {

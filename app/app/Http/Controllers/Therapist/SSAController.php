@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSSARowTransformer;
-use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
-use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAFilterDTO;
 use App\Enums\SSAStatus;
 use App\Http\Controllers\Controller;
@@ -37,7 +35,6 @@ final class SSAController extends Controller
 
     public function __construct(
         private readonly SSAService $ssaService,
-        private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
     ) {}
 
@@ -61,6 +58,7 @@ final class SSAController extends Controller
             'search' => $request->input('filter_search'),
             'status' => $request->input('filter_status'),
             'therapist_id' => $therapist->id,
+            'student_id' => $request->input('filter_student_id'),
         ];
         $filters = SSAFilterDTO::fromArray($filterData);
 
@@ -113,16 +111,10 @@ final class SSAController extends Controller
             ]);
             $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
         } elseif ($activeTab === 'session_logs') {
-            $dto = SessionLogIndexDTO::fromArray(
-                array_merge($request->query(), ['ssa_id' => $ssa->id, 'therapist_id' => $therapist->id])
-            );
-            $sessionLogData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
-
-            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
-            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
-            $viewData['sessionLogRows'] = $sessionLogData['rows'];
-            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
+            $viewData['datatableUrl'] = route('therapist.session-logs.data');
+            $viewData['ssaId'] = $ssa->id;
         }
 
         return view('therapist.ssas.show', $viewData);

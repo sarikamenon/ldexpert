@@ -15,7 +15,7 @@ async function initExpensesTable() {
 
         const dt = await initServerSideDataTable('#expensesTable', dataUrl, {
             order: [[0, 'desc']],
-            pageLength: 10,
+            pageLength: 25,
             columnDefs: [
                 { orderable: false, targets: -1 },
             ],

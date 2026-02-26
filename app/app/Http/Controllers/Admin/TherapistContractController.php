@@ -71,6 +71,7 @@ final class TherapistContractController extends Controller
             'status' => $request->input('filter_status'),
             'search' => $request->input('filter_search'),
             'therapist_ids' => $request->input('filter_therapist_ids', []),
+            'therapist_id' => $request->input('filter_therapist_id'),
         ];
         $filters = TherapistContractFilterDTO::fromArray($filterData);
 

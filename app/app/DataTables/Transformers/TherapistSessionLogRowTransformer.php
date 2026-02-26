@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
 use App\Models\SessionLog;
 use App\Support\DateHelper;
 
@@ -78,17 +79,14 @@ final class TherapistSessionLogRowTransformer
         $statusCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'.e($statusLabel).'</span>';
 
         $viewUrl = route('therapist.session-logs.show', $log);
-        $actionsCell = '<div class="flex items-center gap-1">';
-        $actionsCell .= '<a href="'.e($viewUrl).'" class="inline-flex items-center justify-center w-8 h-8 rounded transition-colors border border-border text-foreground hover:bg-background/subtle" title="View"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></a>';
+        $buttons = [ActionButtons::view($viewUrl, 'View')];
 
         if ($log->status?->canEdit()) {
-            $editUrl = route('therapist.session-logs.edit', $log);
-            $submitUrl = route('therapist.session-logs.submit', $log);
-            $token = e(csrf_token());
-            $actionsCell .= '<a href="'.e($editUrl).'" class="inline-flex items-center justify-center w-8 h-8 rounded transition-colors bg-primary text-primary-foreground hover:bg-primary/90" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></a>';
-            $actionsCell .= '<form method="POST" action="'.e($submitUrl).'" class="inline"><input type="hidden" name="_token" value="'.$token.'"><button type="submit" class="inline-flex items-center justify-center w-8 h-8 rounded transition-colors border border-primary text-primary hover:bg-primary/10" title="Submit" data-confirm-title="Submit session?" data-confirm-text="Submit this session for approval." data-confirm-icon="question"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg></button></form>';
+            $buttons[] = ActionButtons::edit(route('therapist.session-logs.edit', $log), 'Edit');
+            $buttons[] = ActionButtons::submit(route('therapist.session-logs.submit', $log));
         }
-        $actionsCell .= '</div>';
+
+        $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [
             $dateTimeCell,
