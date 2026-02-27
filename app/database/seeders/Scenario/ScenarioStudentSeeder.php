@@ -32,6 +32,7 @@ final class ScenarioStudentSeeder extends Seeder
                 $index++;
                 $user = User::query()->create([
                     'name' => "Scenario Student {$index}",
+                    'username' => "scenario.student.{$index}",
                     'email' => "scenario-student-{$index}@example.com",
                     'password' => Hash::make('password'),
                     'role' => Role::STUDENT->value,

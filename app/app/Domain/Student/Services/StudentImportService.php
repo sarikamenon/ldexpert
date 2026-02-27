@@ -17,6 +17,7 @@ use App\Jobs\ProcessStudentImportJob;
 use App\Models\School;
 use App\Models\StudentImport;
 use App\Models\StudentImportRow;
+use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -162,9 +163,14 @@ final class StudentImportService
                 return;
             }
 
+            // Auto-generate username: firstname.lastname.idnumber
+            $username = $this->generateUsername($mappedData);
+
             // Create student
             $password = Str::password(12);
-            $createDTO = $importDTO->toCreateStudentDTO($password, $school->id);
+            $mappedData['username'] = $username;
+            $createDTO = ImportStudentDTO::fromArray($mappedData, $rowNumber)
+                ->toCreateStudentDTO($password, $school->id);
             $student = $this->studentService->create($createDTO);
 
             // Update row status to done
@@ -366,14 +372,6 @@ final class StudentImportService
      */
     public function checkDuplicate(array $data, int $schoolId): ?string
     {
-        // Check by email (globally unique)
-        if (isset($data['email'])) {
-            $existing = $this->repository->findByEmail($data['email']);
-            if ($existing !== null) {
-                return 'Student with email "'.$data['email'].'" already exists.';
-            }
-        }
-
         // Check by id_number per school
         if (isset($data['id_number'])) {
             $existing = $this->repository->findByIdNumber($data['id_number'], $schoolId);
@@ -451,6 +449,30 @@ final class StudentImportService
         foreach (array_chunk($rows, 500) as $chunk) {
             StudentImportRow::insert($chunk);
         }
+    }
+
+    /**
+     * Auto-generate a username from student data: firstname.lastname.idnumber
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function generateUsername(array $data): string
+    {
+        $firstName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) ($data['first_name'] ?? '')) ?: 'student');
+        $lastName = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) ($data['last_name'] ?? '')) ?: 'user');
+        $idNumber = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', (string) ($data['id_number'] ?? '')) ?: '');
+
+        $base = $idNumber !== '' ? "{$firstName}.{$lastName}.{$idNumber}" : "{$firstName}.{$lastName}";
+
+        // Ensure uniqueness — append a number if collision
+        $username = $base;
+        $counter = 1;
+        while (User::query()->where('username', $username)->exists()) {
+            $username = "{$base}.{$counter}";
+            $counter++;
+        }
+
+        return $username;
     }
 
     private function normalizeState(string $state): ?string

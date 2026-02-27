@@ -79,7 +79,7 @@ final class StudentManagementTest extends TestCase
                 'recordsFiltered',
                 'data' => [
                     '*' => [
-                        0, 1, 2, 3, 4, 5, 6, 7,
+                        0, 1, 2, 3, 4, 5, 6, 7, 8,
                     ],
                 ],
             ]);
@@ -126,6 +126,7 @@ final class StudentManagementTest extends TestCase
             'first_name' => 'Ava',
             'middle_name' => 'Rose',
             'last_name' => 'Smith',
+            'username' => 'ava.smith.100',
             'email' => 'ava@example.com',
             'gender' => 'Female',
             'date_of_birth' => '2012-03-05',
@@ -170,6 +171,7 @@ final class StudentManagementTest extends TestCase
             'first_name' => 'Updated',
             'middle_name' => null,
             'last_name' => 'Student',
+            'username' => 'updated.student',
             'email' => 'updated@example.com',
             'gender' => 'Male',
             'date_of_birth' => '2011-01-01',
@@ -257,6 +259,7 @@ final class StudentManagementTest extends TestCase
         $response->assertSessionHasErrors([
             'first_name',
             'last_name',
+            'username',
             'email',
             'date_of_birth',
             'timezone',
@@ -268,6 +271,7 @@ final class StudentManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
             'first_name' => 'Test',
             'last_name' => 'Student',
+            'username' => 'test.phone.format',
             'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/Chicago',
@@ -282,6 +286,7 @@ final class StudentManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
             'first_name' => 'Test',
             'last_name' => 'Student',
+            'username' => 'test.phone.valid',
             'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/Chicago',
@@ -291,17 +296,18 @@ final class StudentManagementTest extends TestCase
         $response->assertSessionDoesntHaveErrors(['parent_guardian_phone']);
     }
 
-    public function test_create_student_validates_unique_email(): void
+    public function test_create_student_validates_unique_username(): void
     {
         $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
             'first_name' => 'Test',
             'last_name' => 'Student',
-            'email' => $this->student->email,
+            'username' => $this->student->username,
+            'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/New_York',
         ]);
 
-        $response->assertSessionHasErrors(['email']);
+        $response->assertSessionHasErrors(['username']);
     }
 
     public function test_non_admin_cannot_modify_students(): void
@@ -447,8 +453,8 @@ final class StudentManagementTest extends TestCase
 
     public function test_student_show_page_filters_therapists_by_position(): void
     {
-        $slpPosition = Position::factory()->create(['name' => 'SLP']);
-        $otPosition = Position::factory()->create(['name' => 'OT']);
+        $slpPosition = Position::firstOrCreate(['name' => 'SLP'], ['status' => 'active']);
+        $otPosition = Position::firstOrCreate(['name' => 'OT'], ['status' => 'active']);
 
         $slpTherapist = User::factory()->therapist()->has(
             \App\Models\TherapistProfile::factory()->state(['position_id' => $slpPosition->id])

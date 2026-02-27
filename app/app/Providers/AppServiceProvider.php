@@ -97,6 +97,7 @@ use App\Policies\StudentProfilePolicy;
 use App\Policies\TherapistBillPolicy;
 use App\Policies\TherapistContractPolicy;
 use App\Policies\TherapistProfilePolicy;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
@@ -173,6 +174,14 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);
         Event::listen(ScheduleUpdated::class, SendScheduleNotification::class);
+
+        // Generate password reset URLs with ?username= instead of ?email=
+        ResetPassword::createUrlUsing(function (User $user, string $token) {
+            return url(route('password.reset', [
+                'token' => $token,
+                'username' => $user->getEmailForPasswordReset(),
+            ], false));
+        });
 
         Collection::macro('withUserTimezone', function (?User $user = null, array $fields = ['created_at', 'updated_at']) {
             /** @var \Illuminate\Support\Collection $this */

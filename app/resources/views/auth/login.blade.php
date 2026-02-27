@@ -10,12 +10,13 @@
     <form method="POST" action="{{ route('login') }}">
         @csrf
 
-        <!-- Email Address -->
+        <!-- Username -->
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-ui::input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required
-                autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <x-input-label for="username" :value="__('Username')" />
+            <p class="mt-1 text-xs text-foreground/60" id="username_help">For therapists and admins, use your email address</p>
+            <x-ui::input id="username" class="block mt-1 w-full" type="text" name="username" :value="old('username')" required
+                autofocus autocomplete="username" aria-describedby="username_help" />
+            <x-input-error :messages="$errors->get('username')" class="mt-2" />
         </div>
 
         <!-- Password -->

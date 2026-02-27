@@ -43,8 +43,16 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
+                <x-input-label for="username" value="Username *" />
+                <p class="mt-1 text-xs text-foreground/60" id="username_help">A unique username for student login. Letters, numbers, dots, and dashes only.</p>
+                <x-ui::input id="username" name="username" type="text" class="mt-1 block w-full" :value="old('username', $isEdit ? $student->username : '')"
+                    dusk="student-username" aria-describedby="username_help" />
+                <x-input-error :messages="$errors->get('username')" class="mt-2" />
+            </div>
+
+            <div>
                 <x-input-label for="email" value="Email *" />
-                <p class="mt-1 text-xs text-foreground/60">Email address for account access</p>
+                <p class="mt-1 text-xs text-foreground/60">Email for notifications (can be shared with siblings)</p>
                 <x-ui::input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $isEdit ? $student->email : '')"
                     dusk="student-email" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2" />

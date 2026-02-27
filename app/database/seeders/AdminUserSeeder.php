@@ -10,6 +10,7 @@ use App\Models\AdminProfile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class AdminUserSeeder extends Seeder
 {
@@ -34,6 +35,9 @@ class AdminUserSeeder extends Seeder
         foreach ($admins as $admin) {
             $user = User::withTrashed()->firstOrNew(['email' => $admin['email']]);
             $user->name = $admin['name'];
+            if (Schema::hasColumn('users', 'username')) {
+                $user->username = $user->username ?: $admin['email'];
+            }
             $user->role = Role::ADMIN->value;
             $user->status = UserStatus::ACTIVE->value;
             $user->password = Hash::make($password);

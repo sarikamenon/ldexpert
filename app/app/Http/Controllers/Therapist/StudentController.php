@@ -9,7 +9,6 @@ use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Student\Services\StudentService;
-use App\DTOs\SSAFilterDTO;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;

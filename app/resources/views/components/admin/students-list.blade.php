@@ -110,6 +110,7 @@
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Username</th>
                         <th>Email</th>
                         <th>School</th>
                         <th>Grade Level</th>
@@ -156,6 +157,7 @@
                                     </a>
                                 @endif
                             </td>
+                            <td>{{ $student->username }}</td>
                             <td>{{ $student->email }}</td>
                             <td>
                                 @if ($profile?->school)

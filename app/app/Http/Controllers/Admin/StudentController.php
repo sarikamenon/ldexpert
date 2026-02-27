@@ -23,7 +23,6 @@ use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
-use App\DTOs\SSAFilterDTO;
 use App\DTOs\StoreStudentImportDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
@@ -85,11 +84,12 @@ final class StudentController extends Controller
     private const STUDENTS_ORDER_WHITELIST = [
         0 => 'users.id',
         1 => 'users.name',
-        2 => 'users.email',
-        3 => 'schools.display_name',
-        4 => 'student_profiles.grade_level',
-        5 => 'student_profiles.date_of_birth',
-        6 => 'users.status',
+        2 => 'users.username',
+        3 => 'users.email',
+        4 => 'schools.display_name',
+        5 => 'student_profiles.grade_level',
+        6 => 'student_profiles.date_of_birth',
+        7 => 'users.status',
     ];
 
     private const STUDENT_SCHEDULES_ORDER_WHITELIST = [
@@ -319,6 +319,7 @@ final class StudentController extends Controller
             fputcsv($handle, [
                 'ID',
                 'Name',
+                'Username',
                 'Email',
                 'School',
                 'Grade Level',
@@ -331,6 +332,7 @@ final class StudentController extends Controller
                 fputcsv($handle, [
                     $student->id,
                     $student->name,
+                    $student->username,
                     $student->email,
                     $profile?->school->display_name ?? '—',
                     $profile->grade_level ?? '—',

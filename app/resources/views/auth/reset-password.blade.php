@@ -5,16 +5,16 @@
         <!-- Password Reset Token -->
         <input type="hidden" name="token" value="{{ $request->route('token') }}">
 
-        <!-- Email Address -->
+        <!-- Username (hidden) -->
         <div class="mb-4">
             <p class="text-sm text-gray-600 dark:text-gray-400">
                 {{ __('You are resetting the password for:') }}
             </p>
             <p class="font-medium text-lg text-gray-900 dark:text-gray-100 mt-1">
-                {{ $request->email }}
+                {{ $request->username }}
             </p>
-            <input type="hidden" name="email" value="{{ $request->email }}">
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+            <input type="hidden" name="username" value="{{ $request->username }}">
+            <x-input-error :messages="$errors->get('username')" class="mt-2" />
         </div>
 
         <!-- Password -->

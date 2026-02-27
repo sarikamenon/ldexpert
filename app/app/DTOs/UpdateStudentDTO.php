@@ -10,6 +10,7 @@ final class UpdateStudentDTO
         public readonly string $firstName,
         public readonly ?string $middleName,
         public readonly string $lastName,
+        public readonly string $username,
         public readonly string $email,
         public readonly ?string $gender,
         public readonly string $dateOfBirth,
@@ -34,6 +35,7 @@ final class UpdateStudentDTO
             firstName: $data['first_name'],
             middleName: $data['middle_name'] ?? null,
             lastName: $data['last_name'],
+            username: $data['username'],
             email: $data['email'],
             gender: $data['gender'] ?? null,
             dateOfBirth: $data['date_of_birth'],
@@ -57,6 +59,7 @@ final class UpdateStudentDTO
     {
         return [
             'name' => trim($this->firstName.' '.($this->middleName ? $this->middleName.' ' : '').$this->lastName),
+            'username' => $this->username,
             'email' => $this->email,
         ];
     }

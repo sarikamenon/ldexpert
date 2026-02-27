@@ -275,7 +275,9 @@ final class SSAImportService
      */
     public function lookupStudent(array $mappedData): ?User
     {
-        // Try email first
+        // Try email first.
+        // Note: if siblings share email, the first match is returned.
+        // Future: add username column to SSA import CSV for precise lookup.
         if (! empty($mappedData['student_email'])) {
             $student = $this->studentRepository->findByEmail($mappedData['student_email']);
             if ($student && $student->status === UserStatus::ACTIVE) {
