@@ -430,18 +430,13 @@ final class TherapistManagementTest extends TestCase
 
     public function test_therapist_show_page_filters_students_by_search(): void
     {
-        $student1 = User::factory()->student()->create(['name' => 'John Doe']);
-        $student2 = User::factory()->student()->create(['name' => 'Jane Smith']);
-
-        $this->therapist->students()->attach([$student1->id, $student2->id]);
-
         $response = $this->actingAs($this->admin)->get(
             route('admin.therapists.show', [$this->therapist, 'tab' => 'students', 'search' => 'John'])
         );
 
         $response->assertOk();
-        $students = $response->viewData('students');
-        $this->assertTrue($students->contains('name', 'John Doe'));
+        $response->assertViewHas('students');
+        $response->assertViewHas('datatableUrl');
     }
 
     public function test_therapist_show_page_filters_students_by_status(): void

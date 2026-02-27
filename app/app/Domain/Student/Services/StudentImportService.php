@@ -372,6 +372,22 @@ final class StudentImportService
      */
     public function checkDuplicate(array $data, int $schoolId): ?string
     {
+        // Check by username (system-wide)
+        if (isset($data['username'])) {
+            $existing = User::where('username', $data['username'])->first();
+            if ($existing !== null) {
+                return 'A user with username "'.$data['username'].'" already exists.';
+            }
+        }
+
+        // Check by email (system-wide)
+        if (isset($data['email'])) {
+            $existing = User::where('email', $data['email'])->first();
+            if ($existing !== null) {
+                return 'A user with email "'.$data['email'].'" already exists.';
+            }
+        }
+
         // Check by id_number per school
         if (isset($data['id_number'])) {
             $existing = $this->repository->findByIdNumber($data['id_number'], $schoolId);

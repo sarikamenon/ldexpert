@@ -180,7 +180,7 @@ final class SessionLogIndexServiceTest extends TestCase
 
         $log = SessionLog::factory()->create([
             'therapist_id' => $therapist->id,
-            'session_date' => Carbon::parse('2025-01-08'),
+            'session_date' => Carbon::parse('2025-01-10'),
             'created_at' => Carbon::parse('2025-01-10 08:00:00'),
         ]);
 

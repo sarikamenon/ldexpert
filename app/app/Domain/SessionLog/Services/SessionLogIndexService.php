@@ -139,10 +139,10 @@ final class SessionLogIndexService
                         'time' => null,
                         'duration' => $log->duration_minutes ? "{$log->duration_minutes} mins" : null,
                     ],
-                    'entry_info' => [
+                    'entry_info' => array_filter([
                         'created_date' => $createdAt?->format('M d, Y'),
                         'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
-                    ],
+                    ], fn ($v) => $v !== null),
                     'student_service_school' => [
                         'student' => $log->student->name ?? null,
                         'school' => $log->school->display_name ?? null,
@@ -185,10 +185,10 @@ final class SessionLogIndexService
                         'time' => $timeRange,
                         'duration' => $duration,
                     ],
-                    'entry_info' => [
+                    'entry_info' => array_filter([
                         'created_date' => $createdAt?->format('M d, Y'),
                         'entry_difference' => DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt),
-                    ],
+                    ], fn ($v) => $v !== null),
                     'student_service_school' => [
                         'student' => $log->student->name ?? null,
                         'school' => $log->school->display_name ?? null,

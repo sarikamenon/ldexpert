@@ -37,6 +37,7 @@ final class EloquentTherapistRepositoryTest extends TestCase
 
         $userData = [
             'name' => 'John Doe',
+            'username' => 'john.doe',
             'email' => 'john.doe@ldexpert.com',
             'password' => 'SecurePass123!',
             'role' => Role::THERAPIST->value,
