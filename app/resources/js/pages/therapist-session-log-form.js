@@ -1,4 +1,5 @@
 import $ from 'jquery';
+import { errorAlert } from '../common/sweetalert';
 
 $(function () {
     const $ssaSelect = $('#session-log-ssa');
@@ -117,6 +118,31 @@ $(function () {
     }
 
     updateEndTime();
+
+    // Billing entry window check
+    const sessionDate = $('input[name="session_date"]').val();
+    if (sessionDate) {
+        $.get('/therapist/session-logs/entry-window', { session_date: sessionDate })
+            .done(function (data) {
+                if (data.is_within_window === false) {
+                    $('#billing-window-cutoff').text(data.cutoff_display || data.cutoff);
+                    $('#billing-window-blocked').removeClass('hidden');
+
+                    // Disable submit button
+                    $('form button[type="submit"], form .loading-button, form [x-on\\:click]')
+                        .filter(':last')
+                        .prop('disabled', true)
+                        .addClass('opacity-50 pointer-events-none');
+
+                    errorAlert(
+                        'The billing window for this session\'s week closed on ' +
+                        (data.cutoff_display || data.cutoff) +
+                        '. You can no longer create or edit session logs for this date. Please contact an administrator.',
+                        'Billing Window Closed'
+                    );
+                }
+            });
+    }
 });
 
 

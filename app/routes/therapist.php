@@ -58,6 +58,7 @@ Route::middleware('role:therapist')
             Route::get('/', [SessionLogController::class, 'index'])->name('index');
             Route::post('data', [SessionLogController::class, 'data'])->name('data');
             Route::get('select-ssa', [SessionLogController::class, 'selectSSA'])->name('select-ssa');
+            Route::get('entry-window', [SessionLogController::class, 'entryWindow'])->name('entry-window');
             Route::get('create', [SessionLogController::class, 'create'])->name('create');
             Route::get('create/schedule/{schedule}', [SessionLogController::class, 'create'])->name('create.from-schedule');
             Route::post('/', [SessionLogController::class, 'store'])->name('store');

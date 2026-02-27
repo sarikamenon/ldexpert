@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -216,6 +217,21 @@ final class StoreSessionLogRequest extends FormRequest
                 $date = Carbon::parse((string) $sessionDate);
                 if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
                     $validator->errors()->add('session_date', 'Session date falls on a school holiday.');
+                }
+            }
+
+            // Validate billing entry window (hard block for therapists)
+            $sessionDate = $this->input('session_date');
+            if ($sessionDate) {
+                $windowService = app(BillingEntryWindowService::class);
+                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate));
+                if (! $windowResult->isWithinWindow) {
+                    $validator->errors()->add(
+                        'session_date',
+                        "The billing window for this session's week closed on "
+                        .Carbon::parse($windowResult->cutoff)->format('l, M j, Y \a\t g:i A')
+                        .'. Session logs can no longer be created for this date.'
+                    );
                 }
             }
 
