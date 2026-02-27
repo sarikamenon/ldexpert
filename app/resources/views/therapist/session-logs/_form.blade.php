@@ -14,6 +14,17 @@
         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}" />
     @endif
 
+    {{-- Billing window blocked banner (shown/hidden by JS) --}}
+    <div id="billing-window-blocked" class="hidden">
+        <x-ui::alert variant="danger" class="mb-4">
+            <p class="font-semibold">Billing window closed</p>
+            <p class="text-sm mt-1">The billing entry window for this session's week closed on
+                <span id="billing-window-cutoff" class="font-medium"></span>.
+                You can no longer create or edit session logs for this date.
+                Please contact an administrator if you need to make changes.</p>
+        </x-ui::alert>
+    </div>
+
     {{-- Session Details --}}
     <x-ui::card class="p-6 space-y-4">
         <h3 class="text-lg font-semibold text-foreground">Session Details</h3>

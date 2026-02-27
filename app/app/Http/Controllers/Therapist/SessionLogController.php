@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
+use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
@@ -15,6 +16,7 @@ use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
+use App\Http\Requests\Therapist\EntryWindowRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
 use App\Http\Requests\Therapist\TherapistSessionLogDataRequest;
 use App\Http\Requests\Therapist\UpdateSessionLogRequest;
@@ -22,6 +24,7 @@ use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
 use App\Models\SessionLog;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +49,7 @@ final class SessionLogController extends Controller
         private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly SSAService $ssaService,
         private readonly StudentDocumentService $documentService,
+        private readonly BillingEntryWindowService $billingEntryWindowService,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -60,6 +64,16 @@ final class SessionLogController extends Controller
         return view('therapist.session-logs.select-ssa', [
             'ssas' => $ssas,
         ]);
+    }
+
+    public function entryWindow(EntryWindowRequest $request): JsonResponse
+    {
+        $sessionDate = Carbon::parse((string) $request->validated('session_date'));
+        $result = $this->billingEntryWindowService->checkWindow($sessionDate);
+
+        return response()->json(array_merge($result->toArray(), [
+            'cutoff_display' => Carbon::parse($result->cutoff)->format('l, M j, Y'),
+        ]));
     }
 
     public function index(SessionLogIndexRequest $request): View
