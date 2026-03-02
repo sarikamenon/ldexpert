@@ -7,14 +7,12 @@ namespace App\Services;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\SSAStatus;
-use App\Models\ActivityLog;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 
 class DashboardService
 {
     public function __construct(
-        private readonly ActivityLogService $activityLogService,
         private readonly UserTimezoneService $userTimezoneService,
         private readonly DashboardRepositoryInterface $repository,
     ) {}
@@ -137,28 +135,6 @@ class DashboardService
             'therapist_by_position' => $this->repository->getTherapistsByPosition(),
             'utilization_trend' => $this->repository->getUtilizationTrendData(),
         ];
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    public function getRecentActivity(int $limit = 10): array
-    {
-        $logs = $this->activityLogService
-            ->recent($limit)
-            ->withUserTimezone(Auth::user());
-
-        return $logs
-            ->map(function (ActivityLog $log): array {
-                return [
-                    'type' => $log->action,
-                    'description' => $log->description ?? $this->fallbackActivityDescription($log),
-                    'user' => $log->user !== null ? $log->user->name : 'System',
-                    'created_at' => $log->created_at,
-                    'created_at_local' => $log->getAttribute('created_at_local') ?? $log->created_at,
-                    'icon' => $this->resolveActivityIcon($log),
-                    'color' => $this->resolveActivityColor($log),
-                ];
-            })
-            ->toArray();
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -295,48 +271,6 @@ class DashboardService
                 'icon' => 'chart',
                 'color' => 'secondary',
             ],
-            [
-                'title' => 'Activity Logs',
-                'description' => 'Audit trail',
-                'route' => 'admin.activity-logs.index',
-                'icon' => 'list',
-                'color' => 'secondary',
-            ],
         ];
-    }
-
-    private function fallbackActivityDescription(ActivityLog $log): string
-    {
-        $modelName = class_basename($log->model_type ?? 'Record');
-        $action = Str::headline($log->action ?? 'activity');
-
-        return "{$modelName} {$action}";
-    }
-
-    private function resolveActivityIcon(ActivityLog $log): string
-    {
-        $model = strtolower(class_basename($log->model_type ?? 'record'));
-
-        return match ($model) {
-            'school' => 'school',
-            'therapistprofile' => 'user',
-            'studentprofile' => 'user',
-            'servicesupportagreement' => 'document',
-            'service' => 'settings',
-            default => 'activity',
-        };
-    }
-
-    private function resolveActivityColor(ActivityLog $log): string
-    {
-        $action = $log->action ?? '';
-
-        return match (true) {
-            str_contains($action, 'created') => 'primary',
-            str_contains($action, 'updated') => 'secondary',
-            str_contains($action, 'deleted') => 'danger',
-            str_contains($action, 'status') => 'warning',
-            default => 'accent',
-        };
     }
 }

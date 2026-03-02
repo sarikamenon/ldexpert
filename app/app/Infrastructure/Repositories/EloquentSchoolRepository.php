@@ -28,7 +28,9 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
 
     public function listForDataTables(SchoolFilterDTO $filters, DataTablesParamsDTO $params): array
     {
-        $baseQuery = $this->applyFilters($this->baseQuery(), $filters);
+        $baseQuery = $this->applyFilters($this->baseQuery(), $filters)
+            ->leftJoin('users', 'schools.manager_id', '=', 'users.id')
+            ->select('schools.*');
 
         $queryForTotal = (clone $baseQuery);
         $recordsTotal = $queryForTotal->count('schools.id');

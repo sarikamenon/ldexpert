@@ -170,7 +170,7 @@ return [
             [
                 'label' => 'Reports',
                 'route' => 'admin.reports.ssa.utilization.index',
-                'active' => 'admin.reports.*',
+                'active' => ['admin.reports.*', 'admin.analytics.*'],
                 'children' => [
                     [
                         'label' => 'Utilization & Compliance',
@@ -187,12 +187,17 @@ return [
                         'route' => 'admin.reports.ssa.expirations.index',
                         'active' => 'admin.reports.ssa.expirations.*',
                     ],
+                    [
+                        'label' => 'Analytics',
+                        'route' => 'admin.analytics.index',
+                        'active' => 'admin.analytics.*',
+                    ],
                 ],
             ],
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*', 'admin.activity-logs.*', 'admin.analytics.*'],
+                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*'],
                 'children' => [
                     [
                         'label' => 'Services',
@@ -208,16 +213,6 @@ return [
                         'label' => 'Positions',
                         'route' => 'admin.positions.index',
                         'active' => 'admin.positions.*',
-                    ],
-                    [
-                        'label' => 'Activity Logs',
-                        'route' => 'admin.activity-logs.index',
-                        'active' => 'admin.activity-logs.*',
-                    ],
-                    [
-                        'label' => 'Analytics',
-                        'route' => 'admin.analytics.index',
-                        'active' => 'admin.analytics.*',
                     ],
                 ],
             ],

@@ -124,7 +124,7 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
             });
         }
 
-        $queryForTotal = (clone $baseQuery)->distinct();
+        $queryForTotal = (clone $baseQuery);
         $recordsTotal = $queryForTotal->count('users.id');
 
         if ($params->searchValue) {
@@ -132,14 +132,13 @@ final class EloquentTherapistRepository implements TherapistRepositoryInterface
                 $q->search($params->searchValue); // @phpstan-ignore method.notFound
             });
         }
-        $recordsFiltered = (clone $baseQuery)->distinct()->count('users.id');
+        $recordsFiltered = (clone $baseQuery)->count('users.id');
 
         $orderColumn = $params->orderColumn ?? 'users.name';
         $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
         $baseQuery->orderBy($orderColumn, $orderDir);
 
         $rows = (clone $baseQuery)
-            ->distinct()
             ->skip($params->start)
             ->take($params->length)
             ->get();

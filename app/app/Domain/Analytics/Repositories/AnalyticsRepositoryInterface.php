@@ -60,6 +60,4 @@ interface AnalyticsRepositoryInterface
     /** @return array<string, array<int, mixed>> */
     public function getUsersByRole(): array;
 
-    /** @return array<string, array<int, mixed>> */
-    public function getActivitySummary(Carbon $startDate, Carbon $endDate): array;
 }

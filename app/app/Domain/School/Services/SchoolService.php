@@ -11,7 +11,6 @@ use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Models\School;
-use App\Services\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +21,6 @@ class SchoolService
 {
     public function __construct(
         private readonly SchoolRepositoryInterface $schools,
-        private readonly ActivityLogService $activityLog
     ) {}
 
     /** @return LengthAwarePaginator<int, School> */
@@ -44,7 +42,6 @@ class SchoolService
         /** @var School */
         return $this->wrapWrite(function () use ($dto) {
             $school = $this->schools->create($dto);
-            $this->activityLog->logCreated($school);
 
             return $school;
         });
@@ -54,22 +51,7 @@ class SchoolService
     {
         /** @var School */
         return $this->wrapWrite(function () use ($school, $dto) {
-            $originalAttributes = $school->getOriginal();
             $updatedSchool = $this->schools->update($school, $dto);
-
-            $changes = [];
-            foreach ($updatedSchool->getChanges() as $key => $newValue) {
-                if (isset($originalAttributes[$key])) {
-                    $changes[$key] = [
-                        'old' => $originalAttributes[$key],
-                        'new' => $newValue,
-                    ];
-                }
-            }
-
-            if (! empty($changes)) {
-                $this->activityLog->logUpdated($updatedSchool, $changes);
-            }
 
             return $updatedSchool;
         });
@@ -79,15 +61,7 @@ class SchoolService
     {
         /** @var School */
         return $this->wrapWrite(function () use ($school, $dto) {
-            $oldStatus = $school->status->value;
             $updatedSchool = $this->schools->changeStatus($school, $dto);
-
-            $this->activityLog->logStatusChanged(
-                $updatedSchool,
-                $oldStatus,
-                $dto->status->value,
-                $dto->reason
-            );
 
             return $updatedSchool;
         });

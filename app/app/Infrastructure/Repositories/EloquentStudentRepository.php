@@ -115,7 +115,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             });
         }
 
-        $queryForTotal = (clone $baseQuery)->distinct();
+        $queryForTotal = (clone $baseQuery);
         $recordsTotal = $queryForTotal->count('users.id');
 
         if ($params->searchValue) {
@@ -123,14 +123,13 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
                 $q->search($params->searchValue); // @phpstan-ignore method.notFound
             });
         }
-        $recordsFiltered = (clone $baseQuery)->distinct()->count('users.id');
+        $recordsFiltered = (clone $baseQuery)->count('users.id');
 
         $orderColumn = $params->orderColumn ?? 'users.name';
         $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
         $baseQuery->orderBy($orderColumn, $orderDir);
 
         $rows = (clone $baseQuery)
-            ->distinct()
             ->skip($params->start)
             ->take($params->length)
             ->get();
@@ -166,21 +165,20 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             $baseQuery->where('users.status', $filters['status']);
         }
 
-        $recordsTotal = (clone $baseQuery)->distinct()->count('users.id');
+        $recordsTotal = (clone $baseQuery)->count('users.id');
 
         if ($params->searchValue) {
             $baseQuery->whereHas('studentProfile', function ($q) use ($params) {
                 $q->search($params->searchValue); // @phpstan-ignore method.notFound
             });
         }
-        $recordsFiltered = (clone $baseQuery)->distinct()->count('users.id');
+        $recordsFiltered = (clone $baseQuery)->count('users.id');
 
         $orderColumn = $params->orderColumn ?? 'users.name';
         $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
         $baseQuery->orderBy($orderColumn, $orderDir);
 
         $rows = (clone $baseQuery)
-            ->distinct()
             ->skip($params->start)
             ->take($params->length)
             ->get();

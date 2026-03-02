@@ -249,20 +249,4 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
         ];
     }
 
-    /** @return array<string, array<int, mixed>> */
-    public function getActivitySummary(Carbon $startDate, Carbon $endDate): array
-    {
-        $activities = DB::table('activity_logs')
-            ->select('action', DB::raw('count(*) as count'))
-            ->whereBetween('created_at', [$startDate, $endDate])
-            ->groupBy('action')
-            ->orderByDesc('count')
-            ->limit(10)
-            ->get();
-
-        return [
-            'labels' => $activities->pluck('action')->map(fn ($action) => ucfirst(str_replace('_', ' ', $action)))->toArray(),
-            'data' => $activities->pluck('count')->toArray(),
-        ];
-    }
 }
