@@ -53,7 +53,9 @@ final class SessionLogAccessTest extends TestCase
     public function test_edit_update_accepts_hh_mm_time_inputs(): void
     {
         /** @var SessionLog $sessionLog */
-        $sessionLog = SessionLog::factory()->draft()->create();
+        $sessionLog = SessionLog::factory()->draft()->create([
+            'session_date' => now()->startOfWeek(),
+        ]);
 
         $therapist = $sessionLog->therapist;
         $this->seedContractsForSessionLog($sessionLog);
@@ -79,6 +81,7 @@ final class SessionLogAccessTest extends TestCase
     {
         /** @var SessionLog $sessionLog */
         $sessionLog = SessionLog::factory()->draft()->create([
+            'session_date' => now()->startOfWeek(),
             'outcome' => SessionOutcome::SERVICES_ADMINISTERED,
         ]);
 

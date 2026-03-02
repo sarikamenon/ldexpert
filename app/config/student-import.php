@@ -20,7 +20,6 @@ return [
                 'last_name',
                 'email',
                 'gender',
-                'date_of_birth',
                 'school_name',
                 'id_number',
                 'timezone',
@@ -31,6 +30,7 @@ return [
             ],
             'optional_columns' => [
                 'middle_name',
+                'date_of_birth',
                 'address',
                 'parent_guardian_name',
                 'parent_guardian_email',

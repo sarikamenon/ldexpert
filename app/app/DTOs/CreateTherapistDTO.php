@@ -57,6 +57,7 @@ final class CreateTherapistDTO
     {
         return [
             'name' => $this->firstName.' '.$this->lastName,
+            'username' => $this->personalEmail,
             'email' => $this->personalEmail,
             'password' => $this->password,
             'role' => 'therapist',

@@ -17,6 +17,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 /**
+ * @property string $username
  * @property Role $role
  * @property UserStatus $status
  */
@@ -32,6 +33,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'role',
@@ -61,6 +63,15 @@ class User extends Authenticatable implements MustVerifyEmail
             'role' => Role::class,
             'status' => UserStatus::class,
         ];
+    }
+
+    /**
+     * Return username as the key for password reset tokens.
+     * The password_reset_tokens.email column stores this value.
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->username;
     }
 
     /**

@@ -26,7 +26,7 @@
                 <div style="margin:24px 0; padding:20px; border-radius:8px; background:#f8fafc; border:1px solid #e2e8f0;">
                     <p style="margin:0 0 8px; font-size:14px; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; font-weight:600;">Your Credentials</p>
                     <p style="margin:0 0 8px; font-family:monospace; font-size:16px; color:#0f172a;">
-                        <span style="color:#475569;">Email:</span> <strong>{{ $email }}</strong>
+                        <span style="color:#475569;">Username:</span> <strong>{{ $email }}</strong>
                     </p>
                     <p style="margin:0; font-family:monospace; font-size:16px; color:#0f172a;">
                         <span style="color:#475569;">Password:</span> <strong>{{ $plainPassword }}</strong>

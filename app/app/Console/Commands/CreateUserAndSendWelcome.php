@@ -35,6 +35,7 @@ class CreateUserAndSendWelcome extends Command
         $dto = CreateUserDTO::fromArray([
             'name' => $name,
             'email' => $email,
+            'username' => $email,
             'password' => $password,
         ]);
 

@@ -23,6 +23,7 @@ class EloquentUserRepository implements UserRepositoryInterface
     {
         $user = new User;
         $user->name = $dto->name;
+        $user->username = $dto->username !== '' ? $dto->username : $dto->email;
         $user->email = $dto->email;
         $user->password = Hash::make($dto->password);
         $user->role = Role::from($role);
@@ -34,6 +35,11 @@ class EloquentUserRepository implements UserRepositoryInterface
     public function findByEmail(string $email): ?User
     {
         return User::query()->where('email', $email)->first();
+    }
+
+    public function findByUsername(string $username): ?User
+    {
+        return User::query()->where('username', $username)->first();
     }
 
     /**

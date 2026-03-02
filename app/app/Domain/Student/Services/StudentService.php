@@ -39,6 +39,7 @@ final class StudentService
         Mail::to($dto->email)->send(
             new WelcomeStudentMail(
                 name: $dto->firstName.' '.$dto->lastName,
+                username: $dto->username,
                 email: $dto->email,
                 plainPassword: $dto->password
             )

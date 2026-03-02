@@ -24,7 +24,7 @@ class TherapistBillFactory extends Factory
         $endDate = $this->faker->dateTimeBetween($startDate, 'now');
 
         $billNumber = sprintf(
-            'BILL-%s-%03d',
+            'BILL-%s-F%04d',
             now()->format('Ymd'),
             self::$sequence++
         );

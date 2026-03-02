@@ -20,6 +20,8 @@ interface UserRepositoryInterface
 
     public function findByEmail(string $email): ?User;
 
+    public function findByUsername(string $username): ?User;
+
     public function countStudentsByStatus(string $status): int;
 
     public function countNewStudentsThisMonth(): int;
@@ -40,13 +42,13 @@ interface UserRepositoryInterface
     public function listActiveTherapistsForSelect(): Collection;
 
     /**
-     * @param array<int, int> $ids
+     * @param  array<int, int>  $ids
      * @return Collection<int, User>
      */
     public function findByIds(array $ids): Collection;
 
     /**
-     * @param array<int, int> $serviceIds
+     * @param  array<int, int>  $serviceIds
      * @return Collection<int, User>
      */
     public function listActiveTherapistsForServices(array $serviceIds): Collection;

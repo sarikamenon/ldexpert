@@ -33,6 +33,7 @@ final class EloquentStudentRepositoryTest extends TestCase
 
         $userData = [
             'name' => 'Ava Lee',
+            'username' => 'ava.lee',
             'email' => 'ava@example.com',
             'password' => 'hashed',
             'role' => Role::STUDENT->value,

@@ -25,7 +25,7 @@ class InvoiceFactory extends Factory
         $endDate = $this->faker->dateTimeBetween($startDate, 'now');
 
         $invoiceNumber = sprintf(
-            'INV-%s-%03d',
+            'INV-%s-F%04d',
             now()->format('Ymd'),
             self::$sequence++
         );

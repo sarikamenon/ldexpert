@@ -30,23 +30,29 @@ final class ScenarioStudentSeeder extends Seeder
         foreach ($schools as $school) {
             for ($j = 0; $j < 5; $j++) {
                 $index++;
-                $user = User::query()->create([
-                    'name' => "Scenario Student {$index}",
-                    'email' => "scenario-student-{$index}@example.com",
-                    'password' => Hash::make('password'),
-                    'role' => Role::STUDENT->value,
-                    'status' => UserStatus::ACTIVE->value,
-                ]);
+                $email = "scenario-student-{$index}@example.com";
+                $user = User::query()->firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => "Scenario Student {$index}",
+                        'username' => "scenario.student.{$index}",
+                        'password' => Hash::make('password'),
+                        'role' => Role::STUDENT->value,
+                        'status' => UserStatus::ACTIVE->value,
+                    ],
+                );
 
-                StudentProfile::query()->create([
-                    'user_id' => $user->id,
-                    'school_id' => $school->id,
-                    'first_name' => "First{$index}",
-                    'last_name' => "Student{$index}",
-                    'timezone' => 'America/Los_Angeles',
-                    'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
-                    'grade_level' => '5',
-                ]);
+                StudentProfile::query()->firstOrCreate(
+                    ['user_id' => $user->id],
+                    [
+                        'school_id' => $school->id,
+                        'first_name' => "First{$index}",
+                        'last_name' => "Student{$index}",
+                        'timezone' => 'America/Los_Angeles',
+                        'date_of_birth' => now()->subYears(10)->format('Y-m-d'),
+                        'grade_level' => '5',
+                    ],
+                );
             }
         }
     }
