@@ -108,7 +108,7 @@ final class SessionLogController extends Controller
 
     public function show(SessionLog $sessionLog): View
     {
-        $sessionLog->load(['student', 'ssa', 'service', 'school', 'therapistContract', 'schoolContract', 'therapist']);
+        $sessionLog->load(['student', 'ssa', 'service', 'school', 'therapistContract', 'schoolContract', 'therapist', 'comments.author']);
 
         $documents = $this->documentService->listBySessionLog($sessionLog->id);
 

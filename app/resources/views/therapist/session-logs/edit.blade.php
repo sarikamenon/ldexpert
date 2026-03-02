@@ -10,23 +10,6 @@
                 <h1 class="text-2xl font-semibold text-foreground">Edit Session Log</h1>
             </div>
 
-            @if ($sessionLog->isSentBack())
-                <x-ui::card class="p-6 mb-6">
-                    <h2 class="text-lg font-semibold text-foreground mb-2">Admin feedback</h2>
-                    <p class="text-sm text-foreground/60 mb-4">This session was sent back for rectification. Please address the comment(s) below and resubmit.</p>
-                    <div class="space-y-4">
-                        @foreach ($sessionLog->comments->where('type', \App\Enums\SessionLogCommentType::SENT_BACK)->sortByDesc('created_at') as $comment)
-                            <div class="rounded-lg border border-border p-4 bg-muted/30">
-                                <p class="text-xs text-foreground/60 mb-1">
-                                    {{ $comment->author?->name ?? 'Admin' }} · {{ $comment->created_at?->format('M d, Y g:i A') }}
-                                </p>
-                                <p class="text-sm text-foreground whitespace-pre-wrap">{{ $comment->comment }}</p>
-                            </div>
-                        @endforeach
-                    </div>
-                </x-ui::card>
-            @endif
-
             @if ($errors->any())
                 <x-ui::alert variant="danger" class="mb-4">
                     <p class="font-semibold mb-2">Please fix the highlighted errors and try again.</p>

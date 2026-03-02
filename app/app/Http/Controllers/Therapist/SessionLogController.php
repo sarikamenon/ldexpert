@@ -12,10 +12,12 @@ use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
+use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
+use App\Http\Requests\Therapist\AddTherapistCommentRequest;
 use App\Http\Requests\Therapist\EntryWindowRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
 use App\Http\Requests\Therapist\TherapistSessionLogDataRequest;
@@ -24,6 +26,7 @@ use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
 use App\Models\SessionLog;
+use App\Models\SessionLogComment;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -293,6 +296,39 @@ final class SessionLogController extends Controller
                 ->withInput()
                 ->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    public function addComment(AddTherapistCommentRequest $request, SessionLog $sessionLog): RedirectResponse
+    {
+        $this->authorize('view', $sessionLog);
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+
+        SessionLogComment::create([
+            'session_log_id' => $sessionLog->id,
+            'author_id' => $therapist->id,
+            'comment' => $request->validated('comment'),
+            'type' => SessionLogCommentType::THERAPIST_REPLY,
+        ]);
+
+        if ($request->boolean('submit_after_comment') && $sessionLog->status?->canSubmit()) {
+            try {
+                $this->sessionLogService->submit($therapist, $sessionLog);
+
+                return redirect()
+                    ->route('therapist.session-logs.show', $sessionLog)
+                    ->with('success', 'Comment added and session log submitted successfully.');
+            } catch (\Exception $e) {
+                return redirect()
+                    ->back()
+                    ->withErrors(['error' => $e->getMessage()]);
+            }
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Comment added successfully.');
     }
 
     public function submit(Request $request, SessionLog $sessionLog): RedirectResponse

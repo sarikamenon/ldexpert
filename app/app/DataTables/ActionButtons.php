@@ -146,7 +146,7 @@ final class ActionButtons
         ?string $confirmTitle = 'Approve session?',
         ?string $confirmText = 'This will mark the session as approved.',
     ): string {
-        return self::formButton($actionUrl, 'POST', self::ICON_ACTIVATE, self::VARIANT_PRIMARY, $label, [
+        return self::formButton($actionUrl, 'POST', self::ICON_ACTIVATE, self::VARIANT_SUCCESS, $label, [
             'data-confirm-title' => $confirmTitle,
             'data-confirm-text' => $confirmText,
             'data-confirm-icon' => 'question',
@@ -167,6 +167,16 @@ final class ActionButtons
             'data-confirm-text' => $confirmText,
             'data-confirm-icon' => 'warning',
         ]);
+    }
+
+    /**
+     * Send back button (link to show page with send-back form).
+     *
+     * @param  array<string, string|int|null>  $attrs
+     */
+    public static function sendBack(string $url, string $label = 'Send back', array $attrs = []): string
+    {
+        return self::link($url, self::ICON_DEACTIVATE, self::VARIANT_DANGER, $label, $attrs);
     }
 
     /**

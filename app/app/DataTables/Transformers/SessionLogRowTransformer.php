@@ -88,7 +88,7 @@ final class SessionLogRowTransformer
 
         if ($log->status === SessionLogStatus::SUBMITTED) {
             $buttons[] = ActionButtons::approve(route('admin.session-logs.approve', $log));
-            $buttons[] = ActionButtons::cancel(route('admin.session-logs.cancel', $log));
+            $buttons[] = ActionButtons::sendBack(route('admin.session-logs.show', $log).'#send-back-form');
         }
 
         $actionsCell = ActionButtons::wrap(...$buttons);
