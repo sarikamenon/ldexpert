@@ -261,8 +261,14 @@ final class StudentManagementTest extends TestCase
             'last_name',
             'username',
             'email',
-            'date_of_birth',
+            'gender',
+            'school_id',
+            'id_number',
             'timezone',
+            'grade_level',
+            'city',
+            'state',
+            'zip_code',
         ]);
     }
 
