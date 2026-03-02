@@ -330,7 +330,7 @@ final class StudentImportService
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:255'],
             'gender' => ['required', 'string', 'max:50'],
-            'date_of_birth' => ['required', 'date', 'before:today', 'after:1900-01-01'],
+            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'id_number' => ['required', 'string', 'max:50'],
             'timezone' => ['required', 'string'],
             'grade_level' => ['required', 'string', 'max:50'],

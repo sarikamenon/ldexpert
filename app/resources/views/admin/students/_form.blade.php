@@ -73,8 +73,8 @@
             </div>
 
             <div>
-                <x-input-label for="date_of_birth" value="Date of Birth *" />
-                <p class="mt-1 text-xs text-foreground/60">Student's date of birth</p>
+                <x-input-label for="date_of_birth" value="Date of Birth" />
+                <p class="mt-1 text-xs text-foreground/60">Student's date of birth (optional)</p>
                 <x-ui::input id="date_of_birth" name="date_of_birth" type="date" class="mt-1 block w-full"
                     :value="old('date_of_birth', $profile?->date_of_birth?->format('Y-m-d'))" dusk="student-date-of-birth" />
                 <x-input-error :messages="$errors->get('date_of_birth')" class="mt-2" />

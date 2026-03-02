@@ -115,7 +115,7 @@ final class ScheduleOverlapTest extends TestCase
 
     public function test_timezone_conversion_stores_as_utc(): void
     {
-        // Therapist in EST (UTC-5)
+        // Therapist in Eastern time (America/New_York, DST-aware)
         $therapist = User::factory()->create(['role' => Role::THERAPIST, 'timezone' => 'America/New_York']);
 
         $studentUser = User::factory()->create(['role' => Role::STUDENT]);
@@ -130,7 +130,7 @@ final class ScheduleOverlapTest extends TestCase
         ]);
         $therapist->students()->attach($studentUser->id, ['assigned_at' => now(), 'status' => 'active']);
 
-        // Schedule at 9:00 AM EST -> 14:00 UTC
+        // Schedule at 9:00 AM local -> stored as UTC
         $date = now()->addWeek()->format('Y-m-d');
         $payload = [
             'ssa_id' => $ssa->id,
@@ -152,8 +152,8 @@ final class ScheduleOverlapTest extends TestCase
         $this->assertDatabaseHas('schedules', [
             'therapist_id' => $therapist->id,
             'schedule_date' => $date,
-            'start_time' => '14:00:00', // 9 AM EST is 14:00 UTC
-            'end_time' => '15:00:00',
+            'start_time' => '13:00:00',
+            'end_time' => '14:00:00',
         ]);
     }
 }

@@ -31,7 +31,7 @@ abstract class StudentFormRequest extends FormRequest
             'username' => ['required', 'string', 'regex:/^[a-zA-Z0-9.\-]+$/', 'max:255', $usernameRule],
             'email' => ['required', 'email:rfc', 'max:255'],
             'gender' => ['required', 'string', 'max:50'],
-            'date_of_birth' => ['required', 'date', 'before:today', 'after:1900-01-01'],
+            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
             'id_number' => ['required', 'string', 'max:50'],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
