@@ -92,7 +92,20 @@ return [
                 'Parent First Name' => 'parent_guardian_first_name',
                 'timezone' => 'timezone',
             ],
-            'default_date_of_birth' => '2020-02-20',
+            'field_sources' => [
+                'email' => 'parent_guardian_email',
+            ],
+            'transformations' => [
+                [
+                    'type' => 'combine',
+                    'target' => 'parent_guardian_name',
+                    'sources' => ['parent_guardian_first_name', 'parent_guardian_last_name'],
+                    'separator' => ' ',
+                ],
+            ],
+            'context_sources' => [
+                'state' => 'school.state_code',
+            ],
         ],
 
         'MARVIN' => [
@@ -128,5 +141,15 @@ return [
             'application/csv',
         ],
         'duplicate_check_fields' => ['email', 'id_number'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Default Values (applied when field is empty after mapping)
+    |--------------------------------------------------------------------------
+    */
+
+    'defaults' => [
+        'date_of_birth' => '2020-02-20',
     ],
 ];

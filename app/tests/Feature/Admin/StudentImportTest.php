@@ -518,6 +518,34 @@ final class StudentImportTest extends TestCase
         $this->assertEquals('America/Chicago', $profile->timezone);
     }
 
+    public function test_timezone_fallback_to_school_when_invalid(): void
+    {
+        Mail::fake();
+
+        $schoolDenver = School::factory()->create([
+            'external_emr_name' => 'Denver School',
+            'timezone' => 'America/Denver',
+        ]);
+
+        $csvContent = "first_name,last_name,email,gender,date_of_birth,school_name,id_number,timezone,grade_level,city,state,zip_code\n";
+        $csvContent .= "Jane,Doe,invalid-tz@example.com,Female,2010-06-15,Denver School,STU009,Invalid/Timezone,7,Denver,CO,80201\n";
+        $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::NOVA->value,
+            ]);
+
+        $response->assertOk();
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $profile = StudentProfile::where('id_number', 'STU009')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('America/Denver', $profile->timezone);
+    }
+
     private function generateRsmCsvContent(array $rows): string
     {
         $columns = [
