@@ -56,33 +56,36 @@ final class ScenarioTherapistSeeder extends Seeder
     private function createTherapist(int $managerId, int $positionId, string $positionName, int $index): void
     {
         $email = "therapist-{$positionName}-{$index}@example.com";
-        $user = User::query()->create([
-            'name' => "Therapist {$positionName} {$index}",
-            'username' => $email,
-            'email' => $email,
-            'password' => Hash::make('password'),
-            'role' => Role::THERAPIST->value,
-            'status' => UserStatus::ACTIVE->value,
-        ]);
+        $username = 'therapist.'.strtolower($positionName).".{$index}";
+        $user = User::query()->firstOrCreate(
+            ['email' => $email],
+            [
+                'name' => "Therapist {$positionName} {$index}",
+                'username' => $username,
+                'password' => Hash::make('password'),
+                'role' => Role::THERAPIST->value,
+                'status' => UserStatus::ACTIVE->value,
+            ],
+        );
 
         TherapistProfile::query()->create([
             'user_id' => $user->id,
-            'employee_type' => EmployeeType::W2->value,
-            'title' => TherapistTitle::MS->value,
-            'first_name' => "First{$index}",
-            'last_name' => "{$positionName}{$index}",
-            'personal_email' => $user->email,
-            'phone' => '555-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT).'-0000',
-            'ld_email' => $user->email,
-            'address' => '123 Scenario St',
-            'comments' => 'Scenario 2025 therapist.',
-            'position_id' => $positionId,
-            'state' => 'CA',
-            'timezone' => 'America/Los_Angeles',
-            'manager_id' => $managerId,
-            'max_weekly_hours' => 40,
-            'hourly_rate' => 75.00,
-            'dob' => now()->subYears(32)->format('Y-m-d'),
+                'employee_type' => EmployeeType::W2->value,
+                'title' => TherapistTitle::MS->value,
+                'first_name' => "First{$index}",
+                'last_name' => "{$positionName}{$index}",
+                'personal_email' => $user->email,
+                'phone' => '555-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT).'-0000',
+                'ld_email' => $user->email,
+                'address' => '123 Scenario St',
+                'comments' => 'Scenario 2025 therapist.',
+                'position_id' => $positionId,
+                'state' => 'CA',
+                'timezone' => 'America/Los_Angeles',
+                'manager_id' => $managerId,
+                'max_weekly_hours' => 40,
+                'hourly_rate' => 75.00,
+                'dob' => now()->subYears(32)->format('Y-m-d'),
         ]);
     }
 
