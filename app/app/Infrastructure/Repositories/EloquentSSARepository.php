@@ -46,6 +46,9 @@ final class EloquentSSARepository implements SSARepositoryInterface
     public function listForDataTables(SSAFilterDTO $filters, DataTablesParamsDTO $params): array
     {
         $baseQuery = $this->applyFilters(ServiceSupportAgreement::query(), $filters)
+            ->leftJoin('users as students', 'service_support_agreements.student_id', '=', 'students.id')
+            ->leftJoin('users as therapists', 'service_support_agreements.assigned_therapist_id', '=', 'therapists.id')
+            ->select('service_support_agreements.*')
             ->with([
                 'student',
                 'student.studentProfile.school',

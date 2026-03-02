@@ -228,16 +228,24 @@ Route::middleware('role:admin')
         Route::prefix('reports/ssa')->name('reports.ssa.')->group(function () {
             Route::get('utilization', [SSAUtilizationReportController::class, 'index'])
                 ->name('utilization.index');
+            Route::post('utilization/data', [SSAUtilizationReportController::class, 'data'])
+                ->name('utilization.data');
             Route::get('utilization/export', [SSAUtilizationReportController::class, 'export'])
                 ->name('utilization.export');
 
             Route::get('caseload', [SSACaseloadReportController::class, 'index'])
                 ->name('caseload.index');
+            Route::post('caseload/therapist-data', [SSACaseloadReportController::class, 'therapistData'])
+                ->name('caseload.therapist-data');
+            Route::post('caseload/unassigned-data', [SSACaseloadReportController::class, 'unassignedData'])
+                ->name('caseload.unassigned-data');
             Route::get('caseload/export', [SSACaseloadReportController::class, 'export'])
                 ->name('caseload.export');
 
             Route::get('expirations', [SSAExpirationReportController::class, 'index'])
                 ->name('expirations.index');
+            Route::post('expirations/data', [SSAExpirationReportController::class, 'data'])
+                ->name('expirations.data');
             Route::get('expirations/export', [SSAExpirationReportController::class, 'export'])
                 ->name('expirations.export');
         });

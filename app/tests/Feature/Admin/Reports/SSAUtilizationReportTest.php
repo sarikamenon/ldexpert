@@ -24,6 +24,7 @@ final class SSAUtilizationReportTest extends TestCase
         return User::factory()->admin()->create();
     }
 
+    /** @param array<string, mixed> $overrides */
     private function createSSA(array $overrides = []): ServiceSupportAgreement
     {
         $school = School::factory()->create();
@@ -59,7 +60,6 @@ final class SSAUtilizationReportTest extends TestCase
     public function test_admin_can_view_utilization_report(): void
     {
         $admin = $this->createAdmin();
-        $this->createSSA();
 
         $response = $this->actingAs($admin)
             ->get(route('admin.reports.ssa.utilization.index'));
@@ -67,8 +67,7 @@ final class SSAUtilizationReportTest extends TestCase
         $response->assertOk()
             ->assertSee('SSA Utilization & Compliance Report')
             ->assertViewIs('admin.reports.ssa.utilization')
-            ->assertViewHas('ssas')
-            ->assertViewHas('summary')
+            ->assertViewHas('datatableUrl')
             ->assertViewHas('schools')
             ->assertViewHas('therapists')
             ->assertViewHas('services');
@@ -86,42 +85,46 @@ final class SSAUtilizationReportTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_filters_work_correctly(): void
+    public function test_data_endpoint_returns_json(): void
     {
         $admin = $this->createAdmin();
-        $dateRange = [
-            'start_date' => now()->subDays(10),
-            'end_date' => now()->addDays(10),
-        ];
-        $ssa1 = $this->createSSA(array_merge($dateRange, [
-            'tho_minutes' => 1000,
-            'served_minutes' => 500,
-        ]));
-        $ssa2 = $this->createSSA(array_merge($dateRange, [
-            'tho_minutes' => 2000,
-            'served_minutes' => 2000,
-        ]));
+        $this->createSSA();
 
         $response = $this->actingAs($admin)
-            ->get(route('admin.reports.ssa.utilization.index', [
-                'start_date' => now()->subDays(30)->format('Y-m-d'),
-                'end_date' => now()->addDays(30)->format('Y-m-d'),
-            ]));
+            ->post(route('admin.reports.ssa.utilization.data'), [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 25,
+            ]);
 
-        $response->assertOk();
-        $this->assertGreaterThanOrEqual(2, $response->viewData('ssas')->total());
+        $response->assertOk()
+            ->assertJsonStructure([
+                'draw',
+                'recordsTotal',
+                'recordsFiltered',
+                'data',
+                'summary',
+            ]);
+
+        $json = $response->json();
+        $this->assertGreaterThanOrEqual(1, $json['recordsTotal']);
+        $this->assertNotEmpty($json['summary']);
     }
 
-    public function test_utilization_percentage_calculates_correctly(): void
+    public function test_data_endpoint_summary_has_utilization(): void
     {
         $admin = $this->createAdmin();
         $this->createSSA(['tho_minutes' => 1000, 'served_minutes' => 800]);
 
         $response = $this->actingAs($admin)
-            ->get(route('admin.reports.ssa.utilization.index'));
+            ->post(route('admin.reports.ssa.utilization.data'), [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 25,
+            ]);
 
         $response->assertOk();
-        $summary = $response->viewData('summary');
+        $summary = $response->json('summary');
         $this->assertEquals(80.0, $summary['overall_utilization_percent']);
     }
 

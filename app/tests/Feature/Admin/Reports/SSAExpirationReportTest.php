@@ -24,6 +24,7 @@ final class SSAExpirationReportTest extends TestCase
         return User::factory()->admin()->create();
     }
 
+    /** @param array<string, mixed> $overrides */
     private function createSSA(array $overrides = []): ServiceSupportAgreement
     {
         $school = School::factory()->create();
@@ -59,7 +60,6 @@ final class SSAExpirationReportTest extends TestCase
     public function test_admin_can_view_expiration_report(): void
     {
         $admin = $this->createAdmin();
-        $this->createSSA();
 
         $response = $this->actingAs($admin)
             ->get(route('admin.reports.ssa.expirations.index'));
@@ -67,10 +67,10 @@ final class SSAExpirationReportTest extends TestCase
         $response->assertOk()
             ->assertSee('SSA Expirations & Pipeline Report')
             ->assertViewIs('admin.reports.ssa.expirations')
-            ->assertViewHas('upcoming')
-            ->assertViewHas('expired')
-            ->assertViewHas('pending')
-            ->assertViewHas('summary');
+            ->assertViewHas('datatableUrl')
+            ->assertViewHas('schools')
+            ->assertViewHas('therapists')
+            ->assertViewHas('services');
     }
 
     public function test_non_admin_cannot_access_expiration_report(): void
@@ -85,7 +85,7 @@ final class SSAExpirationReportTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_upcoming_expirations_are_shown(): void
+    public function test_data_endpoint_returns_upcoming(): void
     {
         $admin = $this->createAdmin();
         $this->createSSA([
@@ -94,14 +94,26 @@ final class SSAExpirationReportTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->get(route('admin.reports.ssa.expirations.index', ['bucket' => 'upcoming']));
+            ->post(route('admin.reports.ssa.expirations.data'), [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 25,
+                'filter_bucket' => 'upcoming',
+            ]);
 
-        $response->assertOk();
-        $upcoming = $response->viewData('upcoming');
-        $this->assertGreaterThanOrEqual(1, $upcoming->count());
+        $response->assertOk()
+            ->assertJsonStructure([
+                'draw',
+                'recordsTotal',
+                'recordsFiltered',
+                'data',
+                'summary',
+            ]);
+
+        $this->assertGreaterThanOrEqual(1, $response->json('recordsTotal'));
     }
 
-    public function test_expired_ssas_are_shown(): void
+    public function test_data_endpoint_returns_expired(): void
     {
         $admin = $this->createAdmin();
         $this->createSSA([
@@ -110,11 +122,15 @@ final class SSAExpirationReportTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->get(route('admin.reports.ssa.expirations.index', ['bucket' => 'expired']));
+            ->post(route('admin.reports.ssa.expirations.data'), [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 25,
+                'filter_bucket' => 'expired',
+            ]);
 
         $response->assertOk();
-        $expired = $response->viewData('expired');
-        $this->assertGreaterThanOrEqual(1, $expired->count());
+        $this->assertGreaterThanOrEqual(1, $response->json('recordsTotal'));
     }
 
     public function test_export_generates_csv(): void
