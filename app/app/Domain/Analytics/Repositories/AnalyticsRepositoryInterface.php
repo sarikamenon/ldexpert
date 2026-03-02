@@ -59,5 +59,4 @@ interface AnalyticsRepositoryInterface
 
     /** @return array<string, array<int, mixed>> */
     public function getUsersByRole(): array;
-
 }

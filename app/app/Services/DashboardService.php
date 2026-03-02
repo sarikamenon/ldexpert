@@ -8,7 +8,6 @@ use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\SSAStatus;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 
 class DashboardService
 {

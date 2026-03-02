@@ -248,5 +248,4 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
             'data' => $users->pluck('count')->toArray(),
         ];
     }
-
 }
