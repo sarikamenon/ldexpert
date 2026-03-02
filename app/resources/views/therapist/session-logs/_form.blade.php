@@ -132,18 +132,10 @@
             </div>
         </div>
 
-        <div x-data="{ open: true }" class="space-y-4 mt-4">
-            <div class="flex items-center justify-between">
-                <h4 class="text-sm font-medium text-foreground/70">Notes & Outcome</h4>
-                <button type="button"
-                    class="text-xs text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
-                    @click="open = !open" x-bind:aria-expanded="open.toString()">
-                    <span x-show="!open">Show</span>
-                    <span x-show="open">Hide</span>
-                </button>
-            </div>
+        <div class="space-y-4 mt-4">
+            <h4 class="text-sm font-medium text-foreground/70">Notes & Outcome</h4>
 
-            <div x-show="open" x-cloak class="space-y-4">
+            <div class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-foreground">Notes</label>
                     <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
@@ -170,7 +162,6 @@
                     @error('outcome')
                         <p class="mt-1 text-sm text-danger">{{ $message }}</p>
                     @enderror
-                    {{-- Always billable flags are handled automatically; keep default as billable --}}
                     <input type="hidden" name="is_billable_therapist"
                         value="{{ old('is_billable_therapist', $sessionLog->is_billable_therapist ?? 1) }}">
                     <input type="hidden" name="is_billable_school" value="1">
@@ -186,3 +177,57 @@
         </x-ui::loading-button>
     </div>
 </form>
+
+@if ($isEdit && $sessionLog->comments->count() > 0)
+    <x-ui::card class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-foreground">Comments</h3>
+        <p class="text-sm text-foreground/60">Conversation between admin and therapist about this session log.</p>
+        <div class="space-y-3">
+            @foreach ($sessionLog->comments->sortBy('created_at') as $comment)
+                @php
+                    $isAdmin = $comment->type === \App\Enums\SessionLogCommentType::SENT_BACK;
+                @endphp
+                <div class="rounded-lg border border-border p-4 {{ $isAdmin ? 'bg-muted/30' : 'bg-primary/5' }}">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-medium {{ $isAdmin ? 'text-warning' : 'text-primary' }}">
+                            {{ $isAdmin ? 'Admin' : 'Therapist' }}
+                        </span>
+                        <span class="text-xs text-foreground/60">
+                            {{ $comment->author?->name ?? ($isAdmin ? 'Admin' : 'Therapist') }} · {{ $comment->created_at?->format('M d, Y g:i A') }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-foreground whitespace-pre-wrap">{{ $comment->comment }}</p>
+                </div>
+            @endforeach
+        </div>
+
+        <form method="POST" action="{{ route('therapist.session-logs.comment', $sessionLog) }}" class="space-y-3"
+            x-data="{ submitAfter: false }">
+            @csrf
+            <input type="hidden" name="submit_after_comment" x-bind:value="submitAfter ? '1' : '0'" />
+            <div>
+                <label class="block text-sm font-medium text-foreground">Add a Reply</label>
+                <p class="mt-1 text-xs text-foreground/60" id="therapist-comment-help">
+                    Add a comment to respond to admin feedback or provide additional context.
+                </p>
+                <textarea name="comment" rows="3"
+                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    aria-describedby="therapist-comment-help"
+                    placeholder="Type your reply here..." required>{{ old('comment') }}</textarea>
+                @error('comment')
+                    <p class="mt-1 text-sm text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="flex justify-end gap-3">
+                <x-ui::button type="submit" variant="primary" @click="submitAfter = false">
+                    Add Comment
+                </x-ui::button>
+                @if ($sessionLog->status?->canSubmit())
+                    <x-ui::button type="submit" variant="success" @click="submitAfter = true">
+                        Add Comment & Submit
+                    </x-ui::button>
+                @endif
+            </div>
+        </form>
+    </x-ui::card>
+@endif
