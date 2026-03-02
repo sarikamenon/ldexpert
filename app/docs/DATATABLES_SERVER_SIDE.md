@@ -62,7 +62,6 @@ List tables in this project use **server-side processing**: paging, search, orde
 | Therapist contracts | `admin.contracts.therapists.data` | `TherapistContractController::data()` | `TherapistContractRowTransformer` |
 | Student imports | `admin.students.imports.data` | `StudentController::importHistoryData()` | `StudentImportRowTransformer` |
 | SSA imports | `admin.ssas.imports.data` | `SSAController::importHistoryData()` | `SSAImportRowTransformer` |
-| Activity logs | `admin.activity-logs.data` | `ActivityLogController::data()` | `ActivityLogRowTransformer` |
 | Session logs (admin) | `admin.session-logs.data` | `SessionLogController::data()` | `SessionLogRowTransformer` |
 | Session logs (therapist) | `therapist.session-logs.data` | `SessionLogController::data()` (Therapist) | `TherapistSessionLogRowTransformer` |
 | SSAs (therapist) | `therapist.ssas.data` | `SSAController::data()` (Therapist) | `TherapistSSARowTransformer` |

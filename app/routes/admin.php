@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\ActivityLogController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\Billing\TherapistBillController;
 use App\Http\Controllers\Admin\DashboardController;
@@ -121,11 +120,6 @@ Route::middleware('role:admin')
                     ->parameters(['therapists' => 'therapistContract'])
                     ->except(['destroy']);
             });
-
-        // Activity Logs
-        Route::get('activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
-        Route::post('activity-logs/data', [ActivityLogController::class, 'data'])->name('activity-logs.data');
-        Route::get('activity-logs/export', [ActivityLogController::class, 'export'])->name('activity-logs.export');
 
         // Analytics
         Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics.index');

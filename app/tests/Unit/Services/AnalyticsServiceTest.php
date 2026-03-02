@@ -68,7 +68,6 @@ final class AnalyticsServiceTest extends TestCase
         $repository->shouldReceive('getUserCount')->once()->andReturn(50);
         $repository->shouldReceive('getActiveUserCount')->once()->andReturn(45);
         $repository->shouldReceive('getUsersByRole')->once()->andReturn(['labels' => [], 'data' => []]);
-        $repository->shouldReceive('getActivitySummary')->once()->andReturn(['labels' => [], 'data' => []]);
 
         $service = new AnalyticsService($repository);
         $result = $service->getOverallAnalytics();
@@ -77,7 +76,6 @@ final class AnalyticsServiceTest extends TestCase
         $this->assertArrayHasKey('schools', $result);
         $this->assertArrayHasKey('therapists', $result);
         $this->assertArrayHasKey('users', $result);
-        $this->assertArrayHasKey('activity_summary', $result);
     }
 
     protected function tearDown(): void

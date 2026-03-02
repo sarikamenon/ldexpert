@@ -96,21 +96,12 @@
         </x-ui::card>
     </div>
 
-    <!-- Charts Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <!-- Users by Role -->
+    <!-- Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
         <x-ui::card class="p-6">
             <h3 class="text-lg font-semibold text-foreground mb-4">Users by Role</h3>
             <div style="position: relative; height: 300px;">
                 <canvas id="usersByRoleChart"></canvas>
-            </div>
-        </x-ui::card>
-
-        <!-- Activity Summary -->
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Top Activities</h3>
-            <div style="position: relative; height: 300px;">
-                <canvas id="activitySummaryChart"></canvas>
             </div>
         </x-ui::card>
     </div>
@@ -183,33 +174,6 @@
                             maintainAspectRatio: false,
                             plugins: {
                                 legend: { position: 'bottom' }
-                            }
-                        }
-                    });
-                }
-
-                // Activity Summary Chart
-                const activitySummaryCtx = document.getElementById('activitySummaryChart');
-                if (activitySummaryCtx) {
-                    const activityData = @json($analytics['activity_summary']);
-                    new Chart(activitySummaryCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: activityData.labels,
-                            datasets: [{
-                                label: 'Count',
-                                data: activityData.data,
-                                backgroundColor: novaColors.primary,
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false }
-                            },
-                            scales: {
-                                y: { beginAtZero: true }
                             }
                         }
                     });

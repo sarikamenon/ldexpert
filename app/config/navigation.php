@@ -197,7 +197,7 @@ return [
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*', 'admin.activity-logs.*'],
+                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*'],
                 'children' => [
                     [
                         'label' => 'Services',
@@ -213,11 +213,6 @@ return [
                         'label' => 'Positions',
                         'route' => 'admin.positions.index',
                         'active' => 'admin.positions.*',
-                    ],
-                    [
-                        'label' => 'Activity Logs',
-                        'route' => 'admin.activity-logs.index',
-                        'active' => 'admin.activity-logs.*',
                     ],
                 ],
             ],

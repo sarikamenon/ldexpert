@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Domain\Analytics\Repositories\AnalyticsRepositoryInterface;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
@@ -36,7 +35,6 @@ use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Events\ScheduleCreated;
 use App\Events\ScheduleUpdated;
 use App\Http\Middleware\RoleMiddleware;
-use App\Infrastructure\Repositories\EloquentActivityLogRepository;
 use App\Infrastructure\Repositories\EloquentAnalyticsRepository;
 use App\Infrastructure\Repositories\EloquentDashboardRepository;
 use App\Infrastructure\Repositories\EloquentFinanceSummaryRepository;
@@ -124,7 +122,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PositionRepositoryInterface::class, EloquentPositionRepository::class);
         $this->app->bind(SSAImportRepositoryInterface::class, EloquentSSAImportRepository::class);
         $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
-        $this->app->bind(ActivityLogRepositoryInterface::class, EloquentActivityLogRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
         $this->app->bind(SessionLogRepositoryInterface::class, EloquentSessionLogRepository::class);
         $this->app->bind(InvoiceRepositoryInterface::class, EloquentInvoiceRepository::class);

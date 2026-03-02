@@ -85,8 +85,7 @@ class AnalyticsService
      *         total: int,
      *         active: int,
      *         by_role: array<string, array<int, mixed>>
-     *     },
-     *     activity_summary: array<string, array<int, mixed>>
+     *     }
      * }
      */
     public function getOverallAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
@@ -110,7 +109,6 @@ class AnalyticsService
                 'active' => $this->repository->getActiveUserCount(),
                 'by_role' => $this->repository->getUsersByRole(),
             ],
-            'activity_summary' => $this->repository->getActivitySummary($startDate, $endDate),
         ];
     }
 }
