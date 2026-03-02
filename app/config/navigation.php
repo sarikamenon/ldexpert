@@ -55,7 +55,7 @@ return [
             [
                 'label' => 'Students',
                 'route' => 'admin.students.index',
-                'active' => ['admin.students.*', 'admin.student-documents.*', 'admin.ssas.*'],
+                'active' => ['admin.students.*', 'admin.student-documents.*', 'admin.ssas.*', 'admin.leads.*'],
                 'children' => [
                     [
                         'label' => 'Student List',
@@ -76,6 +76,16 @@ return [
                         'label' => 'Documents',
                         'route' => 'admin.student-documents.index',
                         'active' => 'admin.student-documents.*',
+                    ],
+                    [
+                        'label' => 'Lead List',
+                        'route' => 'admin.leads.index',
+                        'active' => 'admin.leads.index',
+                    ],
+                    [
+                        'label' => 'Create Lead',
+                        'route' => 'admin.leads.create',
+                        'active' => 'admin.leads.create',
                     ],
                     [
                         'label' => 'SSA List',

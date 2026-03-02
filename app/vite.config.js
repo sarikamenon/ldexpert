@@ -56,6 +56,8 @@ export default defineConfig({
                 'resources/js/pages/admin-reports-ssa-utilization-index.js',
                 'resources/js/pages/admin-reports-ssa-caseload-index.js',
                 'resources/js/pages/admin-reports-ssa-expirations-index.js',
+                'resources/js/pages/admin-leads-index.js',
+                'resources/js/pages/admin-leads-show.js',
                 'resources/css/therapist-schedule.css',
                 'resources/js/pages/therapist-schedule-calendar.js',
                 'resources/js/pages/therapist-schedule-create.js',
