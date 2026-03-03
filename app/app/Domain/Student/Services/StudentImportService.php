@@ -133,8 +133,8 @@ final class StudentImportService
                 return;
             }
 
-            // Apply type-specific transformations
-            $mappedData = $this->applyTypeSpecificTransformations($mappedData, $template, $import->type, $school);
+            // Apply template transformations (field_sources, transformations, defaults, context_sources)
+            $mappedData = $this->applyTemplateTransformations($mappedData, $template, $school);
 
             // Normalize parent_guardian_phone (e.g. (385) 497-0814 -> 385-497-0814)
             if (! empty($mappedData['parent_guardian_phone'])) {
@@ -331,11 +331,6 @@ final class StudentImportService
             'zip_code' => ['required', 'string', 'max:20'],
         ];
 
-        // Validate timezone (after resolution - must be valid key)
-        if (isset($data['timezone']) && $data['timezone'] !== '' && ! array_key_exists($data['timezone'], UsTimezones::TIMEZONES)) {
-            $errors[] = 'Invalid timezone.';
-        }
-
         // Validate state
         if (isset($data['state'])) {
             $stateCode = $this->normalizeState($data['state']);
@@ -441,26 +436,74 @@ final class StudentImportService
         }
     }
 
-    private function applyTypeSpecificTransformations(array $mappedData, array $template, StudentImportType $type, School $school): array
+    private function applyTemplateTransformations(array $mappedData, array $template, School $school): array
     {
-        if ($type !== StudentImportType::RSM) {
-            return $mappedData;
+        // 1. Apply transformations (combine, split)
+        $transformations = $template['transformations'] ?? [];
+        foreach ($transformations as $t) {
+            if (($t['type'] ?? '') === 'combine') {
+                $sources = $t['sources'] ?? [];
+                $target = $t['target'] ?? null;
+                $separator = $t['separator'] ?? ' ';
+                if ($target && ! empty($sources)) {
+                    $parts = [];
+                    foreach ($sources as $src) {
+                        $parts[] = trim($mappedData[$src] ?? '');
+                    }
+                    $value = trim(implode($separator, $parts));
+                    $mappedData[$target] = $value !== '' ? $value : null;
+                    foreach ($sources as $src) {
+                        unset($mappedData[$src]);
+                    }
+                }
+            }
+            if (($t['type'] ?? '') === 'split') {
+                $source = $t['source'] ?? null;
+                $targets = $t['targets'] ?? [];
+                $delimiter = $t['delimiter'] ?? ' ';
+                if ($source && ! empty($targets)) {
+                    $value = trim($mappedData[$source] ?? '');
+                    $parts = $delimiter !== '' ? explode($delimiter, $value, count($targets)) : [$value];
+                    foreach ($targets as $i => $tgt) {
+                        $mappedData[$tgt] = trim($parts[$i] ?? '') ?: null;
+                    }
+                    unset($mappedData[$source]);
+                }
+            }
         }
 
-        // RSM: use parent email as student email
-        $mappedData['email'] = trim($mappedData['parent_guardian_email'] ?? '');
+        // 2. Apply field_sources (target gets value from source when target empty)
+        $fieldSources = $template['field_sources'] ?? [];
+        foreach ($fieldSources as $target => $source) {
+            $sourceValue = trim($mappedData[$source] ?? '');
+            if ($sourceValue !== '') {
+                $mappedData[$target] = $sourceValue;
+            }
+        }
 
-        // RSM: default date of birth
-        $mappedData['date_of_birth'] = $template['default_date_of_birth'] ?? '2020-02-20';
+        // 3. Apply defaults (only when field is empty)
+        $defaults = array_merge(
+            config('student-import.defaults', []),
+            $template['defaults'] ?? []
+        );
+        foreach ($defaults as $field => $defaultValue) {
+            $current = trim($mappedData[$field] ?? '');
+            if ($current === '') {
+                $mappedData[$field] = $defaultValue;
+            }
+        }
 
-        // RSM: state from school
-        $mappedData['state'] = $school->state_code ?? $school->getAttributes()['state'] ?? null;
-
-        // RSM: build parent_guardian_name from Parent First Name + Parent Last Name
-        $parentFirst = trim($mappedData['parent_guardian_first_name'] ?? '');
-        $parentLast = trim($mappedData['parent_guardian_last_name'] ?? '');
-        $mappedData['parent_guardian_name'] = trim($parentFirst.' '.$parentLast) ?: null;
-        unset($mappedData['parent_guardian_first_name'], $mappedData['parent_guardian_last_name']);
+        // 4. Apply context_sources (e.g. state from school)
+        $contextSources = $template['context_sources'] ?? [];
+        foreach ($contextSources as $target => $source) {
+            if (str_starts_with($source, 'school.')) {
+                $attr = substr($source, 7);
+                $value = $school->{$attr} ?? $school->getAttributes()[$attr] ?? null;
+                if ($value !== null) {
+                    $mappedData[$target] = $value;
+                }
+            }
+        }
 
         return $mappedData;
     }

@@ -219,8 +219,9 @@ final class StudentImportServiceTest extends TestCase
         $this->assertEmpty($errors);
     }
 
-    public function test_validate_row_with_invalid_timezone_returns_error(): void
+    public function test_validate_row_accepts_timezone_without_validation_error(): void
     {
+        // Timezone validation removed: invalid/empty timezone is resolved via school fallback in processRow
         $data = [
             'first_name' => 'Test',
             'last_name' => 'Student',
@@ -229,7 +230,7 @@ final class StudentImportServiceTest extends TestCase
             'date_of_birth' => '2010-01-01',
             'school_id' => $this->school->id,
             'id_number' => 'STU005',
-            'timezone' => 'Invalid/Timezone',
+            'timezone' => 'America/New_York',
             'grade_level' => '8',
             'city' => 'New York',
             'state' => 'NY',
@@ -239,8 +240,7 @@ final class StudentImportServiceTest extends TestCase
         $dto = ImportStudentDTO::fromArray($data, 1);
         $errors = $this->service->validateRow($dto, $this->school->id);
 
-        $this->assertNotEmpty($errors);
-        $this->assertContains('Invalid timezone.', $errors);
+        $this->assertEmpty($errors);
     }
 
     public function test_validate_row_with_invalid_state_returns_error(): void
@@ -285,7 +285,8 @@ final class StudentImportServiceTest extends TestCase
         $this->assertArrayHasKey('required_columns', $template);
         $this->assertArrayHasKey('column_mapping', $template);
         $this->assertArrayHasKey('Identity ID', $template['column_mapping']);
-        $this->assertArrayHasKey('default_date_of_birth', $template);
-        $this->assertEquals('2020-02-20', $template['default_date_of_birth']);
+        $this->assertArrayHasKey('field_sources', $template);
+        $this->assertArrayHasKey('transformations', $template);
+        $this->assertEquals('parent_guardian_email', $template['field_sources']['email']);
     }
 }
