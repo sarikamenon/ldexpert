@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Enums\RateType;
 use App\Enums\SessionOutcome;
 use Carbon\Carbon;
@@ -61,6 +62,7 @@ final class UpdateSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $rules = [
@@ -90,6 +92,7 @@ final class UpdateSessionLogRequest extends FormRequest
         return $rules;
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -103,6 +106,7 @@ final class UpdateSessionLogRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
+            /** @var \App\Models\SessionLog|null $sessionLog */
             $sessionLog = $this->route('sessionLog');
 
             if (! $sessionLog) {
@@ -112,6 +116,18 @@ final class UpdateSessionLogRequest extends FormRequest
             // Validate session log is in draft status
             if (! $sessionLog->canEdit()) {
                 $validator->errors()->add('status', 'Session log cannot be edited in its current status.');
+            }
+
+            // Validate billing entry window (hard block for therapists)
+            $windowService = app(BillingEntryWindowService::class);
+            $windowResult = $windowService->checkWindow($sessionLog->session_date);
+            if (! $windowResult->isWithinWindow) {
+                $validator->errors()->add(
+                    'session_date',
+                    "The billing window for this session's week closed on "
+                    .Carbon::parse($windowResult->cutoff)->format('l, M j, Y \a\t g:i A')
+                    .'. Session logs can no longer be edited for this date.'
+                );
             }
         });
     }

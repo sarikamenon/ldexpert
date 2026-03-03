@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateTherapistContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
@@ -14,6 +15,7 @@ use App\Models\TherapistContract;
 use App\Models\TherapistContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class EloquentTherapistContractRepository implements TherapistContractRepositoryInterface
 {
@@ -22,6 +24,41 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         return $this->applyFilters($this->baseQuery(), $filters)
             ->orderByDesc('start_date')
             ->paginate($perPage);
+    }
+
+    public function listForDataTables(TherapistContractFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters($this->baseQuery(), $filters);
+
+        $recordsTotal = (clone $baseQuery)->count('therapist_contracts.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $baseQuery->where(function (Builder $q) use ($search) {
+                $q->where('therapist_contracts.id', 'like', '%'.$search.'%')
+                    ->orWhereHas('therapist', function (Builder $tq) use ($search) {
+                        $tq->where('first_name', 'like', '%'.$search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('last_name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
+                    });
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count('therapist_contracts.id');
+
+        $orderColumn = $params->orderColumn ?? 'therapist_contracts.start_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, TherapistContract> $rows */
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateTherapistContractDTO $dto): TherapistContract
@@ -86,6 +123,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
             ->exists();
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         $total = TherapistContract::count();
@@ -122,7 +160,7 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
             return null;
         }
 
-        $noShowRate = $contractService->no_show_rate !== null ? (float) $contractService->no_show_rate : null;
+        $noShowRate = (float) $contractService->no_show_rate;
         $noShowRateType = $contractService->no_show_rate_type ?? null;
 
         return [
@@ -133,12 +171,17 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         ];
     }
 
+    /** @return Builder<TherapistContract> */
     private function baseQuery(): Builder
     {
         return TherapistContract::query()
             ->with(['therapist.user', 'services.service']);
     }
 
+    /**
+     * @param  Builder<TherapistContract>  $query
+     * @return Builder<TherapistContract>
+     */
     private function applyFilters(Builder $query, TherapistContractFilterDTO $filters): Builder
     {
         if ($filters->status instanceof ContractStatus) {
@@ -150,8 +193,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                 $builder->where('id', $filters->search)
                     ->orWhereHas('therapist', function (Builder $therapistQuery) use ($filters) {
                         $therapistQuery
-                            ->where('first_name', 'like', '%'.$filters->search.'%')
-                            ->orWhere('last_name', 'like', '%'.$filters->search.'%');
+                            ->where('first_name', 'like', '%'.$filters->search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('last_name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }

@@ -148,20 +148,21 @@ final class StudentImportServiceTest extends TestCase
         $this->assertEquals('jane@example.com', $mapped['email']);
     }
 
-    public function test_check_duplicate_by_email_returns_reason(): void
+    public function test_check_duplicate_by_username_returns_reason(): void
     {
-        $existingUser = User::factory()->create(['email' => 'existing@example.com']);
+        $existingUser = User::factory()->create(['username' => 'existing.student']);
         StudentProfile::factory()->create(['user_id' => $existingUser->id]);
 
         $data = [
-            'email' => 'existing@example.com',
+            'username' => 'existing.student',
+            'email' => 'new@example.com',
             'id_number' => 'STU001',
         ];
 
         $reason = $this->service->checkDuplicate($data, $this->school->id);
 
         $this->assertNotNull($reason);
-        $this->assertStringContainsString('email', $reason);
+        $this->assertStringContainsString('username', $reason);
     }
 
     public function test_check_duplicate_by_id_number_returns_reason(): void

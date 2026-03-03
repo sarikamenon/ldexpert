@@ -19,6 +19,7 @@ abstract class TherapistFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $ignoreUserId = null): array
     {
         $personalEmailRule = Rule::unique('therapist_profiles', 'personal_email');
@@ -54,6 +55,7 @@ abstract class TherapistFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

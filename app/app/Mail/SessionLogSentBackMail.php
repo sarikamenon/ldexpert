@@ -23,8 +23,8 @@ class SessionLogSentBackMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $student = $this->sessionLog->student?->name ?? 'Unknown student';
-        $date = $this->sessionLog->session_date?->format('M d, Y') ?? '';
+        $student = $this->sessionLog->student->name ?? 'Unknown student';
+        $date = $this->sessionLog->session_date->format('M d, Y');
 
         return new Envelope(
             subject: "Session log sent back for rectification – {$student}, {$date}",

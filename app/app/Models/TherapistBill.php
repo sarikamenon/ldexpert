@@ -17,6 +17,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $paid_at
  * @property float $total_due
  * @property float $total_paid
+ * @property Carbon $bill_date
+ * @property Carbon|null $due_date
+ * @property Carbon|null $billing_period_start
+ * @property Carbon|null $billing_period_end
+ * @property Carbon|null $sent_at
  */
 class TherapistBill extends Model
 {
@@ -69,7 +74,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBill>
+     * @return BelongsTo<User, $this>
      */
     public function therapist(): BelongsTo
     {
@@ -77,7 +82,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return HasMany<SessionLog, TherapistBill>
+     * @return HasMany<SessionLog, $this>
      */
     public function sessionLogs(): HasMany
     {
@@ -85,7 +90,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBill>
+     * @return BelongsTo<User, $this>
      */
     public function sentBy(): BelongsTo
     {
@@ -93,7 +98,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return HasMany<TherapistBillPaymentAllocation, TherapistBill>
+     * @return HasMany<TherapistBillPaymentAllocation, $this>
      */
     public function paymentAllocations(): HasMany
     {
@@ -101,7 +106,7 @@ class TherapistBill extends Model
     }
 
     /**
-     * @return HasMany<LedgerEntry, TherapistBill>
+     * @return HasMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): HasMany
     {

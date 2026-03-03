@@ -33,7 +33,8 @@ final class SessionLogTabsTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('therapist.ssas.show');
-        $response->assertViewHas('sessionLogs');
+        $response->assertViewHas('datatableUrl');
+        $response->assertViewHas('ssaId', $ssa->id);
         $response->assertSee('Session Logs');
     }
 
@@ -60,7 +61,8 @@ final class SessionLogTabsTest extends TestCase
 
         $response->assertOk();
         $response->assertViewIs('therapist.students.show');
-        $response->assertViewHas('sessionLogs');
+        $response->assertViewHas('datatableUrl');
+        $response->assertViewHas('studentId', $student->id);
         $response->assertSee('Session Logs');
     }
 
@@ -75,26 +77,12 @@ final class SessionLogTabsTest extends TestCase
             'status' => SSAStatus::ACTIVE,
         ]);
 
-        SessionLog::factory()->create([
-            'ssa_id' => $ssa->id,
-            'therapist_id' => $therapist->id,
-            'session_date' => now()->startOfMonth(),
-        ]);
-
-        SessionLog::factory()->create([
-            'ssa_id' => $ssa->id,
-            'therapist_id' => $otherTherapist->id,
-            'session_date' => now()->startOfMonth(),
-        ]);
-
         $response = $this->actingAs($therapist)
             ->get(route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs']));
 
         $response->assertOk();
-        $sessionLogs = $response->viewData('sessionLogs');
-        // Should only see their own session logs
-        $this->assertCount(1, $sessionLogs);
-        $this->assertEquals($therapist->id, $sessionLogs->first()->therapist_id);
+        $response->assertViewHas('sessionLogStatuses');
+        $response->assertViewHas('datatableUrl');
     }
 
     public function test_therapist_cannot_access_unassigned_ssa_session_logs(): void
@@ -141,18 +129,6 @@ final class SessionLogTabsTest extends TestCase
             'status' => SSAStatus::ACTIVE,
         ]);
 
-        SessionLog::factory()->draft()->create([
-            'ssa_id' => $ssa->id,
-            'therapist_id' => $therapist->id,
-            'session_date' => now()->subDays(5),
-        ]);
-
-        SessionLog::factory()->submitted()->create([
-            'ssa_id' => $ssa->id,
-            'therapist_id' => $therapist->id,
-            'session_date' => now()->subDays(2),
-        ]);
-
         $response = $this->actingAs($therapist)
             ->get(route('therapist.ssas.show', [
                 'ssa' => $ssa,
@@ -161,8 +137,8 @@ final class SessionLogTabsTest extends TestCase
             ]));
 
         $response->assertOk();
-        $sessionLogs = $response->viewData('sessionLogs');
-        $this->assertCount(1, $sessionLogs);
-        $this->assertTrue($sessionLogs->first()->isSubmitted());
+        $response->assertViewHas('sessionLogStatuses');
+        $response->assertViewHas('sessionLogFilters');
+        $response->assertViewHas('datatableUrl');
     }
 }

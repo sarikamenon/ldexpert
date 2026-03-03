@@ -7,6 +7,7 @@ namespace App\Domain\Therapist\Services;
 use App\Domain\Therapist\Repositories\TherapistRepositoryInterface;
 use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Mail\WelcomeTherapistMail;
@@ -59,16 +60,27 @@ final class TherapistService
         return $this->repository->changeStatus($user, $dto);
     }
 
+    /** @return Collection<int, User> */
     public function list(TherapistFilterDTO $filters): Collection
     {
         return $this->repository->list($filters);
     }
 
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Database\Eloquent\Collection<int, \App\Models\User>}
+     */
+    public function listForDataTables(TherapistFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
+    }
+
+    /** @return array<string, int> */
     public function getMetrics(?string $status = null): array
     {
         return $this->repository->getMetrics($status);
     }
 
+    /** @return Collection<int, User> */
     public function export(TherapistFilterDTO $filters): Collection
     {
         return $this->repository->export($filters);
@@ -79,6 +91,7 @@ final class TherapistService
         return $this->repository->find($id);
     }
 
+    /** @return Collection<int, TherapistProfile> */
     public function listActiveProfilesForSelect(): Collection
     {
         return $this->repository->listActiveProfilesForSelect();
@@ -89,21 +102,25 @@ final class TherapistService
         return $this->repository->countTherapistsBySchool($schoolId);
     }
 
+    /** @return Collection<int, User> */
     public function listActiveTherapistsBySchool(int $schoolId): Collection
     {
         return $this->repository->listActiveTherapistsBySchool($schoolId);
     }
 
+    /** @return Collection<int, User> */
     public function listActiveTherapists(): Collection
     {
         return $this->repository->listActiveTherapists();
     }
 
+    /** @return Collection<int, User> */
     public function listTherapistsByStudent(int $studentId): Collection
     {
         return $this->repository->listTherapistsByStudent($studentId);
     }
 
+    /** @return LengthAwarePaginator<int, User> */
     public function paginateTherapistsByStudent(int $studentId, ?string $search = null, ?string $status = null, ?int $positionId = null, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateTherapistsByStudent($studentId, $search, $status, $positionId, $perPage);

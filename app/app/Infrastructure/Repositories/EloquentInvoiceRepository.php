@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\Enums\InvoiceStatus;
 use App\Enums\SessionLogStatus;
@@ -15,11 +16,13 @@ use Illuminate\Support\Collection;
 
 final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 {
+    /** @param array<string, mixed> $data */
     public function create(array $data): Invoice
     {
         return Invoice::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function update(Invoice $invoice, array $data): Invoice
     {
         $invoice->update($data);
@@ -36,9 +39,59 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     public function list(InvoiceFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
-        $query = Invoice::query()
-            ->with(['school', 'sessionLogs']);
+        $query = $this->applyFilters(Invoice::query(), $filters);
 
+        return $query->orderBy('created_at', 'desc')
+            ->paginate($perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, Invoice>}
+     */
+    public function listForDataTables(InvoiceFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters(
+            Invoice::query(),
+            $filters,
+        );
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('invoices.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $baseQuery->where(function ($q) use ($search) {
+                $q->where('invoice_number', 'like', '%'.$search.'%')
+                    ->orWhere('school_display_name', 'like', '%'.$search.'%');
+            });
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('invoices.id');
+
+        $orderColumn = $params->orderColumn ?? 'invoice_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, Invoice> $rows */
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<Invoice>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<Invoice>
+     */
+    private function applyFilters($query, InvoiceFilterDTO $filters)
+    {
         if ($filters->schoolId !== null) {
             $query->where('school_id', $filters->schoolId);
         }
@@ -59,13 +112,12 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             $query->where('invoice_number', 'like', '%'.$filters->invoiceNumber.'%');
         }
 
-        return $query->orderBy('created_at', 'desc')
-            ->paginate($perPage);
+        return $query;
     }
 
     /**
      * @param  array<int>  $sessionLogIds
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getApprovedSessionLogsForInvoice(array $sessionLogIds): Collection
     {
@@ -116,7 +168,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getAvailableSessionLogsForInvoiceCreation(array $filters): Collection
     {
@@ -150,14 +202,14 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->whereHas('student', function ($subQ) use ($search) {
-                    $subQ->where('name', 'like', "%{$search}%");
+                    $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                 })
                     ->orWhereHas('service', function ($subQ) use ($search) {
-                        $subQ->where('name', 'like', "%{$search}%");
+                        $subQ->where('name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                     })
                     ->orWhereHas('school', function ($subQ) use ($search) {
-                        $subQ->where('display_name', 'like', "%{$search}%")
-                            ->orWhere('full_name', 'like', "%{$search}%");
+                        $subQ->where('display_name', 'like', "%{$search}%") // @phpstan-ignore argument.type
+                            ->orWhere('full_name', 'like', "%{$search}%"); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -176,6 +228,10 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
             ->pluck('service_id');
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, int>
+     */
     public function getAvailableSchoolIdsForInvoiceCreation(array $filters): Collection
     {
         $query = SessionLog::query()
@@ -209,7 +265,7 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
 
     /**
      * @param  array<int>  $sessionLogIds
-     * @return Collection<SessionLog>
+     * @return Collection<int, SessionLog>
      */
     public function getSessionLogsForInvoiceUpdate(Invoice $invoice, array $sessionLogIds): Collection
     {

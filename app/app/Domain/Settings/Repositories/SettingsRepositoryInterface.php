@@ -8,6 +8,7 @@ use App\Models\Setting;
 
 interface SettingsRepositoryInterface
 {
+    /** @return array<string, mixed> */
     public function getGroup(string $group): array;
 
     public function set(string $key, mixed $value, string $type = 'string', string $group = 'general', bool $isEncrypted = false): Setting;

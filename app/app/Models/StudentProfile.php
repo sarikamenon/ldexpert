@@ -12,8 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property \Carbon\Carbon|null $date_of_birth
+ */
 class StudentProfile extends Model
 {
+    /** @use HasFactory<\Database\Factories\StudentProfileFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -45,40 +49,52 @@ class StudentProfile extends Model
         ];
     }
 
-    /** @return BelongsTo<User, StudentProfile> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** @return BelongsTo<User, StudentProfile> */
+    /** @return BelongsTo<User, $this> */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(User::class, 'parent_id');
     }
 
-    /** @return BelongsTo<School, StudentProfile> */
+    /** @return BelongsTo<School, $this> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);
     }
 
-    /** @return HasMany<ServiceSupportAgreement, StudentProfile> */
+    /** @return HasMany<ServiceSupportAgreement, $this> */
     public function ssas(): HasMany
     {
         return $this->hasMany(ServiceSupportAgreement::class, 'student_id', 'user_id');
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return StudentScope::search($query, $term);
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return StudentScope::active($query, $this);
     }
 
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
     public function scopeInactive(Builder $query): Builder
     {
         return StudentScope::inactive($query, $this);

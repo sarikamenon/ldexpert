@@ -6,16 +6,25 @@ namespace App\Domain\Position\Repositories;
 
 use App\DTOs\ChangePositionStatusDTO;
 use App\DTOs\CreatePositionDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\PositionFilterDTO;
 use App\DTOs\UpdatePositionDTO;
 use App\Models\Position;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 interface PositionRepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator;
 
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:EloquentCollection<int,Position>}
+     */
+    public function listForDataTables(PositionFilterDTO $filters, DataTablesParamsDTO $params): array;
+
+    /** @return Collection<int, Position> */
     public function all(PositionFilterDTO $filters): Collection;
 
     public function create(CreatePositionDTO $dto): Position;
@@ -29,5 +38,6 @@ interface PositionRepositoryInterface
      */
     public function metrics(): array;
 
+    /** @return Collection<int, Position> */
     public function listActiveForSelect(): Collection;
 }

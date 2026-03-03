@@ -4,19 +4,33 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\InvoicePaymentRowTransformer;
 use App\Domain\Finance\Services\PaymentsListService;
 use App\DTOs\InvoicePaymentFilterDTO;
 use App\Enums\InvoiceStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Invoice\InvoicePaymentDataRequest;
 use App\Http\Requests\Admin\Invoice\InvoicePaymentIndexRequest;
+use App\Http\Support\DataTablesRequest;
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class InvoicePaymentsListController extends Controller
 {
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'paid_at',
+        1 => 'amount',
+        2 => 'method',
+        3 => 'reference',
+    ];
+
     public function __construct(
         private readonly \App\Domain\Finance\Services\InvoicePaymentService $service,
         private readonly PaymentsListService $paymentsListService,
@@ -26,13 +40,39 @@ class InvoicePaymentsListController extends Controller
     {
         $this->authorize('viewAny', InvoicePayment::class);
 
-        $filters = InvoicePaymentFilterDTO::fromArray($request->validated());
-
-        $result = $this->paymentsListService->getInvoicePayments($filters);
-
         return view('admin.payments.invoice-payments.index', [
-            'payments' => $result['payments'],
-            'totalAmount' => $result['totalAmount'],
+            'payments' => collect(),
+            'totalAmount' => 0,
+            'datatableUrl' => route('admin.payments.invoices.data'),
+        ]);
+    }
+
+    public function data(InvoicePaymentDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', InvoicePayment::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'from_date' => $request->input('filter_from_date'),
+            'to_date' => $request->input('filter_to_date'),
+            'method' => $request->input('filter_method'),
+            'search' => $request->input('filter_search'),
+        ];
+        $filters = InvoicePaymentFilterDTO::fromArray($filterData);
+
+        $result = $this->paymentsListService->listInvoicePaymentsForDataTables($filters, $params);
+        $totalAmount = $this->paymentsListService->getInvoicePaymentsTotalAmount($filters);
+
+        $data = $result['rows']->map(
+            static fn (InvoicePayment $payment): array => InvoicePaymentRowTransformer::transform($payment)
+        )->all();
+
+        return response()->json([
+            'draw' => $params->draw,
+            'recordsTotal' => $result['recordsTotal'],
+            'recordsFiltered' => $result['recordsFiltered'],
+            'data' => $data,
+            'totalAmount' => round($totalAmount, 2),
         ]);
     }
 
@@ -57,7 +97,9 @@ class InvoicePaymentsListController extends Controller
         $this->authorize('viewAny', InvoicePayment::class);
 
         $data = $request->validated();
-        $data['recorded_by_id'] = $request->user()->id;
+        /** @var \App\Models\User $user */
+        $user = $request->user();
+        $data['recorded_by_id'] = $user->id;
 
         $dto = \App\DTOs\RecordInvoicePaymentDTO::fromArray($data);
 

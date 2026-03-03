@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\SchoolContractRowTransformer;
 use App\Domain\Contract\Services\SchoolContractService;
 use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
@@ -17,8 +18,11 @@ use App\Exceptions\ContractOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Contract\ChangeSchoolContractStatusRequest;
 use App\Http\Requests\Admin\Contract\IndexSchoolContractRequest;
+use App\Http\Requests\Admin\Contract\SchoolContractDataRequest;
 use App\Http\Requests\Admin\Contract\StoreSchoolContractRequest;
 use App\Http\Requests\Admin\Contract\UpdateSchoolContractRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\SchoolContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +30,18 @@ use Illuminate\Http\RedirectResponse;
 
 final class SchoolContractController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'school_contracts.id',
+        1 => 'school_contracts.start_date',
+        2 => 'school_contracts.end_date',
+        3 => 'school_contracts.status',
+    ];
+
     public function __construct(
         private readonly SchoolContractService $service,
         private readonly SchoolService $schoolService,
@@ -36,16 +52,37 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('viewAny', SchoolContract::class);
 
-        $filters = SchoolContractFilterDTO::fromArray($request->validated());
-        $contracts = $this->service->paginate($filters);
-
         return view('admin.contracts.schools.index', [
-            'contracts' => $contracts,
+            'contracts' => collect(),
             'metrics' => $this->service->metrics(),
             'filters' => $request->validated(),
             'statuses' => ContractStatus::cases(),
             'schools' => $this->schoolService->listActiveForSelect(),
+            'datatableUrl' => route('admin.contracts.schools.data'),
         ]);
+    }
+
+    public function data(SchoolContractDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', SchoolContract::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'status' => $request->input('filter_status'),
+            'school_ids' => $request->input('filter_school_ids', []),
+            'school_id' => $request->input('filter_school_id'),
+        ];
+        $filters = SchoolContractFilterDTO::fromArray($filterData);
+
+        $result = $this->service->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (SchoolContract $contract): array => SchoolContractRowTransformer::transform($contract),
+        );
     }
 
     public function create(): View
@@ -137,6 +174,7 @@ final class SchoolContractController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formData(): array
     {
         return [

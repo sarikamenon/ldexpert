@@ -13,6 +13,18 @@ class AnalyticsService
         private readonly AnalyticsRepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     inactive: int,
+     *     by_state: array<string, array<int, mixed>>,
+     *     by_type: array<string, array<int, mixed>>,
+     *     growth_trend: array<string, array<int, mixed>>,
+     *     by_manager: array<string, array<int, mixed>>,
+     *     recent_additions: array<int, array<string, mixed>>
+     * }
+     */
     public function getSchoolsAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subDays(30);
@@ -30,6 +42,17 @@ class AnalyticsService
         ];
     }
 
+    /**
+     * @return array{
+     *     total: int,
+     *     active: int,
+     *     by_position: array<string, array<int, mixed>>,
+     *     by_employee_type: array<string, array<int, mixed>>,
+     *     by_state: array<string, array<int, mixed>>,
+     *     growth_trend: array<string, array<int, mixed>>,
+     *     recent_additions: array<int, array<string, mixed>>
+     * }
+     */
     public function getTherapistsAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subDays(30);
@@ -46,6 +69,25 @@ class AnalyticsService
         ];
     }
 
+    /**
+     * @return array{
+     *     schools: array{
+     *         total: int,
+     *         active: int,
+     *         new_this_period: int
+     *     },
+     *     therapists: array{
+     *         total: int,
+     *         active: int,
+     *         new_this_period: int
+     *     },
+     *     users: array{
+     *         total: int,
+     *         active: int,
+     *         by_role: array<string, array<int, mixed>>
+     *     }
+     * }
+     */
     public function getOverallAnalytics(?Carbon $startDate = null, ?Carbon $endDate = null): array
     {
         $startDate = $startDate ?? now()->subDays(30);
@@ -67,7 +109,6 @@ class AnalyticsService
                 'active' => $this->repository->getActiveUserCount(),
                 'by_role' => $this->repository->getUsersByRole(),
             ],
-            'activity_summary' => $this->repository->getActivitySummary($startDate, $endDate),
         ];
     }
 }

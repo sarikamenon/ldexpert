@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property TransactionType $transaction_type
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ */
 class LedgerEntry extends Model
 {
     /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<LedgerEntry>> */
@@ -39,7 +44,7 @@ class LedgerEntry extends Model
     }
 
     /**
-     * @return MorphTo<Model, LedgerEntry>
+     * @return MorphTo<Model, $this>
      */
     public function ledgerable(): MorphTo
     {
@@ -47,7 +52,7 @@ class LedgerEntry extends Model
     }
 
     /**
-     * @return MorphTo<Model, LedgerEntry>
+     * @return MorphTo<Model, $this>
      */
     public function reference(): MorphTo
     {
@@ -55,7 +60,7 @@ class LedgerEntry extends Model
     }
 
     /**
-     * @return BelongsTo<User, LedgerEntry>
+     * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
     {

@@ -21,6 +21,7 @@ use App\Http\Requests\Therapist\ScheduleFilterRequest;
 use App\Http\Requests\Therapist\StoreScheduleRequest;
 use App\Http\Requests\Therapist\UpdateScheduleRequest;
 use App\Models\Schedule;
+use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
@@ -65,7 +66,7 @@ final class ScheduleController extends Controller
         $formattedSchedules = $schedules->map(function ($schedule) use ($sessionLogsBySchedule) {
             $studentProfile = $schedule->student?->studentProfile;
             $scheduleDate = $schedule->schedule_date;
-            $isPast = $scheduleDate !== null && $scheduleDate->lt(now()->startOfDay());
+            $isPast = $scheduleDate->lt(now()->startOfDay());
             $isBilled = $schedule->billing_status === BillingStatus::BILLED;
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
             /** @var \App\Models\SessionLog|null $sessionLog */
@@ -73,17 +74,17 @@ final class ScheduleController extends Controller
 
             return [
                 'id' => $schedule->id,
-                'schedule_date' => $scheduleDate?->format('Y-m-d'),
-                'start_time' => $schedule->start_time?->format('H:i'),
-                'end_time' => $schedule->end_time?->format('H:i'),
+                'schedule_date' => $scheduleDate->format('Y-m-d'),
+                'start_time' => $schedule->start_time->format('H:i'),
+                'end_time' => $schedule->end_time->format('H:i'),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id
                     ? route('therapist.students.show', $schedule->student->id)
                     : null,
                 'service' => $schedule->service?->name,
-                'status' => $schedule->status?->value,
-                'billing_status' => $schedule->billing_status?->value,
+                'status' => $schedule->status->value,
+                'billing_status' => $schedule->billing_status->value,
                 'is_group' => $schedule->is_group,
                 'is_past' => $isPast,
                 'is_billed' => $isBilled,
@@ -96,15 +97,15 @@ final class ScheduleController extends Controller
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'student_name' => $schedule->student?->name,
-                'student_password' => $studentProfile?->id_number ?? '-',
-                'parent_name' => $studentProfile?->parent_guardian_name ?? '-',
-                'parent_email' => $studentProfile?->parent_guardian_email ?? '-',
-                'parent_phone' => $studentProfile?->parent_guardian_phone ?? '-',
+                'student_password' => $studentProfile->id_number ?? '-',
+                'parent_name' => $studentProfile->parent_guardian_name ?? '-',
+                'parent_email' => $studentProfile->parent_guardian_email ?? '-',
+                'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
             ];
         });
 
-        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         $calendarStart = $selectedDate->startOfMonth();
@@ -119,12 +120,12 @@ final class ScheduleController extends Controller
                 'id' => $event->id,
                 'school_id' => $event->school_id,
                 'title' => $event->title,
-                'event_type' => $event->event_type?->value,
-                'event_type_label' => $event->event_type?->label(),
-                'start_date' => $event->start_date?->format('Y-m-d'),
-                'end_date' => $event->end_date?->format('Y-m-d'),
+                'event_type' => $event->event_type->value,
+                'event_type_label' => $event->event_type->label(),
+                'start_date' => $event->start_date->format('Y-m-d'),
+                'end_date' => $event->end_date->format('Y-m-d'),
                 'notes' => $event->notes,
-                'is_holiday' => $event->event_type?->value === 'holiday',
+                'is_holiday' => $event->event_type->value === 'holiday',
             ];
         })->values();
 
@@ -178,18 +179,21 @@ final class ScheduleController extends Controller
         $students = collect([
             (object) [
                 'user_id' => $student?->id,
-                'first_name' => $student?->name ?? '',
+                'first_name' => $student->name ?? '',
                 'last_name' => '',
             ],
         ])->filter(static fn ($studentInfo) => $studentInfo->user_id !== null)->values();
 
         // Get all services from this SSA (primary + additional)
         $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
-        $serviceOptions = $ssaServices->map(function ($service) {
+        $serviceOptions = $ssaServices->map(function (Service $service) {
+            /** @var \App\Models\Pivots\SSAService|null $pivot */
+            $pivot = $service->getRelation('pivot');
+
             return [
                 'service_id' => $service->id,
                 'service_name' => $service->name,
-                'is_primary' => (bool) $service->pivot?->is_primary,
+                'is_primary' => (bool) $pivot?->is_primary,
             ];
         })->values();
 
@@ -200,14 +204,14 @@ final class ScheduleController extends Controller
             ],
         ]);
 
-        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
             'students' => $students,
             'schools' => $this->scheduleService->getSchools($therapist),
-            'studentServiceMappings' => is_array($studentServiceMappings) ? collect($studentServiceMappings) : $studentServiceMappings,
+            'studentServiceMappings' => $studentServiceMappings,
             'serviceOptions' => $serviceOptions,
             'ssa' => $ssa,
             'preselectedStudent' => $student,
@@ -243,7 +247,7 @@ final class ScheduleController extends Controller
 
         $this->authorize('update', $schedule);
 
-        $therapistTimezone = $therapist->therapistProfile?->timezone ?? 'America/Chicago';
+        $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         return view('therapist.schedule.edit', [
@@ -275,12 +279,12 @@ final class ScheduleController extends Controller
                     'id' => $event->id,
                     'school_id' => $event->school_id,
                     'title' => $event->title,
-                    'event_type' => $event->event_type?->value,
-                    'event_type_label' => $event->event_type?->label(),
-                    'start_date' => $event->start_date?->format('Y-m-d'),
-                    'end_date' => $event->end_date?->format('Y-m-d'),
+                    'event_type' => $event->event_type->value,
+                    'event_type_label' => $event->event_type->label(),
+                    'start_date' => $event->start_date->format('Y-m-d'),
+                    'end_date' => $event->end_date->format('Y-m-d'),
                     'notes' => $event->notes,
-                    'is_holiday' => $event->event_type?->value === 'holiday',
+                    'is_holiday' => $event->event_type->value === 'holiday',
                 ];
             })->values();
 
@@ -292,7 +296,7 @@ final class ScheduleController extends Controller
         return response()->json([
             'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule) {
                 $scheduleDate = $schedule->schedule_date;
-                $isPast = $scheduleDate !== null && $scheduleDate->lt(now()->startOfDay());
+                $isPast = $scheduleDate->lt(now()->startOfDay());
                 $isBilled = $schedule->billing_status === BillingStatus::BILLED;
                 $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
                 /** @var \App\Models\SessionLog|null $sessionLog */
@@ -300,14 +304,14 @@ final class ScheduleController extends Controller
 
                 return [
                     'id' => $schedule->id,
-                    'schedule_date' => $scheduleDate?->format('Y-m-d'),
-                    'start_time' => $schedule->start_time?->format('H:i'),
-                    'end_time' => $schedule->end_time?->format('H:i'),
+                    'schedule_date' => $scheduleDate->format('Y-m-d'),
+                    'start_time' => $schedule->start_time->format('H:i'),
+                    'end_time' => $schedule->end_time->format('H:i'),
                     'school' => $schedule->school?->display_name,
                     'student' => $schedule->student?->name,
                     'service' => $schedule->service?->name,
-                    'status' => $schedule->status?->value,
-                    'billing_status' => $schedule->billing_status?->value,
+                    'status' => $schedule->status->value,
+                    'billing_status' => $schedule->billing_status->value,
                     'is_group' => $schedule->is_group,
                     'is_past' => $isPast,
                     'is_billed' => $isBilled,
@@ -320,10 +324,10 @@ final class ScheduleController extends Controller
                     'notes' => $schedule->notes,
                     'location_details' => $schedule->location_details,
                     'student_name' => $schedule->student?->name,
-                    'student_password' => $schedule->student?->studentProfile?->id_number ?? '-',
-                    'parent_name' => $schedule->student?->studentProfile?->parent_guardian_name ?? '-',
-                    'parent_email' => $schedule->student?->studentProfile?->parent_guardian_email ?? '-',
-                    'parent_phone' => $schedule->student?->studentProfile?->parent_guardian_phone ?? '-',
+                    'student_password' => $schedule->student?->studentProfile->id_number ?? '-',
+                    'parent_name' => $schedule->student?->studentProfile->parent_guardian_name ?? '-',
+                    'parent_email' => $schedule->student?->studentProfile->parent_guardian_email ?? '-',
+                    'parent_phone' => $schedule->student?->studentProfile->parent_guardian_phone ?? '-',
                     'edit_url' => route('therapist.schedule.edit', $schedule->id),
                 ];
             })->toArray(),
@@ -357,12 +361,12 @@ final class ScheduleController extends Controller
                     'id' => $event->id,
                     'school_id' => $event->school_id,
                     'title' => $event->title,
-                    'event_type' => $event->event_type?->value,
-                    'event_type_label' => $event->event_type?->label(),
-                    'start_date' => $event->start_date?->format('Y-m-d'),
-                    'end_date' => $event->end_date?->format('Y-m-d'),
+                    'event_type' => $event->event_type->value,
+                    'event_type_label' => $event->event_type->label(),
+                    'start_date' => $event->start_date->format('Y-m-d'),
+                    'end_date' => $event->end_date->format('Y-m-d'),
                     'notes' => $event->notes,
-                    'is_holiday' => $event->event_type?->value === 'holiday',
+                    'is_holiday' => $event->event_type->value === 'holiday',
                 ];
             })->values(),
         ]);
@@ -394,9 +398,7 @@ final class ScheduleController extends Controller
         $services = $ssas
             ->flatMap(function ($ssa) {
                 $allServices = collect([$ssa->primaryService])->filter();
-                if ($ssa->services) {
-                    $allServices = $allServices->merge($ssa->services);
-                }
+                $allServices = $allServices->merge($ssa->services);
 
                 return $allServices;
             })
@@ -452,7 +454,7 @@ final class ScheduleController extends Controller
 
         return redirect()
             ->route('therapist.schedule.calendar', [
-                'date' => $schedule->schedule_date?->format('Y-m-d') ?? $request->input('schedule_date'),
+                'date' => $schedule->schedule_date->format('Y-m-d'),
             ])
             ->with('status', 'Schedule created successfully.');
     }
@@ -495,7 +497,7 @@ final class ScheduleController extends Controller
 
         return redirect()
             ->route('therapist.schedule.calendar', [
-                'date' => $updated->schedule_date?->format('Y-m-d') ?? $request->input('schedule_date'),
+                'date' => $updated->schedule_date->format('Y-m-d'),
             ])
             ->with('status', 'Schedule updated successfully.');
     }
@@ -636,16 +638,16 @@ final class ScheduleController extends Controller
         return response()->json([
             'schedule' => [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date?->format('Y-m-d'),
-                'schedule_date_formatted' => $schedule->schedule_date?->format('M d, Y'),
-                'start_time' => $schedule->start_time?->format('H:i'),
-                'start_time_formatted' => $schedule->start_time?->format('g:i A'),
-                'end_time' => $schedule->end_time?->format('H:i'),
-                'end_time_formatted' => $schedule->end_time?->format('g:i A'),
+                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
+                'schedule_date_formatted' => $schedule->schedule_date->format('M d, Y'),
+                'start_time' => $schedule->start_time->format('H:i'),
+                'start_time_formatted' => $schedule->start_time->format('g:i A'),
+                'end_time' => $schedule->end_time->format('H:i'),
+                'end_time_formatted' => $schedule->end_time->format('g:i A'),
                 'duration_minutes' => $durationMinutes,
                 'duration_formatted' => $this->formatDuration($durationMinutes),
-                'status' => $schedule->status?->value,
-                'billing_status' => $schedule->billing_status?->value,
+                'status' => $schedule->status->value,
+                'billing_status' => $schedule->billing_status->value,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'service' => [
@@ -654,14 +656,14 @@ final class ScheduleController extends Controller
                 ],
                 'ssa' => $ssa ? [
                     'id' => $ssa->id,
-                    'start_date' => $ssa->start_date?->format('Y-m-d'),
-                    'start_date_formatted' => $ssa->start_date?->format('M d, Y'),
+                    'start_date' => $ssa->start_date->format('Y-m-d'),
+                    'start_date_formatted' => $ssa->start_date->format('M d, Y'),
                     'end_date' => $ssa->end_date?->format('Y-m-d'),
                     'end_date_formatted' => $ssa->end_date?->format('M d, Y'),
                     'minutes_per_session' => $ssa->minutes_per_session,
                     'frequency' => $ssa->frequency?->value,
                     'sessions_per_frequency' => $ssa->sessions_per_frequency,
-                    'status' => $ssa->status?->value,
+                    'status' => $ssa->status->value,
                     'tho_minutes' => $ssa->tho_minutes ?? 0,
                     'served_minutes' => $ssa->served_minutes ?? 0,
                     'service' => [
@@ -673,17 +675,17 @@ final class ScheduleController extends Controller
                     'id' => $schedule->student?->id,
                     'name' => $schedule->student?->name,
                     'email' => $schedule->student?->email,
-                    'id_number' => $studentProfile?->id_number ?? '-',
-                    'timezone' => $studentProfile?->timezone ?? '-',
+                    'id_number' => $studentProfile->id_number ?? '-',
+                    'timezone' => $studentProfile->timezone ?? '-',
                 ],
                 'school' => [
                     'id' => $schedule->school?->id,
-                    'name' => $schedule->school?->display_name ?? $schedule->school?->name,
+                    'name' => $schedule->school->display_name ?? $schedule->school?->name,
                 ],
                 'parent' => [
-                    'name' => $studentProfile?->parent_guardian_name ?? '-',
-                    'email' => $studentProfile?->parent_guardian_email ?? '-',
-                    'phone' => $studentProfile?->parent_guardian_phone ?? '-',
+                    'name' => $studentProfile->parent_guardian_name ?? '-',
+                    'email' => $studentProfile->parent_guardian_email ?? '-',
+                    'phone' => $studentProfile->parent_guardian_phone ?? '-',
                 ],
             ],
         ]);

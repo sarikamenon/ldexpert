@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\SchoolStatus;
@@ -17,11 +18,44 @@ use Illuminate\Support\Collection;
 
 class EloquentSchoolRepository implements SchoolRepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, School> */
     public function paginate(SchoolFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery(), $filters)
             ->orderBy('display_name')
             ->paginate($perPage);
+    }
+
+    public function listForDataTables(SchoolFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters($this->baseQuery(), $filters)
+            ->leftJoin('users', 'schools.manager_id', '=', 'users.id')
+            ->select('schools.*');
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('schools.id');
+
+        if ($params->searchValue) {
+            $baseQuery->search($params->searchValue);
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('schools.id');
+
+        $orderColumn = $params->orderColumn ?? 'schools.display_name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateSchoolDTO $dto): School
@@ -59,6 +93,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
         ];
     }
 
+    /** @return Collection<int, School> */
     public function export(SchoolFilterDTO $filters): Collection
     {
         return $this->applyFilters($this->baseQuery(), $filters)
@@ -66,6 +101,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, School> */
     public function listAllForSelect(): Collection
     {
         return School::query()
@@ -74,6 +110,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, School> */
     public function listActiveForSelect(): Collection
     {
         return School::query()
@@ -95,11 +132,16 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->first();
     }
 
+    /** @return Builder<School> */
     private function baseQuery(): Builder
     {
         return School::query()->with('manager');
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     private function applyFilters(Builder $query, SchoolFilterDTO $filters): Builder
     {
         $query->search($filters->search);

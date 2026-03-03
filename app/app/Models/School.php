@@ -16,6 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property SchoolStatus $status
+ */
 class School extends Model
 {
     /** @use HasFactory<\Database\Factories\SchoolFactory> */
@@ -52,6 +55,7 @@ class School extends Model
         ];
     }
 
+    /** @return Attribute<string, string> */
     protected function name(): Attribute
     {
         return Attribute::make(
@@ -59,6 +63,7 @@ class School extends Model
         );
     }
 
+    /** @return Attribute<string|null, string|null> */
     protected function email(): Attribute
     {
         return Attribute::make(
@@ -66,6 +71,7 @@ class School extends Model
         );
     }
 
+    /** @return Attribute<string|null, string|null> */
     protected function phone(): Attribute
     {
         return Attribute::make(
@@ -73,6 +79,7 @@ class School extends Model
         );
     }
 
+    /** @return Attribute<string|null, string|null> */
     protected function state(): Attribute
     {
         return Attribute::make(
@@ -81,6 +88,7 @@ class School extends Model
         );
     }
 
+    /** @return Attribute<string|null, string|null> */
     protected function stateCode(): Attribute
     {
         return Attribute::make(
@@ -108,50 +116,67 @@ class School extends Model
         return null;
     }
 
-    /** @return BelongsTo<User, School> */
+    /** @return BelongsTo<User, $this> */
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
 
-    /** @return HasMany<StudentProfile, School> */
+    /** @return HasMany<StudentProfile, $this> */
     public function studentProfiles(): HasMany
     {
         return $this->hasMany(StudentProfile::class);
     }
 
-    /** @return HasMany<SchoolCalendarEvent, School> */
+    /** @return HasMany<SchoolCalendarEvent, $this> */
     public function calendarEvents(): HasMany
     {
         return $this->hasMany(SchoolCalendarEvent::class);
     }
 
-    /** @return HasMany<Invoice, School> */
+    /** @return HasMany<Invoice, $this> */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class, 'school_id');
     }
 
+    /** @return MorphMany<\App\Models\LedgerEntry, $this> */
     public function ledgerEntries(): MorphMany
     {
         return $this->morphMany(LedgerEntry::class, 'ledgerable');
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return SchoolScope::search($query, $term);
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeStatus(Builder $query, ?SchoolStatus $status): Builder
     {
         return SchoolScope::status($query, $status);
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return SchoolScope::active($query, $query->getModel());
     }
 
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
     public function scopeInactive(Builder $query): Builder
     {
         return SchoolScope::inactive($query, $query->getModel());

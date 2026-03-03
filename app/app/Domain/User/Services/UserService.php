@@ -24,6 +24,7 @@ class UserService
         return $this->repository->create($dto, $role);
     }
 
+    /** @param array<string, mixed> $profileData */
     public function createWithProfile(CreateUserDTO $dto, string $role, array $profileData = []): User
     {
         $user = $this->repository->create($dto, $role);
@@ -45,31 +46,48 @@ class UserService
             default => null,
         };
 
-        return $user->fresh();
+        /** @var User $freshUser */
+        $freshUser = $user->fresh();
+
+        return $freshUser;
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listByRole(Role $role): Collection
     {
         return $this->repository->listByRole($role->value);
     }
 
+    /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User
     {
         return $this->repository->updateProfile($user, $data);
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listAdmins(): Collection
     {
         return $this->repository->listAdmins();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listActiveStudentsForSelect(): Collection
     {
         return $this->repository->listActiveStudentsForSelect();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     public function listActiveTherapistsForSelect(): Collection
     {
         return $this->repository->listActiveTherapistsForSelect();
+    }
+
+    /**
+     * @param  array<int, int>  $serviceIds
+     * @return Collection<int, User>
+     */
+    public function listActiveTherapistsForServices(array $serviceIds): Collection
+    {
+        return $this->repository->listActiveTherapistsForServices($serviceIds);
     }
 }

@@ -16,8 +16,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $session_date
+ * @property Carbon $start_time
+ * @property Carbon $end_time
+ * @property SessionOutcome|null $outcome
+ */
 class SessionLog extends Model
 {
+    /** @use HasFactory<\Database\Factories\SessionLogFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -90,73 +97,73 @@ class SessionLog extends Model
         ];
     }
 
-    /** @return BelongsTo<User, SessionLog> */
+    /** @return BelongsTo<User, $this> */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
-    /** @return BelongsTo<User, SessionLog> */
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
-    /** @return BelongsTo<ServiceSupportAgreement, SessionLog> */
+    /** @return BelongsTo<ServiceSupportAgreement, $this> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
-    /** @return BelongsTo<Schedule, SessionLog> */
+    /** @return BelongsTo<Schedule, $this> */
     public function schedule(): BelongsTo
     {
         return $this->belongsTo(Schedule::class, 'schedule_id');
     }
 
-    /** @return BelongsTo<Service, SessionLog> */
+    /** @return BelongsTo<Service, $this> */
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'service_id');
     }
 
-    /** @return BelongsTo<School, SessionLog> */
+    /** @return BelongsTo<School, $this> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
     }
 
-    /** @return BelongsTo<TherapistContract, SessionLog> */
+    /** @return BelongsTo<TherapistContract, $this> */
     public function therapistContract(): BelongsTo
     {
         return $this->belongsTo(TherapistContract::class, 'therapist_contract_id');
     }
 
-    /** @return BelongsTo<SchoolContract, SessionLog> */
+    /** @return BelongsTo<SchoolContract, $this> */
     public function schoolContract(): BelongsTo
     {
         return $this->belongsTo(SchoolContract::class, 'school_contract_id');
     }
 
-    /** @return BelongsTo<User, SessionLog> */
+    /** @return BelongsTo<User, $this> */
     public function submittedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'submitted_by_id');
     }
 
-    /** @return BelongsTo<User, SessionLog> */
+    /** @return BelongsTo<User, $this> */
     public function approvedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by_id');
     }
 
-    /** @return BelongsTo<User, SessionLog> */
+    /** @return BelongsTo<User, $this> */
     public function sentBackBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'sent_back_by_id');
     }
 
-    /** @return HasMany<SessionLogComment, SessionLog> */
+    /** @return HasMany<SessionLogComment, $this> */
     public function comments(): HasMany
     {
         return $this->hasMany(SessionLogComment::class, 'session_log_id');
@@ -170,18 +177,19 @@ class SessionLog extends Model
             ->first();
     }
 
-    /** @return BelongsTo<Invoice, SessionLog> */
+    /** @return BelongsTo<Invoice, $this> */
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
-    /** @return BelongsTo<TherapistBill, SessionLog> */
+    /** @return BelongsTo<TherapistBill, $this> */
     public function therapistBill(): BelongsTo
     {
         return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
     }
 
+    /** @return \Illuminate\Database\Eloquent\Relations\MorphMany<\App\Models\StudentDocument, $this> */
     public function documents(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(\App\Models\StudentDocument::class, 'documentable');
@@ -241,7 +249,7 @@ class SessionLog extends Model
 
         // Try to convert string to enum
         $enum = SessionLogStatus::tryFrom((string) $value);
-        $this->attributes['status'] = $enum?->value ?? $value;
+        $this->attributes['status'] = $enum->value ?? $value;
     }
 
     public function canEdit(): bool
@@ -251,15 +259,8 @@ class SessionLog extends Model
 
     public function calculateDurationMinutes(): int
     {
-        if (! $this->start_time || ! $this->end_time) {
-            return 0;
-        }
-
-        $start = Carbon::parse($this->start_time);
-        $end = Carbon::parse($this->end_time);
-
         // Round to nearest 5 minutes
-        $minutes = (int) $start->diffInMinutes($end);
+        $minutes = (int) $this->start_time->diffInMinutes($this->end_time);
 
         return (int) round($minutes / 5) * 5;
     }
@@ -274,7 +275,7 @@ class SessionLog extends Model
         $query = $this->newQuery();
         $field ??= $this->getRouteKeyName();
 
-        $route = request()?->route();
+        $route = request()->route();
         $routeName = $route?->getName();
         $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
 
@@ -283,9 +284,7 @@ class SessionLog extends Model
         $user = $auth->user();
 
         if ($isTherapistRoute && $user instanceof User) {
-            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
-
-            if ($role === Role::THERAPIST) {
+            if ($user->role === Role::THERAPIST) {
                 $query->where('therapist_id', $user->id);
             }
         }

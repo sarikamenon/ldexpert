@@ -1,17 +1,30 @@
 @props([
-    'sessionLogs',
+    'sessionLogs' => null,
     'columns' => [],
     'rows' => [],
     'filters' => [],
     'statuses' => [],
     // context: 'index', 'detail', or 'therapist'
     'context' => 'index',
+    'datatableUrl' => null,
+    'therapistId' => null,
+    'studentId' => null,
+    'ssaId' => null,
 ])
 
 <x-ui::card class="p-6 space-y-6">
     <form method="GET" class="flex flex-wrap gap-3 items-end w-full" id="sessionLogsFiltersForm">
-        @if ($context === 'detail')
+        @if ($context === 'detail' && empty($datatableUrl))
             <input type="hidden" name="tab" value="session_logs">
+        @endif
+        @if ($therapistId)
+            <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
+        @endif
+        @if ($studentId)
+            <input type="hidden" name="student_id" value="{{ $studentId }}">
+        @endif
+        @if ($ssaId)
+            <input type="hidden" name="ssa_id" value="{{ $ssaId }}">
         @endif
 
         <div class="flex-1 min-w-[180px]">
@@ -36,22 +49,42 @@
             </x-ui::select>
         </div>
 
-        <button type="submit"
-            class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            Apply Filters
-        </button>
+        @if (empty($datatableUrl))
+            <button type="submit"
+                class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Apply Filters
+            </button>
 
-        @if (!empty(array_filter($filters)))
-            <a href="{{ $context === 'detail' ? request()->url() . '?tab=session_logs' : route(Route::currentRouteName()) }}"
-                class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                Clear
-            </a>
+            @if (!empty(array_filter($filters)))
+                <a href="{{ $context === 'detail' ? request()->url() . '?tab=session_logs' : route(Route::currentRouteName()) }}"
+                    class="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                    Clear
+                </a>
+            @endif
         @endif
     </form>
 
     <div id="sessionLogsStatus" class="sr-only" role="status" aria-live="polite"></div>
 
-    @if ($sessionLogs->total() > 0)
+    @if (!empty($datatableUrl))
+        <div class="overflow-x-auto">
+            <table id="sessionLogsTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}">
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>Entry Info</th>
+                        <th>Student / School</th>
+                        <th>Therapist / Service</th>
+                        <th>School Amount</th>
+                        <th>Therapist Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    @elseif ($sessionLogs && $sessionLogs->total() > 0)
         <div class="overflow-x-auto">
             <x-ui::session-log-table :columns="$columns" :rows="$rows" />
         </div>

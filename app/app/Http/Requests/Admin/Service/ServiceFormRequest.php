@@ -25,6 +25,7 @@ abstract class ServiceFormRequest extends FormRequest
         }
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $serviceId = null): array
     {
         $nameRule = Rule::unique('services', 'name');
@@ -48,6 +49,7 @@ abstract class ServiceFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

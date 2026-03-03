@@ -17,8 +17,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
+/**
+ * @property Carbon $schedule_date
+ * @property Carbon $start_time
+ * @property Carbon $end_time
+ * @property Carbon|null $recurrence_end_date
+ * @property ScheduleStatus $status
+ * @property BillingStatus $billing_status
+ * @property RecurrenceType|null $recurrence_type
+ */
 class Schedule extends Model
 {
+    /** @use HasFactory<\Database\Factories\ScheduleFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -60,7 +70,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<User, Schedule>
+     * @return BelongsTo<User, $this>
      */
     public function therapist(): BelongsTo
     {
@@ -68,7 +78,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<User, Schedule>
+     * @return BelongsTo<User, $this>
      */
     public function student(): BelongsTo
     {
@@ -76,7 +86,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<ServiceSupportAgreement, Schedule>
+     * @return BelongsTo<ServiceSupportAgreement, $this>
      */
     public function ssa(): BelongsTo
     {
@@ -84,7 +94,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<Service, Schedule>
+     * @return BelongsTo<Service, $this>
      */
     public function service(): BelongsTo
     {
@@ -92,7 +102,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<School, Schedule>
+     * @return BelongsTo<School, $this>
      */
     public function school(): BelongsTo
     {
@@ -100,7 +110,7 @@ class Schedule extends Model
     }
 
     /**
-     * @return BelongsTo<Schedule, Schedule>
+     * @return BelongsTo<Schedule, $this>
      */
     public function parentSchedule(): BelongsTo
     {
@@ -108,83 +118,143 @@ class Schedule extends Model
     }
 
     /**
-     * @return HasMany<Schedule, Schedule>
+     * @return HasMany<Schedule, $this>
      */
     public function occurrences(): HasMany
     {
         return $this->hasMany(Schedule::class, 'parent_schedule_id');
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeScheduled(Builder $query): Builder
     {
         return ScheduleScope::scheduled($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return ScheduleScope::completed($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeCancelled(Builder $query): Builder
     {
         return ScheduleScope::cancelled($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopePendingBilling(Builder $query): Builder
     {
         return ScheduleScope::pendingBilling($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeBilled(Builder $query): Builder
     {
         return ScheduleScope::billed($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeNotBillable(Builder $query): Builder
     {
         return ScheduleScope::notBillable($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeWaived(Builder $query): Builder
     {
         return ScheduleScope::waived($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeRecurring(Builder $query): Builder
     {
         return ScheduleScope::recurring($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeSingle(Builder $query): Builder
     {
         return ScheduleScope::single($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeGroup(Builder $query): Builder
     {
         return ScheduleScope::group($query, $this);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForTherapist(Builder $query, User $therapist): Builder
     {
         return ScheduleScope::forTherapist($query, $this, $therapist);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForStudent(Builder $query, User $student): Builder
     {
         return ScheduleScope::forStudent($query, $this, $student);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForSSA(Builder $query, ServiceSupportAgreement $ssa): Builder
     {
         return ScheduleScope::forSSA($query, $this, $ssa);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeByRecurringBatch(Builder $query, string $batchNumber): Builder
     {
         return ScheduleScope::byRecurringBatch($query, $this, $batchNumber);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeByGroupBatch(Builder $query, string $batchNumber): Builder
     {
         return ScheduleScope::byGroupBatch($query, $this, $batchNumber);

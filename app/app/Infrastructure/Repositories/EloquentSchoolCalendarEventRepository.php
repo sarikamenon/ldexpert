@@ -14,6 +14,7 @@ use Illuminate\Support\Collection;
 
 class EloquentSchoolCalendarEventRepository implements SchoolCalendarEventRepositoryInterface
 {
+    /** @return Collection<int, SchoolCalendarEvent> */
     public function listBySchoolAndRange(int $schoolId, CarbonInterface $start, CarbonInterface $end): Collection
     {
         return SchoolCalendarEvent::query()
@@ -25,6 +26,7 @@ class EloquentSchoolCalendarEventRepository implements SchoolCalendarEventReposi
             ->get();
     }
 
+    /** @return Collection<int, SchoolCalendarEvent> */
     public function listBySchoolsAndRange(array $schoolIds, CarbonInterface $start, CarbonInterface $end): Collection
     {
         if (count($schoolIds) === 0) {

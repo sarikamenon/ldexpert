@@ -15,6 +15,7 @@ final class ExportServicesRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $statuses = array_map(static fn (ServiceStatus $status) => $status->value, ServiceStatus::cases());

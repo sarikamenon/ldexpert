@@ -61,8 +61,7 @@ final class SessionLogPolicy
 
     public function submit(User $user, SessionLog $sessionLog): bool
     {
-        $role = $user->role instanceof Role ? $user->role->value : $user->role;
-        if ($role !== Role::THERAPIST->value) {
+        if ($user->role !== Role::THERAPIST) {
             return false;
         }
 
@@ -92,11 +91,11 @@ final class SessionLogPolicy
     public function cancel(User $user, SessionLog $sessionLog): bool
     {
         if ($user->role === Role::ADMIN) {
-            return $sessionLog->status->canCancel();
+            return $sessionLog->status?->canCancel() ?? false;
         }
 
         if ($user->role === Role::THERAPIST) {
-            return $sessionLog->therapist_id === $user->id && $sessionLog->status->canCancel();
+            return $sessionLog->therapist_id === $user->id && ($sessionLog->status?->canCancel() ?? false);
         }
 
         return false;

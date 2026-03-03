@@ -38,6 +38,17 @@
                         Will activate when therapist is assigned
                     @endif
                 </span>
+            @elseif ($ssa->status === \App\Enums\SSAStatus::DEACTIVATED)
+                @if ($ssa->canBeActivated())
+                    <x-ui::button variant="success" class="change-status-btn" data-ssa-id="{{ $ssa->id }}"
+                        data-status="active">
+                        Activate
+                    </x-ui::button>
+                @else
+                    <span class="text-sm text-foreground/70">
+                        Assign a therapist to reactivate this SSA
+                    </span>
+                @endif
             @endif
         </x-slot>
     </x-ui::show-header>
@@ -150,13 +161,16 @@
                 @endif
             </div>
 
-            {{-- Hidden select for therapist assignment --}}
-            <select id="therapist_select_for_assignment" class="hidden">
-                <option value="">Select a therapist</option>
-                @foreach ($therapists ?? [] as $therapist)
-                    <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
-                @endforeach
-            </select>
+            {{-- Data for therapist assignment AJAX --}}
+            <script type="application/json" id="therapists-for-service-url">
+                @json(route('admin.ssas.therapists-for-service'))
+            </script>
+            <script type="application/json" id="ssa-service-ids">
+                @json(array_merge(
+                    [$ssa->primary_service_id],
+                    $ssa->additionalServices->pluck('id')->all()
+                ))
+            </script>
 
             @if ($assignmentHistory->count() > 0)
                 <div class="space-y-4">
@@ -209,9 +223,9 @@
                 <p class="text-foreground/70 text-center py-4">No assignment history available.</p>
             @endif
         </x-ui::card>
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+        <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :ssa-id="$ssaId ?? null" context="detail" />
     @endif
 
     <x-slot name="scripts">

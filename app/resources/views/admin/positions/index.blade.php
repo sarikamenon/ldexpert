@@ -54,9 +54,9 @@
             </x-slot:actions>
         </x-ui::filter-toolbar>
 
-        @if ($positions->count() > 0)
+        @if (isset($datatableUrl) || $positions->count() > 0)
             <div class="overflow-x-auto">
-                <table id="positionsTable" class="w-full display">
+                <table id="positionsTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                     <thead>
                         <tr>
                             <th>Name</th>
@@ -66,6 +66,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @if (!isset($datatableUrl))
                         @foreach ($positions as $position)
                             <tr>
                                 <td class="font-medium">{{ $position->name }}</td>
@@ -101,6 +102,7 @@
                                 </td>
                             </tr>
                         @endforeach
+                        @endif
                     </tbody>
                 </table>
             </div>

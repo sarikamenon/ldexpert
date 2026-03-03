@@ -17,9 +17,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $start_date
+ * @property Carbon|null $end_date
+ * @property SSAStatus $status
+ * @property ServiceFrequency|null $frequency
+ */
 class ServiceSupportAgreement extends Model
 {
+    /** @use HasFactory<\Database\Factories\ServiceSupportAgreementFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -58,19 +66,19 @@ class ServiceSupportAgreement extends Model
         ];
     }
 
-    /** @return BelongsTo<User, ServiceSupportAgreement> */
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
-    /** @return BelongsTo<Service, ServiceSupportAgreement> */
+    /** @return BelongsTo<Service, $this> */
     public function primaryService(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'primary_service_id');
     }
 
-    /** @return BelongsToMany<Service, ServiceSupportAgreement> */
+    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'ssa_services', 'ssa_id', 'service_id')
@@ -80,49 +88,73 @@ class ServiceSupportAgreement extends Model
             ->withTimestamps();
     }
 
-    /** @return BelongsToMany<Service, ServiceSupportAgreement> */
+    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
     public function additionalServices(): BelongsToMany
     {
         return $this->services()->wherePivot('is_primary', false);
     }
 
-    /** @return BelongsTo<User, ServiceSupportAgreement> */
+    /** @return BelongsTo<User, $this> */
     public function assignedTherapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_therapist_id');
     }
 
-    /** @return HasMany<SSAAssignmentHistory, ServiceSupportAgreement> */
+    /** @return HasMany<SSAAssignmentHistory, $this> */
     public function assignmentHistory(): HasMany
     {
         return $this->hasMany(SSAAssignmentHistory::class, 'ssa_id')->orderBy('created_at', 'desc');
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::ACTIVE);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeDeactivated(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::DEACTIVATED);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeAssigned(Builder $query): Builder
     {
         return $query->whereNotNull('assigned_therapist_id');
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeUnassigned(Builder $query): Builder
     {
         return $query->whereNull('assigned_therapist_id');
@@ -144,6 +176,7 @@ class ServiceSupportAgreement extends Model
             ServiceFrequency::BI_WEEKLY => 26 / 365,
             ServiceFrequency::MONTHLY => 12 / 365,
             ServiceFrequency::QUARTERLY => 4 / 365,
+            null => 0,
         };
 
         $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
@@ -162,7 +195,7 @@ class ServiceSupportAgreement extends Model
         $query = $this->newQuery();
         $field ??= $this->getRouteKeyName();
 
-        $route = request()?->route();
+        $route = request()->route();
         $routeName = $route?->getName();
         $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
 
@@ -171,9 +204,7 @@ class ServiceSupportAgreement extends Model
         $user = $auth->user();
 
         if ($isTherapistRoute && $user instanceof User) {
-            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
-
-            if ($role === Role::THERAPIST) {
+            if ($user->role === Role::THERAPIST) {
                 $query->where('assigned_therapist_id', $user->id);
             }
         }

@@ -25,7 +25,7 @@
 
                 <div
                     style="margin:20px 0; padding:16px; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd;">
-                    <p style="margin:0 0 8px; color:#0369a1;">Login Email: <strong>{{ $email }}</strong></p>
+                    <p style="margin:0 0 8px; color:#0369a1;">Username: <strong>{{ $username }}</strong></p>
                     <p style="margin:0; color:#0369a1;">Temporary Password: <strong>{{ $plainPassword }}</strong></p>
                 </div>
 

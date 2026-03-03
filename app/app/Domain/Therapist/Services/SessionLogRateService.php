@@ -79,8 +79,18 @@ class SessionLogRateService
      *
      * @return array{contract_id: int|null, rate_type: RateType|null, rate_amount: float|null, no_show_rate: float|null, no_show_rate_type: RateType|null}
      */
-    public function getSchoolRate(int $schoolId, int $serviceId, string $sessionDate): array
+    public function getSchoolRate(?int $schoolId, int $serviceId, string $sessionDate): array
     {
+        if ($schoolId === null) {
+            return [
+                'contract_id' => null,
+                'rate_type' => null,
+                'rate_amount' => null,
+                'no_show_rate' => null,
+                'no_show_rate_type' => null,
+            ];
+        }
+
         $contract = $this->schoolContractRepository->findActiveContractForDate($schoolId, $sessionDate);
 
         if (! $contract) {
@@ -137,14 +147,14 @@ class SessionLogRateService
      */
     public function calculateDualBilling(
         int $therapistUserId,
-        int $schoolId,
+        ?int $schoolId,
         int $serviceId,
         string $sessionDate,
         int $durationMinutes,
         SessionOutcome $outcome = SessionOutcome::SERVICES_ADMINISTERED
     ): array {
         $school = $schoolId ? $this->schoolRepository->find($schoolId) : null;
-        $isPrivateStudent = $school?->is_private_student ?? false;
+        $isPrivateStudent = $school->is_private_student ?? false;
 
         $therapistRate = $this->getTherapistRate($therapistUserId, $serviceId, $sessionDate);
         $schoolRate = $this->getSchoolRate($schoolId, $serviceId, $sessionDate);

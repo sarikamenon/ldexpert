@@ -4,20 +4,36 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\ExpenseRowTransformer;
 use App\Domain\Finance\Services\ExpenseService;
 use App\DTOs\CreateExpenseDTO;
+use App\DTOs\ExpenseFilterDTO;
 use App\DTOs\UpdateExpenseDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Expense\CreateExpenseRequest;
+use App\Http\Requests\Admin\Expense\ExpenseDataRequest;
 use App\Http\Requests\Admin\Expense\UpdateExpenseRequest;
+use App\Http\Support\DataTablesRequest;
 use App\Models\Expense;
 use App\Models\ExpenseCategory;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class ExpenseController extends Controller
 {
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'expense_date',
+        1 => 'expense_category_id',
+        2 => 'vendor_payee',
+        3 => 'description',
+        4 => 'amount',
+    ];
+
     public function __construct(
         private readonly ExpenseService $service,
     ) {}
@@ -29,40 +45,42 @@ class ExpenseController extends Controller
     {
         $this->authorize('viewAny', Expense::class);
 
-        $query = Expense::with(['category', 'createdBy'])
-            ->orderBy('expense_date', 'desc');
-
-        // Apply filters
-        if ($request->filled('category_id')) {
-            $query->where('expense_category_id', $request->input('category_id'));
-        }
-
-        if ($request->filled('date_from')) {
-            $query->where('expense_date', '>=', $request->input('date_from'));
-        }
-
-        if ($request->filled('date_to')) {
-            $query->where('expense_date', '<=', $request->input('date_to'));
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('vendor_payee', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%")
-                    ->orWhere('reference', 'like', "%{$search}%");
-            });
-        }
-
-        $expenses = $query->get();
-
-        $totalAmount = $expenses->sum('amount');
-
         return view('admin.expenses.index', [
-            'expenses' => $expenses,
+            'expenses' => collect(),
             'categories' => ExpenseCategory::active()->orderBy('name')->get(),
             'filters' => $request->all(),
-            'totalAmount' => $totalAmount,
+            'totalAmount' => 0,
+            'datatableUrl' => route('admin.expenses.data'),
+        ]);
+    }
+
+    public function data(ExpenseDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', Expense::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'category_id' => $request->input('filter_category_id'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+            'search' => $request->input('filter_search'),
+            'per_page' => $params->length,
+        ];
+        $filters = ExpenseFilterDTO::fromArray($filterData);
+
+        $result = $this->service->listForDataTables($filters, $params);
+        $totalAmount = $this->service->getTotalAmountForFilters($filters);
+
+        $data = $result['rows']->map(
+            static fn (Expense $expense): array => ExpenseRowTransformer::transform($expense)
+        )->all();
+
+        return response()->json([
+            'draw' => $params->draw,
+            'recordsTotal' => $result['recordsTotal'],
+            'recordsFiltered' => $result['recordsFiltered'],
+            'data' => $data,
+            'totalAmount' => round($totalAmount, 2),
         ]);
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\TherapistContractRowTransformer;
 use App\Domain\Contract\Services\TherapistContractService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Therapist\Services\TherapistService;
@@ -18,7 +19,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Contract\ChangeTherapistContractStatusRequest;
 use App\Http\Requests\Admin\Contract\IndexTherapistContractRequest;
 use App\Http\Requests\Admin\Contract\StoreTherapistContractRequest;
+use App\Http\Requests\Admin\Contract\TherapistContractDataRequest;
 use App\Http\Requests\Admin\Contract\UpdateTherapistContractRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\TherapistContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +30,18 @@ use Illuminate\Http\RedirectResponse;
 
 final class TherapistContractController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'therapist_contracts.id',
+        2 => 'therapist_contracts.start_date',
+        3 => 'therapist_contracts.end_date',
+        5 => 'therapist_contracts.status',
+    ];
+
     public function __construct(
         private readonly TherapistContractService $service,
         private readonly TherapistService $therapistService,
@@ -36,16 +52,38 @@ final class TherapistContractController extends Controller
     {
         $this->authorize('viewAny', TherapistContract::class);
 
-        $filters = TherapistContractFilterDTO::fromArray($request->validated());
-        $contracts = $this->service->paginate($filters);
-
         return view('admin.contracts.therapists.index', [
-            'contracts' => $contracts,
+            'contracts' => collect(),
             'metrics' => $this->service->metrics(),
             'filters' => $request->validated(),
             'statuses' => ContractStatus::cases(),
             'therapists' => $this->therapistService->listActiveProfilesForSelect(),
+            'datatableUrl' => route('admin.contracts.therapists.data'),
         ]);
+    }
+
+    public function data(TherapistContractDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', TherapistContract::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'status' => $request->input('filter_status'),
+            'search' => $request->input('filter_search'),
+            'therapist_ids' => $request->input('filter_therapist_ids', []),
+            'therapist_id' => $request->input('filter_therapist_id'),
+        ];
+        $filters = TherapistContractFilterDTO::fromArray($filterData);
+
+        $result = $this->service->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (TherapistContract $contract): array => TherapistContractRowTransformer::transform($contract),
+        );
     }
 
     public function create(): View
@@ -137,6 +175,7 @@ final class TherapistContractController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formData(): array
     {
         return [

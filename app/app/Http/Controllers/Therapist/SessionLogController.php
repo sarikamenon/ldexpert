@@ -4,20 +4,30 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
+use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\CreateSessionLogDTO;
-use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\UpdateSessionLogDTO;
+use App\Enums\SessionLogCommentType;
+use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SessionLog\SessionLogIndexRequest;
+use App\Http\Requests\Therapist\AddTherapistCommentRequest;
+use App\Http\Requests\Therapist\EntryWindowRequest;
 use App\Http\Requests\Therapist\StoreSessionLogRequest;
+use App\Http\Requests\Therapist\TherapistSessionLogDataRequest;
 use App\Http\Requests\Therapist\UpdateSessionLogRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
 use App\Models\SessionLog;
+use App\Models\SessionLogComment;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -26,15 +36,28 @@ use Illuminate\View\View;
 
 final class SessionLogController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'session_logs.session_date',
+        4 => 'session_logs.therapist_billable_amount',
+        5 => 'session_logs.status',
+    ];
+
     public function __construct(
         private readonly SessionLogService $sessionLogService,
         private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly SSAService $ssaService,
         private readonly StudentDocumentService $documentService,
+        private readonly BillingEntryWindowService $billingEntryWindowService,
     ) {}
 
     public function selectSSA(Request $request): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         $ssas = $this->ssaService
@@ -46,14 +69,22 @@ final class SessionLogController extends Controller
         ]);
     }
 
+    public function entryWindow(EntryWindowRequest $request): JsonResponse
+    {
+        $sessionDate = Carbon::parse((string) $request->validated('session_date'));
+        $result = $this->billingEntryWindowService->checkWindow($sessionDate);
+
+        return response()->json(array_merge($result->toArray(), [
+            'cutoff_display' => Carbon::parse($result->cutoff)->format('l, M j, Y'),
+        ]));
+    }
+
     public function index(SessionLogIndexRequest $request): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
+        $filters = $request->validated();
 
-        $dto = SessionLogIndexDTO::fromArray($request->validated());
-        $viewData = $this->sessionLogIndexService->getTherapistIndex($therapist, $dto);
-
-        // Reference data for filters
         $ssas = $this->ssaService
             ->getActiveSSAsForTherapist($therapist->id)
             ->loadMissing(['student.studentProfile', 'services']);
@@ -74,15 +105,48 @@ final class SessionLogController extends Controller
             ->sortBy('name')
             ->values();
 
-        return view('therapist.session-logs.index', $viewData + [
+        return view('therapist.session-logs.index', [
+            'sessionLogs' => collect(),
+            'columns' => [],
+            'rows' => [],
+            'statuses' => SessionLogStatus::cases(),
+            'filters' => $filters,
             'students' => $students,
             'ssas' => $ssas,
             'services' => $services,
+            'datatableUrl' => route('therapist.session-logs.data'),
         ]);
+    }
+
+    public function data(TherapistSessionLogDataRequest $request): JsonResponse
+    {
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filters = [
+            'student_id' => $request->input('filter_student_id'),
+            'ssa_id' => $request->input('filter_ssa_id'),
+            'service_id' => $request->input('filter_service_id'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+        ];
+        $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+        $result = $this->sessionLogIndexService->listForDataTablesForTherapist($therapist, $filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (SessionLog $log): array => TherapistSessionLogRowTransformer::transform($log),
+        );
     }
 
     public function create(Request $request, ?Schedule $schedule = null): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         // If schedule provided, validate access
@@ -147,6 +211,7 @@ final class SessionLogController extends Controller
 
     public function store(StoreSessionLogRequest $request): RedirectResponse
     {
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $data = $request->validated();
 
@@ -158,6 +223,7 @@ final class SessionLogController extends Controller
             // Check if schedule is provided
             $schedule = null;
             if (isset($data['schedule_id'])) {
+                /** @var Schedule $schedule */
                 $schedule = Schedule::findOrFail($data['schedule_id']);
                 $sessionLog = $this->sessionLogService->createFromSchedule($therapist, $schedule, $dto);
             } else {
@@ -213,6 +279,7 @@ final class SessionLogController extends Controller
     {
         $this->authorize('update', $sessionLog);
 
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $data = $request->validated();
 
@@ -231,10 +298,44 @@ final class SessionLogController extends Controller
         }
     }
 
+    public function addComment(AddTherapistCommentRequest $request, SessionLog $sessionLog): RedirectResponse
+    {
+        $this->authorize('view', $sessionLog);
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+
+        SessionLogComment::create([
+            'session_log_id' => $sessionLog->id,
+            'author_id' => $therapist->id,
+            'comment' => $request->validated('comment'),
+            'type' => SessionLogCommentType::THERAPIST_REPLY,
+        ]);
+
+        if ($request->boolean('submit_after_comment') && $sessionLog->status?->canSubmit()) {
+            try {
+                $this->sessionLogService->submit($therapist, $sessionLog);
+
+                return redirect()
+                    ->route('therapist.session-logs.show', $sessionLog)
+                    ->with('success', 'Comment added and session log submitted successfully.');
+            } catch (\Exception $e) {
+                return redirect()
+                    ->back()
+                    ->withErrors(['error' => $e->getMessage()]);
+            }
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Comment added successfully.');
+    }
+
     public function submit(Request $request, SessionLog $sessionLog): RedirectResponse
     {
         $this->authorize('submit', $sessionLog);
 
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
         try {
@@ -254,6 +355,7 @@ final class SessionLogController extends Controller
     {
         $this->authorize('cancel', $sessionLog);
 
+        /** @var \App\Models\User $therapist */
         $therapist = $request->user();
         $reason = $request->input('cancellation_reason', 'Cancelled by therapist');
 

@@ -11,8 +11,10 @@ final class StudentFilterDTO
         public readonly ?string $status = null,
         public readonly int $perPage = 15,
         public readonly ?int $schoolId = null,
+        public readonly ?int $therapistId = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromRequest(array $data): self
     {
         return new self(
@@ -21,6 +23,9 @@ final class StudentFilterDTO
             perPage: (int) ($data['per_page'] ?? 15),
             schoolId: isset($data['school_id']) && $data['school_id'] !== ''
                 ? (int) $data['school_id']
+                : null,
+            therapistId: isset($data['therapist_id']) && $data['therapist_id'] !== ''
+                ? (int) $data['therapist_id']
                 : null,
         );
     }
@@ -33,6 +38,7 @@ final class StudentFilterDTO
             'status' => $this->status,
             'perPage' => $this->perPage,
             'school_id' => $this->schoolId,
+            'therapist_id' => $this->therapistId,
         ];
     }
 }

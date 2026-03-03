@@ -8,11 +8,13 @@ use App\Enums\PositionStatus;
 
 final class CreatePositionDTO
 {
+    /** @param array<int> $serviceIds */
     public function __construct(
         public readonly string $name,
         public readonly array $serviceIds,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
@@ -21,6 +23,7 @@ final class CreatePositionDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

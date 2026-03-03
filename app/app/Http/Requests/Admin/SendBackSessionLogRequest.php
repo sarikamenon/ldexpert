@@ -10,9 +10,13 @@ final class SendBackSessionLogRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->can('sendBack', $this->route('sessionLog'));
+        /** @var \App\Models\SessionLog|null $sessionLog */
+        $sessionLog = $this->route('sessionLog');
+
+        return $sessionLog !== null && ($this->user()?->can('sendBack', $sessionLog) ?? false);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [
@@ -20,6 +24,7 @@ final class SendBackSessionLogRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

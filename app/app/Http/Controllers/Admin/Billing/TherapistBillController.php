@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin\Billing;
 
+use App\DataTables\Transformers\TherapistBillRowTransformer;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Billing\Services\TherapistBillPdfService;
 use App\Domain\Billing\Services\TherapistBillService;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\CreateTherapistBillDTO;
 use App\DTOs\SendTherapistBillDTO;
@@ -16,8 +16,12 @@ use App\DTOs\TherapistBillFilterDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Billing\CreateTherapistBillRequest;
 use App\Http\Requests\Admin\Billing\SendTherapistBillRequest;
+use App\Http\Requests\Admin\Billing\TherapistBillDataRequest;
 use App\Http\Requests\Admin\Billing\TherapistBillIndexRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\TherapistBill;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -25,12 +29,25 @@ use Illuminate\View\View;
 
 final class TherapistBillController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'bill_number',
+        1 => 'therapist_name',
+        2 => 'billing_period_start',
+        3 => 'total_due',
+        4 => 'status',
+        5 => 'due_date',
+    ];
+
     public function __construct(
         private readonly TherapistBillService $billService,
         private readonly TherapistBillPdfService $pdfService,
         private readonly TherapistBillRepositoryInterface $billRepository,
         private readonly TherapistService $therapistService,
-        private readonly StudentService $studentService,
         private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
@@ -38,16 +55,38 @@ final class TherapistBillController extends Controller
     {
         $this->authorize('viewAny', TherapistBill::class);
 
-        $filters = TherapistBillFilterDTO::fromArray($request->validated());
-        $perPage = $request->integer('per_page', 15);
-
-        $bills = $this->billRepository->list($filters, $perPage);
-
         return view('admin.billing.therapist-bills.index', [
-            'bills' => $bills,
+            'bills' => collect(),
             'filters' => $request->validated(),
             'therapists' => $this->therapistService->listActiveTherapists(),
+            'datatableUrl' => route('admin.billing.therapist-bills.data'),
         ]);
+    }
+
+    public function data(TherapistBillDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', TherapistBill::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'therapist_id' => $request->input('filter_therapist_id'),
+            'status' => $request->input('filter_status'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+            'bill_number' => $request->input('filter_bill_number'),
+            'per_page' => $params->length,
+        ];
+        $filters = TherapistBillFilterDTO::fromArray($filterData);
+
+        $result = $this->billService->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (TherapistBill $bill): array => TherapistBillRowTransformer::transform($bill),
+        );
     }
 
     public function create(Request $request): View
@@ -115,7 +154,9 @@ final class TherapistBillController extends Controller
         $dto = CreateTherapistBillDTO::fromArray($request->validated());
 
         try {
-            $bill = $this->billService->generateBill($request->user(), $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $bill = $this->billService->generateBill($user, $dto);
 
             return redirect()
                 ->route('admin.billing.therapist-bills.show', $bill)
@@ -152,7 +193,9 @@ final class TherapistBillController extends Controller
         $dto = SendTherapistBillDTO::fromArray($request->validated());
 
         try {
-            $this->billService->sendBill($request->user(), $bill, $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->billService->sendBill($user, $bill, $dto);
 
             return redirect()
                 ->route('admin.billing.therapist-bills.show', $bill)

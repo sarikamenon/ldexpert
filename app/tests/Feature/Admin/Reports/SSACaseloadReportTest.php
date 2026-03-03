@@ -24,6 +24,7 @@ final class SSACaseloadReportTest extends TestCase
         return User::factory()->admin()->create();
     }
 
+    /** @param array<string, mixed> $overrides */
     private function createSSA(array $overrides = []): ServiceSupportAgreement
     {
         $school = School::factory()->create();
@@ -57,7 +58,6 @@ final class SSACaseloadReportTest extends TestCase
     public function test_admin_can_view_caseload_report(): void
     {
         $admin = $this->createAdmin();
-        $this->createSSA();
 
         $response = $this->actingAs($admin)
             ->get(route('admin.reports.ssa.caseload.index'));
@@ -65,9 +65,11 @@ final class SSACaseloadReportTest extends TestCase
         $response->assertOk()
             ->assertSee('SSA Caseload & Assignment Report')
             ->assertViewIs('admin.reports.ssa.caseload')
-            ->assertViewHas('therapistData')
-            ->assertViewHas('unassignedSSAs')
-            ->assertViewHas('summary');
+            ->assertViewHas('therapistDatatableUrl')
+            ->assertViewHas('unassignedDatatableUrl')
+            ->assertViewHas('schools')
+            ->assertViewHas('therapists')
+            ->assertViewHas('services');
     }
 
     public function test_non_admin_cannot_access_caseload_report(): void
@@ -82,23 +84,47 @@ final class SSACaseloadReportTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_filters_work_correctly(): void
+    public function test_therapist_data_endpoint_returns_json(): void
     {
         $admin = $this->createAdmin();
-        $therapist = User::factory()->create([
-            'role' => Role::THERAPIST,
-            'status' => UserStatus::ACTIVE,
-        ]);
+        $this->createSSA();
 
-        $this->createSSA(['assigned_therapist_id' => $therapist->id]);
+        $response = $this->actingAs($admin)
+            ->post(route('admin.reports.ssa.caseload.therapist-data'), [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 25,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'draw',
+                'recordsTotal',
+                'recordsFiltered',
+                'data',
+                'summary',
+            ]);
+    }
+
+    public function test_unassigned_data_endpoint_returns_json(): void
+    {
+        $admin = $this->createAdmin();
         $this->createSSA(['assigned_therapist_id' => null, 'status' => SSAStatus::PENDING]);
 
         $response = $this->actingAs($admin)
-            ->get(route('admin.reports.ssa.caseload.index', [
-                'therapist_ids' => [$therapist->id],
-            ]));
+            ->post(route('admin.reports.ssa.caseload.unassigned-data'), [
+                'draw' => 1,
+                'start' => 0,
+                'length' => 25,
+            ]);
 
-        $response->assertOk();
+        $response->assertOk()
+            ->assertJsonStructure([
+                'draw',
+                'recordsTotal',
+                'recordsFiltered',
+                'data',
+            ]);
     }
 
     public function test_export_generates_csv(): void

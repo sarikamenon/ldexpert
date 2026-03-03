@@ -6,16 +6,22 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\DTOs\ChangeStudentStatusDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\Enums\UserStatus;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class EloquentStudentRepository implements StudentRepositoryInterface
 {
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  array<string, mixed>  $profileData
+     */
     public function create(array $userData, array $profileData): StudentProfile
     {
         return DB::transaction(function () use ($userData, $profileData) {
@@ -25,6 +31,10 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         });
     }
 
+    /**
+     * @param  array<string, mixed>  $userData
+     * @param  array<string, mixed>  $profileData
+     */
     public function update(User $user, array $userData, array $profileData): StudentProfile
     {
         return DB::transaction(function () use ($user, $userData, $profileData) {
@@ -34,7 +44,10 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             if ($user->studentProfile) {
                 $user->studentProfile->update($profileData);
 
-                return $user->studentProfile->fresh();
+                /** @var StudentProfile $freshProfile */
+                $freshProfile = $user->studentProfile->fresh();
+
+                return $freshProfile;
             } else {
                 return $user->studentProfile()->create($profileData);
             }
@@ -46,6 +59,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return StudentProfile::with(['user', 'school', 'parent'])->find($id);
     }
 
+    /** @return LengthAwarePaginator<int, User> */
     public function list(StudentFilterDTO $filters): LengthAwarePaginator
     {
         $query = User::query()
@@ -54,7 +68,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
 
         if ($filters->search) {
             $query->whereHas('studentProfile', function ($q) use ($filters) {
-                $q->search($filters->search);
+                $q->search($filters->search); // @phpstan-ignore method.notFound
             });
         }
 
@@ -64,11 +78,116 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
 
         if ($filters->schoolId) {
             $query->whereHas('studentProfile', function ($q) use ($filters) {
-                $q->where('school_id', $filters->schoolId);
+                $q->where('school_id', $filters->schoolId); // @phpstan-ignore argument.type
             });
         }
 
         return $query->orderBy('name')->paginate($filters->perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
+     */
+    public function listForDataTables(StudentFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = User::query()
+            ->where('users.role', 'student')
+            ->leftJoin('student_profiles', 'users.id', '=', 'student_profiles.user_id')
+            ->leftJoin('schools', 'student_profiles.school_id', '=', 'schools.id')
+            ->select('users.*');
+
+        if ($filters->search) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->search($filters->search); // @phpstan-ignore method.notFound
+            });
+        }
+        if ($filters->status) {
+            $baseQuery->where('users.status', $filters->status);
+        }
+        if ($filters->schoolId) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->where('school_id', $filters->schoolId); // @phpstan-ignore argument.type
+            });
+        }
+        if ($filters->therapistId) {
+            $baseQuery->whereHas('studentProfile.ssas', function ($q) use ($filters) {
+                $q->where('assigned_therapist_id', $filters->therapistId); // @phpstan-ignore argument.type
+            });
+        }
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('users.id');
+
+        if ($params->searchValue) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($params) {
+                $q->search($params->searchValue); // @phpstan-ignore method.notFound
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count('users.id');
+
+        $orderColumn = $params->orderColumn ?? 'users.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    /**
+     * @param  array{search?: string|null, status?: string|null}  $filters
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, User>}
+     */
+    public function listForDataTablesByTherapist(int $therapistId, array $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = User::query()
+            ->where('users.role', 'student')
+            ->whereHas('studentProfile.ssas', function ($q) use ($therapistId) {
+                $q->where('assigned_therapist_id', $therapistId); // @phpstan-ignore argument.type
+            })
+            ->leftJoin('student_profiles', 'users.id', '=', 'student_profiles.user_id')
+            ->leftJoin('schools', 'student_profiles.school_id', '=', 'schools.id')
+            ->select('users.*');
+
+        if (! empty($filters['search'])) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($filters) {
+                $q->search($filters['search']); // @phpstan-ignore method.notFound
+            });
+        }
+        if (! empty($filters['status'])) {
+            $baseQuery->where('users.status', $filters['status']);
+        }
+
+        $recordsTotal = (clone $baseQuery)->count('users.id');
+
+        if ($params->searchValue) {
+            $baseQuery->whereHas('studentProfile', function ($q) use ($params) {
+                $q->search($params->searchValue); // @phpstan-ignore method.notFound
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count('users.id');
+
+        $orderColumn = $params->orderColumn ?? 'users.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function changeStatus(User $user, ChangeStudentStatusDTO $dto): User
@@ -77,9 +196,13 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
             'status' => $dto->status,
         ]);
 
-        return $user->fresh();
+        /** @var User $freshUser */
+        $freshUser = $user->fresh();
+
+        return $freshUser;
     }
 
+    /** @return array<string, int> */
     public function getMetrics(?string $status = null): array
     {
         $query = User::query()
@@ -101,6 +224,9 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         ];
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function export(StudentFilterDTO $filters): Collection
     {
         $query = User::query()
@@ -109,7 +235,7 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
 
         if ($filters->search) {
             $query->whereHas('studentProfile', function ($q) use ($filters) {
-                $q->search($filters->search);
+                $q->search($filters->search); // @phpstan-ignore method.notFound
             });
         }
 
@@ -119,19 +245,20 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
 
         if ($filters->schoolId) {
             $query->whereHas('studentProfile', function ($q) use ($filters) {
-                $q->where('school_id', $filters->schoolId);
+                $q->where('school_id', $filters->schoolId); // @phpstan-ignore argument.type
             });
         }
 
         return $query->orderBy('name')->get();
     }
 
+    /** @return LengthAwarePaginator<int, User> */
     public function listByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()
             ->where('role', 'student')
             ->whereHas('studentProfile.ssas', function ($q) use ($therapistId) {
-                $q->where('assigned_therapist_id', $therapistId);
+                $q->where('assigned_therapist_id', $therapistId); // @phpstan-ignore argument.type
             })
             ->with(['studentProfile.school']);
 
@@ -149,6 +276,8 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         $students = $query->distinct()->orderBy('name')->paginate($perPage);
 
         // Load SSAs for each student
+        /** @var \Illuminate\Pagination\LengthAwarePaginator<int, User> $students */
+        /** @phpstan-ignore-next-line method.notFound (LengthAwarePaginator delegates load() to its collection) */
         $students->load([
             'studentProfile.ssas' => function ($q) use ($therapistId) {
                 $q->where('assigned_therapist_id', $therapistId);
@@ -162,16 +291,19 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
     {
         return User::query()
             ->where('role', 'student')
-            ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $schoolId))
+            ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $schoolId)) // @phpstan-ignore argument.type
             ->count();
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsBySchool(int $schoolId): Collection
     {
         return User::query()
             ->where('role', 'student')
             ->where('status', UserStatus::ACTIVE)
-            ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $schoolId))
+            ->whereHas('studentProfile', fn ($q) => $q->where('school_id', $schoolId)) // @phpstan-ignore argument.type
             ->select(['id', 'name', 'email'])
             ->orderBy('name')
             ->get();
@@ -181,15 +313,16 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
     {
         return User::query()
             ->where('role', 'student')
-            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId))
+            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId)) // @phpstan-ignore argument.type
             ->count();
     }
 
+    /** @return LengthAwarePaginator<int, User> */
     public function listStudentsByTherapist(int $therapistId, ?string $search = null, ?string $status = null, int $perPage = 15): LengthAwarePaginator
     {
         $query = User::query()
             ->where('role', 'student')
-            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId))
+            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId)) // @phpstan-ignore argument.type
             ->with('studentProfile.school');
 
         if ($search) {
@@ -206,12 +339,15 @@ final class EloquentStudentRepository implements StudentRepositoryInterface
         return $query->orderBy('name')->paginate($perPage);
     }
 
+    /**
+     * @return Collection<int, User>
+     */
     public function listActiveStudentsByTherapist(int $therapistId): Collection
     {
         return User::query()
             ->where('role', 'student')
             ->where('status', UserStatus::ACTIVE)
-            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId))
+            ->whereHas('therapists', fn ($q) => $q->where('therapist_id', $therapistId)) // @phpstan-ignore argument.type
             ->select(['id', 'name', 'email'])
             ->orderBy('name')
             ->get();

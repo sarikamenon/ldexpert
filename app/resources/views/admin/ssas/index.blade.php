@@ -10,7 +10,7 @@
     @endif
 
     <x-admin.ssas-list :ssas="$ssas" :filters="$filters" :statuses="$statuses" :students="$students" :therapists="$therapists"
-        :services="$services" :showMetrics="true" :metrics="$metrics" context="index" />
+        :services="$services" :showMetrics="true" :metrics="$metrics" :datatable-url="$datatableUrl" context="index" />
 
     <x-slot name="scripts">
         @vite(['resources/js/pages/admin-ssas-index.js'])

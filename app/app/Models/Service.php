@@ -12,7 +12,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Service extends Model
 {
+    /** @use HasFactory<\Database\Factories\ServiceFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     public const DELIVERY_MODE_OPTIONS = [
@@ -37,6 +39,10 @@ final class Service extends Model
         'status' => ServiceStatus::class,
     ];
 
+    /**
+     * @param  Builder<Service>  $query
+     * @return Builder<Service>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ServiceStatus::ACTIVE);

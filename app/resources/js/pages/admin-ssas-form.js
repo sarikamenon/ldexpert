@@ -1,7 +1,10 @@
 /**
  * SSA Form JavaScript
- * Handles THO minutes auto-calculation, calculated minutes, and conditional field display
+ * Handles THO minutes auto-calculation, calculated minutes, conditional field display,
+ * and therapist filtering by selected service.
  */
+
+import $ from 'jquery';
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('ssaForm');
@@ -18,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentServiceData = currentServiceDataEl ? JSON.parse(currentServiceDataEl.textContent) : null;
 
     const primaryServiceId = document.getElementById('primary_service_id');
+    const additionalServiceIds = document.getElementById('additional_service_ids');
+    const assignedTherapistId = document.getElementById('assigned_therapist_id');
     const minutesPerSession = document.getElementById('minutes_per_session');
     const frequency = document.getElementById('frequency');
     const sessionsPerFrequency = document.getElementById('sessions_per_frequency');
@@ -27,6 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const endDate = document.getElementById('end_date');
     const thoMinutes = document.getElementById('tho_minutes');
     const thoCalculationHint = document.getElementById('tho-calculation-hint');
+
+    // Therapist filtering by service
+    const therapistsForServiceUrlEl = document.getElementById('therapists-for-service-url');
+    const therapistsForServiceUrl = therapistsForServiceUrlEl ? JSON.parse(therapistsForServiceUrlEl.textContent) : null;
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
     // Field containers for conditional display
     const frequencyFields = document.getElementById('frequency-fields');
@@ -209,15 +219,95 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add event listeners
+    // Collect all selected service IDs (primary + additional)
+    function getAllSelectedServiceIds() {
+        const ids = [];
+        if (primaryServiceId?.value) {
+            ids.push(primaryServiceId.value);
+        }
+        if (additionalServiceIds) {
+            const selected = $(additionalServiceIds).val();
+            if (Array.isArray(selected)) {
+                ids.push(...selected);
+            }
+        }
+        return ids.filter((id) => id && id !== '');
+    }
+
+    // Fetch and update therapist dropdown based on all selected services
+    async function fetchTherapistsForServices() {
+        if (!assignedTherapistId || !therapistsForServiceUrl) {
+            return;
+        }
+
+        const $therapist = $(assignedTherapistId);
+        const selectedValue = $therapist.val();
+        const serviceIds = getAllSelectedServiceIds();
+
+        try {
+            const params = new URLSearchParams();
+            serviceIds.forEach((id) => params.append('service_ids[]', id));
+            const url = serviceIds.length
+                ? `${therapistsForServiceUrl}?${params.toString()}`
+                : therapistsForServiceUrl;
+
+            const response = await fetch(url, {
+                headers: {
+                    Accept: 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const therapists = await response.json();
+
+            // Destroy Select2 before modifying options
+            if ($therapist.data('select-initialized') && typeof $therapist.select2 === 'function') {
+                $therapist.select2('destroy');
+                $therapist.data('select-initialized', false);
+            }
+
+            // Rebuild native options
+            assignedTherapistId.innerHTML = '<option value="">Unassigned</option>';
+            therapists.forEach((therapist) => {
+                const option = document.createElement('option');
+                option.value = therapist.id;
+                option.textContent = therapist.name;
+                if (String(therapist.id) === String(selectedValue)) {
+                    option.selected = true;
+                }
+                assignedTherapistId.appendChild(option);
+            });
+
+            // Reinitialize Select2 via the global helper
+            if (typeof window.initSelectBoxes === 'function') {
+                await window.initSelectBoxes();
+            }
+        } catch {
+            // Silently fail - therapist dropdown keeps its current options
+        }
+    }
+
+    // Add event listeners — use jQuery .on('change') for Select2 compatibility
     if (primaryServiceId) {
-        primaryServiceId.addEventListener('change', () => {
+        $(primaryServiceId).on('change', () => {
             toggleFrequencyFields();
             calculateCalculatedMinutes();
             calculateThoMinutes();
+            fetchTherapistsForServices();
         });
     }
 
+    if (additionalServiceIds) {
+        $(additionalServiceIds).on('change', () => {
+            fetchTherapistsForServices();
+        });
+    }
+
+    // Native input fields — standard addEventListener is fine
     [minutesPerSession, sessionsPerFrequency].forEach((field) => {
         if (field) {
             field.addEventListener('change', () => {
@@ -231,7 +321,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    [frequency, startDate, endDate].forEach((field) => {
+    // Frequency is a Select2 — use jQuery event
+    if (frequency) {
+        $(frequency).on('change', () => {
+            calculateCalculatedMinutes();
+            calculateThoMinutes();
+        });
+    }
+
+    // Date inputs — native events
+    [startDate, endDate].forEach((field) => {
         if (field) {
             field.addEventListener('change', () => {
                 calculateCalculatedMinutes();
@@ -249,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         adjustedMinutes.addEventListener('input', calculateThoMinutes);
     }
 
-    [frequency, startDate, endDate, minutesPerSession, sessionsPerFrequency].forEach((field) => {
+    [startDate, endDate, minutesPerSession, sessionsPerFrequency].forEach((field) => {
         if (field) {
             field.addEventListener('blur', () => {
                 calculateCalculatedMinutes();
@@ -265,5 +364,10 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleFrequencyFields();
     calculateCalculatedMinutes();
     calculateThoMinutes();
+
+    // Filter therapists on initial load if any service is already selected
+    if (getAllSelectedServiceIds().length > 0) {
+        fetchTherapistsForServices();
+    }
 });
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\PositionRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\DTOs\ChangePositionStatusDTO;
@@ -14,8 +15,11 @@ use App\Enums\PositionStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Position\ChangePositionStatusRequest;
 use App\Http\Requests\Admin\Position\IndexPositionRequest;
+use App\Http\Requests\Admin\Position\PositionDataRequest;
 use App\Http\Requests\Admin\Position\StorePositionRequest;
 use App\Http\Requests\Admin\Position\UpdatePositionRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\Position;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +28,16 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PositionController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'positions.name',
+        1 => 'positions.status',
+    ];
+
     public function __construct(
         private readonly PositionCatalogService $positionCatalog,
         private readonly ServiceCatalogService $serviceCatalog,
@@ -34,15 +48,40 @@ final class PositionController extends Controller
         $this->authorize('viewAny', Position::class);
 
         $filters = PositionFilterDTO::fromArray($request->validated());
-        $positions = $this->positionCatalog->paginate($filters);
         $metrics = $this->positionCatalog->metrics();
 
         return view('admin.positions.index', [
-            'positions' => $positions,
+            'positions' => collect(),
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'statuses' => PositionStatus::cases(),
+            'datatableUrl' => route('admin.positions.data'),
         ]);
+    }
+
+    public function data(PositionDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', Position::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+        ];
+        $filters = PositionFilterDTO::fromArray($filterData);
+
+        $result = $this->positionCatalog->listForDataTables($filters, $params);
+
+        $result['rows']->load('services');
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            [PositionRowTransformer::class, 'transform']
+        );
     }
 
     public function create(): View
@@ -120,6 +159,9 @@ final class PositionController extends Controller
 
         return response()->streamDownload(function () use ($positions): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Name',

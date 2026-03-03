@@ -6,7 +6,6 @@ namespace Tests\Unit\Services;
 
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
-use App\Services\ActivityLogService;
 use App\Services\DashboardService;
 use Mockery;
 use Tests\TestCase;
@@ -16,7 +15,6 @@ final class DashboardServiceTest extends TestCase
     public function test_get_key_metrics_returns_correct_structure(): void
     {
         $repository = Mockery::mock(DashboardRepositoryInterface::class);
-        $activityLogService = Mockery::mock(ActivityLogService::class);
         $timezoneService = Mockery::mock(UserTimezoneService::class);
 
         $repository->shouldReceive('getSchoolCount')->once()->andReturn(10);
@@ -38,7 +36,7 @@ final class DashboardServiceTest extends TestCase
         $repository->shouldReceive('getSSAsExpiringSoon')->once()->with(7)->andReturn(5);
         $repository->shouldReceive('getAverageSSAUtilization')->once()->andReturn(75);
 
-        $service = new DashboardService($activityLogService, $timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository);
         $result = $service->getKeyMetrics();
 
         $this->assertIsArray($result);
@@ -53,7 +51,6 @@ final class DashboardServiceTest extends TestCase
     public function test_get_critical_alerts_returns_array(): void
     {
         $repository = Mockery::mock(DashboardRepositoryInterface::class);
-        $activityLogService = Mockery::mock(ActivityLogService::class);
         $timezoneService = Mockery::mock(UserTimezoneService::class);
 
         $repository->shouldReceive('getSchoolsWithoutManagers')->once()->andReturn(0);
@@ -63,7 +60,7 @@ final class DashboardServiceTest extends TestCase
         $repository->shouldReceive('getStudentsWithActiveSSAsCount')->once()->andReturn(45);
         $repository->shouldReceive('getUnassignedSSAsCount')->once()->andReturn(0);
 
-        $service = new DashboardService($activityLogService, $timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository);
         $result = $service->getCriticalAlerts();
 
         $this->assertIsArray($result);
@@ -72,14 +69,13 @@ final class DashboardServiceTest extends TestCase
     public function test_get_chart_data_returns_correct_structure(): void
     {
         $repository = Mockery::mock(DashboardRepositoryInterface::class);
-        $activityLogService = Mockery::mock(ActivityLogService::class);
         $timezoneService = Mockery::mock(UserTimezoneService::class);
 
         $repository->shouldReceive('getSSAStatusDistribution')->once()->andReturn(collect());
         $repository->shouldReceive('getTherapistsByPosition')->once()->andReturn(['labels' => [], 'data' => [], 'colors' => []]);
         $repository->shouldReceive('getUtilizationTrendData')->once()->andReturn(['labels' => [], 'tho_minutes' => [], 'served_minutes' => []]);
 
-        $service = new DashboardService($activityLogService, $timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository);
         $result = $service->getChartData();
 
         $this->assertIsArray($result);

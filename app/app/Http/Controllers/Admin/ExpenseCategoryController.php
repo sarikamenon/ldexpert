@@ -4,7 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\ExpenseCategoryRowTransformer;
+use App\Domain\Finance\Services\ExpenseCategoryService;
+use App\DTOs\ExpenseCategoryFilterDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Settings\ExpenseCategoryDataRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\ExpenseCategory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -15,23 +21,49 @@ use Illuminate\Validation\Rule;
 
 class ExpenseCategoryController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'name',
+        1 => 'slug',
+        2 => 'is_active',
+        3 => 'created_at',
+    ];
+
+    public function __construct(
+        private readonly ExpenseCategoryService $expenseCategoryService,
+    ) {}
+
     public function index(Request $request): View
     {
-        $query = ExpenseCategory::query()
-            ->withCount('expenses')
-            ->orderBy('name');
+        return view('admin.settings.expense-categories.index', [
+            'categories' => collect(),
+            'datatableUrl' => route('admin.settings.expense-categories.data'),
+        ]);
+    }
 
-        if ($request->filled('search')) {
-            $query->where('name', 'like', "%{$request->search}%");
-        }
+    public function data(ExpenseCategoryDataRequest $request): JsonResponse
+    {
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+            'per_page' => $params->length,
+        ];
+        $filters = ExpenseCategoryFilterDTO::fromArray($filterData);
 
-        if ($request->filled('status')) {
-            $query->where('is_active', $request->status === 'active');
-        }
+        $result = $this->expenseCategoryService->listForDataTables($filters, $params);
 
-        $categories = $query->paginate(25)->withQueryString();
-
-        return view('admin.settings.expense-categories.index', compact('categories'));
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (ExpenseCategory $category): array => ExpenseCategoryRowTransformer::transform($category),
+        );
     }
 
     public function create(): View

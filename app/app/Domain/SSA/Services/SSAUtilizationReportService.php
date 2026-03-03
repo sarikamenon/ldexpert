@@ -14,6 +14,9 @@ final class SSAUtilizationReportService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getReportData(UtilizationReportFilterDTO $filters): array
     {
         $ssas = $this->repository->getUtilizationReport($filters);
@@ -26,6 +29,7 @@ final class SSAUtilizationReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(UtilizationReportFilterDTO $filters): Collection
     {
         // Get all records without pagination for export
@@ -48,6 +52,7 @@ final class SSAUtilizationReportService
 
     /**
      * @param  array<int, \App\Models\ServiceSupportAgreement>  $ssas
+     * @return array<string, mixed>
      */
     private function calculateSummary(array $ssas): array
     {

@@ -15,6 +15,7 @@ final class ImportSSAsRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $maxSize = config('ssa-import.settings.max_file_size', 10240);
@@ -36,6 +37,7 @@ final class ImportSSAsRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

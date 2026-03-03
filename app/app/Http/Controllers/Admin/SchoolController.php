@@ -6,10 +6,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
-use App\Domain\Contract\Services\SchoolContractService;
-use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\Domain\School\Services\SchoolService;
+use App\DataTables\Transformers\SchoolRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
+use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentService;
@@ -17,11 +16,7 @@ use App\Domain\Therapist\Services\TherapistService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSchoolStatusDTO;
 use App\DTOs\CreateSchoolDTO;
-use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\SchoolFilterDTO;
-use App\DTOs\SSAFilterDTO;
-use App\DTOs\StudentFilterDTO;
-use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\Role;
 use App\Enums\SchoolType;
@@ -31,9 +26,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\School\ChangeSchoolStatusRequest;
 use App\Http\Requests\Admin\School\ExportSchoolsRequest;
 use App\Http\Requests\Admin\School\IndexSchoolRequest;
+use App\Http\Requests\Admin\School\SchoolDataRequest;
 use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
 use App\Http\Requests\Admin\School\UpdateSchoolRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\School;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -44,14 +42,26 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SchoolController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'schools.id',
+        1 => 'schools.display_name',
+        2 => 'users.name',
+        3 => 'schools.state',
+        4 => 'schools.contact_email',
+        5 => 'schools.status',
+    ];
+
     public function __construct(
         private readonly SchoolService $schoolService,
         private readonly UserService $userService,
         private readonly StudentService $studentService,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
-        private readonly SchoolContractService $schoolContractService,
-        private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly PositionCatalogService $positionCatalogService,
     ) {}
@@ -68,10 +78,36 @@ final class SchoolController extends Controller
         $perPage = $request->integer('per_page', 25);
 
         return view('admin.schools.index', [
-            'schools' => $this->schoolService->listSchools($filters, $perPage),
+            'schools' => collect(),
             'metrics' => $this->schoolService->summaryMetrics(),
             'filters' => $filtersPayload,
+            'datatableUrl' => route('admin.schools.data'),
         ] + $this->referenceData());
+    }
+
+    public function data(SchoolDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', School::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+        ];
+        $filters = SchoolFilterDTO::fromArray($filterData);
+
+        $result = $this->schoolService->listForDataTables($filters, $params);
+
+        $result['rows']->load('manager');
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            [SchoolRowTransformer::class, 'transform']
+        );
     }
 
     public function create(): View
@@ -171,38 +207,33 @@ final class SchoolController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'students') {
-            $filters = StudentFilterDTO::fromRequest(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['students'] = $this->studentService->list($filters);
+            $viewData['students'] = collect();
             $viewData['studentFilters'] = $request->query();
-            // Don't show school filter in school detail view as it's redundant
             $viewData['schools'] = [];
             $viewData['statuses'] = UserStatus::cases();
+            $viewData['datatableUrl'] = route('admin.students.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'therapists') {
-            $filters = TherapistFilterDTO::fromRequest(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['therapists'] = $this->therapistService->list($filters);
+            $viewData['therapists'] = collect();
             $viewData['therapistFilters'] = $request->query();
             $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
+            $viewData['datatableUrl'] = route('admin.therapists.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'ssas') {
-            $filters = SSAFilterDTO::fromArray(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['ssas'] = $this->ssaService->paginate($filters);
+            $viewData['ssas'] = collect();
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
             $viewData['students'] = $this->studentService->listActiveStudentsBySchool($school->id);
             $viewData['therapists'] = $this->therapistService->listActiveTherapistsBySchool($school->id);
             $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
+            $viewData['datatableUrl'] = route('admin.ssas.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'contracts') {
-            $filters = SchoolContractFilterDTO::fromArray(
-                array_merge($request->query(), ['school_id' => $school->id])
-            );
-            $viewData['contracts'] = $this->schoolContractService->paginate($filters);
+            $viewData['contracts'] = collect();
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
+            $viewData['datatableUrl'] = route('admin.contracts.schools.data');
+            $viewData['schoolId'] = $school->id;
         } elseif ($activeTab === 'calendar') {
             $viewData['selectedDate'] = $request->query('date')
                 ? CarbonImmutable::parse((string) $request->query('date'))
@@ -225,6 +256,9 @@ final class SchoolController extends Controller
 
         return response()->streamDownload(function () use ($rows): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Full Name',
@@ -246,7 +280,7 @@ final class SchoolController extends Controller
                     $school->state,
                     $school->contact_email,
                     $school->timezone,
-                    $school->status?->value ?? $school->status,
+                    $school->status->value,
                 ]);
             }
 
@@ -256,6 +290,7 @@ final class SchoolController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formPayload(SchoolFormRequest $request): array
     {
         $validated = $request->validated();
@@ -265,6 +300,7 @@ final class SchoolController extends Controller
         return $validated;
     }
 
+    /** @return array<string, mixed> */
     private function referenceData(): array
     {
         return [

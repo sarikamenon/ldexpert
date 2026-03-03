@@ -15,6 +15,7 @@ abstract class SchoolFilterRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function filterRules(): array
     {
         return [

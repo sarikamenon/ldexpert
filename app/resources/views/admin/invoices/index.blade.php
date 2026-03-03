@@ -57,93 +57,24 @@
             </x-slot:actions>
         </x-ui::filter-toolbar>
 
-        @if ($invoices->count() > 0)
-            <div class="overflow-x-auto">
-                <table id="invoicesTable" class="w-full display">
-                    <thead>
-                        <tr>
-                            <th>Invoice #</th>
-                            <th>School</th>
-                            <th>Period</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th>Due Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($invoices as $invoice)
-                            <tr>
-                                <td>
-                                    <a href="{{ route('admin.invoices.show', $invoice) }}"
-                                        class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="View Invoice">
-                                        {{ $invoice->invoice_number }}
-                                    </a>
-                                </td>
-                                <td>
-                                    <a href="{{ route('admin.invoices.show', $invoice) }}"
-                                        class="text-primary hover:underline font-medium">
-                                        {{ $invoice->school_display_name ?? '—' }}
-                                    </a>
-                                </td>
-                                <td class="text-sm text-foreground/70">
-                                    {{ $invoice->billing_period_start->format('M d') }} -
-                                    {{ $invoice->billing_period_end->format('M d, Y') }}
-                                </td>
-                                <td class="font-medium">
-                                    ${{ number_format($invoice->total, 2) }}
-                                </td>
-                                <td>
-                                    <x-ui::badge :variant="match ($invoice->status) {
-                                        \App\Enums\InvoiceStatus::DRAFT => 'secondary',
-                                        \App\Enums\InvoiceStatus::SENT => 'primary',
-                                        \App\Enums\InvoiceStatus::PAID => 'success',
-                                        default => 'secondary',
-                                    }">
-                                        {{ $invoice->status?->label() }}
-                                    </x-ui::badge>
-                                </td>
-                                <td class="text-sm text-foreground/70">
-                                    {{ $invoice->due_date->format('M d, Y') }}
-                                </td>
-                                <td>
-                                    <div class="flex space-x-1">
-                                        <a href="{{ route('admin.invoices.show', $invoice) }}"
-                                            class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                            title="View Invoice"
-                                            aria-label="View invoice {{ $invoice->invoice_number }}">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                                <circle cx="12" cy="12" r="3"></circle>
-                                            </svg>
-                                        </a>
-                                        <a href="{{ route('admin.invoices.download', $invoice) }}"
-                                            class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                            title="Download PDF"
-                                            aria-label="Download invoice {{ $invoice->invoice_number }} as PDF">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
-                                                fill="none" stroke="currentColor" stroke-width="2"
-                                                stroke-linecap="round" stroke-linejoin="round">
-                                                <path
-                                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4">
-                                                </path>
-                                            </svg>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <div class="text-center py-12 text-foreground/60">
-                <p>No invoices found.</p>
-            </div>
-        @endif
+        <div class="overflow-x-auto">
+            <table id="invoicesTable" class="w-full display"
+                @if (!empty($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>School</th>
+                        <th>Period</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
     </x-ui::card>
 
     <x-slot name="scripts">

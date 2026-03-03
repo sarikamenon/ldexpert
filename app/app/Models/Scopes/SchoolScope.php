@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Models\Scopes;
 
 use App\Enums\SchoolStatus;
+use App\Models\School;
 use Illuminate\Database\Eloquent\Builder;
 
 final class SchoolScope extends BaseModelScope
 {
+    /**
+     * @param  Builder<School>  $builder
+     * @return Builder<School>
+     */
     public static function search(Builder $builder, ?string $term): Builder
     {
         if (! $term) {
@@ -25,6 +30,10 @@ final class SchoolScope extends BaseModelScope
         });
     }
 
+    /**
+     * @param  Builder<School>  $builder
+     * @return Builder<School>
+     */
     public static function status(Builder $builder, ?SchoolStatus $status): Builder
     {
         if (! $status) {

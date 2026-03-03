@@ -47,6 +47,15 @@
                     @endforeach
                 </x-ui::select>
 
+                <x-ui::select name="status" placeholder="All Statuses" :inline="true" class="w-36">
+                    <option value="">All Statuses</option>
+                    @foreach ($statuses ?? [] as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>
+                            {{ $status->label() }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+
                 <x-ui::input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
                     title="From Date" class="w-36" />
 
@@ -62,11 +71,23 @@
         </x-ui::filter-toolbar>
 
         <div class="overflow-x-auto">
-            <x-ui::session-log-table :columns="$columns" :rows="$rows" />
-        </div>
-
-        <div class="mt-4">
-            {{ $sessionLogs->withQueryString()->links() }}
+            <table id="adminSessionLogsTable" class="min-w-full divide-y divide-border session-log-table display"
+                data-datatable-url="{{ $datatableUrl ?? route('admin.session-logs.data') }}">
+                <thead class="bg-background/subtle">
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Date & Time / Duration</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Entry Date</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist & Service</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">School Amount</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist Amount</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Status</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-border">
+                </tbody>
+            </table>
         </div>
     </x-ui::card>
 

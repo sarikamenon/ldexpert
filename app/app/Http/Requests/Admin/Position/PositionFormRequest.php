@@ -14,6 +14,7 @@ abstract class PositionFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $positionId = null): array
     {
         $nameRule = Rule::unique('positions', 'name');

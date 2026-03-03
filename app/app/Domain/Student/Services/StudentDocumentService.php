@@ -46,16 +46,19 @@ final class StudentDocumentService
         return $this->repository->create($data);
     }
 
+    /** @return LengthAwarePaginator<int, StudentDocument> */
     public function list(StudentDocumentFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->list($filters);
     }
 
+    /** @return Collection<int, StudentDocument> */
     public function listByStudent(int $studentId): Collection
     {
         return $this->repository->listByStudent($studentId);
     }
 
+    /** @return Collection<int, StudentDocument> */
     public function listBySessionLog(int $sessionLogId): Collection
     {
         return $this->repository->listBySessionLog($sessionLogId);
@@ -94,7 +97,7 @@ final class StudentDocumentService
 
         $path = "student-documents/{$year}/{$month}/{$filename}";
 
-        $this->storageService->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 
         return $path;
     }

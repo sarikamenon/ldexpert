@@ -325,8 +325,7 @@ test('allows admin to view SSA show page with assignment tab', function () {
         ->assertViewIs('admin.ssas.show')
         ->assertViewHas('ssa')
         ->assertViewHas('activeTab', 'assignment')
-        ->assertViewHas('assignmentHistory')
-        ->assertViewHas('therapists');
+        ->assertViewHas('assignmentHistory');
 });
 
 test('loads assignment history correctly for SSA show page', function () {

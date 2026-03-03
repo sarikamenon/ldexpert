@@ -142,10 +142,10 @@
                 <x-student.overview-details :student="$student" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
                 <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="[]"
-                    :therapists="[]" :services="[]" context="therapist" />
-            @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-                <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []" :filters="$sessionLogFilters ?? []"
-                    :statuses="$sessionLogStatuses ?? []" context="detail" />
+                    :therapists="[]" :services="[]" :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="therapist" />
+            @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+                <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+                    :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
             @elseif (($activeTab ?? 'dashboard') === 'comments' && isset($comments))
                 <x-student.comments-section :student="$student" :comments="$comments" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))

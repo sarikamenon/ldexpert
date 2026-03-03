@@ -11,8 +11,10 @@ final class TherapistFilterDTO
         public readonly ?string $status = null,
         public readonly ?int $positionId = null,
         public readonly ?int $schoolId = null,
+        public readonly ?int $studentId = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromRequest(array $data): self
     {
         return new self(
@@ -23,6 +25,9 @@ final class TherapistFilterDTO
                 : null,
             schoolId: isset($data['school_id']) && $data['school_id'] !== ''
                 ? (int) $data['school_id']
+                : null,
+            studentId: isset($data['student_id']) && $data['student_id'] !== ''
+                ? (int) $data['student_id']
                 : null,
         );
     }
@@ -35,6 +40,7 @@ final class TherapistFilterDTO
             'status' => $this->status,
             'position_id' => $this->positionId,
             'school_id' => $this->schoolId,
+            'student_id' => $this->studentId,
         ];
     }
 }

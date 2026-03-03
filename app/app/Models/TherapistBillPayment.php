@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PaymentMethod;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $paid_at
+ * @property PaymentMethod $method
+ */
 class TherapistBillPayment extends Model
 {
     /** @use HasFactory<\Database\Factories\TherapistBillPaymentFactory> */
@@ -41,7 +46,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBillPayment>
+     * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
     {
@@ -49,7 +54,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return BelongsTo<User, TherapistBillPayment>
+     * @return BelongsTo<User, $this>
      */
     public function therapist(): BelongsTo
     {
@@ -57,7 +62,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return MorphMany<LedgerEntry, TherapistBillPayment>
+     * @return MorphMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): MorphMany
     {
@@ -65,7 +70,7 @@ class TherapistBillPayment extends Model
     }
 
     /**
-     * @return HasMany<TherapistBillPaymentAllocation, TherapistBillPayment>
+     * @return HasMany<TherapistBillPaymentAllocation, $this>
      */
     public function allocations(): HasMany
     {
@@ -75,7 +80,7 @@ class TherapistBillPayment extends Model
     /**
      * Single therapist bill this payment is for (1:1).
      *
-     * @return BelongsTo<TherapistBill, TherapistBillPayment>
+     * @return BelongsTo<TherapistBill, $this>
      */
     public function therapistBill(): BelongsTo
     {

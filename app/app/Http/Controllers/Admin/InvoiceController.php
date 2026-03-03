@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\InvoiceRowTransformer;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoicePdfService;
 use App\Domain\Invoice\Services\InvoiceService;
@@ -18,9 +19,13 @@ use App\DTOs\SendInvoiceDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Invoice\AttachSessionsRequest;
 use App\Http\Requests\Admin\Invoice\CreateInvoiceRequest;
+use App\Http\Requests\Admin\Invoice\InvoiceDataRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceIndexRequest;
 use App\Http\Requests\Admin\Invoice\SendInvoiceRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\Invoice;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -28,6 +33,20 @@ use Illuminate\View\View;
 
 final class InvoiceController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const INVOICES_ORDER_WHITELIST = [
+        0 => 'invoice_number',
+        1 => 'school_display_name',
+        2 => 'billing_period_start',
+        3 => 'total',
+        4 => 'status',
+        5 => 'due_date',
+    ];
+
     public function __construct(
         private readonly InvoiceService $invoiceService,
         private readonly InvoicePdfService $pdfService,
@@ -43,15 +62,41 @@ final class InvoiceController extends Controller
         $this->authorize('viewAny', Invoice::class);
 
         $filters = InvoiceFilterDTO::fromArray($request->validated());
-        $perPage = $request->integer('per_page', 15);
-
-        $invoices = $this->invoiceRepository->list($filters, $perPage);
 
         return view('admin.invoices.index', [
-            'invoices' => $invoices,
+            'invoices' => collect(), // Server-side DataTables loads via AJAX
             'filters' => $request->validated(),
             'schools' => $this->schoolRepository->listActiveForSelect(),
+            'datatableUrl' => route('admin.invoices.data'),
         ]);
+    }
+
+    public function data(InvoiceDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', Invoice::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::INVOICES_ORDER_WHITELIST);
+
+        $filterData = [
+            'school_id' => $request->input('filter_school_id'),
+            'status' => $request->input('filter_status'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
+            'invoice_number' => $request->input('filter_invoice_number'),
+            'per_page' => $params->length,
+        ];
+
+        $filters = InvoiceFilterDTO::fromArray($filterData);
+
+        $result = $this->invoiceService->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (Invoice $invoice): array => InvoiceRowTransformer::transform($invoice),
+        );
     }
 
     public function create(Request $request): View
@@ -76,7 +121,9 @@ final class InvoiceController extends Controller
         $dto = CreateInvoiceDTO::fromArray($request->validated());
 
         try {
-            $invoice = $this->invoiceService->generateInvoice($request->user(), $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $invoice = $this->invoiceService->generateInvoice($user, $dto);
 
             if ($invoice->sessionLogs->isEmpty()) {
                 return redirect()
@@ -119,7 +166,9 @@ final class InvoiceController extends Controller
         $dto = SendInvoiceDTO::fromArray($request->validated());
 
         try {
-            $this->invoiceService->sendInvoice($request->user(), $invoice, $dto);
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->invoiceService->sendInvoice($user, $invoice, $dto);
 
             return redirect()
                 ->route('admin.invoices.show', $invoice)
@@ -140,7 +189,7 @@ final class InvoiceController extends Controller
         return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
     }
 
-    public function attachSessions(Request $request, Invoice $invoice): View|RedirectResponse
+    public function attachSessions(Request $request, Invoice $invoice): View
     {
         $this->authorize('update', $invoice);
 
@@ -150,8 +199,8 @@ final class InvoiceController extends Controller
 
         $filters = [
             'school_id' => $invoice->school_id,
-            'date_from' => $request->input('date_from', $invoice->billing_period_start->format('Y-m-d')),
-            'date_to' => $request->input('date_to', $invoice->billing_period_end->format('Y-m-d')),
+            'date_from' => $request->input('date_from', $invoice->billing_period_start?->format('Y-m-d')),
+            'date_to' => $request->input('date_to', $invoice->billing_period_end?->format('Y-m-d')),
             'therapist_id' => $request->input('therapist_id'),
             'student_id' => $request->input('student_id'),
             'service_id' => $request->input('service_id'),
@@ -165,9 +214,10 @@ final class InvoiceController extends Controller
         $availableSessionLogs = $this->invoiceRepository->getAvailableSessionLogsForInvoiceCreation($filters);
         $attachedIds = $attachedSessionLogs->pluck('id')->all();
 
-        $therapists = $this->therapistService->listActiveTherapistsBySchool($invoice->school_id);
-        $students = $this->studentService->listActiveStudentsBySchool($invoice->school_id);
-        $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool($invoice->school_id);
+        $schoolId = (int) $invoice->school_id;
+        $therapists = $this->therapistService->listActiveTherapistsBySchool($schoolId);
+        $students = $this->studentService->listActiveStudentsBySchool($schoolId);
+        $serviceIds = $this->invoiceRepository->getAvailableServiceIdsForSchool($schoolId);
         $services = $serviceIds->isNotEmpty()
             ? $this->serviceCatalogService->listActiveForSelect()->whereIn('id', $serviceIds->toArray())
             : collect();

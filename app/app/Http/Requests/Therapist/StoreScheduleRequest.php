@@ -21,6 +21,7 @@ final class StoreScheduleRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $recurrenceTypes = array_map(
@@ -52,6 +53,7 @@ final class StoreScheduleRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -90,6 +92,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate therapist has access to SSA and it's active
             if ($ssaId) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
@@ -109,6 +112,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate students belong to SSA if provided
             if ($ssaId && $studentCount > 0) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if ($ssa) {
                     foreach ($studentIdsArray as $studentId) {
@@ -122,6 +126,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate service is available for the student via the SSA
             if ($serviceId && $ssaId && $studentCount > 0) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if ($ssa && $ssa->primary_service_id !== (int) $serviceId) {
                     // Check if it's an additional service
@@ -195,8 +200,8 @@ final class StoreScheduleRequest extends FormRequest
                             foreach ($datesToCheck as $dateStr) {
                                 $date = Carbon::parse((string) $dateStr)->format('Y-m-d');
                                 $isHoliday = $holidayEvents->first(function ($event) use ($date) {
-                                    return $event->start_date?->format('Y-m-d') <= $date
-                                        && $event->end_date?->format('Y-m-d') >= $date;
+                                    return $event->start_date->format('Y-m-d') <= $date
+                                        && $event->end_date->format('Y-m-d') >= $date;
                                 });
                                 if ($isHoliday) {
                                     $holidayDateKeys[] = $date;

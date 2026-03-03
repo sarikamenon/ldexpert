@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Repositories;
 
+use App\Models\SchoolContract;
+use App\Models\ServiceSupportAgreement;
 use Illuminate\Support\Collection;
 
 interface DashboardRepositoryInterface
@@ -54,14 +56,19 @@ interface DashboardRepositoryInterface
 
     public function getUnassignedSSAsCount(): int;
 
+    /** @return Collection<string, ServiceSupportAgreement> */
     public function getSSAStatusDistribution(): Collection;
 
+    /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array;
 
+    /** @return array<string, array<int, mixed>> */
     public function getUtilizationTrendData(): array;
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getExpiringSSAs(int $days = 30, int $limit = 4): Collection;
 
+    /** @return Collection<int, SchoolContract> */
     public function getExpiringSchoolContracts(int $days = 30, int $limit = 4): Collection;
 
     public function getTotalTherapistProfilesCount(): int;

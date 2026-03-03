@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PaymentMethod;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $paid_at
+ * @property PaymentMethod $method
+ */
 class InvoicePayment extends Model
 {
     /** @use HasFactory<\Database\Factories\InvoicePaymentFactory> */
@@ -41,7 +46,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return BelongsTo<User, InvoicePayment>
+     * @return BelongsTo<User, $this>
      */
     public function recordedBy(): BelongsTo
     {
@@ -49,7 +54,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return BelongsTo<School, InvoicePayment>
+     * @return BelongsTo<School, $this>
      */
     public function school(): BelongsTo
     {
@@ -57,7 +62,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return MorphMany<LedgerEntry, InvoicePayment>
+     * @return MorphMany<LedgerEntry, $this>
      */
     public function ledgerEntries(): MorphMany
     {
@@ -65,7 +70,7 @@ class InvoicePayment extends Model
     }
 
     /**
-     * @return HasMany<InvoicePaymentAllocation, InvoicePayment>
+     * @return HasMany<InvoicePaymentAllocation, $this>
      */
     public function allocations(): HasMany
     {
@@ -75,7 +80,7 @@ class InvoicePayment extends Model
     /**
      * Single invoice this payment is for (1:1).
      *
-     * @return BelongsTo<Invoice, InvoicePayment>
+     * @return BelongsTo<Invoice, $this>
      */
     public function invoice(): BelongsTo
     {

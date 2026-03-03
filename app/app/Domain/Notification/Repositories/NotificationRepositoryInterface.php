@@ -11,8 +11,10 @@ use Illuminate\Support\Collection;
 
 interface NotificationRepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, DatabaseNotification> */
     public function paginate(User $user, int $perPage = 20): LengthAwarePaginator;
 
+    /** @return Collection<int, DatabaseNotification> */
     public function getUnread(User $user, int $limit = 10): Collection;
 
     public function getUnreadCount(User $user): int;

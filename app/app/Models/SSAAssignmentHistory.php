@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SSAAssignmentHistory extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
     protected $table = 'ssa_assignment_history';
@@ -34,19 +35,19 @@ class SSAAssignmentHistory extends Model
         ];
     }
 
-    /** @return BelongsTo<ServiceSupportAgreement, SSAAssignmentHistory> */
+    /** @return BelongsTo<ServiceSupportAgreement, $this> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
-    /** @return BelongsTo<User, SSAAssignmentHistory> */
+    /** @return BelongsTo<User, $this> */
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
     }
 
-    /** @return BelongsTo<User, SSAAssignmentHistory> */
+    /** @return BelongsTo<User, $this> */
     public function assignedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_by');

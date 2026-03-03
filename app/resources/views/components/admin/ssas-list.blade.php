@@ -7,8 +7,15 @@
     'services' => [],
     'showMetrics' => false,
     'metrics' => null,
+    /**
+     * When set, table uses server-side DataTables and loads via AJAX from this URL.
+     */
+    'datatableUrl' => null,
     // context: 'index', 'detail', or 'therapist'
     'context' => 'index',
+    'schoolId' => null,
+    'therapistId' => null,
+    'studentId' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -37,6 +44,16 @@
         <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="ssas">
+            @endif
+
+            @if ($schoolId)
+                <input type="hidden" name="school_id" value="{{ $schoolId }}">
+            @endif
+            @if ($therapistId)
+                <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
+            @endif
+            @if ($studentId)
+                <input type="hidden" name="student_id" value="{{ $studentId }}">
             @endif
 
             <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
@@ -105,9 +122,9 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    @if ($ssas->count() > 0)
+    @if (isset($datatableUrl) || $ssas->count() > 0)
         <div class="overflow-x-auto">
-            <table id="ssasTable" class="w-full display">
+            <table id="ssasTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -120,6 +137,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!isset($datatableUrl))
                     @foreach ($ssas as $ssa)
                         <tr>
                             <td>
@@ -188,7 +206,12 @@
                                     </a>
                                 @elseif ($context !== 'therapist')
                                     <x-ui::button type="button" class="assign-therapist-btn" size="sm"
-                                        data-ssa-id="{{ $ssa->id }}" title="Assign Therapist">
+                                        data-ssa-id="{{ $ssa->id }}"
+                                        data-service-ids="{{ json_encode(array_merge(
+                                            [$ssa->primary_service_id],
+                                            $ssa->additionalServices->pluck('id')->all()
+                                        )) }}"
+                                        title="Assign Therapist">
                                         Assign
                                     </x-ui::button>
                                 @else
@@ -286,6 +309,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    @endif
                 </tbody>
             </table>
         </div>
@@ -297,10 +321,7 @@
     @endif
 </x-ui::card>
 
-{{-- Hidden select for therapist assignment (used by admin-ssas-index.js) --}}
-<select id="therapist_select_for_assignment" class="hidden">
-    <option value="">Select a therapist</option>
-    @foreach ($therapists ?? [] as $therapist)
-        <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
-    @endforeach
-</select>
+{{-- Endpoint URL for therapist assignment AJAX (used by admin-ssas-index.js) --}}
+<script type="application/json" id="therapists-for-service-url">
+    @json(route('admin.ssas.therapists-for-service'))
+</script>

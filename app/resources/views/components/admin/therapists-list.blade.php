@@ -4,7 +4,13 @@
     'positions' => [],
     'showMetrics' => false,
     'metrics' => null,
+    /**
+     * When set, table uses server-side DataTables: empty tbody, data loaded via AJAX from this URL.
+     */
+    'datatableUrl' => null,
     'context' => 'index', // 'index' or 'detail'
+    'schoolId' => null,
+    'studentId' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -31,6 +37,13 @@
         <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="therapists">
+            @endif
+
+            @if ($schoolId)
+                <input type="hidden" name="school_id" value="{{ $schoolId }}">
+            @endif
+            @if ($studentId)
+                <input type="hidden" name="student_id" value="{{ $studentId }}">
             @endif
 
             <x-ui::input type="text" name="search" class="w-64" placeholder="Search therapists"
@@ -71,9 +84,9 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    @if ($therapists->count() > 0)
+    @if (isset($datatableUrl) || $therapists->count() > 0)
         <div class="overflow-x-auto">
-            <table id="therapistsTable" class="w-full display">
+            <table id="therapistsTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
@@ -87,6 +100,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!isset($datatableUrl))
                     @foreach ($therapists as $therapist)
                         <tr>
                             <td>
@@ -166,6 +180,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    @endif
                 </tbody>
             </table>
         </div>

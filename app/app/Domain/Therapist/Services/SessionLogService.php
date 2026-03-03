@@ -32,6 +32,10 @@ final class SessionLogService
         private readonly ServiceRepositoryInterface $serviceRepository,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, SessionLog>
+     */
     public function getSessionLogs(User $therapist, array $filters = []): Collection
     {
         return $this->repository->getSessionLogsForTherapist($therapist, $filters);
@@ -42,11 +46,16 @@ final class SessionLogService
         return $this->repository->findForTherapist($therapist, $sessionLogId);
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function getActiveSSAsForStudent(int $studentId): Collection
     {
         return $this->repository->getActiveSSAsForStudent($studentId);
     }
 
+    /**
+     * @param  array<int, int>  $scheduleIds
+     * @return Collection<int|string, Collection<int, SessionLog>>
+     */
     public function getSessionLogsByScheduleIds(User $therapist, array $scheduleIds): Collection
     {
         return $this->repository->getSessionLogsByScheduleIds($scheduleIds, $therapist);
@@ -74,7 +83,7 @@ final class SessionLogService
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
-            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile?->school_id ?? null;
+            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
 
             $this->assertScheduleNotBilled($schedule);
@@ -145,7 +154,7 @@ final class SessionLogService
             $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
-            $schoolId = $dto->schoolId ?? $ssa->student->studentProfile?->school_id ?? null;
+            $schoolId = $dto->schoolId ?? $ssa->student->studentProfile->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
 
@@ -191,7 +200,7 @@ final class SessionLogService
     public function update(User $therapist, SessionLog $sessionLog, UpdateSessionLogDTO $dto): SessionLog
     {
         return DB::transaction(function () use ($therapist, $sessionLog, $dto): SessionLog {
-            $isAdmin = $therapist->role?->value === 'admin';
+            $isAdmin = $therapist->role->value === 'admin';
 
             if (! $isAdmin && $sessionLog->therapist_id !== $therapist->id) {
                 throw new \InvalidArgumentException('Therapist does not have access to this session log.');
@@ -213,7 +222,7 @@ final class SessionLogService
             }
 
             $durationChanged = isset($data['duration_minutes']) || isset($data['start_time']) || isset($data['end_time']);
-            $outcomeChanged = isset($data['outcome']) && ($data['outcome'] !== ($sessionLog->outcome?->value ?? $sessionLog->getRawOriginal('outcome')));
+            $outcomeChanged = isset($data['outcome']) && ($data['outcome'] !== ($sessionLog->outcome->value ?? $sessionLog->getRawOriginal('outcome')));
             $schoolIdChanged = array_key_exists('school_id', $data) && (int) ($data['school_id'] ?? 0) !== (int) $sessionLog->school_id;
 
             $shouldRecalculateBilling = ($durationChanged || $outcomeChanged || $schoolIdChanged) && ! ($dto->isRateOverride ?? false);
@@ -328,25 +337,24 @@ final class SessionLogService
 
     public function cancel(User $user, SessionLog $sessionLog, string $reason): SessionLog
     {
-        $role = $user->role instanceof Role ? $user->role->value : $user->role;
-        $isAdmin = $role === Role::ADMIN->value;
+        $isAdmin = $user->role === Role::ADMIN;
 
         if (! $isAdmin && $sessionLog->therapist_id !== $user->id) {
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
-        if (! $sessionLog->status->canCancel()) {
+        if (! $sessionLog->status?->canCancel()) {
             throw new \InvalidArgumentException('Session log cannot be cancelled in its current status.');
         }
 
         return $this->repository->cancel($sessionLog, $reason);
     }
 
-    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, \DateTimeInterface $ssaEnd): void
+    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, ?\DateTimeInterface $ssaEnd): void
     {
         $date = Carbon::parse($sessionDate);
 
-        if ($date->lt(Carbon::parse($ssaStart)) || $date->gt(Carbon::parse($ssaEnd))) {
+        if ($date->lt(Carbon::parse($ssaStart)) || ($ssaEnd !== null && $date->gt(Carbon::parse($ssaEnd)))) {
             throw new \InvalidArgumentException('Session date must be within the SSA start and end dates.');
         }
     }
@@ -362,6 +370,9 @@ final class SessionLogService
         }
     }
 
+    /**
+     * @param  array<string, array<string, mixed>>  $billing
+     */
     private function assertBillingDataComplete(array $billing): void
     {
         if (! $billing['therapist']['contract_id']) {

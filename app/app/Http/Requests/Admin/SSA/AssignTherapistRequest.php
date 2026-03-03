@@ -14,6 +14,7 @@ final class AssignTherapistRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [
@@ -28,6 +29,7 @@ final class AssignTherapistRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

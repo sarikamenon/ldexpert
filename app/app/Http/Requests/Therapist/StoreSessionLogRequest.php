@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -31,7 +32,8 @@ final class StoreSessionLogRequest extends FormRequest
         // When SSA is selected but student is not explicitly provided, infer student from SSA.
         $ssaId = $this->input('ssa_id');
         if ($ssaId && ! $this->filled('student_id')) {
-            $ssa = ServiceSupportAgreement::find($ssaId);
+            /** @var ServiceSupportAgreement|null $ssa */
+            $ssa = ServiceSupportAgreement::find((int) $ssaId);
 
             if ($ssa) {
                 $this->merge([
@@ -79,6 +81,7 @@ final class StoreSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $rules = [
@@ -107,6 +110,7 @@ final class StoreSessionLogRequest extends FormRequest
         return $rules;
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -144,6 +148,7 @@ final class StoreSessionLogRequest extends FormRequest
             // Validate therapist has access to SSA
             $ssaId = $this->input('ssa_id');
             if ($ssaId) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
@@ -164,7 +169,7 @@ final class StoreSessionLogRequest extends FormRequest
                 $sessionDate = $this->input('session_date');
                 if ($sessionDate) {
                     $session = Carbon::parse($sessionDate);
-                    if ($session->lt($ssa->start_date) || $session->gt($ssa->end_date)) {
+                    if ($session->lt($ssa->start_date) || ($ssa->end_date !== null && $session->gt($ssa->end_date))) {
                         $validator->errors()->add('session_date', 'Session date must fall within the SSA start and end dates.');
                     }
                 }
@@ -178,6 +183,7 @@ final class StoreSessionLogRequest extends FormRequest
             // Validate schedule if provided
             $scheduleId = $this->input('schedule_id');
             if ($scheduleId) {
+                /** @var Schedule|null $schedule */
                 $schedule = Schedule::find($scheduleId);
                 if ($schedule && $schedule->therapist_id !== $therapist->id) {
                     $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
@@ -190,8 +196,9 @@ final class StoreSessionLogRequest extends FormRequest
             $schoolId = null;
 
             if ($scheduleId) {
+                /** @var Schedule|null $schedule */
                 $schedule = Schedule::find($scheduleId);
-                $schoolId = $schedule?->school_id
+                $schoolId = $schedule->school_id
                     ?? ($schedule?->student_id ? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id) : null);
             }
 
@@ -213,10 +220,26 @@ final class StoreSessionLogRequest extends FormRequest
                 }
             }
 
+            // Validate billing entry window (hard block for therapists)
+            $sessionDate = $this->input('session_date');
+            if ($sessionDate) {
+                $windowService = app(BillingEntryWindowService::class);
+                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate));
+                if (! $windowResult->isWithinWindow) {
+                    $validator->errors()->add(
+                        'session_date',
+                        "The billing window for this session's week closed on "
+                        .Carbon::parse($windowResult->cutoff)->format('l, M j, Y \a\t g:i A')
+                        .'. Session logs can no longer be created for this date.'
+                    );
+                }
+            }
+
             // Validate duration within service limits (if available)
             $serviceId = $this->input('service_id');
             $durationMinutes = (int) $this->input('duration_minutes', 0);
             if ($serviceId && $durationMinutes > 0) {
+                /** @var Service|null $service */
                 $service = Service::find($serviceId);
                 if ($service) {
                     if ($service->min_duration_minutes !== null && $durationMinutes < $service->min_duration_minutes) {

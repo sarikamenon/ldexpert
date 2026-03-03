@@ -8,7 +8,9 @@ use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Services\CompanyInfoService;
 use App\DTOs\CreateTherapistBillDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SendTherapistBillDTO;
+use App\DTOs\TherapistBillFilterDTO;
 use App\Enums\TherapistBillStatus;
 use App\Mail\TherapistBillMail;
 use App\Models\SessionLog;
@@ -25,6 +27,14 @@ final class TherapistBillService
         private readonly CompanyInfoService $companyInfoService,
         private readonly LedgerService $ledgerService,
     ) {}
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, TherapistBill>}
+     */
+    public function listForDataTables(TherapistBillFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
+    }
 
     public function generateBill(User $user, CreateTherapistBillDTO $dto): TherapistBill
     {
@@ -86,7 +96,7 @@ final class TherapistBillService
     }
 
     /**
-     * @param  Collection<SessionLog>  $sessionLogs
+     * @param  Collection<int, SessionLog>  $sessionLogs
      * @return array<string, float>
      */
     public function calculateTotals(Collection $sessionLogs): array
@@ -111,7 +121,7 @@ final class TherapistBillService
 
         return [
             'therapist_name' => $therapist->name,
-            'therapist_email' => $profile?->personal_email ?? $therapist->email,
+            'therapist_email' => $profile->personal_email ?? $therapist->email,
             'therapist_phone' => $profile?->phone,
             'therapist_address' => $profile?->address,
         ];
@@ -143,7 +153,7 @@ final class TherapistBillService
             // Determine recipient email
             $recipientEmail = $dto->email
                 ?? $bill->therapist_email
-                ?? $bill->therapist->email;
+                ?? $bill->therapist?->email;
 
             if (! $recipientEmail) {
                 throw new \InvalidArgumentException('No email address available for sending bill.');

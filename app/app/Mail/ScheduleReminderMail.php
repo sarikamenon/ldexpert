@@ -26,7 +26,9 @@ class ScheduleReminderMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $therapistName = $this->schedule->therapist->name;
+        /** @var \App\Models\User $therapist */
+        $therapist = $this->schedule->therapist;
+        $therapistName = $therapist->name;
         $timeUntil = match ($this->type) {
             '48h' => '48 hours',
             '2h' => '2 hours',

@@ -15,18 +15,20 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            AdminUserSeeder::class,
             ExpenseCategorySeeder::class,
             ServiceSeeder::class,
-            SchoolSeeder::class,
-            TherapistSeeder::class,
-            StudentSeeder::class,
-            SchoolContractSeeder::class,
-            TherapistContractSeeder::class,
-            SSASeeder::class,
-            ScheduleSeeder::class,
-            SessionLogSeeder::class,
-            FinanceSeeder::class,
+            PositionSeeder::class,
+            PositionServiceSeeder::class,
+            Scenario\ScenarioSchoolSeeder::class,
+            Scenario\ScenarioSchoolContractSeeder::class,
+            Scenario\ScenarioTherapistSeeder::class,
+            Scenario\ScenarioTherapistContractSeeder::class,
+            Scenario\ScenarioStudentSeeder::class,
+            Scenario\ScenarioSSASeeder::class,
+            Scenario\ScenarioScheduleSeeder::class,
+            Scenario\ScenarioSessionLogSeeder::class,
+            Scenario\ScenarioInvoiceBillSeeder::class,
+            Scenario\ScenarioExpenseSeeder::class,
         ]);
     }
 }

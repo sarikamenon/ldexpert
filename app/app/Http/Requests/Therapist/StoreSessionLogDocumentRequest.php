@@ -13,16 +13,21 @@ final class StoreSessionLogDocumentRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        /** @var \App\Models\User $user */
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+        /** @var \App\Models\SessionLog $sessionLog */
         $sessionLog = $this->route('sessionLog');
 
         // Verify therapist owns this session log
-        if ($sessionLog->therapist_id !== $this->user()->id) {
+        if ($sessionLog->therapist_id !== $user->id) {
             return false;
         }
 
-        return $this->user()->can('create', [StudentDocument::class, $sessionLog]);
+        return $user->can('create', [StudentDocument::class, $sessionLog]);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

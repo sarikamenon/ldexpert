@@ -25,7 +25,7 @@ class SchoolFactory extends Factory
 
         return [
             'full_name' => $this->faker->company().' School',
-            'display_name' => $this->faker->company(),
+            'display_name' => $this->faker->unique()->company(),
             'address' => $this->faker->address(),
             'state' => $state,
             'timezone' => $timezone,

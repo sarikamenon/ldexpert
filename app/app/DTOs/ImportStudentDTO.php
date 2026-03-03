@@ -6,6 +6,10 @@ namespace App\DTOs;
 
 final class ImportStudentDTO
 {
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  list<string>  $errors
+     */
     public function __construct(
         public readonly array $data,
         public readonly int $rowNumber,
@@ -21,6 +25,7 @@ final class ImportStudentDTO
         );
     }
 
+    /** @param list<string> $errors */
     public function withErrors(array $errors): self
     {
         return new self(

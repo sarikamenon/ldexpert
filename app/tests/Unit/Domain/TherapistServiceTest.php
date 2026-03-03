@@ -54,6 +54,7 @@ final class TherapistServiceTest extends TestCase
             timezone: 'America/Los_Angeles',
             managerId: $manager->id,
             maxWeeklyHours: 40,
+            hourlyRate: 75.00,
             dob: null,
             defaultMeetingLocation: null,
             password: 'SecurePass123!'
@@ -95,6 +96,7 @@ final class TherapistServiceTest extends TestCase
             timezone: 'America/New_York',
             managerId: $manager->id,
             maxWeeklyHours: 25,
+            hourlyRate: 85.00,
             dob: '1990-01-01',
             defaultMeetingLocation: 'https://meet.google.com/test'
         );

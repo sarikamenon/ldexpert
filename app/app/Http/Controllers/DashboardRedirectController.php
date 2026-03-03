@@ -14,11 +14,7 @@ class DashboardRedirectController extends Controller
     {
         $user = $request->user();
 
-        $role = $user?->role instanceof Role
-            ? $user->role
-            : Role::tryFrom((string) ($user->role ?? ''));
-
-        $destination = match ($role) {
+        $destination = match ($user?->role) {
             Role::ADMIN => 'admin.dashboard',
             Role::THERAPIST => 'therapist.dashboard',
             Role::STUDENT => 'student.dashboard',

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\Position;
 
 final class StorePositionRequest extends PositionFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return array_merge($this->baseRules(), [
@@ -14,6 +15,7 @@ final class StorePositionRequest extends PositionFormRequest
         ]);
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

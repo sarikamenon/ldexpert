@@ -362,7 +362,7 @@ final class StudentImportTest extends TestCase
         $this->assertDatabaseHas('users', ['email' => 'default@example.com', 'role' => Role::STUDENT->value]);
     }
 
-    public function test_rsm_import_uses_parent_email_and_default_dob(): void
+    public function test_rsm_import_uses_parent_email_when_dob_not_provided(): void
     {
         Mail::fake();
 
@@ -406,8 +406,50 @@ final class StudentImportTest extends TestCase
 
         $profile = StudentProfile::where('id_number', 'RSM001')->first();
         $this->assertNotNull($profile);
-        $this->assertEquals('2020-02-20', $profile->date_of_birth->format('Y-m-d'));
+        $this->assertNull($profile->date_of_birth, 'date_of_birth is optional; no default when missing');
         $this->assertEquals('Brittany Gifford', $profile->parent_guardian_name);
+    }
+
+    public function test_rsm_import_accepts_optional_date_of_birth_when_provided(): void
+    {
+        Mail::fake();
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Identity ID' => 'RSM003',
+                'Last Name' => 'Williams',
+                'First Name' => 'Emma',
+                'Gender' => 'Female',
+                'Grade' => '4',
+                'School Name' => $this->school->external_emr_name,
+                'City' => 'Provo',
+                'Zip' => '84606',
+                'Parent Email' => 'emma-dob@example.com',
+                'Parent First Name' => 'Sarah',
+                'Parent Last Name' => 'Williams',
+                'Date of Birth' => '2012-03-15',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm-students.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::RSM->value,
+            ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $import->refresh();
+        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
+
+        $profile = StudentProfile::where('id_number', 'RSM003')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('2012-03-15', $profile->date_of_birth->format('Y-m-d'));
     }
 
     public function test_import_normalizes_formatted_phone_number(): void
@@ -551,7 +593,7 @@ final class StudentImportTest extends TestCase
         $columns = [
             'Identity ID', 'Last Name', 'First Name', 'Gender', 'Grade', 'School Name',
             'City', 'Zip', 'Parent Email', 'Parent Last Name', 'Parent First Name',
-            'Address', 'Phone', 'timezone',
+            'Address', 'Phone', 'timezone', 'Date of Birth',
         ];
 
         $handle = fopen('php://temp', 'r+');

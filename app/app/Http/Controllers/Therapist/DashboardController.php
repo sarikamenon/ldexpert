@@ -14,6 +14,7 @@ class DashboardController extends Controller
 
     public function index(): View
     {
+        /** @var \App\Models\User $therapist */
         $therapist = auth()->user();
         $metrics = $this->service->getDashboardMetrics($therapist);
 

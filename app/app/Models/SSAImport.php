@@ -13,8 +13,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property SSAImportStatus $status
+ * @property SSAImportType $type
+ */
 class SSAImport extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory, SoftDeletes;
 
     protected $table = 'ssa_imports';
@@ -44,33 +49,49 @@ class SSAImport extends Model
         ];
     }
 
-    /** @return BelongsTo<User, SSAImport> */
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /** @return HasMany<SSAImportRow, SSAImport> */
+    /** @return HasMany<SSAImportRow, $this> */
     public function rows(): HasMany
     {
         return $this->hasMany(SSAImportRow::class, 'ssa_import_id', 'id');
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<SSAImport>  $query
+     * @return Builder<SSAImport>
+     */
     public function scopeFailed(Builder $query): Builder
     {
         return $query->where('status', SSAImportStatus::FAILED);

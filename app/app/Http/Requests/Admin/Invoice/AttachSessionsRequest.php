@@ -18,7 +18,10 @@ final class AttachSessionsRequest extends FormRequest
             return false;
         }
 
-        return $this->user()->can('update', $invoice);
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+
+        return $user->can('update', $invoice);
     }
 
     /**
@@ -32,7 +35,7 @@ final class AttachSessionsRequest extends FormRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
         $validator->after(function ($validator) {
             $invoice = $this->route('invoice');

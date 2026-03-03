@@ -16,20 +16,22 @@ abstract class StudentFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $ignoreUserId = null): array
     {
-        $emailRule = Rule::unique('users', 'email');
+        $usernameRule = Rule::unique('users', 'username');
         if ($ignoreUserId) {
-            $emailRule = $emailRule->ignore($ignoreUserId);
+            $usernameRule = $usernameRule->ignore($ignoreUserId);
         }
 
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc', 'max:255', $emailRule],
+            'username' => ['required', 'string', 'regex:/^[a-zA-Z0-9.\-]+$/', 'max:255', $usernameRule],
+            'email' => ['required', 'email:rfc', 'max:255'],
             'gender' => ['required', 'string', 'max:50'],
-            'date_of_birth' => ['required', 'date', 'before:today', 'after:1900-01-01'],
+            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
             'id_number' => ['required', 'string', 'max:50'],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
@@ -45,10 +47,12 @@ abstract class StudentFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
-            'email.unique' => 'This email is already registered in the system',
+            'username.unique' => 'This username is already taken',
+            'username.regex' => 'Username can only contain letters, numbers, dots, and dashes.',
             'parent_guardian_phone.regex' => 'Phone number can only contain digits and dashes.',
             'date_of_birth.before' => 'Date of birth must be in the past',
             'date_of_birth.after' => 'Date of birth must be after 1900-01-01',

@@ -17,7 +17,7 @@ final class S3StorageService implements StorageServiceInterface
         Storage::disk('s3')->put($path, $contents);
     }
 
-    public function get(string $path): string|false
+    public function get(string $path): ?string
     {
         return Storage::disk('s3')->get($path);
     }

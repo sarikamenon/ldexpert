@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Domain\ActivityLog\Repositories\ActivityLogRepositoryInterface;
 use App\Domain\Analytics\Repositories\AnalyticsRepositoryInterface;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
@@ -21,10 +20,12 @@ use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Settings\Repositories\SettingsRepositoryInterface;
+use App\Domain\SSA\Repositories\SSAImportRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentCommentRepositoryInterface;
 use App\Domain\Student\Repositories\StudentDocumentRepositoryInterface;
+use App\Domain\Student\Repositories\StudentImportRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -34,7 +35,6 @@ use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Events\ScheduleCreated;
 use App\Events\ScheduleUpdated;
 use App\Http\Middleware\RoleMiddleware;
-use App\Infrastructure\Repositories\EloquentActivityLogRepository;
 use App\Infrastructure\Repositories\EloquentAnalyticsRepository;
 use App\Infrastructure\Repositories\EloquentDashboardRepository;
 use App\Infrastructure\Repositories\EloquentFinanceSummaryRepository;
@@ -50,9 +50,11 @@ use App\Infrastructure\Repositories\EloquentSchoolRepository;
 use App\Infrastructure\Repositories\EloquentServiceRepository;
 use App\Infrastructure\Repositories\EloquentSessionLogRepository;
 use App\Infrastructure\Repositories\EloquentSettingsRepository;
+use App\Infrastructure\Repositories\EloquentSSAImportRepository;
 use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Infrastructure\Repositories\EloquentStudentCommentRepository;
 use App\Infrastructure\Repositories\EloquentStudentDocumentRepository;
+use App\Infrastructure\Repositories\EloquentStudentImportRepository;
 use App\Infrastructure\Repositories\EloquentStudentRepository;
 use App\Infrastructure\Repositories\EloquentTherapistBillPaymentRepository;
 use App\Infrastructure\Repositories\EloquentTherapistBillRepository;
@@ -93,6 +95,7 @@ use App\Policies\StudentProfilePolicy;
 use App\Policies\TherapistBillPolicy;
 use App\Policies\TherapistContractPolicy;
 use App\Policies\TherapistProfilePolicy;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Router;
 use Illuminate\Support\Collection;
@@ -112,12 +115,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(StudentRepositoryInterface::class, EloquentStudentRepository::class);
         $this->app->bind(StudentCommentRepositoryInterface::class, EloquentStudentCommentRepository::class);
         $this->app->bind(StudentDocumentRepositoryInterface::class, EloquentStudentDocumentRepository::class);
+        $this->app->bind(StudentImportRepositoryInterface::class, EloquentStudentImportRepository::class);
         $this->app->bind(SchoolContractRepositoryInterface::class, EloquentSchoolContractRepository::class);
         $this->app->bind(TherapistContractRepositoryInterface::class, EloquentTherapistContractRepository::class);
         $this->app->bind(ServiceRepositoryInterface::class, EloquentServiceRepository::class);
         $this->app->bind(PositionRepositoryInterface::class, EloquentPositionRepository::class);
+        $this->app->bind(SSAImportRepositoryInterface::class, EloquentSSAImportRepository::class);
         $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
-        $this->app->bind(ActivityLogRepositoryInterface::class, EloquentActivityLogRepository::class);
         $this->app->bind(ScheduleRepositoryInterface::class, EloquentScheduleRepository::class);
         $this->app->bind(SessionLogRepositoryInterface::class, EloquentSessionLogRepository::class);
         $this->app->bind(InvoiceRepositoryInterface::class, EloquentInvoiceRepository::class);
@@ -167,6 +171,14 @@ class AppServiceProvider extends ServiceProvider
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);
         Event::listen(ScheduleUpdated::class, SendScheduleNotification::class);
+
+        // Generate password reset URLs with ?username= instead of ?email=
+        ResetPassword::createUrlUsing(function (User $user, string $token) {
+            return url(route('password.reset', [
+                'token' => $token,
+                'username' => $user->getEmailForPasswordReset(),
+            ], false));
+        });
 
         Collection::macro('withUserTimezone', function (?User $user = null, array $fields = ['created_at', 'updated_at']) {
             /** @var \Illuminate\Support\Collection $this */

@@ -14,21 +14,19 @@
         <x-ui::alert variant="danger" class="mb-4">{{ session('error') }}</x-ui::alert>
     @endif
 
-    {{-- Summary --}}
-    @if ($payments->count() > 0)
-        <x-ui::card class="p-6 mb-6">
-            <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-                <div>
-                    <p class="text-sm text-foreground/70">Total Payments</p>
-                    <p class="text-2xl font-bold mt-1">${{ number_format($totalAmount, 2) }}</p>
-                </div>
-                <div>
-                    <p class="text-sm text-foreground/70">Number of Payments</p>
-                    <p class="text-2xl font-bold mt-1">{{ $payments->total() }}</p>
-                </div>
+    {{-- Summary (updated by JS when using server-side DataTables) --}}
+    <x-ui::card class="p-6 mb-6">
+        <div class="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+            <div>
+                <p class="text-sm text-foreground/70">Total Payments</p>
+                <p class="text-2xl font-bold mt-1" id="therapistBillPaymentsTotalAmount">$0.00</p>
             </div>
-        </x-ui::card>
-    @endif
+            <div>
+                <p class="text-sm text-foreground/70">Number of Payments</p>
+                <p class="text-2xl font-bold mt-1" id="therapistBillPaymentsCount">0</p>
+            </div>
+        </div>
+    </x-ui::card>
 
     {{-- Payments List --}}
     <x-ui::card class="p-6 space-y-4 overflow-hidden">
@@ -51,7 +49,7 @@
         </div>
 
         {{-- Filters + mobile actions --}}
-        <form method="GET" action="{{ route('admin.payments.therapist-bills.index') }}"
+        <form method="GET" action="{{ route('admin.payments.therapist-bills.index') }}" id="therapistBillPaymentsFiltersForm"
             class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 flex-1">
                 <div>
@@ -127,90 +125,24 @@
             </div>
         </form>
 
-        @if ($payments->count() > 0)
-            <div class="overflow-x-auto">
-                <table id="therapistBillPaymentsTable" class="w-full display">
-                    <thead class="bg-background/subtle">
-                        <tr>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Bill</th>
-                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Amount</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Method</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
-                            <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Recorded By</th>
-                            <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($payments as $payment)
-                            <tr class="border-t border-border hover:bg-background/subtle">
-                                <td class="py-3 px-4 text-sm">
-                                    {{ $payment->paid_at?->format('M d, Y') ?? '—' }}
-                                </td>
-                                <td class="py-3 px-4 text-sm">
-                                    @if ($payment->therapistBill)
-                                        <a href="{{ route('admin.billing.therapist-bills.show', $payment->therapistBill) }}"
-                                            class="text-primary hover:underline">
-                                            {{ $payment->therapistBill->bill_number }}
-                                        </a>
-                                        <span class="text-foreground/60"> — {{ $payment->therapist?->name ?? $payment->therapistBill->therapist_name ?? '—' }}</span>
-                                    @else
-                                        —
-                                    @endif
-                                </td>
-                                <td class="py-3 px-4 text-sm text-right font-medium text-danger-600">
-                                    ${{ number_format($payment->amount, 2) }}
-                                </td>
-                                <td class="py-3 px-4 text-sm">
-                                    <span
-                                        class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                                        {{ $payment->method->label() }}
-                                    </span>
-                                </td>
-                                <td class="py-3 px-4 text-sm">
-                                    {{ $payment->reference ?? '—' }}
-                                </td>
-                                <td class="py-3 px-4 text-sm">
-                                    {{ $payment->recordedBy->name ?? 'System' }}
-                                </td>
-                                <td class="py-3 px-4 text-sm text-right">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <form method="POST"
-                                            action="{{ route('admin.payments.therapist-bills.destroy', $payment) }}"
-                                            class="inline js-therapist-bill-payment-delete-form"
-                                            data-confirm-title="Delete therapist bill payment?"
-                                            data-confirm-text="This will remove all allocations and the related ledger entry. This action cannot be undone.">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                class="inline-flex items-center justify-center w-8 h-8 bg-danger text-danger-foreground rounded hover:bg-danger/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                                title="Delete Payment"
-                                                aria-label="Delete therapist bill payment #{{ $payment->id }}">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round"
-                                                    stroke-linejoin="round">
-                                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6">
-                                                    </path>
-                                                    <path d="M10 11v6"></path>
-                                                    <path d="M14 11v6"></path>
-                                                    <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2">
-                                                    </path>
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @else
-            <x-ui::empty-state title="No bill payments found"
-                description="No bill payments match your current filters. Try adjusting your search criteria." />
-        @endif
+        <div class="overflow-x-auto">
+            <table id="therapistBillPaymentsTable" class="w-full display"
+                @if (!empty($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
+                <thead class="bg-background/subtle">
+                    <tr>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Bill</th>
+                        <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Amount</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Method</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Recorded By</th>
+                        <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
     </x-ui::card>
     <x-slot name="scripts">
         @vite(['resources/js/pages/admin-therapist-bill-payments-index.js'])

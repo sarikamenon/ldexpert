@@ -21,7 +21,7 @@ final class SchoolFilterDTO
 
         // Parse status if provided
         $status = null;
-        if (isset($statusValue) && $statusValue !== null && $statusValue !== '') {
+        if (isset($statusValue) && $statusValue !== '') {
             $status = $statusValue instanceof SchoolStatus
                 ? $statusValue
                 : SchoolStatus::from($statusValue);

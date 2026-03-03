@@ -8,6 +8,7 @@ use App\Models\School;
 
 final class UpdateSchoolRequest extends SchoolFormRequest
 {
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         /** @var School|null $school */

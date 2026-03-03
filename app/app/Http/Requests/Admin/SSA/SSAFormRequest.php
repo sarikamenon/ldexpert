@@ -26,6 +26,7 @@ abstract class SSAFormRequest extends FormRequest
         }
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(): array
     {
         $frequencies = array_map(static fn (ServiceFrequency $freq) => $freq->value, ServiceFrequency::cases());
@@ -67,6 +68,7 @@ abstract class SSAFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -84,6 +86,7 @@ abstract class SSAFormRequest extends FormRequest
             $primaryServiceId = $this->input('primary_service_id');
 
             if ($primaryServiceId) {
+                /** @var Service|null $service */
                 $service = Service::find($primaryServiceId);
 
                 if ($service && $service->is_frequency_service) {

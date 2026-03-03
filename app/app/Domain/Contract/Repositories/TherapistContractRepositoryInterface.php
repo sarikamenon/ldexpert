@@ -6,16 +6,24 @@ namespace App\Domain\Contract\Repositories;
 
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateTherapistContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\TherapistContractFilterDTO;
 use App\DTOs\UpdateTherapistContractDTO;
 use App\Enums\ContractStatus;
 use App\Enums\RateType;
 use App\Models\TherapistContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 interface TherapistContractRepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, TherapistContract> */
     public function paginate(TherapistContractFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, TherapistContract>}
+     */
+    public function listForDataTables(TherapistContractFilterDTO $filters, DataTablesParamsDTO $params): array;
 
     public function create(CreateTherapistContractDTO $dto): TherapistContract;
 
@@ -30,6 +38,7 @@ interface TherapistContractRepositoryInterface
 
     public function hasOverlap(int $therapistId, string $startDate, string $endDate, ?int $ignoreId = null): bool;
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array;
 
     public function findActiveContractForDate(int $therapistId, string $date): ?TherapistContract;

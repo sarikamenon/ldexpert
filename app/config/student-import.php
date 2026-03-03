@@ -20,7 +20,6 @@ return [
                 'last_name',
                 'email',
                 'gender',
-                'date_of_birth',
                 'school_name',
                 'id_number',
                 'timezone',
@@ -31,6 +30,7 @@ return [
             ],
             'optional_columns' => [
                 'middle_name',
+                'date_of_birth',
                 'address',
                 'parent_guardian_name',
                 'parent_guardian_email',
@@ -75,6 +75,7 @@ return [
                 'Parent Last Name',
                 'Parent First Name',
                 'timezone',
+                'Date of Birth',
             ],
             'column_mapping' => [
                 'Identity ID' => 'id_number',
@@ -91,6 +92,7 @@ return [
                 'Parent Last Name' => 'parent_guardian_last_name',
                 'Parent First Name' => 'parent_guardian_first_name',
                 'timezone' => 'timezone',
+                'Date of Birth' => 'date_of_birth',
             ],
             'field_sources' => [
                 'email' => 'parent_guardian_email',
@@ -142,14 +144,5 @@ return [
         ],
         'duplicate_check_fields' => ['email', 'id_number'],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Default Values (applied when field is empty after mapping)
-    |--------------------------------------------------------------------------
-    */
-
-    'defaults' => [
-        'date_of_birth' => '2020-02-20',
-    ],
+    'defaults' => [],
 ];

@@ -14,11 +14,12 @@ class ResetPasswordRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [
             'token' => ['required'],
-            'email' => ['required', 'email'],
+            'username' => ['required', 'string'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ];
     }

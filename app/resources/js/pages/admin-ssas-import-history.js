@@ -1,12 +1,21 @@
-import { initDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
 
 async function initImportsTable() {
+    const table = document.getElementById('importsTable');
+    if (!table) return;
+
+    const dataUrl = table.getAttribute('data-datatable-url');
+    if (!dataUrl) return;
+
     try {
         await loadDataTablesLibrary();
 
-        await initDataTable('#importsTable', {
-            order: [[0, 'desc']], // Order by ID descending
+        await initServerSideDataTable('#importsTable', dataUrl, {
+            order: [[0, 'desc']],
             pageLength: 25,
+            columnDefs: [
+                { orderable: false, targets: -1 },
+            ],
         });
     } catch (error) {
         console.error('Failed to init imports table', error);
