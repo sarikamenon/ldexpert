@@ -68,11 +68,10 @@ test:
 	$(PHP_SHELL) 'cd /var/www/html/app && export APP_ENV=testing DB_DATABASE=bird_test DB_HOST=mysql DB_PORT=3306 && if [ -f ./vendor/bin/pest ]; then ./vendor/bin/pest; elif [ -f ./vendor/bin/phpunit ]; then ./vendor/bin/phpunit; elif php artisan list --raw | grep -q "^test"; then php artisan test; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
 
 coverage:
-	$(PHP_SHELL) 'cd /var/www/html/app && if [ -f ./vendor/bin/pest ]; then XDEBUG_MODE=coverage ./vendor/bin/pest --coverage; elif [ -f ./vendor/bin/phpunit ]; then XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage; elif php artisan list --raw | grep -q "^test"; then XDEBUG_MODE=coverage php artisan test --coverage; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
+	$(PHP_SHELL) 'cd /var/www/html/app && export APP_ENV=testing DB_DATABASE=bird_test DB_HOST=mysql DB_PORT=3306 && if [ -f ./vendor/bin/pest ]; then XDEBUG_MODE=coverage ./vendor/bin/pest --coverage; elif [ -f ./vendor/bin/phpunit ]; then XDEBUG_MODE=coverage ./vendor/bin/phpunit --coverage; elif php artisan list --raw | grep -q "^test"; then XDEBUG_MODE=coverage php artisan test --coverage; else echo "No test runner available. Install dev dependencies." && exit 1; fi'
 
 dusk:
-	$(ARTISAN) migrate:fresh
-	$(ARTISAN) dusk
+	$(PHP_SHELL) 'cd /var/www/html/app && export APP_ENV=testing DB_DATABASE=bird_test DB_HOST=mysql DB_PORT=3306 && php artisan migrate:fresh && php artisan dusk'
 
 cs-fix:
 	$(PHP_SHELL) 'cd /var/www/html/app && vendor/bin/pint'
