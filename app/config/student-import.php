@@ -74,7 +74,7 @@ return [
                 'Phone',
                 'Parent Last Name',
                 'Parent First Name',
-                'timezone',
+                'Timezone',
                 'Date of Birth',
             ],
             'column_mapping' => [
