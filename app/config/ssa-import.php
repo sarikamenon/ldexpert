@@ -54,10 +54,34 @@ return [
         ],
 
         'RSM' => [
-            // To be implemented later
-            'required_columns' => [],
-            'optional_columns' => [],
-            'column_mapping' => [],
+            'required_columns' => [
+                'Identity ID',
+                'School Name',
+                'Begin Date',
+                'End Date',
+                'Hours',
+                'Total Hrs Owed',
+            ],
+            'optional_columns' => [
+                'Service',
+                'How Often',
+                'Per',
+                'Notes',
+                'Therapist Email',
+            ],
+            'column_mapping' => [
+                'Identity ID' => 'student_id_number',
+                'School Name' => 'school_name',
+                'Service' => 'primary_service_name',
+                'Begin Date' => 'start_date',
+                'End Date' => 'end_date',
+                'Hours' => 'hours_per_session',
+                'How Often' => 'sessions_per_frequency',
+                'Per' => 'frequency_label',
+                'Notes' => 'adjustment_notes',
+                'Therapist Email' => 'assigned_therapist_email',
+                'Total Hrs Owed' => 'tho_hours',
+            ],
         ],
 
         'MARVIN' => [

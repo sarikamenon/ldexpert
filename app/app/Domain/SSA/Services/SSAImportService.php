@@ -122,6 +122,11 @@ final class SSAImportService
             // Map columns using template
             $mappedData = $this->mapColumns($rowData, $template);
 
+            // Apply RSM-specific transformations
+            if ($import->type === SSAImportType::RSM) {
+                $mappedData = $this->transformRsmData($mappedData);
+            }
+
             // Lookup student
             $student = $this->lookupStudent($mappedData);
             if (! $student) {
@@ -362,9 +367,19 @@ final class SSAImportService
             }
         }
 
-        // Special check: need either student_email OR (student_id_number + school_name)
-        if (! in_array('student_email', $headers, true) &&
-            (! in_array('student_id_number', $headers, true) || ! in_array('school_name', $headers, true))) {
+        // Special check: need a student identifier in the CSV.
+        // For NOVA: student_email OR (student_id_number + school_name)
+        // For RSM: Identity ID + School Name (mapped to student_id_number + school_name)
+        $columnMapping = $template['column_mapping'] ?? [];
+        $mappedHeaders = array_map(
+            static fn (string $h): ?string => $columnMapping[$h] ?? null,
+            $headers
+        );
+        $hasMappedEmail = in_array('student_email', $mappedHeaders, true);
+        $hasMappedIdAndSchool = in_array('student_id_number', $mappedHeaders, true)
+            && in_array('school_name', $mappedHeaders, true);
+
+        if (! $hasMappedEmail && ! $hasMappedIdAndSchool) {
             $errors[] = 'Either student_email or (student_id_number and school_name) must be provided.';
         }
 
@@ -532,6 +547,47 @@ final class SSAImportService
         $typeKey = $type->value;
 
         return $config['templates'][$typeKey] ?? [];
+    }
+
+    private static function rsmFrequencyToEnum(string $label): string
+    {
+        return match (strtolower(trim($label))) {
+            'week' => ServiceFrequency::WEEKLY->value,
+            'month' => ServiceFrequency::MONTHLY->value,
+            'year' => ServiceFrequency::QUARTERLY->value,
+            default => $label,
+        };
+    }
+
+    /**
+     * Transform RSM-specific mapped data into the standard format.
+     *
+     * Converts hours to minutes and maps frequency labels to enum values.
+     *
+     * @param  array<string, string>  $mappedData
+     * @return array<string, string>
+     */
+    private function transformRsmData(array $mappedData): array
+    {
+        // Convert hours_per_session → minutes_per_session
+        if (isset($mappedData['hours_per_session']) && $mappedData['hours_per_session'] !== '') {
+            $mappedData['minutes_per_session'] = (string) (int) round((float) $mappedData['hours_per_session'] * 60);
+            unset($mappedData['hours_per_session']);
+        }
+
+        // Convert tho_hours → tho_minutes
+        if (isset($mappedData['tho_hours']) && $mappedData['tho_hours'] !== '') {
+            $mappedData['tho_minutes'] = (string) (int) round((float) $mappedData['tho_hours'] * 60);
+            unset($mappedData['tho_hours']);
+        }
+
+        // Map frequency_label → frequency (enum value)
+        if (isset($mappedData['frequency_label']) && $mappedData['frequency_label'] !== '') {
+            $mappedData['frequency'] = self::rsmFrequencyToEnum($mappedData['frequency_label']);
+            unset($mappedData['frequency_label']);
+        }
+
+        return $mappedData;
     }
 
     private function storeFile(UploadedFile $file): string

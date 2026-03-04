@@ -370,13 +370,24 @@ final class SSAController extends Controller
     {
         $this->authorize('create', ServiceSupportAgreement::class);
 
-        $type = SSAImportType::NOVA;
-        $template = $this->importService->getTemplate($type);
+        $templates = [];
+        foreach (SSAImportType::cases() as $type) {
+            $template = $this->importService->getTemplate($type);
+            if (! empty($template['required_columns']) || ! empty($template['optional_columns'])) {
+                $templates[$type->value] = [
+                    'required_columns' => $template['required_columns'] ?? [],
+                    'optional_columns' => $template['optional_columns'] ?? [],
+                ];
+            }
+        }
+
+        $novaTemplate = $this->importService->getTemplate(SSAImportType::NOVA);
 
         return view('admin.ssas.import', [
+            'requiredColumns' => $novaTemplate['required_columns'] ?? [],
+            'optionalColumns' => $novaTemplate['optional_columns'] ?? [],
             'importTypes' => SSAImportType::cases(),
-            'requiredColumns' => $template['required_columns'] ?? [],
-            'optionalColumns' => $template['optional_columns'] ?? [],
+            'templates' => $templates,
         ]);
     }
 
