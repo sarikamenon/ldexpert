@@ -126,7 +126,7 @@
                         >{{ old('comment') }}</textarea>
                         <x-input-error :messages="$errors->get('comment')" class="mt-2" />
                     </div>
-                    <x-ui::button type="submit" variant="warning">
+                    <x-ui::button type="submit" variant="primary">
                         Send back to therapist
                     </x-ui::button>
                 </form>
