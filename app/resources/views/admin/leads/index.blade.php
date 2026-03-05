@@ -31,68 +31,61 @@
         </x-ui::card>
     </div>
 
-    {{-- Filter Toolbar --}}
-    <x-ui::card class="p-4 mb-6">
-        <form id="leadsFiltersForm" class="flex flex-wrap items-end gap-4">
-            <div class="flex-1 min-w-[200px]">
-                <x-input-label for="filter_search" value="Search" />
-                <x-ui::input type="text" name="search" id="filter_search" placeholder="Search by name, email..."
-                    class="mt-1 block w-full" />
-            </div>
-            <div class="min-w-[160px]">
-                <x-input-label for="filter_status" value="Status" />
-                <x-ui::select name="status" id="filter_status" class="mt-1" placeholder="All Statuses">
+    {{-- Filter Toolbar + DataTable --}}
+    <x-ui::card class="p-6 space-y-4">
+        <x-ui::filter-toolbar formId="leadsFiltersForm">
+            <x-slot:filters>
+                <x-ui::input type="text" name="search" id="filter_search" class="w-64"
+                    placeholder="Search by name, email..." />
+
+                <x-ui::select name="status" id="filter_status" :searchable="false" placeholder="All Statuses" :inline="true">
                     <option value="">All Statuses</option>
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}">{{ $status->label() }}</option>
                     @endforeach
                 </x-ui::select>
-            </div>
-            <div class="min-w-[160px]">
-                <x-input-label for="filter_source" value="Source" />
-                <x-ui::select name="source" id="filter_source" class="mt-1" placeholder="All Sources">
+
+                <x-ui::select name="source" id="filter_source" :searchable="false" placeholder="All Sources" :inline="true">
                     <option value="">All Sources</option>
                     @foreach ($sources as $source)
                         <option value="{{ $source->value }}">{{ $source->label() }}</option>
                     @endforeach
                 </x-ui::select>
-            </div>
-            <div class="min-w-[160px]">
-                <x-input-label for="filter_school_id" value="School" />
-                <x-ui::select name="school_id" id="filter_school_id" class="mt-1" placeholder="All Schools">
+
+                <x-ui::select name="school_id" id="filter_school_id" :searchable="false" placeholder="All Schools" :inline="true">
                     <option value="">All Schools</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}">{{ $school->display_name }}</option>
                     @endforeach
                 </x-ui::select>
-            </div>
-            <div class="flex gap-2">
-                <x-ui::button type="submit" variant="secondary">Filter</x-ui::button>
-                <a href="{{ route('admin.leads.create') }}">
-                    <x-ui::button type="button">Create Lead</x-ui::button>
-                </a>
-            </div>
-        </form>
-    </x-ui::card>
+            </x-slot:filters>
 
-    {{-- DataTable --}}
-    <x-ui::card class="overflow-x-auto">
-        <table id="leadsTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>School</th>
-                    <th>Source</th>
-                    <th>Status</th>
-                    <th>Follow-up</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+            <x-slot:actions>
+                <a href="{{ route('admin.leads.create') }}"
+                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
+                    Create Lead
+                </a>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
+
+        <div class="overflow-x-auto">
+            <table id="leadsTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>School</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Follow-up</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </x-ui::card>
 
     <x-slot name="scripts">
