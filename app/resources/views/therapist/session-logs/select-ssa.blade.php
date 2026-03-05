@@ -29,9 +29,9 @@
                     </div>
 
                     <div class="flex items-center justify-end">
-                        <button type="submit" class="btn btn-primary">
+                        <x-ui::button type="submit" variant="primary">
                             Continue
-                        </button>
+                        </x-ui::button>
                     </div>
                 </form>
             </x-ui::card>
