@@ -12,12 +12,12 @@ final class SchedulePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isTherapist($user);
+        return $this->isTherapist($user) || $this->isAdmin($user);
     }
 
     public function view(User $user, Schedule $schedule): bool
     {
-        return $this->ownsSchedule($user, $schedule);
+        return $this->isAdmin($user) || $this->ownsSchedule($user, $schedule);
     }
 
     public function create(User $user): bool

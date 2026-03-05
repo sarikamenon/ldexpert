@@ -650,6 +650,7 @@ final class ScheduleController extends Controller
                 'billing_status' => $schedule->billing_status->value,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
+                'is_past' => $schedule->schedule_date->lt(now()->startOfDay()),
                 'service' => [
                     'id' => $schedule->service?->id,
                     'name' => $schedule->service?->name,

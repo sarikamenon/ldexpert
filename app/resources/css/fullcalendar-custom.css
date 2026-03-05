@@ -1,0 +1,117 @@
+/* FullCalendar Custom Theme for NOVA */
+
+.fc {
+    --fc-border-color: #e5e7eb;
+    --fc-today-bg-color: rgba(85, 99, 184, 0.05);
+    --fc-now-indicator-color: #5563b8;
+    --fc-button-bg-color: #5563b8;
+    --fc-button-border-color: #5563b8;
+    --fc-button-hover-bg-color: #4a56a0;
+    --fc-button-hover-border-color: #4a56a0;
+    --fc-button-active-bg-color: #3f4a8a;
+    --fc-button-active-border-color: #3f4a8a;
+    --fc-page-bg-color: #ffffff;
+    --fc-neutral-bg-color: #f9fafb;
+    font-family: inherit;
+    font-size: 0.875rem;
+}
+
+/* Header toolbar */
+.fc .fc-toolbar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #0b1220;
+}
+
+.fc .fc-button {
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.fc .fc-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(85, 99, 184, 0.3);
+}
+
+.fc .fc-button-group > .fc-button {
+    border-radius: 0;
+}
+
+.fc .fc-button-group > .fc-button:first-child {
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+}
+
+.fc .fc-button-group > .fc-button:last-child {
+    border-top-right-radius: 0.5rem;
+    border-bottom-right-radius: 0.5rem;
+}
+
+/* Event styling */
+.fc-event {
+    border-radius: 0.25rem;
+    border-width: 0;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: opacity 0.15s, box-shadow 0.15s;
+    padding: 1px 4px;
+}
+
+.fc-event:hover {
+    opacity: 0.85;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* Month view: block events with background color */
+.fc .fc-daygrid-event {
+    margin: 1px 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Time grid: colored block events */
+.fc .fc-timegrid-event {
+    border-radius: 0.25rem;
+    border-left-width: 3px;
+}
+
+/* Needs billing indicator */
+.fc-event-needs-billing {
+    border-style: dashed;
+}
+
+/* Time grid slots */
+.fc .fc-timegrid-slot {
+    height: 2.5rem;
+}
+
+/* Day header */
+.fc .fc-col-header-cell {
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #6b7280;
+    padding: 0.5rem;
+}
+
+/* Scrollbar styling */
+.fc .fc-scroller::-webkit-scrollbar {
+    width: 6px;
+}
+
+.fc .fc-scroller::-webkit-scrollbar-track {
+    background: #f3f4f6;
+}
+
+.fc .fc-scroller::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.fc .fc-scroller::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
