@@ -71,6 +71,7 @@ use App\Models\School;
 use App\Models\SchoolCalendarEvent;
 use App\Models\SchoolContract;
 use App\Models\Service;
+use App\Models\ServiceAlias;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\StudentComment;
@@ -83,6 +84,7 @@ use App\Models\User;
 use App\Policies\InvoicePolicy;
 use App\Policies\PositionPolicy;
 use App\Policies\SchedulePolicy;
+use App\Policies\ServiceAliasPolicy;
 use App\Policies\SchoolCalendarEventPolicy;
 use App\Policies\SchoolContractPolicy;
 use App\Policies\SchoolPolicy;
@@ -167,6 +169,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TherapistContract::class, TherapistContractPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
         Gate::policy(Position::class, PositionPolicy::class);
+        Gate::policy(ServiceAlias::class, ServiceAliasPolicy::class);
         Gate::policy(ServiceSupportAgreement::class, SSAPolicy::class);
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);

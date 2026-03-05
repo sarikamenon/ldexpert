@@ -1,123 +1,153 @@
-# Service Import Mappings – Implementation Plan
+# Service Aliases – Implementation Plan
 
 ## Overview
 
-Admin UI to manage mappings between external service names (from RSM, MARVIN, future import types) and system services. Enables SSA import and other imports to resolve CSV service names to internal `services` records.
+Admin UI to manage aliases (mappings) between external service names (from RSM, MARVIN, future sources) and system services. Enables SSA import and other integrations to resolve external service names to internal `services` records.
 
-**Scope (this phase):** Admin UI only. Import logic will use this later.
+The table is called `service_aliases` because the concept is not limited to imports — any integration that needs to translate an external service name to an internal one can use this table.
+
+**Scope (this phase):** Admin CRUD UI + seed RSM aliases. Import logic (`SSAImportService`) will be updated to use aliases in a follow-up.
 
 ---
 
 ## 1. Database
 
-### Migration: `create_service_import_mappings_table`
+### Migration: `create_service_aliases_table`
 
 | Column | Type | Attributes |
 |--------|------|------------|
 | id | bigint | PK, auto-increment |
-| import_type | string(50) | NOT NULL, index |
-| external_name | string(255) | NOT NULL |
+| source | string(50) | NOT NULL, index — identifies the external system (RSM, NOVA, MARVIN) |
+| external_name | string(255) | NOT NULL — the name used in the external system |
 | service_id | foreignId | NOT NULL, FK → services.id, cascade on delete |
 | created_at | timestamp | |
 | updated_at | timestamp | |
+| deleted_at | timestamp | nullable (soft deletes) |
 
-**Unique constraint:** `(import_type, external_name)` – one mapping per external name per import type.
+**Unique constraint:** `(source, external_name)` – one alias per external name per source.
 
-**Indexes:** `import_type`, `(import_type, external_name)` unique.
+**Indexes:** `source`, `(source, external_name)` unique.
 
 ---
 
 ## 2. Model
 
-### `App\Models\ServiceImportMapping`
+### `App\Models\ServiceAlias`
 
-- Fillable: `import_type`, `external_name`, `service_id`
-- Casts: `created_at`, `updated_at` → datetime
-- Relationship: `belongsTo(Service::class)`
-- Scopes: `scopeForImportType(string $type)`
-- Validation: `import_type` in [NOVA, RSM, MARVIN]; `external_name` trimmed; `service_id` exists and active
+- Use `SoftDeletes` trait
+- Fillable: `source`, `external_name`, `service_id`
+- Casts: `source` → string (or future enum)
+- Relationships:
+  - `belongsTo(Service::class)` with `@return BelongsTo<Service, $this>`
+- Scopes:
+  - `scopeForSource(Builder $query, string $source): Builder`
+- Constants: `SOURCES = ['RSM', 'NOVA', 'MARVIN']` (or use `SSAImportType` enum values)
 
 ---
 
 ## 3. Routes
 
-Under `admin` middleware, add to Settings group:
+Add to admin routes (same level as `positions`, `services`):
 
 ```
-GET    /admin/settings/service-import-mappings              → index
-GET    /admin/settings/service-import-mappings/create        → create
-POST   /admin/settings/service-import-mappings               → store
-GET    /admin/settings/service-import-mappings/{mapping}/edit → edit
-PUT    /admin/settings/service-import-mappings/{mapping}     → update
-DELETE /admin/settings/service-import-mappings/{mapping}     → destroy (optional for phase 1)
-POST   /admin/settings/service-import-mappings/data          → data (for DataTables)
+POST   /admin/service-aliases/data                        → data (DataTables)
+GET    /admin/service-aliases                              → index
+GET    /admin/service-aliases/create                       → create
+POST   /admin/service-aliases                              → store
+GET    /admin/service-aliases/{service_alias}/edit          → edit
+PUT    /admin/service-aliases/{service_alias}               → update
+DELETE /admin/service-aliases/{service_alias}               → destroy
 ```
 
-Route names: `admin.settings.service-import-mappings.*`
+Route names: `admin.service-aliases.*`
+
+Pattern follows `positions` — flat under admin prefix, not nested under `settings/`.
 
 ---
 
 ## 4. Controller
 
-### `App\Http\Controllers\Admin\ServiceImportMappingController`
+### `App\Http\Controllers\Admin\ServiceAliasController`
 
-- `index()` – List view with DataTables
-- `data()` – AJAX DataTables payload (filter by import_type, search)
-- `create()` – Create form (import_type dropdown, external_name input, service dropdown)
-- `store()` – Validate and create
-- `edit()` – Edit form
-- `update()` – Validate and update
-- `destroy()` – Optional for phase 1
+Follow the `PositionController` pattern:
 
-**Authorization:** `$this->authorize('viewAny', ServiceImportMapping::class)` (or equivalent admin policy).
+- `index()` – List view with metrics (total, per-source counts) + DataTables
+- `data(ServiceAliasDataRequest)` – Server-side DataTables JSON (filter by source, search)
+- `create()` – Create form (source dropdown, external_name input, service dropdown)
+- `store(StoreServiceAliasRequest)` – Validate and create
+- `edit(ServiceAlias)` – Edit form
+- `update(UpdateServiceAliasRequest, ServiceAlias)` – Validate and update
+- `destroy(ServiceAlias)` – Soft delete with SweetAlert confirmation
+
+**Authorization:** `$this->authorize(...)` on each method using `ServiceAliasPolicy`.
+
+**ORDER_WHITELIST:** `['external_name', 'source', 'created_at']`
 
 ---
 
 ## 5. Form Requests
 
-### `StoreServiceImportMappingRequest`
+### `StoreServiceAliasRequest`
 
-- `import_type`: required, string, in:NOVA,RSM,MARVIN
-- `external_name`: required, string, max:255, unique per (import_type, external_name) when creating
-- `service_id`: required, exists:services,id, service must be active
+- `source`: required, string, in:RSM,NOVA,MARVIN
+- `external_name`: required, string, max:255, unique together with source (Rule::unique with where clause)
+- `service_id`: required, exists:services,id (service must be active)
 
-### `UpdateServiceImportMappingRequest`
+### `UpdateServiceAliasRequest`
 
 - Same rules, `unique` ignores current record
+
+### `ServiceAliasDataRequest`
+
+- `filter_source`: nullable, string, in:RSM,NOVA,MARVIN
+- `filter_search`: nullable, string, max:255
 
 ---
 
 ## 6. Policy
 
-### `ServiceImportMappingPolicy`
+### `ServiceAliasPolicy`
 
-- `viewAny`, `view`, `create`, `update`, `delete` → admin only
+- `viewAny`, `view`, `create`, `update`, `delete` → admin only (`$user->role === Role::ADMIN`)
+
+Register in `AppServiceProvider`.
 
 ---
 
 ## 7. Views
 
-### Index: `resources/views/admin/settings/service-import-mappings/index.blade.php`
+Follow the positions pattern (`x-ui::card`, help text before inputs, DataTables).
 
-- Page header: "Service Import Mappings" / "Map external service names to system services for imports"
-- Filters: Import Type (NOVA, RSM, MARVIN), Search (external name or system service name)
-- DataTable columns: Import Type, External Name, System Service, Created, Actions (Edit, Delete)
-- "Add Mapping" button → create
-- Use `x-ui::card`, `x-ui::filter-toolbar`, DataTables pattern (like expense-categories)
+### Index: `resources/views/admin/service-aliases/index.blade.php`
 
-### Create: `resources/views/admin/settings/service-import-mappings/create.blade.php`
+- Page header: "Service Aliases" / "Map external service names from RSM, NOVA, and other sources to system services"
+- Metrics row: Total aliases, per-source counts (RSM: X, NOVA: X, MARVIN: X)
+- Filter toolbar: Source dropdown (All, RSM, NOVA, MARVIN) + Search input
+- DataTable columns: Source, External Name, System Service, Created, Actions (Edit, Delete)
+- "Add Alias" button → create
+- `data-datatable-url="{{ route('admin.service-aliases.data') }}"`
 
-- Form fields:
-  - Import Type (select, required) – NOVA, RSM, MARVIN
-  - External Name (text, required) – help text: "Name as it appears in the import CSV (e.g. Speech Therapy Online)"
-  - System Service (select, required) – active services from DB
+### Create: `resources/views/admin/service-aliases/create.blade.php`
+
+- Form card with shared `_form.blade.php` partial
 - Back link → index
-- Submit → store
 
-### Edit: `resources/views/admin/settings/service-import-mappings/edit.blade.php`
+### Edit: `resources/views/admin/service-aliases/edit.blade.php`
 
-- Same form as create, pre-filled
-- Submit → update
+- Same form partial, pre-filled
+- Back link → index
+
+### Form partial: `resources/views/admin/service-aliases/_form.blade.php`
+
+- **Source** (select, required)
+  - Help text: "The external system this service name comes from."
+  - Options: RSM, NOVA, MARVIN
+- **External Name** (text, required)
+  - Help text: "The service name as it appears in the external system (e.g. 'Speech Therapy Online')."
+- **System Service** (select, required)
+  - Help text: "The system service this external name maps to."
+  - Options: active services from DB, showing service name
+- Cancel / Submit buttons
 
 ---
 
@@ -127,69 +157,115 @@ Add under **Settings** in `config/navigation.php`:
 
 ```php
 [
-    'label' => 'Service Import Mappings',
-    'route' => 'admin.settings.service-import-mappings.index',
-    'active' => 'admin.settings.service-import-mappings.*',
+    'label' => 'Service Aliases',
+    'route' => 'admin.service-aliases.index',
+    'active' => 'admin.service-aliases.*',
 ],
 ```
 
-Update Settings `active` array to include `admin.settings.service-import-mappings.*`.
+Update Settings `active` array to include `'admin.service-aliases.*'`.
 
 ---
 
 ## 9. DataTables
 
-### `ServiceImportMappingRowTransformer` (or inline in controller)
+### `ServiceAliasRowTransformer`
 
-- Transform each mapping for DataTables: import_type, external_name, service.name, created_at, edit URL, delete URL
+**File:** `app/DataTables/Transformers/ServiceAliasRowTransformer.php`
 
-### JS: `admin-settings-service-import-mappings-index.js`
+Static `transform(ServiceAlias $alias): array` returns:
+1. Source badge (styled per source type)
+2. External name (escaped)
+3. System service name (from `$alias->service->name`)
+4. Created at (formatted date)
+5. Action buttons (Edit, Delete)
 
-- Init DataTable with columns, server-side processing, filters (reuse expense-categories pattern)
-- Register in `vite.config.js` if new entry
+### JS: `resources/js/pages/admin-service-aliases-index.js`
+
+- `initServiceAliasesTable()` – Server-side DataTable with source filter + search
+- `setupDeleteHandlers()` – SweetAlert confirmation → AJAX DELETE
+- Filter form change/submit → reload DataTable
+- Register in `vite.config.js`
 
 ---
 
-## 10. Import Type Source
+## 10. Source Values
 
-Use `SSAImportType::cases()` (or shared enum) for import_type options. Values: NOVA, RSM, MARVIN.
+Use `SSAImportType` enum values for consistency: `RSM`, `NOVA`, `MARVIN`.
+
+For the form dropdown, use `SSAImportType::cases()` to dynamically generate options.
 
 ---
 
-## 11. File Checklist
+## 11. Seeder
+
+### `ServiceAliasSeeder`
+
+Seed known RSM aliases based on the CSV analysis:
+
+| Source | External Name | System Service |
+|--------|--------------|----------------|
+| RSM | Speech Therapy Online | Speech Therapy |
+| RSM | Occupational Therapy Online | Occupational Therapy |
+| RSM | Speech Therapy Init-Evaluation Online | Evaluations (Speech, Occupational) |
+| RSM | Occupational Therapy Init-Evaluation Online | Evaluations (Speech, Occupational) |
+| RSM | Speech Therapy Re-Evaluation Online | Evaluations (Speech, Occupational) |
+| RSM | Occupational Therapy Re-Evaluation Online | Evaluations (Speech, Occupational) |
+| RSM | Speech Therapy Meeting Attendance | IEP Meetings |
+| RSM | Occupational Therapy Meeting Attendance | IEP Meetings |
+| RSM | Augmentative and Alternative Communication Services Consultation Online | Speech Therapy |
+
+Use `updateOrCreate` keyed on `(source, external_name)` to be idempotent.
+
+---
+
+## 12. File Checklist
 
 | File | Action |
 |------|--------|
-| `database/migrations/xxxx_create_service_import_mappings_table.php` | Create |
-| `app/Models/ServiceImportMapping.php` | Create |
-| `app/Policies/ServiceImportMappingPolicy.php` | Create |
-| `app/Http/Controllers/Admin/ServiceImportMappingController.php` | Create |
-| `app/Http/Requests/Admin/Settings/StoreServiceImportMappingRequest.php` | Create |
-| `app/Http/Requests/Admin/Settings/UpdateServiceImportMappingRequest.php` | Create |
-| `app/DataTables/Transformers/ServiceImportMappingRowTransformer.php` | Create (optional) |
-| `resources/views/admin/settings/service-import-mappings/index.blade.php` | Create |
-| `resources/views/admin/settings/service-import-mappings/create.blade.php` | Create |
-| `resources/views/admin/settings/service-import-mappings/edit.blade.php` | Create |
-| `resources/js/pages/admin-settings-service-import-mappings-index.js` | Create |
+| `database/migrations/xxxx_create_service_aliases_table.php` | Create |
+| `database/seeders/ServiceAliasSeeder.php` | Create |
+| `app/Models/ServiceAlias.php` | Create |
+| `app/Policies/ServiceAliasPolicy.php` | Create |
+| `app/Http/Controllers/Admin/ServiceAliasController.php` | Create |
+| `app/Http/Requests/Admin/StoreServiceAliasRequest.php` | Create |
+| `app/Http/Requests/Admin/UpdateServiceAliasRequest.php` | Create |
+| `app/Http/Requests/Admin/ServiceAliasDataRequest.php` | Create |
+| `app/DataTables/Transformers/ServiceAliasRowTransformer.php` | Create |
+| `resources/views/admin/service-aliases/index.blade.php` | Create |
+| `resources/views/admin/service-aliases/create.blade.php` | Create |
+| `resources/views/admin/service-aliases/edit.blade.php` | Create |
+| `resources/views/admin/service-aliases/_form.blade.php` | Create |
+| `resources/js/pages/admin-service-aliases-index.js` | Create |
+| `vite.config.js` | Add entry |
 | `routes/admin.php` | Add routes |
-| `config/navigation.php` | Add menu item |
+| `config/navigation.php` | Add menu item + update active array |
 | `app/Providers/AppServiceProvider.php` | Register policy |
 
 ---
 
-## 12. Future Use (Import Logic)
+## 13. Future: Import Logic Integration
 
-When implementing RSM SSA import:
+When updating `SSAImportService` to use aliases:
 
-1. Lookup: `ServiceImportMapping::where('import_type', 'RSM')->where('external_name', $trimmedValue)->first()`
-2. If found → use `mapping->service_id`
-3. If not found → validation error: "Service 'X' not found for RSM. Add a mapping in Settings → Service Import Mappings."
+1. In `processRow()`, after extracting `primary_service_name`, resolve via alias:
+   ```php
+   $alias = ServiceAlias::where('source', $import->type->value)
+       ->where('external_name', trim($primaryServiceName))
+       ->first();
+   $primaryService = $alias?->service ?? $this->lookupService($primaryServiceName);
+   ```
+2. If neither alias nor direct match found → validation error:
+   `"Service 'X' not found for RSM. Add a mapping in Settings → Service Aliases."`
+3. Same approach for additional services.
 
 ---
 
-## 13. Design / UX Notes
+## 14. Design / UX Notes
 
-- Follow design system: `x-ui::card`, `x-ui::button`, `x-input-label`, help text before inputs
-- External name: case-insensitive uniqueness (optional) or document that matching is case-sensitive
-- Trim `external_name` on input
-- Service dropdown: show `name` (and optionally `id` or description) for active services only
+- Follow positions page pattern for layout, metrics, and DataTables
+- Source badges: use distinct colors per source (e.g. RSM = blue, NOVA = green, MARVIN = purple)
+- External name matching is **case-sensitive** — document this in help text
+- Trim `external_name` on input (in Form Request)
+- Service dropdown: show only active services, sorted alphabetically by name
+- Delete confirmation via SweetAlert2 with alias details shown

@@ -19,6 +19,7 @@ export default defineConfig({
                 'resources/js/pages/admin-students-import-history.js',
                 'resources/js/pages/admin-services-index.js',
                 'resources/js/pages/admin-positions-index.js',
+                'resources/js/pages/admin-service-aliases-index.js',
                 'resources/js/pages/admin-ssas-index.js',
                 'resources/js/pages/admin-ssas-form.js',
                 'resources/js/pages/admin-ssas-show.js',

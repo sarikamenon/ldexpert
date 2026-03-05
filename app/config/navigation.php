@@ -197,7 +197,7 @@ return [
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*'],
+                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*', 'admin.service-aliases.*'],
                 'children' => [
                     [
                         'label' => 'Services',
@@ -213,6 +213,11 @@ return [
                         'label' => 'Positions',
                         'route' => 'admin.positions.index',
                         'active' => 'admin.positions.*',
+                    ],
+                    [
+                        'label' => 'Service Aliases',
+                        'route' => 'admin.service-aliases.index',
+                        'active' => 'admin.service-aliases.*',
                     ],
                 ],
             ],

@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
 use App\Http\Controllers\Admin\SchoolCalendarEventController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\ServiceAliasController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SessionLogController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -87,6 +88,9 @@ Route::middleware('role:admin')
         Route::post('positions/data', [PositionController::class, 'data'])->name('positions.data');
         Route::patch('positions/{position}/status', [PositionController::class, 'updateStatus'])->name('positions.status');
         Route::resource('positions', PositionController::class)->except(['destroy', 'show']);
+
+        Route::post('service-aliases/data', [ServiceAliasController::class, 'data'])->name('service-aliases.data');
+        Route::resource('service-aliases', ServiceAliasController::class)->except(['show']);
 
         Route::get('ssas/therapists-for-service', [SSAController::class, 'therapistsForService'])->name('ssas.therapists-for-service');
         Route::get('ssas/export', [SSAController::class, 'export'])->name('ssas.export');
