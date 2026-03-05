@@ -107,7 +107,7 @@ return [
             [
                 'label' => 'Session Logs',
                 'route' => 'admin.session-logs.index',
-                'active' => 'admin.session-logs.*',
+                'active' => ['admin.session-logs.*', 'admin.schedule-calendar.*'],
                 'children' => [
                     [
                         'label' => 'Submitted',
@@ -126,6 +126,11 @@ return [
                         'route' => 'admin.session-logs.index',
                         'query' => ['status' => 'cancelled'],
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
+                    ],
+                    [
+                        'label' => 'Schedule Calendar',
+                        'route' => 'admin.schedule-calendar.index',
+                        'active' => 'admin.schedule-calendar.*',
                     ],
                 ],
             ],
@@ -236,12 +241,17 @@ return [
             [
                 'label' => 'Schedule',
                 'route' => 'therapist.schedule.index',
-                'active' => 'therapist.schedule.*',
+                'active' => ['therapist.schedule.*', 'therapist.schedule-calendar.*'],
                 'children' => [
                     [
                         'label' => 'Calendar',
                         'route' => 'therapist.schedule.calendar',
                         'active' => 'therapist.schedule.calendar',
+                    ],
+                    [
+                        'label' => 'Full Calendar',
+                        'route' => 'therapist.schedule-calendar.index',
+                        'active' => 'therapist.schedule-calendar.*',
                     ],
                     [
                         'label' => 'Pending Schedule',

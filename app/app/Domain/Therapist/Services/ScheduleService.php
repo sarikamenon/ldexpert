@@ -44,6 +44,12 @@ final class ScheduleService
         return $this->repository->getSchedulesForTherapist($therapist, $filters);
     }
 
+    /** @return Collection<int, Schedule> */
+    public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection
+    {
+        return $this->repository->getSchedulesForCalendar($filters);
+    }
+
     public function findForTherapist(User $therapist, int $scheduleId): ?Schedule
     {
         return $this->repository->findForTherapist($therapist, $scheduleId);

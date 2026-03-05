@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
+use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
 use App\Http\Controllers\Therapist\SessionLogController;
 use App\Http\Controllers\Therapist\SessionLogDocumentController;
@@ -34,6 +35,12 @@ Route::middleware('role:therapist')
             Route::post('{id}/remove-student', [ScheduleController::class, 'removeStudent'])->name('remove-student');
             Route::put('{id}/billing-status', [ScheduleController::class, 'updateBillingStatus'])->name('update-billing-status');
             Route::post('bulk-billing-status', [ScheduleController::class, 'bulkUpdateBillingStatus'])->name('bulk-billing-status');
+        });
+
+        // Schedule Full Calendar
+        Route::prefix('schedule-calendar')->name('schedule-calendar.')->group(function () {
+            Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
+            Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
         });
 
         // SSA routes

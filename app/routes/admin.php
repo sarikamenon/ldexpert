@@ -9,15 +9,16 @@ use App\Http\Controllers\Admin\Finance\PayStubReportController;
 use App\Http\Controllers\Admin\FinanceDashboardController;
 use App\Http\Controllers\Admin\InvoiceController;
 use App\Http\Controllers\Admin\InvoicePaymentController;
+use App\Http\Controllers\Admin\InvoicePaymentsListController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\LeadNoteController;
-use App\Http\Controllers\Admin\InvoicePaymentsListController;
 use App\Http\Controllers\Admin\LedgerAccountController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
 use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
 use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
+use App\Http\Controllers\Admin\ScheduleCalendarController;
 use App\Http\Controllers\Admin\SchoolCalendarEventController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
@@ -143,6 +144,13 @@ Route::middleware('role:admin')
         Route::post('notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
         Route::post('notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
         Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+        // Schedule Calendar
+        Route::prefix('schedule-calendar')->name('schedule-calendar.')->group(function () {
+            Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
+            Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
+            Route::get('{id}', [ScheduleCalendarController::class, 'show'])->name('show');
+        });
 
         // Session Logs
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
