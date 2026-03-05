@@ -13,15 +13,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Update template download link when type changes
-    if (importTypeSelect && templateDownloadLink) {
-        importTypeSelect.addEventListener('change', (e) => {
-            const selectedType = e.target.value;
+    // Update type hidden, columns display, and download link visibility when import type changes
+    const templateInfo = document.getElementById('templateInfo');
+    const requiredColumnsList = document.getElementById('requiredColumnsList');
+    const optionalColumnsList = document.getElementById('optionalColumnsList');
+    const templateDownloadSection = document.getElementById('templateDownloadSection');
+    const hideDownloadForTypes = ['RSM', 'MARVIN'];
+
+    const templatesDataEl = document.getElementById('templatesData');
+    const templates = templatesDataEl ? JSON.parse(templatesDataEl.textContent || '{}') : {};
+
+    function renderColumns(container, columns, className) {
+        if (!container) return;
+        container.innerHTML = columns
+            .map((col) => `<span class="px-2 py-1 ${className} text-xs rounded">${col}</span>`)
+            .join('');
+    }
+
+    function updateTemplateDisplay() {
+        const selectedType = importTypeSelect?.value || 'NOVA';
+        if (typeHidden) {
             typeHidden.value = selectedType;
+        }
+
+        const template = templates[selectedType] || templates.NOVA || { required_columns: [], optional_columns: [] };
+        const required = template.required_columns || [];
+        const optional = template.optional_columns || [];
+
+        renderColumns(requiredColumnsList, required, 'bg-primary/10 text-primary');
+        renderColumns(optionalColumnsList, optional, 'bg-foreground/10 text-foreground/70');
+
+        const optionalSection = document.getElementById('optionalColumnsSection');
+        if (optionalSection) {
+            optionalSection.classList.toggle('hidden', optional.length === 0);
+        }
+        if (templateDownloadSection) {
+            templateDownloadSection.classList.toggle('hidden', hideDownloadForTypes.includes(selectedType));
+        }
+        if (templateDownloadLink && selectedType) {
             const url = new URL(templateDownloadLink.href);
             url.searchParams.set('type', selectedType);
             templateDownloadLink.href = url.toString();
-        });
+        }
+    }
+
+    if (importTypeSelect) {
+        importTypeSelect.addEventListener('change', updateTemplateDisplay);
+        updateTemplateDisplay();
     }
 
     form.addEventListener('submit', async (e) => {

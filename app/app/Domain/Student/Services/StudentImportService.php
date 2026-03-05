@@ -7,6 +7,7 @@ namespace App\Domain\Student\Services;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Enums\StudentImportType;
 use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\DTOs\ImportStudentDTO;
@@ -114,7 +115,7 @@ final class StudentImportService
             // Map columns using template
             $mappedData = $this->mapColumns($rowData, $template);
 
-            // Look up school by external_emr_name
+            // Look up school by external_emr_name (exact match)
             $schoolName = $mappedData['school_name'] ?? null;
             if (! $schoolName) {
                 $importRow->update([
@@ -136,6 +137,18 @@ final class StudentImportService
 
                 return;
             }
+
+            // Apply template transformations (field_sources, transformations, defaults, context_sources)
+            $mappedData = $this->applyTemplateTransformations($mappedData, $template, $school);
+
+            // Normalize parent_guardian_phone (e.g. (385) 497-0814 -> 385-497-0814)
+            if (! empty($mappedData['parent_guardian_phone'])) {
+                $mappedData['parent_guardian_phone'] = $this->normalizePhone($mappedData['parent_guardian_phone']);
+            }
+
+            // Resolve timezone: accept key or display label, fallback to school timezone
+            $resolvedTimezone = UsTimezones::resolveFromInput($mappedData['timezone'] ?? null);
+            $mappedData['timezone'] = $resolvedTimezone ?? $school->timezone;
 
             // Validate row
             $importDTO = ImportStudentDTO::fromArray($mappedData, $rowNumber);
@@ -343,11 +356,6 @@ final class StudentImportService
             'zip_code' => ['required', 'string', 'max:20'],
         ];
 
-        // Validate timezone
-        if (isset($data['timezone']) && ! array_key_exists($data['timezone'], UsTimezones::TIMEZONES)) {
-            $errors[] = 'Invalid timezone.';
-        }
-
         // Validate state
         if (isset($data['state'])) {
             $stateCode = $this->normalizeState($data['state']);
@@ -465,6 +473,89 @@ final class StudentImportService
         foreach (array_chunk($rows, 500) as $chunk) {
             StudentImportRow::insert($chunk);
         }
+    }
+
+    private function applyTemplateTransformations(array $mappedData, array $template, School $school): array
+    {
+        // 1. Apply transformations (combine, split)
+        $transformations = $template['transformations'] ?? [];
+        foreach ($transformations as $t) {
+            if (($t['type'] ?? '') === 'combine') {
+                $sources = $t['sources'] ?? [];
+                $target = $t['target'] ?? null;
+                $separator = $t['separator'] ?? ' ';
+                if ($target && ! empty($sources)) {
+                    $parts = [];
+                    foreach ($sources as $src) {
+                        $parts[] = trim($mappedData[$src] ?? '');
+                    }
+                    $value = trim(implode($separator, $parts));
+                    $mappedData[$target] = $value !== '' ? $value : null;
+                    foreach ($sources as $src) {
+                        unset($mappedData[$src]);
+                    }
+                }
+            }
+            if (($t['type'] ?? '') === 'split') {
+                $source = $t['source'] ?? null;
+                $targets = $t['targets'] ?? [];
+                $delimiter = $t['delimiter'] ?? ' ';
+                if ($source && ! empty($targets)) {
+                    $value = trim($mappedData[$source] ?? '');
+                    $parts = $delimiter !== '' ? explode($delimiter, $value, count($targets)) : [$value];
+                    foreach ($targets as $i => $tgt) {
+                        $mappedData[$tgt] = trim($parts[$i] ?? '') ?: null;
+                    }
+                    unset($mappedData[$source]);
+                }
+            }
+        }
+
+        // 2. Apply field_sources (target gets value from source when target empty)
+        $fieldSources = $template['field_sources'] ?? [];
+        foreach ($fieldSources as $target => $source) {
+            $sourceValue = trim($mappedData[$source] ?? '');
+            if ($sourceValue !== '') {
+                $mappedData[$target] = $sourceValue;
+            }
+        }
+
+        // 3. Apply defaults (only when field is empty)
+        $defaults = array_merge(
+            config('student-import.defaults', []),
+            $template['defaults'] ?? []
+        );
+        foreach ($defaults as $field => $defaultValue) {
+            $current = trim($mappedData[$field] ?? '');
+            if ($current === '') {
+                $mappedData[$field] = $defaultValue;
+            }
+        }
+
+        // 4. Apply context_sources (e.g. state from school)
+        $contextSources = $template['context_sources'] ?? [];
+        foreach ($contextSources as $target => $source) {
+            if (str_starts_with($source, 'school.')) {
+                $attr = substr($source, 7);
+                $value = $school->{$attr} ?? $school->getAttributes()[$attr] ?? null;
+                if ($value !== null) {
+                    $mappedData[$target] = $value;
+                }
+            }
+        }
+
+        return $mappedData;
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+
+        if (strlen($digits) === 10) {
+            return substr($digits, 0, 3).'-'.substr($digits, 3, 3).'-'.substr($digits, 6, 4);
+        }
+
+        return $digits;
     }
 
     /**

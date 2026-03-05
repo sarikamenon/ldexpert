@@ -58,6 +58,21 @@ final class CreateStudentDTOTest extends TestCase
         $this->assertSame('SecurePass123!', $dto->password);
     }
 
+    public function test_date_of_birth_empty_string_becomes_null(): void
+    {
+        $dto = CreateStudentDTO::fromArray([
+            'first_name' => 'Sam',
+            'last_name' => 'Test',
+            'username' => 'sam.test',
+            'email' => 'sam@example.com',
+            'date_of_birth' => '',
+            'timezone' => 'America/Chicago',
+            'password' => 'TempPass!',
+        ]);
+
+        $this->assertNull($dto->dateOfBirth);
+    }
+
     public function test_optional_fields_default_to_null(): void
     {
         $dto = CreateStudentDTO::fromArray([

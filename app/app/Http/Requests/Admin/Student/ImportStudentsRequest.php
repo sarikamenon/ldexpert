@@ -32,7 +32,7 @@ final class ImportStudentsRequest extends FormRequest
             'type' => [
                 'nullable',
                 'string',
-                Rule::in(array_column(\App\Enums\StudentImportType::cases(), 'value')),
+                Rule::in(array_column(StudentImportType::cases(), 'value')),
             ],
         ];
     }
@@ -52,8 +52,7 @@ final class ImportStudentsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        // Default to NOVA if type is not provided
-        if (! $this->has('type')) {
+        if (! $this->has('type') || $this->input('type') === '') {
             $this->merge(['type' => StudentImportType::NOVA->value]);
         }
     }

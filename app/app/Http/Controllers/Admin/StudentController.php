@@ -351,14 +351,24 @@ final class StudentController extends Controller
     {
         $this->authorize('create', StudentProfile::class);
 
+        $templates = [];
+        foreach (StudentImportType::cases() as $type) {
+            $template = $this->importService->getTemplate($type);
+            if (! empty($template)) {
+                $templates[$type->value] = [
+                    'required_columns' => $template['required_columns'] ?? [],
+                    'optional_columns' => $template['optional_columns'] ?? [],
+                ];
+            }
+        }
+
         $novaTemplate = $this->importService->getTemplate(StudentImportType::NOVA);
-        $requiredColumns = $novaTemplate['required_columns'] ?? [];
-        $optionalColumns = $novaTemplate['optional_columns'] ?? [];
 
         return view('admin.students.import', [
-            'requiredColumns' => $requiredColumns,
-            'optionalColumns' => $optionalColumns,
+            'requiredColumns' => $novaTemplate['required_columns'] ?? [],
+            'optionalColumns' => $novaTemplate['optional_columns'] ?? [],
             'importTypes' => StudentImportType::cases(),
+            'templates' => $templates,
         ]);
     }
 

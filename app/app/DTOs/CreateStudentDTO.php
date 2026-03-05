@@ -39,7 +39,7 @@ final class CreateStudentDTO
             username: $data['username'],
             email: $data['email'],
             gender: $data['gender'] ?? null,
-            dateOfBirth: $data['date_of_birth'] ?? null,
+            dateOfBirth: ($data['date_of_birth'] ?? null) ?: null,
             schoolId: isset($data['school_id']) ? (int) $data['school_id'] : null,
             idNumber: $data['id_number'] ?? null,
             timezone: $data['timezone'],
