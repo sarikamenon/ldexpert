@@ -182,8 +182,15 @@ final class InvoiceService
                 throw new \InvalidArgumentException('No email address available for sending invoice.');
             }
 
-            // Send email with PDF attachment
-            Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message));
+            // Generate payment token for online payment link
+            $paymentUrl = null;
+            if ((float) $invoice->total > 0) {
+                $invoice->ensurePaymentToken();
+                $paymentUrl = $invoice->getPaymentUrl();
+            }
+
+            // Send email with PDF attachment and payment link
+            Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
 
             // Mark invoice as sent
             $invoice = $this->repository->markAsSent($invoice, $user->id);
