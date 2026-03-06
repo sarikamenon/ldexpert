@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DataTables\Transformers;
 
 use App\DataTables\ActionButtons;
+use App\Enums\SSAImportType;
 use App\Models\ServiceAlias;
 
 final class ServiceAliasRowTransformer
@@ -46,12 +47,7 @@ final class ServiceAliasRowTransformer
 
     private static function sourceBadge(string $source): string
     {
-        $colors = match ($source) {
-            'RSM' => 'bg-primary/10 text-primary border-primary/20',
-            'NOVA' => 'bg-success/10 text-success border-success/20',
-            'MARVIN' => 'bg-warning/10 text-warning border-warning/20',
-            default => 'bg-secondary/10 text-foreground border-secondary/20',
-        };
+        $colors = SSAImportType::badgeClassesFor($source);
 
         return '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$colors.' border">'.e($source).'</span>';
     }

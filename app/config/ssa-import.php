@@ -63,6 +63,7 @@ return [
                 'Total Hrs Owed',
             ],
             'optional_columns' => [
+                'Status (3=WD)',
                 'Service',
                 'How Often',
                 'Per',
@@ -70,6 +71,7 @@ return [
                 'Therapist Email',
             ],
             'column_mapping' => [
+                'Status (3=WD)' => 'rsm_status',
                 'Identity ID' => 'student_id_number',
                 'School Name' => 'school_name',
                 'Service' => 'primary_service_name',

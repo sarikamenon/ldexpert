@@ -21,6 +21,7 @@ use App\Enums\UserStatus;
 use App\Jobs\ProcessSSAImportJob;
 use App\Models\School;
 use App\Models\Service;
+use App\Models\ServiceAlias;
 use App\Models\SSAImport;
 use App\Models\SSAImportRow;
 use App\Models\User;
@@ -33,6 +34,7 @@ final class SSAImportService
     public function __construct(
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly SSAService $ssaService,
+        private readonly RsmImportHandler $rsmImportHandler,
         private readonly StudentRepositoryInterface $studentRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly SchoolRepositoryInterface $schoolRepository,
@@ -152,11 +154,12 @@ final class SSAImportService
                 return;
             }
 
-            $primaryService = $this->lookupService($primaryServiceName);
+            $primaryService = $this->lookupService($primaryServiceName, $import->type);
             if (! $primaryService) {
+                $source = $import->type->value;
                 $importRow->update([
                     'status' => SSAImportRowStatus::VALIDATION_ERROR,
-                    'error_message' => "Service with name '{$primaryServiceName}' not found.",
+                    'error_message' => "Service '{$primaryServiceName}' not found. Add a mapping in Settings → Service Aliases for {$source}.",
                     'processed_at' => now(),
                 ]);
 
@@ -168,7 +171,7 @@ final class SSAImportService
             if (! empty($mappedData['additional_service_names'])) {
                 $serviceNames = array_map('trim', explode(',', $mappedData['additional_service_names']));
                 foreach ($serviceNames as $serviceName) {
-                    $service = $this->lookupService(trim($serviceName));
+                    $service = $this->lookupService(trim($serviceName), $import->type);
                     if (! $service) {
                         $importRow->update([
                             'status' => SSAImportRowStatus::VALIDATION_ERROR,
@@ -226,7 +229,22 @@ final class SSAImportService
                 return;
             }
 
-            // Check for duplicates (overlapping SSAs)
+            // RSM imports use status-based upsert logic
+            if ($import->type === SSAImportType::RSM) {
+                $this->rsmImportHandler->processRow(
+                    $importRow,
+                    $mappedData,
+                    $student,
+                    $primaryService,
+                    $additionalServiceIds,
+                    $therapistId,
+                    $thoMinutes,
+                );
+
+                return;
+            }
+
+            // Non-RSM: check for duplicates (overlapping SSAs)
             $duplicateCheck = $this->checkDuplicate($student->id, $primaryService->id, (string) $mappedData['start_date'], (string) $mappedData['end_date']);
             if ($duplicateCheck !== null) {
                 $importRow->update([
@@ -304,12 +322,29 @@ final class SSAImportService
         return null;
     }
 
-    public function lookupService(string $serviceName): ?Service
+    public function lookupService(string $serviceName, ?SSAImportType $importType = null): ?Service
     {
-        return Service::query()
+        // Try direct name match first
+        $service = Service::query()
             ->where('name', $serviceName)
             ->where('status', ServiceStatus::ACTIVE)
             ->first();
+
+        if ($service !== null) {
+            return $service;
+        }
+
+        // Try alias lookup for sources that use alias mappings
+        if ($importType !== null && in_array($importType, SSAImportType::aliasSources(), true)) {
+            $alias = ServiceAlias::query()
+                ->forSource($importType->value)
+                ->where('external_name', $serviceName)
+                ->first();
+
+            return $alias?->service;
+        }
+
+        return null;
     }
 
     public function lookupTherapist(string $email): ?User
