@@ -9,12 +9,6 @@ services:
       - ./:/var/www/html
     environment:
       - PHP_IDE_CONFIG=serverName=laravel
-      - DB_CONNECTION=mysql
-      - DB_HOST=mysql
-      - DB_PORT=3306
-      - DB_DATABASE=bird
-      - DB_USERNAME=bird
-      - DB_PASSWORD=secret
       - CACHE_STORE=file
     depends_on:
       - mysql

@@ -20,7 +20,10 @@ final class ServiceAliasDataRequest extends FormRequest
     {
         return [
             'filter_search' => ['nullable', 'string', 'max:255'],
-            'filter_source' => ['nullable', Rule::in(SSAImportType::values())],
+            'filter_source' => ['nullable', Rule::in(array_map(
+                static fn (SSAImportType $s): string => $s->value,
+                SSAImportType::aliasSources()
+            ))],
         ];
     }
 }

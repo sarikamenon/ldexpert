@@ -39,7 +39,7 @@ final class ServiceAliasController extends Controller
 
         return view('admin.service-aliases.index', [
             'metrics' => $metrics,
-            'sources' => SSAImportType::cases(),
+            'sources' => SSAImportType::aliasSources(),
             'datatableUrl' => route('admin.service-aliases.data'),
         ]);
     }
@@ -95,7 +95,7 @@ final class ServiceAliasController extends Controller
         $this->authorize('create', ServiceAlias::class);
 
         return view('admin.service-aliases.create', [
-            'sources' => SSAImportType::cases(),
+            'sources' => SSAImportType::aliasSources(),
             'services' => Service::query()->where('status', 'active')->orderBy('name')->get(),
         ]);
     }
@@ -121,7 +121,7 @@ final class ServiceAliasController extends Controller
 
         return view('admin.service-aliases.edit', [
             'alias' => $serviceAlias,
-            'sources' => SSAImportType::cases(),
+            'sources' => SSAImportType::aliasSources(),
             'services' => Service::query()->where('status', 'active')->orderBy('name')->get(),
         ]);
     }
@@ -154,15 +154,16 @@ final class ServiceAliasController extends Controller
     }
 
     /**
-     * @return array{total: int, rsm: int, nova: int, marvin: int}
+     * @return array<string, int>
      */
     private function getMetrics(): array
     {
-        return [
-            'total' => ServiceAlias::count(),
-            'rsm' => ServiceAlias::where('source', SSAImportType::RSM->value)->count(),
-            'nova' => ServiceAlias::where('source', SSAImportType::NOVA->value)->count(),
-            'marvin' => ServiceAlias::where('source', SSAImportType::MARVIN->value)->count(),
-        ];
+        $metrics = ['total' => ServiceAlias::count()];
+
+        foreach (SSAImportType::aliasSources() as $source) {
+            $metrics[strtolower($source->value)] = ServiceAlias::where('source', $source->value)->count();
+        }
+
+        return $metrics;
     }
 }

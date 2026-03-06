@@ -45,11 +45,6 @@
                             <x-ui::input type="text" id="bill_number" name="bill_number"
                                 value="{{ $filters['bill_number'] ?? '' }}" placeholder="Search..." />
                         </div>
-
-                        <a href="{{ route('therapist.billing.index') }}"
-                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
-                            Clear
-                        </a>
                     </x-slot:filters>
                 </x-ui::filter-toolbar>
 

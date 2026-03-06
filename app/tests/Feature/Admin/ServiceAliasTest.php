@@ -70,7 +70,7 @@ it('filters datatable by source', function () {
     $admin = aliasAdmin();
     $service = Service::factory()->create();
     ServiceAlias::create(['source' => 'RSM', 'external_name' => 'RSM Service', 'service_id' => $service->id]);
-    ServiceAlias::create(['source' => 'NOVA', 'external_name' => 'NOVA Service', 'service_id' => $service->id]);
+    ServiceAlias::create(['source' => 'MARVIN', 'external_name' => 'MARVIN Service', 'service_id' => $service->id]);
 
     $response = $this->actingAs($admin)
         ->post(route('admin.service-aliases.data'), ['draw' => 1, 'filter_source' => 'RSM'])
@@ -141,7 +141,7 @@ it('allows same external name for different sources', function () {
 
     $this->actingAs($admin)
         ->post(route('admin.service-aliases.store'), [
-            'source' => 'NOVA',
+            'source' => 'MARVIN',
             'external_name' => 'Speech Therapy Online',
             'service_id' => $service->id,
         ])

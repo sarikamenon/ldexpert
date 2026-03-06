@@ -45,12 +45,6 @@
 
                 <x-ui::input type="text" name="search" value="{{ request('search') }}"
                     placeholder="Vendor, description, reference..." class="w-48" />
-
-                @if (request()->hasAny(['category_id', 'date_from', 'date_to', 'search']) && array_filter(request()->only(['category_id', 'date_from', 'date_to', 'search'])))
-                    <a href="{{ route('admin.expenses.index') }}">
-                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
-                    </a>
-                @endif
             </x-slot:filters>
         </x-ui::filter-toolbar>
 

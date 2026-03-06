@@ -61,12 +61,6 @@
 
                 <x-ui::input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"
                     title="To Date" class="w-36" />
-
-                @if (!empty(array_filter($filters ?? [])))
-                    <a href="{{ route('admin.session-logs.index') }}">
-                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
-                    </a>
-                @endif
             </x-slot:filters>
         </x-ui::filter-toolbar>
 

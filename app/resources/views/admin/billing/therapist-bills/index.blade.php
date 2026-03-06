@@ -42,12 +42,6 @@
 
                 <x-ui::input type="text" name="bill_number" value="{{ $filters['bill_number'] ?? '' }}"
                     placeholder="Bill #" class="w-32" />
-
-                @if (!empty(array_filter($filters ?? [])))
-                    <a href="{{ route('admin.billing.therapist-bills.index') }}">
-                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
-                    </a>
-                @endif
             </x-slot:filters>
 
             <x-slot:actions>

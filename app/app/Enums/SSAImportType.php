@@ -15,4 +15,19 @@ enum SSAImportType: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    /**
+     * Sources that support service alias mappings.
+     *
+     * NOVA uses the same service names as the system, so no aliases are needed.
+     *
+     * @return array<int, self>
+     */
+    public static function aliasSources(): array
+    {
+        return [
+            self::RSM,
+            self::MARVIN,
+        ];
+    }
 }

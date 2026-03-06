@@ -9,23 +9,17 @@
         <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>
     @endif
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-{{ 1 + count($sources) }} gap-4 mb-6">
         <x-ui::card class="p-4">
             <p class="text-sm text-foreground/70">Total Aliases</p>
             <p class="text-3xl font-semibold mt-1">{{ $metrics['total'] ?? 0 }}</p>
         </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">RSM</p>
-            <p class="text-3xl font-semibold mt-1 text-primary">{{ $metrics['rsm'] ?? 0 }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">NOVA</p>
-            <p class="text-3xl font-semibold mt-1 text-success">{{ $metrics['nova'] ?? 0 }}</p>
-        </x-ui::card>
-        <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">MARVIN</p>
-            <p class="text-3xl font-semibold mt-1 text-warning">{{ $metrics['marvin'] ?? 0 }}</p>
-        </x-ui::card>
+        @foreach ($sources as $source)
+            <x-ui::card class="p-4">
+                <p class="text-sm text-foreground/70">{{ $source->value }}</p>
+                <p class="text-3xl font-semibold mt-1">{{ $metrics[strtolower($source->value)] ?? 0 }}</p>
+            </x-ui::card>
+        @endforeach
     </div>
 
     <x-ui::card class="p-6 space-y-4">
@@ -57,11 +51,11 @@
             <table id="serviceAliasesTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}">
                 <thead>
                     <tr>
-                        <th>Source</th>
+                        <th class="w-24">Source</th>
                         <th>External Name</th>
                         <th>System Service</th>
-                        <th>Created</th>
-                        <th>Actions</th>
+                        <th class="w-32">Created</th>
+                        <th class="w-24">Actions</th>
                     </tr>
                 </thead>
                 <tbody></tbody>

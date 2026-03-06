@@ -41,12 +41,6 @@
 
                 <x-ui::input type="text" name="search" placeholder="Search file name..."
                     value="{{ $filters['search'] ?? '' }}" class="w-48" />
-
-                @if (!empty(array_filter($filters)))
-                    <a href="{{ route('admin.student-documents.index') }}">
-                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
-                    </a>
-                @endif
             </x-slot:filters>
         </x-ui::filter-toolbar>
 

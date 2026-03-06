@@ -24,11 +24,9 @@
                     aria-describedby="source_help">
                     <option value="">Select source</option>
                     @foreach ($sources as $source)
-                        @if ($source->value !== 'NOVA')
-                            <option value="{{ $source->value }}" @selected(old('source', $isEdit ? $alias->source : '') === $source->value)>
-                                {{ $source->value }}
-                            </option>
-                        @endif
+                        <option value="{{ $source->value }}" @selected(old('source', $isEdit ? $alias->source : '') === $source->value)>
+                            {{ $source->value }}
+                        </option>
                     @endforeach
                 </x-ui::select>
                 <x-input-error :messages="$errors->get('source')" class="mt-2" />

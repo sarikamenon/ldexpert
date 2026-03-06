@@ -36,12 +36,6 @@
                     <option value="active" @selected(request('status') === 'active')>Active</option>
                     <option value="inactive" @selected(request('status') === 'inactive')>Inactive</option>
                 </x-ui::select>
-
-                @if (request()->hasAny(['search', 'status']) && array_filter(request()->only(['search', 'status'])))
-                    <a href="{{ route('admin.settings.expense-categories.index') }}">
-                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
-                    </a>
-                @endif
             </x-slot:filters>
         </x-ui::filter-toolbar>
 

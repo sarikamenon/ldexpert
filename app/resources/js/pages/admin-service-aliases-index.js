@@ -17,6 +17,9 @@ async function initServiceAliasesTable() {
             pageLength: 25,
             columnDefs: [
                 { orderable: false, targets: [2, 4] },
+                { width: '90px', targets: 0 },
+                { width: '120px', targets: 3 },
+                { width: '90px', targets: 4 },
             ],
             getExtraData(d) {
                 if (!form) return;

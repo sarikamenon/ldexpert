@@ -19,7 +19,10 @@ final class StoreServiceAliasRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'source' => ['required', 'string', Rule::in(SSAImportType::values())],
+            'source' => ['required', 'string', Rule::in(array_map(
+                static fn (SSAImportType $s): string => $s->value,
+                SSAImportType::aliasSources()
+            ))],
             'external_name' => [
                 'required',
                 'string',

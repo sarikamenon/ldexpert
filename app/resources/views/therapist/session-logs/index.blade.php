@@ -72,13 +72,6 @@
                             <x-ui::input id="date_to" type="date" name="date_to"
                                 value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
                         </div>
-
-                        @if (!empty(array_filter($filters ?? [])))
-                            <a href="{{ route('therapist.session-logs.index') }}"
-                                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                                Clear
-                            </a>
-                        @endif
                     </x-slot:filters>
 
                     <x-slot:actions>
