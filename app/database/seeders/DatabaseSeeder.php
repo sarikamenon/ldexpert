@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             Scenario\ScenarioSessionLogSeeder::class,
             Scenario\ScenarioInvoiceBillSeeder::class,
             Scenario\ScenarioExpenseSeeder::class,
+            Scenario\ScenarioLeadSeeder::class,
         ]);
     }
 }
