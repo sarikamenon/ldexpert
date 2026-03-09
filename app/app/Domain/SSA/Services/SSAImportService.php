@@ -25,6 +25,7 @@ use App\Models\ServiceAlias;
 use App\Models\SSAImport;
 use App\Models\SSAImportRow;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -509,7 +510,7 @@ final class SSAImportService
         // Basic validation rules
         $rules = [
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after:start_date'],
+            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
             'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
             'tho_minutes' => ['required', 'integer', 'min:0'],
             'frequency' => ['nullable', 'string'],
@@ -620,6 +621,13 @@ final class SSAImportService
         if (isset($mappedData['frequency_label']) && $mappedData['frequency_label'] !== '') {
             $mappedData['frequency'] = self::rsmFrequencyToEnum($mappedData['frequency_label']);
             unset($mappedData['frequency_label']);
+        }
+
+        // Convert dates from MM/DD/YYYY to YYYY-MM-DD for MySQL
+        foreach (['start_date', 'end_date'] as $dateField) {
+            if (isset($mappedData[$dateField]) && $mappedData[$dateField] !== '') {
+                $mappedData[$dateField] = Carbon::parse($mappedData[$dateField])->format('Y-m-d');
+            }
         }
 
         return $mappedData;

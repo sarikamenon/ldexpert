@@ -150,7 +150,14 @@ final class EloquentSSARepository implements SSARepositoryInterface
     public function update(ServiceSupportAgreement $ssa, UpdateSSADTO $dto): ServiceSupportAgreement
     {
         return DB::transaction(function () use ($ssa, $dto) {
-            $ssa->update($dto->toArray());
+            $data = $dto->toArray();
+            // Auto-activate when assigning a therapist via the edit form (same as assignTherapist())
+            if (array_key_exists('assigned_therapist_id', $data)
+                && $data['assigned_therapist_id'] !== null
+                && $ssa->status === SSAStatus::PENDING) {
+                $data['status'] = SSAStatus::ACTIVE->value;
+            }
+            $ssa->update($data);
 
             $this->syncSsaServices($ssa, $dto->additionalServiceIds);
 
