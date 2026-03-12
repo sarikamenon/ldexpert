@@ -33,17 +33,17 @@ abstract class StudentFormRequest extends FormRequest
             'gender' => ['required', 'string', 'max:50'],
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
-            'id_number' => ['required', 'string', 'max:50'],
+            'id_number' => ['nullable', 'string', 'max:50'],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
-            'grade_level' => ['required', 'string', 'max:50'],
+            'grade_level' => ['nullable', 'string', 'max:50'],
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'schedule_email' => ['nullable', 'email:rfc', 'max:255'],
             'address' => ['nullable', 'string'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', Rule::in(array_keys(UsStates::STATES))],
-            'zip_code' => ['required', 'string', 'max:20'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', Rule::in(array_keys(UsStates::STATES))],
+            'zip_code' => ['nullable', 'string', 'max:20'],
         ];
     }
 

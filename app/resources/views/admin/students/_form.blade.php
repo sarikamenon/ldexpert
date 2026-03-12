@@ -102,8 +102,8 @@
             </div>
 
             <div>
-                <x-input-label for="id_number" value="Student ID *" />
-                <p class="mt-1 text-xs text-foreground/60">Unique student identifier from the school</p>
+                <x-input-label for="id_number" value="Student ID" />
+                <p class="mt-1 text-xs text-foreground/60">Unique student identifier from the school (auto-generated for private schools if left blank)</p>
                 <x-ui::input id="id_number" name="id_number" type="text" class="mt-1 block w-full"
                     :value="old('id_number', $profile?->id_number)" />
                 <x-input-error :messages="$errors->get('id_number')" class="mt-2" />
@@ -126,8 +126,8 @@
             </div>
 
             <div>
-                <x-input-label for="grade_level" value="Grade Level *" />
-                <p class="mt-1 text-xs text-foreground/60">Current grade level (e.g., K, 1, 2, 3-12, or other)</p>
+                <x-input-label for="grade_level" value="Grade Level" />
+                <p class="mt-1 text-xs text-foreground/60">Current grade level (e.g., K, 1, 2, 3-12, or other) (optional)</p>
                 <x-ui::input id="grade_level" name="grade_level" type="text" class="mt-1 block w-full"
                     :value="old('grade_level', $profile?->grade_level)" />
                 <x-input-error :messages="$errors->get('grade_level')" class="mt-2" />
@@ -149,7 +149,13 @@
             </div>
 
             <div>
-                <x-input-label for="parent_guardian_email" value="Email" />
+                <div class="flex items-center gap-3">
+                    <x-input-label for="parent_guardian_email" value="Email" />
+                    <label class="flex items-center gap-2 text-xs text-foreground/70 cursor-pointer">
+                        <input type="checkbox" id="parent_email_same_as_notification" class="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5" />
+                         Same as notification email
+                    </label>
+                </div>
                 <p class="mt-1 text-xs text-foreground/60">Parent or guardian's email address</p>
                 <x-ui::input id="parent_guardian_email" name="parent_guardian_email" type="email"
                     class="mt-1 block w-full" :value="old('parent_guardian_email', $profile?->parent_guardian_email)" />
@@ -157,7 +163,13 @@
             </div>
 
             <div>
-                <x-input-label for="schedule_email" value="Schedule Email" />
+                <div class="flex items-center gap-3">
+                    <x-input-label for="schedule_email" value="Schedule Email" />
+                    <label class="flex items-center gap-2 text-xs text-foreground/70 cursor-pointer">
+                        <input type="checkbox" id="schedule_email_same_as_notification" class="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5" />
+                        Same as notification email
+                    </label>
+                </div>
                 <p class="mt-1 text-xs text-foreground/60">Schedule email for reminders</p>
                 <x-text-input id="schedule_email" name="schedule_email" type="email"
                     class="mt-1 block w-full" :value="old('schedule_email', $profile?->schedule_email)" />
@@ -188,16 +200,16 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-                <x-input-label for="city" value="City *" />
-                <p class="mt-1 text-xs text-foreground/60">City name</p>
+                <x-input-label for="city" value="City" />
+                <p class="mt-1 text-xs text-foreground/60">City name (optional)</p>
                 <x-ui::input id="city" name="city" type="text" class="mt-1 block w-full"
                     :value="old('city', $profile?->city)" />
                 <x-input-error :messages="$errors->get('city')" class="mt-2" />
             </div>
 
             <div>
-                <x-input-label for="state" value="State *" />
-                <p class="mt-1 text-xs text-foreground/60">US state</p>
+                <x-input-label for="state" value="State" />
+                <p class="mt-1 text-xs text-foreground/60">US state (optional)</p>
                 <x-ui::select name="state" id="state" class="mt-1" placeholder="Select State">
                     <option value="">Select State</option>
                     @foreach ($states as $code => $name)
@@ -210,14 +222,16 @@
             </div>
 
             <div>
-                <x-input-label for="zip_code" value="ZIP Code *" />
-                <p class="mt-1 text-xs text-foreground/60">ZIP or postal code</p>
+                <x-input-label for="zip_code" value="ZIP Code" />
+                <p class="mt-1 text-xs text-foreground/60">ZIP or postal code (optional)</p>
                 <x-ui::input id="zip_code" name="zip_code" type="text" class="mt-1 block w-full"
                     :value="old('zip_code', $profile?->zip_code)" />
                 <x-input-error :messages="$errors->get('zip_code')" class="mt-2" />
             </div>
         </div>
     </x-ui::card>
+
+    <input type="hidden" name="redirect_to_ssa" id="redirect_to_ssa" value="0" />
 
     <div class="flex items-center justify-end gap-3">
         <a href="{{ route('admin.students.index') }}">
@@ -228,5 +242,10 @@
         <x-ui::button type="submit">
             {{ $isEdit ? 'Update Student Info' : 'Create Student' }}
         </x-ui::button>
+        @unless ($isEdit)
+            <x-ui::button type="submit" id="create-and-add-ssa-btn">
+                Create and Add SSA
+            </x-ui::button>
+        @endunless
     </div>
 </form>

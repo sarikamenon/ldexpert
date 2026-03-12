@@ -185,7 +185,13 @@ final class StudentController extends Controller
         $validated['password'] = Str::password(12);
 
         $dto = CreateStudentDTO::fromArray($validated);
-        $this->studentService->create($dto);
+        $profile = $this->studentService->create($dto);
+
+        if ($request->input('redirect_to_ssa') === '1') {
+            return redirect()
+                ->route('admin.ssas.create', ['student_id' => $profile->user_id])
+                ->with('status', 'Student created. Now create an SSA for them.');
+        }
 
         return redirect()
             ->route('admin.students.index')

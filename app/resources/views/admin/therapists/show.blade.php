@@ -16,6 +16,9 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            <a href="{{ route('admin.ssas.index', ['status' => 'pending']) }}">
+                <x-ui::button variant="primary">Assign SSA</x-ui::button>
+            </a>
             <x-ui::status-toggle :status="$therapist->status?->value" data-therapist-id="{{ $therapist->id }}" />
         </x-slot>
     </x-ui::show-header>
