@@ -115,6 +115,15 @@ final class StudentImportService
             // Map columns using template
             $mappedData = $this->mapColumns($rowData, $template);
 
+            // Apply default school_name before lookup (for templates like TUTORBIRD that hardcode it)
+            if (empty($mappedData['school_name'])) {
+                $templateDefaults = $template['defaults'] ?? [];
+                $globalDefaults = config('student-import.defaults', []);
+                $mappedData['school_name'] = $templateDefaults['school_name']
+                    ?? $globalDefaults['school_name']
+                    ?? null;
+            }
+
             // Look up school by external_emr_name (exact match)
             $schoolName = $mappedData['school_name'] ?? null;
             if (! $schoolName) {
@@ -165,7 +174,7 @@ final class StudentImportService
             }
 
             // Check for duplicates
-            $duplicateCheck = $this->checkDuplicate($mappedData, $school->id);
+            $duplicateCheck = $this->checkDuplicate($mappedData, $school->id, $template);
             if ($duplicateCheck !== null) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::DUPLICATE,
@@ -219,6 +228,9 @@ final class StudentImportService
             return ['Unable to read file from storage.'];
         }
 
+        // Strip UTF-8 BOM if present
+        $fileContent = $this->stripUtf8Bom($fileContent);
+
         // Use temporary file to parse CSV properly
         $tempFile = tmpfile();
         if ($tempFile === false) {
@@ -267,6 +279,9 @@ final class StudentImportService
         if ($fileContent === null) {
             return [];
         }
+
+        // Strip UTF-8 BOM if present
+        $fileContent = $this->stripUtf8Bom($fileContent);
 
         // Use temporary file to parse CSV properly
         $tempFile = tmpfile();
@@ -377,9 +392,12 @@ final class StudentImportService
 
     /**
      * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $template
      */
-    public function checkDuplicate(array $data, int $schoolId): ?string
+    public function checkDuplicate(array $data, int $schoolId, array $template): ?string
     {
+        $allowDuplicateEmails = (bool) ($template['allow_duplicate_emails'] ?? false);
+
         // Check by username (system-wide)
         if (isset($data['username'])) {
             $existing = User::where('username', $data['username'])->first();
@@ -388,8 +406,8 @@ final class StudentImportService
             }
         }
 
-        // Check by email (system-wide)
-        if (isset($data['email'])) {
+        // Check by email (system-wide) unless template explicitly allows duplicates
+        if (! $allowDuplicateEmails && isset($data['email'])) {
             $existing = User::where('email', $data['email'])->first();
             if ($existing !== null) {
                 return 'A user with email "'.$data['email'].'" already exists.';
@@ -520,7 +538,20 @@ final class StudentImportService
             }
         }
 
-        // 3. Apply defaults (only when field is empty)
+        // 3. Apply context_sources (e.g. state from school) — before defaults so
+        //    defaults act as fallback when school data is null
+        $contextSources = $template['context_sources'] ?? [];
+        foreach ($contextSources as $target => $source) {
+            if (str_starts_with($source, 'school.')) {
+                $attr = substr($source, 7);
+                $value = $school->{$attr} ?? $school->getAttributes()[$attr] ?? null;
+                if ($value !== null && trim($mappedData[$target] ?? '') === '') {
+                    $mappedData[$target] = $value;
+                }
+            }
+        }
+
+        // 4. Apply defaults (only when field is still empty after context_sources)
         $defaults = array_merge(
             config('student-import.defaults', []),
             $template['defaults'] ?? []
@@ -529,18 +560,6 @@ final class StudentImportService
             $current = trim($mappedData[$field] ?? '');
             if ($current === '') {
                 $mappedData[$field] = $defaultValue;
-            }
-        }
-
-        // 4. Apply context_sources (e.g. state from school)
-        $contextSources = $template['context_sources'] ?? [];
-        foreach ($contextSources as $target => $source) {
-            if (str_starts_with($source, 'school.')) {
-                $attr = substr($source, 7);
-                $value = $school->{$attr} ?? $school->getAttributes()[$attr] ?? null;
-                if ($value !== null) {
-                    $mappedData[$target] = $value;
-                }
             }
         }
 
@@ -599,5 +618,12 @@ final class StudentImportService
         }
 
         return null;
+    }
+
+    private function stripUtf8Bom(string $content): string
+    {
+        return str_starts_with($content, "\xEF\xBB\xBF")
+            ? substr($content, 3)
+            : $content;
     }
 }

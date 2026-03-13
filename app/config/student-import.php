@@ -116,6 +116,65 @@ return [
             'optional_columns' => [],
             'column_mapping' => [],
         ],
+
+        'TUTORBIRD' => [
+            'required_columns' => [
+                'First Name',
+                'Last Name',
+                'TutorBird Student ID',
+            ],
+            'optional_columns' => [
+                'Email',
+                'Birthday',
+                'Address',
+                'Gender',
+                'Mobile Phone',
+                'Parent Contact 1 Last Name',
+                'Parent Contact 1 First Name',
+                'Parent Contact 1 Email',
+                'Parent Contact 1 Mobile Phone',
+            ],
+            'column_mapping' => [
+                'First Name' => 'first_name',
+                'Last Name' => 'last_name',
+                'TutorBird Student ID' => 'id_number',
+                'Email' => 'email',
+                'Birthday' => 'date_of_birth',
+                'Address' => 'address',
+                'Gender' => 'gender',
+                'Mobile Phone' => 'student_mobile_phone',
+                'Parent Contact 1 Last Name' => 'parent_guardian_last_name',
+                'Parent Contact 1 First Name' => 'parent_guardian_first_name',
+                'Parent Contact 1 Email' => 'parent_guardian_email',
+                'Parent Contact 1 Mobile Phone' => 'parent_guardian_phone',
+            ],
+            'field_sources' => [
+                'email' => 'parent_guardian_email',
+            ],
+            'transformations' => [
+                [
+                    'type' => 'combine',
+                    'target' => 'parent_guardian_name',
+                    'sources' => ['parent_guardian_first_name', 'parent_guardian_last_name'],
+                    'separator' => ' ',
+                ],
+            ],
+            'defaults' => [
+                'school_name' => 'NR School 01',
+                'timezone' => 'America/Chicago',
+                'gender' => 'Male',
+                'grade_level' => '1',
+                'city' => 'San Antonio',
+                'state' => 'AL',
+                'zip_code' => '78201',
+            ],
+            'allow_duplicate_emails' => true,
+            'context_sources' => [
+                'state' => 'school.state_code',
+                'city' => 'school.city',
+                'zip_code' => 'school.zip_code',
+            ],
+        ],
     ],
 
     /*

@@ -588,6 +588,402 @@ final class StudentImportTest extends TestCase
         $this->assertEquals('America/Denver', $profile->timezone);
     }
 
+    // ── TutorBird Feature Tests ─────────────────────────────────
+
+    public function test_tutorbird_import_creates_student_with_defaults(): void
+    {
+        Mail::fake();
+
+        $tutorbirdSchool = School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Sophia',
+                'Last Name' => 'Martinez',
+                'TutorBird Student ID' => 'TB001',
+                'Parent Contact 1 Email' => 'parent.martinez@example.com',
+                'Parent Contact 1 First Name' => 'Maria',
+                'Parent Contact 1 Last Name' => 'Martinez',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk()->assertJson(['success' => true]);
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $import->refresh();
+        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
+
+        // Student email falls back to parent email via field_sources
+        $this->assertDatabaseHas('users', [
+            'email' => 'parent.martinez@example.com',
+            'role' => Role::STUDENT->value,
+        ]);
+
+        $profile = StudentProfile::where('id_number', 'TB001')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('Sophia', $profile->first_name);
+        $this->assertEquals('Martinez', $profile->last_name);
+        $this->assertEquals($tutorbirdSchool->id, $profile->school_id);
+        $this->assertEquals('Maria Martinez', $profile->parent_guardian_name);
+        $this->assertEquals('parent.martinez@example.com', $profile->parent_guardian_email);
+
+        // Defaults applied from template config
+        $this->assertEquals('America/Chicago', $profile->timezone);
+        $this->assertEquals('Male', $profile->gender);
+        $this->assertEquals('1', $profile->grade_level);
+
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+    }
+
+    public function test_tutorbird_import_uses_parent_email_as_student_email_via_field_sources(): void
+    {
+        Mail::fake();
+
+        School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Liam',
+                'Last Name' => 'Chen',
+                'TutorBird Student ID' => 'TB002',
+                'Email' => 'liam.chen@example.com',
+                'Parent Contact 1 Email' => 'parent.chen@example.com',
+                'Parent Contact 1 First Name' => 'Wei',
+                'Parent Contact 1 Last Name' => 'Chen',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        // field_sources overwrites email with parent_guardian_email when source is non-empty
+        $this->assertDatabaseHas('users', [
+            'email' => 'parent.chen@example.com',
+            'role' => Role::STUDENT->value,
+        ]);
+    }
+
+    public function test_tutorbird_import_allows_duplicate_emails(): void
+    {
+        Mail::fake();
+
+        School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        // Create existing user with same parent email
+        User::factory()->create(['email' => 'shared.parent@example.com']);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Noah',
+                'Last Name' => 'Adams',
+                'TutorBird Student ID' => 'TB003',
+                'Parent Contact 1 Email' => 'shared.parent@example.com',
+                'Parent Contact 1 First Name' => 'Sarah',
+                'Parent Contact 1 Last Name' => 'Adams',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        $userCountBefore = User::count();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        // Should create student despite duplicate email
+        $this->assertGreaterThan($userCountBefore, User::count());
+
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+    }
+
+    public function test_tutorbird_import_catches_duplicate_id_number(): void
+    {
+        Mail::fake();
+
+        $tutorbirdSchool = School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $existingUser = User::factory()->create(['role' => Role::STUDENT->value]);
+        StudentProfile::factory()->create([
+            'user_id' => $existingUser->id,
+            'school_id' => $tutorbirdSchool->id,
+            'id_number' => 'TB004',
+        ]);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Duplicate',
+                'Last Name' => 'Student',
+                'TutorBird Student ID' => 'TB004',
+                'Parent Contact 1 Email' => 'dup@example.com',
+                'Parent Contact 1 First Name' => 'Parent',
+                'Parent Contact 1 Last Name' => 'Dup',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('duplicate', $row->status->value);
+    }
+
+    public function test_tutorbird_import_fails_when_school_not_found(): void
+    {
+        Mail::fake();
+
+        // Do NOT create 'NR School 01' — the default school_name from template defaults
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Orphan',
+                'Last Name' => 'Student',
+                'TutorBird Student ID' => 'TB005',
+                'Parent Contact 1 Email' => 'orphan@example.com',
+                'Parent Contact 1 First Name' => 'Missing',
+                'Parent Contact 1 Last Name' => 'School',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $row = StudentImportRow::where('student_import_id', $import->id)->first();
+        $this->assertEquals('validation_error', $row->status->value);
+        $this->assertStringContainsString('NR School 01', (string) $row->error_message);
+    }
+
+    public function test_tutorbird_import_normalizes_phone_number(): void
+    {
+        Mail::fake();
+
+        School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Phone',
+                'Last Name' => 'Test',
+                'TutorBird Student ID' => 'TB006',
+                'Parent Contact 1 Email' => 'phone@example.com',
+                'Parent Contact 1 First Name' => 'Jane',
+                'Parent Contact 1 Last Name' => 'Test',
+                'Parent Contact 1 Mobile Phone' => '(210) 555-9876',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $profile = StudentProfile::where('id_number', 'TB006')->first();
+        $this->assertNotNull($profile);
+        $this->assertEquals('210-555-9876', $profile->parent_guardian_phone);
+    }
+
+    public function test_tutorbird_import_handles_multiple_rows(): void
+    {
+        Mail::fake();
+
+        School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Alice',
+                'Last Name' => 'One',
+                'TutorBird Student ID' => 'TB010',
+                'Parent Contact 1 Email' => 'alice.parent@example.com',
+                'Parent Contact 1 First Name' => 'Mom',
+                'Parent Contact 1 Last Name' => 'One',
+            ],
+            [
+                'First Name' => 'Bob',
+                'Last Name' => 'Two',
+                'TutorBird Student ID' => 'TB011',
+                'Parent Contact 1 Email' => 'bob.parent@example.com',
+                'Parent Contact 1 First Name' => 'Dad',
+                'Parent Contact 1 Last Name' => 'Two',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $this->assertDatabaseHas('student_profiles', ['id_number' => 'TB010']);
+        $this->assertDatabaseHas('student_profiles', ['id_number' => 'TB011']);
+    }
+
+    public function test_tutorbird_import_with_missing_required_columns_fails(): void
+    {
+        $csvContent = "First Name,Last Name\nJohn,Doe\n";
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+        Bus::assertDispatched(ProcessStudentImportJob::class);
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+        $import->refresh();
+
+        $this->assertEquals(StudentImportStatus::FAILED, $import->status);
+        $this->assertStringContainsString('TutorBird Student ID', (string) $import->error_message);
+    }
+
+    public function test_tutorbird_import_generates_correct_username(): void
+    {
+        Mail::fake();
+
+        School::factory()->create([
+            'external_emr_name' => 'NR School 01',
+            'timezone' => 'America/Chicago',
+        ]);
+
+        $csvContent = $this->generateTutorbirdCsvContent([
+            [
+                'First Name' => 'Jane',
+                'Last Name' => 'Doe',
+                'TutorBird Student ID' => 'TB099',
+                'Parent Contact 1 Email' => 'jane.parent@example.com',
+                'Parent Contact 1 First Name' => 'Mom',
+                'Parent Contact 1 Last Name' => 'Doe',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.students.import.store'), [
+                'file' => $file,
+                'type' => StudentImportType::TUTORBIRD->value,
+            ]);
+
+        $response->assertOk();
+
+        $import = StudentImport::first();
+        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
+
+        $profile = StudentProfile::where('id_number', 'TB099')->first();
+        $this->assertNotNull($profile);
+
+        $user = User::find($profile->user_id);
+        $this->assertEquals('jane.doe.tb099', $user->username);
+    }
+
+    private function generateTutorbirdCsvContent(array $rows): string
+    {
+        $columns = [
+            'First Name', 'Last Name', 'TutorBird Student ID',
+            'Email', 'Birthday', 'Address', 'Gender', 'Mobile Phone',
+            'Parent Contact 1 Last Name', 'Parent Contact 1 First Name',
+            'Parent Contact 1 Email', 'Parent Contact 1 Mobile Phone',
+        ];
+
+        $handle = fopen('php://temp', 'r+');
+        fputcsv($handle, $columns);
+        foreach ($rows as $row) {
+            $line = [];
+            foreach ($columns as $column) {
+                $line[] = $row[$column] ?? '';
+            }
+            fputcsv($handle, $line);
+        }
+        rewind($handle);
+        $content = stream_get_contents($handle);
+        fclose($handle);
+
+        return $content;
+    }
+
     private function generateRsmCsvContent(array $rows): string
     {
         $columns = [
