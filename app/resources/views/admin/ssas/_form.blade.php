@@ -50,33 +50,6 @@
                 <x-input-error :messages="$errors->get('primary_service_id')" class="mt-2" />
             </div>
 
-            <div>
-                <x-input-label for="additional_service_ids" value="Additional Services (Indirect)" />
-                <p id="additional_service_ids_help" class="mt-1 mb-1 text-xs text-foreground/60">Select one or more
-                    indirect
-                    services like IEP meetings or progress reports.</p>
-                @php
-                    $selectedAdditionalServices = collect(
-                        old('additional_service_ids', isset($ssa) ? $ssa->additionalServices->pluck('id')->all() : []),
-                    )
-                        ->map(fn($id) => (int) $id)
-                        ->toArray();
-                    $additionalServiceErrors = array_merge(
-                        $errors->get('additional_service_ids') ?? [],
-                        $errors->get('additional_service_ids.*') ?? [],
-                    );
-                @endphp
-                <x-ui::select id="additional_service_ids" name="additional_service_ids[]" multiple searchable
-                    placeholder="None" class="mt-1" aria-describedby="additional_service_ids_help">
-                    @foreach ($indirectServices as $service)
-                        <option value="{{ $service->id }}" @selected(in_array($service->id, $selectedAdditionalServices, true))>
-                            {{ $service->name }}
-                        </option>
-                    @endforeach
-                </x-ui::select>
-                <x-input-error :messages="$additionalServiceErrors" class="mt-2" />
-            </div>
-
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="start_date" value="Start Date *" />
