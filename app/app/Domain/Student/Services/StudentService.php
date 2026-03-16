@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+
 
 final class StudentService
 {
@@ -158,10 +158,10 @@ final class StudentService
         return $this->repository->getSchoolIdByUserId($userId);
     }
 
-    private function generateUniqueStudentId(): string
+    private function generateUniqueStudentId(): int
     {
         do {
-            $idNumber = 'PVT-'.strtoupper(Str::random(8));
+            $idNumber = random_int(10000000, 99999999);
         } while (StudentProfile::where('id_number', $idNumber)->exists());
 
         return $idNumber;
