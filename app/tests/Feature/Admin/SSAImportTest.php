@@ -471,6 +471,59 @@ final class SSAImportTest extends TestCase
         $this->assertStringContainsString('not found', (string) $row->error_message);
     }
 
+    public function test_rsm_import_matches_completed_ssa_instead_of_creating_duplicate(): void
+    {
+        Mail::fake();
+
+        \App\Models\ServiceAlias::create([
+            'source' => SSAImportType::RSM->value,
+            'external_name' => $this->service->name,
+            'service_id' => $this->service->id,
+        ]);
+
+        $existingSsa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $this->service->id,
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'status' => \App\Enums\SSAStatus::COMPLETED,
+        ]);
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Status (3=WD)' => '1',
+                'Identity ID' => 'STU001',
+                'Last Name' => 'Doe',
+                'First Name' => 'Jane',
+                'School Name' => 'Test School EMR',
+                'Begin Date' => '01/01/2025',
+                'End Date' => '12/31/2025',
+                'Service' => $this->service->name,
+                'Hours' => '1.00',
+                'How Often' => '1',
+                'Per' => 'Week',
+                'Total Hrs Owed' => '24.00',
+                'Therapist Email' => '',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm.csv', $csvContent);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.ssas.import.store'), [
+                'file' => $file,
+                'type' => SSAImportType::RSM->value,
+            ]);
+
+        $import = SSAImport::first();
+        (new ProcessSSAImportJob($import))->handle(app(\App\Domain\SSA\Services\SSAImportService::class));
+
+        $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+        $this->assertEquals($existingSsa->id, $row->ssa_id);
+        $this->assertEquals(1, ServiceSupportAgreement::count());
+    }
+
     public function test_admin_can_download_rsm_template(): void
     {
         $response = $this->actingAs($this->admin)

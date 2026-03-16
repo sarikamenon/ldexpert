@@ -256,6 +256,34 @@ final class EloquentSSARepository implements SSARepositoryInterface
         });
     }
 
+    public function deactivateWithUnassign(ServiceSupportAgreement $ssa, ?string $reason = null): ServiceSupportAgreement
+    {
+        return DB::transaction(function () use ($ssa, $reason) {
+            $therapistId = $ssa->assigned_therapist_id;
+
+            if ($therapistId !== null) {
+                SSAAssignmentHistory::create([
+                    'ssa_id' => $ssa->id,
+                    'therapist_id' => $therapistId,
+                    'action' => 'unassigned',
+                    'assigned_by' => Auth::id(),
+                    'reason' => $reason,
+                    'unassigned_at' => now(),
+                ]);
+            }
+
+            $ssa->update([
+                'assigned_therapist_id' => null,
+                'status' => SSAStatus::DEACTIVATED->value,
+            ]);
+
+            /** @var ServiceSupportAgreement $freshSsa */
+            $freshSsa = $ssa->fresh();
+
+            return $freshSsa;
+        });
+    }
+
     /** @return Collection<int, SSAAssignmentHistory> */
     public function getAssignmentHistory(ServiceSupportAgreement $ssa): Collection
     {

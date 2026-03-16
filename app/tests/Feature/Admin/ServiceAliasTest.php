@@ -79,6 +79,21 @@ it('filters datatable by source', function () {
     expect($response->json('recordsFiltered'))->toBe(1);
 });
 
+it('filters datatable by search on external_name and service name', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = aliasAdmin();
+    $service = Service::factory()->create(['name' => 'Speech Therapy']);
+    ServiceAlias::create(['source' => 'RSM', 'external_name' => 'OT Online', 'service_id' => $service->id]);
+    $stService = Service::factory()->create(['name' => 'Occupational Therapy']);
+    ServiceAlias::create(['source' => 'RSM', 'external_name' => 'ST In-Person', 'service_id' => $stService->id]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.service-aliases.data'), ['draw' => 1, 'filter_search' => 'Speech'])
+        ->assertOk();
+
+    expect($response->json('recordsFiltered'))->toBe(1);
+});
+
 // ── Create ──────────────────────────────────────────────────
 
 it('allows admin to view create form', function () {

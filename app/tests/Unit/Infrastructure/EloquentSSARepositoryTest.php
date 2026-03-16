@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Infrastructure;
 
+use App\Enums\SSAStatus;
 use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Models\School;
 use App\Models\Service;
@@ -267,5 +268,47 @@ final class EloquentSSARepositoryTest extends TestCase
 
         // Should count distinct students, so should be 1, not 2
         $this->assertSame(1, $result);
+    }
+
+    public function test_deactivate_with_unassign_clears_therapist_and_sets_deactivated(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+
+        $therapist = User::factory()->create(['role' => 'therapist']);
+        $student = User::factory()->create(['role' => 'student']);
+        $service = Service::factory()->create();
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        $result = $this->repository->deactivateWithUnassign($ssa, 'RSM import: withdrawn');
+
+        $this->assertInstanceOf(ServiceSupportAgreement::class, $result);
+        $this->assertNull($result->assigned_therapist_id);
+        $this->assertSame(SSAStatus::DEACTIVATED, $result->status);
+    }
+
+    public function test_deactivate_with_unassign_works_when_no_therapist_assigned(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $service = Service::factory()->create();
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => null,
+            'status' => SSAStatus::PENDING,
+        ]);
+
+        $result = $this->repository->deactivateWithUnassign($ssa, 'RSM import: withdrawn');
+
+        $this->assertInstanceOf(ServiceSupportAgreement::class, $result);
+        $this->assertNull($result->assigned_therapist_id);
+        $this->assertSame(SSAStatus::DEACTIVATED, $result->status);
     }
 }

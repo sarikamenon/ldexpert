@@ -147,6 +147,74 @@ class ServiceSupportAgreement extends Model
      * @param  Builder<ServiceSupportAgreement>  $query
      * @return Builder<ServiceSupportAgreement>
      */
+    public function scopeForStudent(Builder $query, int $studentId): Builder
+    {
+        return $query->where('student_id', $studentId);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForPrimaryService(Builder $query, int $serviceId): Builder
+    {
+        return $query->where('primary_service_id', $serviceId);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForStartDate(Builder $query, string $startDate): Builder
+    {
+        return $query->where('start_date', $startDate);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForEndDate(Builder $query, string $endDate): Builder
+    {
+        return $query->where('end_date', $endDate);
+    }
+
+    /**
+     * Lookup by import identifiers (student, service, date range).
+     * Add further conditions via individual scopes without renaming.
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForImportLookup(Builder $query, int $studentId, int $serviceId, string $startDate, string $endDate): Builder
+    {
+        return $query
+            ->forStudent($studentId)
+            ->forPrimaryService($serviceId)
+            ->forStartDate($startDate)
+            ->forEndDate($endDate);
+    }
+
+    /**
+     * SSAs that can be matched during RSM import (pending, active, deactivated, completed).
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeMatchableForImport(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            SSAStatus::PENDING,
+            SSAStatus::ACTIVE,
+            SSAStatus::DEACTIVATED,
+            SSAStatus::COMPLETED,
+        ]);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeAssigned(Builder $query): Builder
     {
         return $query->whereNotNull('assigned_therapist_id');

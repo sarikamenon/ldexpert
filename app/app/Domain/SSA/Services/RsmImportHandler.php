@@ -136,22 +136,22 @@ final class RsmImportHandler
         ?int $therapistId,
     ): void {
         $ourStatus = $ssa->status;
-        $hasCurrentTherapist = $ssa->assigned_therapist_id !== null;
         $hasIncomingTherapist = $therapistId !== null;
+
+        $noChangeMessage = $this->getNoChangeMessage($ourStatus, $isWithdrawn, $hasIncomingTherapist);
+        if ($noChangeMessage !== null) {
+            $this->finishImportRow($importRow, $ssa, $noChangeMessage);
+
+            return;
+        }
+
         $action = 'No changes needed';
+        $hasCurrentTherapist = $ssa->assigned_therapist_id !== null;
 
         if ($isWithdrawn) {
             // Rows 4, 7: Withdrawn — deactivate regardless of current status
             if ($ourStatus === SSAStatus::PENDING || $ourStatus === SSAStatus::ACTIVE) {
-                if ($hasCurrentTherapist) {
-                    $this->ssaService->unassignTherapist($ssa, 'RSM import: withdrawn');
-                    $ssa->refresh();
-                }
-                // Use repository directly: SSAService::changeStatus() doesn't allow Pending→Deactivated
-                $this->ssaRepository->changeStatus(
-                    $ssa,
-                    new ChangeSSAStatusDTO(status: SSAStatus::DEACTIVATED, reason: 'RSM import: withdrawn'),
-                );
+                $this->ssaRepository->deactivateWithUnassign($ssa, 'RSM import: withdrawn');
                 $action = 'Deactivated (withdrawn)';
             } else {
                 $action = 'Already deactivated or completed';
@@ -168,6 +168,28 @@ final class RsmImportHandler
             };
         }
 
+        $this->finishImportRow($importRow, $ssa, $action);
+    }
+
+    /** @return string|null Message if no changes needed, null if action required */
+    private function getNoChangeMessage(SSAStatus $ourStatus, bool $isWithdrawn, bool $hasIncomingTherapist): ?string
+    {
+        if ($isWithdrawn) {
+            return ($ourStatus === SSAStatus::DEACTIVATED || $ourStatus === SSAStatus::COMPLETED)
+                ? 'Already deactivated or completed'
+                : null;
+        }
+
+        return match ($ourStatus) {
+            SSAStatus::COMPLETED => 'No changes needed',
+            SSAStatus::PENDING => $hasIncomingTherapist ? null : 'No changes needed',
+            SSAStatus::ACTIVE => $hasIncomingTherapist ? 'No changes needed' : null,
+            SSAStatus::DEACTIVATED => null,
+        };
+    }
+
+    private function finishImportRow(SSAImportRow $importRow, ServiceSupportAgreement $ssa, string $action): void
+    {
         $importRow->update([
             'status' => SSAImportRowStatus::DONE,
             'ssa_id' => $ssa->id,
@@ -239,7 +261,8 @@ final class RsmImportHandler
 
     /**
      * Find an SSA with exact match on student, service, and date range.
-     * Searches across all statuses (pending, active, deactivated) except completed.
+     * Searches across all statuses (pending, active, deactivated, completed)
+     * so completed SSAs are updated rather than duplicated on re-import.
      */
     private function findExactMatchSSA(
         int $studentId,
@@ -247,11 +270,9 @@ final class RsmImportHandler
         string $startDate,
         string $endDate,
     ): ?ServiceSupportAgreement {
-        return ServiceSupportAgreement::where('student_id', $studentId)
-            ->where('primary_service_id', $serviceId)
-            ->where('start_date', $startDate)
-            ->where('end_date', $endDate)
-            ->whereIn('status', [SSAStatus::PENDING, SSAStatus::ACTIVE, SSAStatus::DEACTIVATED])
+        return ServiceSupportAgreement::query()
+            ->forImportLookup($studentId, $serviceId, $startDate, $endDate)
+            ->matchableForImport()
             ->first();
     }
 }
