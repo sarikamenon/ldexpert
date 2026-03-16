@@ -24,11 +24,11 @@ return [
                 'id_number',
                 'timezone',
                 'grade_level',
+            ],
+            'optional_columns' => [
                 'city',
                 'state',
                 'zip_code',
-            ],
-            'optional_columns' => [
                 'middle_name',
                 'date_of_birth',
                 'address',
@@ -65,11 +65,11 @@ return [
                 'Gender',
                 'Grade',
                 'School Name',
-                'City',
-                'Zip',
                 'Parent Email',
             ],
             'optional_columns' => [
+                'City',
+                'Zip',
                 'Address',
                 'Phone',
                 'Parent Last Name',
@@ -105,9 +105,6 @@ return [
                     'separator' => ' ',
                 ],
             ],
-            'context_sources' => [
-                'state' => 'school.state_code',
-            ],
         ],
 
         'MARVIN' => [
@@ -122,6 +119,7 @@ return [
                 'First Name',
                 'Last Name',
                 'TutorBird Student ID',
+                'School',
             ],
             'optional_columns' => [
                 'Email',
@@ -147,6 +145,7 @@ return [
                 'Parent Contact 1 First Name' => 'parent_guardian_first_name',
                 'Parent Contact 1 Email' => 'parent_guardian_email',
                 'Parent Contact 1 Mobile Phone' => 'parent_guardian_phone',
+                'School' => 'school_name',
             ],
             'field_sources' => [
                 'email' => 'parent_guardian_email',
@@ -160,19 +159,9 @@ return [
                 ],
             ],
             'defaults' => [
-                'school_name' => 'NR School 01',
                 'timezone' => 'America/Chicago',
                 'gender' => 'Male',
                 'grade_level' => '1',
-                'city' => 'San Antonio',
-                'state' => 'AL',
-                'zip_code' => '78201',
-            ],
-            'allow_duplicate_emails' => true,
-            'context_sources' => [
-                'state' => 'school.state_code',
-                'city' => 'school.city',
-                'zip_code' => 'school.zip_code',
             ],
         ],
     ],

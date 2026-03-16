@@ -174,7 +174,7 @@ final class StudentImportService
             }
 
             // Check for duplicates
-            $duplicateCheck = $this->checkDuplicate($mappedData, $school->id, $template);
+            $duplicateCheck = $this->checkDuplicate($mappedData, $school->id);
             if ($duplicateCheck !== null) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::DUPLICATE,
@@ -366,9 +366,9 @@ final class StudentImportService
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'address' => ['nullable', 'string'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string'],
-            'zip_code' => ['required', 'string', 'max:20'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string'],
+            'zip_code' => ['nullable', 'string', 'max:20'],
         ];
 
         // Validate state
@@ -392,25 +392,14 @@ final class StudentImportService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array<string, mixed>  $template
      */
-    public function checkDuplicate(array $data, int $schoolId, array $template): ?string
+    public function checkDuplicate(array $data, int $schoolId): ?string
     {
-        $allowDuplicateEmails = (bool) ($template['allow_duplicate_emails'] ?? false);
-
         // Check by username (system-wide)
         if (isset($data['username'])) {
             $existing = User::where('username', $data['username'])->first();
             if ($existing !== null) {
                 return 'A user with username "'.$data['username'].'" already exists.';
-            }
-        }
-
-        // Check by email (system-wide) unless template explicitly allows duplicates
-        if (! $allowDuplicateEmails && isset($data['email'])) {
-            $existing = User::where('email', $data['email'])->first();
-            if ($existing !== null) {
-                return 'A user with email "'.$data['email'].'" already exists.';
             }
         }
 
