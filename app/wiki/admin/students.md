@@ -30,7 +30,7 @@ Version 2.0 · Last Updated: 13 Jan 2026
 
     4.5 Status & Lifecycle Actions - Students can be marked Active or Deactivated via list/button or edit screen. - Deactivation removes student from assignment pickers but keeps historical data. - Confirmation dialogs capture reason for status change (future enhancement optional).
 
-    4.6 Student Import - Admins can bulk import students via CSV files. - Supports multiple import types: NOVA, RSM, MARVIN with column mapping templates. - Import process runs asynchronously with status tracking per row. - Duplicate detection by email or student ID within school. - Import history viewable with detailed row-level error reporting. - See [Student Import PRD](./student-import.md) for complete documentation.
+    4.6 Student Import - Admins can bulk import students via CSV files. - Supports multiple import types: NOVA, RSM, MARVIN, TUTORBIRD with column mapping templates. - Import process runs asynchronously with status tracking per row. - Duplicate detection by email or student ID within school. - Import history viewable with detailed row-level error reporting. - See [Student Import PRD](./student-import.md) for complete documentation.
 
     4.7 Student Comments - Admins can add comments on student records visible to all admins and assigned therapists. - Comments appear in chronological order on student detail page. - Comments are soft-deleted and retain audit trail. - Maximum length: 5000 characters. - See [Student Comments PRD](../therapist/student-comments.md) for complete documentation.
 
@@ -47,7 +47,7 @@ Version 2.0 · Last Updated: 13 Jan 2026
    Table: users – `id`, `name` (composed from first/last), `email` (unique), `role=student`, `status`, timestamps, soft deletes.
    Table: student_profiles – `user_id`, `parent_id` (optional linked parent user), `first_name`, `middle_name`, `last_name`, `school_id`, `id_number`, `timezone`, `gender`, `address`, `city`, `state`, `zip_code`, `parent_guardian_name`, `parent_guardian_email`, `parent_guardian_phone`, `date_of_birth`, `grade_level`, timestamps, `deleted_at`.
    Table: schools – referenced via `school_id`.
-   Table: student_imports – `id`, `imported_by_id`, `type` (NOVA/RSM/MARVIN), `file_name`, `file_path`, `status`, `total_rows`, `processed_rows`, `successful_rows`, `failed_rows`, `error_message`, timestamps, `completed_at`.
+   Table: student_imports – `id`, `imported_by_id`, `type` (NOVA/RSM/MARVIN/TUTORBIRD), `file_name`, `file_path`, `status`, `total_rows`, `processed_rows`, `successful_rows`, `failed_rows`, `error_message`, timestamps, `completed_at`.
    Table: student_import_rows – `id`, `student_import_id`, `row_number`, `status`, `raw_data` (json), `error_message`, `student_id` (nullable, if created), timestamps, `processed_at`.
    Table: student_comments – `id`, `student_id`, `author_id`, `comment` (text, max 5000), timestamps, `deleted_at`.
    Table: student_documents – `id`, `documentable_type` (polymorphic), `documentable_id` (polymorphic), `uploaded_by_id`, `document_type`, `file_name`, `file_path`, `mime_type`, `file_size`, `description`, timestamps, `deleted_at`.
