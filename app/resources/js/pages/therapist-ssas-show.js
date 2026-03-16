@@ -23,14 +23,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const approved = parseInt(chartCanvas.dataset.approved) || 0;
     const hasMinutesSummary = chartCanvas.dataset.scheduled !== undefined && tho > 0;
 
+    const toHours = (v) => Math.round((v / 60) * 100) / 100;
     let labels, data, backgroundColor;
 
     if (hasMinutesSummary) {
         const loggedNotApproved = Math.max(0, logged - approved);
         const scheduledNotLogged = Math.max(0, scheduled - logged);
         const remaining = Math.max(0, tho - scheduled);
-        labels = ['Approved Minutes', 'Logged (not approved)', 'Scheduled (not logged)', 'Remaining'];
-        data = [approved, loggedNotApproved, scheduledNotLogged, remaining];
+        labels = ['Approved Hours', 'Logged (not approved)', 'Scheduled (not logged)', 'Remaining'];
+        data = [toHours(approved), toHours(loggedNotApproved), toHours(scheduledNotLogged), toHours(remaining)];
         backgroundColor = [
             CHART_COLORS.approved,
             CHART_COLORS.loggedNotApproved,
@@ -39,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ];
     } else {
         const remaining = Math.max(0, tho - served);
-        labels = ['Served Minutes', 'Remaining Minutes'];
-        data = [served, remaining];
+        labels = ['Served Hours', 'Remaining Hours'];
+        data = [toHours(served), toHours(remaining)];
         backgroundColor = [CHART_COLORS.served, CHART_COLORS.remaining];
     }
 
@@ -58,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${context.label}: ${value.toLocaleString()} min (${pct}%)`;
+                            return `${context.label}: ${value.toFixed(2)} hrs (${pct}%)`;
                         },
                     },
                 },

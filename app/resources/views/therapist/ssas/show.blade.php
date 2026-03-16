@@ -71,10 +71,10 @@
                             @isset($minutesSummary)
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Authorized (THO) Minutes
-                                        <x-ui::tooltip-icon content="Total minutes authorized for this SSA based on the agreed service frequency and duration." />
+                                        Authorized (THO) Hours
+                                        <x-ui::tooltip-icon content="Total hours authorized for this SSA based on the agreed service frequency and duration." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->thoMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->thoMinutes / 60, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
@@ -100,7 +100,7 @@
                                 <div class="flex items-center justify-between gap-2 pt-2 border-t border-border">
                                     <span class="font-medium flex items-center gap-1">
                                         Progress
-                                        <x-ui::tooltip-icon content="Percentage of authorized (THO) minutes that have been approved for this SSA." />
+                                        <x-ui::tooltip-icon content="Percentage of authorized (THO) hours that have been approved for this SSA." />
                                     </span>
                                     <span class="font-semibold text-primary">
                                         {{ $minutesSummary->getApprovedUtilizationPercentage() }}% of THO used
@@ -108,12 +108,12 @@
                                 </div>
                             @else
                                 <div class="flex items-center justify-between">
-                                    <span class="text-foreground/70">Served Minutes</span>
-                                    <span class="font-semibold">{{ number_format($ssa->served_minutes) }}</span>
+                                    <span class="text-foreground/70">Served Hours</span>
+                                    <span class="font-semibold">{{ number_format($ssa->served_minutes / 60, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-foreground/70">THO Minutes</span>
-                                    <span class="font-semibold">{{ number_format($ssa->tho_minutes) }}</span>
+                                    <span class="text-foreground/70">THO Hours</span>
+                                    <span class="font-semibold">{{ number_format($ssa->tho_minutes / 60, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between pt-2 border-t border-border">
                                     <span class="font-medium">Progress</span>

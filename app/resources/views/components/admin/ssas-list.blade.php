@@ -132,7 +132,7 @@
                         <th>Therapist</th>
                         <th style="min-width: 180px;">Date Range</th>
                         <th>Session Details</th>
-                        <th>Minutes & Status</th>
+                        <th>Hours & Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -244,12 +244,12 @@
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-foreground/60 font-medium">THO:</span>
                                             <span
-                                                class="text-sm text-foreground font-medium">{{ number_format($ssa->tho_minutes) }}</span>
+                                                class="text-sm text-foreground font-medium">{{ number_format($ssa->tho_minutes / 60, 2) }}</span>
                                         </div>
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs text-foreground/60 font-medium">Served:</span>
                                             <span
-                                                class="text-sm text-foreground">{{ number_format($ssa->served_minutes) }}</span>
+                                                class="text-sm text-foreground">{{ number_format($ssa->served_minutes / 60, 2) }}</span>
                                         </div>
                                     </div>
                                     <div>

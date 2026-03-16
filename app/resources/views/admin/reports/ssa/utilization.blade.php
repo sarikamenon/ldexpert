@@ -14,12 +14,12 @@
         <x-ui::card class="p-6">
             <p class="text-sm text-foreground/70">Total Authorized (THO)</p>
             <p class="text-3xl font-semibold mt-1" id="metricTotalTho">0</p>
-            <p class="text-xs text-foreground/60">minutes</p>
+            <p class="text-xs text-foreground/60">hours</p>
         </x-ui::card>
         <x-ui::card class="p-6">
             <p class="text-sm text-foreground/70">Total Served</p>
             <p class="text-3xl font-semibold mt-1" id="metricTotalServed">0</p>
-            <p class="text-xs text-foreground/60">minutes</p>
+            <p class="text-xs text-foreground/60">hours</p>
         </x-ui::card>
         <x-ui::card class="p-6">
             <p class="text-sm text-foreground/70">Overall Utilization</p>
@@ -120,8 +120,8 @@
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Therapist</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Service</th>
-                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">THO Minutes</th>
-                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Served Minutes</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">THO Hours</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Served Hours</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Utilization %</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                     </tr>

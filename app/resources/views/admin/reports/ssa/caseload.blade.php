@@ -118,7 +118,7 @@
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Student</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Service</th>
-                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">THO Minutes</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">THO Hours</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Actions</th>
                     </tr>
                 </thead>

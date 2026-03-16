@@ -167,7 +167,7 @@ final class SSACaseloadReportController extends Controller
                 'Student Name',
                 'Primary Service',
                 'Active SSA Count',
-                'THO Minutes',
+                'THO Hours',
                 'Status',
             ]);
 
@@ -178,7 +178,7 @@ final class SSACaseloadReportController extends Controller
                     $ssa->student->name ?? '—',
                     $ssa->primaryService->name ?? '—',
                     '',
-                    $ssa->tho_minutes ?? 0,
+                    round(($ssa->tho_minutes ?? 0) / 60, 2),
                     $ssa->status->label(),
                 ]);
             }

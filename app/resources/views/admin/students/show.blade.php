@@ -65,12 +65,12 @@
                 </div>
                 <div class="mt-4 space-y-2">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Served Minutes</span>
-                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0) }}</span>
+                        <span class="text-foreground/70">Served Hours</span>
+                        <span class="font-semibold">{{ number_format(($chartData['served'] ?? 0) / 60, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Remaining Minutes</span>
-                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0) }}</span>
+                        <span class="text-foreground/70">Remaining Hours</span>
+                        <span class="font-semibold">{{ number_format(($chartData['remaining'] ?? 0) / 60, 2) }}</span>
                     </div>
                 </div>
             </x-ui::card>

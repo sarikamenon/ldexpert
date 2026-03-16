@@ -40,8 +40,8 @@ async function initUtilizationTable() {
             if (!json || !json.summary) return;
             const s = json.summary;
             const el = (id) => document.getElementById(id);
-            if (el('metricTotalTho')) el('metricTotalTho').textContent = Number(s.total_tho_minutes || 0).toLocaleString();
-            if (el('metricTotalServed')) el('metricTotalServed').textContent = Number(s.total_served_minutes || 0).toLocaleString();
+            if (el('metricTotalTho')) el('metricTotalTho').textContent = (Number(s.total_tho_minutes || 0) / 60).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            if (el('metricTotalServed')) el('metricTotalServed').textContent = (Number(s.total_served_minutes || 0) / 60).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             if (el('metricUtilization')) el('metricUtilization').textContent = Number(s.overall_utilization_percent || 0).toFixed(1) + '%';
             if (el('metricUnderServed')) el('metricUnderServed').textContent = s.under_served_count || 0;
         });

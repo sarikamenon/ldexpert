@@ -146,10 +146,10 @@ final class SSAUtilizationReportController extends Controller
                 'Primary Service',
                 'Start Date',
                 'End Date',
-                'THO Minutes',
-                'Served Minutes',
+                'THO Hours',
+                'Served Hours',
                 'Utilization %',
-                'Variance Minutes',
+                'Variance Hours',
                 'Status',
             ]);
 
@@ -167,10 +167,10 @@ final class SSAUtilizationReportController extends Controller
                     $ssa->primaryService->name ?? '—',
                     $ssa->start_date->format('Y-m-d'),
                     $ssa->end_date?->format('Y-m-d') ?? '',
-                    $tho,
-                    $served,
+                    round($tho / 60, 2),
+                    round($served / 60, 2),
                     $utilization,
-                    $variance,
+                    round($variance / 60, 2),
                     $ssa->status->label(),
                 ]);
             }

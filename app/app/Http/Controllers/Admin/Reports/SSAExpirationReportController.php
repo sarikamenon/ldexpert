@@ -148,8 +148,8 @@ final class SSAExpirationReportController extends Controller
                 'Start Date',
                 'End Date',
                 'Days Until/Since End',
-                'THO Minutes',
-                'Served Minutes',
+                'THO Hours',
+                'Served Hours',
                 'Status',
             ]);
 
@@ -170,8 +170,8 @@ final class SSAExpirationReportController extends Controller
                     isset($ssa->start_date) ? $ssa->start_date->format('Y-m-d') : '—',
                     $endDate ? $endDate->format('Y-m-d') : '—',
                     $daysDiff ?? '—',
-                    $ssa->tho_minutes ?? 0,
-                    $ssa->served_minutes ?? 0,
+                    round(($ssa->tho_minutes ?? 0) / 60, 2),
+                    round(($ssa->served_minutes ?? 0) / 60, 2),
                     isset($ssa->status) ? $ssa->status->label() : '—',
                 ]);
             }

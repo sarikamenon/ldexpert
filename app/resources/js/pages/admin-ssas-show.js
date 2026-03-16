@@ -27,18 +27,20 @@ function initDeliveryProgressChart() {
     let data;
     let backgroundColor;
 
+    const toHours = (v) => Math.round((v / 60) * 100) / 100;
+
     if (hasMinutesSummary) {
         const loggedNotApproved = Math.max(0, loggedMinutes - approvedMinutes);
         const scheduledNotLogged = Math.max(0, scheduledMinutes - loggedMinutes);
         const remaining = Math.max(0, thoMinutes - scheduledMinutes);
 
         labels = [
-            'Approved Minutes',
+            'Approved Hours',
             'Logged (not approved)',
             'Scheduled (not logged)',
             'Remaining',
         ];
-        data = [approvedMinutes, loggedNotApproved, scheduledNotLogged, remaining];
+        data = [toHours(approvedMinutes), toHours(loggedNotApproved), toHours(scheduledNotLogged), toHours(remaining)];
         backgroundColor = [
             CHART_COLORS.approved,
             CHART_COLORS.loggedNotApproved,
@@ -47,8 +49,8 @@ function initDeliveryProgressChart() {
         ];
     } else {
         const remainingMinutes = Math.max(0, thoMinutes - servedMinutes);
-        labels = ['Served Minutes', 'Remaining Minutes'];
-        data = [servedMinutes, remainingMinutes];
+        labels = ['Served Hours', 'Remaining Hours'];
+        data = [toHours(servedMinutes), toHours(remainingMinutes)];
         backgroundColor = [CHART_COLORS.served, CHART_COLORS.remaining];
     }
 
@@ -81,7 +83,7 @@ function initDeliveryProgressChart() {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value.toLocaleString()} min (${percentage}%)`;
+                            return `${label}: ${value.toFixed(2)} hrs (${percentage}%)`;
                         }
                     }
                 }

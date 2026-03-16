@@ -29,8 +29,8 @@ final class SSAUtilizationReportRowTransformer
         $school = e($ssa->student?->studentProfile?->school->display_name ?? '—');
         $therapist = e($ssa->assignedTherapist->name ?? 'Unassigned');
         $service = e($ssa->primaryService->name ?? '—');
-        $thoFormatted = number_format($tho);
-        $servedFormatted = number_format($served);
+        $thoFormatted = number_format($tho / 60, 2);
+        $servedFormatted = number_format($served / 60, 2);
         $utilizationBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-'.$badgeVariant.'/10 text-'.$badgeVariant.'">'.$utilization.'%</span>';
         $statusBadge = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">'.e($ssa->status->label()).'</span>';
 

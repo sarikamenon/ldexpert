@@ -181,14 +181,12 @@
             </div>
 
             <div>
-                <x-input-label for="tho_minutes" value="THO Minutes (Total Hours Own by therapist) *" />
+                <x-input-label for="tho_minutes" value="THO Hours (Total Hours Owned by therapist) *" />
                 <p class="mt-1 text-xs text-foreground/60">
-                    <span id="tho-calculation-hint">Auto-calculated: Minutes per Session × (Sessions per Frequency ×
-                        Number
-                        of Frequencies in Date Range)</span>
+                    <span id="tho-calculation-hint">Auto-calculated from scheduling parameters and converted to hours</span>
                 </p>
-                <x-ui::input id="tho_minutes" name="tho_minutes" type="number" min="0"
-                    class="mt-1 block w-full" value="{{ old('tho_minutes', isset($ssa) ? $ssa->tho_minutes : '') }}"
+                <x-ui::input id="tho_minutes" name="tho_minutes" type="number" min="0" step="0.01"
+                    class="mt-1 block w-full" value="{{ old('tho_minutes', isset($ssa) ? round($ssa->tho_minutes / 60, 2) : '') }}"
                     aria-describedby="tho-calculation-hint" required />
                 <x-input-error :messages="$errors->get('tho_minutes')" class="mt-2" />
             </div>

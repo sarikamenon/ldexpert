@@ -52,7 +52,7 @@ final class UpdateSSARequest extends FormRequest
             'calculated_minutes' => ['nullable', 'integer', 'min:0'],
             'adjusted_minutes' => ['nullable', 'integer'],
             'adjustment_notes' => ['nullable', 'string', 'max:65535'],
-            'tho_minutes' => ['nullable', 'integer', 'min:0'],
+            'tho_minutes' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
