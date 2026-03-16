@@ -109,11 +109,11 @@
                             @else
                                 <div class="flex items-center justify-between">
                                     <span class="text-foreground/70">Served Hours</span>
-                                    <span class="font-semibold">{{ number_format($ssa->served_minutes / 60, 2) }}</span>
+                                    <span class="font-semibold">{{ number_format($ssa->served_hours, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-foreground/70">THO Hours</span>
-                                    <span class="font-semibold">{{ number_format($ssa->tho_minutes / 60, 2) }}</span>
+                                    <span class="font-semibold">{{ number_format($ssa->tho_hours, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between pt-2 border-t border-border">
                                     <span class="font-medium">Progress</span>

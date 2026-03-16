@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon|null $end_date
  * @property SSAStatus $status
  * @property ServiceFrequency|null $frequency
+ * @property-read float $tho_hours
+ * @property-read float $served_hours
  */
 class ServiceSupportAgreement extends Model
 {
@@ -163,6 +165,16 @@ class ServiceSupportAgreement extends Model
     public function canBeActivated(): bool
     {
         return $this->assigned_therapist_id !== null;
+    }
+
+    public function getThoHoursAttribute(): float
+    {
+        return round($this->tho_minutes / 60, 2);
+    }
+
+    public function getServedHoursAttribute(): float
+    {
+        return round($this->served_minutes / 60, 2);
     }
 
     public function calculateThoMinutes(): int

@@ -130,16 +130,16 @@
         <dl class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-6">
             <div>
                 <dt class="text-sm font-medium text-foreground/70">THO Hours</dt>
-                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->tho_minutes / 60, 2) }}</dd>
+                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->tho_hours, 2) }}</dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Served Hours</dt>
-                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->served_minutes / 60, 2) }}</dd>
+                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->served_hours, 2) }}</dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Remaining Hours</dt>
                 <dd class="mt-1 text-sm text-foreground font-semibold">
-                    {{ number_format(max(0, $ssa->tho_minutes - $ssa->served_minutes) / 60, 2) }}
+                    {{ number_format(max(0, $ssa->tho_hours - $ssa->served_hours), 2) }}
                 </dd>
             </div>
         </dl>

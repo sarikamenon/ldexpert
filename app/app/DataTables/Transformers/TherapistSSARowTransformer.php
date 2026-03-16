@@ -65,8 +65,8 @@ final class TherapistSSARowTransformer
             .'<span class="text-sm text-foreground">'.e($ssa->frequency?->label() ?? '—').'</span></div>'
             .'</div>';
 
-        $tho = number_format((float) $ssa->tho_minutes / 60, 2);
-        $served = number_format((float) $ssa->served_minutes / 60, 2);
+        $tho = number_format($ssa->tho_hours, 2);
+        $served = number_format($ssa->served_hours, 2);
 
         $minutesStatusCell = '<div class="flex flex-col space-y-2">'
             .'<div class="flex flex-col space-y-1">'

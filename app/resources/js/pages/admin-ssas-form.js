@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 adjustedMinutesField.style.display = 'block';
             }
             if (thoCalculationHint) {
-                thoCalculationHint.textContent = 'Auto-calculated from scheduling parameters and converted to hours';
+                thoCalculationHint.textContent = 'Auto-calculated: Minutes per Session × Sessions × Frequencies / 60';
             }
         } else {
             // Hide frequency-related fields, only show THO Minutes
@@ -211,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (thoMinutes && calculatedTho > 0) {
-                thoMinutes.value = Math.round((calculatedTho / 60) * 100) / 100;
+                thoMinutes.value = (calculatedTho / 60).toFixed(2);
             }
         } else {
             // For non-frequency services, THO minutes should be manually entered

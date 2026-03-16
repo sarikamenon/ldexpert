@@ -324,8 +324,8 @@ final class SSAController extends Controller
                     $ssa->minutes_per_session,
                     $ssa->frequency?->label() ?? '',
                     $ssa->sessions_per_frequency,
-                    round($ssa->tho_minutes / 60, 2),
-                    round($ssa->served_minutes / 60, 2),
+                    $ssa->tho_hours,
+                    $ssa->served_hours,
                     $ssa->status->label(),
                 ]);
             }
