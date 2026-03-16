@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\Student;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\Models\School;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,7 +34,7 @@ abstract class StudentFormRequest extends FormRequest
             'gender' => ['required', 'string', 'max:50'],
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
-            'id_number' => ['nullable', 'string', 'max:50'],
+            'id_number' => [$this->isPrivateSchool() ? 'nullable' : 'required', 'string', 'max:50'],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
             'grade_level' => ['nullable', 'string', 'max:50'],
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
@@ -56,6 +57,19 @@ abstract class StudentFormRequest extends FormRequest
             'parent_guardian_phone.regex' => 'Phone number can only contain digits and dashes.',
             'date_of_birth.before' => 'Date of birth must be in the past',
             'date_of_birth.after' => 'Date of birth must be after 1900-01-01',
+            'id_number.required' => 'Student ID is required for non-private schools.',
         ];
+    }
+
+    protected function isPrivateSchool(): bool
+    {
+        $schoolId = $this->input('school_id');
+        if ($schoolId === null || $schoolId === '') {
+            return false;
+        }
+
+        $school = School::find((int) $schoolId);
+
+        return $school !== null && $school->is_private_student;
     }
 }

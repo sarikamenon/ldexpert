@@ -204,6 +204,15 @@
             <x-input-error :messages="$errors->get('adjustment_notes')" class="mt-2" />
         </div>
 
+        <div>
+            <x-input-label for="additional_notes" value="Additional Notes" />
+            <p id="additional_notes_help" class="mt-1 text-xs text-foreground/60">Optional additional notes or comments related to this SSA</p>
+            <textarea id="additional_notes" name="additional_notes" rows="4"
+                class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                aria-describedby="additional_notes_help">{{ old('additional_notes', isset($ssa) ? $ssa->additional_notes : '') }}</textarea>
+            <x-input-error :messages="$errors->get('additional_notes')" class="mt-2" />
+        </div>
+
         {{-- Store service frequency support data for JavaScript --}}
         <script type="application/json" id="services-data">
             @json($services->mapWithKeys(fn($service) => [$service->id => $service->is_frequency_service]))

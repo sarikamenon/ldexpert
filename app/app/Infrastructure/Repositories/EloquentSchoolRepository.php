@@ -105,7 +105,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
     public function listAllForSelect(): Collection
     {
         return School::query()
-            ->select(['id', 'display_name'])
+            ->select(['id', 'display_name', 'is_private_student'])
             ->orderBy('display_name')
             ->get();
     }

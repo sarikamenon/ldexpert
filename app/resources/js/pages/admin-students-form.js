@@ -30,6 +30,29 @@ $(function () {
         }
     });
 
+    // Toggle Student ID required/optional based on school selection
+    const privateSchoolsData = $('#private-schools-data');
+    const privateSchoolIds = privateSchoolsData.length ? JSON.parse(privateSchoolsData.text()) : [];
+    const $schoolSelect = $('#school_id');
+    const $idNumberLabel = $('#id_number_label');
+    const $idNumberHelp = $('#id_number_help');
+
+    function updateStudentIdRequired() {
+        const selectedSchoolId = parseInt($schoolSelect.val(), 10);
+        const isPrivate = privateSchoolIds.includes(selectedSchoolId);
+
+        if (isPrivate) {
+            $idNumberLabel.text('Student ID');
+            $idNumberHelp.text('Optional for private schools. Auto-generated if left blank.');
+        } else {
+            $idNumberLabel.text('Student ID *');
+            $idNumberHelp.text('Required. Unique student identifier from the school.');
+        }
+    }
+
+    $schoolSelect.on('change', updateStudentIdRequired);
+    updateStudentIdRequired();
+
     // "Create and Add SSA" button sets hidden flag before form submit
     $('#create-and-add-ssa-btn').on('click', function () {
         $('#redirect_to_ssa').val('1');

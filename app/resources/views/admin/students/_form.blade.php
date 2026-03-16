@@ -102,10 +102,10 @@
             </div>
 
             <div>
-                <x-input-label for="id_number" value="Student ID" />
-                <p class="mt-1 text-xs text-foreground/60">Unique student identifier from the school (auto-generated for private schools if left blank)</p>
+                <x-input-label for="id_number" id="id_number_label" value="Student ID *" />
+                <p class="mt-1 text-xs text-foreground/60" id="id_number_help">Required for non-private schools. Auto-generated for private schools if left blank.</p>
                 <x-ui::input id="id_number" name="id_number" type="text" class="mt-1 block w-full"
-                    :value="old('id_number', $profile?->id_number)" />
+                    :value="old('id_number', $profile?->id_number)" aria-describedby="id_number_help" />
                 <x-input-error :messages="$errors->get('id_number')" class="mt-2" />
             </div>
         </div>
@@ -230,6 +230,10 @@
             </div>
         </div>
     </x-ui::card>
+
+    <script type="application/json" id="private-schools-data">
+        @json($schools->where('is_private_student', true)->pluck('id'))
+    </script>
 
     <input type="hidden" name="redirect_to_ssa" id="redirect_to_ssa" value="0" />
 
