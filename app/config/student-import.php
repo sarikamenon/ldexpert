@@ -105,6 +105,9 @@ return [
                     'separator' => ' ',
                 ],
             ],
+            'context_sources' => [
+                'state' => 'school.state_code',
+            ],
         ],
 
         'MARVIN' => [
@@ -157,12 +160,7 @@ return [
                     'sources' => ['parent_guardian_first_name', 'parent_guardian_last_name'],
                     'separator' => ' ',
                 ],
-            ],
-            'defaults' => [
-                'timezone' => 'America/Chicago',
-                'gender' => 'Male',
-                'grade_level' => '1',
-            ],
+            ]
         ],
     ],
 
