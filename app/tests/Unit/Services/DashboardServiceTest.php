@@ -73,7 +73,7 @@ final class DashboardServiceTest extends TestCase
 
         $repository->shouldReceive('getSSAStatusDistribution')->once()->andReturn(collect());
         $repository->shouldReceive('getTherapistsByPosition')->once()->andReturn(['labels' => [], 'data' => [], 'colors' => []]);
-        $repository->shouldReceive('getUtilizationTrendData')->once()->andReturn(['labels' => [], 'tho_minutes' => [], 'served_minutes' => []]);
+        $repository->shouldReceive('getUtilizationTrendData')->once()->andReturn(['labels' => [], 'tho_hours' => [], 'served_hours' => []]);
 
         $service = new DashboardService($timezoneService, $repository);
         $result = $service->getChartData();

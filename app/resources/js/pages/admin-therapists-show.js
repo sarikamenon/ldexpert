@@ -6,10 +6,9 @@ function initTherapistProgressChart() {
         return;
     }
 
-    const servedMin = parseInt(canvas.dataset.served || '0', 10);
-    const thoMin = parseInt(canvas.dataset.tho || '0', 10);
-    const served = Math.round((servedMin / 60) * 100) / 100;
-    const remaining = Math.round((Math.max(0, thoMin - servedMin) / 60) * 100) / 100;
+    const served = parseFloat(canvas.dataset.served || '0');
+    const tho = parseFloat(canvas.dataset.tho || '0');
+    const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
 
     new Chart(canvas, {
         type: 'doughnut',

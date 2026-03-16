@@ -10,10 +10,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const chartCanvas = document.getElementById('studentProgressChart');
     if (chartCanvas) {
-        const servedMin = parseInt(chartCanvas.dataset.served) || 0;
-        const thoMin = parseInt(chartCanvas.dataset.tho) || 0;
-        const served = Math.round((servedMin / 60) * 100) / 100;
-        const remaining = Math.round((Math.max(0, thoMin - servedMin) / 60) * 100) / 100;
+        const served = parseFloat(chartCanvas.dataset.served) || 0;
+        const tho = parseFloat(chartCanvas.dataset.tho) || 0;
+        const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
 
         new Chart(chartCanvas, {
             type: 'doughnut',

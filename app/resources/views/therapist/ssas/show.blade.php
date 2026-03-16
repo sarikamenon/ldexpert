@@ -58,12 +58,12 @@
                         <div class="relative" style="height: 250px;">
                             <canvas
                                 id="deliveryProgressChart"
-                                data-served="{{ $ssa->served_minutes }}"
-                                data-tho="{{ $ssa->tho_minutes }}"
+                                data-served="{{ $ssa->served_hours }}"
+                                data-tho="{{ $ssa->tho_hours }}"
                                 @isset($minutesSummary)
-                                    data-scheduled="{{ $minutesSummary->scheduledMinutes }}"
-                                    data-logged="{{ $minutesSummary->loggedMinutes }}"
-                                    data-approved="{{ $minutesSummary->approvedMinutes }}"
+                                    data-scheduled="{{ $minutesSummary->getScheduledHours() }}"
+                                    data-logged="{{ $minutesSummary->getLoggedHours() }}"
+                                    data-approved="{{ $minutesSummary->getApprovedHours() }}"
                                 @endisset
                             ></canvas>
                         </div>
@@ -74,28 +74,28 @@
                                         Authorized (THO) Hours
                                         <x-ui::tooltip-icon content="Total hours authorized for this SSA based on the agreed service frequency and duration." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->thoMinutes / 60, 2) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getThoHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
                                         Scheduled Hours
                                         <x-ui::tooltip-icon content="Total hours scheduled on the calendar for this SSA, including both upcoming and completed sessions." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->scheduledMinutes / 60, 2) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getScheduledHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
                                         Logged Hours
                                         <x-ui::tooltip-icon content="Hours captured on submitted or approved session logs for this SSA, before final approval." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->loggedMinutes / 60, 2) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getLoggedHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
                                         Approved Hours
                                         <x-ui::tooltip-icon content="Hours from approved session logs that count toward THO utilization for this SSA." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->approvedMinutes / 60, 2) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getApprovedHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2 pt-2 border-t border-border">
                                     <span class="font-medium flex items-center gap-1">

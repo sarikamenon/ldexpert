@@ -32,6 +32,9 @@ class ServiceSupportAgreement extends Model
 
     use SoftDeletes;
 
+    /** @var list<string> */
+    protected $appends = ['tho_hours', 'served_hours'];
+
     protected $fillable = [
         'student_id',
         'primary_service_id',

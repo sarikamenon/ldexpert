@@ -84,8 +84,8 @@ final class SSAUtilizationReportService
         $overallUtilization = $totalTho > 0 ? ($totalServed / $totalTho) * 100 : 0;
 
         return [
-            'total_tho_minutes' => $totalTho,
-            'total_served_minutes' => $totalServed,
+            'total_tho_hours' => round($totalTho / 60, 2),
+            'total_served_hours' => round($totalServed / 60, 2),
             'overall_utilization_percent' => round($overallUtilization, 2),
             'under_served_count' => $underServed,
             'on_target_count' => $onTarget,

@@ -95,13 +95,13 @@ final class StudentController extends Controller
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
             $ssasForMetrics = $this->ssaService->getSSAsForMetrics($student->id, $therapist->id);
 
-            $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
-            $served = (int) $ssasForMetrics->sum('served_minutes');
+            $totalThoHours = round((float) $ssasForMetrics->sum('tho_minutes') / 60, 2);
+            $servedHours = round((float) $ssasForMetrics->sum('served_minutes') / 60, 2);
 
             $viewData['chartData'] = [
-                'served' => $served,
-                'remaining' => max(0, $totalTho - $served),
-                'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
+                'served' => $servedHours,
+                'remaining' => round(max(0, $totalThoHours - $servedHours), 2),
+                'progress' => $totalThoHours > 0 ? round(($servedHours / $totalThoHours) * 100, 1) : 0,
             ];
 
             $viewData['metrics'] = [

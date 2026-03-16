@@ -416,14 +416,14 @@
                         labels: utilizationData.labels.filter((_, i) => i % 5 === 0), // Show every 5th label
                         datasets: [{
                                 label: 'THO Hours',
-                                data: utilizationData.tho_minutes.filter((_, i) => i % 5 === 0).map(v => Math.round((v / 60) * 100) / 100),
+                                data: utilizationData.tho_hours.filter((_, i) => i % 5 === 0),
                                 borderColor: novaColors.primary,
                                 backgroundColor: novaColors.primaryBg,
                                 fill: false,
                             },
                             {
                                 label: 'Served Hours',
-                                data: utilizationData.served_minutes.filter((_, i) => i % 5 === 0).map(v => Math.round((v / 60) * 100) / 100),
+                                data: utilizationData.served_hours.filter((_, i) => i % 5 === 0),
                                 borderColor: novaColors.accent,
                                 backgroundColor: novaColors.accentBg,
                                 fill: false,
