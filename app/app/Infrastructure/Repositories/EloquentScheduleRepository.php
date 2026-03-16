@@ -482,4 +482,43 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ])
             ->count();
     }
+
+    /** @return Collection<int, Schedule> */
+    public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection
+    {
+        $query = Schedule::query()
+            ->with(['therapist', 'student', 'service', 'school']);
+
+        if ($filters->therapistId) {
+            $query->where('therapist_id', $filters->therapistId);
+        }
+
+        if ($filters->studentId) {
+            $query->where('student_id', $filters->studentId);
+        }
+
+        if ($filters->schoolId) {
+            $query->where('school_id', $filters->schoolId);
+        }
+
+        if ($filters->status) {
+            $query->where('status', $filters->status);
+        }
+
+        if ($filters->billingStatus) {
+            $query->where('billing_status', $filters->billingStatus);
+        }
+
+        if ($filters->dateFrom) {
+            $query->whereDate('schedule_date', '>=', $filters->dateFrom);
+        }
+
+        if ($filters->dateTo) {
+            $query->whereDate('schedule_date', '<=', $filters->dateTo);
+        }
+
+        return $query->orderBy('schedule_date')
+            ->orderBy('start_time')
+            ->get();
+    }
 }

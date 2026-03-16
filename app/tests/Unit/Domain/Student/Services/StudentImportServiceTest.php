@@ -290,4 +290,137 @@ final class StudentImportServiceTest extends TestCase
         $this->assertArrayHasKey('transformations', $template);
         $this->assertEquals('parent_guardian_email', $template['field_sources']['email']);
     }
+
+    // ── TutorBird-specific tests ──────────────────────────────────
+
+    public function test_get_template_returns_tutorbird_config(): void
+    {
+        $template = $this->service->getTemplate(StudentImportType::TUTORBIRD);
+
+        $this->assertIsArray($template);
+        $this->assertArrayHasKey('required_columns', $template);
+        $this->assertArrayHasKey('column_mapping', $template);
+        $this->assertArrayHasKey('First Name', $template['column_mapping']);
+        $this->assertArrayHasKey('TutorBird Student ID', $template['column_mapping']);
+        $this->assertArrayHasKey('School', $template['column_mapping']);
+        $this->assertArrayHasKey('field_sources', $template);
+        $this->assertEquals('parent_guardian_email', $template['field_sources']['email']);
+        $this->assertArrayHasKey('transformations', $template);
+    }
+
+    public function test_tutorbird_validate_file_structure_with_valid_headers(): void
+    {
+        $csvContent = "First Name,Last Name,TutorBird Student ID,School,Email,Birthday\n";
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $path = 'student-imports/tests/tutorbird-valid.csv';
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+
+        $import = StudentImport::create([
+            'user_id' => $this->admin->id,
+            'type' => StudentImportType::TUTORBIRD,
+            'file_path' => $path,
+            'file_name' => 'tutorbird.csv',
+            'total_rows' => 0,
+            'processed_rows' => 0,
+            'status' => StudentImportStatus::PENDING,
+        ]);
+
+        $template = $this->service->getTemplate(StudentImportType::TUTORBIRD);
+        $errors = $this->service->validateFileStructure($import, $template);
+
+        $this->assertEmpty($errors);
+    }
+
+    public function test_tutorbird_validate_file_structure_missing_required_columns(): void
+    {
+        $csvContent = "First Name,Last Name\n";
+        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
+
+        $path = 'student-imports/tests/tutorbird-missing.csv';
+        $disk = config('filesystems.default');
+        Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()));
+
+        $import = StudentImport::create([
+            'user_id' => $this->admin->id,
+            'type' => StudentImportType::TUTORBIRD,
+            'file_path' => $path,
+            'file_name' => 'tutorbird.csv',
+            'total_rows' => 0,
+            'processed_rows' => 0,
+            'status' => StudentImportStatus::PENDING,
+        ]);
+
+        $template = $this->service->getTemplate(StudentImportType::TUTORBIRD);
+        $errors = $this->service->validateFileStructure($import, $template);
+
+        $this->assertNotEmpty($errors);
+        $this->assertStringContainsString('TutorBird Student ID', $errors[0]);
+    }
+
+    public function test_tutorbird_map_columns_maps_csv_headers_to_internal_fields(): void
+    {
+        $rowData = [
+            'First Name' => 'Emma',
+            'Last Name' => 'Watson',
+            'TutorBird Student ID' => 'TB100',
+            'Email' => 'emma@example.com',
+            'Birthday' => '2012-05-20',
+            'Gender' => 'Female',
+            'Parent Contact 1 First Name' => 'Helen',
+            'Parent Contact 1 Last Name' => 'Watson',
+            'Parent Contact 1 Email' => 'helen@example.com',
+            'Parent Contact 1 Mobile Phone' => '(210) 555-1234',
+        ];
+
+        $template = $this->service->getTemplate(StudentImportType::TUTORBIRD);
+        $mapped = $this->service->mapColumns($rowData, $template);
+
+        $this->assertEquals('Emma', $mapped['first_name']);
+        $this->assertEquals('Watson', $mapped['last_name']);
+        $this->assertEquals('TB100', $mapped['id_number']);
+        $this->assertEquals('emma@example.com', $mapped['email']);
+        $this->assertEquals('2012-05-20', $mapped['date_of_birth']);
+        $this->assertEquals('Female', $mapped['gender']);
+        $this->assertEquals('Helen', $mapped['parent_guardian_first_name']);
+        $this->assertEquals('Watson', $mapped['parent_guardian_last_name']);
+        $this->assertEquals('helen@example.com', $mapped['parent_guardian_email']);
+        $this->assertEquals('(210) 555-1234', $mapped['parent_guardian_phone']);
+    }
+
+    public function test_tutorbird_check_duplicate_does_not_check_email(): void
+    {
+        // checkDuplicate only checks username and id_number, not email
+        User::factory()->create(['email' => 'shared@example.com']);
+
+        $data = [
+            'email' => 'shared@example.com',
+            'id_number' => 'TB200',
+        ];
+
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
+
+        $this->assertNull($reason, 'checkDuplicate does not validate email uniqueness');
+    }
+
+    public function test_tutorbird_check_duplicate_still_catches_id_number(): void
+    {
+        $existingUser = User::factory()->create();
+        StudentProfile::factory()->create([
+            'user_id' => $existingUser->id,
+            'school_id' => $this->school->id,
+            'id_number' => 'TB300',
+        ]);
+
+        $data = [
+            'email' => 'new@example.com',
+            'id_number' => 'TB300',
+        ];
+
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
+
+        $this->assertNotNull($reason);
+        $this->assertStringContainsString('ID number', $reason);
+    }
 }

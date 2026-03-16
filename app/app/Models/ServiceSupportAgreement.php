@@ -41,6 +41,7 @@ class ServiceSupportAgreement extends Model
         'calculated_minutes',
         'adjusted_minutes',
         'adjustment_notes',
+        'additional_notes',
         'tho_minutes',
         'assigned_therapist_id',
         'status',

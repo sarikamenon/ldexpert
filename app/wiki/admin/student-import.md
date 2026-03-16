@@ -17,7 +17,7 @@ Version 1.0 · Last Updated: 13 Jan 2026
 4. FUNCTIONAL SCOPE
    4.1 Import Form
    - File Upload: CSV file selection (max size: 10MB default, configurable via `config/student-import.php`).
-   - Import Type Selection: Dropdown with options NOVA, RSM, MARVIN (defaults to NOVA).
+   - Import Type Selection: Dropdown with options NOVA, RSM, MARVIN, TUTORBIRD (defaults to NOVA).
    - Template Download: Link to download CSV template matching selected import type.
    - Actions: Upload & Import (primary), Cancel (secondary).
 
@@ -52,7 +52,7 @@ Version 1.0 · Last Updated: 13 Jan 2026
    • Error alerts for file structure issues or upload failures.
 
 6. DATA MODEL
-   Table: student_imports – `id`, `imported_by_id` (foreign key to users), `type` (enum: NOVA, RSM, MARVIN), `file_name`, `file_path` (S3/local path), `status` (enum: PENDING, PROCESSING, COMPLETED, FAILED), `total_rows`, `processed_rows`, `successful_rows`, `failed_rows`, `error_message` (nullable, for overall import failures), timestamps, `completed_at` (nullable).
+   Table: student_imports – `id`, `imported_by_id` (foreign key to users), `type` (enum: NOVA, RSM, MARVIN, TUTORBIRD), `file_name`, `file_path` (S3/local path), `status` (enum: PENDING, PROCESSING, COMPLETED, FAILED), `total_rows`, `processed_rows`, `successful_rows`, `failed_rows`, `error_message` (nullable, for overall import failures), timestamps, `completed_at` (nullable).
 
    Table: student_import_rows – `id`, `student_import_id` (foreign key), `row_number` (1-indexed), `status` (enum: PENDING, PROCESSING, SUCCESS, VALIDATION_ERROR, DUPLICATE, FAILED), `raw_data` (json, stores original CSV row), `error_message` (nullable), `student_id` (nullable, foreign key to users if student created), timestamps, `processed_at` (nullable).
 
@@ -73,7 +73,7 @@ Version 1.0 · Last Updated: 13 Jan 2026
 
 8. VALIDATION RULES
    • File: Required, CSV format (.csv, .txt), max size 10MB (configurable), MIME types: text/csv, text/plain, application/csv.
-   • Import Type: Required, must be one of: NOVA, RSM, MARVIN.
+   • Import Type: Required, must be one of: NOVA, RSM, MARVIN, TUTORBIRD.
    • Row-level validation matches student creation rules:
      - Required: first_name, last_name, email (unique globally), gender, date_of_birth (before today, after 1900-01-01), school_name (must match active school's external_emr_name), id_number, timezone (valid US timezone), grade_level, city, state (valid US state), zip_code.
      - Optional: middle_name, address, parent_guardian_name, parent_guardian_email, parent_guardian_phone (digits/dashes regex).
@@ -126,7 +126,47 @@ Version 1.0 · Last Updated: 13 Jan 2026
     • Import rollback: No automatic rollback of successful rows if later rows fail; manual cleanup may be needed.
     • Template versioning: Column mappings may change over time; need versioning strategy for templates.
 
-16. VERSION 2 BACKLOG (FUTURE ENHANCEMENTS)
+16. TUTORBIRD IMPORT TYPE (FUNCTIONALITY & LOGIC)
+
+   TutorBird is a supported import source for student records exported from TutorBird scheduling/billing systems. TutorBird CSV files have a different structure than NOVA/RSM, with different column names and up to 4 parent contacts (only Parent Contact 1 is imported).
+
+   16.1 Supported CSV Structure
+   - **Required columns:** First Name, Last Name, TutorBird Student ID, School
+   - **Optional columns:** Email, Birthday, Address, Gender, Mobile Phone, Parent Contact 1 Last Name, Parent Contact 1 First Name, Parent Contact 1 Email, Parent Contact 1 Mobile Phone
+   - School must match an active school's `external_emr_name` (e.g., "NR School 01"). The school must exist before import.
+
+   16.2 Column Mapping (TutorBird → Internal)
+   | TutorBird CSV Column | Internal Field |
+   |----------------------|----------------|
+   | First Name | first_name |
+   | Last Name | last_name |
+   | TutorBird Student ID | id_number |
+   | School | school_name |
+   | Email | email |
+   | Birthday | date_of_birth |
+   | Address | address |
+   | Gender | gender |
+   | Mobile Phone | student_mobile_phone |
+   | Parent Contact 1 First Name + Last Name | parent_guardian_name (combined) |
+   | Parent Contact 1 Email | parent_guardian_email |
+   | Parent Contact 1 Mobile Phone | parent_guardian_phone |
+
+   16.3 Business Logic
+   - **Student email fallback:** If the student Email column is empty, the system uses Parent Contact 1 Email as the student's email address.
+   - **Parent name:** Parent Contact 1 First Name and Last Name are combined into a single `parent_guardian_name` field.
+   - **Duplicate detection:** Duplicate detection uses `id_number` (TutorBird Student ID) within the school and `username` (system-wide). Siblings sharing the same parent email may create multiple students if the system allows; duplicate id_number within the same school will be rejected.
+   - **Phone normalization:** Phone numbers in various formats (e.g., `407-538-2859`, `5123008985`, `(801) 702-4233`) are normalized to `XXX-XXX-XXXX`.
+   - **Username generation:** Student usernames follow the pattern `{first_name}.{last_name}.{id_number}` (e.g., `John.Doe.TB001`).
+
+   16.4 Unmapped TutorBird Columns (Not Imported)
+   TutorBird Family ID, Adult Student, Status, Note, Parent Contact 2/3/4, Texting Allowed, Subject, Level, Base Duration, Rate, Tutor, Group Tags, Referrer, Last Lesson, Next Lesson, and similar billing/scheduling fields are not imported. Student import is student-record only; SSA/billing import is out of scope.
+
+   16.5 Known Behaviors & Edge Cases
+   - **No parent email + no student email:** Row fails validation (email required).
+   - **Duplicate parent emails across siblings:** Second student with same parent email will show validation error (accepted behavior).
+   - **School must exist:** The School value in the CSV must match an active school's `external_emr_name`. If not found, the row fails with "School not found".
+
+17. VERSION 2 BACKLOG (FUTURE ENHANCEMENTS)
     • Custom Column Mappings – allow admins to define school-specific or source-specific column mappings.
     • Import Preview – show first N rows with validation results before committing import.
     • Bulk Actions – retry failed rows, skip duplicates, update existing students.

@@ -219,6 +219,9 @@ final class StudentImportService
             return ['Unable to read file from storage.'];
         }
 
+        // Strip UTF-8 BOM if present
+        $fileContent = $this->stripUtf8Bom($fileContent);
+
         // Use temporary file to parse CSV properly
         $tempFile = tmpfile();
         if ($tempFile === false) {
@@ -267,6 +270,9 @@ final class StudentImportService
         if ($fileContent === null) {
             return [];
         }
+
+        // Strip UTF-8 BOM if present
+        $fileContent = $this->stripUtf8Bom($fileContent);
 
         // Use temporary file to parse CSV properly
         $tempFile = tmpfile();
@@ -342,18 +348,18 @@ final class StudentImportService
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:255'],
-            'gender' => ['required', 'string', 'max:50'],
+            'gender' => ['nullable', 'string', 'max:50'],
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'id_number' => ['required', 'string', 'max:50'],
             'timezone' => ['required', 'string'],
-            'grade_level' => ['required', 'string', 'max:50'],
+            'grade_level' => ['nullable', 'string', 'max:50'],
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'address' => ['nullable', 'string'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', 'string'],
-            'zip_code' => ['required', 'string', 'max:20'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', 'string'],
+            'zip_code' => ['nullable', 'string', 'max:20'],
         ];
 
         // Validate state
@@ -385,14 +391,6 @@ final class StudentImportService
             $existing = User::where('username', $data['username'])->first();
             if ($existing !== null) {
                 return 'A user with username "'.$data['username'].'" already exists.';
-            }
-        }
-
-        // Check by email (system-wide)
-        if (isset($data['email'])) {
-            $existing = User::where('email', $data['email'])->first();
-            if ($existing !== null) {
-                return 'A user with email "'.$data['email'].'" already exists.';
             }
         }
 
@@ -520,7 +518,20 @@ final class StudentImportService
             }
         }
 
-        // 3. Apply defaults (only when field is empty)
+        // 3. Apply context_sources (e.g. state from school) — before defaults so
+        //    defaults act as fallback when school data is null
+        $contextSources = $template['context_sources'] ?? [];
+        foreach ($contextSources as $target => $source) {
+            if (str_starts_with($source, 'school.')) {
+                $attr = substr($source, 7);
+                $value = $school->{$attr} ?? $school->getAttributes()[$attr] ?? null;
+                if ($value !== null && trim($mappedData[$target] ?? '') === '') {
+                    $mappedData[$target] = $value;
+                }
+            }
+        }
+
+        // 4. Apply defaults (only when field is still empty after context_sources)
         $defaults = array_merge(
             config('student-import.defaults', []),
             $template['defaults'] ?? []
@@ -529,18 +540,6 @@ final class StudentImportService
             $current = trim($mappedData[$field] ?? '');
             if ($current === '') {
                 $mappedData[$field] = $defaultValue;
-            }
-        }
-
-        // 4. Apply context_sources (e.g. state from school)
-        $contextSources = $template['context_sources'] ?? [];
-        foreach ($contextSources as $target => $source) {
-            if (str_starts_with($source, 'school.')) {
-                $attr = substr($source, 7);
-                $value = $school->{$attr} ?? $school->getAttributes()[$attr] ?? null;
-                if ($value !== null) {
-                    $mappedData[$target] = $value;
-                }
             }
         }
 
@@ -599,5 +598,12 @@ final class StudentImportService
         }
 
         return null;
+    }
+
+    private function stripUtf8Bom(string $content): string
+    {
+        return str_starts_with($content, "\xEF\xBB\xBF")
+            ? substr($content, 3)
+            : $content;
     }
 }

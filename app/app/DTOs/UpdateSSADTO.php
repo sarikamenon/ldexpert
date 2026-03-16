@@ -22,6 +22,7 @@ final class UpdateSSADTO
         public readonly ?int $calculatedMinutes,
         public readonly ?int $adjustedMinutes,
         public readonly ?string $adjustmentNotes,
+        public readonly ?string $additionalNotes,
         public readonly ?int $thoMinutes,
     ) {}
 
@@ -64,6 +65,7 @@ final class UpdateSSADTO
                 ? (int) $data['adjusted_minutes']
                 : null,
             adjustmentNotes: $data['adjustment_notes'] ?? null,
+            additionalNotes: $data['additional_notes'] ?? null,
             thoMinutes: isset($data['tho_minutes']) ? (int) $data['tho_minutes'] : null,
         );
     }
@@ -99,6 +101,9 @@ final class UpdateSSADTO
         }
         if ($this->adjustmentNotes !== null) {
             $array['adjustment_notes'] = $this->adjustmentNotes;
+        }
+        if ($this->additionalNotes !== null) {
+            $array['additional_notes'] = $this->additionalNotes;
         }
         if ($this->thoMinutes !== null) {
             $array['tho_minutes'] = $this->thoMinutes;

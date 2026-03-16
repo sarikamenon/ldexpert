@@ -398,7 +398,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
         }
 
         if ($filters->status) {
-            $query->where('status', $filters->status->value);
+            $query->where('service_support_agreements.status', $filters->status->value);
         }
 
         if ($filters->studentId) {

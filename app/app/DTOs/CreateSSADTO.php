@@ -24,6 +24,7 @@ final class CreateSSADTO
         public readonly ?int $calculatedMinutes,
         public readonly ?int $adjustedMinutes,
         public readonly ?string $adjustmentNotes,
+        public readonly ?string $additionalNotes,
         public readonly int $thoMinutes,
         public readonly ?int $assignedTherapistId,
     ) {}
@@ -66,6 +67,7 @@ final class CreateSSADTO
                 ? (int) $data['adjusted_minutes']
                 : null,
             adjustmentNotes: $data['adjustment_notes'] ?? null,
+            additionalNotes: $data['additional_notes'] ?? null,
             thoMinutes: (int) $data['tho_minutes'],
             assignedTherapistId: isset($data['assigned_therapist_id']) && $data['assigned_therapist_id'] !== ''
                 ? (int) $data['assigned_therapist_id']
@@ -88,6 +90,7 @@ final class CreateSSADTO
             'calculated_minutes' => $this->calculatedMinutes,
             'adjusted_minutes' => $this->adjustedMinutes,
             'adjustment_notes' => $this->adjustmentNotes,
+            'additional_notes' => $this->additionalNotes,
             'tho_minutes' => $this->thoMinutes,
             'assigned_therapist_id' => $this->assignedTherapistId,
             'status' => SSAStatus::PENDING->value, // New SSAs always start as PENDING

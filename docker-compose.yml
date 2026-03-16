@@ -9,7 +9,6 @@ services:
       - ./:/var/www/html
     environment:
       - PHP_IDE_CONFIG=serverName=laravel
-      - CACHE_STORE=file
     depends_on:
       - mysql
     networks:

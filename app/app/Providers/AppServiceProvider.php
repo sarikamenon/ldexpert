@@ -14,6 +14,7 @@ use App\Domain\Finance\Repositories\InvoicePaymentRepositoryInterface;
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
 use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
+use App\Domain\Lead\Repositories\LeadRepositoryInterface;
 use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
 use App\Domain\Position\Repositories\PositionRepositoryInterface;
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
@@ -40,6 +41,7 @@ use App\Infrastructure\Repositories\EloquentDashboardRepository;
 use App\Infrastructure\Repositories\EloquentFinanceSummaryRepository;
 use App\Infrastructure\Repositories\EloquentInvoicePaymentRepository;
 use App\Infrastructure\Repositories\EloquentInvoiceRepository;
+use App\Infrastructure\Repositories\EloquentLeadRepository;
 use App\Infrastructure\Repositories\EloquentLedgerEntryRepository;
 use App\Infrastructure\Repositories\EloquentNotificationRepository;
 use App\Infrastructure\Repositories\EloquentPositionRepository;
@@ -64,6 +66,7 @@ use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Infrastructure\Services\Storage\LocalStorageService;
 use App\Infrastructure\Services\Storage\S3StorageService;
 use App\Listeners\SendScheduleNotification;
+use App\Models\Lead;
 use App\Models\Invoice;
 use App\Models\Position;
 use App\Models\Schedule;
@@ -82,6 +85,7 @@ use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use App\Policies\InvoicePolicy;
+use App\Policies\LeadPolicy;
 use App\Policies\PositionPolicy;
 use App\Policies\SchedulePolicy;
 use App\Policies\ServiceAliasPolicy;
@@ -136,6 +140,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(LedgerEntryRepositoryInterface::class, EloquentLedgerEntryRepository::class);
         $this->app->bind(InvoicePaymentRepositoryInterface::class, EloquentInvoicePaymentRepository::class);
         $this->app->bind(TherapistBillPaymentRepositoryInterface::class, EloquentTherapistBillPaymentRepository::class);
+        $this->app->bind(LeadRepositoryInterface::class, EloquentLeadRepository::class);
         $this->app->bind(FinanceSummaryRepositoryInterface::class, EloquentFinanceSummaryRepository::class);
         $this->app->bind(StorageServiceInterface::class, function (): StorageServiceInterface {
             return match (config('filesystems.default')) {
@@ -171,6 +176,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Position::class, PositionPolicy::class);
         Gate::policy(ServiceAlias::class, ServiceAliasPolicy::class);
         Gate::policy(ServiceSupportAgreement::class, SSAPolicy::class);
+        Gate::policy(Lead::class, LeadPolicy::class);
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);
         Event::listen(ScheduleUpdated::class, SendScheduleNotification::class);

@@ -9,6 +9,7 @@ enum StudentImportType: string
     case NOVA = 'NOVA';
     case RSM = 'RSM';
     case MARVIN = 'MARVIN';
+    case TUTORBIRD = 'TUTORBIRD';
 
     /** @return array<int, string> */
     public static function values(): array

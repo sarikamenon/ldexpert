@@ -88,4 +88,7 @@ interface ScheduleRepositoryInterface
     public function getSchedulesInWindow(Carbon $start, Carbon $end): Collection;
 
     public function countLessonsThisWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): int;
+
+    /** @return Collection<int, Schedule> */
+    public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection;
 }
