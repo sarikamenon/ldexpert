@@ -78,24 +78,24 @@
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Scheduled Minutes
-                                        <x-ui::tooltip-icon content="Total minutes scheduled on the calendar for this SSA, including both upcoming and completed sessions." />
+                                        Scheduled Hours
+                                        <x-ui::tooltip-icon content="Total hours scheduled on the calendar for this SSA, including both upcoming and completed sessions." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->scheduledMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->scheduledMinutes / 60, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Logged Minutes
-                                        <x-ui::tooltip-icon content="Minutes captured on submitted or approved session logs for this SSA, before final approval." />
+                                        Logged Hours
+                                        <x-ui::tooltip-icon content="Hours captured on submitted or approved session logs for this SSA, before final approval." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->loggedMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->loggedMinutes / 60, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Approved Minutes
-                                        <x-ui::tooltip-icon content="Minutes from approved session logs that count toward THO utilization for this SSA." />
+                                        Approved Hours
+                                        <x-ui::tooltip-icon content="Hours from approved session logs that count toward THO utilization for this SSA." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->approvedMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->approvedMinutes / 60, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2 pt-2 border-t border-border">
                                     <span class="font-medium flex items-center gap-1">
