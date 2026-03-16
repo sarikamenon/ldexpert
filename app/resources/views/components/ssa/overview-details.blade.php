@@ -183,4 +183,11 @@
             </dl>
         </x-ui::card>
     @endif
+
+    @if ($ssa->additional_notes)
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Additional Notes</h3>
+            <p class="text-sm text-foreground whitespace-pre-line">{{ $ssa->additional_notes }}</p>
+        </x-ui::card>
+    @endif
 </div>

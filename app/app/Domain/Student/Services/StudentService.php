@@ -11,6 +11,7 @@ use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Mail\WelcomeStudentMail;
+use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+
 
 final class StudentService
 {
@@ -30,9 +32,18 @@ final class StudentService
         $userData = $dto->toUserArray();
         $userData['password'] = Hash::make($dto->password);
 
+        $profileData = $dto->toProfileArray(0);
+
+        if (empty($profileData['id_number']) && $dto->schoolId !== null) {
+            $school = School::find($dto->schoolId);
+            if ($school !== null && $school->is_private_student) {
+                $profileData['id_number'] = $this->generateUniqueStudentId();
+            }
+        }
+
         $profile = $this->repository->create(
             $userData,
-            $dto->toProfileArray(0) // user_id will be set in repository
+            $profileData // user_id will be set in repository
         );
 
         // Send welcome email to student's user email
@@ -145,5 +156,14 @@ final class StudentService
     public function getSchoolIdByUserId(int $userId): ?int
     {
         return $this->repository->getSchoolIdByUserId($userId);
+    }
+
+    private function generateUniqueStudentId(): int
+    {
+        do {
+            $idNumber = random_int(10000000, 99999999);
+        } while (StudentProfile::where('id_number', $idNumber)->exists());
+
+        return $idNumber;
     }
 }

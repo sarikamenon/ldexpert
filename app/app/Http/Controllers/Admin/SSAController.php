@@ -143,6 +143,12 @@ final class SSAController extends Controller
             $dto = CreateSSADTO::fromArray($request->validated());
             $this->ssaService->create($dto);
 
+            if ($request->input('add_more_ssa') === '1') {
+                return redirect()
+                    ->route('admin.ssas.create', ['student_id' => $dto->studentId])
+                    ->with('status', 'SSA created successfully. Create another SSA for the same student.');
+            }
+
             return redirect()
                 ->route('admin.ssas.index')
                 ->with('status', 'SSA created successfully.');
