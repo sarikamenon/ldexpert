@@ -115,15 +115,6 @@ final class StudentImportService
             // Map columns using template
             $mappedData = $this->mapColumns($rowData, $template);
 
-            // Apply default school_name before lookup (for templates like TUTORBIRD that hardcode it)
-            if (empty($mappedData['school_name'])) {
-                $templateDefaults = $template['defaults'] ?? [];
-                $globalDefaults = config('student-import.defaults', []);
-                $mappedData['school_name'] = $templateDefaults['school_name']
-                    ?? $globalDefaults['school_name']
-                    ?? null;
-            }
-
             // Look up school by external_emr_name (exact match)
             $schoolName = $mappedData['school_name'] ?? null;
             if (! $schoolName) {
@@ -357,11 +348,11 @@ final class StudentImportService
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email:rfc', 'max:255'],
-            'gender' => ['required', 'string', 'max:50'],
+            'gender' => ['nullable', 'string', 'max:50'],
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'id_number' => ['required', 'string', 'max:50'],
             'timezone' => ['required', 'string'],
-            'grade_level' => ['required', 'string', 'max:50'],
+            'grade_level' => ['nullable', 'string', 'max:50'],
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
