@@ -153,15 +153,13 @@ final class StudentImportServiceTest extends TestCase
         $existingUser = User::factory()->create(['username' => 'existing.student']);
         StudentProfile::factory()->create(['user_id' => $existingUser->id]);
 
-        $template = $this->service->getTemplate(StudentImportType::NOVA);
-
         $data = [
             'username' => 'existing.student',
             'email' => 'new@example.com',
             'id_number' => 'STU001',
         ];
 
-        $reason = $this->service->checkDuplicate($data, $this->school->id, $template);
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
 
         $this->assertNotNull($reason);
         $this->assertStringContainsString('username', $reason);
@@ -176,14 +174,12 @@ final class StudentImportServiceTest extends TestCase
             'id_number' => 'STU002',
         ]);
 
-        $template = $this->service->getTemplate(StudentImportType::NOVA);
-
         $data = [
             'email' => 'new@example.com',
             'id_number' => 'STU002',
         ];
 
-        $reason = $this->service->checkDuplicate($data, $this->school->id, $template);
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
 
         $this->assertNotNull($reason);
         $this->assertStringContainsString('ID number', $reason);
@@ -191,14 +187,12 @@ final class StudentImportServiceTest extends TestCase
 
     public function test_check_duplicate_returns_null_when_no_duplicate(): void
     {
-        $template = $this->service->getTemplate(StudentImportType::NOVA);
-
         $data = [
             'email' => 'new@example.com',
             'id_number' => 'STU003',
         ];
 
-        $reason = $this->service->checkDuplicate($data, $this->school->id, $template);
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
 
         $this->assertNull($reason);
     }
@@ -308,16 +302,15 @@ final class StudentImportServiceTest extends TestCase
         $this->assertArrayHasKey('column_mapping', $template);
         $this->assertArrayHasKey('First Name', $template['column_mapping']);
         $this->assertArrayHasKey('TutorBird Student ID', $template['column_mapping']);
+        $this->assertArrayHasKey('School', $template['column_mapping']);
         $this->assertArrayHasKey('field_sources', $template);
         $this->assertEquals('parent_guardian_email', $template['field_sources']['email']);
-        $this->assertArrayHasKey('defaults', $template);
-        $this->assertEquals('NR School 01', $template['defaults']['school_name']);
-        $this->assertTrue($template['allow_duplicate_emails']);
+        $this->assertArrayHasKey('transformations', $template);
     }
 
     public function test_tutorbird_validate_file_structure_with_valid_headers(): void
     {
-        $csvContent = "First Name,Last Name,TutorBird Student ID,Email,Birthday\n";
+        $csvContent = "First Name,Last Name,TutorBird Student ID,School,Email,Birthday\n";
         $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
 
         $path = 'student-imports/tests/tutorbird-valid.csv';
@@ -396,21 +389,19 @@ final class StudentImportServiceTest extends TestCase
         $this->assertEquals('(210) 555-1234', $mapped['parent_guardian_phone']);
     }
 
-    public function test_tutorbird_check_duplicate_allows_duplicate_emails(): void
+    public function test_tutorbird_check_duplicate_does_not_check_email(): void
     {
-        // Create existing user with same email
+        // checkDuplicate only checks username and id_number, not email
         User::factory()->create(['email' => 'shared@example.com']);
-
-        $template = $this->service->getTemplate(StudentImportType::TUTORBIRD);
 
         $data = [
             'email' => 'shared@example.com',
             'id_number' => 'TB200',
         ];
 
-        $reason = $this->service->checkDuplicate($data, $this->school->id, $template);
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
 
-        $this->assertNull($reason, 'TutorBird allows duplicate emails');
+        $this->assertNull($reason, 'checkDuplicate does not validate email uniqueness');
     }
 
     public function test_tutorbird_check_duplicate_still_catches_id_number(): void
@@ -422,14 +413,12 @@ final class StudentImportServiceTest extends TestCase
             'id_number' => 'TB300',
         ]);
 
-        $template = $this->service->getTemplate(StudentImportType::TUTORBIRD);
-
         $data = [
             'email' => 'new@example.com',
             'id_number' => 'TB300',
         ];
 
-        $reason = $this->service->checkDuplicate($data, $this->school->id, $template);
+        $reason = $this->service->checkDuplicate($data, $this->school->id);
 
         $this->assertNotNull($reason);
         $this->assertStringContainsString('ID number', $reason);

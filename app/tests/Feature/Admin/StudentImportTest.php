@@ -167,7 +167,8 @@ final class StudentImportTest extends TestCase
     {
         Mail::fake();
 
-        // Create existing student
+        // Schema allows duplicate emails (unique constraint dropped). checkDuplicate only
+        // checks username and id_number, so duplicate email import succeeds.
         $existingStudent = User::factory()
             ->create([
                 'email' => 'existing@example.com',
@@ -211,11 +212,11 @@ final class StudentImportTest extends TestCase
         $userCountBefore = User::count();
         (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
-        $this->assertSame($userCountBefore, User::count());
-        $this->assertSame(1, User::where('email', 'existing@example.com')->count());
+        $this->assertGreaterThan($userCountBefore, User::count());
+        $this->assertGreaterThanOrEqual(2, User::where('email', 'existing@example.com')->count());
 
         $row = StudentImportRow::where('student_import_id', $import->id)->first();
-        $this->assertEquals('duplicate', $row->status->value);
+        $this->assertEquals('done', $row->status->value);
     }
 
     public function test_import_skips_duplicate_by_id_number(): void
@@ -604,6 +605,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Sophia',
                 'Last Name' => 'Martinez',
                 'TutorBird Student ID' => 'TB001',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'parent.martinez@example.com',
                 'Parent Contact 1 First Name' => 'Maria',
                 'Parent Contact 1 Last Name' => 'Martinez',
@@ -640,10 +642,8 @@ final class StudentImportTest extends TestCase
         $this->assertEquals('Maria Martinez', $profile->parent_guardian_name);
         $this->assertEquals('parent.martinez@example.com', $profile->parent_guardian_email);
 
-        // Defaults applied from template config
+        // Timezone falls back to school when not in CSV
         $this->assertEquals('America/Chicago', $profile->timezone);
-        $this->assertEquals('Male', $profile->gender);
-        $this->assertEquals('1', $profile->grade_level);
 
         $row = StudentImportRow::where('student_import_id', $import->id)->first();
         $this->assertEquals('done', $row->status->value);
@@ -663,6 +663,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Liam',
                 'Last Name' => 'Chen',
                 'TutorBird Student ID' => 'TB002',
+                'School' => 'NR School 01',
                 'Email' => 'liam.chen@example.com',
                 'Parent Contact 1 Email' => 'parent.chen@example.com',
                 'Parent Contact 1 First Name' => 'Wei',
@@ -699,7 +700,7 @@ final class StudentImportTest extends TestCase
             'timezone' => 'America/Chicago',
         ]);
 
-        // Create existing user with same parent email
+        // Schema allows duplicate emails (unique constraint dropped); import succeeds
         User::factory()->create(['email' => 'shared.parent@example.com']);
 
         $csvContent = $this->generateTutorbirdCsvContent([
@@ -707,6 +708,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Noah',
                 'Last Name' => 'Adams',
                 'TutorBird Student ID' => 'TB003',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'shared.parent@example.com',
                 'Parent Contact 1 First Name' => 'Sarah',
                 'Parent Contact 1 Last Name' => 'Adams',
@@ -727,7 +729,6 @@ final class StudentImportTest extends TestCase
         $userCountBefore = User::count();
         (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
 
-        // Should create student despite duplicate email
         $this->assertGreaterThan($userCountBefore, User::count());
 
         $row = StudentImportRow::where('student_import_id', $import->id)->first();
@@ -755,6 +756,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Duplicate',
                 'Last Name' => 'Student',
                 'TutorBird Student ID' => 'TB004',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'dup@example.com',
                 'Parent Contact 1 First Name' => 'Parent',
                 'Parent Contact 1 Last Name' => 'Dup',
@@ -782,13 +784,13 @@ final class StudentImportTest extends TestCase
     {
         Mail::fake();
 
-        // Do NOT create 'NR School 01' — the default school_name from template defaults
-
+        // Do NOT create school with external_emr_name 'NonExistent School'
         $csvContent = $this->generateTutorbirdCsvContent([
             [
                 'First Name' => 'Orphan',
                 'Last Name' => 'Student',
                 'TutorBird Student ID' => 'TB005',
+                'School' => 'NonExistent School',
                 'Parent Contact 1 Email' => 'orphan@example.com',
                 'Parent Contact 1 First Name' => 'Missing',
                 'Parent Contact 1 Last Name' => 'School',
@@ -810,7 +812,7 @@ final class StudentImportTest extends TestCase
 
         $row = StudentImportRow::where('student_import_id', $import->id)->first();
         $this->assertEquals('validation_error', $row->status->value);
-        $this->assertStringContainsString('NR School 01', (string) $row->error_message);
+        $this->assertStringContainsString('NonExistent School', (string) $row->error_message);
     }
 
     public function test_tutorbird_import_normalizes_phone_number(): void
@@ -827,6 +829,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Phone',
                 'Last Name' => 'Test',
                 'TutorBird Student ID' => 'TB006',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'phone@example.com',
                 'Parent Contact 1 First Name' => 'Jane',
                 'Parent Contact 1 Last Name' => 'Test',
@@ -866,6 +869,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Alice',
                 'Last Name' => 'One',
                 'TutorBird Student ID' => 'TB010',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'alice.parent@example.com',
                 'Parent Contact 1 First Name' => 'Mom',
                 'Parent Contact 1 Last Name' => 'One',
@@ -874,6 +878,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Bob',
                 'Last Name' => 'Two',
                 'TutorBird Student ID' => 'TB011',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'bob.parent@example.com',
                 'Parent Contact 1 First Name' => 'Dad',
                 'Parent Contact 1 Last Name' => 'Two',
@@ -933,6 +938,7 @@ final class StudentImportTest extends TestCase
                 'First Name' => 'Jane',
                 'Last Name' => 'Doe',
                 'TutorBird Student ID' => 'TB099',
+                'School' => 'NR School 01',
                 'Parent Contact 1 Email' => 'jane.parent@example.com',
                 'Parent Contact 1 First Name' => 'Mom',
                 'Parent Contact 1 Last Name' => 'Doe',
@@ -962,7 +968,7 @@ final class StudentImportTest extends TestCase
     private function generateTutorbirdCsvContent(array $rows): string
     {
         $columns = [
-            'First Name', 'Last Name', 'TutorBird Student ID',
+            'First Name', 'Last Name', 'TutorBird Student ID', 'School',
             'Email', 'Birthday', 'Address', 'Gender', 'Mobile Phone',
             'Parent Contact 1 Last Name', 'Parent Contact 1 First Name',
             'Parent Contact 1 Email', 'Parent Contact 1 Mobile Phone',
