@@ -69,6 +69,7 @@ final class RsmImportHandler
         );
 
         if ($existingSsa !== null) {
+            $this->updateThoFields($existingSsa, $mappedData, $thoMinutes);
             $this->applyStatusLogic($importRow, $existingSsa, $isWithdrawn, $therapistId);
 
             return;
@@ -257,6 +258,33 @@ final class RsmImportHandler
             );
             $action = 'Marked as pending';
         }
+    }
+
+    /**
+     * Update THO-related fields on an existing SSA with adjustment data from import.
+     *
+     * @param  array<string, mixed>  $mappedData
+     */
+    private function updateThoFields(
+        ServiceSupportAgreement $ssa,
+        array $mappedData,
+        int $thoMinutes,
+    ): void {
+        $updates = ['tho_minutes' => $thoMinutes];
+
+        if (isset($mappedData['calculated_minutes'])) {
+            $updates['calculated_minutes'] = (int) $mappedData['calculated_minutes'];
+        }
+
+        if (isset($mappedData['adjusted_minutes'])) {
+            $updates['adjusted_minutes'] = (int) $mappedData['adjusted_minutes'];
+        }
+
+        if (! empty($mappedData['adjustment_notes'])) {
+            $updates['adjustment_notes'] = (string) $mappedData['adjustment_notes'];
+        }
+
+        $ssa->update($updates);
     }
 
     /**

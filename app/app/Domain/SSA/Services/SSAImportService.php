@@ -217,6 +217,15 @@ final class SSAImportService
             // Add calculated THO minutes to mapped data for validation
             $mappedData['tho_minutes'] = $thoMinutes;
 
+            // For RSM imports: compare imported THO with system-calculated THO
+            if ($import->type === SSAImportType::RSM
+                && ! empty($mappedData['frequency'])
+                && ! empty($mappedData['sessions_per_frequency'])
+                && $thoMinutes > 0
+            ) {
+                $this->applyRsmThoAdjustment($mappedData, $thoMinutes);
+            }
+
             // Validate row data
             $validationErrors = $this->validateRowData($mappedData, $primaryService, $additionalServiceIds);
 
@@ -688,5 +697,38 @@ final class SSAImportService
         foreach (array_chunk($rows, 500) as $chunk) {
             SSAImportRow::insert($chunk);
         }
+    }
+
+    /**
+     * Compare imported THO with system-calculated THO and set adjustment fields.
+     *
+     * @param  array<string, mixed>  $mappedData
+     */
+    private function applyRsmThoAdjustment(array &$mappedData, int $thoMinutes): void
+    {
+        $calculatedMinutes = $this->ssaService->calculateThoMinutes(
+            (int) $mappedData['minutes_per_session'],
+            (string) $mappedData['frequency'],
+            (int) $mappedData['sessions_per_frequency'],
+            (string) $mappedData['start_date'],
+            (string) $mappedData['end_date'],
+        );
+
+        $mappedData['calculated_minutes'] = $calculatedMinutes;
+
+        if ($thoMinutes === $calculatedMinutes) {
+            return;
+        }
+
+        $adjustment = $thoMinutes - $calculatedMinutes;
+        $mappedData['adjusted_minutes'] = $adjustment;
+
+        $sign = $adjustment > 0 ? '+' : '';
+        $autoNote = "RSM import: System calculated {$calculatedMinutes} min, RSM reports {$thoMinutes} min. Adjusted by {$sign}{$adjustment} min.";
+
+        $existingNotes = (string) ($mappedData['adjustment_notes'] ?? '');
+        $mappedData['adjustment_notes'] = $existingNotes !== ''
+            ? $existingNotes . ' | ' . $autoNote
+            : $autoNote;
     }
 }
