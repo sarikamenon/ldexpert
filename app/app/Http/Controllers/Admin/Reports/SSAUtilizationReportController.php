@@ -154,10 +154,10 @@ final class SSAUtilizationReportController extends Controller
             ]);
 
             foreach ($ssas as $ssa) {
-                $tho = $ssa->tho_minutes ?? 0;
-                $served = $ssa->served_minutes ?? 0;
-                $utilization = $tho > 0 ? round(($served / $tho) * 100, 2) : 0;
-                $variance = $served - $tho;
+                $thoHours = $ssa->tho_hours;
+                $servedHours = $ssa->served_hours;
+                $utilization = $thoHours > 0 ? round(($servedHours / $thoHours) * 100, 2) : 0;
+                $variance = round($servedHours - $thoHours, 2);
 
                 fputcsv($handle, [
                     $ssa->id,
@@ -167,10 +167,10 @@ final class SSAUtilizationReportController extends Controller
                     $ssa->primaryService->name ?? '—',
                     $ssa->start_date->format('Y-m-d'),
                     $ssa->end_date?->format('Y-m-d') ?? '',
-                    round($tho / 60, 2),
-                    round($served / 60, 2),
+                    $thoHours,
+                    $servedHours,
                     $utilization,
-                    round($variance / 60, 2),
+                    $variance,
                     $ssa->status->label(),
                 ]);
             }
