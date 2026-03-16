@@ -1,6 +1,10 @@
 import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
 
+function getFilterForm() {
+    return document.getElementById('serviceAliasFiltersForm');
+}
+
 async function initServiceAliasesTable() {
     const table = document.getElementById('serviceAliasesTable');
     if (!table) return;
@@ -8,13 +12,12 @@ async function initServiceAliasesTable() {
     const dataUrl = table.getAttribute('data-datatable-url');
     if (!dataUrl) return;
 
-    const form = document.getElementById('serviceAliasFiltersForm');
-
     try {
         await loadDataTablesLibrary();
         await initServerSideDataTable('#serviceAliasesTable', dataUrl, {
             order: [[0, 'asc']],
             pageLength: 25,
+            searchDelay: 1000,
             columnDefs: [
                 { orderable: false, targets: [2, 4] },
                 { width: '90px', targets: 0 },
@@ -22,9 +25,13 @@ async function initServiceAliasesTable() {
                 { width: '90px', targets: 4 },
             ],
             getExtraData(d) {
-                if (!form) return;
-                d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
-                d.filter_source = form.querySelector('[name="source"]')?.value ?? '';
+                const form = getFilterForm();
+                const formSearch = form?.querySelector('[name="search"]')?.value ?? '';
+                const dtSearch = (d.search?.value ?? '').trim();
+                d.filter_search = formSearch || dtSearch;
+                if (form) {
+                    d.filter_source = form.querySelector('[name="source"]')?.value ?? '';
+                }
             },
         });
     } catch (error) {
@@ -96,18 +103,36 @@ function reloadTable() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function setupFilterHandlers() {
+    const form = getFilterForm();
+    if (!form) return;
+
+    form.addEventListener('change', () => reloadTable());
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        reloadTable();
+    });
+
+    const searchInput = form.querySelector('[name="search"]');
+    if (searchInput) {
+        let debounceTimer;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => reloadTable(), 400);
+        });
+    }
+}
+
+function init() {
     if (!document.getElementById('serviceAliasesTable')) return;
 
     initServiceAliasesTable();
     setupDeleteHandlers();
+    setupFilterHandlers();
+}
 
-    const form = document.getElementById('serviceAliasFiltersForm');
-    if (form) {
-        form.addEventListener('change', () => reloadTable());
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            reloadTable();
-        });
-    }
-});
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
