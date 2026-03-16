@@ -369,5 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (getAllSelectedServiceIds().length > 0) {
         fetchTherapistsForServices();
     }
+
+    // "Add More SSA" button sets hidden flag before form submit
+    $('#add-more-ssa-btn').on('click', function () {
+        $('#add_more_ssa').val('1');
+    });
 });
 

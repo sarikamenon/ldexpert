@@ -14,6 +14,7 @@ export default defineConfig({
                 'resources/js/pages/admin-schools-index.js',
                 'resources/js/pages/admin-therapists-index.js',
                 'resources/js/pages/admin-students-index.js',
+                'resources/js/pages/admin-students-form.js',
                 'resources/js/pages/admin-students-import.js',
                 'resources/js/pages/admin-students-import-status.js',
                 'resources/js/pages/admin-students-import-history.js',
