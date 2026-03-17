@@ -11,10 +11,13 @@ use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\InvoiceFilterDTO;
+use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
+use App\Enums\InvoiceEmailType;
 use App\Enums\InvoiceStatus;
 use App\Mail\InvoiceMail;
 use App\Models\Invoice;
+use App\Models\InvoiceEmailLog;
 use App\Models\School;
 use App\Models\SessionLog;
 use App\Models\User;
@@ -192,6 +195,16 @@ final class InvoiceService
             // Send email with PDF attachment and payment link
             Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
 
+            // Log initial email send
+            InvoiceEmailLog::create([
+                'invoice_id' => $invoice->id,
+                'type' => InvoiceEmailType::INITIAL->value,
+                'recipient_email' => $recipientEmail,
+                'custom_message' => $dto->message,
+                'sent_by_id' => $user->id,
+                'sent_at' => now(),
+            ]);
+
             // Mark invoice as sent
             $invoice = $this->repository->markAsSent($invoice, $user->id);
 
@@ -200,6 +213,33 @@ final class InvoiceService
 
             return $invoice;
         });
+    }
+
+    public function resendInvoiceEmail(User $user, Invoice $invoice, ResendInvoiceEmailDTO $dto): void
+    {
+        if (! $invoice->isSent()) {
+            throw new \InvalidArgumentException('Invoice must be in sent status to resend email.');
+        }
+        if ($invoice->isPaid()) {
+            throw new \InvalidArgumentException('Cannot resend email for a paid invoice.');
+        }
+
+        // Reuse existing payment token — do NOT regenerate
+        $paymentUrl = null;
+        if ((float) $invoice->total > 0 && $invoice->payment_token) {
+            $paymentUrl = $invoice->getPaymentUrl();
+        }
+
+        Mail::to($dto->email)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
+
+        InvoiceEmailLog::create([
+            'invoice_id' => $invoice->id,
+            'type' => InvoiceEmailType::RESEND->value,
+            'recipient_email' => $dto->email,
+            'custom_message' => $dto->message,
+            'sent_by_id' => $user->id,
+            'sent_at' => now(),
+        ]);
     }
 
     public function find(int $id): ?Invoice

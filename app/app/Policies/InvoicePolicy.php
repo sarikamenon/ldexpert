@@ -39,4 +39,9 @@ final class InvoicePolicy
     {
         return $user->role === Role::ADMIN && ($invoice->isDraft() || $invoice->isSent());
     }
+
+    public function resendEmail(User $user, Invoice $invoice): bool
+    {
+        return $user->role === Role::ADMIN && $invoice->isSent() && ! $invoice->isPaid();
+    }
 }

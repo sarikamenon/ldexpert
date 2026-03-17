@@ -32,6 +32,13 @@
                 </x-ui::button>
             @endif
 
+            @if ($invoice->isSent() && !$invoice->isPaid())
+                <x-ui::button type="button" variant="secondary" x-data=""
+                    x-on:click="$dispatch('open-resend-email-modal')">
+                    Resend Email
+                </x-ui::button>
+            @endif
+
             <a href="{{ route('admin.invoices.download', $invoice) }}">
                 <x-ui::button>
                     Download PDF
@@ -121,6 +128,8 @@
         </div>
     </x-ui::card>
 
+    @include('admin.invoices._email-history')
+
     <x-ui::card class="p-6">
         <h2 class="text-lg font-semibold text-foreground mb-4">Line Items</h2>
 
@@ -188,75 +197,45 @@
     </x-ui::card>
 
     {{-- Record Payment Modal --}}
-    @if (!$invoice->isDraft())
-        <div x-data="{ open: false }" x-on:open-record-payment-modal.window="open = true" x-show="open"
+    @include('admin.invoices._record-payment-modal')
+
+    {{-- Resend Email Modal --}}
+    @if ($invoice->isSent() && !$invoice->isPaid())
+        <div x-data="{ open: false }" x-on:open-resend-email-modal.window="open = true" x-show="open"
             class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
             <div class="flex items-center justify-center min-h-screen px-4">
                 <div class="fixed inset-0 bg-black opacity-50" x-on:click="open = false"></div>
 
                 <div class="relative bg-card rounded-lg shadow-xl max-w-md w-full p-6">
-                    <h3 class="text-lg font-semibold text-foreground mb-4">Record Payment</h3>
+                    <h3 class="text-lg font-semibold text-foreground mb-4">Resend Invoice Email</h3>
 
-                    <form method="POST" action="{{ route('admin.invoices.payments.store', $invoice) }}">
+                    <form method="POST" action="{{ route('admin.invoices.resend-email', $invoice) }}"
+                        id="resend-email-form">
                         @csrf
-                        <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
 
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-foreground mb-1">Payment Date *</label>
-                                <input type="date" name="paid_at" value="{{ old('paid_at', date('Y-m-d')) }}"
-                                    max="{{ date('Y-m-d') }}" required
-                                    class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                                @error('paid_at')
-                                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                                @enderror
+                                <x-input-label for="resend_email" value="Recipient Email *" />
+                                <p class="mt-1 text-xs text-foreground/60" id="resend_email_help">
+                                    The email address to send the invoice to. Change if the original was incorrect.
+                                </p>
+                                <x-text-input id="resend_email" name="email" type="email"
+                                    class="mt-1 block w-full"
+                                    aria-describedby="resend_email_help"
+                                    value="{{ old('email', $invoice->school_invoice_email ?? $invoice->school_contact_email) }}"
+                                    required />
+                                <x-input-error :messages="$errors->get('email')" class="mt-2" />
                             </div>
 
                             <div>
-                                <label class="block text-sm font-medium text-foreground mb-1">Amount *</label>
-                                <input type="number" name="amount" step="0.01" min="0.01"
-                                    value="{{ old('amount', $invoice->balance_remaining) }}" required
-                                    class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                                @error('amount')
-                                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-foreground mb-1">Payment Method *</label>
-                                <select name="method" required
-                                    class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                                    <option value="">Select method...</option>
-                                    @foreach (\App\Enums\PaymentMethod::cases() as $method)
-                                        <option value="{{ $method->value }}"
-                                            {{ old('method') == $method->value ? 'selected' : '' }}>
-                                            {{ $method->label() }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('method')
-                                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-foreground mb-1">Reference
-                                    Number</label>
-                                <input type="text" name="reference" value="{{ old('reference') }}"
-                                    placeholder="Check number, transaction ID, etc."
-                                    class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">
-                                @error('reference')
-                                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-foreground mb-1">Notes</label>
-                                <textarea name="notes" rows="3"
-                                    class="w-full px-3 py-2 border border-border rounded-md focus:ring-2 focus:ring-primary">{{ old('notes') }}</textarea>
-                                @error('notes')
-                                    <p class="text-sm text-danger mt-1">{{ $message }}</p>
-                                @enderror
+                                <x-input-label for="resend_message" value="Custom Message" />
+                                <p class="mt-1 text-xs text-foreground/60" id="resend_message_help">
+                                    Optional message to include in the email body. Leave blank to use the default.
+                                </p>
+                                <textarea id="resend_message" name="message" rows="3"
+                                    aria-describedby="resend_message_help"
+                                    class="mt-1 block w-full border-border rounded-md shadow-sm focus:ring-2 focus:ring-ring">{{ old('message') }}</textarea>
+                                <x-input-error :messages="$errors->get('message')" class="mt-2" />
                             </div>
                         </div>
 
@@ -267,7 +246,7 @@
                             </button>
                             <button type="submit"
                                 class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
-                                Record Payment
+                                Resend Email
                             </button>
                         </div>
                     </form>

@@ -159,6 +159,14 @@ class Invoice extends Model
     }
 
     /**
+     * @return HasMany<InvoiceEmailLog, $this>
+     */
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(InvoiceEmailLog::class, 'invoice_id');
+    }
+
+    /**
      * @return HasMany<PaymentGatewayTransaction, $this>
      */
     public function gatewayTransactions(): HasMany

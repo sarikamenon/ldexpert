@@ -15,12 +15,14 @@ use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\InvoiceFilterDTO;
+use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Invoice\AttachSessionsRequest;
 use App\Http\Requests\Admin\Invoice\CreateInvoiceRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceDataRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceIndexRequest;
+use App\Http\Requests\Admin\Invoice\ResendInvoiceEmailRequest;
 use App\Http\Requests\Admin\Invoice\SendInvoiceRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
@@ -152,6 +154,7 @@ final class InvoiceController extends Controller
             'sessionLogs.therapist',
             'school',
             'sentBy',
+            'emailLogs.sentBy',
         ]);
 
         return view('admin.invoices.show', [
@@ -173,6 +176,27 @@ final class InvoiceController extends Controller
             return redirect()
                 ->route('admin.invoices.show', $invoice)
                 ->with('success', 'Invoice sent successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function resendEmail(ResendInvoiceEmailRequest $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('resendEmail', $invoice);
+
+        $dto = ResendInvoiceEmailDTO::fromArray($request->validated());
+
+        try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->invoiceService->resendInvoiceEmail($user, $invoice, $dto);
+
+            return redirect()
+                ->route('admin.invoices.show', $invoice)
+                ->with('success', 'Invoice email resent successfully.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()
