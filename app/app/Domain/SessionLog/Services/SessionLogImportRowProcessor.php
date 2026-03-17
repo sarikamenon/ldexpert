@@ -157,9 +157,9 @@ final class SessionLogImportRowProcessor
         }
 
         // SSA lookup
-        $ssa = $this->lookupSSA($student->id, $service->id, $sessionDate);
+        $ssa = $this->lookupSSA($student->id, $service->id, $sessionDate, $therapist->id);
         if (! $ssa) {
-            $this->markError($importRow, 'No matching SSA found for student + service + date.');
+            $this->markError($importRow, 'No matching SSA found for student + service + date + therapist.');
             return;
         }
 
@@ -280,11 +280,12 @@ final class SessionLogImportRowProcessor
             ->first();
     }
 
-    public function lookupSSA(int $studentId, int $serviceId, string $sessionDate): ?ServiceSupportAgreement
+    public function lookupSSA(int $studentId, int $serviceId, string $sessionDate, int $therapistId): ?ServiceSupportAgreement
     {
         return ServiceSupportAgreement::query()
             ->where('student_id', $studentId) // @phpstan-ignore argument.type
             ->where('primary_service_id', $serviceId) // @phpstan-ignore argument.type
+            ->where('assigned_therapist_id', $therapistId) // @phpstan-ignore argument.type
             ->where('start_date', '<=', $sessionDate) // @phpstan-ignore argument.type
             ->where('end_date', '>=', $sessionDate) // @phpstan-ignore argument.type
             ->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING]) // @phpstan-ignore argument.type
