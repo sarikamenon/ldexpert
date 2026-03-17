@@ -524,6 +524,242 @@ final class SSAImportTest extends TestCase
         $this->assertEquals(1, ServiceSupportAgreement::count());
     }
 
+    public function test_rsm_import_skips_all_processing_for_completed_ssa(): void
+    {
+        Mail::fake();
+
+        $existingSsa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $this->service->id,
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'status' => \App\Enums\SSAStatus::COMPLETED,
+            'minutes_per_session' => 30,
+            'tho_minutes' => 600,
+            'frequency' => \App\Enums\ServiceFrequency::WEEKLY,
+            'sessions_per_frequency' => 1,
+        ]);
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Status (3=WD)' => '1',
+                'Identity ID' => 'STU001',
+                'School Name' => 'Test School EMR',
+                'Begin Date' => '01/01/2025',
+                'End Date' => '12/31/2025',
+                'Service' => $this->service->name,
+                'Hours' => '2.00',
+                'How Often' => '3',
+                'Per' => 'Month',
+                'Total Hrs Owed' => '48.00',
+                'Therapist Email' => '',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm.csv', $csvContent);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.ssas.import.store'), [
+                'file' => $file,
+                'type' => SSAImportType::RSM->value,
+            ]);
+
+        $import = SSAImport::first();
+        (new ProcessSSAImportJob($import))->handle(app(\App\Domain\SSA\Services\SSAImportService::class));
+
+        $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+        $this->assertEquals($existingSsa->id, $row->ssa_id);
+        $this->assertStringContainsString('completed', (string) $row->error_message);
+
+        // Verify no fields were updated on the completed SSA
+        $existingSsa->refresh();
+        $this->assertEquals(\App\Enums\SSAStatus::COMPLETED, $existingSsa->status);
+        $this->assertEquals(30, $existingSsa->minutes_per_session);
+        $this->assertEquals(600, $existingSsa->tho_minutes);
+        $this->assertEquals('weekly', $existingSsa->frequency->value);
+        $this->assertEquals(1, $existingSsa->sessions_per_frequency);
+    }
+
+    public function test_rsm_import_reassigns_therapist_when_active_and_therapist_changed(): void
+    {
+        Mail::fake();
+
+        $oldTherapist = User::factory()->therapist()->create([
+            'email' => 'old-therapist@example.com',
+            'status' => UserStatus::ACTIVE,
+        ]);
+        $newTherapist = User::factory()->therapist()->create([
+            'email' => 'new-therapist@example.com',
+            'status' => UserStatus::ACTIVE,
+        ]);
+
+        $existingSsa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $this->service->id,
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'status' => \App\Enums\SSAStatus::ACTIVE,
+            'assigned_therapist_id' => $oldTherapist->id,
+        ]);
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Status (3=WD)' => '1',
+                'Identity ID' => 'STU001',
+                'School Name' => 'Test School EMR',
+                'Begin Date' => '01/01/2025',
+                'End Date' => '12/31/2025',
+                'Service' => $this->service->name,
+                'Hours' => '1.00',
+                'How Often' => '1',
+                'Per' => 'Week',
+                'Total Hrs Owed' => '24.00',
+                'Therapist Email' => 'new-therapist@example.com',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm.csv', $csvContent);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.ssas.import.store'), [
+                'file' => $file,
+                'type' => SSAImportType::RSM->value,
+            ]);
+
+        $import = SSAImport::first();
+        (new ProcessSSAImportJob($import))->handle(app(\App\Domain\SSA\Services\SSAImportService::class));
+
+        $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+        $this->assertStringContainsString('Reassigned therapist', (string) $row->error_message);
+
+        // Verify therapist was reassigned and status stayed active
+        $existingSsa->refresh();
+        $this->assertEquals(\App\Enums\SSAStatus::ACTIVE, $existingSsa->status);
+        $this->assertEquals($newTherapist->id, $existingSsa->assigned_therapist_id);
+    }
+
+    public function test_rsm_import_no_changes_when_active_and_same_therapist(): void
+    {
+        Mail::fake();
+
+        $therapist = User::factory()->therapist()->create([
+            'email' => 'therapist@example.com',
+            'status' => UserStatus::ACTIVE,
+        ]);
+
+        $existingSsa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $this->service->id,
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'status' => \App\Enums\SSAStatus::ACTIVE,
+            'assigned_therapist_id' => $therapist->id,
+        ]);
+
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Status (3=WD)' => '1',
+                'Identity ID' => 'STU001',
+                'School Name' => 'Test School EMR',
+                'Begin Date' => '01/01/2025',
+                'End Date' => '12/31/2025',
+                'Service' => $this->service->name,
+                'Hours' => '1.00',
+                'How Often' => '1',
+                'Per' => 'Week',
+                'Total Hrs Owed' => '24.00',
+                'Therapist Email' => 'therapist@example.com',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm.csv', $csvContent);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.ssas.import.store'), [
+                'file' => $file,
+                'type' => SSAImportType::RSM->value,
+            ]);
+
+        $import = SSAImport::first();
+        (new ProcessSSAImportJob($import))->handle(app(\App\Domain\SSA\Services\SSAImportService::class));
+
+        $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+        $this->assertStringContainsString('No changes needed', (string) $row->error_message);
+
+        // Verify nothing changed
+        $existingSsa->refresh();
+        $this->assertEquals(\App\Enums\SSAStatus::ACTIVE, $existingSsa->status);
+        $this->assertEquals($therapist->id, $existingSsa->assigned_therapist_id);
+    }
+
+    public function test_rsm_import_updates_ssa_fields_on_reimport(): void
+    {
+        Mail::fake();
+
+        $therapist = User::factory()->therapist()->create([
+            'email' => 'therapist@example.com',
+            'status' => UserStatus::ACTIVE,
+        ]);
+
+        $existingSsa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $this->student->id,
+            'primary_service_id' => $this->service->id,
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'status' => \App\Enums\SSAStatus::ACTIVE,
+            'assigned_therapist_id' => $therapist->id,
+            'minutes_per_session' => 30,
+            'frequency' => \App\Enums\ServiceFrequency::WEEKLY,
+            'sessions_per_frequency' => 1,
+            'tho_minutes' => 600,
+        ]);
+
+        // Re-import with different frequency, hours, and THO
+        $csvContent = $this->generateRsmCsvContent([
+            [
+                'Status (3=WD)' => '1',
+                'Identity ID' => 'STU001',
+                'School Name' => 'Test School EMR',
+                'Begin Date' => '01/01/2025',
+                'End Date' => '12/31/2025',
+                'Service' => $this->service->name,
+                'Hours' => '1.50',
+                'How Often' => '2',
+                'Per' => 'Month',
+                'Total Hrs Owed' => '36.00',
+                'Therapist Email' => 'therapist@example.com',
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('rsm.csv', $csvContent);
+
+        $this->actingAs($this->admin)
+            ->postJson(route('admin.ssas.import.store'), [
+                'file' => $file,
+                'type' => SSAImportType::RSM->value,
+            ]);
+
+        $import = SSAImport::first();
+        (new ProcessSSAImportJob($import))->handle(app(\App\Domain\SSA\Services\SSAImportService::class));
+
+        $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
+        $this->assertEquals('done', $row->status->value);
+
+        // Verify fields were updated
+        $existingSsa->refresh();
+        $this->assertEquals(90, $existingSsa->minutes_per_session); // 1.50 hours × 60
+        $this->assertEquals('monthly', $existingSsa->frequency->value);
+        $this->assertEquals(2, $existingSsa->sessions_per_frequency);
+        $this->assertEquals(2160, $existingSsa->tho_minutes); // 36.00 hours × 60
+
+        // Status and therapist unchanged
+        $this->assertEquals(\App\Enums\SSAStatus::ACTIVE, $existingSsa->status);
+        $this->assertEquals($therapist->id, $existingSsa->assigned_therapist_id);
+    }
+
     public function test_admin_can_download_rsm_template(): void
     {
         $response = $this->actingAs($this->admin)
