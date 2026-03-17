@@ -16,20 +16,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const chartCanvas = document.getElementById('deliveryProgressChart');
     if (!chartCanvas) return;
 
-    const served = parseInt(chartCanvas.dataset.served) || 0;
-    const tho = parseInt(chartCanvas.dataset.tho) || 0;
-    const scheduled = parseInt(chartCanvas.dataset.scheduled) || 0;
-    const logged = parseInt(chartCanvas.dataset.logged) || 0;
-    const approved = parseInt(chartCanvas.dataset.approved) || 0;
+    const served = parseFloat(chartCanvas.dataset.served) || 0;
+    const tho = parseFloat(chartCanvas.dataset.tho) || 0;
+    const scheduled = parseFloat(chartCanvas.dataset.scheduled) || 0;
+    const logged = parseFloat(chartCanvas.dataset.logged) || 0;
+    const approved = parseFloat(chartCanvas.dataset.approved) || 0;
     const hasMinutesSummary = chartCanvas.dataset.scheduled !== undefined && tho > 0;
 
     let labels, data, backgroundColor;
 
     if (hasMinutesSummary) {
-        const loggedNotApproved = Math.max(0, logged - approved);
-        const scheduledNotLogged = Math.max(0, scheduled - logged);
-        const remaining = Math.max(0, tho - scheduled);
-        labels = ['Approved Minutes', 'Logged (not approved)', 'Scheduled (not logged)', 'Remaining'];
+        const loggedNotApproved = Math.round(Math.max(0, logged - approved) * 100) / 100;
+        const scheduledNotLogged = Math.round(Math.max(0, scheduled - logged) * 100) / 100;
+        const remaining = Math.round(Math.max(0, tho - scheduled) * 100) / 100;
+        labels = ['Approved Hours', 'Logged (not approved)', 'Scheduled (not logged)', 'Remaining'];
         data = [approved, loggedNotApproved, scheduledNotLogged, remaining];
         backgroundColor = [
             CHART_COLORS.approved,
@@ -38,8 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             CHART_COLORS.remaining,
         ];
     } else {
-        const remaining = Math.max(0, tho - served);
-        labels = ['Served Minutes', 'Remaining Minutes'];
+        const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
+        labels = ['Served Hours', 'Remaining Hours'];
         data = [served, remaining];
         backgroundColor = [CHART_COLORS.served, CHART_COLORS.remaining];
     }
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const pct = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${context.label}: ${value.toLocaleString()} min (${pct}%)`;
+                            return `${context.label}: ${value.toFixed(2)} hrs (${pct}%)`;
                         },
                     },
                 },

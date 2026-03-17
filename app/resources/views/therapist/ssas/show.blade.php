@@ -58,12 +58,12 @@
                         <div class="relative" style="height: 250px;">
                             <canvas
                                 id="deliveryProgressChart"
-                                data-served="{{ $ssa->served_minutes }}"
-                                data-tho="{{ $ssa->tho_minutes }}"
+                                data-served="{{ $ssa->served_hours }}"
+                                data-tho="{{ $ssa->tho_hours }}"
                                 @isset($minutesSummary)
-                                    data-scheduled="{{ $minutesSummary->scheduledMinutes }}"
-                                    data-logged="{{ $minutesSummary->loggedMinutes }}"
-                                    data-approved="{{ $minutesSummary->approvedMinutes }}"
+                                    data-scheduled="{{ $minutesSummary->getScheduledHours() }}"
+                                    data-logged="{{ $minutesSummary->getLoggedHours() }}"
+                                    data-approved="{{ $minutesSummary->getApprovedHours() }}"
                                 @endisset
                             ></canvas>
                         </div>
@@ -71,36 +71,36 @@
                             @isset($minutesSummary)
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Authorized (THO) Minutes
-                                        <x-ui::tooltip-icon content="Total minutes authorized for this SSA based on the agreed service frequency and duration." />
+                                        Authorized (THO) Hours
+                                        <x-ui::tooltip-icon content="Total hours authorized for this SSA based on the agreed service frequency and duration." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->thoMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getThoHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Scheduled Minutes
-                                        <x-ui::tooltip-icon content="Total minutes scheduled on the calendar for this SSA, including both upcoming and completed sessions." />
+                                        Scheduled Hours
+                                        <x-ui::tooltip-icon content="Total hours scheduled on the calendar for this SSA, including both upcoming and completed sessions." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->scheduledMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getScheduledHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Logged Minutes
-                                        <x-ui::tooltip-icon content="Minutes captured on submitted or approved session logs for this SSA, before final approval." />
+                                        Logged Hours
+                                        <x-ui::tooltip-icon content="Hours captured on submitted or approved session logs for this SSA, before final approval." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->loggedMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getLoggedHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2">
                                     <span class="text-foreground/70 flex items-center gap-1">
-                                        Approved Minutes
-                                        <x-ui::tooltip-icon content="Minutes from approved session logs that count toward THO utilization for this SSA." />
+                                        Approved Hours
+                                        <x-ui::tooltip-icon content="Hours from approved session logs that count toward THO utilization for this SSA." />
                                     </span>
-                                    <span class="font-semibold">{{ number_format($minutesSummary->approvedMinutes) }}</span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getApprovedHours(), 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between gap-2 pt-2 border-t border-border">
                                     <span class="font-medium flex items-center gap-1">
                                         Progress
-                                        <x-ui::tooltip-icon content="Percentage of authorized (THO) minutes that have been approved for this SSA." />
+                                        <x-ui::tooltip-icon content="Percentage of authorized (THO) hours that have been approved for this SSA." />
                                     </span>
                                     <span class="font-semibold text-primary">
                                         {{ $minutesSummary->getApprovedUtilizationPercentage() }}% of THO used
@@ -108,12 +108,12 @@
                                 </div>
                             @else
                                 <div class="flex items-center justify-between">
-                                    <span class="text-foreground/70">Served Minutes</span>
-                                    <span class="font-semibold">{{ number_format($ssa->served_minutes) }}</span>
+                                    <span class="text-foreground/70">Served Hours</span>
+                                    <span class="font-semibold">{{ number_format($ssa->served_hours, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-foreground/70">THO Minutes</span>
-                                    <span class="font-semibold">{{ number_format($ssa->tho_minutes) }}</span>
+                                    <span class="text-foreground/70">THO Hours</span>
+                                    <span class="font-semibold">{{ number_format($ssa->tho_hours, 2) }}</span>
                                 </div>
                                 <div class="flex items-center justify-between pt-2 border-t border-border">
                                     <span class="font-medium">Progress</span>

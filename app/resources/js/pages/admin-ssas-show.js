@@ -16,29 +16,29 @@ function initDeliveryProgressChart() {
     const canvas = document.getElementById('deliveryProgressChart');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const servedMinutes = parseInt(canvas.dataset.served || '0');
-    const thoMinutes = parseInt(canvas.dataset.tho || '0');
-    const scheduledMinutes = parseInt(canvas.dataset.scheduled || '0');
-    const loggedMinutes = parseInt(canvas.dataset.logged || '0');
-    const approvedMinutes = parseInt(canvas.dataset.approved || '0');
-    const hasMinutesSummary = canvas.dataset.scheduled !== undefined && thoMinutes > 0;
+    const served = parseFloat(canvas.dataset.served || '0');
+    const tho = parseFloat(canvas.dataset.tho || '0');
+    const scheduled = parseFloat(canvas.dataset.scheduled || '0');
+    const logged = parseFloat(canvas.dataset.logged || '0');
+    const approved = parseFloat(canvas.dataset.approved || '0');
+    const hasMinutesSummary = canvas.dataset.scheduled !== undefined && tho > 0;
 
     let labels;
     let data;
     let backgroundColor;
 
     if (hasMinutesSummary) {
-        const loggedNotApproved = Math.max(0, loggedMinutes - approvedMinutes);
-        const scheduledNotLogged = Math.max(0, scheduledMinutes - loggedMinutes);
-        const remaining = Math.max(0, thoMinutes - scheduledMinutes);
+        const loggedNotApproved = Math.round(Math.max(0, logged - approved) * 100) / 100;
+        const scheduledNotLogged = Math.round(Math.max(0, scheduled - logged) * 100) / 100;
+        const remaining = Math.round(Math.max(0, tho - scheduled) * 100) / 100;
 
         labels = [
-            'Approved Minutes',
+            'Approved Hours',
             'Logged (not approved)',
             'Scheduled (not logged)',
             'Remaining',
         ];
-        data = [approvedMinutes, loggedNotApproved, scheduledNotLogged, remaining];
+        data = [approved, loggedNotApproved, scheduledNotLogged, remaining];
         backgroundColor = [
             CHART_COLORS.approved,
             CHART_COLORS.loggedNotApproved,
@@ -46,9 +46,9 @@ function initDeliveryProgressChart() {
             CHART_COLORS.remaining,
         ];
     } else {
-        const remainingMinutes = Math.max(0, thoMinutes - servedMinutes);
-        labels = ['Served Minutes', 'Remaining Minutes'];
-        data = [servedMinutes, remainingMinutes];
+        const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
+        labels = ['Served Hours', 'Remaining Hours'];
+        data = [served, remaining];
         backgroundColor = [CHART_COLORS.served, CHART_COLORS.remaining];
     }
 
@@ -81,7 +81,7 @@ function initDeliveryProgressChart() {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value.toLocaleString()} min (${percentage}%)`;
+                            return `${label}: ${value.toFixed(2)} hrs (${percentage}%)`;
                         }
                     }
                 }

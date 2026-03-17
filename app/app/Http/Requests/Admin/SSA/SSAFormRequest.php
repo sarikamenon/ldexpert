@@ -58,7 +58,7 @@ abstract class SSAFormRequest extends FormRequest
             'adjusted_minutes' => ['nullable', 'integer'],
             'adjustment_notes' => ['nullable', 'string', 'max:65535'],
             'additional_notes' => ['nullable', 'string', 'max:65535'],
-            'tho_minutes' => ['required', 'integer', 'min:0'],
+            'tho_minutes' => ['required', 'numeric', 'min:0'],
             'assigned_therapist_id' => [
                 'nullable',
                 'integer',

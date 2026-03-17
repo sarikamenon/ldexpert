@@ -226,9 +226,12 @@ final class StudentController extends Controller
             $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
             $served = (int) $ssasForMetrics->sum('served_minutes');
 
+            $totalThoHours = round($totalTho / 60, 2);
+            $servedHours = round($served / 60, 2);
+
             $viewData['chartData'] = [
-                'served' => $served,
-                'remaining' => max(0, $totalTho - $served),
+                'served' => $servedHours,
+                'remaining' => round(max(0, $totalThoHours - $servedHours), 2),
                 'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
             ];
 

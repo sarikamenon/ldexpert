@@ -140,7 +140,9 @@ final class SSAController extends Controller
         $this->authorize('create', ServiceSupportAgreement::class);
 
         try {
-            $dto = CreateSSADTO::fromArray($request->validated());
+            $validated = $request->validated();
+            $validated['tho_minutes'] = (int) round((float) $validated['tho_minutes'] * 60);
+            $dto = CreateSSADTO::fromArray($validated);
             $this->ssaService->create($dto);
 
             if ($request->input('add_more_ssa') === '1') {
@@ -217,7 +219,11 @@ final class SSAController extends Controller
         $this->authorize('update', $ssa);
 
         try {
-            $dto = UpdateSSADTO::fromArray($request->validated());
+            $validated = $request->validated();
+            if (isset($validated['tho_minutes'])) {
+                $validated['tho_minutes'] = (int) round((float) $validated['tho_minutes'] * 60);
+            }
+            $dto = UpdateSSADTO::fromArray($validated);
             $this->ssaService->update($ssa, $dto);
 
             return redirect()
@@ -308,8 +314,8 @@ final class SSAController extends Controller
                 'Minutes per Session',
                 'Frequency',
                 'Sessions per Frequency',
-                'THO Minutes',
-                'Served Minutes',
+                'THO Hours',
+                'Served Hours',
                 'Status',
             ]);
 
@@ -324,8 +330,8 @@ final class SSAController extends Controller
                     $ssa->minutes_per_session,
                     $ssa->frequency?->label() ?? '',
                     $ssa->sessions_per_frequency,
-                    $ssa->tho_minutes,
-                    $ssa->served_minutes,
+                    $ssa->tho_hours,
+                    $ssa->served_hours,
                     $ssa->status->label(),
                 ]);
             }

@@ -42,6 +42,26 @@ final class SSAMinutesSummaryDTO
         return max(0, $this->thoMinutes - $this->approvedMinutes);
     }
 
+    public function getThoHours(): float
+    {
+        return round($this->thoMinutes / 60, 2);
+    }
+
+    public function getScheduledHours(): float
+    {
+        return round($this->scheduledMinutes / 60, 2);
+    }
+
+    public function getLoggedHours(): float
+    {
+        return round($this->loggedMinutes / 60, 2);
+    }
+
+    public function getApprovedHours(): float
+    {
+        return round($this->approvedMinutes / 60, 2);
+    }
+
     public function getApprovedUtilizationPercentage(): float
     {
         if ($this->thoMinutes <= 0) {

@@ -6,14 +6,14 @@ function initTherapistProgressChart() {
         return;
     }
 
-    const served = parseInt(canvas.dataset.served || '0', 10);
-    const tho = parseInt(canvas.dataset.tho || '0', 10);
-    const remaining = Math.max(0, tho - served);
+    const served = parseFloat(canvas.dataset.served || '0');
+    const tho = parseFloat(canvas.dataset.tho || '0');
+    const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
 
     new Chart(canvas, {
         type: 'doughnut',
         data: {
-            labels: ['Served', 'Remaining'],
+            labels: ['Served Hours', 'Remaining Hours'],
             datasets: [{
                 data: [served, remaining],
                 backgroundColor: ['#0ea5e9', '#e5e7eb'],
@@ -41,7 +41,7 @@ function initTherapistProgressChart() {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((sum, item) => sum + item, 0);
                             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value.toLocaleString()} (${percentage}%)`;
+                            return `${label}: ${value.toFixed(2)} hrs (${percentage}%)`;
                         },
                     },
                 },
