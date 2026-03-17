@@ -150,7 +150,14 @@ final class EloquentSSARepository implements SSARepositoryInterface
     public function update(ServiceSupportAgreement $ssa, UpdateSSADTO $dto): ServiceSupportAgreement
     {
         return DB::transaction(function () use ($ssa, $dto) {
-            $ssa->update($dto->toArray());
+            $data = $dto->toArray();
+            // Auto-activate when assigning a therapist via the edit form (same as assignTherapist())
+            if (array_key_exists('assigned_therapist_id', $data)
+                && $data['assigned_therapist_id'] !== null
+                && $ssa->status === SSAStatus::PENDING) {
+                $data['status'] = SSAStatus::ACTIVE->value;
+            }
+            $ssa->update($data);
 
             $this->syncSsaServices($ssa, $dto->additionalServiceIds);
 
@@ -241,6 +248,34 @@ final class EloquentSSARepository implements SSARepositoryInterface
                     'status' => SSAStatus::PENDING->value, // Reset to pending when unassigned
                 ]);
             }
+
+            /** @var ServiceSupportAgreement $freshSsa */
+            $freshSsa = $ssa->fresh();
+
+            return $freshSsa;
+        });
+    }
+
+    public function deactivateWithUnassign(ServiceSupportAgreement $ssa, ?string $reason = null): ServiceSupportAgreement
+    {
+        return DB::transaction(function () use ($ssa, $reason) {
+            $therapistId = $ssa->assigned_therapist_id;
+
+            if ($therapistId !== null) {
+                SSAAssignmentHistory::create([
+                    'ssa_id' => $ssa->id,
+                    'therapist_id' => $therapistId,
+                    'action' => 'unassigned',
+                    'assigned_by' => Auth::id(),
+                    'reason' => $reason,
+                    'unassigned_at' => now(),
+                ]);
+            }
+
+            $ssa->update([
+                'assigned_therapist_id' => null,
+                'status' => SSAStatus::DEACTIVATED->value,
+            ]);
 
             /** @var ServiceSupportAgreement $freshSsa */
             $freshSsa = $ssa->fresh();

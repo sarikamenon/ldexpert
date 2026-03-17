@@ -42,12 +42,6 @@
 
                 <x-ui::input type="text" name="invoice_number" value="{{ $filters['invoice_number'] ?? '' }}"
                     placeholder="Invoice #" class="w-32" />
-
-                @if (!empty(array_filter($filters ?? [])))
-                    <a href="{{ route('admin.invoices.index') }}">
-                        <x-ui::button type="button" variant="secondary">Clear</x-ui::button>
-                    </a>
-                @endif
             </x-slot:filters>
 
             <x-slot:actions>

@@ -43,6 +43,12 @@ interface SSARepositoryInterface
 
     public function unassignTherapist(ServiceSupportAgreement $ssa, ?string $reason = null): ServiceSupportAgreement;
 
+    /**
+     * Unassign therapist (if any) and set status to DEACTIVATED in a single update.
+     * Used for bulk RSM import when withdrawing SSAs.
+     */
+    public function deactivateWithUnassign(ServiceSupportAgreement $ssa, ?string $reason = null): ServiceSupportAgreement;
+
     /** @return Collection<int, \App\Models\SSAAssignmentHistory> */
     public function getAssignmentHistory(ServiceSupportAgreement $ssa): Collection;
 
