@@ -30,7 +30,8 @@ use App\Models\User;
  * | Pending     | 1        | None              | Yes                | Assign therapist → Active            |
  * | Pending     | 3        | —                 | —                  | Deactivate                           |
  * | Active      | 1        | Yes               | None               | Unassign therapist → Pending         |
- * | Active      | 1        | Yes               | Yes                | None                                 |
+ * | Active      | 1        | Yes               | Yes (same)         | None                                 |
+ * | Active      | 1        | Yes               | Yes (different)    | Reassign therapist (stay Active)     |
  * | Active      | 3        | Yes               | —                  | Unassign therapist → Deactivate      |
  * | Deactivated | 1        | None              | None               | Mark Pending                         |
  * | Deactivated | 1        | None              | Yes                | Assign therapist → Active            |
@@ -75,7 +76,7 @@ final class RsmImportHandler
                 return;
             }
 
-            $this->updateThoFields($existingSsa, $mappedData, $thoMinutes);
+            $this->updateSsaFields($existingSsa, $mappedData, $thoMinutes);
             $this->applyStatusLogic($importRow, $existingSsa, $isWithdrawn, $therapistId);
 
             return;
@@ -144,8 +145,9 @@ final class RsmImportHandler
     ): void {
         $ourStatus = $ssa->status;
         $hasIncomingTherapist = $therapistId !== null;
+        $isTherapistChanged = $hasIncomingTherapist && $ssa->assigned_therapist_id !== $therapistId;
 
-        $noChangeMessage = $this->getNoChangeMessage($ourStatus, $isWithdrawn, $hasIncomingTherapist);
+        $noChangeMessage = $this->getNoChangeMessage($ourStatus, $isWithdrawn, $hasIncomingTherapist, $isTherapistChanged);
         if ($noChangeMessage !== null) {
             $this->finishImportRow($importRow, $ssa, $noChangeMessage);
 
@@ -169,7 +171,7 @@ final class RsmImportHandler
             // If match doesn't propagate the reference correctly, refactor to if/elseif.
             match ($ourStatus) {
                 SSAStatus::PENDING => $this->handlePendingWithActiveImport($ssa, $hasIncomingTherapist, $therapistId, $action),
-                SSAStatus::ACTIVE => $this->handleActiveWithActiveImport($ssa, $hasIncomingTherapist, $action),
+                SSAStatus::ACTIVE => $this->handleActiveWithActiveImport($ssa, $hasIncomingTherapist, $therapistId, $action),
                 SSAStatus::DEACTIVATED => $this->handleDeactivatedWithActiveImport($ssa, $hasIncomingTherapist, $therapistId, $action),
                 SSAStatus::COMPLETED => null, // Completed SSAs are never modified
             };
@@ -179,8 +181,12 @@ final class RsmImportHandler
     }
 
     /** @return string|null Message if no changes needed, null if action required */
-    private function getNoChangeMessage(SSAStatus $ourStatus, bool $isWithdrawn, bool $hasIncomingTherapist): ?string
-    {
+    private function getNoChangeMessage(
+        SSAStatus $ourStatus,
+        bool $isWithdrawn,
+        bool $hasIncomingTherapist,
+        bool $isTherapistChanged,
+    ): ?string {
         if ($isWithdrawn) {
             return $ourStatus === SSAStatus::DEACTIVATED
                 ? 'Already deactivated'
@@ -189,7 +195,7 @@ final class RsmImportHandler
 
         return match ($ourStatus) {
             SSAStatus::PENDING => $hasIncomingTherapist ? null : 'No changes needed',
-            SSAStatus::ACTIVE => $hasIncomingTherapist ? 'No changes needed' : null,
+            SSAStatus::ACTIVE => ($hasIncomingTherapist && ! $isTherapistChanged) ? 'No changes needed' : null,
             SSAStatus::DEACTIVATED => null,
             SSAStatus::COMPLETED => null, // Completed is handled before applyStatusLogic
         };
@@ -225,14 +231,22 @@ final class RsmImportHandler
     private function handleActiveWithActiveImport(
         ServiceSupportAgreement $ssa,
         bool $hasIncomingTherapist,
+        ?int $therapistId,
         string &$action,
     ): void {
         if (! $hasIncomingTherapist) {
             // Row 5: Active + no incoming therapist → unassign → pending
             $this->ssaService->unassignTherapist($ssa, 'RSM import: therapist removed');
             $action = 'Unassigned therapist and marked as pending';
+        } elseif ($therapistId !== null && $ssa->assigned_therapist_id !== $therapistId) {
+            // Active + different incoming therapist → reassign (status stays active)
+            $this->ssaService->assignTherapist(
+                $ssa,
+                new SSAAssignmentDTO(therapistId: $therapistId, reason: 'RSM import: therapist reassigned'),
+            );
+            $action = 'Reassigned therapist';
         }
-        // Row 6: Active + incoming therapist → no action (already active with therapist)
+        // Row 6: Active + same incoming therapist → no action (already handled by getNoChangeMessage)
     }
 
     private function handleDeactivatedWithActiveImport(
@@ -267,16 +281,29 @@ final class RsmImportHandler
     }
 
     /**
-     * Update THO-related fields on an existing SSA with adjustment data from import.
+     * Update SSA fields from import data (THO, frequency, duration, etc.)
+     * Does NOT update status — status changes are handled by applyStatusLogic.
      *
      * @param  array<string, mixed>  $mappedData
      */
-    private function updateThoFields(
+    private function updateSsaFields(
         ServiceSupportAgreement $ssa,
         array $mappedData,
         int $thoMinutes,
     ): void {
         $updates = ['tho_minutes' => $thoMinutes];
+
+        if (isset($mappedData['minutes_per_session'])) {
+            $updates['minutes_per_session'] = (int) $mappedData['minutes_per_session'];
+        }
+
+        if (! empty($mappedData['frequency'])) {
+            $updates['frequency'] = ServiceFrequency::from($mappedData['frequency'])->value;
+        }
+
+        if (isset($mappedData['sessions_per_frequency'])) {
+            $updates['sessions_per_frequency'] = (int) $mappedData['sessions_per_frequency'];
+        }
 
         if (isset($mappedData['calculated_minutes'])) {
             $updates['calculated_minutes'] = (int) $mappedData['calculated_minutes'];
