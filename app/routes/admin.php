@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ServiceController;
 use App\Http\Controllers\Admin\SessionLogController;
+use App\Http\Controllers\Admin\SessionLogImportController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SSAController;
 use App\Http\Controllers\Admin\StudentCommentController;
@@ -154,6 +155,14 @@ Route::middleware('role:admin')
 
         // Session Logs
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
+            Route::get('import', [SessionLogImportController::class, 'showImportForm'])->name('import');
+            Route::post('import', [SessionLogImportController::class, 'import'])->name('import.store');
+            Route::get('imports', [SessionLogImportController::class, 'importHistory'])->name('imports.index');
+            Route::post('imports/data', [SessionLogImportController::class, 'importHistoryData'])->name('imports.data');
+            Route::get('imports/{import}', [SessionLogImportController::class, 'showImportStatus'])->name('imports.show');
+            Route::get('imports/{import}/status', [SessionLogImportController::class, 'showImportStatus'])->name('imports.status');
+            Route::get('import/template', [SessionLogImportController::class, 'downloadTemplate'])->name('import.template');
+
             Route::get('/', [SessionLogController::class, 'index'])->name('index');
             Route::post('data', [SessionLogController::class, 'data'])->name('data');
             Route::get('{sessionLog}', [SessionLogController::class, 'show'])->name('show');
