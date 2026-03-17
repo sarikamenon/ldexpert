@@ -75,7 +75,7 @@ final class ScenarioTherapistSeeder extends Seeder
             'first_name' => "First{$index}",
             'last_name' => "{$positionName}{$index}",
             'personal_email' => $user->email,
-            'phone' => '555-' . str_pad((string) $index, 3, '0', STR_PAD_LEFT) . '-0000',
+            'phone' => '555-'.str_pad((string) $index, 3, '0', STR_PAD_LEFT).'-0000',
             'ld_email' => $user->email,
             'address' => '123 Scenario St',
             'comments' => 'Scenario 2025 therapist.',
