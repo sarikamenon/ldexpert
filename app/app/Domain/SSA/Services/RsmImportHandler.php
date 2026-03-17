@@ -69,6 +69,12 @@ final class RsmImportHandler
         );
 
         if ($existingSsa !== null) {
+            if ($existingSsa->status === SSAStatus::COMPLETED) {
+                $this->finishImportRow($importRow, $existingSsa, 'Skipped: SSA is already completed.');
+
+                return;
+            }
+
             $this->updateThoFields($existingSsa, $mappedData, $thoMinutes);
             $this->applyStatusLogic($importRow, $existingSsa, $isWithdrawn, $therapistId);
 
@@ -176,16 +182,16 @@ final class RsmImportHandler
     private function getNoChangeMessage(SSAStatus $ourStatus, bool $isWithdrawn, bool $hasIncomingTherapist): ?string
     {
         if ($isWithdrawn) {
-            return ($ourStatus === SSAStatus::DEACTIVATED || $ourStatus === SSAStatus::COMPLETED)
-                ? 'Already deactivated or completed'
+            return $ourStatus === SSAStatus::DEACTIVATED
+                ? 'Already deactivated'
                 : null;
         }
 
         return match ($ourStatus) {
-            SSAStatus::COMPLETED => 'No changes needed',
             SSAStatus::PENDING => $hasIncomingTherapist ? null : 'No changes needed',
             SSAStatus::ACTIVE => $hasIncomingTherapist ? 'No changes needed' : null,
             SSAStatus::DEACTIVATED => null,
+            SSAStatus::COMPLETED => null, // Completed is handled before applyStatusLogic
         };
     }
 
