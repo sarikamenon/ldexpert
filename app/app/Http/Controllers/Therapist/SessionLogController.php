@@ -32,6 +32,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 final class SessionLogController extends Controller
@@ -179,6 +180,7 @@ final class SessionLogController extends Controller
         $ssaServiceMappings = $ssas->map(function ($ssa) {
             return [
                 'ssa_id' => $ssa->id,
+                'primary_service_id' => $ssa->primary_service_id,
                 'services' => $ssa->services->map(function ($service) {
                     return [
                         'id' => $service->id,
@@ -233,6 +235,8 @@ final class SessionLogController extends Controller
             return redirect()
                 ->route('therapist.session-logs.show', $sessionLog)
                 ->with('success', 'Session log created successfully.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()
@@ -290,6 +294,8 @@ final class SessionLogController extends Controller
             return redirect()
                 ->route('therapist.session-logs.show', $sessionLog)
                 ->with('success', 'Session log updated successfully.');
+        } catch (ValidationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             return redirect()
                 ->back()

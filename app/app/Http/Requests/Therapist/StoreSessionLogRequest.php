@@ -84,7 +84,7 @@ final class StoreSessionLogRequest extends FormRequest
     /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
-        $rules = [
+        return [
             'student_id' => ['required', 'integer', Rule::exists('users', 'id')->where('role', 'student')],
             'ssa_id' => ['required', 'integer', Rule::exists('service_support_agreements', 'id')],
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')],
@@ -99,15 +99,13 @@ final class StoreSessionLogRequest extends FormRequest
                 'min:'.config('session_minutes.min'),
                 'max:'.config('session_minutes.max'),
             ],
-            'outcome' => ['string', Rule::in(SessionOutcome::values())],
+            'outcome' => ['required', 'string', Rule::in(SessionOutcome::values())],
             'notes' => ['required', 'string', 'min:50', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],
             'is_billable_school' => ['nullable', 'boolean'],
             // Therapists cannot override rates; this is reserved for admins.
             'is_rate_override' => ['prohibited'],
         ];
-
-        return $rules;
     }
 
     /** @return array<string, string> */
@@ -123,7 +121,12 @@ final class StoreSessionLogRequest extends FormRequest
             'session_date.required' => 'Session date is required.',
             'start_time.required' => 'Start time is required.',
             'end_time.required' => 'End time is required.',
+            'duration_minutes.required' => 'Duration is required.',
+            'duration_minutes.min' => 'Duration must be at least :min minutes.',
+            'duration_minutes.max' => 'Duration must not exceed :max minutes.',
             'end_time.after' => 'End time must be after start time.',
+            'outcome.required' => 'Session outcome is required.',
+            'outcome.in' => 'The selected session outcome is invalid.',
             'is_rate_override.prohibited' => 'Rate overrides are only allowed for admin users.',
         ];
     }
@@ -218,6 +221,15 @@ final class StoreSessionLogRequest extends FormRequest
                 if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
                     $validator->errors()->add('session_date', 'Session date falls on a school holiday.');
                 }
+            }
+
+            // Validate active contracts cover the session date
+            $sessionDate = $this->input('session_date');
+            if ($sessionDate && $therapist->id) {
+                $contractRule = new \App\Rules\SessionDateHasActiveContracts($therapist->id, $schoolId);
+                $contractRule->validate('session_date', $sessionDate, function (string $message) use ($validator): void { // @phpstan-ignore argument.type
+                    $validator->errors()->add('session_date', $message);
+                });
             }
 
             // Validate billing entry window (hard block for therapists)
