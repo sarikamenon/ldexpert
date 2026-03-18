@@ -202,6 +202,8 @@ final class SSAImportService
                 $therapistId = $therapist->id;
             }
 
+            $mappedData = $this->normalizeSchedulingFields($mappedData);
+
             // Calculate THO minutes if not provided
             $thoMinutes = (int) ($mappedData['tho_minutes'] ?? 0);
             if ($thoMinutes === 0 && ! empty($mappedData['frequency']) && ! empty($mappedData['sessions_per_frequency'])) {
@@ -509,6 +511,30 @@ final class SSAImportService
 
     /**
      * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeSchedulingFields(array $data): array
+    {
+        $frequency = isset($data['frequency']) ? ServiceFrequency::tryFrom((string) $data['frequency']) : null;
+
+        if ($frequency !== ServiceFrequency::ONE_TIME) {
+            return $data;
+        }
+
+        $data['sessions_per_frequency'] = $frequency->normalizeSessionsPerFrequency(null);
+
+        if (! empty($data['minutes_per_session'])) {
+            $data['calculated_minutes'] = $frequency->normalizeCalculatedMinutes(
+                (int) $data['minutes_per_session'],
+                null
+            );
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
      * @param  array<int, int>  $additionalServiceIds
      * @return array<int, string>
      */
@@ -519,7 +545,7 @@ final class SSAImportService
         // Basic validation rules
         $rules = [
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['required', 'date'],
             'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
             'tho_minutes' => ['required', 'integer', 'min:0'],
             'frequency' => ['nullable', 'string'],
@@ -534,6 +560,8 @@ final class SSAImportService
         if ($validator->fails()) {
             $errors = array_merge($errors, $validator->errors()->all());
         }
+
+        $errors = array_merge($errors, $this->validateDateRange($data));
 
         // Validate frequency if service is frequency-based
         if ($primaryService->is_frequency_service) {
@@ -570,6 +598,33 @@ final class SSAImportService
         }
 
         return $errors;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function validateDateRange(array $data): array
+    {
+        if (empty($data['start_date']) || empty($data['end_date'])) {
+            return [];
+        }
+
+        $frequency = ! empty($data['frequency'])
+            ? ServiceFrequency::tryFrom((string) $data['frequency'])
+            : null;
+
+        $startDate = Carbon::parse((string) $data['start_date'])->startOfDay();
+        $endDate = Carbon::parse((string) $data['end_date'])->startOfDay();
+
+        if ($frequency === ServiceFrequency::ONE_TIME) {
+            return $endDate->lt($startDate)
+                ? ['End date must be the same as or after start date for one-time SSAs.']
+                : [];
+        }
+
+        return $endDate->gt($startDate)
+            ? []
+            : ['End date must be after start date.'];
     }
 
     public function checkDuplicate(int $studentId, int $serviceId, string $startDate, string $endDate): ?string

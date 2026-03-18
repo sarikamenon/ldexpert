@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Enums\ServiceStatus;
+use App\Enums\ServiceFrequency;
 use App\Enums\SSAImportRowStatus;
 use App\Enums\SSAImportStatus;
 use App\Enums\SSAImportType;
@@ -211,6 +212,61 @@ final class SSAImportTest extends TestCase
         $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
         $this->assertEquals('validation_error', $row->status->value);
         $this->assertNotNull($row->error_message);
+    }
+
+    public function test_import_normalizes_one_time_frequency_fields(): void
+    {
+        Mail::fake();
+
+        $frequencyService = Service::factory()->create([
+            'name' => 'One Time Speech Therapy',
+            'status' => ServiceStatus::ACTIVE,
+            'is_frequency_service' => true,
+            'is_direct_service' => true,
+        ]);
+
+        $csvContent = $this->generateCsvContent([
+            [
+                'student_email' => $this->student->email,
+                'primary_service_name' => $frequencyService->name,
+                'start_date' => '2025-01-01',
+                'end_date' => '2025-01-01',
+                'minutes_per_session' => '60',
+                'tho_minutes' => '0',
+                'frequency' => ServiceFrequency::ONE_TIME->value,
+            ],
+        ]);
+
+        $file = UploadedFile::fake()->createWithContent('ssas-one-time.csv', $csvContent);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.ssas.import.store'), [
+                'file' => $file,
+                'type' => SSAImportType::NOVA->value,
+            ]);
+
+        $response->assertOk();
+        Bus::assertDispatched(ProcessSSAImportJob::class);
+
+        $import = SSAImport::first();
+        $this->assertNotNull($import);
+
+        (new ProcessSSAImportJob($import))->handle(app(\App\Domain\SSA\Services\SSAImportService::class));
+
+        $import->refresh();
+        $this->assertEquals(SSAImportStatus::COMPLETED, $import->status);
+
+        $row = SSAImportRow::where('ssa_import_id', $import->id)->first();
+        $this->assertNotNull($row);
+        $this->assertEquals(SSAImportRowStatus::DONE, $row->status);
+        $this->assertNotNull($row->ssa_id);
+
+        $ssa = ServiceSupportAgreement::find($row->ssa_id);
+        $this->assertNotNull($ssa);
+        $this->assertEquals(ServiceFrequency::ONE_TIME, $ssa->frequency);
+        $this->assertEquals(1, $ssa->sessions_per_frequency);
+        $this->assertEquals(60, $ssa->calculated_minutes);
+        $this->assertEquals(60, $ssa->tho_minutes);
     }
 
     public function test_import_detects_duplicate_ssas(): void

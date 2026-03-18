@@ -124,21 +124,50 @@
 
             <div id="sessions-per-frequency-field">
                 <x-input-label for="sessions_per_frequency" value="Sessions per Frequency *" />
-                <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions per
-                    frequency period</p>
-                <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
-                    max="100" class="mt-1 block w-full" aria-describedby="sessions_per_frequency_help"
-                    value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions in the
+                    selected frequency period.</p>
+                <div class="group relative mt-1">
+                    <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
+                        max="100" class="block w-full pr-10" aria-describedby="sessions_per_frequency_help"
+                        value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                    <span id="sessions_per_frequency_lock"
+                        class="pointer-events-none absolute inset-y-0 right-3 hidden flex items-center text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m12.728 0L5.636 18.364" />
+                        </svg>
+                    </span>
+                </div>
+                <p id="sessions_per_frequency_status" class="mt-2 hidden text-xs text-foreground/60" aria-live="polite">
+                </p>
+                <input type="hidden" id="sessions_per_frequency_hidden" name="sessions_per_frequency"
+                    value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}"
+                    disabled />
                 <x-input-error :messages="$errors->get('sessions_per_frequency')" class="mt-2" />
             </div>
 
             <div id="calculated-minutes-field">
                 <x-input-label for="calculated_minutes" value="Calculated minutes after Sessions per Frequency *" />
-                <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated based on
-                    sessions per frequency</p>
-                <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
-                    class="mt-1 block w-full" aria-describedby="calculated_minutes_help"
-                    value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated from Minutes per
+                    Session and Sessions per Frequency.</p>
+                <div class="group relative mt-1">
+                    <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
+                        class="block w-full pr-10" aria-describedby="calculated_minutes_help"
+                        value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                    <span id="calculated_minutes_lock"
+                        class="pointer-events-none absolute inset-y-0 right-3 hidden flex items-center text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m12.728 0L5.636 18.364" />
+                        </svg>
+                    </span>
+                </div>
+                <p id="calculated_minutes_status" class="mt-2 hidden text-xs text-foreground/60" aria-live="polite">
+                </p>
+                <input type="hidden" id="calculated_minutes_hidden" name="calculated_minutes"
+                    value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" disabled />
                 <x-input-error :messages="$errors->get('calculated_minutes')" class="mt-2" />
             </div>
 

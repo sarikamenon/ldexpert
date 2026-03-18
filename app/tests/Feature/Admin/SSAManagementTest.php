@@ -128,6 +128,80 @@ test('allows admin to create SSA without therapist', function () {
     ]);
 });
 
+test('normalizes one time frequency fields when creating an SSA', function () {
+    $admin = ssaAdmin();
+    $frequencyService = Service::factory()->create([
+        'status' => ServiceStatus::ACTIVE->value,
+        'is_direct_service' => true,
+        'is_frequency_service' => true,
+    ]);
+    $payload = ssaPayload([
+        'primary_service_id' => $frequencyService->id,
+        'start_date' => '2026-01-01',
+        'end_date' => '2026-01-01',
+        'minutes_per_session' => 45,
+        'frequency' => ServiceFrequency::ONE_TIME->value,
+        'sessions_per_frequency' => 6,
+        'calculated_minutes' => 270,
+        'tho_minutes' => 45,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.store'), $payload)
+        ->assertRedirect(route('admin.ssas.index'))
+        ->assertSessionHas('status', 'SSA created successfully.');
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'student_id' => $payload['student_id'],
+        'primary_service_id' => $frequencyService->id,
+        'frequency' => ServiceFrequency::ONE_TIME->value,
+        'sessions_per_frequency' => 1,
+        'calculated_minutes' => 45,
+        'tho_minutes' => 45,
+    ]);
+});
+
+test('allows updating an SSA to one time with the same start and end date', function () {
+    $admin = ssaAdmin();
+    $frequencyService = Service::factory()->create([
+        'status' => ServiceStatus::ACTIVE->value,
+        'is_direct_service' => true,
+        'is_frequency_service' => true,
+    ]);
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'primary_service_id' => $frequencyService->id,
+        'frequency' => ServiceFrequency::WEEKLY,
+        'start_date' => '2026-01-01',
+        'end_date' => '2026-12-31',
+        'minutes_per_session' => 30,
+        'sessions_per_frequency' => 2,
+        'tho_minutes' => 3120,
+    ]);
+
+    $this->actingAs($admin)
+        ->put(route('admin.ssas.update', $ssa), [
+            'primary_service_id' => $ssa->primary_service_id,
+            'start_date' => '2026-02-15',
+            'end_date' => '2026-02-15',
+            'minutes_per_session' => 50,
+            'frequency' => ServiceFrequency::ONE_TIME->value,
+            'sessions_per_frequency' => 4,
+            'calculated_minutes' => 200,
+            'tho_minutes' => 50,
+        ])
+        ->assertRedirect(route('admin.ssas.index'))
+        ->assertSessionHas('status', 'SSA updated successfully.');
+
+    $ssa->refresh();
+
+    expect($ssa->frequency)->toBe(ServiceFrequency::ONE_TIME)
+        ->and($ssa->start_date->format('Y-m-d'))->toBe('2026-02-15')
+        ->and($ssa->end_date->format('Y-m-d'))->toBe('2026-02-15')
+        ->and($ssa->sessions_per_frequency)->toBe(1)
+        ->and($ssa->calculated_minutes)->toBe(50)
+        ->and($ssa->tho_minutes)->toBe(50);
+});
+
 test('stores indirect additional services for SSA', function () {
     $admin = ssaAdmin();
     $indirectA = ssaIndirectService();
