@@ -666,7 +666,9 @@ final class ScheduleController extends Controller
                     'sessions_per_frequency' => $ssa->sessions_per_frequency,
                     'status' => $ssa->status->value,
                     'tho_minutes' => $ssa->tho_minutes ?? 0,
+                    'tho_hours' => $ssa->tho_hours,
                     'served_minutes' => $ssa->served_minutes ?? 0,
+                    'served_hours' => $ssa->served_hours,
                     'service' => [
                         'id' => $ssa->primaryService?->id,
                         'name' => $ssa->primaryService?->name,
