@@ -27,8 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const frequency = document.getElementById('frequency');
     const sessionsPerFrequency = document.getElementById('sessions_per_frequency');
     const sessionsPerFrequencyHidden = document.getElementById('sessions_per_frequency_hidden');
+    const sessionsPerFrequencyLock = document.getElementById('sessions_per_frequency_lock');
+    const sessionsPerFrequencyStatus = document.getElementById('sessions_per_frequency_status');
     const calculatedMinutes = document.getElementById('calculated_minutes');
     const calculatedMinutesHidden = document.getElementById('calculated_minutes_hidden');
+    const calculatedMinutesLock = document.getElementById('calculated_minutes_lock');
+    const calculatedMinutesStatus = document.getElementById('calculated_minutes_status');
     const adjustedMinutes = document.getElementById('adjusted_minutes');
     const startDate = document.getElementById('start_date');
     const endDate = document.getElementById('end_date');
@@ -49,6 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const ONE_TIME_FREQUENCY = 'one_time';
     const defaultThoCalculationHint = 'Auto-calculated: Minutes per Session × (Sessions per Frequency × Number of Frequencies in Date Range)';
     const oneTimeThoCalculationHint = 'Auto-calculated: Minutes per Session + Adjusted Minutes';
+    const oneTimeLockMessage = 'Auto-populated for One Time frequency. Change Minutes per Session to refresh this value.';
+    const oneTimeCalculatedMessage = 'Auto-populated from Minutes per Session because Frequency is One Time.';
 
     const frequencyMultipliers = {
         weekly: 52 / 365,
@@ -56,6 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
         monthly: 12 / 365,
         quarterly: 4 / 365,
     };
+
+    function getPositiveIntegerValue(field) {
+        if (!field?.value) {
+            return null;
+        }
+
+        const value = parseInt(field.value, 10);
+        return Number.isNaN(value) || value <= 0 ? null : value;
+    }
 
     function supportsFrequencyBasedScheduling() {
         if (!primaryServiceId?.value) {
@@ -79,22 +94,52 @@ document.addEventListener('DOMContentLoaded', () => {
         hiddenField.disabled = !enabled;
     }
 
-    function syncOneTimeFrequencyFields() {
+    function updateLockedFieldPresentation(field, lockIcon, statusElement, locked, statusMessage) {
+        if (field) {
+            field.classList.toggle('cursor-not-allowed', locked);
+            field.classList.toggle('bg-background', locked);
+            field.title = locked ? statusMessage : '';
+        }
+
+        if (lockIcon) {
+            lockIcon.classList.toggle('hidden', !locked);
+        }
+
+        if (statusElement) {
+            statusElement.textContent = locked ? statusMessage : '';
+            statusElement.classList.toggle('hidden', !locked);
+        }
+    }
+
+    function applyOneTimeFrequencyFields() {
         const isOneTimeFrequency = isOneTimeFrequencySelected();
         const supportsFrequency = supportsFrequencyBasedScheduling();
-        const oneTimeCalculatedMinutes = minutesPerSession?.value
-            ? String(parseInt(minutesPerSession.value, 10) || '')
-            : '';
+        const minutesValue = getPositiveIntegerValue(minutesPerSession);
+        const oneTimeCalculatedMinutes = minutesValue ? String(minutesValue) : '';
 
         if (sessionsPerFrequency) {
             if (isOneTimeFrequency) {
                 sessionsPerFrequency.value = '1';
                 sessionsPerFrequency.disabled = true;
                 sessionsPerFrequency.required = false;
+                updateLockedFieldPresentation(
+                    sessionsPerFrequency,
+                    sessionsPerFrequencyLock,
+                    sessionsPerFrequencyStatus,
+                    true,
+                    oneTimeLockMessage
+                );
                 updateHiddenField(sessionsPerFrequencyHidden, '1', true);
             } else {
                 sessionsPerFrequency.disabled = false;
                 sessionsPerFrequency.required = supportsFrequency;
+                updateLockedFieldPresentation(
+                    sessionsPerFrequency,
+                    sessionsPerFrequencyLock,
+                    sessionsPerFrequencyStatus,
+                    false,
+                    ''
+                );
                 updateHiddenField(sessionsPerFrequencyHidden, sessionsPerFrequency.value, false);
             }
         }
@@ -103,9 +148,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isOneTimeFrequency) {
                 calculatedMinutes.value = oneTimeCalculatedMinutes;
                 calculatedMinutes.disabled = true;
+                updateLockedFieldPresentation(
+                    calculatedMinutes,
+                    calculatedMinutesLock,
+                    calculatedMinutesStatus,
+                    true,
+                    oneTimeCalculatedMessage
+                );
                 updateHiddenField(calculatedMinutesHidden, oneTimeCalculatedMinutes, true);
             } else {
                 calculatedMinutes.disabled = false;
+                updateLockedFieldPresentation(
+                    calculatedMinutes,
+                    calculatedMinutesLock,
+                    calculatedMinutesStatus,
+                    false,
+                    ''
+                );
                 updateHiddenField(calculatedMinutesHidden, calculatedMinutes.value, false);
             }
         }
@@ -146,6 +205,75 @@ document.addEventListener('DOMContentLoaded', () => {
         return numberOfFrequencies > 0 ? numberOfFrequencies : null;
     }
 
+    function updateCalculatedMinutesValue() {
+        if (!supportsFrequencyBasedScheduling()) {
+            if (calculatedMinutes) {
+                calculatedMinutes.value = '';
+            }
+            return;
+        }
+
+        if (isOneTimeFrequencySelected()) {
+            const minutesValue = getPositiveIntegerValue(minutesPerSession);
+
+            if (calculatedMinutes) {
+                calculatedMinutes.value = minutesValue ? String(minutesValue) : '';
+                updateHiddenField(calculatedMinutesHidden, calculatedMinutes.value, true);
+            }
+            return;
+        }
+
+        const minutesValue = getPositiveIntegerValue(minutesPerSession);
+        const sessionsValue = getPositiveIntegerValue(sessionsPerFrequency);
+        const numberOfFrequencies = getNumberOfFrequencies();
+
+        if (calculatedMinutes && minutesValue && sessionsValue && numberOfFrequencies) {
+            const totalSessions = sessionsValue * numberOfFrequencies;
+            calculatedMinutes.value = String(totalSessions * minutesValue);
+        } else if (calculatedMinutes) {
+            calculatedMinutes.value = '';
+        }
+    }
+
+    function updateThoMinutesValue() {
+        const supportsFrequency = supportsFrequencyBasedScheduling();
+
+        if (!supportsFrequency) {
+            return;
+        }
+
+        const minutesValue = getPositiveIntegerValue(minutesPerSession);
+        const sessionsValue = getPositiveIntegerValue(sessionsPerFrequency);
+        const numberOfFrequencies = getNumberOfFrequencies();
+
+        if (!minutesValue || !sessionsValue || !numberOfFrequencies) {
+            return;
+        }
+
+        let calculatedTho = numberOfFrequencies * sessionsValue * minutesValue;
+
+        if (adjustedMinutes?.value) {
+            const adjusted = parseInt(adjustedMinutes.value, 10);
+            if (!Number.isNaN(adjusted)) {
+                calculatedTho += adjusted;
+            }
+        }
+
+        if (thoMinutes && calculatedTho > 0) {
+            thoMinutes.value = String(calculatedTho);
+        }
+    }
+
+    function refreshSchedulingState({ toggleVisibility = false } = {}) {
+        if (toggleVisibility) {
+            toggleFrequencyFields();
+        }
+
+        applyOneTimeFrequencyFields();
+        updateCalculatedMinutesValue();
+        updateThoMinutesValue();
+    }
+
     // Check if service supports frequency and toggle fields
     function toggleFrequencyFields() {
         if (!primaryServiceId?.value) {
@@ -179,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (thoCalculationHint) {
                 thoCalculationHint.textContent = defaultThoCalculationHint;
             }
-            syncOneTimeFrequencyFields();
         } else {
             // Hide frequency-related fields, only show THO Minutes
             if (frequencyField) {
@@ -198,6 +325,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionsInput.disabled = false;
                     sessionsInput.value = '';
                 }
+                updateLockedFieldPresentation(
+                    sessionsPerFrequency,
+                    sessionsPerFrequencyLock,
+                    sessionsPerFrequencyStatus,
+                    false,
+                    ''
+                );
                 updateHiddenField(sessionsPerFrequencyHidden, '', false);
             }
             if (calculatedMinutesField) {
@@ -206,6 +340,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     calculatedMinutes.disabled = false;
                     calculatedMinutes.value = '';
                 }
+                updateLockedFieldPresentation(
+                    calculatedMinutes,
+                    calculatedMinutesLock,
+                    calculatedMinutesStatus,
+                    false,
+                    ''
+                );
                 updateHiddenField(calculatedMinutesHidden, '', false);
             }
             if (adjustedMinutesField) {
@@ -217,78 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (thoCalculationHint) {
                 thoCalculationHint.textContent = 'Total Hours Own by therapist';
             }
-        }
-    }
-
-    // Calculate calculated minutes based on sessions per frequency
-    function calculateCalculatedMinutes() {
-        syncOneTimeFrequencyFields();
-
-        if (!supportsFrequencyBasedScheduling()) {
-            if (calculatedMinutes) {
-                calculatedMinutes.value = '';
-            }
-            return;
-        }
-
-        if (!minutesPerSession?.value || !sessionsPerFrequency?.value) {
-            if (calculatedMinutes) {
-                calculatedMinutes.value = '';
-            }
-            return;
-        }
-
-        const mins = parseInt(minutesPerSession.value, 10);
-        const sessions = parseInt(sessionsPerFrequency.value, 10);
-        const numberOfFrequencies = getNumberOfFrequencies();
-
-        if (calculatedMinutes && mins > 0 && sessions > 0 && numberOfFrequencies) {
-            const totalSessions = sessions * numberOfFrequencies;
-            calculatedMinutes.value = totalSessions * mins;
-            updateHiddenField(calculatedMinutesHidden, calculatedMinutes.value, isOneTimeFrequencySelected());
-        } else if (calculatedMinutes) {
-            calculatedMinutes.value = '';
-            updateHiddenField(calculatedMinutesHidden, '', isOneTimeFrequencySelected());
-        }
-    }
-
-    // Calculate THO minutes
-    function calculateThoMinutes() {
-        syncOneTimeFrequencyFields();
-
-        const supportsFrequency = supportsFrequencyBasedScheduling();
-
-        if (supportsFrequency) {
-            // For frequency-based services, use the existing calculation
-            if (!minutesPerSession?.value || !frequency?.value || !sessionsPerFrequency?.value) {
-                return;
-            }
-
-            const mins = parseInt(minutesPerSession.value, 10);
-            const sessions = parseInt(sessionsPerFrequency.value, 10);
-            const numberOfFrequencies = getNumberOfFrequencies();
-
-            if (!numberOfFrequencies) {
-                return;
-            }
-
-            const totalSessions = numberOfFrequencies * sessions;
-            let calculatedTho = totalSessions * mins;
-
-            // Apply adjusted minutes if provided
-            if (adjustedMinutes?.value) {
-                const adjusted = parseInt(adjustedMinutes.value, 10);
-                if (!Number.isNaN(adjusted)) {
-                    calculatedTho += adjusted;
-                }
-            }
-
-            if (thoMinutes && calculatedTho > 0) {
-                thoMinutes.value = (calculatedTho / 60).toFixed(2);
-            }
-        } else {
-            // For non-frequency services, THO minutes should be manually entered
-            // No auto-calculation needed
         }
     }
 
@@ -364,12 +433,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Add event listeners — use jQuery .on('change') for Select2 compatibility
+    function bindNativeListeners(field, eventNames, callback) {
+        if (!field) {
+            return;
+        }
+
+        eventNames.forEach((eventName) => {
+            field.addEventListener(eventName, callback);
+        });
+    }
+
+    function bindSelectListeners(field, callback) {
+        if (!field) {
+            return;
+        }
+
+        bindNativeListeners(field, ['change', 'blur'], callback);
+
+        if (window.jQuery) {
+            window.jQuery(field).on('change select2:select select2:clear', callback);
+        }
+    }
+
+    function bindInputListeners(field, callback) {
+        bindNativeListeners(field, ['change', 'input', 'blur'], callback);
+    }
+
+    // Add event listeners
     if (primaryServiceId) {
-        $(primaryServiceId).on('change', () => {
-            toggleFrequencyFields();
-            calculateCalculatedMinutes();
-            calculateThoMinutes();
+        bindSelectListeners(primaryServiceId, () => {
+            refreshSchedulingState({ toggleVisibility: true });
             fetchTherapistsForServices();
         });
     }
@@ -380,63 +473,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Native input fields — standard addEventListener is fine
+    // Native input fields
     [minutesPerSession, sessionsPerFrequency].forEach((field) => {
-        if (field) {
-            field.addEventListener('change', () => {
-                calculateCalculatedMinutes();
-                calculateThoMinutes();
-            });
-            field.addEventListener('input', () => {
-                calculateCalculatedMinutes();
-                calculateThoMinutes();
-            });
-        }
+        bindInputListeners(field, () => {
+            refreshSchedulingState();
+        });
     });
 
-    // Frequency is a Select2 — use jQuery event
-    if (frequency) {
-        $(frequency).on('change', () => {
-            calculateCalculatedMinutes();
-            calculateThoMinutes();
-        });
-    }
+    bindSelectListeners(frequency, () => {
+        refreshSchedulingState();
+    });
 
-    // Date inputs — native events
     [startDate, endDate].forEach((field) => {
-        if (field) {
-            field.addEventListener('change', () => {
-                calculateCalculatedMinutes();
-                calculateThoMinutes();
-            });
-            field.addEventListener('input', () => {
-                calculateCalculatedMinutes();
-                calculateThoMinutes();
-            });
-        }
+        bindInputListeners(field, () => {
+            refreshSchedulingState();
+        });
     });
 
     if (adjustedMinutes) {
-        adjustedMinutes.addEventListener('change', calculateThoMinutes);
-        adjustedMinutes.addEventListener('input', calculateThoMinutes);
+        bindInputListeners(adjustedMinutes, refreshSchedulingState);
     }
-
-    [startDate, endDate, minutesPerSession, sessionsPerFrequency].forEach((field) => {
-        if (field) {
-            field.addEventListener('blur', () => {
-                calculateCalculatedMinutes();
-                calculateThoMinutes();
-            });
-        }
-    });
 
     // Initial setup - check current service if editing
     if (currentServiceData && primaryServiceId) {
         primaryServiceId.value = currentServiceData.id;
     }
     toggleFrequencyFields();
-    calculateCalculatedMinutes();
-    calculateThoMinutes();
+    refreshSchedulingState();
 
     // Filter therapists on initial load if any service is already selected
     if (getAllSelectedServiceIds().length > 0) {

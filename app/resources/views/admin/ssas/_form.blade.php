@@ -126,9 +126,21 @@
                 <x-input-label for="sessions_per_frequency" value="Sessions per Frequency *" />
                 <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions per
                     frequency period. One-time SSAs are automatically locked to a single session.</p>
-                <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
-                    max="100" class="mt-1 block w-full" aria-describedby="sessions_per_frequency_help"
-                    value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                <div class="group relative mt-1">
+                    <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
+                        max="100" class="block w-full pr-10" aria-describedby="sessions_per_frequency_help"
+                        value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                    <span id="sessions_per_frequency_lock"
+                        class="pointer-events-none absolute inset-y-0 right-3 hidden flex items-center text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 11V7a4 4 0 10-8 0v4m-2 0h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                        </svg>
+                    </span>
+                </div>
+                <p id="sessions_per_frequency_status" class="mt-2 hidden text-xs text-foreground/60" aria-live="polite">
+                </p>
                 <input type="hidden" id="sessions_per_frequency_hidden" name="sessions_per_frequency"
                     value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}"
                     disabled />
@@ -139,9 +151,21 @@
                 <x-input-label for="calculated_minutes" value="Calculated minutes after Sessions per Frequency *" />
                 <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated based on
                     sessions per frequency. For one-time SSAs this matches Minutes per Session.</p>
-                <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
-                    class="mt-1 block w-full" aria-describedby="calculated_minutes_help"
-                    value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                <div class="group relative mt-1">
+                    <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
+                        class="block w-full pr-10" aria-describedby="calculated_minutes_help"
+                        value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                    <span id="calculated_minutes_lock"
+                        class="pointer-events-none absolute inset-y-0 right-3 hidden flex items-center text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 11V7a4 4 0 10-8 0v4m-2 0h12a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2v-6a2 2 0 012-2z" />
+                        </svg>
+                    </span>
+                </div>
+                <p id="calculated_minutes_status" class="mt-2 hidden text-xs text-foreground/60" aria-live="polite">
+                </p>
                 <input type="hidden" id="calculated_minutes_hidden" name="calculated_minutes"
                     value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" disabled />
                 <x-input-error :messages="$errors->get('calculated_minutes')" class="mt-2" />
