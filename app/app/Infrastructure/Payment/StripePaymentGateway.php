@@ -29,7 +29,14 @@ final class StripePaymentGateway implements PaymentGatewayInterface
     public function createPaymentSession(Invoice $invoice, CreatePaymentSessionDTO $dto): PaymentSessionDTO
     {
         try {
-            $session = Session::create([
+            $expiryHours = (int) config('payment.link_expiry_hours', 24);
+            // Stripe requires expires_at to be between 30 minutes and 24 hours
+            $expirySeconds = $expiryHours > 0
+                ? min($expiryHours * 3600, 86400)
+                : 86400; // Default to 24 hours if 0
+
+            /** @var array<string, mixed> $sessionParams */
+            $sessionParams = [
                 'payment_method_types' => ['card', 'us_bank_account'],
                 'mode' => 'payment',
                 'customer_email' => $dto->customerEmail,
@@ -49,8 +56,21 @@ final class StripePaymentGateway implements PaymentGatewayInterface
                 'success_url' => $dto->successUrl,
                 'cancel_url' => $dto->cancelUrl,
                 'metadata' => $dto->metadata,
-                'expires_at' => time() + ((int) config('payment.link_expiry_hours', 72) * 3600),
-            ]);
+                'expires_at' => time() + $expirySeconds,
+            ];
+
+            if ($dto->afterExpirationUrl) {
+                // Stripe shows a "Get a new payment link" button on expired sessions
+                // which auto-creates a new checkout session for the same payment
+                $sessionParams['after_expiration'] = [
+                    'recovery' => [
+                        'enabled' => true,
+                        'allow_promotion_codes' => false,
+                    ],
+                ];
+            }
+
+            $session = Session::create($sessionParams);
 
             return new PaymentSessionDTO(
                 sessionId: $session->id,

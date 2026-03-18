@@ -40,6 +40,7 @@ final class OnlinePaymentService
                 'invoice_number' => $invoice->invoice_number,
                 'school_id' => (string) $invoice->school_id,
             ],
+            afterExpirationUrl: route('payment.show', ['token' => $token]),
         );
 
         $transaction = PaymentGatewayTransaction::create([

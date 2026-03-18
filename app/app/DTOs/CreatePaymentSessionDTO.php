@@ -17,6 +17,7 @@ final readonly class CreatePaymentSessionDTO
         public string $successUrl,
         public string $cancelUrl,
         public array $metadata = [],
+        public ?string $afterExpirationUrl = null,
     ) {}
 
     /**
@@ -32,6 +33,7 @@ final readonly class CreatePaymentSessionDTO
             successUrl: (string) $data['success_url'],
             cancelUrl: (string) $data['cancel_url'],
             metadata: $data['metadata'] ?? [],
+            afterExpirationUrl: $data['after_expiration_url'] ?? null,
         );
     }
 
@@ -48,6 +50,7 @@ final readonly class CreatePaymentSessionDTO
             'success_url' => $this->successUrl,
             'cancel_url' => $this->cancelUrl,
             'metadata' => $this->metadata,
+            'after_expiration_url' => $this->afterExpirationUrl,
         ];
     }
 }

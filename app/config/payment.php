@@ -45,8 +45,9 @@ return [
     | Payment Link Expiry
     |--------------------------------------------------------------------------
     |
-    | The number of hours a payment link remains valid. Set to 0 for no expiry.
+    | The number of hours a Stripe checkout session remains valid (max 24).
+    | If set to 0, defaults to 24 hours (Stripe's maximum).
     |
     */
-    'link_expiry_hours' => (int) env('PAYMENT_LINK_EXPIRY', 72),
+    'link_expiry_hours' => (int) env('PAYMENT_LINK_EXPIRY', 24),
 ];
