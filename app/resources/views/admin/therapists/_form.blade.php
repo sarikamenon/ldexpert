@@ -27,7 +27,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {{-- Title --}}
                 <div>
-                    <x-input-label for="title" value="Title *" />
+                    <x-input-label for="title" value="Title" />
                     <p class="mt-1 text-xs text-foreground/60">Professional title (e.g., BCBA, RBT)</p>
                     <x-ui::select name="title" id="title" class="mt-1" placeholder="Select Title">
                         <option value="">Select Title</option>

@@ -8,7 +8,7 @@ final class CreateTherapistDTO
 {
     public function __construct(
         public readonly string $employeeType,
-        public readonly string $title,
+        public readonly ?string $title,
         public readonly string $firstName,
         public readonly string $lastName,
         public readonly string $personalEmail,
@@ -32,7 +32,7 @@ final class CreateTherapistDTO
     {
         return new self(
             employeeType: $data['employee_type'],
-            title: $data['title'],
+            title: $data['title'] ?? null,
             firstName: $data['first_name'],
             lastName: $data['last_name'],
             personalEmail: $data['personal_email'],
