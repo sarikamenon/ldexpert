@@ -253,18 +253,10 @@ class ServiceSupportAgreement extends Model
     {
         $startDate = Carbon::parse($this->start_date);
         $endDate = Carbon::parse($this->end_date);
-        $daysDiff = $startDate->diffInDays($endDate) + 1;
-
-        $frequencyMultiplier = match ($this->frequency) {
-            ServiceFrequency::WEEKLY => 52 / 365,
-            ServiceFrequency::BI_WEEKLY => 26 / 365,
-            ServiceFrequency::MONTHLY => 12 / 365,
-            ServiceFrequency::QUARTERLY => 4 / 365,
-            null => 0,
-        };
-
-        $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
-        $totalSessions = $numberOfFrequencies * $this->sessions_per_frequency;
+        $frequency = $this->frequency ?? ServiceFrequency::WEEKLY;
+        $numberOfFrequencies = $frequency->occurrencesInDateRange($startDate, $endDate);
+        $sessionsPerFrequency = $frequency->normalizeSessionsPerFrequency($this->sessions_per_frequency) ?? 0;
+        $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
 
         return $totalSessions * $this->minutes_per_session;
     }

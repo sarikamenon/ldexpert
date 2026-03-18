@@ -41,6 +41,7 @@ final class SSASeeder extends Seeder
         }
 
         $frequencies = [
+            ServiceFrequency::ONE_TIME,
             ServiceFrequency::WEEKLY,
             ServiceFrequency::BI_WEEKLY,
             ServiceFrequency::MONTHLY,
@@ -64,6 +65,7 @@ final class SSASeeder extends Seeder
 
             // Calculate sessions per frequency
             $sessionsPerFrequency = match ($frequency) {
+                ServiceFrequency::ONE_TIME => 1,
                 ServiceFrequency::WEEKLY => rand(1, 3),
                 ServiceFrequency::BI_WEEKLY => rand(1, 2),
                 ServiceFrequency::MONTHLY => rand(1, 4),
@@ -73,14 +75,7 @@ final class SSASeeder extends Seeder
             $minutesPerSession = [30, 45, 60][array_rand([30, 45, 60])];
 
             // Calculate THO minutes
-            $daysDiff = $startDate->diffInDays($endDate) + 1;
-            $frequencyMultiplier = match ($frequency) {
-                ServiceFrequency::WEEKLY => 52 / 365,
-                ServiceFrequency::BI_WEEKLY => 26 / 365,
-                ServiceFrequency::MONTHLY => 12 / 365,
-                ServiceFrequency::QUARTERLY => 4 / 365,
-            };
-            $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
+            $numberOfFrequencies = $frequency->occurrencesInDateRange($startDate, $endDate);
             $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
             $thoMinutes = $totalSessions * $minutesPerSession;
 

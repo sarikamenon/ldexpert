@@ -11,6 +11,7 @@ use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\UpdateSSADTO;
+use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Models\ServiceSupportAgreement;
@@ -157,18 +158,10 @@ final class SSAService
     ): int {
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
-        $daysDiff = $start->diffInDays($end) + 1;
-
-        $frequencyMultiplier = match ($frequency) {
-            'weekly' => 52 / 365,
-            'bi_weekly' => 26 / 365,
-            'monthly' => 12 / 365,
-            'quarterly' => 4 / 365,
-            default => 0,
-        };
-
-        $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
-        $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
+        $frequencyEnum = ServiceFrequency::from($frequency);
+        $numberOfFrequencies = $frequencyEnum->occurrencesInDateRange($start, $end);
+        $normalizedSessions = $frequencyEnum->normalizeSessionsPerFrequency($sessionsPerFrequency) ?? 0;
+        $totalSessions = $numberOfFrequencies * $normalizedSessions;
 
         return $totalSessions * $minutesPerSession;
     }

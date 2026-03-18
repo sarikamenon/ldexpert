@@ -125,20 +125,25 @@
             <div id="sessions-per-frequency-field">
                 <x-input-label for="sessions_per_frequency" value="Sessions per Frequency *" />
                 <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions per
-                    frequency period</p>
+                    frequency period. One-time SSAs are automatically locked to a single session.</p>
                 <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
                     max="100" class="mt-1 block w-full" aria-describedby="sessions_per_frequency_help"
                     value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                <input type="hidden" id="sessions_per_frequency_hidden" name="sessions_per_frequency"
+                    value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}"
+                    disabled />
                 <x-input-error :messages="$errors->get('sessions_per_frequency')" class="mt-2" />
             </div>
 
             <div id="calculated-minutes-field">
                 <x-input-label for="calculated_minutes" value="Calculated minutes after Sessions per Frequency *" />
                 <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated based on
-                    sessions per frequency</p>
+                    sessions per frequency. For one-time SSAs this matches Minutes per Session.</p>
                 <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
                     class="mt-1 block w-full" aria-describedby="calculated_minutes_help"
                     value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                <input type="hidden" id="calculated_minutes_hidden" name="calculated_minutes"
+                    value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" disabled />
                 <x-input-error :messages="$errors->get('calculated_minutes')" class="mt-2" />
             </div>
 

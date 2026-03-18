@@ -24,6 +24,22 @@ abstract class SSAFormRequest extends FormRequest
                 'additional_service_ids' => [],
             ]);
         }
+
+        if ($this->input('frequency') === ServiceFrequency::ONE_TIME->value) {
+            $frequency = ServiceFrequency::ONE_TIME;
+            $normalizedValues = [
+                'sessions_per_frequency' => $frequency->normalizeSessionsPerFrequency(null),
+            ];
+
+            if ($this->filled('minutes_per_session')) {
+                $normalizedValues['calculated_minutes'] = $frequency->normalizeCalculatedMinutes(
+                    (int) $this->input('minutes_per_session'),
+                    null
+                );
+            }
+
+            $this->merge($normalizedValues);
+        }
     }
 
     /** @return array<string, array<int, mixed>|string> */

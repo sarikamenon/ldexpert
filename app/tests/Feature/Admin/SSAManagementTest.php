@@ -128,6 +128,39 @@ test('allows admin to create SSA without therapist', function () {
     ]);
 });
 
+test('normalizes one time frequency fields when creating an SSA', function () {
+    $admin = ssaAdmin();
+    $frequencyService = Service::factory()->create([
+        'status' => ServiceStatus::ACTIVE->value,
+        'is_direct_service' => true,
+        'is_frequency_service' => true,
+    ]);
+    $payload = ssaPayload([
+        'primary_service_id' => $frequencyService->id,
+        'start_date' => '2026-01-01',
+        'end_date' => '2026-12-31',
+        'minutes_per_session' => 45,
+        'frequency' => ServiceFrequency::ONE_TIME->value,
+        'sessions_per_frequency' => 6,
+        'calculated_minutes' => 270,
+        'tho_minutes' => 45,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.store'), $payload)
+        ->assertRedirect(route('admin.ssas.index'))
+        ->assertSessionHas('status', 'SSA created successfully.');
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'student_id' => $payload['student_id'],
+        'primary_service_id' => $frequencyService->id,
+        'frequency' => ServiceFrequency::ONE_TIME->value,
+        'sessions_per_frequency' => 1,
+        'calculated_minutes' => 45,
+        'tho_minutes' => 45,
+    ]);
+});
+
 test('stores indirect additional services for SSA', function () {
     $admin = ssaAdmin();
     $indirectA = ssaIndirectService();

@@ -202,6 +202,8 @@ final class SSAImportService
                 $therapistId = $therapist->id;
             }
 
+            $mappedData = $this->normalizeSchedulingFields($mappedData);
+
             // Calculate THO minutes if not provided
             $thoMinutes = (int) ($mappedData['tho_minutes'] ?? 0);
             if ($thoMinutes === 0 && ! empty($mappedData['frequency']) && ! empty($mappedData['sessions_per_frequency'])) {
@@ -505,6 +507,30 @@ final class SSAImportService
         }
 
         return $mapped;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeSchedulingFields(array $data): array
+    {
+        $frequency = isset($data['frequency']) ? ServiceFrequency::tryFrom((string) $data['frequency']) : null;
+
+        if ($frequency !== ServiceFrequency::ONE_TIME) {
+            return $data;
+        }
+
+        $data['sessions_per_frequency'] = $frequency->normalizeSessionsPerFrequency(null);
+
+        if (! empty($data['minutes_per_session'])) {
+            $data['calculated_minutes'] = $frequency->normalizeCalculatedMinutes(
+                (int) $data['minutes_per_session'],
+                null
+            );
+        }
+
+        return $data;
     }
 
     /**

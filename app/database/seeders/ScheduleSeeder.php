@@ -169,6 +169,7 @@ final class ScheduleSeeder extends Seeder
     private function getPeriodEnd(Carbon $date, ServiceFrequency $frequency): Carbon
     {
         return match ($frequency) {
+            ServiceFrequency::ONE_TIME => $date->copy(),
             ServiceFrequency::WEEKLY => $date->copy()->addWeek()->subDay(),
             ServiceFrequency::BI_WEEKLY => $date->copy()->addWeeks(2)->subDay(),
             ServiceFrequency::MONTHLY => $date->copy()->addMonth()->subDay(),
@@ -179,6 +180,7 @@ final class ScheduleSeeder extends Seeder
     private function mapFrequencyToRecurrenceType(ServiceFrequency $frequency): RecurrenceType
     {
         return match ($frequency) {
+            ServiceFrequency::ONE_TIME => RecurrenceType::NONE,
             ServiceFrequency::WEEKLY => RecurrenceType::WEEKLY,
             ServiceFrequency::BI_WEEKLY => RecurrenceType::BI_WEEKLY,
             ServiceFrequency::MONTHLY => RecurrenceType::MONTHLY,
