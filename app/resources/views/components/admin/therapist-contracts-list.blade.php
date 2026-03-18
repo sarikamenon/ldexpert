@@ -103,7 +103,7 @@
                             </td>
                             @if ($context !== 'detail')
                                 <td>
-                                    <a href="{{ route('admin.therapists.show', $contract->therapist) }}"
+                                    <a href="{{ route('admin.therapists.show', $contract->therapist?->user) }}"
                                         class="text-primary hover:underline font-medium">
                                         {{ $contract->therapist?->first_name }} {{ $contract->therapist?->last_name }}
                                     </a>

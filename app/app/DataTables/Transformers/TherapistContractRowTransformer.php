@@ -19,7 +19,7 @@ final class TherapistContractRowTransformer
         $idCell = '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" title="View Contract">'.(int) $contract->id.'</a>';
         $therapistCell = '—';
         if ($contract->therapist) {
-            $therapistShowUrl = route('admin.therapists.show', $contract->therapist);
+            $therapistShowUrl = route('admin.therapists.show', $contract->therapist->user);
             $name = trim($contract->therapist->first_name.' '.$contract->therapist->last_name) ?: '—';
             $therapistCell = '<a href="'.e($therapistShowUrl).'" class="text-primary hover:underline font-medium">'.e($name).'</a>';
         }

@@ -144,7 +144,7 @@ final class TherapistManagementTest extends TestCase
             'ld_email' => 'updated@ldexpert.com',
             'address' => '456 New St',
             'comments' => 'Updated comment',
-            'position_id' => Position::where('name', 'OT')->first()->id,
+            'position_id' => Position::where('name', 'OT')->firstOrFail()->id,
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $this->manager->id,
@@ -294,7 +294,8 @@ final class TherapistManagementTest extends TestCase
 
     public function test_create_therapist_validates_unique_email(): void
     {
-        $existingEmail = $this->therapist->therapistProfile->personal_email;
+        $existingEmail = $this->therapist->therapistProfile?->personal_email;
+        $this->assertNotNull($existingEmail);
 
         $response = $this->actingAs($this->admin)->post(route('admin.therapists.store'), [
             'employee_type' => 'W2',
@@ -397,6 +398,37 @@ final class TherapistManagementTest extends TestCase
         $response->assertViewHas('students');
         $response->assertViewHas('therapists');
         $response->assertViewHas('services');
+    }
+
+    public function test_admin_can_view_therapist_show_page_with_contracts_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'contracts'])
+        );
+
+        $response->assertOk();
+        $response->assertViewIs('admin.therapists.show');
+        $response->assertViewHas('therapist');
+        $response->assertViewHas('activeTab', 'contracts');
+        $response->assertViewHas('contracts');
+        $response->assertViewHas('contractFilters');
+        $response->assertViewHas('statuses');
+        $response->assertViewHas('datatableUrl');
+    }
+
+    public function test_contracts_tab_passes_therapist_profile_id_not_user_id(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'contracts'])
+        );
+
+        $response->assertOk();
+        $therapistProfileId = $response->viewData('therapistId');
+        $expectedProfileId = $this->therapist->therapistProfile?->id;
+        $this->assertNotNull($expectedProfileId, 'Therapist must have a profile');
+
+        $this->assertEquals($expectedProfileId, $therapistProfileId);
+        $this->assertNotEquals($this->therapist->id, $therapistProfileId);
     }
 
     public function test_therapist_show_page_loads_dashboard_metrics_correctly(): void

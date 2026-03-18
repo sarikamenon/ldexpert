@@ -202,7 +202,7 @@ final class TherapistController extends Controller
             $viewData['contractFilters'] = $request->query();
             $viewData['statuses'] = \App\Enums\ContractStatus::cases();
             $viewData['datatableUrl'] = route('admin.contracts.therapists.data');
-            $viewData['therapistId'] = $therapist->id;
+            $viewData['therapistId'] = $therapist->therapistProfile?->id;
         } elseif ($activeTab === 'session_logs') {
             $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
