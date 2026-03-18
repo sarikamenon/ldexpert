@@ -53,8 +53,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const ONE_TIME_FREQUENCY = 'one_time';
     const defaultThoCalculationHint = 'Auto-calculated: Minutes per Session × (Sessions per Frequency × Number of Frequencies in Date Range)';
     const oneTimeThoCalculationHint = 'Auto-calculated: Minutes per Session + Adjusted Minutes';
-    const oneTimeLockMessage = 'Auto-populated for One Time frequency. Change Minutes per Session to refresh this value.';
-    const oneTimeCalculatedMessage = 'Auto-populated from Minutes per Session because Frequency is One Time.';
+    const oneTimeLockMessage = 'Auto-set to 1 for One Time.';
+    const oneTimeCalculatedMessage = 'Auto-set from Minutes per Session for One Time.';
 
     const frequencyMultipliers = {
         weekly: 52 / 365,
@@ -274,6 +274,32 @@ document.addEventListener('DOMContentLoaded', () => {
         updateThoMinutesValue();
     }
 
+    function bindNativeListeners(field, eventNames, callback) {
+        if (!field) {
+            return;
+        }
+
+        eventNames.forEach((eventName) => {
+            field.addEventListener(eventName, callback);
+        });
+    }
+
+    function bindSelectListeners(field, callback) {
+        if (!field) {
+            return;
+        }
+
+        bindNativeListeners(field, ['change', 'blur'], callback);
+
+        if (window.jQuery) {
+            window.jQuery(field).on('change select2:select select2:clear', callback);
+        }
+    }
+
+    function bindInputListeners(field, callback) {
+        bindNativeListeners(field, ['change', 'input', 'blur'], callback);
+    }
+
     // Check if service supports frequency and toggle fields
     function toggleFrequencyFields() {
         if (!primaryServiceId?.value) {
@@ -433,32 +459,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function bindNativeListeners(field, eventNames, callback) {
-        if (!field) {
-            return;
-        }
-
-        eventNames.forEach((eventName) => {
-            field.addEventListener(eventName, callback);
-        });
-    }
-
-    function bindSelectListeners(field, callback) {
-        if (!field) {
-            return;
-        }
-
-        bindNativeListeners(field, ['change', 'blur'], callback);
-
-        if (window.jQuery) {
-            window.jQuery(field).on('change select2:select select2:clear', callback);
-        }
-    }
-
-    function bindInputListeners(field, callback) {
-        bindNativeListeners(field, ['change', 'input', 'blur'], callback);
-    }
-
     // Add event listeners
     if (primaryServiceId) {
         bindSelectListeners(primaryServiceId, () => {
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Native input fields
+
     [minutesPerSession, sessionsPerFrequency].forEach((field) => {
         bindInputListeners(field, () => {
             refreshSchedulingState();

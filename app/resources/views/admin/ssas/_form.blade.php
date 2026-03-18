@@ -124,8 +124,8 @@
 
             <div id="sessions-per-frequency-field">
                 <x-input-label for="sessions_per_frequency" value="Sessions per Frequency *" />
-                <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions per
-                    frequency period. One-time SSAs are automatically locked to a single session.</p>
+                <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions in the
+                    selected frequency period.</p>
                 <div class="group relative mt-1">
                     <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
                         max="100" class="block w-full pr-10" aria-describedby="sessions_per_frequency_help"
@@ -149,8 +149,8 @@
 
             <div id="calculated-minutes-field">
                 <x-input-label for="calculated_minutes" value="Calculated minutes after Sessions per Frequency *" />
-                <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated based on
-                    sessions per frequency. For one-time SSAs this matches Minutes per Session.</p>
+                <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated from Minutes per
+                    Session and Sessions per Frequency.</p>
                 <div class="group relative mt-1">
                     <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
                         class="block w-full pr-10" aria-describedby="calculated_minutes_help"
