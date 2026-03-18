@@ -192,7 +192,7 @@
                         <option value="">Select Manager</option>
                         @foreach ($managers as $manager)
                             <option value="{{ $manager->id }}"
-                                {{ old('manager_id', $profile?->manager_id) == $manager->id ? 'selected' : '' }}>
+                                @selected(old('manager_id', $profile?->manager_id ?? $defaultManagerId) == $manager->id)>
                                 {{ $manager->name }}
                             </option>
                         @endforeach

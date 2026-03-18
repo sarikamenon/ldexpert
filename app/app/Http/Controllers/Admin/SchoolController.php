@@ -8,6 +8,7 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\DataTables\Transformers\SchoolRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
+use App\Support\SystemAdmin;
 use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
@@ -308,6 +309,7 @@ final class SchoolController extends Controller
             'timezones' => UsTimezones::getTimezones(),
             'managers' => $this->userService->listByRole(Role::ADMIN),
             'schoolTypes' => SchoolType::values(),
+            'defaultManagerId' => SystemAdmin::id(),
         ];
     }
 }

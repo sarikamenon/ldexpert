@@ -8,6 +8,7 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\DataTables\Transformers\TherapistRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
+use App\Support\SystemAdmin;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
@@ -296,6 +297,7 @@ final class TherapistController extends Controller
             'titles' => TherapistTitle::cases(),
             'positions' => $this->positionCatalogService->listActiveForSelect(),
             'employeeTypes' => EmployeeType::cases(),
+            'defaultManagerId' => SystemAdmin::id(),
         ];
     }
 }
