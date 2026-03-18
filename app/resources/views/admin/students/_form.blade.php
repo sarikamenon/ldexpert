@@ -93,7 +93,7 @@
                 <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School">
                     <option value="">Select School</option>
                     @foreach ($schools as $school)
-                        <option value="{{ $school->id }}" @selected((string) old('school_id', $profile?->school_id) === (string) $school->id)>
+                        <option value="{{ $school->id }}" @selected((string) old('school_id', $profile?->school_id ?? ($preselectedSchoolId ?? '')) === (string) $school->id)>
                             {{ $school->display_name }}
                         </option>
                     @endforeach
@@ -117,7 +117,7 @@
                 <x-ui::select name="timezone" id="timezone" class="mt-1" placeholder="Select Timezone">
                     <option value="">Select Timezone</option>
                     @foreach ($timezones as $tz => $label)
-                        <option value="{{ $tz }}" @selected(old('timezone', $profile?->timezone) === $tz)>
+                        <option value="{{ $tz }}" @selected(old('timezone', $profile?->timezone ?? ($preselectedTimezone ?? '')) === $tz)>
                             {{ $label }}
                         </option>
                     @endforeach

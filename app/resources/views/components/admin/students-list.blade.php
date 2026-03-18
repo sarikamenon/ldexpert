@@ -93,7 +93,7 @@
                     </x-ui::button>
                 </a>
                 @if ($context === 'index' || $context === 'detail')
-                    <a href="{{ route('admin.students.create') }}">
+                    <a href="{{ route('admin.students.create', $schoolId ? ['school_id' => $schoolId] : []) }}">
                         <x-ui::button>
                             Add Student
                         </x-ui::button>
