@@ -545,7 +545,7 @@ final class SSAImportService
         // Basic validation rules
         $rules = [
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
+            'end_date' => ['required', 'date'],
             'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
             'tho_minutes' => ['required', 'integer', 'min:0'],
             'frequency' => ['nullable', 'string'],
@@ -560,6 +560,8 @@ final class SSAImportService
         if ($validator->fails()) {
             $errors = array_merge($errors, $validator->errors()->all());
         }
+
+        $errors = array_merge($errors, $this->validateDateRange($data));
 
         // Validate frequency if service is frequency-based
         if ($primaryService->is_frequency_service) {
@@ -596,6 +598,33 @@ final class SSAImportService
         }
 
         return $errors;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function validateDateRange(array $data): array
+    {
+        if (empty($data['start_date']) || empty($data['end_date'])) {
+            return [];
+        }
+
+        $frequency = ! empty($data['frequency'])
+            ? ServiceFrequency::tryFrom((string) $data['frequency'])
+            : null;
+
+        $startDate = Carbon::parse((string) $data['start_date'])->startOfDay();
+        $endDate = Carbon::parse((string) $data['end_date'])->startOfDay();
+
+        if ($frequency === ServiceFrequency::ONE_TIME) {
+            return $endDate->lt($startDate)
+                ? ['End date must be the same as or after start date for one-time SSAs.']
+                : [];
+        }
+
+        return $endDate->gt($startDate)
+            ? []
+            : ['End date must be after start date.'];
     }
 
     public function checkDuplicate(int $studentId, int $serviceId, string $startDate, string $endDate): ?string

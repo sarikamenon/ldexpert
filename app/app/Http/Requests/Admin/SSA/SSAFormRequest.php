@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\SSA;
 
 use App\Enums\ServiceFrequency;
 use App\Models\Service;
+use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -61,7 +62,7 @@ abstract class SSAFormRequest extends FormRequest
                 }),
             ],
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after:start_date'],
+            'end_date' => ['required', 'date'],
             'minutes_per_session' => [
                 'required',
                 'integer',
@@ -101,6 +102,7 @@ abstract class SSAFormRequest extends FormRequest
     {
         $validator->after(function ($validator) {
             $primaryServiceId = $this->input('primary_service_id');
+            $this->validateDateRange($validator);
 
             if ($primaryServiceId) {
                 /** @var Service|null $service */
@@ -117,5 +119,33 @@ abstract class SSAFormRequest extends FormRequest
                 }
             }
         });
+    }
+
+    private function validateDateRange(Validator $validator): void
+    {
+        if (
+            ! $this->filled('start_date') ||
+            ! $this->filled('end_date') ||
+            $validator->errors()->has('start_date') ||
+            $validator->errors()->has('end_date')
+        ) {
+            return;
+        }
+
+        $startDate = Carbon::parse((string) $this->input('start_date'))->startOfDay();
+        $endDate = Carbon::parse((string) $this->input('end_date'))->startOfDay();
+        $frequency = ServiceFrequency::tryFrom((string) $this->input('frequency'));
+
+        if ($frequency === ServiceFrequency::ONE_TIME) {
+            if ($endDate->lt($startDate)) {
+                $validator->errors()->add('end_date', 'End date must be the same as or after start date for one-time SSAs.');
+            }
+
+            return;
+        }
+
+        if (! $endDate->gt($startDate)) {
+            $validator->errors()->add('end_date', 'End date must be after start date.');
+        }
     }
 }

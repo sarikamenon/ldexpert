@@ -230,7 +230,7 @@ final class SSAImportTest extends TestCase
                 'student_email' => $this->student->email,
                 'primary_service_name' => $frequencyService->name,
                 'start_date' => '2025-01-01',
-                'end_date' => '2025-12-31',
+                'end_date' => '2025-01-01',
                 'minutes_per_session' => '60',
                 'tho_minutes' => '0',
                 'frequency' => ServiceFrequency::ONE_TIME->value,
