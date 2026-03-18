@@ -102,6 +102,11 @@ $(function () {
                     }),
                 );
             });
+
+            // Auto-select primary service from SSA
+            if (mapping.primary_service_id) {
+                $serviceSelect.val(String(mapping.primary_service_id));
+            }
         }
     }
 
@@ -118,6 +123,19 @@ $(function () {
     }
 
     updateEndTime();
+
+    // Show validation errors as SweetAlert on page load (after redirect back)
+    const errorsElement = document.getElementById('session-log-errors');
+    if (errorsElement) {
+        try {
+            const errors = JSON.parse(errorsElement.textContent || '[]');
+            if (errors.length > 0) {
+                errorAlert(errors.join('\n'), 'Validation Error');
+            }
+        } catch (e) {
+            console.error('Failed to parse session log errors', e);
+        }
+    }
 
     // Billing entry window check
     const sessionDate = $('input[name="session_date"]').val();

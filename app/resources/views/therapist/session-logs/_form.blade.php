@@ -63,7 +63,7 @@
         {{-- Row 2: Service + Session Date --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Service</label>
+                <label class="block text-sm font-medium text-gray-700">Service *</label>
                 <p class="mt-1 text-xs text-foreground/60">Service provided during this session</p>
                 @if (isset($schedule))
                     {{-- From schedule: service is read-only --}}
@@ -87,6 +87,7 @@
                         @endif
                     </x-ui::select>
                 @endif
+                <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
             </div>
 
             <div>
@@ -104,15 +105,16 @@
         {{-- Row 3: Start Time + Duration + End Time --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Start Time</label>
+                <label class="block text-sm font-medium text-gray-700">Start Time *</label>
                 <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
                 <x-ui::input type="time" name="start_time" id="session-log-start-time"
                     value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
                     class="mt-1" required />
+                <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                <label class="block text-sm font-medium text-gray-700">Duration (minutes) *</label>
                 <p class="mt-1 text-xs text-foreground/60" id="session-log-duration-help">
                     Session duration in minutes (min {{ config('session_minutes.min') }}, max
                     {{ config('session_minutes.max') }}).
@@ -121,6 +123,7 @@
                     value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
                     min="{{ config('session_minutes.min') }}" max="{{ config('session_minutes.max') }}" step="1"
                     class="mt-1" aria-describedby="session-log-duration-help" required />
+                <x-input-error :messages="$errors->get('duration_minutes')" class="mt-2" />
             </div>
 
             <div>
@@ -129,6 +132,7 @@
                 <x-ui::input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
                     value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
                     class="mt-1 bg-gray-100" required />
+                <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
             </div>
         </div>
 
@@ -137,19 +141,17 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-foreground">Notes</label>
+                    <label class="block text-sm font-medium text-foreground">Notes *</label>
                     <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
                         Session notes must be at least 50 characters. Describe what occurred during the session.
                     </p>
                     <textarea name="notes" rows="4"
                         class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
                         aria-describedby="session-notes-help" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
-                    @error('notes')
-                        <p class="mt-1 text-sm text-danger">{{ $message }}</p>
-                    @enderror
+                    <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-foreground">Session Outcome</label>
+                    <label class="block text-sm font-medium text-foreground">Session Outcome *</label>
                     <p class="mt-1 text-xs text-foreground/60">Select the outcome of this session</p>
                     <x-ui::select name="outcome" class="mt-1" placeholder="Select outcome">
                         <option value="">Select outcome</option>
@@ -159,9 +161,7 @@
                             </option>
                         @endforeach
                     </x-ui::select>
-                    @error('outcome')
-                        <p class="mt-1 text-sm text-danger">{{ $message }}</p>
-                    @enderror
+                    <x-input-error :messages="$errors->get('outcome')" class="mt-2" />
                     <input type="hidden" name="is_billable_therapist"
                         value="{{ old('is_billable_therapist', $sessionLog->is_billable_therapist ?? 1) }}">
                     <input type="hidden" name="is_billable_school" value="1">
@@ -172,7 +172,7 @@
 
     <div class="flex justify-end gap-3">
         <x-ui::loading-button variant="primary" loadingText="{{ $isEdit ? 'Updating...' : 'Creating...' }}"
-            x-on:click="$nextTick(() => loading = true)">
+            x-on:click="if ($el.closest('form').checkValidity()) { $nextTick(() => loading = true) }">
             {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
         </x-ui::loading-button>
     </div>

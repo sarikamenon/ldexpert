@@ -85,6 +85,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50), // Minimum 50 characters
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -210,6 +211,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -263,6 +265,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -303,6 +306,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => 'Short', // Less than 50 characters
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -341,6 +345,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -393,6 +398,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -433,6 +439,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addMinutes(30)->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -482,6 +489,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -531,6 +539,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -569,11 +578,12 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertSessionHasErrors(['session_date']);
     }
 
     public function test_rejects_when_service_rates_missing(): void
@@ -581,10 +591,7 @@ final class SessionLogCreateTest extends TestCase
         $therapist = User::factory()->therapist()->create();
         $school = School::factory()->create();
         $student = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $school->id,
-        ]);
+        $student->studentProfile->update(['school_id' => $school->id]);
         $service = Service::factory()->create([
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
@@ -629,11 +636,12 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $sessionDate->format('Y-m-d H:i:s'),
                 'end_time' => $sessionDate->copy()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertSessionHasErrors(['service_id']);
     }
 
     public function test_rejects_multiple_logs_for_same_schedule(): void
@@ -684,6 +692,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
