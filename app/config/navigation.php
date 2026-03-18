@@ -128,6 +128,11 @@ return [
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
                     ],
                     [
+                        'label' => 'Import Session Logs',
+                        'route' => 'admin.session-logs.import',
+                        'active' => ['admin.session-logs.import', 'admin.session-logs.imports.*'],
+                    ],
+                    [
                         'label' => 'Schedule Calendar',
                         'route' => 'admin.schedule-calendar.index',
                         'active' => 'admin.schedule-calendar.*',
