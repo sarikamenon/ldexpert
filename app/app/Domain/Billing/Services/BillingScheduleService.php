@@ -26,6 +26,16 @@ final class BillingScheduleService
         return $this->repository->find($id);
     }
 
+    public function getEntityConfig(string $schedulableType, int $schedulableId, string $scheduleType): ?BillingSchedule
+    {
+        return $this->repository->getForEntity($schedulableType, $schedulableId, $scheduleType);
+    }
+
+    public function deleteSchedule(BillingSchedule $schedule): bool
+    {
+        return $this->repository->delete($schedule);
+    }
+
     public function createSchedule(BillingScheduleDTO $dto): BillingSchedule
     {
         $data = $dto->toArray();

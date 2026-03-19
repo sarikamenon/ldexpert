@@ -234,6 +234,13 @@ Route::middleware('role:admin')
         Route::post('billing/therapist-bills/{therapist_bill}/payments', [TherapistBillPaymentController::class, 'store'])->name('billing.therapist-bills.payments.store');
         Route::delete('billing/therapist-bills/{therapist_bill}/payments/{payment}', [TherapistBillPaymentController::class, 'destroy'])->name('billing.therapist-bills.payments.destroy');
 
+        // Entity Billing Configuration
+        Route::prefix('billing/entity-config')->name('billing.entity-config.')->group(function () {
+            Route::get('{entity_type}/{entity_id}', [App\Http\Controllers\Admin\EntityBillingController::class, 'show'])->name('show');
+            Route::post('/', [App\Http\Controllers\Admin\EntityBillingController::class, 'storeOrUpdate'])->name('store');
+            Route::delete('{entity_type}/{entity_id}', [App\Http\Controllers\Admin\EntityBillingController::class, 'destroy'])->name('destroy');
+        });
+
         // Billing Settings
         Route::prefix('billing/settings')->name('billing.settings.')->group(function () {
             Route::get('/', [App\Http\Controllers\Admin\BillingSettingsController::class, 'edit'])->name('edit');

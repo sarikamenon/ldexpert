@@ -46,4 +46,6 @@ interface BillingScheduleRepositoryInterface
      * @return Collection<int, BillingScheduleRun>
      */
     public function getRunHistory(int $scheduleId, int $limit = 20): Collection;
+
+    public function delete(BillingSchedule $schedule): bool;
 }

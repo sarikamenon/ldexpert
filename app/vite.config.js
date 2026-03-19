@@ -52,6 +52,8 @@ export default defineConfig({
                 'resources/js/pages/admin-therapist-bills-show.js',
                 'resources/js/pages/admin-billing-schedules-index.js',
                 'resources/js/pages/admin-billing-schedules-form.js',
+                'resources/js/pages/admin-billing-settings.js',
+                'resources/js/pages/admin-entity-billing.js',
                 'resources/js/pages/session-logs/index.js',
                 'resources/js/pages/admin-ledger-accounts-index.js',
                 'resources/js/pages/admin-ledger-accounts-show.js',

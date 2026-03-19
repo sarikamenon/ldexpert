@@ -125,6 +125,11 @@ final class EloquentBillingScheduleRepository implements BillingScheduleReposito
         return $result;
     }
 
+    public function delete(BillingSchedule $schedule): bool
+    {
+        return (bool) $schedule->delete();
+    }
+
     /**
      * @param  Builder<BillingSchedule>  $query
      * @return Builder<BillingSchedule>

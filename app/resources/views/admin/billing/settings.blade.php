@@ -1,4 +1,5 @@
 <x-admin.layouts.app>
+    @vite(['resources/js/pages/admin-billing-settings.js'])
     <x-page-title title="Billing Settings" />
 
     @if (session('success'))
@@ -36,10 +37,10 @@
                     <x-input-error :messages="$errors->get('default_generation_day_type')" class="mt-2" />
                 </div>
 
-                <div>
+                <div id="dow_wrapper" style="{{ old('default_generation_day_type', $settings->default_generation_day_type->value) === 'fixed_delay' ? 'display:none' : '' }}">
                     <x-input-label for="default_generation_day_of_week" value="Default Day of Week *" />
                     <p class="mt-1 text-xs text-foreground/60" id="dow_help">Which weekday to generate on (when using Day of Week type).</p>
-                    <x-ui::select id="default_generation_day_of_week" name="default_generation_day_of_week" class="mt-1" required :searchable="false" aria-describedby="dow_help">
+                    <x-ui::select id="default_generation_day_of_week" name="default_generation_day_of_week" class="mt-1" :searchable="false" aria-describedby="dow_help">
                         @php $dow = old('default_generation_day_of_week', (string) $settings->default_generation_day_of_week); @endphp
                         <option value="0" @selected($dow === '0')>Sunday</option>
                         <option value="1" @selected($dow === '1')>Monday</option>
@@ -52,10 +53,10 @@
                     <x-input-error :messages="$errors->get('default_generation_day_of_week')" class="mt-2" />
                 </div>
 
-                <div>
+                <div id="grace_wrapper" style="{{ old('default_generation_day_type', $settings->default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
                     <x-input-label for="default_min_grace_days" value="Default Grace Days *" />
                     <p class="mt-1 text-xs text-foreground/60" id="grace_help">Minimum days to wait after period ends before generating.</p>
-                    <x-ui::input type="number" id="default_min_grace_days" name="default_min_grace_days" class="mt-1 block w-full" required
+                    <x-ui::input type="number" id="default_min_grace_days" name="default_min_grace_days" class="mt-1 block w-full"
                         value="{{ old('default_min_grace_days', $settings->default_min_grace_days) }}" min="0" max="14" aria-describedby="grace_help" />
                     <x-input-error :messages="$errors->get('default_min_grace_days')" class="mt-2" />
                 </div>
