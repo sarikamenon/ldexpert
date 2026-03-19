@@ -9,7 +9,6 @@ use App\Enums\ServiceStatus;
 use App\Models\Service;
 use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

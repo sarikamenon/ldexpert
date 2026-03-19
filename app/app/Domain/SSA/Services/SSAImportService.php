@@ -783,7 +783,7 @@ final class SSAImportService
 
         $existingNotes = (string) ($mappedData['adjustment_notes'] ?? '');
         $mappedData['adjustment_notes'] = $existingNotes !== ''
-            ? $existingNotes . ' | ' . $autoNote
+            ? $existingNotes.' | '.$autoNote
             : $autoNote;
     }
 }

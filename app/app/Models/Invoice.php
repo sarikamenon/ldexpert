@@ -4,20 +4,24 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\BillingMode;
 use App\Enums\InvoiceStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
  * @property InvoiceStatus $status
+ * @property BillingMode $billing_mode
  * @property Carbon|null $paid_at
  * @property float $total
  * @property float $total_paid
+ * @property float $carry_forward_balance
  * @property Carbon $invoice_date
  * @property Carbon|null $due_date
  * @property Carbon|null $billing_period_start
@@ -54,6 +58,15 @@ class Invoice extends Model
         'company_phone',
         'company_email',
         'company_tax_id',
+        'billing_mode',
+        'invoice_type',
+        'student_id',
+        'parent_id',
+        'carry_forward_balance',
+        'parent_name',
+        'parent_email',
+        'parent_phone',
+        'parent_address',
         'sent_at',
         'sent_by_id',
         'paid_at',
@@ -69,6 +82,8 @@ class Invoice extends Model
             'billing_period_end' => 'date',
             'due_date' => 'date',
             'status' => InvoiceStatus::class,
+            'billing_mode' => BillingMode::class,
+            'carry_forward_balance' => 'decimal:2',
             'subtotal' => 'decimal:2',
             'tax_total' => 'decimal:2',
             'total' => 'decimal:2',
@@ -89,11 +104,44 @@ class Invoice extends Model
     }
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'student_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'parent_id');
+    }
+
+    /**
      * @return HasMany<SessionLog, $this>
      */
     public function sessionLogs(): HasMany
     {
         return $this->hasMany(SessionLog::class, 'invoice_id');
+    }
+
+    /**
+     * @return HasMany<InvoiceLineItem, $this>
+     */
+    public function lineItems(): HasMany
+    {
+        return $this->hasMany(InvoiceLineItem::class, 'invoice_id')
+            ->orderBy('sort_order');
+    }
+
+    /**
+     * @return MorphMany<BillingReminder, $this>
+     */
+    public function billingReminders(): MorphMany
+    {
+        return $this->morphMany(BillingReminder::class, 'remindable');
     }
 
     /**
@@ -119,6 +167,11 @@ class Invoice extends Model
     {
         return $this->hasMany(LedgerEntry::class, 'reference_id')
             ->where('reference_type', self::class);
+    }
+
+    public function isAdvanceMode(): bool
+    {
+        return $this->billing_mode === BillingMode::ADVANCE;
     }
 
     public function isDraft(): bool

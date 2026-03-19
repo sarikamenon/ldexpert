@@ -234,6 +234,25 @@ Route::middleware('role:admin')
         Route::post('billing/therapist-bills/{therapist_bill}/payments', [TherapistBillPaymentController::class, 'store'])->name('billing.therapist-bills.payments.store');
         Route::delete('billing/therapist-bills/{therapist_bill}/payments/{payment}', [TherapistBillPaymentController::class, 'destroy'])->name('billing.therapist-bills.payments.destroy');
 
+        // Billing Settings
+        Route::prefix('billing/settings')->name('billing.settings.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\BillingSettingsController::class, 'edit'])->name('edit');
+            Route::put('/', [App\Http\Controllers\Admin\BillingSettingsController::class, 'update'])->name('update');
+        });
+
+        // Billing Schedules
+        Route::prefix('billing/schedules')->name('billing.schedules.')->group(function () {
+            Route::post('data', [App\Http\Controllers\Admin\BillingScheduleController::class, 'data'])->name('data');
+            Route::get('/', [App\Http\Controllers\Admin\BillingScheduleController::class, 'index'])->name('index');
+            Route::get('create', [App\Http\Controllers\Admin\BillingScheduleController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\BillingScheduleController::class, 'store'])->name('store');
+            Route::get('{schedule}/edit', [App\Http\Controllers\Admin\BillingScheduleController::class, 'edit'])->name('edit');
+            Route::put('{schedule}', [App\Http\Controllers\Admin\BillingScheduleController::class, 'update'])->name('update');
+            Route::patch('{schedule}/toggle', [App\Http\Controllers\Admin\BillingScheduleController::class, 'toggleActive'])->name('toggle');
+            Route::post('{schedule}/run', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runNow'])->name('run');
+            Route::get('{schedule}/history', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runHistory'])->name('history');
+        });
+
         // Expenses
         Route::post('expenses/data', [ExpenseController::class, 'data'])->name('expenses.data');
         Route::resource('expenses', ExpenseController::class);

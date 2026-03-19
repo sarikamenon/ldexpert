@@ -12,10 +12,10 @@ use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\Enums\Role;
 use App\Enums\SchoolStatus;
+use App\Enums\ServiceStatus;
 use App\Enums\SessionLogImportRowStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
-use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\School;
@@ -55,7 +55,7 @@ final class SessionLogImportRowProcessor
         } catch (\Exception $e) {
             $importRow->update([
                 'status' => SessionLogImportRowStatus::VALIDATION_ERROR,
-                'error_message' => 'Failed to process row: ' . $e->getMessage(),
+                'error_message' => 'Failed to process row: '.$e->getMessage(),
                 'processed_at' => now(),
             ]);
         }
@@ -77,6 +77,7 @@ final class SessionLogImportRowProcessor
         $referenceId = trim($mappedData['reference_id'] ?? '');
         if ($referenceId === '') {
             $this->markSkipped($importRow, 'Empty reference ID (Entry_KEYID).');
+
             return;
         }
 
@@ -84,6 +85,7 @@ final class SessionLogImportRowProcessor
         $errorDetails = strtolower(trim($mappedData['error_details'] ?? ''));
         if ($errorFlag !== 'N' && $errorDetails !== 'no therapist selected') {
             $this->markSkipped($importRow, 'Row flagged with error by source system.');
+
             return;
         }
 
@@ -95,6 +97,7 @@ final class SessionLogImportRowProcessor
                 'error_message' => "Duplicate reference ID: {$referenceId}",
                 'processed_at' => now(),
             ]);
+
             return;
         }
         $currentBatch[$referenceId] = true;
@@ -104,24 +107,28 @@ final class SessionLogImportRowProcessor
         $school = $this->lookupSchool($mappedData['school_name'] ?? '');
         if (! $school) {
             $this->markError($importRow, "School not found by external EMR name: '{$mappedData['school_name']}'.");
+
             return;
         }
 
         $student = $this->lookupStudent($mappedData['student_id_number'] ?? '', $school->id);
         if (! $student) {
             $this->markError($importRow, "Student not found with ID '{$mappedData['student_id_number']}' at school '{$school->name}'.");
+
             return;
         }
 
         $therapist = $this->lookupTherapist($mappedData['therapist_email'] ?? '');
         if (! $therapist) {
             $this->markError($importRow, "Therapist not found or inactive: '{$mappedData['therapist_email']}'.");
+
             return;
         }
 
         $service = $this->lookupService($mappedData['primary_service_name'] ?? '');
         if (! $service) {
             $this->markError($importRow, "Service not found: '{$mappedData['primary_service_name']}'.");
+
             return;
         }
 
@@ -129,16 +136,19 @@ final class SessionLogImportRowProcessor
         $sessionDate = $this->parseDate($mappedData['session_date'] ?? '');
         if (! $sessionDate) {
             $this->markError($importRow, "Invalid date format: '{$mappedData['session_date']}'.");
+
             return;
         }
         if (Carbon::parse($sessionDate)->isFuture()) {
             $this->markError($importRow, 'Session date cannot be in the future.');
+
             return;
         }
 
         $outcome = $this->mapOutcome($mappedData['type1'] ?? '');
         if (! $outcome) {
             $this->markError($importRow, "Unknown outcome Type1: '{$mappedData['type1']}'.");
+
             return;
         }
 
@@ -146,6 +156,7 @@ final class SessionLogImportRowProcessor
         $durationMinutes = (int) round($hours * 60);
         if ($durationMinutes <= 0) {
             $this->markError($importRow, 'Duration must be greater than zero.');
+
             return;
         }
 
@@ -153,6 +164,7 @@ final class SessionLogImportRowProcessor
         $endTime = $this->parseTime($mappedData['end_time'] ?? '');
         if (! $startTime || ! $endTime) {
             $this->markError($importRow, 'Invalid start or end time format.');
+
             return;
         }
 
@@ -160,6 +172,7 @@ final class SessionLogImportRowProcessor
         $ssa = $this->lookupSSA($student->id, $service->id, $sessionDate, $therapist->id);
         if (! $ssa) {
             $this->markError($importRow, 'No matching SSA found for student + service + date + therapist.');
+
             return;
         }
 
@@ -169,7 +182,8 @@ final class SessionLogImportRowProcessor
                 $therapist->id, $school->id, $service->id, $sessionDate, $durationMinutes, $outcome
             );
         } catch (\Exception $e) {
-            $this->markError($importRow, 'Billing error: ' . $e->getMessage());
+            $this->markError($importRow, 'Billing error: '.$e->getMessage());
+
             return;
         }
 
@@ -242,6 +256,7 @@ final class SessionLogImportRowProcessor
         if ($school && $school->status === SchoolStatus::ACTIVE) {
             return $school;
         }
+
         return null;
     }
 
@@ -254,6 +269,7 @@ final class SessionLogImportRowProcessor
         if ($profile && $profile->user && $profile->user->status === UserStatus::ACTIVE) {
             return $profile->user;
         }
+
         return null;
     }
 
@@ -266,6 +282,7 @@ final class SessionLogImportRowProcessor
         if ($user && $user->role === Role::THERAPIST && $user->status === UserStatus::ACTIVE) {
             return $user;
         }
+
         return null;
     }
 
@@ -274,6 +291,7 @@ final class SessionLogImportRowProcessor
         if ($name === '') {
             return null;
         }
+
         return Service::query()
             ->where('name', $name) // @phpstan-ignore argument.type
             ->where('status', ServiceStatus::ACTIVE) // @phpstan-ignore argument.type
@@ -310,8 +328,9 @@ final class SessionLogImportRowProcessor
     {
         $parts = array_filter([trim($narrative), trim($goalsProgress)]);
         if (count($parts) === 2) {
-            return $parts[0] . "\n\n--- Goals Progress ---\n" . $parts[1];
+            return $parts[0]."\n\n--- Goals Progress ---\n".$parts[1];
         }
+
         return implode('', $parts);
     }
 

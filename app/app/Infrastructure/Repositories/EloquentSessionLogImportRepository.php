@@ -21,12 +21,12 @@ final class EloquentSessionLogImportRepository implements SessionLogImportReposi
         if ($params->searchValue) {
             $search = $params->searchValue;
             $baseQuery->where(function (Builder $q) use ($search) {
-                $q->where('session_log_imports.id', 'like', '%' . $search . '%')
-                    ->orWhere('session_log_imports.file_name', 'like', '%' . $search . '%')
-                    ->orWhere('session_log_imports.type', 'like', '%' . $search . '%')
-                    ->orWhere('session_log_imports.status', 'like', '%' . $search . '%')
+                $q->where('session_log_imports.id', 'like', '%'.$search.'%')
+                    ->orWhere('session_log_imports.file_name', 'like', '%'.$search.'%')
+                    ->orWhere('session_log_imports.type', 'like', '%'.$search.'%')
+                    ->orWhere('session_log_imports.status', 'like', '%'.$search.'%')
                     ->orWhereHas('user', function (Builder $uq) use ($search) {
-                        $uq->where('name', 'like', '%' . $search . '%'); // @phpstan-ignore argument.type
+                        $uq->where('name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }

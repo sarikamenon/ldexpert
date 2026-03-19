@@ -242,7 +242,7 @@ final class SessionLogImportTest extends TestCase
         $row = SessionLogImportRow::where('session_log_import_id', $import->id)->first();
         $this->assertNotNull($row);
         if ($row->status !== SessionLogImportRowStatus::DONE) {
-            $this->fail('Row status is ' . $row->status->value . ' with error: ' . ($row->error_message ?? 'none'));
+            $this->fail('Row status is '.$row->status->value.' with error: '.($row->error_message ?? 'none'));
         }
         $this->assertNotNull($row->session_log_id);
 
@@ -858,7 +858,7 @@ final class SessionLogImportTest extends TestCase
     private function validRowData(array $overrides = []): array
     {
         return array_merge([
-            'Entry_KEYID' => 'REF' . fake()->unique()->randomNumber(6),
+            'Entry_KEYID' => 'REF'.fake()->unique()->randomNumber(6),
             'School' => 'Test School EMR',
             'STUDENTID' => 'STU001',
             'First Name' => 'John',
