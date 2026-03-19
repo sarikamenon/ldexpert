@@ -17,7 +17,8 @@ class InvoiceMail extends Mailable
 
     public function __construct(
         public readonly Invoice $invoice,
-        public readonly ?string $customMessage = null
+        public readonly ?string $customMessage = null,
+        public readonly ?string $paymentUrl = null,
     ) {}
 
     public function envelope(): Envelope
@@ -33,6 +34,7 @@ class InvoiceMail extends Mailable
             view: 'emails.invoice',
             with: [
                 'customMessage' => $this->customMessage,
+                'paymentUrl' => $this->paymentUrl,
             ],
         );
     }

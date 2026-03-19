@@ -46,7 +46,8 @@ final class EloquentLeadRepository implements LeadRepositoryInterface
             'createdBy',
             'convertedStudent',
             'leadNotes' => function ($q) {
-                $q->with('author')->orderByDesc('created_at');            },
+                $q->with('author')->orderByDesc('created_at');
+            },
         ])->find($id);
     }
 
@@ -64,7 +65,8 @@ final class EloquentLeadRepository implements LeadRepositoryInterface
         $recordsTotal = (clone $baseQuery)->count('leads.id');
 
         if ($params->searchValue) {
-            $baseQuery->search($params->searchValue);        }
+            $baseQuery->search($params->searchValue);
+        }
 
         $recordsFiltered = (clone $baseQuery)->count('leads.id');
 
@@ -105,7 +107,8 @@ final class EloquentLeadRepository implements LeadRepositoryInterface
 
         $total = Lead::count();
         $activePipeline = Lead::whereIn('status', $activeValues)->count();
-        $overdueFollowUps = Lead::query()->overdueFollowUp()->count();        $thisMonth = Lead::where('created_at', '>=', Carbon::now()->startOfMonth())->count();
+        $overdueFollowUps = Lead::query()->overdueFollowUp()->count();
+        $thisMonth = Lead::where('created_at', '>=', Carbon::now()->startOfMonth())->count();
 
         return [
             'total' => $total,
@@ -119,7 +122,7 @@ final class EloquentLeadRepository implements LeadRepositoryInterface
     public function getOverdueFollowUps(): EloquentCollection
     {
         return Lead::query()
-            ->overdueFollowUp()            ->with(['school', 'createdBy'])
+            ->overdueFollowUp()->with(['school', 'createdBy'])
             ->orderBy('follow_up_date')
             ->get();
     }
@@ -128,7 +131,7 @@ final class EloquentLeadRepository implements LeadRepositoryInterface
     public function getFollowUpsOnDate(string $date): EloquentCollection
     {
         return Lead::query()
-            ->followUpDueOn($date)            ->with(['school', 'createdBy'])
+            ->followUpDueOn($date)->with(['school', 'createdBy'])
             ->get();
     }
 
@@ -153,10 +156,12 @@ final class EloquentLeadRepository implements LeadRepositoryInterface
     private function applyFilters(Builder $query, LeadFilterDTO $filters): Builder
     {
         if ($filters->search) {
-            $query->search($filters->search);        }
+            $query->search($filters->search);
+        }
 
         if ($filters->status) {
-            $query->byStatus($filters->status);        }
+            $query->byStatus($filters->status);
+        }
 
         if ($filters->source) {
             $query->where('leads.source', $filters->source);

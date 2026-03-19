@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
 use App\Models\Lead;
 use App\Models\LeadNote;

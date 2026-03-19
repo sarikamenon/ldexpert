@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 /**
  * @property InvoiceStatus $status
@@ -56,6 +57,7 @@ class Invoice extends Model
         'sent_at',
         'sent_by_id',
         'paid_at',
+        'payment_token',
         'notes',
     ];
 
@@ -154,5 +156,42 @@ class Invoice extends Model
         $totalPaid = $this->getTotalPaidAttribute();
 
         return $totalPaid > 0 && $totalPaid < (float) $this->total;
+    }
+
+    /**
+     * @return HasMany<InvoiceEmailLog, $this>
+     */
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(InvoiceEmailLog::class, 'invoice_id');
+    }
+
+    /**
+     * @return HasMany<PaymentGatewayTransaction, $this>
+     */
+    public function gatewayTransactions(): HasMany
+    {
+        return $this->hasMany(PaymentGatewayTransaction::class, 'invoice_id');
+    }
+
+    public function ensurePaymentToken(): string
+    {
+        if (! $this->payment_token) {
+            $token = Str::uuid()->toString();
+            $this->update(['payment_token' => $token]);
+
+            return $token;
+        }
+
+        return $this->payment_token;
+    }
+
+    public function getPaymentUrl(): ?string
+    {
+        if (! $this->payment_token) {
+            return null;
+        }
+
+        return route('payment.show', $this->payment_token);
     }
 }

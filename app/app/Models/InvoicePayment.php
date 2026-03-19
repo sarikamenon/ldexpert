@@ -31,6 +31,9 @@ class InvoicePayment extends Model
         'reference',
         'notes',
         'recorded_by_id',
+        'gateway',
+        'gateway_transaction_id',
+        'payment_gateway_transaction_id',
     ];
 
     protected function casts(): array
@@ -85,5 +88,13 @@ class InvoicePayment extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    /**
+     * @return BelongsTo<PaymentGatewayTransaction, $this>
+     */
+    public function gatewayTransaction(): BelongsTo
+    {
+        return $this->belongsTo(PaymentGatewayTransaction::class, 'payment_gateway_transaction_id');
     }
 }

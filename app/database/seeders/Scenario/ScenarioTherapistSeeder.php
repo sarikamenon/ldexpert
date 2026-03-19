@@ -56,7 +56,7 @@ final class ScenarioTherapistSeeder extends Seeder
     private function createTherapist(int $managerId, int $positionId, string $positionName, int $index): void
     {
         $email = "therapist-{$positionName}-{$index}@example.com";
-        $username = 'therapist.'.strtolower($positionName).".{$index}";
+        $username = $email;
         $user = User::query()->firstOrCreate(
             ['email' => $email],
             [
