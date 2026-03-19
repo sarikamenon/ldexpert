@@ -579,6 +579,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             let html = '';
             schedules.forEach((schedule) => {
                 const isPast = Boolean(schedule.is_past);
+                const isTodayOrPast = Boolean(schedule.is_today_or_past);
                 const isBilled = Boolean(schedule.is_billed);
                 const isPendingBilling = schedule.billing_status === 'pending';
 
@@ -636,7 +637,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                                     </button>
                                 ` : ''}
 
-                                ${isPast && isPendingBilling ? (
+                                ${isTodayOrPast && isPendingBilling ? (
                                     schedule.bill_url
                                         ? `
                                             <a href="${schedule.bill_url}" class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" title="Bill Your Session">

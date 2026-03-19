@@ -8,6 +8,7 @@
     $scheduleDate = $schedule['schedule_date'] ?? null;
     $billingStatus = $schedule['billing_status'] ?? null;
     $isPast = $scheduleDate ? \Carbon\Carbon::parse($scheduleDate)->lt(now()->startOfDay()) : false;
+    $isTodayOrPast = $scheduleDate ? \Carbon\Carbon::parse($scheduleDate)->lte(now()->startOfDay()) : false;
     $isBilled = $billingStatus === 'billed';
     $isPendingBilling = $billingStatus === 'pending';
 @endphp
@@ -103,8 +104,8 @@
                     </button>
                 @endif
 
-                {{-- Billing / View Session Buttons (only for past schedules) --}}
-                @if ($isPast && $isPendingBilling)
+                {{-- Billing / View Session Buttons (today or past schedules) --}}
+                @if ($isTodayOrPast && $isPendingBilling)
                     @if (isset($schedule['bill_url']))
                         <a href="{{ $schedule['bill_url'] }}"
                             class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"

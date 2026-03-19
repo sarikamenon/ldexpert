@@ -8,6 +8,7 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
+use App\Enums\BillingStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
@@ -94,10 +95,14 @@ class DashboardService
         /** @var Collection<int, array<string, mixed>> */
         return $schedules->map(function (Schedule $schedule): array {
             $studentProfile = $schedule->student?->studentProfile;
+            $scheduleDate = $schedule->schedule_date;
+            $isTodayOrPast = $scheduleDate->lte(now()->startOfDay());
+            $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
+            $isBilled = $schedule->billing_status === BillingStatus::BILLED;
 
             return [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
+                'schedule_date' => $scheduleDate->format('Y-m-d'),
                 'start_time' => $schedule->start_time->format('H:i'),
                 'end_time' => $schedule->end_time->format('H:i'),
                 'school' => $schedule->school?->display_name,
@@ -117,6 +122,9 @@ class DashboardService
                 'parent_email' => $studentProfile->parent_guardian_email ?? '-',
                 'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
+                'bill_url' => $isTodayOrPast && $isPendingBilling
+                    ? route('therapist.session-logs.create.from-schedule', $schedule->id)
+                    : null,
             ];
         });
     }

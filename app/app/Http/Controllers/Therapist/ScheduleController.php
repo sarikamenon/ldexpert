@@ -67,6 +67,7 @@ final class ScheduleController extends Controller
             $studentProfile = $schedule->student?->studentProfile;
             $scheduleDate = $schedule->schedule_date;
             $isPast = $scheduleDate->lt(now()->startOfDay());
+            $isTodayOrPast = $scheduleDate->lte(now()->startOfDay());
             $isBilled = $schedule->billing_status === BillingStatus::BILLED;
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
             /** @var \App\Models\SessionLog|null $sessionLog */
@@ -87,8 +88,9 @@ final class ScheduleController extends Controller
                 'billing_status' => $schedule->billing_status->value,
                 'is_group' => $schedule->is_group,
                 'is_past' => $isPast,
+                'is_today_or_past' => $isTodayOrPast,
                 'is_billed' => $isBilled,
-                'bill_url' => $isPast && $isPendingBilling
+                'bill_url' => $isTodayOrPast && $isPendingBilling
                     ? route('therapist.session-logs.create.from-schedule', $schedule->id)
                     : null,
                 'session_log_url' => $isPast && $isBilled && $sessionLog
@@ -297,6 +299,7 @@ final class ScheduleController extends Controller
             'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule) {
                 $scheduleDate = $schedule->schedule_date;
                 $isPast = $scheduleDate->lt(now()->startOfDay());
+                $isTodayOrPast = $scheduleDate->lte(now()->startOfDay());
                 $isBilled = $schedule->billing_status === BillingStatus::BILLED;
                 $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
                 /** @var \App\Models\SessionLog|null $sessionLog */
@@ -314,8 +317,9 @@ final class ScheduleController extends Controller
                     'billing_status' => $schedule->billing_status->value,
                     'is_group' => $schedule->is_group,
                     'is_past' => $isPast,
+                    'is_today_or_past' => $isTodayOrPast,
                     'is_billed' => $isBilled,
-                    'bill_url' => $isPast && $isPendingBilling
+                    'bill_url' => $isTodayOrPast && $isPendingBilling
                         ? route('therapist.session-logs.create.from-schedule', $schedule->id)
                         : null,
                     'session_log_url' => $isPast && $isBilled && $sessionLog
