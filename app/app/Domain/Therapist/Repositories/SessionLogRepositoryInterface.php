@@ -7,6 +7,7 @@ namespace App\Domain\Therapist\Repositories;
 use App\DTOs\DataTablesParamsDTO;
 use App\Models\SessionLog;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -75,4 +76,9 @@ interface SessionLogRepositoryInterface
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SessionLog>}
      */
     public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array;
+
+    /**
+     * @return array{minutes: int, sessions: int}
+     */
+    public function getSubmittedSummaryForWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): array;
 }

@@ -9,6 +9,7 @@ use App\Enums\Role;
 use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
+use App\Models\Concerns\HasSessionLogScopes;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,7 +26,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class SessionLog extends Model
 {
     /** @use HasFactory<\Database\Factories\SessionLogFactory> */
-    use HasFactory, SoftDeletes;
+    use HasFactory, HasSessionLogScopes, SoftDeletes;
 
     protected $fillable = [
         'therapist_id',
@@ -285,7 +286,7 @@ class SessionLog extends Model
 
         if ($isTherapistRoute && $user instanceof User) {
             if ($user->role === Role::THERAPIST) {
-                $query->where('therapist_id', $user->id);
+                $query->forTherapist($user);
             }
         }
 

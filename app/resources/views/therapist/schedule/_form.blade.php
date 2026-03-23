@@ -85,18 +85,6 @@
                                 class="font-medium text-foreground">{{ $currentSsa->primaryService->name ?? 'N/A' }}</span>
                         </div>
                         <div>
-                            <span class="text-foreground/70 block mb-1">Additional Services:</span>
-                            @if ($currentSsa->additionalServices->isNotEmpty())
-                                <span class="font-medium text-foreground">
-                                    @foreach ($currentSsa->additionalServices as $service)
-                                        {{ $loop->first ? '' : ', ' }}{{ $service->name }}
-                                    @endforeach
-                                </span>
-                            @else
-                                <span class="font-medium text-foreground/60">None</span>
-                            @endif
-                        </div>
-                        <div>
                             <span class="text-foreground/70 block mb-1">End Date:</span>
                             <span class="font-medium text-foreground">
                                 {{ $currentSsa->end_date->format('M d, Y') }}
@@ -137,7 +125,7 @@
                         <input type="hidden" name="ssa_id" value="{{ $currentSsa->id }}">
                         <input type="hidden" name="student_ids[]" value="{{ $preselectedStudent->id }}">
                         <p class="text-xs text-foreground/60 mt-1">
-                            Services available for this SSA (primary and additional).
+                            Services available for this SSA.
                         </p>
                     @endif
                     <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
@@ -184,9 +172,14 @@
                 </div>
                 <div>
                     <x-input-label for="end_time_display" value="End Time (auto-calculated)" />
-                    <x-ui::input id="end_time_display" type="text"
-                        class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75" value=""
-                        disabled readonly />
+                    
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <x-ui::input id="end_time_display" type="time"
+                            class="block w-full min-w-0 flex-1 bg-background/subtle cursor-not-allowed opacity-75"
+                            value="" disabled readonly tabindex="-1" aria-describedby="end_time_display_help" />
+                        <span id="end_time_next_day" class="hidden shrink-0 text-sm text-foreground/70"
+                            aria-live="polite">(next day)</span>
+                    </div>
                 </div>
             </div>
         </div>

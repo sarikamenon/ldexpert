@@ -46,5 +46,8 @@ interface ServiceRepositoryInterface
     /** @return Collection<int, Service> */
     public function listIndirectServices(): Collection;
 
+    /** @return Collection<int, Service> */
+    public function listCommonIndirectServices(int $therapistProfileId, int $schoolId): Collection;
+
     public function findOrFail(int $id): Service;
 }

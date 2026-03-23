@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\RecurrenceType;
@@ -124,14 +125,20 @@ final class StoreScheduleRequest extends FormRequest
                 }
             }
 
-            // Validate service is available for the student via the SSA
+            // Validate service is available for the student via the SSA or as a common indirect service
             if ($serviceId && $ssaId && $studentCount > 0) {
                 /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if ($ssa && $ssa->primary_service_id !== (int) $serviceId) {
-                    // Check if it's an additional service
-                    $isAdditionalService = $ssa->additionalServices()->where('services.id', $serviceId)->exists();
-                    if (! $isAdditionalService) {
+                    $schoolId = $ssa->student?->studentProfile?->school_id;
+                    $therapistProfileId = $therapist->therapistProfile?->id;
+                    $isCommonIndirect = false;
+                    if ($schoolId && $therapistProfileId) {
+                        $isCommonIndirect = app(ServiceCatalogService::class)
+                            ->listCommonIndirectServices($therapistProfileId, $schoolId)
+                            ->contains('id', (int) $serviceId);
+                    }
+                    if (! $isCommonIndirect) {
                         $validator->errors()->add('service_id', 'This service is not available for the selected SSA.');
                     }
                 }

@@ -225,6 +225,11 @@
         <script type="application/json" id="therapists-for-service-url">
             @json(route('admin.ssas.therapists-for-service'))
         </script>
+        @if (isset($ssa) && $ssa->assigned_therapist_id)
+            <script type="application/json" id="current-assigned-therapist-id">
+                @json($ssa->assigned_therapist_id)
+            </script>
+        @endif
     </x-ui::card>
 
     <input type="hidden" name="add_more_ssa" id="add_more_ssa" value="0" />

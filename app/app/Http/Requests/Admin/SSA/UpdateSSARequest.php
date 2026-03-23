@@ -20,12 +20,6 @@ final class UpdateSSARequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if (! $this->has('additional_service_ids')) {
-            $this->merge([
-                'additional_service_ids' => [],
-            ]);
-        }
-
         if ($this->input('frequency') === ServiceFrequency::ONE_TIME->value) {
             $frequency = ServiceFrequency::ONE_TIME;
             $normalizedValues = [
@@ -50,14 +44,6 @@ final class UpdateSSARequest extends FormRequest
 
         return [
             'assigned_therapist_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
-            'additional_service_ids' => ['nullable', 'array'],
-            'additional_service_ids.*' => [
-                'integer',
-                'distinct',
-                Rule::exists('services', 'id')->where(function ($query) {
-                    $query->where('is_direct_service', false);
-                }),
-            ],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date'],
             'minutes_per_session' => [

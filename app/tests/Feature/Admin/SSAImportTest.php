@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin;
 
-use App\Enums\ServiceStatus;
 use App\Enums\ServiceFrequency;
+use App\Enums\ServiceStatus;
 use App\Enums\SSAImportRowStatus;
 use App\Enums\SSAImportStatus;
 use App\Enums\SSAImportType;
@@ -855,7 +855,6 @@ final class SSAImportTest extends TestCase
         $optionalColumns = [
             'student_id_number',
             'school_name',
-            'additional_service_names',
             'frequency',
             'sessions_per_frequency',
             'assigned_therapist_email',

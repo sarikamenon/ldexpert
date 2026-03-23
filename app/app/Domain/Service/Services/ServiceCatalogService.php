@@ -78,4 +78,10 @@ final class ServiceCatalogService
     {
         return $this->repository->listIndirectServices();
     }
+
+    /** @return Collection<int, Service> */
+    public function listCommonIndirectServices(int $therapistProfileId, int $schoolId): Collection
+    {
+        return $this->repository->listCommonIndirectServices($therapistProfileId, $schoolId);
+    }
 }

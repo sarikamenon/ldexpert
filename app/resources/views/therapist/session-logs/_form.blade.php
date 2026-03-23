@@ -78,7 +78,7 @@
                         @if (isset($sessionLog) || isset($selectedSsa))
                             <option value="">Select service</option>
                             @foreach ($services ?? [] as $service)
-                                <option value="{{ $service->id }}" @selected(old('service_id', $sessionLog->service_id ?? ($selectedSsa->primary_service_id ?? '')) == $service->id)>
+                                <option value="{{ $service->id }}" @selected(old('service_id', $sessionLog->service_id ?? '') == $service->id)>
                                     {{ $service->name }}
                                 </option>
                             @endforeach
@@ -92,12 +92,19 @@
 
             <div>
                 <x-input-label for="session-log-date" value="Session Date *" />
-                <p class="mt-1 text-xs text-foreground/60">Date when the session occurred</p>
-                <input type="hidden" name="session_date"
-                    value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}" />
-                <x-ui::input type="date" id="session-log-date" class="mt-1 block w-full bg-gray-100"
-                    value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
-                    readonly :disabled="true" />
+                @if (isset($schedule))
+                    <p class="mt-1 text-xs text-foreground/60">Date when the session occurred (from schedule)</p>
+                    <input type="hidden" name="session_date"
+                        value="{{ old('session_date', $schedule->schedule_date?->format('Y-m-d')) }}" />
+                    <x-ui::input type="date" id="session-log-date" class="mt-1 block w-full bg-gray-100"
+                        value="{{ old('session_date', $schedule->schedule_date?->format('Y-m-d')) }}"
+                        readonly :disabled="true" />
+                @else
+                    <p class="mt-1 text-xs text-foreground/60">Date when the session occurred. Must be a past date.</p>
+                    <x-ui::input type="date" name="session_date" id="session-log-date" class="mt-1 block w-full"
+                        value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : '') }}"
+                        max="{{ now()->subDay()->format('Y-m-d') }}" required />
+                @endif
                 <x-input-error :messages="$errors->get('session_date')" class="mt-2" />
             </div>
         </div>

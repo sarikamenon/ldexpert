@@ -44,16 +44,6 @@ final class ImportSSADTO
     {
         $data = $this->data;
 
-        // Parse additional service names (comma-separated) into IDs
-        $additionalServiceIds = [];
-        if (isset($data['additional_service_names']) && ! empty($data['additional_service_names'])) {
-            $serviceNames = array_map('trim', explode(',', $data['additional_service_names']));
-            // Service IDs will be resolved during import processing
-            $data['additional_service_ids'] = $serviceNames; // Store names temporarily
-        } else {
-            $data['additional_service_ids'] = [];
-        }
-
         // Ensure frequency is null if empty
         if (empty($data['frequency'])) {
             $data['frequency'] = null;

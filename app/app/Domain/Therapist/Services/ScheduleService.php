@@ -124,7 +124,8 @@ final class ScheduleService
                 throw new \InvalidArgumentException('Therapist does not have access to one or more selected students.');
             }
 
-            if (! $this->repository->validateStudentsShareService($therapist, $dto->studentIds, $dto->serviceId)) {
+            $service = $this->serviceRepository->findOrFail($dto->serviceId);
+            if ($service->is_direct_service && ! $this->repository->validateStudentsShareService($therapist, $dto->studentIds, $dto->serviceId)) {
                 throw new \InvalidArgumentException('Selected students do not share this service via an active SSA.');
             }
 
@@ -133,9 +134,8 @@ final class ScheduleService
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
-            // Fetch students and service before overlap checks (tests expect these to be called)
+            // Fetch students before overlap checks (tests expect these to be called)
             $students = $this->userRepository->findByIds($dto->studentIds);
-            $service = $this->serviceRepository->findOrFail($dto->serviceId);
 
             // Validate Therapist Overlap
             $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, true);

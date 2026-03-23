@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
 use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\SessionLogService;
@@ -37,6 +38,7 @@ final class ScheduleController extends Controller
         private readonly SSAService $ssaService,
         private readonly SessionLogService $sessionLogService,
         private readonly SchoolCalendarService $calendarService,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function calendar(ScheduleFilterRequest $request): View
@@ -184,7 +186,7 @@ final class ScheduleController extends Controller
             ],
         ])->filter(static fn ($studentInfo) => $studentInfo->user_id !== null)->values();
 
-        // Get all services from this SSA (primary + additional)
+        // Get primary service from SSA
         $ssaServices = $ssa->services()->where('status', ServiceStatus::ACTIVE)->get();
         $serviceOptions = $ssaServices->map(function (Service $service) {
             /** @var \App\Models\Pivots\SSAService|null $pivot */
@@ -196,6 +198,22 @@ final class ScheduleController extends Controller
                 'is_primary' => (bool) $pivot?->is_primary,
             ];
         })->values();
+
+        // Append common indirect services available to both the therapist and student's school
+        $schoolId = $student?->studentProfile?->school_id;
+        $therapistProfileId = $therapist->therapistProfile?->id;
+        if ($schoolId && $therapistProfileId) {
+            $existingIds = $serviceOptions->pluck('service_id')->all();
+            $indirectOptions = $this->serviceCatalogService
+                ->listCommonIndirectServices($therapistProfileId, $schoolId)
+                ->reject(static fn (Service $s) => in_array($s->id, $existingIds, true))
+                ->map(static fn (Service $s) => [
+                    'service_id' => $s->id,
+                    'service_name' => $s->name,
+                    'is_primary' => false,
+                ]);
+            $serviceOptions = $serviceOptions->merge($indirectOptions)->values();
+        }
 
         $studentServiceMappings = collect([
             [
@@ -238,7 +256,6 @@ final class ScheduleController extends Controller
             'service',
             'ssa',
             'ssa.primaryService',
-            'ssa.additionalServices',
             'ssa.student',
             'ssa.student.studentProfile',
             'ssa.student.studentProfile.school',
@@ -444,6 +461,17 @@ final class ScheduleController extends Controller
             }
 
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => $e->getMessage(),
+                    'errors' => [
+                        'service_id' => [$e->getMessage()],
+                    ],
+                ], 422);
+            }
+
+            return back()->withErrors(['service_id' => $e->getMessage()])->withInput();
         }
 
         if ($request->expectsJson()) {

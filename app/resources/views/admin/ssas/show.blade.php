@@ -166,10 +166,7 @@
                 @json(route('admin.ssas.therapists-for-service'))
             </script>
             <script type="application/json" id="ssa-service-ids">
-                @json(array_merge(
-                    [$ssa->primary_service_id],
-                    $ssa->additionalServices->pluck('id')->all()
-                ))
+                @json([$ssa->primary_service_id])
             </script>
 
             @if ($assignmentHistory->count() > 0)

@@ -94,12 +94,6 @@ class ServiceSupportAgreement extends Model
             ->withTimestamps();
     }
 
-    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
-    public function additionalServices(): BelongsToMany
-    {
-        return $this->services()->wherePivot('is_primary', false);
-    }
-
     /** @return BelongsTo<User, $this> */
     public function assignedTherapist(): BelongsTo
     {
