@@ -15,11 +15,11 @@ class DashboardRedirectController extends Controller
         $user = $request->user();
 
         // Redirect to password change if user hasn't changed password yet
-        if ($user?->password_change_prompted_at === null) {
+        if ($user === null || $user->password_change_prompted_at === null) {
             return redirect()->route('password.edit');
         }
 
-        $destination = match ($user?->role) {
+        $destination = match ($user->role) {
             Role::ADMIN => 'admin.dashboard',
             Role::THERAPIST => 'therapist.dashboard',
             Role::STUDENT => 'student.dashboard',

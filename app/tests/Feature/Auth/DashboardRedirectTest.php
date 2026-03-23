@@ -54,6 +54,5 @@ class DashboardRedirectTest extends TestCase
         $response = $this->actingAs($admin)->get('/dashboard');
 
         $response->assertRedirect(route('admin.dashboard'));
-        $response->assertNotRedirect(route('password.edit'));
     }
 }
