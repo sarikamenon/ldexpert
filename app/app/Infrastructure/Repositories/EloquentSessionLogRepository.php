@@ -61,7 +61,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->with(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule']);
 
         if (isset($filters['status'])) {
-            $query->withStatuses([(string) $filters['status']]);
+            $query->withStatuses([$filters['status']]);
         }
 
         if (isset($filters['student_id'])) {
@@ -96,7 +96,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->with(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule']);
 
         if (isset($filters['status'])) {
-            $query->withStatuses([(string) $filters['status']]);
+            $query->withStatuses([$filters['status']]);
         }
 
         if (isset($filters['student_id'])) {
@@ -361,7 +361,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $query->where('ssa_id', $filters['ssa_id']);
         }
         if (! empty($filters['status'])) {
-            $query->withStatuses([(string) $filters['status']]);
+            $query->withStatuses([$filters['status']]);
         }
         if (! empty($filters['date_from'])) {
             $query->whereDate('session_date', '>=', $filters['date_from']);

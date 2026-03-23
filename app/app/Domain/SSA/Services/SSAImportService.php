@@ -210,7 +210,7 @@ final class SSAImportService
             }
 
             // Validate row data
-            $validationErrors = $this->validateRowData($mappedData, $primaryService, []);
+            $validationErrors = $this->validateRowData($mappedData, $primaryService);
 
             if (! empty($validationErrors)) {
                 $importRow->update([
@@ -514,10 +514,9 @@ final class SSAImportService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array<int, int>  $additionalServiceIds
      * @return array<int, string>
      */
-    public function validateRowData(array $data, Service $primaryService, array $additionalServiceIds): array
+    public function validateRowData(array $data, Service $primaryService): array
     {
         $errors = [];
 
@@ -559,27 +558,11 @@ final class SSAImportService
             }
         }
 
-        // Validate additional services are indirect
-        if (! empty($additionalServiceIds)) {
-            $additionalServices = Service::whereIn('id', $additionalServiceIds)
-                ->where('status', ServiceStatus::ACTIVE)
-                ->get();
-
-            if ($additionalServices->count() !== count($additionalServiceIds)) {
-                $errors[] = 'One or more additional services not found or inactive.';
-            } else {
-                foreach ($additionalServices as $service) {
-                    if ($service->is_direct_service) {
-                        $errors[] = "Additional service '{$service->name}' must be an indirect service.";
-                    }
-                }
-            }
-        }
-
         return $errors;
     }
 
     /**
+     * @param  array<string, mixed>  $data
      * @return array<int, string>
      */
     private function validateDateRange(array $data): array
