@@ -6,9 +6,12 @@
 
 @php
     $scheduleDate = $schedule['schedule_date'] ?? null;
+    $startTime = $schedule['start_time'] ?? null;
     $billingStatus = $schedule['billing_status'] ?? null;
     $isPast = $scheduleDate ? \Carbon\Carbon::parse($scheduleDate)->lt(now()->startOfDay()) : false;
-    $isTodayOrPast = $scheduleDate ? \Carbon\Carbon::parse($scheduleDate)->lte(now()->startOfDay()) : false;
+    $hasEventStarted = ($scheduleDate && $startTime)
+        ? now()->gte(\Carbon\Carbon::parse($scheduleDate . ' ' . $startTime))
+        : $isPast;
     $isBilled = $billingStatus === 'billed';
     $isPendingBilling = $billingStatus === 'pending';
 @endphp
@@ -104,8 +107,8 @@
                     </button>
                 @endif
 
-                {{-- Billing / View Session Buttons (today or past schedules) --}}
-                @if ($isTodayOrPast && $isPendingBilling)
+                {{-- Billing / View Session Buttons (after event start time) --}}
+                @if ($hasEventStarted && $isPendingBilling)
                     @if (isset($schedule['bill_url']))
                         <a href="{{ $schedule['bill_url'] }}"
                             class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
