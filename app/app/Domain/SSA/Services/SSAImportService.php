@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\SSA\Services;
 
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateSSADTO;
 use App\DTOs\StoreSSAImportDTO;
+use App\Enums\Role;
 use App\Enums\ServiceFrequency;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAImportRowStatus;
@@ -21,9 +21,11 @@ use App\Enums\UserStatus;
 use App\Jobs\ProcessSSAImportJob;
 use App\Models\School;
 use App\Models\Service;
+use App\Models\ServiceAlias;
 use App\Models\SSAImport;
 use App\Models\SSAImportRow;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -33,8 +35,8 @@ final class SSAImportService
     public function __construct(
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly SSAService $ssaService,
+        private readonly RsmImportHandler $rsmImportHandler,
         private readonly StudentRepositoryInterface $studentRepository,
-        private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly StorageServiceInterface $storageService,
@@ -99,6 +101,10 @@ final class SSAImportService
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $rowData
+     * @param  array<string, mixed>  $template
+     */
     public function processRow(SSAImport $import, int $rowNumber, array $rowData, array $template): void
     {
         $importRow = SSAImportRow::where('ssa_import_id', $import->id)
@@ -118,6 +124,11 @@ final class SSAImportService
         try {
             // Map columns using template
             $mappedData = $this->mapColumns($rowData, $template);
+
+            // Apply RSM-specific transformations
+            if ($import->type === SSAImportType::RSM) {
+                $mappedData = $this->transformRsmData($mappedData);
+            }
 
             // Lookup student
             $student = $this->lookupStudent($mappedData);
@@ -144,11 +155,12 @@ final class SSAImportService
                 return;
             }
 
-            $primaryService = $this->lookupService($primaryServiceName);
+            $primaryService = $this->lookupService($primaryServiceName, $import->type);
             if (! $primaryService) {
+                $source = $import->type->value;
                 $importRow->update([
                     'status' => SSAImportRowStatus::VALIDATION_ERROR,
-                    'error_message' => "Service with name '{$primaryServiceName}' not found.",
+                    'error_message' => "Service '{$primaryServiceName}' not found. Add a mapping in Settings → Service Aliases for {$source}.",
                     'processed_at' => now(),
                 ]);
 
@@ -160,7 +172,7 @@ final class SSAImportService
             if (! empty($mappedData['additional_service_names'])) {
                 $serviceNames = array_map('trim', explode(',', $mappedData['additional_service_names']));
                 foreach ($serviceNames as $serviceName) {
-                    $service = $this->lookupService(trim($serviceName));
+                    $service = $this->lookupService(trim($serviceName), $import->type);
                     if (! $service) {
                         $importRow->update([
                             'status' => SSAImportRowStatus::VALIDATION_ERROR,
@@ -190,6 +202,8 @@ final class SSAImportService
                 $therapistId = $therapist->id;
             }
 
+            $mappedData = $this->normalizeSchedulingFields($mappedData);
+
             // Calculate THO minutes if not provided
             $thoMinutes = (int) ($mappedData['tho_minutes'] ?? 0);
             if ($thoMinutes === 0 && ! empty($mappedData['frequency']) && ! empty($mappedData['sessions_per_frequency'])) {
@@ -205,6 +219,15 @@ final class SSAImportService
             // Add calculated THO minutes to mapped data for validation
             $mappedData['tho_minutes'] = $thoMinutes;
 
+            // For RSM imports: compare imported THO with system-calculated THO
+            if ($import->type === SSAImportType::RSM
+                && ! empty($mappedData['frequency'])
+                && ! empty($mappedData['sessions_per_frequency'])
+                && $thoMinutes > 0
+            ) {
+                $this->applyRsmThoAdjustment($mappedData, $thoMinutes);
+            }
+
             // Validate row data
             $validationErrors = $this->validateRowData($mappedData, $primaryService, $additionalServiceIds);
 
@@ -218,8 +241,23 @@ final class SSAImportService
                 return;
             }
 
-            // Check for duplicates (overlapping SSAs)
-            $duplicateCheck = $this->checkDuplicate($student->id, $primaryService->id, $mappedData['start_date'], $mappedData['end_date']);
+            // RSM imports use status-based upsert logic
+            if ($import->type === SSAImportType::RSM) {
+                $this->rsmImportHandler->processRow(
+                    $importRow,
+                    $mappedData,
+                    $student,
+                    $primaryService,
+                    $additionalServiceIds,
+                    $therapistId,
+                    $thoMinutes,
+                );
+
+                return;
+            }
+
+            // Non-RSM: check for duplicates (overlapping SSAs)
+            $duplicateCheck = $this->checkDuplicate($student->id, $primaryService->id, (string) $mappedData['start_date'], (string) $mappedData['end_date']);
             if ($duplicateCheck !== null) {
                 $importRow->update([
                     'status' => SSAImportRowStatus::DUPLICATE,
@@ -267,9 +305,14 @@ final class SSAImportService
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $mappedData
+     */
     public function lookupStudent(array $mappedData): ?User
     {
-        // Try email first
+        // Try email first.
+        // Note: if siblings share email, the first match is returned.
+        // Future: add username column to SSA import CSV for precise lookup.
         if (! empty($mappedData['student_email'])) {
             $student = $this->studentRepository->findByEmail($mappedData['student_email']);
             if ($student && $student->status === UserStatus::ACTIVE) {
@@ -291,30 +334,51 @@ final class SSAImportService
         return null;
     }
 
-    public function lookupService(string $serviceName): ?Service
+    public function lookupService(string $serviceName, ?SSAImportType $importType = null): ?Service
     {
-        return Service::query()
+        // Try direct name match first
+        $service = Service::query()
             ->where('name', $serviceName)
             ->where('status', ServiceStatus::ACTIVE)
             ->first();
+
+        if ($service !== null) {
+            return $service;
+        }
+
+        // Try alias lookup for sources that use alias mappings
+        if ($importType !== null && in_array($importType, SSAImportType::aliasSources(), true)) {
+            $alias = ServiceAlias::query()
+                ->forSource($importType->value)
+                ->where('external_name', $serviceName)
+                ->first();
+
+            return $alias?->service;
+        }
+
+        return null;
     }
 
     public function lookupTherapist(string $email): ?User
     {
         $user = $this->userRepository->findByEmail($email);
-        if ($user && $user->role === 'therapist' && $user->status === UserStatus::ACTIVE) {
+        if ($user && $user->role === Role::THERAPIST && $user->status === UserStatus::ACTIVE) {
             return $user;
         }
 
         return null;
     }
 
+    /**
+     * @param  array<string, mixed>  $template
+     * @return array<int, string>
+     */
     public function validateFileStructure(SSAImport $import, array $template): array
     {
         $errors = [];
 
         $fileContent = $this->storageService->get($import->file_path);
-        if ($fileContent === false) {
+        if ($fileContent === null) {
             return ['Unable to read file from storage.'];
         }
 
@@ -331,12 +395,12 @@ final class SSAImportService
         $headers = fgetcsv($tempFile);
         fclose($tempFile);
 
-        if ($headers === false || empty($headers)) {
+        if ($headers === false) {
             return ['File appears to be empty or invalid.'];
         }
 
         // Normalize headers
-        $headers = array_map('trim', $headers);
+        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
 
         $errors = [];
 
@@ -350,9 +414,19 @@ final class SSAImportService
             }
         }
 
-        // Special check: need either student_email OR (student_id_number + school_name)
-        if (! in_array('student_email', $headers, true) &&
-            (! in_array('student_id_number', $headers, true) || ! in_array('school_name', $headers, true))) {
+        // Special check: need a student identifier in the CSV.
+        // For NOVA: student_email OR (student_id_number + school_name)
+        // For RSM: Identity ID + School Name (mapped to student_id_number + school_name)
+        $columnMapping = $template['column_mapping'] ?? [];
+        $mappedHeaders = array_map(
+            static fn (string $h): ?string => $columnMapping[$h] ?? null,
+            $headers
+        );
+        $hasMappedEmail = in_array('student_email', $mappedHeaders, true);
+        $hasMappedIdAndSchool = in_array('student_id_number', $mappedHeaders, true)
+            && in_array('school_name', $mappedHeaders, true);
+
+        if (! $hasMappedEmail && ! $hasMappedIdAndSchool) {
             $errors[] = 'Either student_email or (student_id_number and school_name) must be provided.';
         }
 
@@ -363,12 +437,15 @@ final class SSAImportService
         return $errors;
     }
 
+    /**
+     * @return array<int, array<string, string>>
+     */
     public function parseCsvFromStorage(string $filePath): array
     {
         $rows = [];
 
         $fileContent = $this->storageService->get($filePath);
-        if ($fileContent === false) {
+        if ($fileContent === null) {
             return [];
         }
 
@@ -383,14 +460,14 @@ final class SSAImportService
 
         // Read headers
         $headers = fgetcsv($tempFile);
-        if ($headers === false || empty($headers)) {
+        if ($headers === false) {
             fclose($tempFile);
 
             return [];
         }
 
         // Normalize headers
-        $headers = array_map('trim', $headers);
+        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
 
         // Parse data rows
         while (($row = fgetcsv($tempFile)) !== false) {
@@ -413,6 +490,11 @@ final class SSAImportService
         return $rows;
     }
 
+    /**
+     * @param  array<string, mixed>  $rowData
+     * @param  array<string, mixed>  $template
+     * @return array<string, string>
+     */
     public function mapColumns(array $rowData, array $template): array
     {
         $mapped = [];
@@ -427,6 +509,35 @@ final class SSAImportService
         return $mapped;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeSchedulingFields(array $data): array
+    {
+        $frequency = isset($data['frequency']) ? ServiceFrequency::tryFrom((string) $data['frequency']) : null;
+
+        if ($frequency !== ServiceFrequency::ONE_TIME) {
+            return $data;
+        }
+
+        $data['sessions_per_frequency'] = $frequency->normalizeSessionsPerFrequency(null);
+
+        if (! empty($data['minutes_per_session'])) {
+            $data['calculated_minutes'] = $frequency->normalizeCalculatedMinutes(
+                (int) $data['minutes_per_session'],
+                null
+            );
+        }
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  array<int, int>  $additionalServiceIds
+     * @return array<int, string>
+     */
     public function validateRowData(array $data, Service $primaryService, array $additionalServiceIds): array
     {
         $errors = [];
@@ -434,7 +545,7 @@ final class SSAImportService
         // Basic validation rules
         $rules = [
             'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after:start_date'],
+            'end_date' => ['required', 'date'],
             'minutes_per_session' => ['required', 'integer', 'min:5', 'max:1440'],
             'tho_minutes' => ['required', 'integer', 'min:0'],
             'frequency' => ['nullable', 'string'],
@@ -449,6 +560,8 @@ final class SSAImportService
         if ($validator->fails()) {
             $errors = array_merge($errors, $validator->errors()->all());
         }
+
+        $errors = array_merge($errors, $this->validateDateRange($data));
 
         // Validate frequency if service is frequency-based
         if ($primaryService->is_frequency_service) {
@@ -487,6 +600,33 @@ final class SSAImportService
         return $errors;
     }
 
+    /**
+     * @return array<int, string>
+     */
+    private function validateDateRange(array $data): array
+    {
+        if (empty($data['start_date']) || empty($data['end_date'])) {
+            return [];
+        }
+
+        $frequency = ! empty($data['frequency'])
+            ? ServiceFrequency::tryFrom((string) $data['frequency'])
+            : null;
+
+        $startDate = Carbon::parse((string) $data['start_date'])->startOfDay();
+        $endDate = Carbon::parse((string) $data['end_date'])->startOfDay();
+
+        if ($frequency === ServiceFrequency::ONE_TIME) {
+            return $endDate->lt($startDate)
+                ? ['End date must be the same as or after start date for one-time SSAs.']
+                : [];
+        }
+
+        return $endDate->gt($startDate)
+            ? []
+            : ['End date must be after start date.'];
+    }
+
     public function checkDuplicate(int $studentId, int $serviceId, string $startDate, string $endDate): ?string
     {
         $overlapping = $this->ssaRepository->checkOverlappingSSAs($studentId, $serviceId, $startDate, $endDate);
@@ -498,12 +638,63 @@ final class SSAImportService
         return null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getTemplate(SSAImportType $type): array
     {
         $config = config('ssa-import');
         $typeKey = $type->value;
 
         return $config['templates'][$typeKey] ?? [];
+    }
+
+    private static function rsmFrequencyToEnum(string $label): string
+    {
+        return match (strtolower(trim($label))) {
+            'week' => ServiceFrequency::WEEKLY->value,
+            'month' => ServiceFrequency::MONTHLY->value,
+            'year' => ServiceFrequency::QUARTERLY->value,
+            default => $label,
+        };
+    }
+
+    /**
+     * Transform RSM-specific mapped data into the standard format.
+     *
+     * Converts hours to minutes and maps frequency labels to enum values.
+     *
+     * @param  array<string, string>  $mappedData
+     * @return array<string, string>
+     */
+    private function transformRsmData(array $mappedData): array
+    {
+        // Convert hours_per_session → minutes_per_session
+        if (isset($mappedData['hours_per_session']) && $mappedData['hours_per_session'] !== '') {
+            $mappedData['minutes_per_session'] = (string) (int) round((float) $mappedData['hours_per_session'] * 60);
+            unset($mappedData['hours_per_session']);
+        }
+
+        // Convert tho_hours → tho_minutes
+        if (isset($mappedData['tho_hours']) && $mappedData['tho_hours'] !== '') {
+            $mappedData['tho_minutes'] = (string) (int) round((float) $mappedData['tho_hours'] * 60);
+            unset($mappedData['tho_hours']);
+        }
+
+        // Map frequency_label → frequency (enum value)
+        if (isset($mappedData['frequency_label']) && $mappedData['frequency_label'] !== '') {
+            $mappedData['frequency'] = self::rsmFrequencyToEnum($mappedData['frequency_label']);
+            unset($mappedData['frequency_label']);
+        }
+
+        // Convert dates from MM/DD/YYYY to YYYY-MM-DD for MySQL
+        foreach (['start_date', 'end_date'] as $dateField) {
+            if (isset($mappedData[$dateField]) && $mappedData[$dateField] !== '') {
+                $mappedData[$dateField] = Carbon::parse($mappedData[$dateField])->format('Y-m-d');
+            }
+        }
+
+        return $mappedData;
     }
 
     private function storeFile(UploadedFile $file): string
@@ -514,7 +705,7 @@ final class SSAImportService
 
         $path = config('ssa-import.s3.path_prefix', 'ssa-imports')."/{$year}/{$month}/{$filename}";
 
-        $this->storageService->put($path, file_get_contents($file->getRealPath()));
+        $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 
         return $path;
     }
@@ -561,5 +752,38 @@ final class SSAImportService
         foreach (array_chunk($rows, 500) as $chunk) {
             SSAImportRow::insert($chunk);
         }
+    }
+
+    /**
+     * Compare imported THO with system-calculated THO and set adjustment fields.
+     *
+     * @param  array<string, mixed>  $mappedData
+     */
+    private function applyRsmThoAdjustment(array &$mappedData, int $thoMinutes): void
+    {
+        $calculatedMinutes = $this->ssaService->calculateThoMinutes(
+            (int) $mappedData['minutes_per_session'],
+            (string) $mappedData['frequency'],
+            (int) $mappedData['sessions_per_frequency'],
+            (string) $mappedData['start_date'],
+            (string) $mappedData['end_date'],
+        );
+
+        $mappedData['calculated_minutes'] = $calculatedMinutes;
+
+        if ($thoMinutes === $calculatedMinutes) {
+            return;
+        }
+
+        $adjustment = $thoMinutes - $calculatedMinutes;
+        $mappedData['adjusted_minutes'] = $adjustment;
+
+        $sign = $adjustment > 0 ? '+' : '';
+        $autoNote = "RSM import: System calculated {$calculatedMinutes} min, RSM reports {$thoMinutes} min. Adjusted by {$sign}{$adjustment} min.";
+
+        $existingNotes = (string) ($mappedData['adjustment_notes'] ?? '');
+        $mappedData['adjustment_notes'] = $existingNotes !== ''
+            ? $existingNotes . ' | ' . $autoNote
+            : $autoNote;
     }
 }

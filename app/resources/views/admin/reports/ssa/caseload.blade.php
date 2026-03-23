@@ -10,27 +10,28 @@
     @endif
 
     {{-- Summary Metrics --}}
-    @php
-        $metricItems = [
-            ['label' => 'Total Therapists', 'value' => $summary['total_therapists'] ?? 0, 'valueClass' => 'text-3xl'],
-            ['label' => 'Total Active SSAs', 'value' => $summary['total_active_ssas'] ?? 0, 'valueClass' => 'text-3xl'],
-            [
-                'label' => 'Median Minutes/Week',
-                'value' => number_format($summary['median_minutes_per_week'] ?? 0, 0),
-                'valueClass' => 'text-3xl',
-            ],
-            [
-                'label' => 'Unassigned SSAs',
-                'value' => $unassignedSSAs->count(),
-                'valueClass' => 'text-3xl text-warning',
-            ],
-        ];
-    @endphp
-    <x-ui::metric-grid :items="$metricItems" />
+    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Total Therapists</p>
+            <p class="text-3xl font-semibold mt-1" id="metricTotalTherapists">0</p>
+        </x-ui::card>
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Total Active SSAs</p>
+            <p class="text-3xl font-semibold mt-1" id="metricTotalActiveSSAs">0</p>
+        </x-ui::card>
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Median Minutes/Week</p>
+            <p class="text-3xl font-semibold mt-1" id="metricMedianMinutes">0</p>
+        </x-ui::card>
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Unassigned SSAs</p>
+            <p class="text-3xl font-semibold text-warning mt-1" id="metricUnassignedSSAs">0</p>
+        </x-ui::card>
+    </div>
 
     {{-- Filters --}}
     <x-ui::card class="p-6 mb-6">
-        <form method="GET" action="{{ route('admin.reports.ssa.caseload.index') }}" class="space-y-4">
+        <form id="caseloadFiltersForm" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <x-input-label for="school_ids" value="Schools" />
@@ -77,14 +78,12 @@
             </div>
             <div class="flex gap-2">
                 <x-ui::button type="submit">Apply Filters</x-ui::button>
-                <x-ui::button type="button" variant="secondary"
-                    onclick="window.location.href='{{ route('admin.reports.ssa.caseload.index') }}'">
+                <x-ui::button type="button" variant="secondary" id="resetFiltersBtn">
                     Reset
                 </x-ui::button>
-                <x-ui::button type="submit" variant="secondary"
-                    formaction="{{ route('admin.reports.ssa.caseload.export') }}">
-                    Export CSV
-                </x-ui::button>
+                <a href="{{ route('admin.reports.ssa.caseload.export', $filters) }}">
+                    <x-ui::button type="button" variant="secondary">Export CSV</x-ui::button>
+                </a>
             </div>
         </form>
     </x-ui::card>
@@ -93,110 +92,42 @@
     <x-ui::card class="p-6 mb-6">
         <h3 class="text-lg font-semibold mb-4">Therapist Caseloads</h3>
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-border">
-                <thead>
+            <table id="caseloadTherapistTable" class="w-full display"
+                data-datatable-url="{{ $therapistDatatableUrl }}">
+                <thead class="bg-background/subtle">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Therapist
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Schools
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Active SSAs
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Minutes/Week
-                        </th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Therapist</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Schools</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Active SSAs</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Minutes/Week</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
-                    @forelse ($therapistData as $data)
-                        <tr>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ $data['therapist']->name ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3">
-                                @foreach ($data['schools'] as $school)
-                                    <span
-                                        class="inline-block bg-background border border-border rounded px-2 py-1 text-xs mr-1 mb-1">
-                                        {{ $school->display_name }}
-                                    </span>
-                                @endforeach
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ $data['active_ssa_count'] }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ number_format($data['authorized_minutes_per_week'], 0) }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="px-4 py-8 text-center text-foreground/60">
-                                No therapist caseloads found matching the filters.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </x-ui::card>
 
     {{-- Unassigned SSAs --}}
-    @if ($unassignedSSAs->isNotEmpty())
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold mb-4">Unassigned SSAs</h3>
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-border">
-                    <thead>
-                        <tr>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                Student
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                School
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                Service
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                THO Minutes
-                            </th>
-                            <th
-                                class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-border">
-                        @foreach ($unassignedSSAs as $ssa)
-                            <tr>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    {{ $ssa->student->name ?? '—' }}
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    {{ $ssa->student->studentProfile->school->display_name ?? '—' }}
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    {{ $ssa->primaryService->name ?? '—' }}
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    {{ number_format($ssa->tho_minutes ?? 0) }}
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <a href="{{ route('admin.ssas.show', $ssa) }}"
-                                        class="text-primary hover:underline text-sm">View SSA</a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </x-ui::card>
-    @endif
+    <x-ui::card class="p-6">
+        <h3 class="text-lg font-semibold mb-4">Unassigned SSAs</h3>
+        <div class="overflow-x-auto">
+            <table id="caseloadUnassignedTable" class="w-full display"
+                data-datatable-url="{{ $unassignedDatatableUrl }}">
+                <thead class="bg-background/subtle">
+                    <tr>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Student</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Service</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">THO Hours</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-reports-ssa-caseload-index.js'])
+    </x-slot>
 </x-admin.layouts.app>

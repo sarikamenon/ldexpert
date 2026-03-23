@@ -7,12 +7,15 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateSchoolContractDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SchoolContractFilterDTO;
 use App\DTOs\UpdateSchoolContractDTO;
 use App\Enums\ContractStatus;
 use App\Models\SchoolContract;
+use App\Models\SchoolContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 final class EloquentSchoolContractRepository implements SchoolContractRepositoryInterface
 {
@@ -21,6 +24,44 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         return $this->applyFilters($this->baseQuery(), $filters)
             ->orderByDesc('start_date')
             ->paginate($perPage);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, SchoolContract>}
+     */
+    public function listForDataTables(SchoolContractFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters($this->baseQuery(), $filters);
+
+        $recordsTotal = (clone $baseQuery)->count('school_contracts.id');
+
+        if ($params->searchValue) {
+            $search = $params->searchValue;
+            $baseQuery->where(function (Builder $q) use ($search) {
+                $q->where('school_contracts.id', 'like', '%'.$search.'%')
+                    ->orWhereHas('school', function (Builder $sq) use ($search) {
+                        $sq->where('full_name', 'like', '%'.$search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('display_name', 'like', '%'.$search.'%'); // @phpstan-ignore argument.type
+                    });
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count('school_contracts.id');
+
+        $orderColumn = $params->orderColumn ?? 'school_contracts.start_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        /** @var Collection<int, SchoolContract> $rows */
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateSchoolContractDTO $dto): SchoolContract
@@ -55,6 +96,8 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
                     'service_id' => $dto->serviceId,
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
+                    'no_show_rate' => $dto->noShowRate,
+                    'no_show_rate_type' => $dto->noShowRateType?->value,
                 ],
                 $services,
             )
@@ -83,6 +126,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             ->exists();
     }
 
+    /** @return array{total: int, active: int, inactive: int} */
     public function metrics(): array
     {
         $total = SchoolContract::count();
@@ -110,7 +154,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
 
     public function getServiceRate(int $contractId, int $serviceId): ?array
     {
-        $contractService = \App\Models\SchoolContractService::query()
+        $contractService = SchoolContractService::query()
             ->where('school_contract_id', $contractId)
             ->where('service_id', $serviceId)
             ->first();
@@ -119,18 +163,28 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             return null;
         }
 
+        $noShowRate = $contractService->no_show_rate !== null ? (float) $contractService->no_show_rate : null;
+        $noShowRateType = $contractService->no_show_rate_type ?? null;
+
         return [
             'rate_type' => $contractService->rate_type,
             'rate_amount' => (float) $contractService->rate,
+            'no_show_rate' => $noShowRate,
+            'no_show_rate_type' => $noShowRateType,
         ];
     }
 
+    /** @return Builder<SchoolContract> */
     private function baseQuery(): Builder
     {
         return SchoolContract::query()
             ->with(['school', 'services.service']);
     }
 
+    /**
+     * @param  Builder<SchoolContract>  $query
+     * @return Builder<SchoolContract>
+     */
     private function applyFilters(Builder $query, SchoolContractFilterDTO $filters): Builder
     {
         if ($filters->status instanceof ContractStatus) {
@@ -141,8 +195,8 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $query->where(function (Builder $builder) use ($filters) {
                 $builder->where('id', $filters->search)
                     ->orWhereHas('school', function (Builder $schoolQuery) use ($filters) {
-                        $schoolQuery->where('full_name', 'like', '%'.$filters->search.'%')
-                            ->orWhere('display_name', 'like', '%'.$filters->search.'%');
+                        $schoolQuery->where('full_name', 'like', '%'.$filters->search.'%') // @phpstan-ignore argument.type
+                            ->orWhere('display_name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -151,7 +205,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             $query->where('school_id', $filters->schoolId);
         }
 
-        if (!empty($filters->schoolIds)) {
+        if (! empty($filters->schoolIds)) {
             $query->whereIn('school_id', $filters->schoolIds);
         }
 

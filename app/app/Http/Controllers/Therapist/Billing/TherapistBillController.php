@@ -28,8 +28,10 @@ final class TherapistBillController extends Controller
         $perPage = $request->integer('per_page', 15);
 
         // Filter to current therapist's bills only
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $bills = $this->billRepository->getBillsByTherapist(
-            $request->user()->id,
+            $user->id,
             $filters,
             $perPage
         );

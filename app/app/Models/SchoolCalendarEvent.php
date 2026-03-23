@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property SchoolCalendarEventType $event_type
+ * @property \Carbon\Carbon $start_date
+ * @property \Carbon\Carbon $end_date
+ */
 class SchoolCalendarEvent extends Model
 {
     /** @use HasFactory<\Database\Factories\SchoolCalendarEventFactory> */
@@ -35,6 +40,7 @@ class SchoolCalendarEvent extends Model
         ];
     }
 
+    /** @return BelongsTo<School, $this> */
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class);

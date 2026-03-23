@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SSAImportRow extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
     protected $table = 'ssa_import_rows';
@@ -36,36 +37,58 @@ class SSAImportRow extends Model
         ];
     }
 
+    /** @return BelongsTo<SSAImport, $this> */
     public function ssaImport(): BelongsTo
     {
         return $this->belongsTo(SSAImport::class, 'ssa_import_id');
     }
 
+    /** @return BelongsTo<ServiceSupportAgreement, $this> */
     public function ssa(): BelongsTo
     {
         return $this->belongsTo(ServiceSupportAgreement::class, 'ssa_id');
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeDone(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::DONE);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeDuplicate(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::DUPLICATE);
     }
 
+    /**
+     * @param  Builder<SSAImportRow>  $query
+     * @return Builder<SSAImportRow>
+     */
     public function scopeValidationError(Builder $query): Builder
     {
         return $query->where('status', SSAImportRowStatus::VALIDATION_ERROR);

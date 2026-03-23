@@ -10,14 +10,18 @@ use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
+use App\Enums\RateType;
 use App\Enums\Role;
 use App\Enums\SessionOutcome;
+use App\Mail\SessionLogSentBackMail;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
 
 final class SessionLogService
 {
@@ -28,6 +32,10 @@ final class SessionLogService
         private readonly ServiceRepositoryInterface $serviceRepository,
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, SessionLog>
+     */
     public function getSessionLogs(User $therapist, array $filters = []): Collection
     {
         return $this->repository->getSessionLogsForTherapist($therapist, $filters);
@@ -38,11 +46,16 @@ final class SessionLogService
         return $this->repository->findForTherapist($therapist, $sessionLogId);
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function getActiveSSAsForStudent(int $studentId): Collection
     {
         return $this->repository->getActiveSSAsForStudent($studentId);
     }
 
+    /**
+     * @param  array<int, int>  $scheduleIds
+     * @return Collection<int|string, Collection<int, SessionLog>>
+     */
     public function getSessionLogsByScheduleIds(User $therapist, array $scheduleIds): Collection
     {
         return $this->repository->getSessionLogsByScheduleIds($scheduleIds, $therapist);
@@ -70,19 +83,22 @@ final class SessionLogService
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
-            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile?->school_id ?? null;
+            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
 
             $this->assertScheduleNotBilled($schedule);
             $this->assertScheduleHasNoLogs($schedule);
 
-            // Calculate billing amounts and validate contracts
+            $outcome = SessionOutcome::from($dto->outcome);
+
+            // Calculate billing amounts and validate contracts (outcome and private/school drive rate choice)
             $billing = $this->rateService->calculateDualBilling(
                 $therapist->id,
                 $schoolId,
                 $dto->serviceId,
                 $dto->sessionDate,
-                $dto->durationMinutes
+                $dto->durationMinutes,
+                $outcome
             );
             $this->assertBillingDataComplete($billing);
 
@@ -138,17 +154,20 @@ final class SessionLogService
             $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
-            $schoolId = $dto->schoolId ?? $ssa->student->studentProfile?->school_id ?? null;
+            $schoolId = $dto->schoolId ?? $ssa->student->studentProfile->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
 
-            // Calculate billing amounts and validate contracts
+            $outcome = SessionOutcome::from($dto->outcome);
+
+            // Calculate billing amounts and validate contracts (outcome and private/school drive rate choice)
             $billing = $this->rateService->calculateDualBilling(
                 $therapist->id,
                 $schoolId,
                 $dto->serviceId,
                 $dto->sessionDate,
-                $dto->durationMinutes
+                $dto->durationMinutes,
+                $outcome
             );
             $this->assertBillingDataComplete($billing);
 
@@ -181,7 +200,7 @@ final class SessionLogService
     public function update(User $therapist, SessionLog $sessionLog, UpdateSessionLogDTO $dto): SessionLog
     {
         return DB::transaction(function () use ($therapist, $sessionLog, $dto): SessionLog {
-            $isAdmin = $therapist->role?->value === 'admin';
+            $isAdmin = $therapist->role->value === 'admin';
 
             if (! $isAdmin && $sessionLog->therapist_id !== $therapist->id) {
                 throw new \InvalidArgumentException('Therapist does not have access to this session log.');
@@ -202,43 +221,68 @@ final class SessionLogService
                 $this->applyOutcomeBillingFlags($data);
             }
 
-            // If duration changed, recalculate billing
-            if (isset($data['duration_minutes']) || isset($data['start_time']) || isset($data['end_time'])) {
-                // Recalculate duration if times changed
-                if (isset($data['start_time']) && isset($data['end_time'])) {
-                    $start = \Carbon\Carbon::parse($data['start_time']);
-                    $end = \Carbon\Carbon::parse($data['end_time']);
-                    $data['duration_minutes'] = $start->diffInMinutes($end);
-                } elseif (isset($data['duration_minutes'])) {
-                    // Use provided duration
-                } else {
-                    $data['duration_minutes'] = $sessionLog->calculateDurationMinutes();
+            $durationChanged = isset($data['duration_minutes']) || isset($data['start_time']) || isset($data['end_time']);
+            $outcomeChanged = isset($data['outcome']) && ($data['outcome'] !== ($sessionLog->outcome->value ?? $sessionLog->getRawOriginal('outcome')));
+            $schoolIdChanged = array_key_exists('school_id', $data) && (int) ($data['school_id'] ?? 0) !== (int) $sessionLog->school_id;
+
+            $shouldRecalculateBilling = ($durationChanged || $outcomeChanged || $schoolIdChanged) && ! ($dto->isRateOverride ?? false);
+
+            if ($shouldRecalculateBilling) {
+                if ($durationChanged) {
+                    if (isset($data['start_time']) && isset($data['end_time'])) {
+                        $start = Carbon::parse($data['start_time']);
+                        $end = Carbon::parse($data['end_time']);
+                        $data['duration_minutes'] = $start->diffInMinutes($end);
+                    } elseif (! isset($data['duration_minutes'])) {
+                        $data['duration_minutes'] = $sessionLog->calculateDurationMinutes();
+                    }
                 }
 
-                // Recalculate billing if not overridden
-                if (! ($dto->isRateOverride ?? false)) {
-                    $sessionDate = $data['session_date'] ?? $sessionLog->session_date->format('Y-m-d');
-                    $serviceId = $data['service_id'] ?? $sessionLog->service_id;
-                    $schoolId = $data['school_id'] ?? $sessionLog->school_id;
-                    $therapistUserId = $isAdmin ? $sessionLog->therapist_id : $therapist->id;
+                $sessionDate = $data['session_date'] ?? $sessionLog->session_date->format('Y-m-d');
+                $serviceId = $data['service_id'] ?? $sessionLog->service_id;
+                $schoolId = $data['school_id'] ?? $sessionLog->school_id;
+                $durationMinutes = (int) ($data['duration_minutes'] ?? $sessionLog->duration_minutes);
+                $therapistUserId = $isAdmin ? $sessionLog->therapist_id : $therapist->id;
+                $outcome = isset($data['outcome'])
+                    ? SessionOutcome::from($data['outcome'])
+                    : ($sessionLog->outcome ?? SessionOutcome::SERVICES_ADMINISTERED);
 
-                    $billing = $this->rateService->calculateDualBilling(
-                        $therapistUserId,
-                        $schoolId,
-                        $serviceId,
-                        $sessionDate,
-                        $data['duration_minutes']
+                $billing = $this->rateService->calculateDualBilling(
+                    $therapistUserId,
+                    $schoolId,
+                    $serviceId,
+                    $sessionDate,
+                    $durationMinutes,
+                    $outcome
+                );
+
+                $data['therapist_contract_id'] = $billing['therapist']['contract_id'];
+                $data['therapist_rate_type'] = $billing['therapist']['rate_type']?->value;
+                $data['therapist_rate_amount'] = $billing['therapist']['rate_amount'];
+                $data['therapist_billable_amount'] = $billing['therapist']['billable_amount'];
+
+                $data['school_contract_id'] = $billing['school']['contract_id'];
+                $data['school_rate_type'] = $billing['school']['rate_type']?->value;
+                $data['school_rate_amount'] = $billing['school']['rate_amount'];
+                $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
+            }
+
+            // When admin overrides rates, recalculate billable/invoice amounts from rate type, rate amount, and session duration
+            if ($isAdmin && ($dto->isRateOverride ?? false)) {
+                $durationMinutes = (int) $sessionLog->duration_minutes;
+                if ($durationMinutes > 0 && isset($data['therapist_rate_type'], $data['therapist_rate_amount'])) {
+                    $data['therapist_billable_amount'] = $this->rateService->calculateBillableAmount(
+                        RateType::from($data['therapist_rate_type']),
+                        (float) $data['therapist_rate_amount'],
+                        $durationMinutes
                     );
-
-                    $data['therapist_contract_id'] = $billing['therapist']['contract_id'];
-                    $data['therapist_rate_type'] = $billing['therapist']['rate_type']?->value;
-                    $data['therapist_rate_amount'] = $billing['therapist']['rate_amount'];
-                    $data['therapist_billable_amount'] = $billing['therapist']['billable_amount'];
-
-                    $data['school_contract_id'] = $billing['school']['contract_id'];
-                    $data['school_rate_type'] = $billing['school']['rate_type']?->value;
-                    $data['school_rate_amount'] = $billing['school']['rate_amount'];
-                    $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
+                }
+                if ($durationMinutes > 0 && isset($data['school_rate_type'], $data['school_rate_amount'])) {
+                    $data['school_invoice_amount'] = $this->rateService->calculateBillableAmount(
+                        RateType::from($data['school_rate_type']),
+                        (float) $data['school_rate_amount'],
+                        $durationMinutes
+                    );
                 }
             }
 
@@ -252,8 +296,8 @@ final class SessionLogService
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
-        // Draft -> ok to submit
-        if ($sessionLog->isDraft() || $sessionLog->status === null) {
+        // Draft or sent back -> ok to submit
+        if ($sessionLog->isDraft() || $sessionLog->isSentBack() || $sessionLog->status === null) {
             return $this->repository->submit($sessionLog, $therapist);
         }
 
@@ -264,6 +308,22 @@ final class SessionLogService
 
         // Approved / cancelled -> not allowed
         throw new \InvalidArgumentException('Session log cannot be submitted in its current status.');
+    }
+
+    public function sendBack(User $admin, SessionLog $sessionLog, string $comment): SessionLog
+    {
+        if (! $sessionLog->isSubmitted()) {
+            throw new \InvalidArgumentException('Session log must be submitted before it can be sent back.');
+        }
+
+        $sessionLog = $this->repository->sendBack($sessionLog, $admin, $comment);
+
+        $sessionLog->loadMissing(['therapist', 'student', 'service']);
+        if ($sessionLog->therapist?->email) {
+            Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+        }
+
+        return $sessionLog;
     }
 
     public function approve(User $admin, SessionLog $sessionLog): SessionLog
@@ -277,25 +337,24 @@ final class SessionLogService
 
     public function cancel(User $user, SessionLog $sessionLog, string $reason): SessionLog
     {
-        $role = $user->role instanceof Role ? $user->role->value : $user->role;
-        $isAdmin = $role === Role::ADMIN->value;
+        $isAdmin = $user->role === Role::ADMIN;
 
         if (! $isAdmin && $sessionLog->therapist_id !== $user->id) {
             throw new \InvalidArgumentException('Therapist does not have access to this session log.');
         }
 
-        if (! $sessionLog->status->canCancel()) {
+        if (! $sessionLog->status?->canCancel()) {
             throw new \InvalidArgumentException('Session log cannot be cancelled in its current status.');
         }
 
         return $this->repository->cancel($sessionLog, $reason);
     }
 
-    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, \DateTimeInterface $ssaEnd): void
+    private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, ?\DateTimeInterface $ssaEnd): void
     {
         $date = Carbon::parse($sessionDate);
 
-        if ($date->lt(Carbon::parse($ssaStart)) || $date->gt(Carbon::parse($ssaEnd))) {
+        if ($date->lt(Carbon::parse($ssaStart)) || ($ssaEnd !== null && $date->gt(Carbon::parse($ssaEnd)))) {
             throw new \InvalidArgumentException('Session date must be within the SSA start and end dates.');
         }
     }
@@ -311,26 +370,41 @@ final class SessionLogService
         }
     }
 
+    /**
+     * @param  array<string, array<string, mixed>>  $billing
+     */
     private function assertBillingDataComplete(array $billing): void
     {
-        // Validate therapist contract exists
         if (! $billing['therapist']['contract_id']) {
-            throw new \InvalidArgumentException('Active therapist contract is required for this service and date.');
+            throw ValidationException::withMessages([
+                'session_date' => [
+                    'No active therapist contract was found for this date. Please add or activate a therapist contract that covers the session date (Admin → Contracts → Therapist Contracts).',
+                ],
+            ]);
         }
 
-        // Validate therapist service rate is configured
         if (! $billing['therapist']['rate_type'] || $billing['therapist']['rate_amount'] === null) {
-            throw new \InvalidArgumentException('Therapist service rate is not configured for this service in the active contract.');
+            throw ValidationException::withMessages([
+                'service_id' => [
+                    'The therapist rate for this service is not set. Please configure the service rate in the therapist contract (Admin → Contracts → Therapist Contracts).',
+                ],
+            ]);
         }
 
-        // Validate school contract exists
         if (! $billing['school']['contract_id']) {
-            throw new \InvalidArgumentException('Active school contract is required for this service and date.');
+            throw ValidationException::withMessages([
+                'session_date' => [
+                    'No active school contract was found for this date. Please add or activate a school contract that covers the session date (Admin → Contracts → School Contracts).',
+                ],
+            ]);
         }
 
-        // Validate school service rate is configured
         if (! $billing['school']['rate_type'] || $billing['school']['rate_amount'] === null) {
-            throw new \InvalidArgumentException('School service rate is not configured for this service in the active contract.');
+            throw ValidationException::withMessages([
+                'service_id' => [
+                    'The school rate for this service is not set. Please configure the service rate in the school contract (Admin → Contracts → School Contracts).',
+                ],
+            ]);
         }
     }
 

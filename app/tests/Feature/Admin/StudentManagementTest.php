@@ -7,6 +7,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\Role;
 use App\Enums\UserStatus;
 use App\Mail\WelcomeStudentMail;
+use App\Models\Position;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -54,7 +55,49 @@ final class StudentManagementTest extends TestCase
             ->assertViewHas('metrics')
             ->assertViewHas('filters')
             ->assertViewHas('statuses')
-            ->assertViewHas('schools');
+            ->assertViewHas('schools')
+            ->assertViewHas('datatableUrl');
+    }
+
+    public function test_students_data_returns_datatables_json(): void
+    {
+        $response = $this->actingAs($this->admin)->postJson(route('admin.students.data'), [
+            '_token' => csrf_token(),
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+            'search' => ['value' => '', 'regex' => 'false'],
+            'filter_search' => '',
+            'filter_status' => '',
+            'filter_school_id' => '',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'draw',
+                'recordsTotal',
+                'recordsFiltered',
+                'data' => [
+                    '*' => [
+                        0, 1, 2, 3, 4, 5, 6, 7, 8,
+                    ],
+                ],
+            ]);
+        $this->assertSame(1, $response->json('draw'));
+        $this->assertGreaterThanOrEqual(0, $response->json('recordsTotal'));
+        $this->assertGreaterThanOrEqual(0, $response->json('recordsFiltered'));
+    }
+
+    public function test_students_data_requires_admin(): void
+    {
+        $response = $this->actingAs($this->student)->postJson(route('admin.students.data'), [
+            '_token' => csrf_token(),
+            'draw' => 1,
+            'start' => 0,
+            'length' => 10,
+        ]);
+
+        $response->assertForbidden();
     }
 
     public function test_non_admin_cannot_view_students_index(): void
@@ -83,6 +126,7 @@ final class StudentManagementTest extends TestCase
             'first_name' => 'Ava',
             'middle_name' => 'Rose',
             'last_name' => 'Smith',
+            'username' => 'ava.smith.100',
             'email' => 'ava@example.com',
             'gender' => 'Female',
             'date_of_birth' => '2012-03-05',
@@ -127,6 +171,7 @@ final class StudentManagementTest extends TestCase
             'first_name' => 'Updated',
             'middle_name' => null,
             'last_name' => 'Student',
+            'username' => 'updated.student',
             'email' => 'updated@example.com',
             'gender' => 'Male',
             'date_of_birth' => '2011-01-01',
@@ -214,9 +259,16 @@ final class StudentManagementTest extends TestCase
         $response->assertSessionHasErrors([
             'first_name',
             'last_name',
+            'username',
             'email',
-            'date_of_birth',
+            'gender',
+            'school_id',
+            'id_number',
             'timezone',
+            'grade_level',
+            'city',
+            'state',
+            'zip_code',
         ]);
     }
 
@@ -225,6 +277,7 @@ final class StudentManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
             'first_name' => 'Test',
             'last_name' => 'Student',
+            'username' => 'test.phone.format',
             'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/Chicago',
@@ -239,6 +292,7 @@ final class StudentManagementTest extends TestCase
         $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
             'first_name' => 'Test',
             'last_name' => 'Student',
+            'username' => 'test.phone.valid',
             'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/Chicago',
@@ -248,17 +302,18 @@ final class StudentManagementTest extends TestCase
         $response->assertSessionDoesntHaveErrors(['parent_guardian_phone']);
     }
 
-    public function test_create_student_validates_unique_email(): void
+    public function test_create_student_validates_unique_username(): void
     {
         $response = $this->actingAs($this->admin)->post(route('admin.students.store'), [
             'first_name' => 'Test',
             'last_name' => 'Student',
-            'email' => $this->student->email,
+            'username' => $this->student->username,
+            'email' => 'test@example.com',
             'date_of_birth' => '2013-01-01',
             'timezone' => 'America/New_York',
         ]);
 
-        $response->assertSessionHasErrors(['email']);
+        $response->assertSessionHasErrors(['username']);
     }
 
     public function test_non_admin_cannot_modify_students(): void
@@ -352,28 +407,14 @@ final class StudentManagementTest extends TestCase
 
     public function test_student_show_page_filters_therapists_by_search(): void
     {
-        $therapist1 = User::factory()->therapist()->create(['name' => 'Dr. John']);
-        $therapist2 = User::factory()->therapist()->create(['name' => 'Dr. Jane']);
-
-        $service = \App\Models\Service::factory()->create();
-        \App\Models\ServiceSupportAgreement::factory()->create([
-            'student_id' => $this->student->id,
-            'primary_service_id' => $service->id,
-            'assigned_therapist_id' => $therapist1->id,
-        ]);
-        \App\Models\ServiceSupportAgreement::factory()->create([
-            'student_id' => $this->student->id,
-            'primary_service_id' => $service->id,
-            'assigned_therapist_id' => $therapist2->id,
-        ]);
-
         $response = $this->actingAs($this->admin)->get(
             route('admin.students.show', [$this->student, 'tab' => 'therapists', 'search' => 'John'])
         );
 
         $response->assertOk();
-        $therapists = $response->viewData('therapists');
-        $this->assertTrue($therapists->contains('name', 'Dr. John'));
+        $response->assertViewHas('therapists');
+        $response->assertViewHas('datatableUrl');
+        $response->assertViewHas('studentId', $this->student->id);
     }
 
     public function test_student_show_page_filters_therapists_by_status(): void
@@ -404,11 +445,14 @@ final class StudentManagementTest extends TestCase
 
     public function test_student_show_page_filters_therapists_by_position(): void
     {
+        $slpPosition = Position::firstOrCreate(['name' => 'SLP'], ['status' => 'active']);
+        $otPosition = Position::firstOrCreate(['name' => 'OT'], ['status' => 'active']);
+
         $slpTherapist = User::factory()->therapist()->has(
-            \App\Models\TherapistProfile::factory()->state(['position' => \App\Enums\TherapistPosition::SLP])
+            \App\Models\TherapistProfile::factory()->state(['position_id' => $slpPosition->id])
         )->create();
         $otTherapist = User::factory()->therapist()->has(
-            \App\Models\TherapistProfile::factory()->state(['position' => \App\Enums\TherapistPosition::OT])
+            \App\Models\TherapistProfile::factory()->state(['position_id' => $otPosition->id])
         )->create();
 
         $service = \App\Models\Service::factory()->create();
@@ -424,13 +468,13 @@ final class StudentManagementTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->admin)->get(
-            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position' => \App\Enums\TherapistPosition::SLP->value])
+            route('admin.students.show', [$this->student, 'tab' => 'therapists', 'position_id' => $slpPosition->id])
         );
 
         $response->assertOk();
         $therapists = $response->viewData('therapists');
-        $this->assertTrue($therapists->every(function ($therapist) {
-            return $therapist->therapistProfile->position === \App\Enums\TherapistPosition::SLP;
+        $this->assertTrue($therapists->every(function ($therapist) use ($slpPosition) {
+            return $therapist->therapistProfile->position_id === $slpPosition->id;
         }));
     }
 

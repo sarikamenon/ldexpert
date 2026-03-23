@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ParentProfile extends Model
 {
+    /** @use HasFactory<\Database\Factories\ParentProfileFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -21,11 +22,13 @@ class ParentProfile extends Model
         'emergency_contact',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<StudentProfile, $this> */
     public function children(): HasMany
     {
         return $this->hasMany(StudentProfile::class, 'parent_id', 'user_id');

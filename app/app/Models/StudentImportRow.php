@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class StudentImportRow extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
     protected $fillable = [
@@ -34,36 +35,58 @@ class StudentImportRow extends Model
         ];
     }
 
+    /** @return BelongsTo<StudentImport, $this> */
     public function import(): BelongsTo
     {
         return $this->belongsTo(StudentImport::class, 'student_import_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeDone(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::DONE);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeDuplicate(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::DUPLICATE);
     }
 
+    /**
+     * @param  Builder<StudentImportRow>  $query
+     * @return Builder<StudentImportRow>
+     */
     public function scopeValidationError(Builder $query): Builder
     {
         return $query->where('status', StudentImportRowStatus::VALIDATION_ERROR);

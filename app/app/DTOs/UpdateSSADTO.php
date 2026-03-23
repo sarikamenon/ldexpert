@@ -9,6 +9,7 @@ use App\Enums\ServiceFrequency;
 final class UpdateSSADTO
 {
     public function __construct(
+        public readonly ?int $assignedTherapistId,
         /**
          * @var array<int>|null
          */
@@ -21,9 +22,11 @@ final class UpdateSSADTO
         public readonly ?int $calculatedMinutes,
         public readonly ?int $adjustedMinutes,
         public readonly ?string $adjustmentNotes,
+        public readonly ?string $additionalNotes,
         public readonly ?int $thoMinutes,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $frequency = null;
@@ -35,15 +38,20 @@ final class UpdateSSADTO
 
         $additionalServiceIds = null;
         if (array_key_exists('additional_service_ids', $data)) {
-            $additionalServiceIds = collect($data['additional_service_ids'] ?? [])
-                ->filter(static fn ($value) => $value !== null && $value !== '')
-                ->map(static fn ($value) => (int) $value)
+            /** @var array<int, mixed> $rawIds */
+            $rawIds = $data['additional_service_ids'] ?? [];
+            $additionalServiceIds = collect($rawIds)
+                ->filter(static fn ($value): bool => $value !== null && $value !== '')
+                ->map(static fn ($value): int => (int) $value)
                 ->unique()
                 ->values()
                 ->all();
         }
 
         return new self(
+            assignedTherapistId: array_key_exists('assigned_therapist_id', $data)
+                ? ($data['assigned_therapist_id'] !== null && $data['assigned_therapist_id'] !== '' ? (int) $data['assigned_therapist_id'] : null)
+                : -1,
             additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'] ?? null,
             endDate: $data['end_date'] ?? null,
@@ -57,14 +65,19 @@ final class UpdateSSADTO
                 ? (int) $data['adjusted_minutes']
                 : null,
             adjustmentNotes: $data['adjustment_notes'] ?? null,
+            additionalNotes: $data['additional_notes'] ?? null,
             thoMinutes: isset($data['tho_minutes']) ? (int) $data['tho_minutes'] : null,
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         $array = [];
 
+        if ($this->assignedTherapistId !== -1) {
+            $array['assigned_therapist_id'] = $this->assignedTherapistId;
+        }
         if ($this->startDate !== null) {
             $array['start_date'] = $this->startDate;
         }
@@ -88,6 +101,9 @@ final class UpdateSSADTO
         }
         if ($this->adjustmentNotes !== null) {
             $array['adjustment_notes'] = $this->adjustmentNotes;
+        }
+        if ($this->additionalNotes !== null) {
+            $array['additional_notes'] = $this->additionalNotes;
         }
         if ($this->thoMinutes !== null) {
             $array['tho_minutes'] = $this->thoMinutes;

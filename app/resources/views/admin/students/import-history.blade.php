@@ -1,4 +1,8 @@
 <x-admin.layouts.app>
+    <x-slot name="styles">
+        @vite(['resources/css/common/datatables.css'])
+    </x-slot>
+
     <x-page-title title="Import History" />
 
     @if (session('status'))
@@ -15,7 +19,8 @@
         </div>
 
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-border" id="importsTable">
+            <table class="min-w-full divide-y divide-border display" id="importsTable"
+                data-datatable-url="{{ $datatableUrl ?? route('admin.students.imports.data') }}">
                 <thead class="bg-foreground/5">
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
@@ -45,40 +50,8 @@
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-border">
-                    @foreach ($imports as $import)
-                        <tr>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">#{{ $import->id }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ $import->type->value }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ $import->file_name }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ $import->user->name ?? '—' }}</td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <span
-                                    class="px-2 py-1 text-xs font-semibold rounded-full
-                                    @if ($import->status->value === 'completed') bg-green-100 text-green-800
-                                    @elseif($import->status->value === 'failed') bg-red-100 text-red-800
-                                    @elseif($import->status->value === 'processing') bg-blue-100 text-blue-800
-                                    @else bg-yellow-100 text-yellow-800 @endif">
-                                    {{ strtoupper($import->status->value) }}
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm">
-                                {{ $import->processed_rows }} / {{ $import->total_rows }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm text-foreground/60">
-                                {{ $import->created_at->format('M d, Y H:i') }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap text-sm">
-                                <a href="{{ route('admin.students.imports.show', $import) }}"
-                                    class="text-primary hover:text-primary/80">View</a>
-                            </td>
-                        </tr>
-                    @endforeach
                 </tbody>
             </table>
-        </div>
-
-        <div class="mt-4">
-            {{ $imports->links() }}
         </div>
     </x-ui::card>
 

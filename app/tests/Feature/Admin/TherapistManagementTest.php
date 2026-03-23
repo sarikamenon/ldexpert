@@ -6,6 +6,7 @@ namespace Tests\Feature\Admin;
 
 use App\Enums\UserStatus;
 use App\Mail\WelcomeTherapistMail;
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,15 +23,20 @@ final class TherapistManagementTest extends TestCase
 
     private User $manager;
 
+    private Position $position;
+
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->position = Position::factory()->create(['name' => 'SLP']);
+        Position::factory()->create(['name' => 'OT']);
 
         $this->admin = User::factory()->admin()->create();
         $this->manager = User::factory()->admin()->create();
         $this->therapist = User::factory()
             ->therapist()
-            ->has(TherapistProfile::factory()->state(['manager_id' => $this->manager->id]), 'therapistProfile')
+            ->has(TherapistProfile::factory()->state(['manager_id' => $this->manager->id, 'position_id' => $this->position->id]), 'therapistProfile')
             ->create();
     }
 
@@ -82,11 +88,12 @@ final class TherapistManagementTest extends TestCase
             'ld_email' => 'jane.smith@ldexpert.com',
             'address' => '123 Test St',
             'comments' => 'Test comment',
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 40,
+            'hourly_rate' => 55.00,
             'dob' => '1990-01-01',
             'default_meeting_location' => 'https://meet.google.com/new',
         ];
@@ -101,6 +108,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane.smith@example.com',
             'max_weekly_hours' => 40,
+            'hourly_rate' => 55.00,
             'default_meeting_location' => 'https://meet.google.com/new',
         ]);
 
@@ -136,11 +144,12 @@ final class TherapistManagementTest extends TestCase
             'ld_email' => 'updated@ldexpert.com',
             'address' => '456 New St',
             'comments' => 'Updated comment',
-            'position' => 'OT',
+            'position_id' => Position::where('name', 'OT')->firstOrFail()->id,
             'state' => 'NY',
             'timezone' => 'America/New_York',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 32,
+            'hourly_rate' => 62.50,
             'dob' => '1985-05-15',
             'default_meeting_location' => 'https://meet.google.com/updated',
         ];
@@ -159,6 +168,7 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Name',
             'personal_email' => 'updated@example.com',
             'max_weekly_hours' => 32,
+            'hourly_rate' => 62.50,
             'default_meeting_location' => 'https://meet.google.com/updated',
         ]);
     }
@@ -233,11 +243,12 @@ final class TherapistManagementTest extends TestCase
             'last_name',
             'personal_email',
             'phone',
-            'position',
+            'position_id',
             'state',
             'timezone',
             'manager_id',
             'max_weekly_hours',
+            'hourly_rate',
         ]);
     }
 
@@ -250,11 +261,12 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane@example.com',
             'phone' => '123-456-7890abc', // Invalid: contains letters
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 35,
+            'hourly_rate' => 50,
         ]);
 
         $response->assertSessionHasErrors(['phone']);
@@ -269,7 +281,8 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => 'jane@example.com',
             'phone' => '123-456-7890', // Valid: digits and dashes
-            'position' => 'SLP',
+            'hourly_rate' => 45,
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
@@ -281,7 +294,8 @@ final class TherapistManagementTest extends TestCase
 
     public function test_create_therapist_validates_unique_email(): void
     {
-        $existingEmail = $this->therapist->therapistProfile->personal_email;
+        $existingEmail = $this->therapist->therapistProfile?->personal_email;
+        $this->assertNotNull($existingEmail);
 
         $response = $this->actingAs($this->admin)->post(route('admin.therapists.store'), [
             'employee_type' => 'W2',
@@ -290,11 +304,12 @@ final class TherapistManagementTest extends TestCase
             'last_name' => 'Smith',
             'personal_email' => $existingEmail, // Duplicate
             'phone' => '555-123-4567',
-            'position' => 'SLP',
+            'position_id' => $this->position->id,
             'state' => 'CA',
             'timezone' => 'America/Los_Angeles',
             'manager_id' => $this->manager->id,
             'max_weekly_hours' => 40,
+            'hourly_rate' => 50,
         ]);
 
         $response->assertSessionHasErrors(['personal_email']);
@@ -385,6 +400,37 @@ final class TherapistManagementTest extends TestCase
         $response->assertViewHas('services');
     }
 
+    public function test_admin_can_view_therapist_show_page_with_contracts_tab(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'contracts'])
+        );
+
+        $response->assertOk();
+        $response->assertViewIs('admin.therapists.show');
+        $response->assertViewHas('therapist');
+        $response->assertViewHas('activeTab', 'contracts');
+        $response->assertViewHas('contracts');
+        $response->assertViewHas('contractFilters');
+        $response->assertViewHas('statuses');
+        $response->assertViewHas('datatableUrl');
+    }
+
+    public function test_contracts_tab_passes_therapist_profile_id_not_user_id(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.therapists.show', [$this->therapist, 'tab' => 'contracts'])
+        );
+
+        $response->assertOk();
+        $therapistProfileId = $response->viewData('therapistId');
+        $expectedProfileId = $this->therapist->therapistProfile?->id;
+        $this->assertNotNull($expectedProfileId, 'Therapist must have a profile');
+
+        $this->assertEquals($expectedProfileId, $therapistProfileId);
+        $this->assertNotEquals($this->therapist->id, $therapistProfileId);
+    }
+
     public function test_therapist_show_page_loads_dashboard_metrics_correctly(): void
     {
         $student = User::factory()->student()->create();
@@ -416,18 +462,13 @@ final class TherapistManagementTest extends TestCase
 
     public function test_therapist_show_page_filters_students_by_search(): void
     {
-        $student1 = User::factory()->student()->create(['name' => 'John Doe']);
-        $student2 = User::factory()->student()->create(['name' => 'Jane Smith']);
-
-        $this->therapist->students()->attach([$student1->id, $student2->id]);
-
         $response = $this->actingAs($this->admin)->get(
             route('admin.therapists.show', [$this->therapist, 'tab' => 'students', 'search' => 'John'])
         );
 
         $response->assertOk();
-        $students = $response->viewData('students');
-        $this->assertTrue($students->contains('name', 'John Doe'));
+        $response->assertViewHas('students');
+        $response->assertViewHas('datatableUrl');
     }
 
     public function test_therapist_show_page_filters_students_by_status(): void

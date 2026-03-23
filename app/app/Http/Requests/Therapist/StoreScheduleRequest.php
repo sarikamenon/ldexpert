@@ -21,10 +21,11 @@ final class StoreScheduleRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn(RecurrenceType $type): string => $type->value,
+            static fn (RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
@@ -40,18 +41,19 @@ final class StoreScheduleRequest extends FormRequest
             'duration_minutes' => [
                 'required',
                 'integer',
-                'min:' . config('session_minutes.min'),
-                'max:' . config('session_minutes.max'),
+                'min:'.config('session_minutes.min'),
+                'max:'.config('session_minutes.max'),
             ],
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
-            'recurrence_end_date' => ['required_unless:recurrence_type,' . RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
-            'occurrence_dates' => ['required_unless:recurrence_type,' . RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
+            'recurrence_end_date' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
+            'occurrence_dates' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
             'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -90,6 +92,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate therapist has access to SSA and it's active
             if ($ssaId) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
@@ -109,6 +112,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate students belong to SSA if provided
             if ($ssaId && $studentCount > 0) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if ($ssa) {
                     foreach ($studentIdsArray as $studentId) {
@@ -122,6 +126,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate service is available for the student via the SSA
             if ($serviceId && $ssaId && $studentCount > 0) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if ($ssa && $ssa->primary_service_id !== (int) $serviceId) {
                     // Check if it's an additional service
@@ -160,7 +165,7 @@ final class StoreScheduleRequest extends FormRequest
                 }
 
                 if (count($weekendDates) > 0) {
-                    $validator->errors()->add('occurrence_dates', 'The following dates fall on weekends and cannot be scheduled: ' . implode(', ', $weekendDates) . '. Please adjust these dates.');
+                    $validator->errors()->add('occurrence_dates', 'The following dates fall on weekends and cannot be scheduled: '.implode(', ', $weekendDates).'. Please adjust these dates.');
                 }
 
                 // Check for duplicate dates
@@ -183,7 +188,7 @@ final class StoreScheduleRequest extends FormRequest
                     )));
 
                     if (count($datesToCheck) > 0) {
-                        $dateObjects = array_map(static fn($date) => Carbon::parse((string) $date), $datesToCheck);
+                        $dateObjects = array_map(static fn ($date) => Carbon::parse((string) $date), $datesToCheck);
                         $minDate = collect($dateObjects)->min();
                         $maxDate = collect($dateObjects)->max();
 
@@ -195,8 +200,8 @@ final class StoreScheduleRequest extends FormRequest
                             foreach ($datesToCheck as $dateStr) {
                                 $date = Carbon::parse((string) $dateStr)->format('Y-m-d');
                                 $isHoliday = $holidayEvents->first(function ($event) use ($date) {
-                                    return $event->start_date?->format('Y-m-d') <= $date
-                                        && $event->end_date?->format('Y-m-d') >= $date;
+                                    return $event->start_date->format('Y-m-d') <= $date
+                                        && $event->end_date->format('Y-m-d') >= $date;
                                 });
                                 if ($isHoliday) {
                                     $holidayDateKeys[] = $date;
@@ -205,14 +210,14 @@ final class StoreScheduleRequest extends FormRequest
                             }
 
                             if (count($holidayDates) > 0) {
-                                $message = 'Scheduling is not allowed on school holidays: ' . implode(', ', $holidayDates) . '.';
+                                $message = 'Scheduling is not allowed on school holidays: '.implode(', ', $holidayDates).'.';
                                 $scheduleDateKey = $this->input('schedule_date');
                                 if ($scheduleDateKey && in_array($scheduleDateKey, $holidayDateKeys, true)) {
                                     $validator->errors()->add('schedule_date', $message);
                                 }
                                 $occurrenceHolidayDates = array_filter(
                                     $holidayDateKeys,
-                                    static fn($date) => $date !== $scheduleDateKey
+                                    static fn ($date) => $date !== $scheduleDateKey
                                 );
                                 if (count($occurrenceHolidayDates) > 0) {
                                     $validator->errors()->add('occurrence_dates', $message);

@@ -7,6 +7,7 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\DTOs\ChangeServiceStatusDTO;
 use App\DTOs\CreateServiceDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ServiceFilterDTO;
 use App\DTOs\UpdateServiceDTO;
 use App\Enums\ServiceStatus;
@@ -17,6 +18,7 @@ use Illuminate\Support\Collection;
 
 final class EloquentServiceRepository implements ServiceRepositoryInterface
 {
+    /** @return LengthAwarePaginator<int, Service> */
     public function paginate(ServiceFilterDTO $filters): LengthAwarePaginator
     {
         return $this->applyFilters(Service::query(), $filters)
@@ -25,11 +27,42 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->withQueryString();
     }
 
+    /** @return Collection<int, Service> */
     public function all(ServiceFilterDTO $filters): Collection
     {
         return $this->applyFilters(Service::query(), $filters)
             ->orderBy('name')
             ->get();
+    }
+
+    public function listForDataTables(ServiceFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->applyFilters(Service::query(), $filters);
+
+        $queryForTotal = (clone $baseQuery);
+        $recordsTotal = $queryForTotal->count('services.id');
+
+        if ($params->searchValue) {
+            $baseQuery->where('name', 'like', '%'.$params->searchValue.'%');
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('services.id');
+
+        $orderColumn = $params->orderColumn ?? 'services.name';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+
+        $baseQuery->orderBy($orderColumn, $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function create(CreateServiceDTO $dto): Service
@@ -41,14 +74,20 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
     {
         $service->update($dto->toArray());
 
-        return $service->fresh();
+        /** @var Service $freshService */
+        $freshService = $service->fresh();
+
+        return $freshService;
     }
 
     public function changeStatus(Service $service, ChangeServiceStatusDTO $dto): Service
     {
         $service->update($dto->toArray());
 
-        return $service->fresh();
+        /** @var Service $freshService */
+        $freshService = $service->fresh();
+
+        return $freshService;
     }
 
     public function metrics(): array
@@ -64,6 +103,10 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
         ];
     }
 
+    /**
+     * @param  Builder<Service>  $query
+     * @return Builder<Service>
+     */
     private function applyFilters(Builder $query, ServiceFilterDTO $filters): Builder
     {
         if ($filters->search) {
@@ -93,6 +136,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
         return $query;
     }
 
+    /** @return Collection<int, Service> */
     public function listActiveForSelect(): Collection
     {
         return Service::query()
@@ -102,6 +146,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Service> */
     public function listActiveWithFrequencyFlag(): Collection
     {
         return Service::query()
@@ -111,6 +156,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Service> */
     public function listIndirectServices(): Collection
     {
         return Service::query()

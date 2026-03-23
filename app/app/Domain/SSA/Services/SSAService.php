@@ -7,14 +7,17 @@ namespace App\Domain\SSA\Services;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\UpdateSSADTO;
+use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -24,9 +27,18 @@ final class SSAService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
+    /** @return LengthAwarePaginator<int, ServiceSupportAgreement> */
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator
     {
         return $this->repository->paginate($filters);
+    }
+
+    /**
+     * @return array{recordsTotal:int,recordsFiltered:int,rows:\Illuminate\Support\Collection<int,ServiceSupportAgreement>}
+     */
+    public function listForDataTables(SSAFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTables($filters, $params);
     }
 
     public function find(int $id): ?ServiceSupportAgreement
@@ -56,7 +68,7 @@ final class SSAService
     public function update(ServiceSupportAgreement $ssa, UpdateSSADTO $dto): ServiceSupportAgreement
     {
         $startDate = $dto->startDate ?? $ssa->start_date->format('Y-m-d');
-        $endDate = $dto->endDate ?? $ssa->end_date->format('Y-m-d');
+        $endDate = $dto->endDate ?? $ssa->end_date?->format('Y-m-d');
 
         // Check for overlapping SSAs (excluding current SSA)
         if ($dto->startDate || $dto->endDate) {
@@ -80,10 +92,17 @@ final class SSAService
 
     public function changeStatus(ServiceSupportAgreement $ssa, ChangeSSAStatusDTO $dto): ServiceSupportAgreement
     {
-        // Cannot change status if already completed or deactivated
-        if (in_array($ssa->status, [SSAStatus::COMPLETED, SSAStatus::DEACTIVATED], true)) {
+        // COMPLETED is always terminal — no transitions allowed
+        if ($ssa->status === SSAStatus::COMPLETED) {
             throw ValidationException::withMessages([
-                'status' => 'Cannot change status of a completed or deactivated SSA.',
+                'status' => 'Cannot change status of a completed SSA.',
+            ]);
+        }
+
+        // DEACTIVATED can only transition to ACTIVE (reactivation)
+        if ($ssa->status === SSAStatus::DEACTIVATED && $dto->status !== SSAStatus::ACTIVE) {
+            throw ValidationException::withMessages([
+                'status' => 'A deactivated SSA can only be reactivated.',
             ]);
         }
 
@@ -116,11 +135,15 @@ final class SSAService
         return $this->repository->unassignTherapist($ssa, $reason);
     }
 
+    /** @return Collection<int, \App\Models\SSAAssignmentHistory> */
     public function getAssignmentHistory(ServiceSupportAgreement $ssa): Collection
     {
         return $this->repository->getAssignmentHistory($ssa);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function metrics(): array
     {
         return $this->repository->metrics();
@@ -135,18 +158,10 @@ final class SSAService
     ): int {
         $start = Carbon::parse($startDate);
         $end = Carbon::parse($endDate);
-        $daysDiff = $start->diffInDays($end) + 1;
-
-        $frequencyMultiplier = match ($frequency) {
-            'weekly' => 52 / 365,
-            'bi_weekly' => 26 / 365,
-            'monthly' => 12 / 365,
-            'quarterly' => 4 / 365,
-            default => 0,
-        };
-
-        $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
-        $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
+        $frequencyEnum = ServiceFrequency::from($frequency);
+        $numberOfFrequencies = $frequencyEnum->occurrencesInDateRange($start, $end);
+        $normalizedSessions = $frequencyEnum->normalizeSessionsPerFrequency($sessionsPerFrequency) ?? 0;
+        $totalSessions = $numberOfFrequencies * $normalizedSessions;
 
         return $totalSessions * $minutesPerSession;
     }
@@ -156,12 +171,14 @@ final class SSAService
         return $this->repository->hasStudentAssignedToTherapist($studentId, $therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
     {
         return $this->repository->getSSAsForMetrics($studentId, $therapistId);
     }
 
-    public function getActiveSSAsForTherapist(int $therapistId): Collection
+    /** @return EloquentCollection<int, ServiceSupportAgreement> */
+    public function getActiveSSAsForTherapist(int $therapistId): EloquentCollection
     {
         return $this->repository->getActiveSSAsForTherapist($therapistId);
     }
@@ -171,31 +188,37 @@ final class SSAService
         return $this->repository->findSSAForSchedule($ssaId, $therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForSchoolMetrics(int $schoolId): Collection
     {
         return $this->repository->getSSAsForSchoolMetrics($schoolId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentMetrics(int $studentId): Collection
     {
         return $this->repository->getSSAsForStudentMetrics($studentId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentSchedule(int $studentId): Collection
     {
         return $this->repository->getSSAsForStudentSchedule($studentId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistMetrics(int $therapistId): Collection
     {
         return $this->repository->getSSAsForTherapistMetrics($therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getAssignedSSAsForTherapist(int $therapistId): Collection
     {
         return $this->repository->getAssignedSSAsForTherapist($therapistId);
     }
 
+    /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForTherapistDashboard(int $therapistId, int $limit = 5): Collection
     {
         return $this->repository->getSSAsForTherapistDashboard($therapistId, $limit);

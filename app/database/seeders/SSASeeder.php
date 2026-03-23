@@ -12,11 +12,14 @@ use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
+use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
 final class SSASeeder extends Seeder
 {
+    use SeedsSchoolYear;
+
     public function run(): void
     {
         $students = User::where('role', Role::STUDENT)
@@ -38,6 +41,7 @@ final class SSASeeder extends Seeder
         }
 
         $frequencies = [
+            ServiceFrequency::ONE_TIME,
             ServiceFrequency::WEEKLY,
             ServiceFrequency::BI_WEEKLY,
             ServiceFrequency::MONTHLY,
@@ -51,12 +55,17 @@ final class SSASeeder extends Seeder
             $service = $services->random();
             $frequency = $frequencies[array_rand($frequencies)];
 
-            // Determine dates
+            // Determine dates (cap end_date at current school year so schedules stay within contract coverage)
             $startDate = now()->subMonths(rand(0, 6))->startOfMonth();
             $endDate = $startDate->copy()->addYear();
+            $schoolYearEnd = $this->currentSchoolYear()['end'];
+            if ($endDate->gt($schoolYearEnd)) {
+                $endDate = $schoolYearEnd->copy();
+            }
 
             // Calculate sessions per frequency
             $sessionsPerFrequency = match ($frequency) {
+                ServiceFrequency::ONE_TIME => 1,
                 ServiceFrequency::WEEKLY => rand(1, 3),
                 ServiceFrequency::BI_WEEKLY => rand(1, 2),
                 ServiceFrequency::MONTHLY => rand(1, 4),
@@ -66,14 +75,7 @@ final class SSASeeder extends Seeder
             $minutesPerSession = [30, 45, 60][array_rand([30, 45, 60])];
 
             // Calculate THO minutes
-            $daysDiff = $startDate->diffInDays($endDate) + 1;
-            $frequencyMultiplier = match ($frequency) {
-                ServiceFrequency::WEEKLY => 52 / 365,
-                ServiceFrequency::BI_WEEKLY => 26 / 365,
-                ServiceFrequency::MONTHLY => 12 / 365,
-                ServiceFrequency::QUARTERLY => 4 / 365,
-            };
-            $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
+            $numberOfFrequencies = $frequency->occurrencesInDateRange($startDate, $endDate);
             $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
             $thoMinutes = $totalSessions * $minutesPerSession;
 

@@ -34,6 +34,7 @@ final class UpdateSessionLogDTO
         public readonly ?string $cancellationReason,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $therapistRateType = isset($data['therapist_rate_type']) && $data['therapist_rate_type'] !== ''
@@ -107,6 +108,7 @@ final class UpdateSessionLogDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         $array = [];

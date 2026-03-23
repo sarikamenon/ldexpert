@@ -54,9 +54,9 @@
             </x-slot:actions>
         </x-ui::filter-toolbar>
 
-        @if ($schools->count() > 0)
+        @if (isset($datatableUrl) || $schools->count() > 0)
             <div class="overflow-x-auto">
-                <table id="schoolsTable" class="w-full display">
+                <table id="schoolsTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -69,6 +69,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @if (!isset($datatableUrl))
                         @foreach ($schools as $school)
                             <tr>
                                 <td>
@@ -147,6 +148,7 @@
                                 </td>
                             </tr>
                         @endforeach
+                        @endif
                     </tbody>
                 </table>
             </div>

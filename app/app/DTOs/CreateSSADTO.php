@@ -24,10 +24,12 @@ final class CreateSSADTO
         public readonly ?int $calculatedMinutes,
         public readonly ?int $adjustedMinutes,
         public readonly ?string $adjustmentNotes,
+        public readonly ?string $additionalNotes,
         public readonly int $thoMinutes,
         public readonly ?int $assignedTherapistId,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $frequency = null;
@@ -37,16 +39,20 @@ final class CreateSSADTO
                 : ServiceFrequency::from($data['frequency']);
         }
 
+        /** @var array<int, mixed> $additionalIds */
+        $additionalIds = $data['additional_service_ids'] ?? [];
+        $additionalServiceIds = collect($additionalIds)
+            ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
+            ->map(static fn ($value) => (int) $value)
+            ->filter(static fn (int $value) => $value > 0)
+            ->unique()
+            ->values()
+            ->all();
+
         return new self(
             studentId: (int) $data['student_id'],
             primaryServiceId: (int) $data['primary_service_id'],
-            additionalServiceIds: collect($data['additional_service_ids'] ?? [])
-                ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
-                ->map(static fn ($value) => (int) $value)
-                ->filter(static fn (int $value) => $value > 0)
-                ->unique()
-                ->values()
-                ->all(),
+            additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'],
             endDate: $data['end_date'],
             minutesPerSession: (int) $data['minutes_per_session'],
@@ -61,6 +67,7 @@ final class CreateSSADTO
                 ? (int) $data['adjusted_minutes']
                 : null,
             adjustmentNotes: $data['adjustment_notes'] ?? null,
+            additionalNotes: $data['additional_notes'] ?? null,
             thoMinutes: (int) $data['tho_minutes'],
             assignedTherapistId: isset($data['assigned_therapist_id']) && $data['assigned_therapist_id'] !== ''
                 ? (int) $data['assigned_therapist_id']
@@ -68,19 +75,22 @@ final class CreateSSADTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [
             'student_id' => $this->studentId,
             'primary_service_id' => $this->primaryServiceId,
+            'additional_service_ids' => $this->additionalServiceIds,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             'minutes_per_session' => $this->minutesPerSession,
-            'frequency' => $this->frequency?->value ?? ServiceFrequency::WEEKLY->value,
+            'frequency' => $this->frequency !== null ? $this->frequency->value : ServiceFrequency::WEEKLY->value,
             'sessions_per_frequency' => $this->sessionsPerFrequency ?? ($this->frequency === null ? 1 : null),
             'calculated_minutes' => $this->calculatedMinutes,
             'adjusted_minutes' => $this->adjustedMinutes,
             'adjustment_notes' => $this->adjustmentNotes,
+            'additional_notes' => $this->additionalNotes,
             'tho_minutes' => $this->thoMinutes,
             'assigned_therapist_id' => $this->assignedTherapistId,
             'status' => SSAStatus::PENDING->value, // New SSAs always start as PENDING

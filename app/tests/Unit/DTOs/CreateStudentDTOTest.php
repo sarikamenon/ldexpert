@@ -15,6 +15,7 @@ final class CreateStudentDTOTest extends TestCase
             'first_name' => 'Ava',
             'middle_name' => 'Lee',
             'last_name' => 'Rivera',
+            'username' => 'ava.rivera.stu123',
             'email' => 'ava@example.com',
             'gender' => 'Female',
             'date_of_birth' => '2012-03-05',
@@ -38,6 +39,7 @@ final class CreateStudentDTOTest extends TestCase
         $this->assertSame('Ava', $dto->firstName);
         $this->assertSame('Lee', $dto->middleName);
         $this->assertSame('Rivera', $dto->lastName);
+        $this->assertSame('ava.rivera.stu123', $dto->username);
         $this->assertSame('ava@example.com', $dto->email);
         $this->assertSame('Female', $dto->gender);
         $this->assertSame('2012-03-05', $dto->dateOfBirth);
@@ -56,11 +58,27 @@ final class CreateStudentDTOTest extends TestCase
         $this->assertSame('SecurePass123!', $dto->password);
     }
 
+    public function test_date_of_birth_empty_string_becomes_null(): void
+    {
+        $dto = CreateStudentDTO::fromArray([
+            'first_name' => 'Sam',
+            'last_name' => 'Test',
+            'username' => 'sam.test',
+            'email' => 'sam@example.com',
+            'date_of_birth' => '',
+            'timezone' => 'America/Chicago',
+            'password' => 'TempPass!',
+        ]);
+
+        $this->assertNull($dto->dateOfBirth);
+    }
+
     public function test_optional_fields_default_to_null(): void
     {
         $dto = CreateStudentDTO::fromArray([
             'first_name' => 'Eli',
             'last_name' => 'Stone',
+            'username' => 'eli.stone',
             'email' => 'eli@example.com',
             'date_of_birth' => '2013-11-09',
             'timezone' => 'America/Chicago',
@@ -88,6 +106,7 @@ final class CreateStudentDTOTest extends TestCase
             firstName: 'Avery',
             middleName: null,
             lastName: 'Woods',
+            username: 'avery.woods',
             email: 'avery@example.com',
             gender: null,
             dateOfBirth: '2011-01-15',
@@ -109,6 +128,7 @@ final class CreateStudentDTOTest extends TestCase
         $userArray = $dto->toUserArray();
 
         $this->assertSame('Avery Woods', $userArray['name']);
+        $this->assertSame('avery.woods', $userArray['username']);
         $this->assertSame('avery@example.com', $userArray['email']);
         $this->assertSame('MyPass123!', $userArray['password']);
         $this->assertSame('student', $userArray['role']);
@@ -121,6 +141,7 @@ final class CreateStudentDTOTest extends TestCase
             firstName: 'Mia',
             middleName: 'Rose',
             lastName: 'Nguyen',
+            username: 'mia.nguyen.stu777',
             email: 'mia@example.com',
             gender: 'Female',
             dateOfBirth: '2010-07-21',

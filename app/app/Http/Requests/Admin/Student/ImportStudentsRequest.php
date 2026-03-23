@@ -15,6 +15,7 @@ final class ImportStudentsRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $maxSize = config('student-import.settings.max_file_size', 10240);
@@ -31,11 +32,12 @@ final class ImportStudentsRequest extends FormRequest
             'type' => [
                 'nullable',
                 'string',
-                Rule::in(array_column(\App\Enums\StudentImportType::cases(), 'value')),
+                Rule::in(array_column(StudentImportType::cases(), 'value')),
             ],
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -50,8 +52,7 @@ final class ImportStudentsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        // Default to NOVA if type is not provided
-        if (! $this->has('type')) {
+        if (! $this->has('type') || $this->input('type') === '') {
             $this->merge(['type' => StudentImportType::NOVA->value]);
         }
     }

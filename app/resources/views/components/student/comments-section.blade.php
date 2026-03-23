@@ -5,8 +5,7 @@
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-foreground">Comments</h3>
             @if ($comments->hasPages() && $comments->currentPage() < $comments->lastPage())
-                <a href="{{ $comments->url($comments->lastPage()) }}"
-                    class="text-xs text-primary hover:underline">
+                <a href="{{ $comments->url($comments->lastPage()) }}" class="text-xs text-primary hover:underline">
                     View latest messages
                 </a>
             @endif
@@ -25,8 +24,7 @@
                                     <div
                                         class="flex items-center gap-2 text-xs text-foreground/70 {{ $isOwnComment ? 'justify-end' : 'justify-start' }}">
                                         <span class="font-semibold text-foreground">{{ $comment->author->name }}</span>
-                                        <x-ui::badge
-                                            :variant="$comment->author->role->value === 'admin' ? 'primary' : 'success'">
+                                        <x-ui::badge :variant="$comment->author->role->value === 'admin' ? 'primary' : 'success'">
                                             {{ ucfirst($comment->author->role->value) }}
                                         </x-ui::badge>
                                         <span class="text-foreground/50">
@@ -58,7 +56,8 @@
                 <div>
                     <x-input-label for="comment" value="Comment *" />
                     <p class="mt-1 text-xs text-foreground/60" id="comment_help">
-                        Add a comment about this student. Comments are visible to all admins and therapists assigned to this
+                        Add a comment about this student. Comments are visible to all admins and therapists assigned to
+                        this
                         student.
                     </p>
                     <div class="relative mt-1">
@@ -69,10 +68,10 @@
                             class="absolute bottom-3 right-3 inline-flex items-center px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/90 text-sm font-medium shadow-sm">
                             <span id="submit-text">Send</span>
                             <span id="submit-spinner" class="hidden ml-2">
-                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none"
-                                    viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                        stroke-width="4"></circle>
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                                    fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10"
+                                        stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor"
                                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
                                     </path>

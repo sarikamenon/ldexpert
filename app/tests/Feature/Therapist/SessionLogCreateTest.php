@@ -9,6 +9,7 @@ use App\Enums\ContractStatus;
 use App\Enums\RateType;
 use App\Enums\SchoolCalendarEventType;
 use App\Enums\SessionLogStatus;
+use App\Enums\SessionOutcome;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
 use App\Models\School;
@@ -84,6 +85,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50), // Minimum 50 characters
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -107,6 +109,68 @@ final class SessionLogCreateTest extends TestCase
             ->firstOrFail();
 
         expect($log->duration_minutes)->toBe(37);
+    }
+
+    public function test_school_student_no_show_outcome_uses_no_show_rates(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $school = School::factory()->create(['is_private_student' => false]);
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+        $service = Service::factory()->create([
+            'min_duration_minutes' => 30,
+            'max_duration_minutes' => 120,
+        ]);
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+        ]);
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'ssa_id' => $ssa->id,
+            'service_id' => $service->id,
+            'school_id' => $school->id,
+        ]);
+
+        $this->seedContracts($therapist, $school, $service, now());
+
+        $sessionDate = now()->format('Y-m-d');
+        $startTime = now()->setTime(10, 0, 0);
+        $endTime = $startTime->copy()->addMinutes(60);
+
+        $response = $this->actingAs($therapist)
+            ->post(route('therapist.session-logs.store'), [
+                'schedule_id' => $schedule->id,
+                'student_id' => $student->id,
+                'ssa_id' => $ssa->id,
+                'service_id' => $service->id,
+                'session_date' => $sessionDate,
+                'start_time' => $startTime->format('Y-m-d H:i:s'),
+                'end_time' => $endTime->format('Y-m-d H:i:s'),
+                'outcome' => SessionOutcome::NO_SHOW->value,
+                'notes' => str_repeat('a', 50),
+                'is_billable_therapist' => true,
+                'is_billable_school' => true,
+                '_token' => csrf_token(),
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasNoErrors();
+
+        $log = SessionLog::where('therapist_id', $therapist->id)
+            ->where('schedule_id', $schedule->id)
+            ->firstOrFail();
+
+        $this->assertSame(25.0, (float) $log->therapist_billable_amount, 'No-show outcome should use therapist no-show rate (flat 25)');
+        $this->assertSame(30.0, (float) $log->school_invoice_amount, 'No-show outcome should use school no-show rate (flat 30)');
     }
 
     public function test_therapist_can_create_standalone_session_log(): void
@@ -147,6 +211,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -200,6 +265,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -240,6 +306,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => 'Short', // Less than 50 characters
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -278,6 +345,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -330,6 +398,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -370,6 +439,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addMinutes(30)->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -419,6 +489,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -468,6 +539,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -506,11 +578,12 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertSessionHasErrors(['session_date']);
     }
 
     public function test_rejects_when_service_rates_missing(): void
@@ -518,10 +591,7 @@ final class SessionLogCreateTest extends TestCase
         $therapist = User::factory()->therapist()->create();
         $school = School::factory()->create();
         $student = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $school->id,
-        ]);
+        $student->studentProfile->update(['school_id' => $school->id]);
         $service = Service::factory()->create([
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
@@ -566,11 +636,12 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $sessionDate->format('Y-m-d H:i:s'),
                 'end_time' => $sessionDate->copy()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
 
-        $response->assertSessionHasErrors(['error']);
+        $response->assertSessionHasErrors(['service_id']);
     }
 
     public function test_rejects_multiple_logs_for_same_schedule(): void
@@ -621,6 +692,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
+                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),
             ]);
@@ -648,6 +720,8 @@ final class SessionLogCreateTest extends TestCase
             'service_id' => $service->id,
             'rate' => 100,
             'rate_type' => RateType::HOURLY->value,
+            'no_show_rate' => 25,
+            'no_show_rate_type' => RateType::FLAT->value,
         ]);
 
         $schoolContract = SchoolContract::create([
@@ -662,6 +736,8 @@ final class SessionLogCreateTest extends TestCase
             'service_id' => $service->id,
             'rate' => 150,
             'rate_type' => RateType::HOURLY->value,
+            'no_show_rate' => 30,
+            'no_show_rate_type' => RateType::FLAT->value,
         ]);
     }
 }

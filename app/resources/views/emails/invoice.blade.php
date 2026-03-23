@@ -47,6 +47,18 @@
                     </p>
                 </div>
 
+                @if ($paymentUrl)
+                    <div style="margin:20px 0; text-align:center;">
+                        <a href="{{ $paymentUrl }}"
+                            style="display:inline-block; padding:14px 36px; background:#5563b8; color:#ffffff; text-decoration:none; border-radius:8px; font-size:16px; font-weight:600;">
+                            Pay Now
+                        </a>
+                        <p style="margin:10px 0 0; font-size:12px; color:#94a3b8;">
+                            Click the button above to pay securely online.
+                        </p>
+                    </div>
+                @endif
+
                 @if ($customMessage)
                     <p style="margin:16px 0;">
                         {{ $customMessage }}

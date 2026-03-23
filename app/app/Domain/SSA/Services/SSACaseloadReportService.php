@@ -7,6 +7,7 @@ namespace App\Domain\SSA\Services;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\DTOs\SSAReport\CaseloadReportFilterDTO;
 use App\Enums\ServiceFrequency;
+use App\Models\ServiceSupportAgreement;
 use Illuminate\Support\Collection;
 
 final class SSACaseloadReportService
@@ -15,6 +16,9 @@ final class SSACaseloadReportService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getReportData(CaseloadReportFilterDTO $filters): array
     {
         $ssas = $this->repository->getCaseloadReport($filters);
@@ -29,18 +33,24 @@ final class SSACaseloadReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(CaseloadReportFilterDTO $filters): Collection
     {
         return $this->repository->getCaseloadReport($filters);
     }
 
+    /**
+     * @param  Collection<int, \App\Models\ServiceSupportAgreement>  $ssas
+     * @return Collection<int, array<string, mixed>>
+     */
     private function groupByTherapist(Collection $ssas): Collection
     {
+        /** @var Collection<int, array<string, mixed>> */
         return $ssas
             ->whereNotNull('assigned_therapist_id')
             ->groupBy('assigned_therapist_id')
             ->map(function (Collection $therapistSSAs, int $therapistId) {
-                $therapist = $therapistSSAs->first()->assignedTherapist;
+                $therapist = $therapistSSAs->first()?->assignedTherapist;
                 $schools = $therapistSSAs->map(function ($ssa) {
                     return $ssa->student?->studentProfile?->school;
                 })
@@ -64,6 +74,10 @@ final class SSACaseloadReportService
             ->values();
     }
 
+    /**
+     * @param  Collection<int, array<string, mixed>>  $therapistData
+     * @return array<string, mixed>
+     */
     private function calculateSummary(Collection $therapistData): array
     {
         $totalTherapists = $therapistData->count();
@@ -86,7 +100,7 @@ final class SSACaseloadReportService
         ];
     }
 
-    private function calculateMinutesPerWeek($ssa): float
+    private function calculateMinutesPerWeek(ServiceSupportAgreement $ssa): float
     {
         if (! $ssa->frequency || ! $ssa->sessions_per_frequency) {
             return 0;

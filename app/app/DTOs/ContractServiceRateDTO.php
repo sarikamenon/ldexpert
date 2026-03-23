@@ -12,25 +12,39 @@ final class ContractServiceRateDTO
         public readonly int $serviceId,
         public readonly string $rate,
         public readonly RateType $rateType,
+        public readonly ?string $noShowRate,
+        public readonly ?RateType $noShowRateType,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
+        $noShowRateType = $data['no_show_rate_type'] ?? null;
+
         return new self(
             serviceId: (int) $data['service_id'],
             rate: self::normalizeRate($data['rate']),
             rateType: $data['rate_type'] instanceof RateType
                 ? $data['rate_type']
                 : RateType::from($data['rate_type']),
+            noShowRate: isset($data['no_show_rate']) && $data['no_show_rate'] !== null && $data['no_show_rate'] !== ''
+                ? self::normalizeRate($data['no_show_rate'])
+                : null,
+            noShowRateType: $noShowRateType === null || $noShowRateType === ''
+                ? null
+                : ($noShowRateType instanceof RateType ? $noShowRateType : RateType::from($noShowRateType)),
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [
             'service_id' => $this->serviceId,
             'rate' => $this->rate,
             'rate_type' => $this->rateType->value,
+            'no_show_rate' => $this->noShowRate,
+            'no_show_rate_type' => $this->noShowRateType?->value,
         ];
     }
 

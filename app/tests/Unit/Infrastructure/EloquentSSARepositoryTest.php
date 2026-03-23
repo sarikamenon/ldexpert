@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Infrastructure;
 
+use App\Enums\SSAStatus;
 use App\Infrastructure\Repositories\EloquentSSARepository;
 use App\Models\School;
 use App\Models\Service;
@@ -177,6 +178,9 @@ final class EloquentSSARepositoryTest extends TestCase
 
     public function test_count_new_students_this_month_returns_correct_count(): void
     {
+        $fixedNow = Carbon::create(2025, 5, 15, 12, 0, 0);
+        Carbon::setTestNow($fixedNow);
+
         $therapist = User::factory()->create(['role' => 'therapist']);
         $service = Service::factory()->create();
 
@@ -187,7 +191,7 @@ final class EloquentSSARepositoryTest extends TestCase
                 'student_id' => $student->id,
                 'primary_service_id' => $service->id,
                 'assigned_therapist_id' => $therapist->id,
-                'created_at' => Carbon::now()->subDays($i),
+                'created_at' => $fixedNow->copy()->subDays($i),
             ]);
         }
 
@@ -197,7 +201,7 @@ final class EloquentSSARepositoryTest extends TestCase
             'student_id' => $oldStudent->id,
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
-            'created_at' => Carbon::now()->subMonth(),
+            'created_at' => $fixedNow->copy()->subMonth(),
         ]);
 
         // Create an SSA for a different therapist (should not be counted)
@@ -207,7 +211,7 @@ final class EloquentSSARepositoryTest extends TestCase
             'student_id' => $otherStudent->id,
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $otherTherapist->id,
-            'created_at' => Carbon::now(),
+            'created_at' => $fixedNow->copy(),
         ]);
 
         $result = $this->repository->countNewStudentsThisMonth($therapist->id);
@@ -217,6 +221,9 @@ final class EloquentSSARepositoryTest extends TestCase
 
     public function test_count_new_students_this_month_returns_zero_when_none_this_month(): void
     {
+        $fixedNow = Carbon::create(2025, 5, 15, 12, 0, 0);
+        Carbon::setTestNow($fixedNow);
+
         $therapist = User::factory()->create(['role' => 'therapist']);
         $service = Service::factory()->create();
         $student = User::factory()->create(['role' => 'student']);
@@ -225,7 +232,7 @@ final class EloquentSSARepositoryTest extends TestCase
             'student_id' => $student->id,
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
-            'created_at' => Carbon::now()->subMonth(),
+            'created_at' => $fixedNow->copy()->subMonth(),
         ]);
 
         $result = $this->repository->countNewStudentsThisMonth($therapist->id);
@@ -235,6 +242,9 @@ final class EloquentSSARepositoryTest extends TestCase
 
     public function test_count_new_students_this_month_counts_distinct_students(): void
     {
+        $fixedNow = Carbon::create(2025, 5, 15, 12, 0, 0);
+        Carbon::setTestNow($fixedNow);
+
         $therapist = User::factory()->create(['role' => 'therapist']);
         $service = Service::factory()->create();
         $student = User::factory()->create(['role' => 'student']);
@@ -244,19 +254,61 @@ final class EloquentSSARepositoryTest extends TestCase
             'student_id' => $student->id,
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
-            'created_at' => Carbon::now(),
+            'created_at' => $fixedNow->copy(),
         ]);
 
         ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
-            'created_at' => Carbon::now()->subDays(1),
+            'created_at' => $fixedNow->copy()->subDays(1),
         ]);
 
         $result = $this->repository->countNewStudentsThisMonth($therapist->id);
 
         // Should count distinct students, so should be 1, not 2
         $this->assertSame(1, $result);
+    }
+
+    public function test_deactivate_with_unassign_clears_therapist_and_sets_deactivated(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin);
+
+        $therapist = User::factory()->create(['role' => 'therapist']);
+        $student = User::factory()->create(['role' => 'student']);
+        $service = Service::factory()->create();
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        $result = $this->repository->deactivateWithUnassign($ssa, 'RSM import: withdrawn');
+
+        $this->assertInstanceOf(ServiceSupportAgreement::class, $result);
+        $this->assertNull($result->assigned_therapist_id);
+        $this->assertSame(SSAStatus::DEACTIVATED, $result->status);
+    }
+
+    public function test_deactivate_with_unassign_works_when_no_therapist_assigned(): void
+    {
+        $student = User::factory()->create(['role' => 'student']);
+        $service = Service::factory()->create();
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => null,
+            'status' => SSAStatus::PENDING,
+        ]);
+
+        $result = $this->repository->deactivateWithUnassign($ssa, 'RSM import: withdrawn');
+
+        $this->assertInstanceOf(ServiceSupportAgreement::class, $result);
+        $this->assertNull($result->assigned_therapist_id);
+        $this->assertSame(SSAStatus::DEACTIVATED, $result->status);
     }
 }

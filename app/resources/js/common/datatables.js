@@ -1,16 +1,27 @@
 /**
  * Common DataTables Initialization Module
- * 
+ *
  * This module provides a reusable function to initialize DataTables
- * with common configuration options.
+ * with common configuration options, and server-side support.
  */
+
+import { errorAlert } from './sweetalert';
+
+/**
+ * Get CSRF token from layout meta tag.
+ * @returns {string|null}
+ */
+function getCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+    return meta ? meta.getAttribute('content') : null;
+}
 
 /**
  * Initialize DataTable with common configuration
- * 
+ *
  * @param {string} selector - jQuery selector for the table
  * @param {Object} customOptions - Custom options to merge with defaults
- * @returns {Object} DataTable instance
+ * @returns {Promise<Object>} DataTable instance
  */
 export function initDataTable(selector, customOptions = {}) {
     // Wait for jQuery and DataTables to be loaded
@@ -20,8 +31,8 @@ export function initDataTable(selector, customOptions = {}) {
                 console.log('Initializing DataTable for:', selector);
                 
                 const defaultOptions = {
-                    pageLength: 10,
-                    lengthMenu: [5, 10, 25, 50, 100],
+                    pageLength: 25,
+                    lengthMenu: [10, 25, 50, 100],
                     order: [],
                     columnDefs: [{
                         orderable: false,
@@ -34,7 +45,7 @@ export function initDataTable(selector, customOptions = {}) {
                         infoEmpty: "Showing 0 to 0 of 0 entries",
                         infoFiltered: "(filtered from _TOTAL_ total entries)",
                         zeroRecords: "No matching records found",
-                        emptyTable: "No session logs found.",
+                        emptyTable: "No records found.",
                         paginate: {
                             first: "First",
                             last: "Last",
@@ -91,5 +102,43 @@ export function loadDataTablesLibrary() {
         };
         document.body.appendChild(script);
     });
+}
+
+/**
+ * Initialize DataTable with server-side processing.
+ * Uses POST, CSRF token, processing indicator, and optional error callback.
+ *
+ * @param {string} selector - jQuery selector for the table
+ * @param {string} ajaxUrl - URL for the data endpoint
+ * @param {Object} customOptions - Additional options (order, pageLength, columnDefs, etc.)
+ * @param {Function} [customOptions.getExtraData] - Optional function(d) that adds extra params to the request (e.g. form filters)
+ * @returns {Promise<Object>} DataTable instance
+ */
+export function initServerSideDataTable(selector, ajaxUrl, customOptions = {}) {
+    const { getExtraData, ...restOptions } = customOptions;
+
+    const options = {
+        serverSide: true,
+        processing: true,
+        ajax: {
+            url: ajaxUrl,
+            type: 'POST',
+            data: function (d) {
+                const token = getCsrfToken();
+                if (token) {
+                    d._token = token;
+                }
+                if (typeof getExtraData === 'function') {
+                    getExtraData(d);
+                }
+            },
+            error: function () {
+                errorAlert('Failed to load table data. Please try again.');
+            },
+        },
+        ...restOptions,
+    };
+
+    return initDataTable(selector, options);
 }
 

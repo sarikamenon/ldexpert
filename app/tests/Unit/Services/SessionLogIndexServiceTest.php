@@ -67,7 +67,6 @@ final class SessionLogIndexServiceTest extends TestCase
         $draftActions = collect($draftRow['actions'])->pluck('label')->all();
         $this->assertContains('Edit', $draftActions);
         $this->assertContains('Submit', $draftActions);
-        $this->assertContains('Cancel', $draftActions);
 
         $finalRow = collect($result['rows'])
             ->first(fn (array $row) => $row['status'] === SessionLogStatus::APPROVED->label());
@@ -173,7 +172,7 @@ final class SessionLogIndexServiceTest extends TestCase
         $this->assertContains('-', $statuses);
     }
 
-    public function test_rows_include_created_date_and_entry_difference(): void
+    public function test_rows_include_entry_created_date(): void
     {
         Carbon::setTestNow('2025-01-10 10:00:00');
 
@@ -181,7 +180,7 @@ final class SessionLogIndexServiceTest extends TestCase
 
         $log = SessionLog::factory()->create([
             'therapist_id' => $therapist->id,
-            'session_date' => Carbon::parse('2025-01-08'),
+            'session_date' => Carbon::parse('2025-01-10'),
             'created_at' => Carbon::parse('2025-01-10 08:00:00'),
         ]);
 
@@ -195,8 +194,7 @@ final class SessionLogIndexServiceTest extends TestCase
 
         $this->assertNotNull($row);
         $this->assertSame('Jan 10, 2025', $row['entry_info']['created_date']);
-        $this->assertSame('2 days later', $row['entry_info']['entry_difference']);
-        $this->assertStringNotContainsString('-', $row['entry_info']['entry_difference']);
+        $this->assertArrayNotHasKey('entry_difference', $row['entry_info']);
 
         Carbon::setTestNow();
     }

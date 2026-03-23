@@ -72,13 +72,6 @@
                             <x-ui::input id="date_to" type="date" name="date_to"
                                 value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
                         </div>
-
-                        @if (!empty(array_filter($filters ?? [])))
-                            <a href="{{ route('therapist.session-logs.index') }}"
-                                class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle">
-                                Clear
-                            </a>
-                        @endif
                     </x-slot:filters>
 
                     <x-slot:actions>
@@ -90,11 +83,23 @@
                 </x-ui::filter-toolbar>
 
                 <div class="overflow-x-auto">
-                    <x-ui::session-log-table :columns="$columns" :rows="$rows" />
-                </div>
-
-                <div class="mt-4">
-                    {{ $sessionLogs->withQueryString()->links() }}
+                    <table id="therapistSessionLogsTable" class="min-w-full divide-y divide-border session-log-table display"
+                        data-datatable-url="{{ $datatableUrl ?? route('therapist.session-logs.data') }}"
+                        data-filter-form="sessionLogsFiltersForm">
+                        <thead class="bg-background/subtle">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Date & Time</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Service</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Entry</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist Amount</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Status</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-border">
+                        </tbody>
+                    </table>
                 </div>
             </x-ui::card>
         </div>

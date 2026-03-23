@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StudentComment extends Model
 {
+    /** @use HasFactory<\Database\Factories\StudentCommentFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -19,11 +20,13 @@ class StudentComment extends Model
         'comment',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /** @return BelongsTo<User, $this> */
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');

@@ -12,11 +12,17 @@ final class SettingsService
         private readonly SettingsRepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getGroup(string $group): array
     {
         return $this->repository->getGroup($group);
     }
 
+    /**
+     * @return array<string, array<string, mixed>>
+     */
     public function getAllGroups(): array
     {
         return [
@@ -26,6 +32,9 @@ final class SettingsService
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $settings
+     */
     public function updateSettings(array $settings): void
     {
         if (isset($settings['site_name'])) {

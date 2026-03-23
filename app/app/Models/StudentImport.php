@@ -13,8 +13,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property StudentImportStatus $status
+ * @property StudentImportType $type
+ */
 class StudentImport extends Model
 {
+    /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -42,31 +47,49 @@ class StudentImport extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<StudentImportRow, $this> */
     public function rows(): HasMany
     {
         return $this->hasMany(StudentImportRow::class);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopeProcessing(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::PROCESSING);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<StudentImport>  $query
+     * @return Builder<StudentImport>
+     */
     public function scopeFailed(Builder $query): Builder
     {
         return $query->where('status', StudentImportStatus::FAILED);

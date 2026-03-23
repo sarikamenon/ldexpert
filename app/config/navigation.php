@@ -55,7 +55,7 @@ return [
             [
                 'label' => 'Students',
                 'route' => 'admin.students.index',
-                'active' => ['admin.students.*', 'admin.student-documents.*', 'admin.ssas.*'],
+                'active' => ['admin.students.*', 'admin.student-documents.*', 'admin.ssas.*', 'admin.leads.*'],
                 'children' => [
                     [
                         'label' => 'Student List',
@@ -78,6 +78,16 @@ return [
                         'active' => 'admin.student-documents.*',
                     ],
                     [
+                        'label' => 'Lead List',
+                        'route' => 'admin.leads.index',
+                        'active' => 'admin.leads.index',
+                    ],
+                    [
+                        'label' => 'Create Lead',
+                        'route' => 'admin.leads.create',
+                        'active' => 'admin.leads.create',
+                    ],
+                    [
                         'label' => 'SSA List',
                         'route' => 'admin.ssas.index',
                         'active' => 'admin.ssas.index',
@@ -97,7 +107,7 @@ return [
             [
                 'label' => 'Session Logs',
                 'route' => 'admin.session-logs.index',
-                'active' => 'admin.session-logs.*',
+                'active' => ['admin.session-logs.*', 'admin.schedule-calendar.*'],
                 'children' => [
                     [
                         'label' => 'Submitted',
@@ -117,22 +127,43 @@ return [
                         'query' => ['status' => 'cancelled'],
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
                     ],
+                    [
+                        'label' => 'Import Session Logs',
+                        'route' => 'admin.session-logs.import',
+                        'active' => ['admin.session-logs.import', 'admin.session-logs.imports.*'],
+                    ],
+                    [
+                        'label' => 'Schedule Calendar',
+                        'route' => 'admin.schedule-calendar.index',
+                        'active' => 'admin.schedule-calendar.*',
+                    ],
                 ],
             ],
             [
                 'label' => 'Finance',
-                'route' => 'admin.invoices.index',
-                'active' => ['admin.invoices.*', 'admin.billing.therapist-bills.*'],
+                'route' => 'admin.finance.dashboard',
+                'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
                 'children' => [
+                    [
+                        'label' => 'Dashboard',
+                        'route' => 'admin.finance.dashboard',
+                        'active' => 'admin.finance.dashboard',
+                    ],
+                    [
+                        'label' => 'Accounts Ledger',
+                        'route' => 'admin.ledger.accounts.index',
+                        'query' => ['type' => 'schools'],
+                        'active' => 'admin.ledger.accounts.*',
+                    ],
                     [
                         'label' => 'Invoices',
                         'route' => 'admin.invoices.index',
                         'active' => ['admin.invoices.index', 'admin.invoices.show'],
                     ],
                     [
-                        'label' => 'Create Invoice',
-                        'route' => 'admin.invoices.create',
-                        'active' => 'admin.invoices.create',
+                        'label' => 'Invoice Payments',
+                        'route' => 'admin.payments.invoices.index',
+                        'active' => 'admin.payments.invoices.*',
                     ],
                     [
                         'label' => 'Therapist Billing',
@@ -140,16 +171,26 @@ return [
                         'active' => ['admin.billing.therapist-bills.index', 'admin.billing.therapist-bills.show'],
                     ],
                     [
-                        'label' => 'Create Bill',
-                        'route' => 'admin.billing.therapist-bills.create',
-                        'active' => 'admin.billing.therapist-bills.create',
+                        'label' => 'Bill Payments',
+                        'route' => 'admin.payments.therapist-bills.index',
+                        'active' => 'admin.payments.therapist-bills.*',
+                    ],
+                    [
+                        'label' => 'Expenses',
+                        'route' => 'admin.expenses.index',
+                        'active' => ['admin.expenses.*'],
+                    ],
+                    [
+                        'label' => 'Pay Stub Report',
+                        'route' => 'admin.finance.pay-stub-report.index',
+                        'active' => 'admin.finance.pay-stub-report.*',
                     ],
                 ],
             ],
             [
                 'label' => 'Reports',
                 'route' => 'admin.reports.ssa.utilization.index',
-                'active' => 'admin.reports.*',
+                'active' => ['admin.reports.*', 'admin.analytics.*'],
                 'children' => [
                     [
                         'label' => 'Utilization & Compliance',
@@ -166,12 +207,17 @@ return [
                         'route' => 'admin.reports.ssa.expirations.index',
                         'active' => 'admin.reports.ssa.expirations.*',
                     ],
+                    [
+                        'label' => 'Analytics',
+                        'route' => 'admin.analytics.index',
+                        'active' => 'admin.analytics.*',
+                    ],
                 ],
             ],
             [
                 'label' => 'Settings',
                 'route' => 'admin.settings.index',
-                'active' => ['admin.settings.*', 'admin.services.*', 'admin.activity-logs.*', 'admin.analytics.*'],
+                'active' => ['admin.settings.*', 'admin.services.*', 'admin.positions.*', 'admin.service-aliases.*'],
                 'children' => [
                     [
                         'label' => 'Services',
@@ -179,14 +225,19 @@ return [
                         'active' => 'admin.services.*',
                     ],
                     [
-                        'label' => 'Activity Logs',
-                        'route' => 'admin.activity-logs.index',
-                        'active' => 'admin.activity-logs.*',
+                        'label' => 'Expense Categories',
+                        'route' => 'admin.settings.expense-categories.index',
+                        'active' => 'admin.settings.expense-categories.*',
                     ],
                     [
-                        'label' => 'Analytics',
-                        'route' => 'admin.analytics.index',
-                        'active' => 'admin.analytics.*',
+                        'label' => 'Positions',
+                        'route' => 'admin.positions.index',
+                        'active' => 'admin.positions.*',
+                    ],
+                    [
+                        'label' => 'Service Aliases',
+                        'route' => 'admin.service-aliases.index',
+                        'active' => 'admin.service-aliases.*',
                     ],
                 ],
             ],
@@ -200,12 +251,17 @@ return [
             [
                 'label' => 'Schedule',
                 'route' => 'therapist.schedule.index',
-                'active' => 'therapist.schedule.*',
+                'active' => ['therapist.schedule.*', 'therapist.schedule-calendar.*'],
                 'children' => [
                     [
                         'label' => 'Calendar',
                         'route' => 'therapist.schedule.calendar',
                         'active' => 'therapist.schedule.calendar',
+                    ],
+                    [
+                        'label' => 'Full Calendar',
+                        'route' => 'therapist.schedule-calendar.index',
+                        'active' => 'therapist.schedule-calendar.*',
                     ],
                     [
                         'label' => 'Pending Schedule',

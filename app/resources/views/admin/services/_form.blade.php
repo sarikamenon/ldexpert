@@ -80,16 +80,16 @@
             </div>
 
             <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                <x-input-label value="Include in THO minutes?" />
-                <p class="mt-1 text-xs text-foreground/60 mb-3">Approved session minutes for this service will count
-                    toward the student’s SSA THO minutes (based on session outcome).</p>
+                <x-input-label value="Include in THO hours?" />
+                <p class="mt-1 text-xs text-foreground/60 mb-3">Approved session hours for this service will count
+                    toward the student’s SSA THO hours (based on session outcome).</p>
                 <div class="flex items-center gap-2">
                     <input type="hidden" name="include_in_tho" value="0">
                     <input id="include_in_tho" name="include_in_tho" type="checkbox" value="1"
                         class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                         @checked(old('include_in_tho', $service->include_in_tho ?? false))>
                     <label for="include_in_tho" class="text-sm font-medium text-foreground/80 cursor-pointer">
-                        Count approved minutes toward SSA THO
+                        Count approved hours toward SSA THO
                     </label>
                 </div>
                 <x-input-error :messages="$errors->get('include_in_tho')" class="mt-2" />

@@ -60,6 +60,9 @@ class UsStates
         'DC' => 'District of Columbia',
     ];
 
+    /**
+     * @return array<string, string>
+     */
     public static function getStates(): array
     {
         return self::STATES;

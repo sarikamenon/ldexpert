@@ -14,15 +14,18 @@ final class StoreStudentDocumentRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        /** @var \App\Models\User $user */
+        $user = $this->user();
         $student = $this->route('student');
 
         if (! $student instanceof User) {
             return false;
         }
 
-        return $this->user()->can('create', [StudentDocument::class, $student]);
+        return $user->can('create', [StudentDocument::class, $student]);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

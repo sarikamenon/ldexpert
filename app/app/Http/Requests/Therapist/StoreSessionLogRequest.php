@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -31,7 +32,8 @@ final class StoreSessionLogRequest extends FormRequest
         // When SSA is selected but student is not explicitly provided, infer student from SSA.
         $ssaId = $this->input('ssa_id');
         if ($ssaId && ! $this->filled('student_id')) {
-            $ssa = ServiceSupportAgreement::find($ssaId);
+            /** @var ServiceSupportAgreement|null $ssa */
+            $ssa = ServiceSupportAgreement::find((int) $ssaId);
 
             if ($ssa) {
                 $this->merge([
@@ -47,7 +49,7 @@ final class StoreSessionLogRequest extends FormRequest
 
         // Normalize start/end time to full datetime (Y-m-d H:i:s) using session_date when only a time is provided.
         if ($sessionDate && $startTimeInput && $durationInput && ! str_contains((string) $startTimeInput, ' ')) {
-            $start = Carbon::parse($sessionDate . ' ' . $startTimeInput . ':00');
+            $start = Carbon::parse($sessionDate.' '.$startTimeInput.':00');
             $end = (clone $start)->addMinutes((int) $durationInput);
 
             $this->merge([
@@ -79,9 +81,10 @@ final class StoreSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'therapist';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
-        $rules = [
+        return [
             'student_id' => ['required', 'integer', Rule::exists('users', 'id')->where('role', 'student')],
             'ssa_id' => ['required', 'integer', Rule::exists('service_support_agreements', 'id')],
             'service_id' => ['required', 'integer', Rule::exists('services', 'id')],
@@ -93,20 +96,19 @@ final class StoreSessionLogRequest extends FormRequest
             'duration_minutes' => [
                 'required',
                 'integer',
-                'min:' . config('session_minutes.min'),
-                'max:' . config('session_minutes.max'),
+                'min:'.config('session_minutes.min'),
+                'max:'.config('session_minutes.max'),
             ],
-            'outcome' => ['string', Rule::in(SessionOutcome::values())],
+            'outcome' => ['required', 'string', Rule::in(SessionOutcome::values())],
             'notes' => ['required', 'string', 'min:50', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],
             'is_billable_school' => ['nullable', 'boolean'],
             // Therapists cannot override rates; this is reserved for admins.
             'is_rate_override' => ['prohibited'],
         ];
-
-        return $rules;
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -119,7 +121,12 @@ final class StoreSessionLogRequest extends FormRequest
             'session_date.required' => 'Session date is required.',
             'start_time.required' => 'Start time is required.',
             'end_time.required' => 'End time is required.',
+            'duration_minutes.required' => 'Duration is required.',
+            'duration_minutes.min' => 'Duration must be at least :min minutes.',
+            'duration_minutes.max' => 'Duration must not exceed :max minutes.',
             'end_time.after' => 'End time must be after start time.',
+            'outcome.required' => 'Session outcome is required.',
+            'outcome.in' => 'The selected session outcome is invalid.',
             'is_rate_override.prohibited' => 'Rate overrides are only allowed for admin users.',
         ];
     }
@@ -144,6 +151,7 @@ final class StoreSessionLogRequest extends FormRequest
             // Validate therapist has access to SSA
             $ssaId = $this->input('ssa_id');
             if ($ssaId) {
+                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
                 $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
@@ -164,7 +172,7 @@ final class StoreSessionLogRequest extends FormRequest
                 $sessionDate = $this->input('session_date');
                 if ($sessionDate) {
                     $session = Carbon::parse($sessionDate);
-                    if ($session->lt($ssa->start_date) || $session->gt($ssa->end_date)) {
+                    if ($session->lt($ssa->start_date) || ($ssa->end_date !== null && $session->gt($ssa->end_date))) {
                         $validator->errors()->add('session_date', 'Session date must fall within the SSA start and end dates.');
                     }
                 }
@@ -178,6 +186,7 @@ final class StoreSessionLogRequest extends FormRequest
             // Validate schedule if provided
             $scheduleId = $this->input('schedule_id');
             if ($scheduleId) {
+                /** @var Schedule|null $schedule */
                 $schedule = Schedule::find($scheduleId);
                 if ($schedule && $schedule->therapist_id !== $therapist->id) {
                     $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
@@ -190,8 +199,9 @@ final class StoreSessionLogRequest extends FormRequest
             $schoolId = null;
 
             if ($scheduleId) {
+                /** @var Schedule|null $schedule */
                 $schedule = Schedule::find($scheduleId);
-                $schoolId = $schedule?->school_id
+                $schoolId = $schedule->school_id
                     ?? ($schedule?->student_id ? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id) : null);
             }
 
@@ -213,10 +223,35 @@ final class StoreSessionLogRequest extends FormRequest
                 }
             }
 
+            // Validate active contracts cover the session date
+            $sessionDate = $this->input('session_date');
+            if ($sessionDate && $therapist->id) {
+                $contractRule = new \App\Rules\SessionDateHasActiveContracts($therapist->id, $schoolId);
+                $contractRule->validate('session_date', $sessionDate, function (string $message) use ($validator): void { // @phpstan-ignore argument.type
+                    $validator->errors()->add('session_date', $message);
+                });
+            }
+
+            // Validate billing entry window (hard block for therapists)
+            $sessionDate = $this->input('session_date');
+            if ($sessionDate) {
+                $windowService = app(BillingEntryWindowService::class);
+                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate));
+                if (! $windowResult->isWithinWindow) {
+                    $validator->errors()->add(
+                        'session_date',
+                        "The billing window for this session's week closed on "
+                        .Carbon::parse($windowResult->cutoff)->format('l, M j, Y \a\t g:i A')
+                        .'. Session logs can no longer be created for this date.'
+                    );
+                }
+            }
+
             // Validate duration within service limits (if available)
             $serviceId = $this->input('service_id');
             $durationMinutes = (int) $this->input('duration_minutes', 0);
             if ($serviceId && $durationMinutes > 0) {
+                /** @var Service|null $service */
                 $service = Service::find($serviceId);
                 if ($service) {
                     if ($service->min_duration_minutes !== null && $durationMinutes < $service->min_duration_minutes) {

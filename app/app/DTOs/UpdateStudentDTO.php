@@ -10,9 +10,10 @@ final class UpdateStudentDTO
         public readonly string $firstName,
         public readonly ?string $middleName,
         public readonly string $lastName,
+        public readonly string $username,
         public readonly string $email,
         public readonly ?string $gender,
-        public readonly string $dateOfBirth,
+        public readonly ?string $dateOfBirth,
         public readonly ?int $schoolId,
         public readonly ?string $idNumber,
         public readonly string $timezone,
@@ -27,15 +28,17 @@ final class UpdateStudentDTO
         public readonly ?string $zipCode,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         return new self(
             firstName: $data['first_name'],
             middleName: $data['middle_name'] ?? null,
             lastName: $data['last_name'],
+            username: $data['username'],
             email: $data['email'],
             gender: $data['gender'] ?? null,
-            dateOfBirth: $data['date_of_birth'],
+            dateOfBirth: $data['date_of_birth'] ?? null,
             schoolId: isset($data['school_id']) ? (int) $data['school_id'] : null,
             idNumber: $data['id_number'] ?? null,
             timezone: $data['timezone'],
@@ -51,14 +54,17 @@ final class UpdateStudentDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toUserArray(): array
     {
         return [
             'name' => trim($this->firstName.' '.($this->middleName ? $this->middleName.' ' : '').$this->lastName),
+            'username' => $this->username,
             'email' => $this->email,
         ];
     }
 
+    /** @return array<string, mixed> */
     public function toProfileArray(): array
     {
         return [

@@ -10,38 +10,31 @@
     @endif
 
     {{-- Summary Metrics --}}
-    @php
-        $metricItems = [
-            [
-                'label' => 'Total Authorized (THO)',
-                'value' => number_format($summary['total_tho_minutes'] ?? 0),
-                'valueClass' => 'text-3xl',
-                'subtext' => 'minutes',
-            ],
-            [
-                'label' => 'Total Served',
-                'value' => number_format($summary['total_served_minutes'] ?? 0),
-                'valueClass' => 'text-3xl',
-                'subtext' => 'minutes',
-            ],
-            [
-                'label' => 'Overall Utilization',
-                'value' => number_format($summary['overall_utilization_percent'] ?? 0, 1) . '%',
-                'valueClass' => 'text-3xl',
-            ],
-            [
-                'label' => 'Under-served',
-                'value' => $summary['under_served_count'] ?? 0,
-                'valueClass' => 'text-3xl text-danger',
-                'subtext' => 'SSAs',
-            ],
-        ];
-    @endphp
-    <x-ui::metric-grid :items="$metricItems" />
+    <div class="grid grid-cols-1 gap-4 mb-6 md:grid-cols-4">
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Total Authorized (THO)</p>
+            <p class="text-3xl font-semibold mt-1" id="metricTotalTho">0</p>
+            <p class="text-xs text-foreground/60">hours</p>
+        </x-ui::card>
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Total Served</p>
+            <p class="text-3xl font-semibold mt-1" id="metricTotalServed">0</p>
+            <p class="text-xs text-foreground/60">hours</p>
+        </x-ui::card>
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Overall Utilization</p>
+            <p class="text-3xl font-semibold mt-1" id="metricUtilization">0%</p>
+        </x-ui::card>
+        <x-ui::card class="p-6">
+            <p class="text-sm text-foreground/70">Under-served</p>
+            <p class="text-3xl font-semibold text-danger mt-1" id="metricUnderServed">0</p>
+            <p class="text-xs text-foreground/60">SSAs</p>
+        </x-ui::card>
+    </div>
 
     {{-- Filters --}}
     <x-ui::card class="p-6 mb-6">
-        <form method="GET" action="{{ route('admin.reports.ssa.utilization.index') }}" class="space-y-4">
+        <form id="utilizationFiltersForm" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <x-input-label for="start_date" value="Start Date *" />
@@ -105,14 +98,12 @@
             </div>
             <div class="flex gap-2">
                 <x-ui::button type="submit">Apply Filters</x-ui::button>
-                <x-ui::button type="button" variant="secondary"
-                    onclick="window.location.href='{{ route('admin.reports.ssa.utilization.index') }}'">
+                <x-ui::button type="button" variant="secondary" id="resetFiltersBtn">
                     Reset
                 </x-ui::button>
-                <x-ui::button type="submit" variant="secondary"
-                    formaction="{{ route('admin.reports.ssa.utilization.export') }}">
-                    Export CSV
-                </x-ui::button>
+                <a href="{{ route('admin.reports.ssa.utilization.export', $filters) }}">
+                    <x-ui::button type="button" variant="secondary">Export CSV</x-ui::button>
+                </a>
             </div>
         </form>
     </x-ui::card>
@@ -120,97 +111,27 @@
     {{-- Data Table --}}
     <x-ui::card class="p-6">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-border">
-                <thead>
+            <table id="utilizationTable" class="w-full display"
+                data-datatable-url="{{ $datatableUrl }}">
+                <thead class="bg-background/subtle">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            SSA ID
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Student
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            School
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Therapist
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Service
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            THO Minutes
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Served Minutes
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Utilization %
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                            Status
-                        </th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">SSA ID</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Student</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Therapist</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Service</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">THO Hours</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Served Hours</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Utilization %</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Status</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border">
-                    @forelse ($ssas as $ssa)
-                        @php
-                            $tho = $ssa->tho_minutes ?? 0;
-                            $served = $ssa->served_minutes ?? 0;
-                            $utilization = $tho > 0 ? round(($served / $tho) * 100, 2) : 0;
-                            $isNearEnd = $ssa->end_date->diffInDays(now()) <= 30;
-                            $badgeColor =
-                                $utilization < 80 && $isNearEnd
-                                    ? 'danger'
-                                    : ($utilization > 120
-                                        ? 'warning'
-                                        : 'success');
-                        @endphp
-                        <tr>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <a href="{{ route('admin.ssas.show', $ssa) }}"
-                                    class="text-primary hover:underline">#{{ $ssa->id }}</a>
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ $ssa->student->name ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ $ssa->student->studentProfile->school->display_name ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ $ssa->assignedTherapist->name ?? 'Unassigned' }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ $ssa->primaryService->name ?? '—' }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ number_format($tho) }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                {{ number_format($served) }}
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <x-ui::badge variant="{{ $badgeColor }}">{{ $utilization }}%</x-ui::badge>
-                            </td>
-                            <td class="px-4 py-3 whitespace-nowrap">
-                                <x-ui::badge>{{ $ssa->status->label() }}</x-ui::badge>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" class="px-4 py-8 text-center text-foreground/60">
-                                No SSAs found matching the filters.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
-
-        @if ($ssas->hasPages())
-            <div class="mt-4">
-                {{ $ssas->links() }}
-            </div>
-        @endif
     </x-ui::card>
+
+    <x-slot name="scripts">
+        @vite(['resources/js/pages/admin-reports-ssa-utilization-index.js'])
+    </x-slot>
 </x-admin.layouts.app>

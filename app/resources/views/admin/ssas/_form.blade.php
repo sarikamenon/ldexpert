@@ -24,7 +24,7 @@
                 <x-ui::select id="student_id" name="student_id" class="mt-1" placeholder="Select a student" required>
                     <option value="">Select a student</option>
                     @foreach ($students as $student)
-                        <option value="{{ $student->id }}" @selected(old('student_id', $ssa->student_id ?? '') == $student->id)>
+                        <option value="{{ $student->id }}" @selected(old('student_id', $ssa->student_id ?? request('student_id')) == $student->id)>
                             {{ $student->name }}
                         </option>
                     @endforeach
@@ -48,33 +48,6 @@
                     <input type="hidden" name="primary_service_id" value="{{ $ssa->primary_service_id }}">
                 @endif
                 <x-input-error :messages="$errors->get('primary_service_id')" class="mt-2" />
-            </div>
-
-            <div>
-                <x-input-label for="additional_service_ids" value="Additional Services (Indirect)" />
-                <p id="additional_service_ids_help" class="mt-1 mb-1 text-xs text-foreground/60">Select one or more
-                    indirect
-                    services like IEP meetings or progress reports.</p>
-                @php
-                    $selectedAdditionalServices = collect(
-                        old('additional_service_ids', isset($ssa) ? $ssa->additionalServices->pluck('id')->all() : []),
-                    )
-                        ->map(fn($id) => (int) $id)
-                        ->toArray();
-                    $additionalServiceErrors = array_merge(
-                        $errors->get('additional_service_ids') ?? [],
-                        $errors->get('additional_service_ids.*') ?? [],
-                    );
-                @endphp
-                <x-ui::select id="additional_service_ids" name="additional_service_ids[]" multiple searchable
-                    placeholder="None" class="mt-1" aria-describedby="additional_service_ids_help">
-                    @foreach ($indirectServices as $service)
-                        <option value="{{ $service->id }}" @selected(in_array($service->id, $selectedAdditionalServices, true))>
-                            {{ $service->name }}
-                        </option>
-                    @endforeach
-                </x-ui::select>
-                <x-input-error :messages="$additionalServiceErrors" class="mt-2" />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -151,21 +124,50 @@
 
             <div id="sessions-per-frequency-field">
                 <x-input-label for="sessions_per_frequency" value="Sessions per Frequency *" />
-                <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions per
-                    frequency period</p>
-                <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
-                    max="100" class="mt-1 block w-full" aria-describedby="sessions_per_frequency_help"
-                    value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                <p id="sessions_per_frequency_help" class="mt-1 text-xs text-foreground/60">Number of sessions in the
+                    selected frequency period.</p>
+                <div class="group relative mt-1">
+                    <x-ui::input id="sessions_per_frequency" name="sessions_per_frequency" type="number" min="1"
+                        max="100" class="block w-full pr-10" aria-describedby="sessions_per_frequency_help"
+                        value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}" />
+                    <span id="sessions_per_frequency_lock"
+                        class="pointer-events-none absolute inset-y-0 right-3 hidden flex items-center text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m12.728 0L5.636 18.364" />
+                        </svg>
+                    </span>
+                </div>
+                <p id="sessions_per_frequency_status" class="mt-2 hidden text-xs text-foreground/60" aria-live="polite">
+                </p>
+                <input type="hidden" id="sessions_per_frequency_hidden" name="sessions_per_frequency"
+                    value="{{ old('sessions_per_frequency', isset($ssa) ? $ssa->sessions_per_frequency : '') }}"
+                    disabled />
                 <x-input-error :messages="$errors->get('sessions_per_frequency')" class="mt-2" />
             </div>
 
             <div id="calculated-minutes-field">
                 <x-input-label for="calculated_minutes" value="Calculated minutes after Sessions per Frequency *" />
-                <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated based on
-                    sessions per frequency</p>
-                <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
-                    class="mt-1 block w-full" aria-describedby="calculated_minutes_help"
-                    value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                <p id="calculated_minutes_help" class="mt-1 text-xs text-foreground/60">Auto-calculated from Minutes per
+                    Session and Sessions per Frequency.</p>
+                <div class="group relative mt-1">
+                    <x-ui::input id="calculated_minutes" name="calculated_minutes" type="number" min="0"
+                        class="block w-full pr-10" aria-describedby="calculated_minutes_help"
+                        value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" />
+                    <span id="calculated_minutes_lock"
+                        class="pointer-events-none absolute inset-y-0 right-3 hidden flex items-center text-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                        aria-hidden="true">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M18.364 5.636a9 9 0 010 12.728m-12.728 0a9 9 0 010-12.728m12.728 0L5.636 18.364" />
+                        </svg>
+                    </span>
+                </div>
+                <p id="calculated_minutes_status" class="mt-2 hidden text-xs text-foreground/60" aria-live="polite">
+                </p>
+                <input type="hidden" id="calculated_minutes_hidden" name="calculated_minutes"
+                    value="{{ old('calculated_minutes', isset($ssa) ? $ssa->calculated_minutes : '') }}" disabled />
                 <x-input-error :messages="$errors->get('calculated_minutes')" class="mt-2" />
             </div>
 
@@ -181,14 +183,12 @@
             </div>
 
             <div>
-                <x-input-label for="tho_minutes" value="THO Minutes (Total Hours Own by therapist) *" />
+                <x-input-label for="tho_minutes" value="THO Hours (Total Hours Owned by therapist) *" />
                 <p class="mt-1 text-xs text-foreground/60">
-                    <span id="tho-calculation-hint">Auto-calculated: Minutes per Session × (Sessions per Frequency ×
-                        Number
-                        of Frequencies in Date Range)</span>
+                    <span id="tho-calculation-hint">Auto-calculated: Minutes per Session × Sessions × Frequencies / 60</span>
                 </p>
-                <x-ui::input id="tho_minutes" name="tho_minutes" type="number" min="0"
-                    class="mt-1 block w-full" value="{{ old('tho_minutes', isset($ssa) ? $ssa->tho_minutes : '') }}"
+                <x-ui::input id="tho_minutes" name="tho_minutes" type="number" min="0" step="0.01"
+                    class="mt-1 block w-full" value="{{ old('tho_minutes', isset($ssa) ? $ssa->tho_hours : '') }}"
                     aria-describedby="tho-calculation-hint" required />
                 <x-input-error :messages="$errors->get('tho_minutes')" class="mt-2" />
             </div>
@@ -204,6 +204,15 @@
             <x-input-error :messages="$errors->get('adjustment_notes')" class="mt-2" />
         </div>
 
+        <div>
+            <x-input-label for="additional_notes" value="Additional Notes" />
+            <p id="additional_notes_help" class="mt-1 text-xs text-foreground/60">Optional additional notes or comments related to this SSA</p>
+            <textarea id="additional_notes" name="additional_notes" rows="4"
+                class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                aria-describedby="additional_notes_help">{{ old('additional_notes', isset($ssa) ? $ssa->additional_notes : '') }}</textarea>
+            <x-input-error :messages="$errors->get('additional_notes')" class="mt-2" />
+        </div>
+
         {{-- Store service frequency support data for JavaScript --}}
         <script type="application/json" id="services-data">
             @json($services->mapWithKeys(fn($service) => [$service->id => $service->is_frequency_service]))
@@ -213,7 +222,12 @@
                 @json(['id' => $ssa->primaryService->id, 'supports_frequency' => $ssa->primaryService->is_frequency_service])
             </script>
         @endif
+        <script type="application/json" id="therapists-for-service-url">
+            @json(route('admin.ssas.therapists-for-service'))
+        </script>
     </x-ui::card>
+
+    <input type="hidden" name="add_more_ssa" id="add_more_ssa" value="0" />
 
     <div class="flex justify-end gap-3">
         <a href="{{ route('admin.ssas.index') }}">
@@ -224,5 +238,10 @@
         <x-ui::button type="submit">
             {{ $isEdit ? 'Update SSA' : 'Create SSA' }}
         </x-ui::button>
+        @unless ($isEdit)
+            <x-ui::button type="submit" id="add-more-ssa-btn">
+                Add More SSA
+            </x-ui::button>
+        @endunless
     </div>
 </form>

@@ -65,12 +65,12 @@
                 </div>
                 <div class="mt-4 space-y-2">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Served Minutes</span>
-                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0) }}</span>
+                        <span class="text-foreground/70">Served Hours</span>
+                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Remaining Minutes</span>
-                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0) }}</span>
+                        <span class="text-foreground/70">Remaining Hours</span>
+                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0, 2) }}</span>
                     </div>
                 </div>
             </x-ui::card>
@@ -114,15 +114,17 @@
         <x-student.overview-details :student="$student" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
-            :services="$services ?? []" context="detail" />
+            :services="$services ?? []" :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'therapists' && isset($therapists))
-        <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []" context="detail" />
-    @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($schedules))
-        <x-admin.schedules-list :schedules="$schedules" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
-            :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail" />
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []" :filters="$sessionLogFilters ?? []"
-            :statuses="$sessionLogStatuses ?? []" context="detail" />
+        <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []"
+            :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($scheduleFilters))
+        <x-admin.schedules-list :schedules="$schedules ?? collect()" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
+            :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail"
+            :datatable-url="$scheduleDatatableUrl ?? null" :student-id="$scheduleStudentId ?? null" />
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+        <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'comments' && isset($comments))
         <x-student.comments-section :student="$student" :comments="$comments" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))
@@ -130,9 +132,8 @@
     @endif
 
     <x-slot name="scripts">
-        @if (($activeTab ?? 'dashboard') === 'dashboard')
-            @vite(['resources/js/pages/admin-students-show.js'])
-        @elseif (($activeTab ?? 'dashboard') === 'ssas')
+        @vite(['resources/js/pages/admin-students-show.js'])
+        @if (($activeTab ?? 'dashboard') === 'ssas')
             @vite(['resources/js/pages/admin-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'therapists')
             @vite(['resources/js/pages/admin-therapists-index.js'])

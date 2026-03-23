@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AdminProfile extends Model
 {
+    /** @use HasFactory<\Database\Factories\AdminProfileFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -19,6 +20,7 @@ class AdminProfile extends Model
         'phone',
     ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

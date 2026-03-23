@@ -1,5 +1,5 @@
 @props([
-    'variant' => 'primary', // primary|secondary|ghost|success|danger
+    'variant' => 'primary', // primary|secondary|ghost|success|danger|warning
     'size' => 'md', // sm|md|lg
     'type' => 'button',
 ])
@@ -19,10 +19,17 @@
         'ghost' => 'bg-transparent text-foreground hover:bg-background/muted active:bg-background/subtle',
         'success' => 'bg-success text-success-foreground hover:bg-success/90 active:bg-success/80',
         'danger' => 'bg-danger text-danger-foreground hover:bg-danger/90 active:bg-danger/80',
+        'warning' => 'bg-warning text-warning-foreground hover:bg-warning/90 active:bg-warning/80',
     ];
 @endphp
 
+@if($attributes->has('href'))
+<a {{ $attributes->merge(['class' => $base . ' ' . $sizes[$size] . ' ' . ($variants[$variant] ?? $variants['primary'])]) }}>
+    {{ $slot }}
+</a>
+@else
 <button type="{{ $type }}"
     {{ $attributes->merge(['class' => $base . ' ' . $sizes[$size] . ' ' . ($variants[$variant] ?? $variants['primary'])]) }}>
     {{ $slot }}
 </button>
+@endif

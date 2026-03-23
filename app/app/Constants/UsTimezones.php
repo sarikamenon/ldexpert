@@ -17,6 +17,9 @@ class UsTimezones
         'Pacific/Honolulu' => 'Hawaii Time (HT)',
     ];
 
+    /**
+     * @return array<string, string>
+     */
     public static function getTimezones(): array
     {
         return self::TIMEZONES;
@@ -25,5 +28,26 @@ class UsTimezones
     public static function getTimezoneLabel(string $timezone): string
     {
         return self::TIMEZONES[$timezone] ?? $timezone;
+    }
+
+    /**
+     * Resolve timezone from CSV input. Accepts both timezone key (e.g. America/New_York)
+     * and display label (e.g. Eastern Time (ET)) for better UX.
+     */
+    public static function resolveFromInput(?string $input): ?string
+    {
+        if ($input === null || trim($input) === '') {
+            return null;
+        }
+
+        $input = trim($input);
+
+        if (array_key_exists($input, self::TIMEZONES)) {
+            return $input;
+        }
+
+        $key = array_search($input, self::TIMEZONES, true);
+
+        return $key !== false ? $key : null;
     }
 }

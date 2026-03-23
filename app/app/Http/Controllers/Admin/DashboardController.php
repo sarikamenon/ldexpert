@@ -20,7 +20,6 @@ class DashboardController extends Controller
             'metrics' => $this->dashboardService->getKeyMetrics(),
             'alerts' => $this->dashboardService->getCriticalAlerts(),
             'charts' => $this->dashboardService->getChartData(),
-            'recentActivity' => $this->dashboardService->getRecentActivity(limit: 5),
             'upcomingEvents' => $this->dashboardService->getUpcomingEvents(),
             'operationalMetrics' => $this->dashboardService->getOperationalMetrics(),
             'quickActions' => $this->dashboardService->getQuickActions(),

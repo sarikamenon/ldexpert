@@ -12,6 +12,7 @@ final class UpdateScheduleDTO
     public function __construct(
         public readonly ?int $ssaId,
         public readonly ?int $serviceId,
+        /** @var array<int>|null */
         public readonly ?array $studentIds,
         public readonly ?string $scheduleDate,
         public readonly ?string $startTime,
@@ -25,6 +26,7 @@ final class UpdateScheduleDTO
         public readonly ?int $durationMinutes = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $recurrenceType = null;
@@ -76,6 +78,7 @@ final class UpdateScheduleDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         $array = [];

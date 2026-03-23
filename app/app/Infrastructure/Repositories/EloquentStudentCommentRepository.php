@@ -16,6 +16,7 @@ final class EloquentStudentCommentRepository implements StudentCommentRepository
         return StudentComment::create($dto->toArray());
     }
 
+    /** @return LengthAwarePaginator<int, StudentComment> */
     public function listByStudent(int $studentId, int $perPage = 15): LengthAwarePaginator
     {
         return StudentComment::query()

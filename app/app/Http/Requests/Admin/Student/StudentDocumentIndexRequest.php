@@ -13,9 +13,13 @@ final class StudentDocumentIndexRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('viewAny', StudentDocument::class);
+        /** @var \App\Models\User $user */
+        $user = $this->user();
+
+        return $user->can('viewAny', StudentDocument::class);
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [

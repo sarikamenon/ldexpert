@@ -12,12 +12,12 @@ final class SchedulePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isTherapist($user);
+        return $this->isTherapist($user) || $this->isAdmin($user);
     }
 
     public function view(User $user, Schedule $schedule): bool
     {
-        return $this->ownsSchedule($user, $schedule);
+        return $this->isAdmin($user) || $this->ownsSchedule($user, $schedule);
     }
 
     public function create(User $user): bool
@@ -51,15 +51,11 @@ final class SchedulePolicy
 
     private function isTherapist(User $user): bool
     {
-        $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
-
-        return $role === Role::THERAPIST;
+        return $user->role === Role::THERAPIST;
     }
 
     private function isAdmin(User $user): bool
     {
-        $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
-
-        return $role === Role::ADMIN;
+        return $user->role === Role::ADMIN;
     }
 }

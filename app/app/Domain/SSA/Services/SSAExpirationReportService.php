@@ -14,6 +14,9 @@ final class SSAExpirationReportService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getReportData(ExpirationReportFilterDTO $filters): array
     {
         $reportData = $this->repository->getExpirationReport($filters);
@@ -29,6 +32,7 @@ final class SSAExpirationReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(ExpirationReportFilterDTO $filters): Collection
     {
         $reportData = $this->repository->getExpirationReport($filters);
@@ -53,6 +57,10 @@ final class SSAExpirationReportService
             ->merge($reportData['pending']);
     }
 
+    /**
+     * @param  array<string, mixed>  $reportData
+     * @return array<string, mixed>
+     */
     private function calculateSummary(array $reportData, ExpirationReportFilterDTO $filters): array
     {
         return [

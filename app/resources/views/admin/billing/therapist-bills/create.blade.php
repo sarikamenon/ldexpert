@@ -33,7 +33,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div class="space-y-1">
                     <label for="filter_therapist_id" class="text-sm font-medium text-foreground/70">Therapist</label>
-                    <x-ui::select id="filter_therapist_id" name="therapist_id">
+                    <x-ui::select id="filter_therapist_id" name="therapist_id" searchable placeholder="All Therapists">
                         <option value="">All Therapists</option>
                         @foreach ($therapists ?? [] as $therapist)
                             <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
@@ -45,7 +45,7 @@
 
                 <div class="space-y-1">
                     <label for="filter_student_id" class="text-sm font-medium text-foreground/70">Student</label>
-                    <x-ui::select id="filter_student_id" name="student_id">
+                    <x-ui::select id="filter_student_id" name="student_id" searchable placeholder="All Students">
                         <option value="">All Students</option>
                         @foreach ($students ?? [] as $student)
                             <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
@@ -57,7 +57,7 @@
 
                 <div class="space-y-1">
                     <label for="filter_service_id" class="text-sm font-medium text-foreground/70">Service</label>
-                    <x-ui::select id="filter_service_id" name="service_id">
+                    <x-ui::select id="filter_service_id" name="service_id" searchable placeholder="All Services">
                         <option value="">All Services</option>
                         @foreach ($services ?? [] as $service)
                             <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
@@ -69,7 +69,7 @@
 
                 <div class="space-y-1">
                     <label for="filter_school_id" class="text-sm font-medium text-foreground/70">School</label>
-                    <x-ui::select id="filter_school_id" name="school_id">
+                    <x-ui::select id="filter_school_id" name="school_id" searchable placeholder="All Schools">
                         <option value="">All Schools</option>
                     </x-ui::select>
                 </div>
@@ -111,7 +111,7 @@
                     <label for="therapist_id" class="text-sm font-medium text-foreground">Therapist <span
                             class="text-red-500">*</span></label>
                     <p class="mt-1 text-xs text-foreground/60">Therapist to bill for the selected session logs</p>
-                    <x-ui::select id="therapist_id" name="therapist_id" class="mt-1" required>
+                    <x-ui::select id="therapist_id" name="therapist_id" class="mt-1" required searchable placeholder="Select Therapist">
                         <option value="">Select Therapist</option>
                         @foreach ($therapists ?? [] as $therapist)
                             <option value="{{ $therapist->id }}" @selected(old('therapist_id', $filters['therapist_id'] ?? null) == $therapist->id)>

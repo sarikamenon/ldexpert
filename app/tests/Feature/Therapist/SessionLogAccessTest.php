@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Therapist;
 
+use App\Enums\ContractStatus;
+use App\Enums\RateType;
 use App\Enums\SessionOutcome;
+use App\Models\SchoolContract;
+use App\Models\SchoolContractService;
 use App\Models\SessionLog;
+use App\Models\TherapistContract;
+use App\Models\TherapistContractService;
+use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -40,15 +47,18 @@ final class SessionLogAccessTest extends TestCase
         // The edit form should contain a service select option for the current service_id
         // and mark it as selected so that the service appears pre-populated.
         $response->assertSee('name="service_id"', false);
-        $response->assertSee('value="' . $sessionLog->service_id . '"', false);
+        $response->assertSee('value="'.$sessionLog->service_id.'"', false);
     }
 
     public function test_edit_update_accepts_hh_mm_time_inputs(): void
     {
         /** @var SessionLog $sessionLog */
-        $sessionLog = SessionLog::factory()->draft()->create();
+        $sessionLog = SessionLog::factory()->draft()->create([
+            'session_date' => now()->startOfWeek(),
+        ]);
 
         $therapist = $sessionLog->therapist;
+        $this->seedContractsForSessionLog($sessionLog);
 
         $payload = [
             'session_date' => $sessionLog->session_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
@@ -71,16 +81,18 @@ final class SessionLogAccessTest extends TestCase
     {
         /** @var SessionLog $sessionLog */
         $sessionLog = SessionLog::factory()->draft()->create([
+            'session_date' => now()->startOfWeek(),
             'outcome' => SessionOutcome::SERVICES_ADMINISTERED,
         ]);
 
         $therapist = $sessionLog->therapist;
+        $this->seedContractsForSessionLog($sessionLog);
 
         $payload = [
             'session_date' => $sessionLog->session_date?->format('Y-m-d') ?? now()->format('Y-m-d'),
             'start_time' => '09:00',
             'duration_minutes' => 45,
-            'notes' => '   ' . str_repeat('B', 60) . '   ',
+            'notes' => '   '.str_repeat('B', 60).'   ',
             'outcome' => SessionOutcome::NO_SHOW->value,
         ];
 
@@ -103,5 +115,44 @@ final class SessionLogAccessTest extends TestCase
         $this->actingAs($otherTherapist)
             ->get(route('therapist.session-logs.show', $sessionLog))
             ->assertNotFound();
+    }
+
+    private function seedContractsForSessionLog(SessionLog $sessionLog): void
+    {
+        $therapist = $sessionLog->therapist;
+        $therapistProfile = $therapist->therapistProfile
+            ?? TherapistProfile::factory()->create(['user_id' => $therapist->id]);
+
+        $sessionDate = $sessionLog->session_date ?? now();
+
+        $therapistContract = TherapistContract::create([
+            'therapist_id' => $therapistProfile->id,
+            'start_date' => $sessionDate->copy()->subDay()->toDateString(),
+            'end_date' => $sessionDate->copy()->addMonth()->toDateString(),
+            'status' => ContractStatus::ACTIVE->value,
+        ]);
+        TherapistContractService::create([
+            'therapist_contract_id' => $therapistContract->id,
+            'service_id' => $sessionLog->service_id,
+            'rate' => 100,
+            'rate_type' => RateType::HOURLY->value,
+            'no_show_rate' => 25,
+            'no_show_rate_type' => RateType::FLAT->value,
+        ]);
+
+        $schoolContract = SchoolContract::create([
+            'school_id' => $sessionLog->school_id,
+            'start_date' => $sessionDate->copy()->subDay()->toDateString(),
+            'end_date' => $sessionDate->copy()->addMonth()->toDateString(),
+            'status' => ContractStatus::ACTIVE->value,
+        ]);
+        SchoolContractService::create([
+            'school_contract_id' => $schoolContract->id,
+            'service_id' => $sessionLog->service_id,
+            'rate' => 150,
+            'rate_type' => RateType::HOURLY->value,
+            'no_show_rate' => 30,
+            'no_show_rate_type' => RateType::FLAT->value,
+        ]);
     }
 }

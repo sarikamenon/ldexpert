@@ -12,10 +12,12 @@ use Illuminate\Support\Collection;
 
 interface SchoolCalendarEventRepositoryInterface
 {
+    /** @return Collection<int, SchoolCalendarEvent> */
     public function listBySchoolAndRange(int $schoolId, CarbonInterface $start, CarbonInterface $end): Collection;
 
     /**
      * @param  array<int>  $schoolIds
+     * @return Collection<int, SchoolCalendarEvent>
      */
     public function listBySchoolsAndRange(array $schoolIds, CarbonInterface $start, CarbonInterface $end): Collection;
 

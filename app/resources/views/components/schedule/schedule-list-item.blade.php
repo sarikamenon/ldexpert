@@ -6,8 +6,12 @@
 
 @php
     $scheduleDate = $schedule['schedule_date'] ?? null;
+    $startTime = $schedule['start_time'] ?? null;
     $billingStatus = $schedule['billing_status'] ?? null;
     $isPast = $scheduleDate ? \Carbon\Carbon::parse($scheduleDate)->lt(now()->startOfDay()) : false;
+    $hasEventStarted = ($scheduleDate && $startTime)
+        ? now()->gte(\Carbon\Carbon::parse($scheduleDate . ' ' . $startTime))
+        : $isPast;
     $isBilled = $billingStatus === 'billed';
     $isPendingBilling = $billingStatus === 'pending';
 @endphp
@@ -91,10 +95,20 @@
                             </svg>
                         </button>
                     @endif
+
+                    {{-- Delete Schedule Button (hidden for billed schedules) --}}
+                    <button type="button"
+                        class="schedule-delete-btn p-2 border border-danger/30 rounded-lg hover:bg-danger/10 hover:border-danger/50 transition-colors text-danger"
+                        data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Delete Schedule">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
                 @endif
 
-                {{-- Billing / View Session Buttons (only for past schedules) --}}
-                @if ($isPast && $isPendingBilling)
+                {{-- Billing / View Session Buttons (after event start time) --}}
+                @if ($hasEventStarted && $isPendingBilling)
                     @if (isset($schedule['bill_url']))
                         <a href="{{ $schedule['bill_url'] }}"
                             class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"

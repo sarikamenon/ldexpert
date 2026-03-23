@@ -5,8 +5,8 @@ namespace Database\Factories;
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\Enums\EmployeeType;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -39,11 +39,12 @@ class TherapistProfileFactory extends Factory
             'ld_email' => $this->faker->optional(0.3)->safeEmail(),
             'address' => $this->faker->optional()->address(),
             'comments' => $this->faker->optional()->sentence(),
-            'position' => $this->faker->randomElement(TherapistPosition::cases())->value,
+            'position_id' => Position::inRandomOrder()->first()?->id ?? Position::factory(),
             'state' => $state,
             'timezone' => $timezone,
             'manager_id' => User::factory()->admin(),
             'max_weekly_hours' => $this->faker->numberBetween(10, 60),
+            'hourly_rate' => $this->faker->randomFloat(2, 25, 120),
             'dob' => $this->faker->optional()->dateTimeBetween('-60 years', '-22 years'),
         ];
     }

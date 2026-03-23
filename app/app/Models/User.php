@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,7 +16,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable
+/**
+ * @property string $username
+ * @property Role $role
+ * @property UserStatus $status
+ */
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -27,6 +33,7 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username',
         'email',
         'password',
         'role',
@@ -59,7 +66,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Return username as the key for password reset tokens.
+     * The password_reset_tokens.email column stores this value.
+     */
+    public function getEmailForPasswordReset(): string
+    {
+        return $this->username;
+    }
+
+    /**
      * Get the therapist profile for the user.
+     *
+     * @return HasOne<TherapistProfile, $this>
      */
     public function therapistProfile(): HasOne
     {
@@ -68,6 +86,8 @@ class User extends Authenticatable
 
     /**
      * Get the student profile for the user.
+     *
+     * @return HasOne<StudentProfile, $this>
      */
     public function studentProfile(): HasOne
     {
@@ -76,6 +96,8 @@ class User extends Authenticatable
 
     /**
      * Get the parent profile for the user.
+     *
+     * @return HasOne<ParentProfile, $this>
      */
     public function parentProfile(): HasOne
     {
@@ -84,6 +106,8 @@ class User extends Authenticatable
 
     /**
      * Get the admin profile for the user.
+     *
+     * @return HasOne<AdminProfile, $this>
      */
     public function adminProfile(): HasOne
     {
@@ -93,19 +117,20 @@ class User extends Authenticatable
     /**
      * Get the profile based on user role.
      */
-    public function getProfileAttribute()
+    public function getProfileAttribute(): TherapistProfile|StudentProfile|ParentProfile|AdminProfile|null
     {
         return match ($this->role) {
             Role::THERAPIST => $this->therapistProfile,
             Role::STUDENT => $this->studentProfile,
             Role::PARENT => $this->parentProfile,
             Role::ADMIN => $this->adminProfile,
-            default => null,
         };
     }
 
     /**
      * Get the students for a therapist.
+     *
+     * @return BelongsToMany<User, $this, TherapistStudent, 'pivot'>
      */
     public function students(): BelongsToMany
     {
@@ -121,6 +146,8 @@ class User extends Authenticatable
 
     /**
      * Get the therapists for a student.
+     *
+     * @return BelongsToMany<User, $this, TherapistStudent, 'pivot'>
      */
     public function therapists(): BelongsToMany
     {
@@ -136,6 +163,8 @@ class User extends Authenticatable
 
     /**
      * Get the children (students) for a parent.
+     *
+     * @return HasMany<StudentProfile, $this>
      */
     public function children(): HasMany
     {
@@ -144,6 +173,8 @@ class User extends Authenticatable
 
     /**
      * Get the SSAs assigned to this therapist.
+     *
+     * @return HasMany<ServiceSupportAgreement, $this>
      */
     public function assignedSSAs(): HasMany
     {
@@ -152,9 +183,31 @@ class User extends Authenticatable
 
     /**
      * Get documents attached to this user (when user is a student).
+     *
+     * @return MorphMany<\App\Models\StudentDocument, $this>
      */
     public function documents(): MorphMany
     {
         return $this->morphMany(\App\Models\StudentDocument::class, 'documentable');
+    }
+
+    /**
+     * Get therapist bills for this user when the user is a therapist.
+     *
+     * @return HasMany<TherapistBill, $this>
+     */
+    public function therapistBills(): HasMany
+    {
+        return $this->hasMany(TherapistBill::class, 'therapist_id');
+    }
+
+    /**
+     * Get ledger entries associated with this user as a ledgerable entity.
+     *
+     * @return MorphMany<\App\Models\LedgerEntry, $this>
+     */
+    public function ledgerEntries(): MorphMany
+    {
+        return $this->morphMany(LedgerEntry::class, 'ledgerable');
     }
 }

@@ -241,9 +241,9 @@
                 <div id="occurrence_dates_container" class="hidden mt-4">
                     <x-input-label value="Occurrence Dates *" />
                     <p class="text-xs text-foreground/60 mt-1 mb-3">
-                        Review and adjust the occurrence dates below. Dates falling on weekends are highlighted in
-                        yellow.
-                        You can modify any date if needed (e.g., if a monthly occurrence falls on a weekend).
+                        Review the occurrence dates below. You can modify any date or remove unwanted
+                        occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
+                        Dates falling on weekends are highlighted in yellow.
                     </p>
                     <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
                     <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />

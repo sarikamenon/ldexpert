@@ -75,7 +75,7 @@
                     <x-ui::select id="manager_id" name="manager_id" class="mt-1" placeholder="Select Manager">
                         <option value="">Select Manager</option>
                         @foreach ($managers as $manager)
-                            <option value="{{ $manager->id }}" @selected(old('manager_id', $school->manager_id ?? '') == $manager->id)>
+                            <option value="{{ $manager->id }}" @selected(old('manager_id', $school->manager_id ?? $defaultManagerId) == $manager->id)>
                                 {{ $manager->name }}
                             </option>
                         @endforeach

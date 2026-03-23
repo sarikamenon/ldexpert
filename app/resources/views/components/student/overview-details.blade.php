@@ -18,8 +18,12 @@
                 <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->last_name ?? '—' }}</dd>
             </div>
             <div>
+                <dt class="text-sm font-medium text-foreground/70">Username</dt>
+                <dd class="mt-1 text-sm text-primary">{{ $student->username }}</dd>
+            </div>
+            <div>
                 <dt class="text-sm font-medium text-foreground/70">Email</dt>
-                <dd class="mt-1 text-sm text-primary">{{ $student->email }}</dd>
+                <dd class="mt-1 text-sm text-foreground">{{ $student->email }}</dd>
             </div>
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Gender</dt>

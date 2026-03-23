@@ -56,30 +56,79 @@
                     <x-ui::card class="p-6 lg:col-span-1">
                         <h3 class="text-lg font-semibold text-foreground mb-4">Delivery Progress</h3>
                         <div class="relative" style="height: 250px;">
-                            <canvas id="deliveryProgressChart" data-served="{{ $ssa->served_minutes }}"
-                                data-tho="{{ $ssa->tho_minutes }}"></canvas>
+                            <canvas
+                                id="deliveryProgressChart"
+                                data-served="{{ $ssa->served_hours }}"
+                                data-tho="{{ $ssa->tho_hours }}"
+                                @isset($minutesSummary)
+                                    data-scheduled="{{ $minutesSummary->getScheduledHours() }}"
+                                    data-logged="{{ $minutesSummary->getLoggedHours() }}"
+                                    data-approved="{{ $minutesSummary->getApprovedHours() }}"
+                                @endisset
+                            ></canvas>
                         </div>
-                        <div class="mt-4 space-y-2 text-center">
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-foreground/70">Served Minutes</span>
-                                <span class="text-sm font-semibold">{{ number_format($ssa->served_minutes) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span class="text-sm text-foreground/70">THO Minutes</span>
-                                <span class="text-sm font-semibold">{{ number_format($ssa->tho_minutes) }}</span>
-                            </div>
-                            <div class="flex items-center justify-between pt-2 border-t border-border">
-                                <span class="text-sm font-medium">Progress</span>
-                                <span class="text-sm font-semibold text-primary">
-                                    {{ $ssa->tho_minutes > 0 ? number_format(($ssa->served_minutes / $ssa->tho_minutes) * 100, 1) : 0 }}%
-                                </span>
-                            </div>
+                        <div class="mt-4 space-y-2 text-sm" aria-label="Minutes ledger">
+                            @isset($minutesSummary)
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-foreground/70 flex items-center gap-1">
+                                        Authorized (THO) Hours
+                                        <x-ui::tooltip-icon content="Total hours authorized for this SSA based on the agreed service frequency and duration." />
+                                    </span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getThoHours(), 2) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-foreground/70 flex items-center gap-1">
+                                        Scheduled Hours
+                                        <x-ui::tooltip-icon content="Total hours scheduled on the calendar for this SSA, including both upcoming and completed sessions." />
+                                    </span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getScheduledHours(), 2) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-foreground/70 flex items-center gap-1">
+                                        Logged Hours
+                                        <x-ui::tooltip-icon content="Hours captured on submitted or approved session logs for this SSA, before final approval." />
+                                    </span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getLoggedHours(), 2) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-2">
+                                    <span class="text-foreground/70 flex items-center gap-1">
+                                        Approved Hours
+                                        <x-ui::tooltip-icon content="Hours from approved session logs that count toward THO utilization for this SSA." />
+                                    </span>
+                                    <span class="font-semibold">{{ number_format($minutesSummary->getApprovedHours(), 2) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-2 pt-2 border-t border-border">
+                                    <span class="font-medium flex items-center gap-1">
+                                        Progress
+                                        <x-ui::tooltip-icon content="Percentage of authorized (THO) hours that have been approved for this SSA." />
+                                    </span>
+                                    <span class="font-semibold text-primary">
+                                        {{ $minutesSummary->getApprovedUtilizationPercentage() }}% of THO used
+                                    </span>
+                                </div>
+                            @else
+                                <div class="flex items-center justify-between">
+                                    <span class="text-foreground/70">Served Hours</span>
+                                    <span class="font-semibold">{{ number_format($ssa->served_hours, 2) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-foreground/70">THO Hours</span>
+                                    <span class="font-semibold">{{ number_format($ssa->tho_hours, 2) }}</span>
+                                </div>
+                                <div class="flex items-center justify-between pt-2 border-t border-border">
+                                    <span class="font-medium">Progress</span>
+                                    <span class="font-semibold text-primary">
+                                        {{ $ssa->tho_minutes > 0 ? number_format(($ssa->served_minutes / $ssa->tho_minutes) * 100, 1) : 0 }}%
+                                    </span>
+                                </div>
+                            @endisset
                         </div>
                     </x-ui::card>
 
                     {{-- Quick Stats --}}
                     <x-ssa.dashboard-stats :ssa="$ssa" />
                 </div>
+
             @elseif (($activeTab ?? 'dashboard') === 'details')
                 <x-ssa.overview-details :ssa="$ssa" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'assignment' && isset($assignmentHistory))
@@ -141,9 +190,9 @@
                 <p class="text-foreground/70 text-center py-4">No assignment history available.</p>
             @endif
         </x-ui::card>
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+        <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :ssa-id="$ssaId ?? null" context="detail" />
     @endif
 </div>
 </div>

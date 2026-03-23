@@ -15,7 +15,7 @@
             @endif
 
             <x-admin.ssas-list :ssas="$ssas" :filters="$filters" :statuses="$statuses" :showMetrics="false"
-                context="therapist" />
+                context="therapist" :datatable-url="$datatableUrl ?? null" />
         </div>
     </div>
 

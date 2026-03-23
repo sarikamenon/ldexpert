@@ -96,12 +96,12 @@
                         </div>
                         <div class="mt-4 space-y-2">
                             <div class="flex items-center justify-between text-sm">
-                                <span class="text-foreground/70">Served Minutes</span>
-                                <span class="font-semibold">{{ number_format($chartData['served'] ?? 0) }}</span>
+                                <span class="text-foreground/70">Served Hours</span>
+                                <span class="font-semibold">{{ number_format($chartData['served'] ?? 0, 2) }}</span>
                             </div>
                             <div class="flex items-center justify-between text-sm">
-                                <span class="text-foreground/70">Remaining Minutes</span>
-                                <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0) }}</span>
+                                <span class="text-foreground/70">Remaining Hours</span>
+                                <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0, 2) }}</span>
                             </div>
                         </div>
                     </x-ui::card>
@@ -142,10 +142,10 @@
                 <x-student.overview-details :student="$student" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
                 <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="[]"
-                    :therapists="[]" :services="[]" context="therapist" />
-            @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-                <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []" :filters="$sessionLogFilters ?? []"
-                    :statuses="$sessionLogStatuses ?? []" context="detail" />
+                    :therapists="[]" :services="[]" :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="therapist" />
+            @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+                <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+                    :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
             @elseif (($activeTab ?? 'dashboard') === 'comments' && isset($comments))
                 <x-student.comments-section :student="$student" :comments="$comments" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))

@@ -6,12 +6,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\DataTables\Transformers\ScheduleRowTransformer;
+use App\DataTables\Transformers\StudentImportRowTransformer;
+use App\DataTables\Transformers\StudentRowTransformer;
+use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
+use App\Domain\Student\Services\StudentImportListService;
 use App\Domain\Student\Services\StudentImportService;
 use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\ScheduleService;
@@ -19,8 +23,6 @@ use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
-use App\DTOs\SessionLogIndexDTO;
-use App\DTOs\SSAFilterDTO;
 use App\DTOs\StoreStudentImportDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
@@ -28,7 +30,6 @@ use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Enums\SSAStatus;
 use App\Enums\StudentImportType;
-use App\Enums\TherapistPosition;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
@@ -36,7 +37,12 @@ use App\Http\Requests\Admin\Student\ExportStudentsRequest;
 use App\Http\Requests\Admin\Student\ImportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
+use App\Http\Requests\Admin\Student\StudentDataRequest;
+use App\Http\Requests\Admin\Student\StudentImportDataRequest;
+use App\Http\Requests\Admin\Student\StudentScheduleDataRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\StudentImport;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -49,6 +55,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class StudentController extends Controller
 {
+    use DataTablesResponse;
+
     public function __construct(
         private readonly StudentService $studentService,
         private readonly StudentImportService $importService,
@@ -57,10 +65,37 @@ final class StudentController extends Controller
         private readonly SSAService $ssaService,
         private readonly ScheduleService $scheduleService,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly SessionLogIndexService $sessionLogIndexService,
         private readonly StudentCommentService $commentService,
         private readonly StudentDocumentService $documentService,
+        private readonly PositionCatalogService $positionCatalogService,
+        private readonly StudentImportListService $importListService,
     ) {}
+
+    /** Column index => allowed order column for student imports list. */
+    private const STUDENT_IMPORTS_ORDER_WHITELIST = [
+        0 => 'student_imports.id',
+        1 => 'student_imports.type',
+        2 => 'student_imports.file_name',
+        4 => 'student_imports.status',
+        6 => 'student_imports.created_at',
+    ];
+
+    /** Column index => allowed order column (DB/table qualified). */
+    private const STUDENTS_ORDER_WHITELIST = [
+        0 => 'users.id',
+        1 => 'users.name',
+        2 => 'users.username',
+        3 => 'users.email',
+        4 => 'schools.display_name',
+        5 => 'student_profiles.grade_level',
+        6 => 'student_profiles.date_of_birth',
+        7 => 'users.status',
+    ];
+
+    private const STUDENT_SCHEDULES_ORDER_WHITELIST = [
+        0 => 'schedule_date',
+        1 => 'start_time',
+    ];
 
     public function index(IndexStudentRequest $request): View
     {
@@ -71,19 +106,86 @@ final class StudentController extends Controller
         $metrics = $this->studentService->getMetrics();
 
         return view('admin.students.index', [
-            'students' => $students,
+            'students' => collect(), // Server-side DataTables loads via AJAX
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'statuses' => UserStatus::cases(),
             'schools' => $this->schoolRepository->listAllForSelect(),
+            'datatableUrl' => route('admin.students.data'),
         ]);
     }
 
-    public function create(): View
+    public function data(StudentDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::STUDENTS_ORDER_WHITELIST);
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+            'school_id' => $request->input('filter_school_id'),
+            'therapist_id' => $request->input('filter_therapist_id'),
+            'per_page' => $params->length,
+        ];
+        $filters = StudentFilterDTO::fromRequest($filterData);
+
+        $result = $this->studentService->listForDataTables($filters, $params);
+        $result['rows']->load(['studentProfile.school']);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (User $student): array => StudentRowTransformer::transform($student),
+        );
+    }
+
+    public function scheduleData(StudentScheduleDataRequest $request, User $student): JsonResponse
+    {
+        $this->authorize('view', StudentProfile::class);
+
+        $requestStudentId = (int) $request->input('filter_student_id');
+        if ($requestStudentId !== $student->id) {
+            abort(403, 'Student mismatch.');
+        }
+
+        $filters = ScheduleFilterDTO::fromRequest([
+            'student_id' => $student->id,
+            'date' => $request->input('filter_date'),
+            'status' => $request->input('filter_status'),
+            'billing_status' => $request->input('filter_billing_status'),
+            'ssa_id' => $request->input('filter_ssa_id'),
+            'therapist_id' => $request->input('filter_therapist_id'),
+        ]);
+        $params = DataTablesRequest::fromRequest($request, self::STUDENT_SCHEDULES_ORDER_WHITELIST);
+        $result = $this->scheduleService->listForDataTablesForStudent($student, $filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn ($schedule) => ScheduleRowTransformer::transform($schedule),
+        );
+    }
+
+    public function create(Request $request): View
     {
         $this->authorize('create', StudentProfile::class);
 
-        return view('admin.students.create', $this->referenceData());
+        $data = $this->referenceData();
+
+        $schoolId = $request->query('school_id');
+        if ($schoolId) {
+            $school = $this->schoolRepository->find((int) $schoolId);
+            if ($school) {
+                $data['preselectedSchoolId'] = $school->id;
+                $data['preselectedTimezone'] = $school->timezone;
+            }
+        }
+
+        return view('admin.students.create', $data);
     }
 
     public function store(StoreStudentRequest $request): RedirectResponse
@@ -94,7 +196,13 @@ final class StudentController extends Controller
         $validated['password'] = Str::password(12);
 
         $dto = CreateStudentDTO::fromArray($validated);
-        $this->studentService->create($dto);
+        $profile = $this->studentService->create($dto);
+
+        if ($request->input('redirect_to_ssa') === '1') {
+            return redirect()
+                ->route('admin.ssas.create', ['student_id' => $profile->user_id])
+                ->with('status', 'Student created. Now create an SSA for them.');
+        }
 
         return redirect()
             ->route('admin.students.index')
@@ -129,9 +237,12 @@ final class StudentController extends Controller
             $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
             $served = (int) $ssasForMetrics->sum('served_minutes');
 
+            $totalThoHours = round($totalTho / 60, 2);
+            $servedHours = round($served / 60, 2);
+
             $viewData['chartData'] = [
-                'served' => $served,
-                'remaining' => max(0, $totalTho - $served),
+                'served' => $servedHours,
+                'remaining' => round(max(0, $totalThoHours - $servedHours), 2),
                 'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
             ];
 
@@ -145,49 +256,35 @@ final class StudentController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'ssas') {
-            $filters = SSAFilterDTO::fromArray(
-                array_merge($request->query(), ['student_id' => $student->id])
-            );
-            $viewData['ssas'] = $this->ssaService->paginate($filters);
+            $viewData['ssas'] = collect();
             $viewData['ssaFilters'] = $request->query();
             $viewData['statuses'] = SSAStatus::cases();
             // Don't show student filter in student detail view as it's redundant
             $viewData['students'] = [];
             $viewData['therapists'] = $this->therapistService->listActiveTherapists();
             $viewData['services'] = $this->serviceCatalogService->listActiveWithFrequencyFlag();
+            $viewData['datatableUrl'] = route('admin.ssas.data');
+            $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'therapists') {
-            $viewData['therapists'] = $this->therapistService->paginateTherapistsByStudent(
-                $student->id,
-                $request->query('search'),
-                $request->query('status'),
-                $request->query('position'),
-                $request->integer('per_page', 15)
-            );
+            $viewData['therapists'] = collect();
             $viewData['therapistFilters'] = $request->query();
-            $viewData['positions'] = TherapistPosition::cases();
+            $viewData['positions'] = $this->positionCatalogService->listActiveForSelect();
+            $viewData['datatableUrl'] = route('admin.therapists.data');
+            $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'schedule') {
-            $filters = ScheduleFilterDTO::fromRequest(
-                array_merge($request->query(), ['student_id' => $student->id])
-            );
-            $perPage = $request->integer('per_page', 15);
-
-            $viewData['schedules'] = $this->scheduleService->paginateForStudent($student, $filters, $perPage);
+            $viewData['schedules'] = collect();
             $viewData['scheduleFilters'] = $request->query();
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
             $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);
             $viewData['therapists'] = $this->therapistService->listTherapistsByStudent($student->id);
+            $viewData['scheduleDatatableUrl'] = route('admin.students.schedules.data', $student);
+            $viewData['scheduleStudentId'] = $student->id;
         } elseif ($activeTab === 'session_logs') {
-            $dto = SessionLogIndexDTO::fromArray(
-                array_merge($request->query(), ['student_id' => $student->id])
-            );
-            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
-
-            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
-            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
-            $viewData['sessionLogRows'] = $sessionLogData['rows'];
-            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
+            $viewData['datatableUrl'] = route('admin.session-logs.data');
+            $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {
@@ -236,9 +333,13 @@ final class StudentController extends Controller
 
         return response()->streamDownload(function () use ($students): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Name',
+                'Username',
                 'Email',
                 'School',
                 'Grade Level',
@@ -251,11 +352,12 @@ final class StudentController extends Controller
                 fputcsv($handle, [
                     $student->id,
                     $student->name,
+                    $student->username,
                     $student->email,
-                    $profile?->school?->display_name ?? '—',
-                    $profile?->grade_level ?? '—',
+                    $profile?->school->display_name ?? '—',
+                    $profile->grade_level ?? '—',
                     optional($profile?->date_of_birth)->format('Y-m-d') ?? '—',
-                    $student->status?->value ?? $student->status ?? 'inactive',
+                    $student->status->value,
                 ]);
             }
 
@@ -269,14 +371,24 @@ final class StudentController extends Controller
     {
         $this->authorize('create', StudentProfile::class);
 
+        $templates = [];
+        foreach (StudentImportType::cases() as $type) {
+            $template = $this->importService->getTemplate($type);
+            if (! empty($template)) {
+                $templates[$type->value] = [
+                    'required_columns' => $template['required_columns'] ?? [],
+                    'optional_columns' => $template['optional_columns'] ?? [],
+                ];
+            }
+        }
+
         $novaTemplate = $this->importService->getTemplate(StudentImportType::NOVA);
-        $requiredColumns = $novaTemplate['required_columns'] ?? [];
-        $optionalColumns = $novaTemplate['optional_columns'] ?? [];
 
         return view('admin.students.import', [
-            'requiredColumns' => $requiredColumns,
-            'optionalColumns' => $optionalColumns,
+            'requiredColumns' => $novaTemplate['required_columns'] ?? [],
+            'optionalColumns' => $novaTemplate['optional_columns'] ?? [],
             'importTypes' => StudentImportType::cases(),
+            'templates' => $templates,
         ]);
     }
 
@@ -287,9 +399,11 @@ final class StudentController extends Controller
         $validated = $request->validated();
         $type = StudentImportType::from($validated['type'] ?? StudentImportType::NOVA->value);
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = StoreStudentImportDTO::fromArray([
             'file' => $request->file('file'),
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => $type->value,
         ]);
 
@@ -338,14 +452,26 @@ final class StudentController extends Controller
     {
         $this->authorize('viewAny', StudentProfile::class);
 
-        $imports = StudentImport::query()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(25);
-
         return view('admin.students.import-history', [
-            'imports' => $imports,
+            'imports' => collect(),
+            'datatableUrl' => route('admin.students.imports.data'),
         ]);
+    }
+
+    public function importHistoryData(StudentImportDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::STUDENT_IMPORTS_ORDER_WHITELIST);
+        $result = $this->importListService->listForDataTables($params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (StudentImport $import): array => StudentImportRowTransformer::transform($import),
+        );
     }
 
     public function downloadTemplate(Request $request): StreamedResponse
@@ -363,6 +489,9 @@ final class StudentController extends Controller
 
         return response()->streamDownload(function () use ($allColumns, $requiredColumns): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
 
             // Write header row
             fputcsv($handle, $allColumns);
@@ -385,6 +514,7 @@ final class StudentController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function referenceData(): array
     {
         return [

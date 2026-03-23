@@ -35,26 +35,25 @@
             <x-input-error :messages="$errors->get('type')" class="mt-2" />
         </div>
 
-        {{-- Template Information --}}
+        {{-- Template Information: required/optional columns for all types; download link only for NOVA --}}
         <div id="templateInfo" class="bg-foreground/5 rounded-lg p-4 space-y-3">
             <h3 class="font-semibold text-sm">Required Columns</h3>
-            <div class="flex flex-wrap gap-2">
+            <div id="requiredColumnsList" class="flex flex-wrap gap-2">
                 @foreach ($requiredColumns as $column)
                     <span class="px-2 py-1 bg-primary/10 text-primary text-xs rounded">{{ $column }}</span>
                 @endforeach
             </div>
 
-            @if (!empty($optionalColumns))
+            <div id="optionalColumnsSection">
                 <h3 class="font-semibold text-sm mt-4">Optional Columns</h3>
-                <div class="flex flex-wrap gap-2">
-                    @foreach ($optionalColumns as $column)
-                        <span
-                            class="px-2 py-1 bg-foreground/10 text-foreground/70 text-xs rounded">{{ $column }}</span>
-                    @endforeach
+                <div id="optionalColumnsList" class="flex flex-wrap gap-2">
+                @foreach ($optionalColumns as $column)
+                    <span class="px-2 py-1 bg-foreground/10 text-foreground/70 text-xs rounded">{{ $column }}</span>
+                @endforeach
                 </div>
-            @endif
+            </div>
 
-            <div class="mt-4">
+            <div id="templateDownloadSection" class="mt-4">
                 <a href="{{ route('admin.students.import.template', ['type' => 'NOVA']) }}" id="templateDownloadLink"
                     class="inline-flex items-center px-3 py-2 text-sm font-medium text-primary hover:text-primary/80">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,6 +65,8 @@
                 </a>
             </div>
         </div>
+
+        <script type="application/json" id="templatesData">@json($templates ?? [])</script>
 
         {{-- Import Form --}}
         <form id="importForm" method="POST" action="{{ route('admin.students.import.store') }}"

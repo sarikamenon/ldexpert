@@ -38,7 +38,7 @@ final class CreateInvoiceRequest extends FormRequest
             'invoice_date' => ['required', 'date'],
             'billing_period_start' => ['required', 'date'],
             'billing_period_end' => ['required', 'date', 'after_or_equal:billing_period_start'],
-            'session_log_ids' => ['required', 'array', 'min:1'],
+            'session_log_ids' => ['nullable', 'array'],
             'session_log_ids.*' => ['required', 'integer', Rule::exists('session_logs', 'id')],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
@@ -47,7 +47,7 @@ final class CreateInvoiceRequest extends FormRequest
     /**
      * Configure the validator instance.
      */
-    public function withValidator($validator): void
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
     {
         $validator->after(function ($validator) {
             if ($this->has('school_id') && $this->has('session_log_ids')) {

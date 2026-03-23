@@ -10,6 +10,7 @@ use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateScheduleDTO;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
@@ -17,10 +18,12 @@ use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Events\ScheduleCreated;
 use App\Events\ScheduleUpdated;
+use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -35,9 +38,16 @@ final class ScheduleService
         private readonly StudentRepositoryInterface $studentRepository,
     ) {}
 
+    /** @return Collection<int, Schedule> */
     public function getSchedules(User $therapist, ScheduleFilterDTO $filters): Collection
     {
         return $this->repository->getSchedulesForTherapist($therapist, $filters);
+    }
+
+    /** @return Collection<int, Schedule> */
+    public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection
+    {
+        return $this->repository->getSchedulesForCalendar($filters);
     }
 
     public function findForTherapist(User $therapist, int $scheduleId): ?Schedule
@@ -45,6 +55,9 @@ final class ScheduleService
         return $this->repository->findForTherapist($therapist, $scheduleId);
     }
 
+    /**
+     * @param  array<int, string>  $relations
+     */
     public function findForTherapistWithRelations(User $therapist, int $scheduleId, array $relations = []): ?Schedule
     {
         $schedule = $this->repository->findForTherapist($therapist, $scheduleId);
@@ -61,26 +74,39 @@ final class ScheduleService
         return $this->repository->getPendingCount($therapist);
     }
 
+    /** @return Collection<int, Schedule> */
     public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
     {
         return $this->repository->getPendingSchedules($therapist, $filters);
     }
 
+    /** @return LengthAwarePaginator<int, Schedule> */
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->repository->paginateForStudent($student, $filters, $perPage);
     }
 
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, \App\Models\Schedule>}
+     */
+    public function listForDataTablesForStudent(User $student, ScheduleFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listForDataTablesForStudent($student, $filters, $params);
+    }
+
+    /** @return Collection<int, \App\Models\School> */
     public function getSchools(User $therapist): Collection
     {
         return $this->repository->getSchoolsForTherapist($therapist);
     }
 
+    /** @return Collection<int, User> */
     public function getStudents(User $therapist): Collection
     {
         return $this->repository->getStudentsForTherapist($therapist);
     }
 
+    /** @return Collection<int, array<string, mixed>> */
     public function getStudentServiceMappings(User $therapist): Collection
     {
         return $this->repository->getStudentServiceMappings($therapist);
@@ -346,6 +372,10 @@ final class ScheduleService
                 return;
             }
 
+            if ($schedule->billing_status === BillingStatus::BILLED) {
+                throw new CannotDeleteBilledScheduleException;
+            }
+
             // If this is the parent of a recurring series, delete all in the batch
             if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
                 $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
@@ -375,10 +405,13 @@ final class ScheduleService
      */
     public function generateRecurringOccurrences(Schedule $parentSchedule, array $studentIds, bool $isGroup): Collection
     {
-        if ($parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
+        if (! $parentSchedule->recurrence_type || $parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
             return collect([]);
         }
 
+        $recurrenceType = $parentSchedule->recurrence_type;
+
+        /** @var User $therapist */
         $therapist = $this->userRepository->findById($parentSchedule->therapist_id);
         $students = $this->userRepository->findByIds($studentIds);
 
@@ -388,15 +421,9 @@ final class ScheduleService
         // Assuming end date is end of the recurrence period (date only)
         $endDate = $parentSchedule->recurrence_end_date;
 
-        $scheduleDate = $parentSchedule->schedule_date instanceof \Carbon\Carbon
-            ? $parentSchedule->schedule_date->format('Y-m-d')
-            : $parentSchedule->schedule_date;
-        $startTime = $parentSchedule->start_time instanceof \Carbon\Carbon
-            ? $parentSchedule->start_time->format('H:i:s')
-            : $parentSchedule->start_time;
-        $endTime = $parentSchedule->end_time instanceof \Carbon\Carbon
-            ? $parentSchedule->end_time->format('H:i:s')
-            : $parentSchedule->end_time;
+        $scheduleDate = $parentSchedule->schedule_date->format('Y-m-d');
+        $startTime = $parentSchedule->start_time->format('H:i:s');
+        $endTime = $parentSchedule->end_time->format('H:i:s');
 
         $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
         $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
@@ -411,8 +438,8 @@ final class ScheduleService
         $currentEnd = $localEnd->copy();
 
         // First occurrence is the parent; start generating from next interval
-        $currentStart = $this->nextRecurrenceDate($currentStart, $parentSchedule->recurrence_type);
-        $currentEnd = $this->nextRecurrenceDate($currentEnd, $parentSchedule->recurrence_type);
+        $currentStart = $this->nextRecurrenceDate($currentStart, $recurrenceType);
+        $currentEnd = $this->nextRecurrenceDate($currentEnd, $recurrenceType);
 
         while ($currentStart->format('Y-m-d') <= $endDate->format('Y-m-d')) {
             // Convert current Local occurrence to UTC for storage/validation
@@ -454,8 +481,8 @@ final class ScheduleService
                 ]));
             }
 
-            $currentStart = $this->nextRecurrenceDate($currentStart, $parentSchedule->recurrence_type);
-            $currentEnd = $this->nextRecurrenceDate($currentEnd, $parentSchedule->recurrence_type);
+            $currentStart = $this->nextRecurrenceDate($currentStart, $recurrenceType);
+            $currentEnd = $this->nextRecurrenceDate($currentEnd, $recurrenceType);
         }
 
         return $occurrences;
@@ -475,23 +502,11 @@ final class ScheduleService
         $occurrences = collect();
 
         // Get time from parent schedule (stored as UTC)
-        $startTime = $parentSchedule->start_time instanceof \Carbon\Carbon
-            ? $parentSchedule->start_time->format('H:i')
-            : ($parentSchedule->start_time instanceof \DateTimeInterface
-                ? $parentSchedule->start_time->format('H:i')
-                : $parentSchedule->start_time);
-        $endTime = $parentSchedule->end_time instanceof \Carbon\Carbon
-            ? $parentSchedule->end_time->format('H:i')
-            : ($parentSchedule->end_time instanceof \DateTimeInterface
-                ? $parentSchedule->end_time->format('H:i')
-                : $parentSchedule->end_time);
+        $startTime = $parentSchedule->start_time->format('H:i');
+        $endTime = $parentSchedule->end_time->format('H:i');
 
         // Format schedule date to ensure it's just a date string
-        $parentScheduleDateStr = $parentSchedule->schedule_date instanceof \Carbon\Carbon
-            ? $parentSchedule->schedule_date->format('Y-m-d')
-            : ($parentSchedule->schedule_date instanceof \DateTimeInterface
-                ? $parentSchedule->schedule_date->format('Y-m-d')
-                : $parentSchedule->schedule_date);
+        $parentScheduleDateStr = $parentSchedule->schedule_date->format('Y-m-d');
 
         // Parse parent schedule date/time to get duration
         $parentUtcStart = Carbon::parse($parentScheduleDateStr.' '.$startTime);
@@ -583,7 +598,7 @@ final class ScheduleService
         return $cursor->toDateString();
     }
 
-    private function nextRecurrenceDate(Carbon $date, RecurrenceType $type): Carbon
+    private function nextRecurrenceDate(CarbonInterface $date, RecurrenceType $type): CarbonInterface
     {
         return match ($type) {
             RecurrenceType::DAILY => $date->copy()->addDay(),
@@ -612,6 +627,9 @@ final class ScheduleService
         });
     }
 
+    /**
+     * @param  array<int, int>  $scheduleIds
+     */
     public function bulkUpdateBillingStatus(User $therapist, array $scheduleIds, BillingStatus $status): int
     {
         return DB::transaction(function () use ($therapist, $scheduleIds, $status): int {
@@ -639,7 +657,7 @@ final class ScheduleService
         if ($this->repository->hasOverlap($user, $date, $startTime, $endTime, $excludeScheduleId)) {
             $message = $isTherapist
                 ? 'You already have another schedule at this time. Please choose a different time.'
-                : sprintf('The student already has another schedule at this time. Please choose a different time.', $user->name ?? 'Student');
+                : 'The student already has another schedule at this time. Please choose a different time.';
 
             throw new ScheduleOverlapException($message);
         }

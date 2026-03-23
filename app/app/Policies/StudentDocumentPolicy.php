@@ -51,7 +51,7 @@ class StudentDocumentPolicy
         return false;
     }
 
-    public function create(User $user, $documentable = null): bool
+    public function create(User $user, mixed $documentable = null): bool
     {
         if ($this->isAdmin($user)) {
             // Admin can create documents for students
@@ -93,15 +93,11 @@ class StudentDocumentPolicy
 
     private function isAdmin(User $user): bool
     {
-        $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
-
-        return $role === Role::ADMIN;
+        return $user->role === Role::ADMIN;
     }
 
     private function isTherapist(User $user): bool
     {
-        $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
-
-        return $role === Role::THERAPIST;
+        return $user->role === Role::THERAPIST;
     }
 }

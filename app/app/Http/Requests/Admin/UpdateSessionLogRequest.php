@@ -15,31 +15,21 @@ final class UpdateSessionLogRequest extends FormRequest
         return $this->user()?->role?->value === 'admin';
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $rateTypes = RateType::values();
 
-        $rules = [
-            'therapist_rate_type' => ['nullable', Rule::in($rateTypes)],
-            'therapist_rate_amount' => ['nullable', 'numeric', 'min:0'],
-            'therapist_billable_amount' => ['nullable', 'numeric', 'min:0'],
-            'school_rate_type' => ['nullable', Rule::in($rateTypes)],
-            'school_rate_amount' => ['nullable', 'numeric', 'min:0'],
-            'school_invoice_amount' => ['nullable', 'numeric', 'min:0'],
+        // Admin session log update is only used for the override page; override fields are always required.
+        return [
+            'therapist_rate_type' => ['required', Rule::in($rateTypes)],
+            'therapist_rate_amount' => ['required', 'numeric', 'min:0'],
+            'therapist_billable_amount' => ['required', 'numeric', 'min:0'],
+            'school_rate_type' => ['required', Rule::in($rateTypes)],
+            'school_rate_amount' => ['required', 'numeric', 'min:0'],
+            'school_invoice_amount' => ['required', 'numeric', 'min:0'],
             'is_rate_override' => ['sometimes', 'boolean'],
-            'override_reason' => ['nullable', 'string', 'min:20'],
+            'override_reason' => ['required', 'string', 'min:20'],
         ];
-
-        if ($this->boolean('is_rate_override')) {
-            $rules['override_reason'][] = 'required';
-            $rules['therapist_rate_type'][] = 'required';
-            $rules['therapist_rate_amount'][] = 'required';
-            $rules['therapist_billable_amount'][] = 'required';
-            $rules['school_rate_type'][] = 'required';
-            $rules['school_rate_amount'][] = 'required';
-            $rules['school_invoice_amount'][] = 'required';
-        }
-
-        return $rules;
     }
 }

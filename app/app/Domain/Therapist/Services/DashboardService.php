@@ -8,8 +8,11 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
+use App\Enums\BillingStatus;
+use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -22,6 +25,9 @@ class DashboardService
         private readonly ScheduleRepositoryInterface $scheduleRepository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getDashboardMetrics(User $therapist): array
     {
         $assignedSSAs = $this->ssaRepository->getAssignedSSAsForTherapist($therapist->id);
@@ -43,6 +49,28 @@ class DashboardService
         $lessonsThisWeek = $this->scheduleRepository->countLessonsThisWeek($therapist, $startOfWeek, $endOfWeek);
         $pendingScheduleCount = $this->scheduleService->getPendingCount($therapist);
 
+        $sentBackSessionLogs = SessionLog::query()
+            ->where('therapist_id', $therapist->id)
+            ->where('status', SessionLogStatus::SENT_BACK)
+            ->orderByDesc('sent_back_at')
+            ->limit(10)
+            ->with(['student', 'service', 'comments'])
+            ->get();
+
+        $pendingSchedules = $this->scheduleService->getPendingSchedules($therapist, null);
+        $pendingSchedulesLimited = $pendingSchedules->take(10)->values();
+        $pendingSchedulesList = $this->formatSchedulesForDashboard($pendingSchedulesLimited)
+            ->map(function (array $row, int $i) use ($pendingSchedulesLimited): array {
+                $schedule = $pendingSchedulesLimited->get($i);
+                $row['create_session_log_url'] = $schedule
+                    ? route('therapist.session-logs.create.from-schedule', $schedule)
+                    : null;
+
+                return $row;
+            })
+            ->values()
+            ->all();
+
         return [
             'activeStudents' => $activeStudents,
             'newStudentsThisMonth' => $newStudentsThisMonth,
@@ -53,6 +81,8 @@ class DashboardService
             'lessonsToday' => $lessonsToday,
             'lessonsThisWeek' => $lessonsThisWeek,
             'pendingScheduleCount' => $pendingScheduleCount,
+            'sentBackSessionLogs' => $sentBackSessionLogs,
+            'pendingSchedulesList' => $pendingSchedulesList,
         ];
     }
 
@@ -62,31 +92,38 @@ class DashboardService
      */
     private function formatSchedulesForDashboard(Collection $schedules): Collection
     {
+        /** @var Collection<int, array<string, mixed>> */
         return $schedules->map(function (Schedule $schedule): array {
             $studentProfile = $schedule->student?->studentProfile;
+            $eventStart = $schedule->schedule_date->copy()->setTimeFrom($schedule->start_time);
+            $hasEventStarted = now()->gte($eventStart);
+            $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
 
             return [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date?->format('Y-m-d'),
-                'start_time' => $schedule->start_time?->format('H:i'),
-                'end_time' => $schedule->end_time?->format('H:i'),
+                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
+                'start_time' => $schedule->start_time->format('H:i'),
+                'end_time' => $schedule->end_time->format('H:i'),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id
                     ? route('therapist.students.show', $schedule->student->id)
                     : null,
                 'service' => $schedule->service?->name,
-                'status' => $schedule->status?->value,
-                'billing_status' => $schedule->billing_status?->value,
+                'status' => $schedule->status->value,
+                'billing_status' => $schedule->billing_status->value,
                 'is_group' => $schedule->is_group,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'student_name' => $schedule->student?->name,
-                'student_password' => $studentProfile?->id_number ?? '-',
-                'parent_name' => $studentProfile?->parent_guardian_name ?? '-',
-                'parent_email' => $studentProfile?->parent_guardian_email ?? '-',
-                'parent_phone' => $studentProfile?->parent_guardian_phone ?? '-',
+                'student_password' => $studentProfile->id_number ?? '-',
+                'parent_name' => $studentProfile->parent_guardian_name ?? '-',
+                'parent_email' => $studentProfile->parent_guardian_email ?? '-',
+                'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
+                'bill_url' => $hasEventStarted && $isPendingBilling
+                    ? route('therapist.session-logs.create.from-schedule', $schedule->id)
+                    : null,
             ];
         });
     }

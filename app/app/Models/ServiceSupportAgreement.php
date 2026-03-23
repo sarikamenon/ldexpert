@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\Role;
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
-use App\Enums\Role;
 use App\Models\Pivots\SSAService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,10 +17,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property Carbon $start_date
+ * @property Carbon|null $end_date
+ * @property SSAStatus $status
+ * @property ServiceFrequency|null $frequency
+ * @property-read float $tho_hours
+ * @property-read float $served_hours
+ */
 class ServiceSupportAgreement extends Model
 {
+    /** @use HasFactory<\Database\Factories\ServiceSupportAgreementFactory> */
     use HasFactory;
+
     use SoftDeletes;
+
+    /** @var list<string> */
+    protected $appends = ['tho_hours', 'served_hours'];
 
     protected $fillable = [
         'student_id',
@@ -33,6 +46,7 @@ class ServiceSupportAgreement extends Model
         'calculated_minutes',
         'adjusted_minutes',
         'adjustment_notes',
+        'additional_notes',
         'tho_minutes',
         'assigned_therapist_id',
         'status',
@@ -58,16 +72,19 @@ class ServiceSupportAgreement extends Model
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
     }
 
+    /** @return BelongsTo<Service, $this> */
     public function primaryService(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'primary_service_id');
     }
 
+    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class, 'ssa_services', 'ssa_id', 'service_id')
@@ -77,46 +94,141 @@ class ServiceSupportAgreement extends Model
             ->withTimestamps();
     }
 
+    /** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
     public function additionalServices(): BelongsToMany
     {
         return $this->services()->wherePivot('is_primary', false);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function assignedTherapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_therapist_id');
     }
 
+    /** @return HasMany<SSAAssignmentHistory, $this> */
     public function assignmentHistory(): HasMany
     {
         return $this->hasMany(SSAAssignmentHistory::class, 'ssa_id')->orderBy('created_at', 'desc');
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::PENDING);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::ACTIVE);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeCompleted(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::COMPLETED);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeDeactivated(Builder $query): Builder
     {
         return $query->where('status', SSAStatus::DEACTIVATED);
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForStudent(Builder $query, int $studentId): Builder
+    {
+        return $query->where('student_id', $studentId);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForPrimaryService(Builder $query, int $serviceId): Builder
+    {
+        return $query->where('primary_service_id', $serviceId);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForStartDate(Builder $query, string $startDate): Builder
+    {
+        return $query->where('start_date', $startDate);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForEndDate(Builder $query, string $endDate): Builder
+    {
+        return $query->where('end_date', $endDate);
+    }
+
+    /**
+     * Lookup by import identifiers (student, service, date range).
+     * Add further conditions via individual scopes without renaming.
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForImportLookup(Builder $query, int $studentId, int $serviceId, string $startDate, string $endDate): Builder
+    {
+        return $query
+            ->forStudent($studentId)
+            ->forPrimaryService($serviceId)
+            ->forStartDate($startDate)
+            ->forEndDate($endDate);
+    }
+
+    /**
+     * SSAs that can be matched during RSM import (pending, active, deactivated, completed).
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeMatchableForImport(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            SSAStatus::PENDING,
+            SSAStatus::ACTIVE,
+            SSAStatus::DEACTIVATED,
+            SSAStatus::COMPLETED,
+        ]);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeAssigned(Builder $query): Builder
     {
         return $query->whereNotNull('assigned_therapist_id');
     }
 
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeUnassigned(Builder $query): Builder
     {
         return $query->whereNull('assigned_therapist_id');
@@ -127,21 +239,24 @@ class ServiceSupportAgreement extends Model
         return $this->assigned_therapist_id !== null;
     }
 
+    public function getThoHoursAttribute(): float
+    {
+        return round($this->tho_minutes / 60, 2);
+    }
+
+    public function getServedHoursAttribute(): float
+    {
+        return round($this->served_minutes / 60, 2);
+    }
+
     public function calculateThoMinutes(): int
     {
         $startDate = Carbon::parse($this->start_date);
         $endDate = Carbon::parse($this->end_date);
-        $daysDiff = $startDate->diffInDays($endDate) + 1;
-
-        $frequencyMultiplier = match ($this->frequency) {
-            ServiceFrequency::WEEKLY => 52 / 365,
-            ServiceFrequency::BI_WEEKLY => 26 / 365,
-            ServiceFrequency::MONTHLY => 12 / 365,
-            ServiceFrequency::QUARTERLY => 4 / 365,
-        };
-
-        $numberOfFrequencies = (int) ceil($daysDiff * $frequencyMultiplier);
-        $totalSessions = $numberOfFrequencies * $this->sessions_per_frequency;
+        $frequency = $this->frequency ?? ServiceFrequency::WEEKLY;
+        $numberOfFrequencies = $frequency->occurrencesInDateRange($startDate, $endDate);
+        $sessionsPerFrequency = $frequency->normalizeSessionsPerFrequency($this->sessions_per_frequency) ?? 0;
+        $totalSessions = $numberOfFrequencies * $sessionsPerFrequency;
 
         return $totalSessions * $this->minutes_per_session;
     }
@@ -156,7 +271,7 @@ class ServiceSupportAgreement extends Model
         $query = $this->newQuery();
         $field ??= $this->getRouteKeyName();
 
-        $route = request()?->route();
+        $route = request()->route();
         $routeName = $route?->getName();
         $isTherapistRoute = is_string($routeName) && str_starts_with($routeName, 'therapist.');
 
@@ -165,9 +280,7 @@ class ServiceSupportAgreement extends Model
         $user = $auth->user();
 
         if ($isTherapistRoute && $user instanceof User) {
-            $role = $user->role instanceof Role ? $user->role : Role::tryFrom((string) $user->role);
-
-            if ($role === Role::THERAPIST) {
+            if ($user->role === Role::THERAPIST) {
                 $query->where('assigned_therapist_id', $user->id);
             }
         }

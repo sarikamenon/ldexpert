@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\EmployeeType;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Models\Scopes\TherapistScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,7 +15,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TherapistProfile extends Model
 {
+    /** @use HasFactory<\Database\Factories\TherapistProfileFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -30,11 +31,12 @@ class TherapistProfile extends Model
         'ld_email',
         'address',
         'comments',
-        'position',
+        'position_id',
         'state',
         'timezone',
         'manager_id',
         'max_weekly_hours',
+        'hourly_rate',
         'dob',
         'default_meeting_location',
     ];
@@ -44,32 +46,52 @@ class TherapistProfile extends Model
         return [
             'employee_type' => EmployeeType::class,
             'title' => TherapistTitle::class,
-            'position' => TherapistPosition::class,
             'max_weekly_hours' => 'integer',
+            'hourly_rate' => 'decimal:2',
             'dob' => 'date',
         ];
     }
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /** @return BelongsTo<User, $this> */
     public function manager(): BelongsTo
     {
         return $this->belongsTo(User::class, 'manager_id');
     }
 
+    /** @return BelongsTo<\App\Models\Position, $this> */
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
     public function scopeSearch(Builder $query, ?string $term): Builder
     {
         return TherapistScope::search($query, $term);
     }
 
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
     public function scopeActive(Builder $query): Builder
     {
         return TherapistScope::active($query, $this);
     }
 
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
     public function scopeInactive(Builder $query): Builder
     {
         return TherapistScope::inactive($query, $this);

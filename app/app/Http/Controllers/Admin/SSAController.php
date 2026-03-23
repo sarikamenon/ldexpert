@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
+use App\DataTables\Transformers\SSAImportRowTransformer;
+use App\DataTables\Transformers\SSARowTransformer;
 use App\Domain\Service\Services\ServiceCatalogService;
-use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAImportListService;
 use App\Domain\SSA\Services\SSAImportService;
+use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\User\Services\UserService;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
-use App\DTOs\SessionLogIndexDTO;
 use App\DTOs\SSAAssignmentDTO;
 use App\DTOs\SSAFilterDTO;
 use App\DTOs\StoreSSAImportDTO;
@@ -25,11 +27,16 @@ use App\Http\Requests\Admin\SSA\AssignTherapistRequest;
 use App\Http\Requests\Admin\SSA\ChangeSSAStatusRequest;
 use App\Http\Requests\Admin\SSA\ImportSSAsRequest;
 use App\Http\Requests\Admin\SSA\IndexSSARequest;
+use App\Http\Requests\Admin\SSA\SSADataRequest;
+use App\Http\Requests\Admin\SSA\SSAImportDataRequest;
 use App\Http\Requests\Admin\SSA\StoreSSARequest;
 use App\Http\Requests\Admin\SSA\UnassignTherapistRequest;
 use App\Http\Requests\Admin\SSA\UpdateSSARequest;
+use App\Http\Support\DataTablesRequest;
+use App\Http\Support\DataTablesResponse;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAImport;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,12 +47,39 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SSAController extends Controller
 {
+    use DataTablesResponse;
+
+    /**
+     * @var array<int, string>
+     */
+    private const SSA_IMPORTS_ORDER_WHITELIST = [
+        0 => 'ssa_imports.id',
+        1 => 'ssa_imports.type',
+        2 => 'ssa_imports.file_name',
+        4 => 'ssa_imports.status',
+        6 => 'ssa_imports.created_at',
+    ];
+
+    /**
+     * @var array<int, string>
+     */
+    private const ORDER_WHITELIST = [
+        0 => 'service_support_agreements.id',
+        1 => 'students.name',
+        2 => 'therapists.name',
+        3 => 'service_support_agreements.start_date',
+        4 => 'service_support_agreements.minutes_per_session',
+        5 => 'service_support_agreements.tho_minutes',
+        6 => 'service_support_agreements.status',
+    ];
+
     public function __construct(
         private readonly SSAService $ssaService,
         private readonly SSAImportService $importService,
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly SessionLogIndexService $sessionLogIndexService,
+        private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
+        private readonly SSAImportListService $importListService,
     ) {}
 
     public function index(IndexSSARequest $request): View
@@ -53,18 +87,45 @@ final class SSAController extends Controller
         $this->authorize('viewAny', ServiceSupportAgreement::class);
 
         $filters = SSAFilterDTO::fromArray($request->validated());
-        $ssas = $this->ssaService->paginate($filters);
         $metrics = $this->ssaService->metrics();
 
         return view('admin.ssas.index', [
-            'ssas' => $ssas,
+            'ssas' => collect(),
             'metrics' => $metrics,
             'filters' => $request->validated(),
             'statuses' => SSAStatus::cases(),
             'students' => $this->getActiveStudents(),
             'services' => $this->getActiveServices(),
             'therapists' => $this->getActiveTherapists(),
+            'datatableUrl' => route('admin.ssas.data'),
         ]);
+    }
+
+    public function data(SSADataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
+
+        $filterData = [
+            'search' => $request->input('filter_search'),
+            'status' => $request->input('filter_status'),
+            'student_id' => $request->input('filter_student_id'),
+            'service_id' => $request->input('filter_service_id'),
+            'therapist_id' => $request->input('filter_therapist_id'),
+            'school_id' => $request->input('filter_school_id'),
+        ];
+        $filters = SSAFilterDTO::fromArray($filterData);
+
+        $result = $this->ssaService->listForDataTables($filters, $params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            [SSARowTransformer::class, 'transform']
+        );
     }
 
     public function create(): View
@@ -79,8 +140,16 @@ final class SSAController extends Controller
         $this->authorize('create', ServiceSupportAgreement::class);
 
         try {
-            $dto = CreateSSADTO::fromArray($request->validated());
+            $validated = $request->validated();
+            $validated['tho_minutes'] = (int) round((float) $validated['tho_minutes'] * 60);
+            $dto = CreateSSADTO::fromArray($validated);
             $this->ssaService->create($dto);
+
+            if ($request->input('add_more_ssa') === '1') {
+                return redirect()
+                    ->route('admin.ssas.create', ['student_id' => $dto->studentId])
+                    ->with('status', 'SSA created successfully. Create another SSA for the same student.');
+            }
 
             return redirect()
                 ->route('admin.ssas.index')
@@ -120,18 +189,15 @@ final class SSAController extends Controller
                 'assignmentHistory.assignedBy',
             ]);
             $viewData['assignmentHistory'] = $this->ssaService->getAssignmentHistory($ssa)->withUserTimezone();
-            $viewData['therapists'] = $this->getActiveTherapists();
         } elseif ($activeTab === 'session_logs') {
-            $dto = SessionLogIndexDTO::fromArray(
-                array_merge($request->query(), ['ssa_id' => $ssa->id])
-            );
-            $sessionLogData = $this->sessionLogIndexService->getAdminIndex($dto);
-
-            $viewData['sessionLogs'] = $sessionLogData['sessionLogs'];
-            $viewData['sessionLogColumns'] = $sessionLogData['columns'];
-            $viewData['sessionLogRows'] = $sessionLogData['rows'];
-            $viewData['sessionLogStatuses'] = $sessionLogData['statuses'];
+            $viewData['sessionLogStatuses'] = \App\Enums\SessionLogStatus::cases();
             $viewData['sessionLogFilters'] = $request->query();
+            $viewData['datatableUrl'] = route('admin.session-logs.data');
+            $viewData['ssaId'] = $ssa->id;
+        }
+
+        if ($activeTab === 'dashboard') {
+            $viewData['minutesSummary'] = $this->ssaMinutesSummaryService->getMinutesSummaryForSSA($ssa);
         }
 
         return view('admin.ssas.show', $viewData);
@@ -153,7 +219,11 @@ final class SSAController extends Controller
         $this->authorize('update', $ssa);
 
         try {
-            $dto = UpdateSSADTO::fromArray($request->validated());
+            $validated = $request->validated();
+            if (isset($validated['tho_minutes'])) {
+                $validated['tho_minutes'] = (int) round((float) $validated['tho_minutes'] * 60);
+            }
+            $dto = UpdateSSADTO::fromArray($validated);
             $this->ssaService->update($ssa, $dto);
 
             return redirect()
@@ -220,6 +290,7 @@ final class SSAController extends Controller
         ]);
     }
 
+    /** @return \Symfony\Component\HttpFoundation\StreamedResponse */
     public function export(IndexSSARequest $request)
     {
         $this->authorize('viewAny', ServiceSupportAgreement::class);
@@ -230,6 +301,9 @@ final class SSAController extends Controller
 
         return response()->streamDownload(function () use ($ssas): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, [
                 'ID',
                 'Student',
@@ -240,24 +314,24 @@ final class SSAController extends Controller
                 'Minutes per Session',
                 'Frequency',
                 'Sessions per Frequency',
-                'THO Minutes',
-                'Served Minutes',
+                'THO Hours',
+                'Served Hours',
                 'Status',
             ]);
 
-            foreach ($ssas as $ssa) {
+            foreach ($ssas->items() as $ssa) {
                 fputcsv($handle, [
                     $ssa->id,
                     $ssa->student->name ?? '—',
                     $ssa->primaryService->name ?? '—',
                     $ssa->assignedTherapist->name ?? 'Unassigned',
                     $ssa->start_date->format('Y-m-d'),
-                    $ssa->end_date->format('Y-m-d'),
+                    $ssa->end_date?->format('Y-m-d') ?? '',
                     $ssa->minutes_per_session,
-                    $ssa->frequency->label(),
+                    $ssa->frequency?->label() ?? '',
                     $ssa->sessions_per_frequency,
-                    $ssa->tho_minutes,
-                    $ssa->served_minutes,
+                    $ssa->tho_hours,
+                    $ssa->served_hours,
                     $ssa->status->label(),
                 ]);
             }
@@ -268,32 +342,64 @@ final class SSAController extends Controller
         ]);
     }
 
+    /** @return Collection<int, \App\Models\User> */
     private function getActiveStudents(): Collection
     {
         return $this->userService->listActiveStudentsForSelect();
     }
 
+    /** @return Collection<int, \App\Models\Service> */
     private function getActiveServices(): Collection
     {
         return $this->serviceCatalogService->listActiveWithFrequencyFlag();
     }
 
+    /** @return Collection<int, \App\Models\User> */
     private function getActiveTherapists(): Collection
     {
         return $this->userService->listActiveTherapistsForSelect();
+    }
+
+    public function therapistsForService(Request $request): JsonResponse
+    {
+        $this->authorize('create', ServiceSupportAgreement::class);
+
+        $serviceIds = array_filter(
+            array_map('intval', (array) $request->query('service_ids', [])),
+            fn (int $id): bool => $id > 0,
+        );
+
+        $therapists = $serviceIds !== []
+            ? $this->userService->listActiveTherapistsForServices($serviceIds)
+            : $this->userService->listActiveTherapistsForSelect();
+
+        return response()->json(
+            $therapists->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name])->values()
+        );
     }
 
     public function showImportForm(): View
     {
         $this->authorize('create', ServiceSupportAgreement::class);
 
-        $type = SSAImportType::NOVA;
-        $template = $this->importService->getTemplate($type);
+        $templates = [];
+        foreach (SSAImportType::cases() as $type) {
+            $template = $this->importService->getTemplate($type);
+            if (! empty($template['required_columns']) || ! empty($template['optional_columns'])) {
+                $templates[$type->value] = [
+                    'required_columns' => $template['required_columns'] ?? [],
+                    'optional_columns' => $template['optional_columns'] ?? [],
+                ];
+            }
+        }
+
+        $novaTemplate = $this->importService->getTemplate(SSAImportType::NOVA);
 
         return view('admin.ssas.import', [
+            'requiredColumns' => $novaTemplate['required_columns'] ?? [],
+            'optionalColumns' => $novaTemplate['optional_columns'] ?? [],
             'importTypes' => SSAImportType::cases(),
-            'requiredColumns' => $template['required_columns'] ?? [],
-            'optionalColumns' => $template['optional_columns'] ?? [],
+            'templates' => $templates,
         ]);
     }
 
@@ -304,9 +410,11 @@ final class SSAController extends Controller
         $validated = $request->validated();
         $type = SSAImportType::from($validated['type'] ?? SSAImportType::NOVA->value);
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = StoreSSAImportDTO::fromArray([
             'file' => $request->file('file'),
-            'user_id' => $request->user()->id,
+            'user_id' => $user->id,
             'type' => $type->value,
         ]);
 
@@ -355,14 +463,26 @@ final class SSAController extends Controller
     {
         $this->authorize('viewAny', ServiceSupportAgreement::class);
 
-        $imports = SSAImport::query()
-            ->with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(25);
-
         return view('admin.ssas.import-history', [
-            'imports' => $imports,
+            'imports' => collect(),
+            'datatableUrl' => route('admin.ssas.imports.data'),
         ]);
+    }
+
+    public function importHistoryData(SSAImportDataRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        $params = DataTablesRequest::fromRequest($request, self::SSA_IMPORTS_ORDER_WHITELIST);
+        $result = $this->importListService->listForDataTables($params);
+
+        return $this->dataTablesResponse(
+            $params,
+            $result['recordsTotal'],
+            $result['recordsFiltered'],
+            $result['rows'],
+            static fn (SSAImport $import): array => SSAImportRowTransformer::transform($import),
+        );
     }
 
     public function downloadTemplate(Request $request): StreamedResponse
@@ -380,6 +500,9 @@ final class SSAController extends Controller
 
         return response()->streamDownload(function () use ($allColumns): void {
             $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Failed to open CSV stream');
+            }
             fputcsv($handle, $allColumns);
             fclose($handle);
         }, $filename, [
@@ -387,6 +510,7 @@ final class SSAController extends Controller
         ]);
     }
 
+    /** @return array<string, mixed> */
     private function formData(): array
     {
         return [

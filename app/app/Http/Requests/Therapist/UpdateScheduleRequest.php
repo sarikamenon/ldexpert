@@ -19,20 +19,22 @@ final class UpdateScheduleRequest extends FormRequest
 {
     public function authorize(): bool
     {
+        /** @var Schedule|null $schedule */
         $schedule = Schedule::find($this->route('id'));
 
         return $schedule && $schedule->therapist_id === $this->user()?->id;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $recurrenceTypes = array_map(
-            static fn(RecurrenceType $type): string => $type->value,
+            static fn (RecurrenceType $type): string => $type->value,
             RecurrenceType::cases()
         );
 
         $billingStatuses = array_map(
-            static fn(BillingStatus $status): string => $status->value,
+            static fn (BillingStatus $status): string => $status->value,
             BillingStatus::cases()
         );
 
@@ -48,8 +50,8 @@ final class UpdateScheduleRequest extends FormRequest
             'duration_minutes' => [
                 'required',
                 'integer',
-                'min:' . config('session_minutes.min'),
-                'max:' . config('session_minutes.max'),
+                'min:'.config('session_minutes.min'),
+                'max:'.config('session_minutes.max'),
             ],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
@@ -59,6 +61,7 @@ final class UpdateScheduleRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
@@ -91,12 +94,13 @@ final class UpdateScheduleRequest extends FormRequest
             }
 
             // Validate students are assigned to therapist if provided
-            if ($studentIds && is_array($studentIds) && ! empty($studentIds)) {
+            if ($studentIds && is_array($studentIds)) {
                 if (! $repository->validateTherapistAccessToStudents($therapist, array_map('intval', $studentIds))) {
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
                 }
             }
 
+            /** @var Schedule|null $schedule */
             $schedule = Schedule::find($this->route('id'));
             if ($schedule) {
                 $calendarService = app(SchoolCalendarService::class);

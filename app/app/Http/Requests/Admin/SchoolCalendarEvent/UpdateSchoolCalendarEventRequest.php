@@ -13,13 +13,13 @@ final class UpdateSchoolCalendarEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $role = $this->user()?->role instanceof Role
-            ? $this->user()?->role
-            : Role::tryFrom($this->user()?->role);
+        /** @var \App\Models\User $user */
+        $user = $this->user();
 
-        return $role === Role::ADMIN;
+        return $user->role === Role::ADMIN;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         return [
@@ -31,6 +31,7 @@ final class UpdateSchoolCalendarEventRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

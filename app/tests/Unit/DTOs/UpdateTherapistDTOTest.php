@@ -21,11 +21,12 @@ final class UpdateTherapistDTOTest extends TestCase
             'ld_email' => 'sarah.w@ldexpert.com',
             'address' => '789 Elm St',
             'comments' => 'Updated comment',
-            'position' => 'LCSW',
+            'position_id' => 4,
             'state' => 'FL',
             'timezone' => 'America/New_York',
             'manager_id' => 5,
             'max_weekly_hours' => 20,
+            'hourly_rate' => 65.00,
             'dob' => '1988-03-20',
             'default_meeting_location' => 'https://meet.google.com/xyz',
         ];
@@ -41,11 +42,12 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('sarah.w@ldexpert.com', $dto->ldEmail);
         $this->assertSame('789 Elm St', $dto->address);
         $this->assertSame('Updated comment', $dto->comments);
-        $this->assertSame('LCSW', $dto->position);
+        $this->assertSame(4, $dto->positionId);
         $this->assertSame('FL', $dto->state);
         $this->assertSame('America/New_York', $dto->timezone);
         $this->assertSame(5, $dto->managerId);
         $this->assertSame(20, $dto->maxWeeklyHours);
+        $this->assertSame(65.0, $dto->hourlyRate);
         $this->assertSame('1988-03-20', $dto->dob);
         $this->assertSame('https://meet.google.com/xyz', $dto->defaultMeetingLocation);
     }
@@ -62,11 +64,12 @@ final class UpdateTherapistDTOTest extends TestCase
             ldEmail: 'michael.b@ldexpert.com',
             address: '321 Pine St',
             comments: 'New comment',
-            position: 'RBT',
+            positionId: 7,
             state: 'WA',
             timezone: 'America/Los_Angeles',
             managerId: 7,
             maxWeeklyHours: 36,
+            hourlyRate: 52.25,
             dob: '1992-07-10',
             defaultMeetingLocation: null,
         );
@@ -89,11 +92,12 @@ final class UpdateTherapistDTOTest extends TestCase
             ldEmail: 'emily.d@ldexpert.com',
             address: '999 Main St',
             comments: 'Test',
-            position: 'SLP',
+            positionId: 1,
             state: 'CA',
             timezone: 'America/Los_Angeles',
             managerId: 1,
             maxWeeklyHours: 40,
+            hourlyRate: 70.0,
             dob: '1990-01-01',
             defaultMeetingLocation: 'https://meet.google.com/test'
         );
@@ -109,11 +113,12 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('emily.d@ldexpert.com', $array['ld_email']);
         $this->assertSame('999 Main St', $array['address']);
         $this->assertSame('Test', $array['comments']);
-        $this->assertSame('SLP', $array['position']);
+        $this->assertSame(1, $array['position_id']);
         $this->assertSame('CA', $array['state']);
         $this->assertSame('America/Los_Angeles', $array['timezone']);
         $this->assertSame(1, $array['manager_id']);
         $this->assertSame(40, $array['max_weekly_hours']);
+        $this->assertSame(70.0, $array['hourly_rate']);
         $this->assertSame('1990-01-01', $array['dob']);
         $this->assertSame('https://meet.google.com/test', $array['default_meeting_location']);
     }

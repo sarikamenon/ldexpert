@@ -12,8 +12,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property DocumentType $document_type
+ */
 class StudentDocument extends Model
 {
+    /** @use HasFactory<\Database\Factories\StudentDocumentFactory> */
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
@@ -36,11 +40,13 @@ class StudentDocument extends Model
         ];
     }
 
+    /** @return MorphTo<\Illuminate\Database\Eloquent\Model, $this> */
     public function documentable(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /** @return BelongsTo<User, $this> */
     public function uploadedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by_id');

@@ -9,6 +9,12 @@ use Carbon\Carbon;
 
 final class UtilizationReportFilterDTO
 {
+    /**
+     * @param  array<int>|null  $schoolIds
+     * @param  array<int>|null  $therapistIds
+     * @param  array<int>|null  $serviceIds
+     * @param  list<SSAStatus>|null  $statuses
+     */
     public function __construct(
         public readonly ?Carbon $startDate = null,
         public readonly ?Carbon $endDate = null,
@@ -21,6 +27,7 @@ final class UtilizationReportFilterDTO
         public readonly int $perPage = 25,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $startDate = isset($data['start_date']) && $data['start_date'] !== ''

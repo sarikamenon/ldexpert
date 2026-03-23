@@ -33,6 +33,12 @@ final class ServiceSupportAgreementFactory extends Factory
     {
         $startDate = now()->addDays(1);
         $endDate = $startDate->copy()->addYear();
+        $recurringFrequencies = [
+            ServiceFrequency::WEEKLY,
+            ServiceFrequency::BI_WEEKLY,
+            ServiceFrequency::MONTHLY,
+            ServiceFrequency::QUARTERLY,
+        ];
 
         return [
             'student_id' => User::factory()->create(['role' => 'student'])->id,
@@ -40,7 +46,7 @@ final class ServiceSupportAgreementFactory extends Factory
             'start_date' => $startDate,
             'end_date' => $endDate,
             'minutes_per_session' => $this->faker->randomElement([30, 45, 60]),
-            'frequency' => $this->faker->randomElement(ServiceFrequency::cases()),
+            'frequency' => $this->faker->randomElement($recurringFrequencies),
             'sessions_per_frequency' => $this->faker->numberBetween(1, 4),
             'tho_minutes' => $this->faker->numberBetween(1000, 5000),
             'assigned_therapist_id' => null,

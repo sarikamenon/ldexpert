@@ -6,12 +6,18 @@
     'showMetrics' => false,
     'metrics' => null,
     /**
+     * When set, table uses server-side DataTables: empty tbody, data loaded via AJAX from this URL.
+     */
+    'datatableUrl' => null,
+    /**
      * Context controls both layout and routing:
      * - 'index'  : admin index page
      * - 'detail' : admin student detail tab
      * - 'therapist' : therapist-facing students list
      */
     'context' => 'index',
+    'schoolId' => null,
+    'therapistId' => null,
 ])
 
 @if ($showMetrics && $metrics)
@@ -38,6 +44,13 @@
         <x-slot:filters>
             @if ($context === 'detail')
                 <input type="hidden" name="tab" value="students">
+            @endif
+
+            @if ($schoolId)
+                <input type="hidden" name="school_id" value="{{ $schoolId }}">
+            @endif
+            @if ($therapistId)
+                <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
             @endif
 
             <x-ui::input type="text" name="search" class="w-64" placeholder="Search students"
@@ -80,7 +93,7 @@
                     </x-ui::button>
                 </a>
                 @if ($context === 'index' || $context === 'detail')
-                    <a href="{{ route('admin.students.create') }}">
+                    <a href="{{ route('admin.students.create', $schoolId ? ['school_id' => $schoolId] : []) }}">
                         <x-ui::button>
                             Add Student
                         </x-ui::button>
@@ -90,13 +103,14 @@
         </x-slot:actions>
     </x-ui::filter-toolbar>
 
-    @if ($students->count() > 0)
+    @if (isset($datatableUrl) || $students->count() > 0)
         <div class="overflow-x-auto">
-            <table id="studentsTable" class="w-full display">
+            <table id="studentsTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
                         <th>ID</th>
                         <th>Name</th>
+                        <th>Username</th>
                         <th>Email</th>
                         <th>School</th>
                         <th>Grade Level</th>
@@ -106,6 +120,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @if (!isset($datatableUrl))
                     @foreach ($students as $student)
                         @php
                             $profile = $student->studentProfile;
@@ -142,6 +157,7 @@
                                     </a>
                                 @endif
                             </td>
+                            <td>{{ $student->username }}</td>
                             <td>{{ $student->email }}</td>
                             <td>
                                 @if ($profile?->school)
@@ -232,6 +248,7 @@
                             </td>
                         </tr>
                     @endforeach
+                    @endif
                 </tbody>
             </table>
         </div>

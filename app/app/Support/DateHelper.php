@@ -27,13 +27,9 @@ final class DateHelper
             return null;
         }
 
-        $diffInDays = $fromDay->diffInDays($toDay);
+        $diffInDays = (int) $fromDay->diffInDays($toDay);
         $dayLabel = $diffInDays === 1 ? 'day' : 'days';
 
-        if ($toDay->lessThan($fromDay)) {
-            return "{$diffInDays} {$dayLabel} earlier";
-        }
-
-        return "{$diffInDays} {$dayLabel} later";
+        return "{$diffInDays} {$dayLabel}";
     }
 }

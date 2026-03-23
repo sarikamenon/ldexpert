@@ -15,6 +15,7 @@ final class IndexSSARequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
         $statuses = array_map(static fn (SSAStatus $status) => $status->value, SSAStatus::cases());

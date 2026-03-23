@@ -18,6 +18,7 @@ abstract class SchoolFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $ignoreId = null): array
     {
         $displayNameRule = Rule::unique('schools', 'display_name');
@@ -48,6 +49,7 @@ abstract class SchoolFormRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [

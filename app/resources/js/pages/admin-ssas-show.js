@@ -2,25 +2,63 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
 import { setupStatusChanges } from '../common/status-change';
 import Swal from 'sweetalert2';
 
-// Initialize delivery progress chart
+// Design system colors (from tailwind.config.js)
+const CHART_COLORS = {
+    approved: '#22c55e',       // success
+    loggedNotApproved: '#f59e0b', // warning
+    scheduledNotLogged: '#99f6e4', // secondary-200
+    remaining: '#e5e7eb',      // gray
+    served: '#14b8a6',         // secondary (teal)
+};
+
+// Initialize delivery progress chart (2-segment or 4-segment when minutes summary exists)
 function initDeliveryProgressChart() {
     const canvas = document.getElementById('deliveryProgressChart');
     if (!canvas || typeof Chart === 'undefined') return;
 
-    const servedMinutes = parseInt(canvas.dataset.served || '0');
-    const thoMinutes = parseInt(canvas.dataset.tho || '0');
-    const remainingMinutes = Math.max(0, thoMinutes - servedMinutes);
+    const served = parseFloat(canvas.dataset.served || '0');
+    const tho = parseFloat(canvas.dataset.tho || '0');
+    const scheduled = parseFloat(canvas.dataset.scheduled || '0');
+    const logged = parseFloat(canvas.dataset.logged || '0');
+    const approved = parseFloat(canvas.dataset.approved || '0');
+    const hasMinutesSummary = canvas.dataset.scheduled !== undefined && tho > 0;
+
+    let labels;
+    let data;
+    let backgroundColor;
+
+    if (hasMinutesSummary) {
+        const loggedNotApproved = Math.round(Math.max(0, logged - approved) * 100) / 100;
+        const scheduledNotLogged = Math.round(Math.max(0, scheduled - logged) * 100) / 100;
+        const remaining = Math.round(Math.max(0, tho - scheduled) * 100) / 100;
+
+        labels = [
+            'Approved Hours',
+            'Logged (not approved)',
+            'Scheduled (not logged)',
+            'Remaining',
+        ];
+        data = [approved, loggedNotApproved, scheduledNotLogged, remaining];
+        backgroundColor = [
+            CHART_COLORS.approved,
+            CHART_COLORS.loggedNotApproved,
+            CHART_COLORS.scheduledNotLogged,
+            CHART_COLORS.remaining,
+        ];
+    } else {
+        const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
+        labels = ['Served Hours', 'Remaining Hours'];
+        data = [served, remaining];
+        backgroundColor = [CHART_COLORS.served, CHART_COLORS.remaining];
+    }
 
     new Chart(canvas, {
         type: 'doughnut',
         data: {
-            labels: ['Served Minutes', 'Remaining Minutes'],
+            labels,
             datasets: [{
-                data: [servedMinutes, remainingMinutes],
-                backgroundColor: [
-                    '#14b8a6', // Teal (secondary) for served
-                    '#e5e7eb', // Gray for remaining
-                ],
+                data,
+                backgroundColor,
                 borderWidth: 2,
                 borderColor: '#ffffff',
             }]
@@ -33,9 +71,7 @@ function initDeliveryProgressChart() {
                     position: 'bottom',
                     labels: {
                         padding: 10,
-                        font: {
-                            size: 12
-                        }
+                        font: { size: 12 }
                     }
                 },
                 tooltip: {
@@ -45,13 +81,31 @@ function initDeliveryProgressChart() {
                             const value = context.parsed || 0;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
-                            return `${label}: ${value.toLocaleString()} minutes (${percentage}%)`;
+                            return `${label}: ${value.toFixed(2)} hrs (${percentage}%)`;
                         }
                     }
                 }
             }
         }
     });
+}
+
+// Fetch therapists filtered by service IDs
+async function fetchFilteredTherapists(serviceIds, csrfToken) {
+    const urlEl = document.getElementById('therapists-for-service-url');
+    if (!urlEl) return null;
+
+    const baseUrl = JSON.parse(urlEl.textContent);
+    const params = new URLSearchParams();
+    serviceIds.forEach((id) => params.append('service_ids[]', id));
+    const url = serviceIds.length ? `${baseUrl}?${params.toString()}` : baseUrl;
+
+    const response = await fetch(url, {
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken },
+    });
+
+    if (!response.ok) return null;
+    return response.json();
 }
 
 // Setup assignment actions
@@ -64,20 +118,21 @@ function setupAssignmentActions() {
         assignBtn.addEventListener('click', async () => {
             const ssaId = assignBtn.dataset.ssaId;
 
-            // Get therapists from a hidden select or fetch from page
-            const therapistSelect = document.getElementById('therapist_select_for_assignment');
-            if (!therapistSelect) {
-                errorAlert('Therapist list not available. Please refresh the page.');
+            // Get SSA service IDs and fetch filtered therapists
+            const serviceIdsEl = document.getElementById('ssa-service-ids');
+            const serviceIds = serviceIdsEl ? JSON.parse(serviceIdsEl.textContent) : [];
+
+            showLoading('Loading therapists...');
+            const therapists = await fetchFilteredTherapists(serviceIds, csrfToken);
+            closeAlert();
+
+            if (!therapists || therapists.length === 0) {
+                errorAlert('No therapists available for the services in this SSA.');
                 return;
             }
 
-            // Build options object for SweetAlert2
             const inputOptions = new Map();
-            Array.from(therapistSelect.options).forEach((option) => {
-                if (option.value) {
-                    inputOptions.set(option.value, option.text);
-                }
-            });
+            therapists.forEach((t) => inputOptions.set(String(t.id), t.name));
 
             const result = await Swal.fire({
                 title: 'Assign Therapist?',

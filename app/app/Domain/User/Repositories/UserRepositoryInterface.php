@@ -20,24 +20,42 @@ interface UserRepositoryInterface
 
     public function findByEmail(string $email): ?User;
 
+    public function findByUsername(string $username): ?User;
+
     public function countStudentsByStatus(string $status): int;
 
     public function countNewStudentsThisMonth(): int;
 
+    /** @return Collection<int, User> */
     public function listByRole(string $role): Collection;
 
+    /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User;
 
+    /** @return Collection<int, User> */
     public function listAdmins(): Collection;
 
+    /** @return Collection<int, User> */
     public function listActiveStudentsForSelect(): Collection;
 
+    /** @return Collection<int, User> */
     public function listActiveTherapistsForSelect(): Collection;
 
+    /**
+     * @param  array<int, int>  $ids
+     * @return Collection<int, User>
+     */
     public function findByIds(array $ids): Collection;
+
+    /**
+     * @param  array<int, int>  $serviceIds
+     * @return Collection<int, User>
+     */
+    public function listActiveTherapistsForServices(array $serviceIds): Collection;
 
     public function findById(int $id): ?User;
 
+    /** @param array<int, int> $studentIds */
     public function countActiveStudentsByIds(array $studentIds): int;
 
     public function createTherapistProfile(CreateTherapistProfileDTO $dto): TherapistProfile;

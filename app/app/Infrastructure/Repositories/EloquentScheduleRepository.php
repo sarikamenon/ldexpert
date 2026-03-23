@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
@@ -21,6 +22,7 @@ use Illuminate\Support\Str;
 
 final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 {
+    /** @return Collection<int, Schedule> */
     public function getSchedulesForTherapist(User $therapist, ScheduleFilterDTO $filters): Collection
     {
         $query = Schedule::query()
@@ -54,6 +56,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->count();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
     {
         $query = Schedule::query()
@@ -90,22 +93,24 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, School> */
     public function getSchoolsForTherapist(User $therapist): Collection
     {
         return School::query()
             ->whereHas('studentProfiles.ssas', function ($query) use ($therapist) {
-                $query->where('assigned_therapist_id', $therapist->id)
-                    ->where('status', SSAStatus::ACTIVE);
+                $query->where('assigned_therapist_id', $therapist->id) // @phpstan-ignore argument.type
+                    ->where('status', SSAStatus::ACTIVE); // @phpstan-ignore argument.type
             })
             ->orWhereHas('studentProfiles.user', function ($query) use ($therapist) {
                 $query->whereHas('therapists', function ($q) use ($therapist) {
-                    $q->where('therapist_id', $therapist->id);
+                    $q->where('therapist_id', $therapist->id); // @phpstan-ignore argument.type
                 });
             })
             ->orderBy('display_name')
             ->get();
     }
 
+    /** @return Collection<int, User> */
     public function getStudentsForTherapist(User $therapist): Collection
     {
         $studentIds = ServiceSupportAgreement::query()
@@ -120,6 +125,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, array<string, mixed>> */
     public function getStudentServiceMappings(User $therapist): Collection
     {
         $ssas = ServiceSupportAgreement::query()
@@ -155,16 +161,20 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                     continue;
                 }
 
+                /** @var \App\Models\Pivots\SSAService|null $pivot */
+                $pivot = $service->getRelation('pivot');
+
                 $mappings[$studentId]['services'][] = [
                     'ssa_id' => $ssa->id,
                     'service_id' => $service->id,
                     'service_name' => $service->name,
                     'is_group_service' => $service->is_group_service,
-                    'is_primary' => (bool) $service->pivot?->is_primary,
+                    'is_primary' => (bool) $pivot?->is_primary,
                 ];
             }
         }
 
+        /** @var Collection<int, array<string, mixed>> */
         return collect($mappings)->map(function (array $entry) {
             $entry['services'] = collect($entry['services'])
                 ->unique(fn ($service) => $service['service_id'].'-'.$service['ssa_id'])
@@ -175,11 +185,13 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         });
     }
 
+    /** @param array<string, mixed> $data */
     public function create(array $data): Schedule
     {
         return Schedule::create($data);
     }
 
+    /** @param array<string, mixed> $data */
     public function update(Schedule $schedule, array $data): Schedule
     {
         $schedule->fill($data);
@@ -201,6 +213,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->first();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getRecurringOccurrences(Schedule $parentSchedule): Collection
     {
         return Schedule::query()
@@ -210,6 +223,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getRecurringOccurrencesByBatch(string $recurringBatchNumber): Collection
     {
         return Schedule::query()
@@ -219,6 +233,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection
     {
         return Schedule::query()
@@ -228,6 +243,10 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, Schedule>
+     */
     public function getSchedulesForStudent(User $student, array $filters = []): Collection
     {
         $dto = new ScheduleFilterDTO(
@@ -246,6 +265,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->get();
     }
 
+    /** @return LengthAwarePaginator<int, Schedule> */
     public function paginateForStudent(User $student, ScheduleFilterDTO $filters, int $perPage = 15): LengthAwarePaginator
     {
         return $this->buildStudentScheduleQuery($student, $filters)
@@ -253,6 +273,44 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->orderBy('start_time')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, Schedule>}
+     */
+    public function listForDataTablesForStudent(User $student, ScheduleFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = $this->buildStudentScheduleQuery($student, $filters);
+
+        $recordsTotal = (clone $baseQuery)->count();
+
+        if ($params->searchValue) {
+            $sv = $params->searchValue;
+            $baseQuery->where(function ($q) use ($sv) {
+                $q->whereHas('therapist', fn ($q2) => $q2->where('name', 'like', "%{$sv}%")) // @phpstan-ignore argument.type
+                    ->orWhereHas('service', fn ($q2) => $q2->where('name', 'like', "%{$sv}%")) // @phpstan-ignore argument.type
+                    ->orWhereHas('school', fn ($q2) => $q2->where('display_name', 'like', "%{$sv}%")); // @phpstan-ignore argument.type
+            });
+        }
+        $recordsFiltered = (clone $baseQuery)->count();
+
+        $orderColumn = $params->orderColumn ?? 'schedule_date';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir);
+        if ($orderColumn !== 'start_time') {
+            $baseQuery->orderBy('start_time', $orderDir);
+        }
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function validateTherapistAccessToSSA(User $therapist, int $ssaId): bool
@@ -263,6 +321,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->exists();
     }
 
+    /** @param array<int, int> $studentIds */
     public function validateTherapistAccessToStudents(User $therapist, array $studentIds): bool
     {
         // Check if therapist has access to all students via active SSAs
@@ -276,6 +335,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         return $count === count(array_unique($studentIds));
     }
 
+    /** @param array<int, int> $studentIds */
     public function validateStudentsShareService(User $therapist, array $studentIds, int $serviceId): bool
     {
         // Check if all students have an active SSA with this service assigned to this therapist
@@ -308,6 +368,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         return $schedule;
     }
 
+    /** @param array<int, int> $scheduleIds */
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int
     {
         return Schedule::query()
@@ -366,12 +427,14 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             });
     }
 
+    /** @return Collection<int, Schedule> */
     public function getSchedulesForReminder(Carbon $start, Carbon $end): Collection
     {
         return $this->getSchedulesInWindow($start, $end);
     }
 
-    private function buildStudentScheduleQuery(User $student, ScheduleFilterDTO $filters)
+    /** @return \Illuminate\Database\Eloquent\Builder<Schedule> */
+    private function buildStudentScheduleQuery(User $student, ScheduleFilterDTO $filters): \Illuminate\Database\Eloquent\Builder
     {
         $query = Schedule::query()
             ->forStudent($student)
@@ -418,5 +481,44 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                 ScheduleStatus::COMPLETED->value,
             ])
             ->count();
+    }
+
+    /** @return Collection<int, Schedule> */
+    public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection
+    {
+        $query = Schedule::query()
+            ->with(['therapist', 'student', 'service', 'school']);
+
+        if ($filters->therapistId) {
+            $query->where('therapist_id', $filters->therapistId);
+        }
+
+        if ($filters->studentId) {
+            $query->where('student_id', $filters->studentId);
+        }
+
+        if ($filters->schoolId) {
+            $query->where('school_id', $filters->schoolId);
+        }
+
+        if ($filters->status) {
+            $query->where('status', $filters->status);
+        }
+
+        if ($filters->billingStatus) {
+            $query->where('billing_status', $filters->billingStatus);
+        }
+
+        if ($filters->dateFrom) {
+            $query->whereDate('schedule_date', '>=', $filters->dateFrom);
+        }
+
+        if ($filters->dateTo) {
+            $query->whereDate('schedule_date', '<=', $filters->dateTo);
+        }
+
+        return $query->orderBy('schedule_date')
+            ->orderBy('start_time')
+            ->get();
     }
 }

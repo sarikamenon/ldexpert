@@ -14,6 +14,7 @@ use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
+use Illuminate\Validation\ValidationException;
 
 final class SessionLogSeeder extends Seeder
 {
@@ -87,14 +88,20 @@ final class SessionLogSeeder extends Seeder
                 $outcome = SessionOutcome::NON_BILLABLE_CANCELLATION_PROVIDER;
             }
 
-            // Calculate billing amounts
-            $billing = $rateService->calculateDualBilling(
-                $schedule->therapist_id,
-                $schedule->school_id,
-                $schedule->service_id,
-                $scheduleDate->format('Y-m-d'),
-                $durationMinutes
-            );
+            // Calculate billing amounts (skip schedule if no contract/rate for date)
+            try {
+                $billing = $rateService->calculateDualBilling(
+                    $schedule->therapist_id,
+                    $schedule->school_id,
+                    $schedule->service_id,
+                    $scheduleDate->format('Y-m-d'),
+                    $durationMinutes
+                );
+            } catch (ValidationException $e) {
+                $skippedLogs++;
+
+                continue;
+            }
 
             // Skip if billing data is incomplete (no contracts or service rates)
             if (! $billing['therapist']['contract_id'] || ! $billing['school']['contract_id']) {

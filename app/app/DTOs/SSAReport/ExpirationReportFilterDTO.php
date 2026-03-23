@@ -6,6 +6,11 @@ namespace App\DTOs\SSAReport;
 
 final class ExpirationReportFilterDTO
 {
+    /**
+     * @param  array<int>|null  $schoolIds
+     * @param  array<int>|null  $therapistIds
+     * @param  array<int>|null  $serviceIds
+     */
     public function __construct(
         public readonly int $expirationWindowDays = 30,
         public readonly ?array $schoolIds = null,
@@ -14,6 +19,7 @@ final class ExpirationReportFilterDTO
         public readonly ?string $bucket = null,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $schoolIds = isset($data['school_ids']) && is_array($data['school_ids'])

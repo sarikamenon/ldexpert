@@ -1,0 +1,77 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\SSA\Services;
+
+use App\DTOs\SSAMinutesSummaryDTO;
+use App\Enums\ScheduleStatus;
+use App\Enums\SessionLogStatus;
+use App\Models\Schedule;
+use App\Models\ServiceSupportAgreement;
+use App\Models\SessionLog;
+
+final class SSAMinutesSummaryService
+{
+    public function __construct() {}
+
+    public function getMinutesSummaryForSSA(ServiceSupportAgreement $ssa): SSAMinutesSummaryDTO
+    {
+        $thoMinutes = (int) ($ssa->tho_minutes ?? 0);
+
+        $scheduledMinutes = $this->calculateScheduledMinutes($ssa);
+        $loggedMinutes = $this->calculateLoggedMinutes($ssa);
+        $approvedMinutes = $this->calculateApprovedMinutes($ssa);
+
+        return new SSAMinutesSummaryDTO(
+            thoMinutes: $thoMinutes,
+            scheduledMinutes: $scheduledMinutes,
+            loggedMinutes: $loggedMinutes,
+            approvedMinutes: $approvedMinutes,
+        );
+    }
+
+    private function calculateScheduledMinutes(ServiceSupportAgreement $ssa): int
+    {
+        /** @var \Illuminate\Support\Collection<int, Schedule> $schedules */
+        $schedules = Schedule::query()
+            ->where('ssa_id', $ssa->id)
+            ->whereIn('status', [
+                ScheduleStatus::SCHEDULED->value,
+                ScheduleStatus::COMPLETED->value,
+            ])
+            ->get();
+
+        return (int) $schedules
+            ->sum(static fn (Schedule $schedule): int => $schedule->durationMinutes());
+    }
+
+    private function calculateLoggedMinutes(ServiceSupportAgreement $ssa): int
+    {
+        /** @var \Illuminate\Support\Collection<int, SessionLog> $logs */
+        $logs = SessionLog::query()
+            ->where('ssa_id', $ssa->id)
+            ->whereIn('status', [
+                SessionLogStatus::SUBMITTED->value,
+                SessionLogStatus::APPROVED->value,
+            ])
+            ->get();
+
+        return (int) $logs->sum(static function (SessionLog $log): int {
+            return $log->tho_minutes > 0
+                ? $log->tho_minutes
+                : $log->duration_minutes;
+        });
+    }
+
+    private function calculateApprovedMinutes(ServiceSupportAgreement $ssa): int
+    {
+        /** @var \Illuminate\Support\Collection<int, SessionLog> $logs */
+        $logs = SessionLog::query()
+            ->where('ssa_id', $ssa->id)
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->get();
+
+        return (int) $logs->sum(static fn (SessionLog $log): int => (int) ($log->tho_minutes ?? 0));
+    }
+}

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Admin\Student;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\Models\School;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -16,42 +17,59 @@ abstract class StudentFormRequest extends FormRequest
         return true;
     }
 
+    /** @return array<string, array<int, mixed>|string> */
     protected function baseRules(?int $ignoreUserId = null): array
     {
-        $emailRule = Rule::unique('users', 'email');
+        $usernameRule = Rule::unique('users', 'username');
         if ($ignoreUserId) {
-            $emailRule = $emailRule->ignore($ignoreUserId);
+            $usernameRule = $usernameRule->ignore($ignoreUserId);
         }
 
         return [
             'first_name' => ['required', 'string', 'max:255'],
             'middle_name' => ['nullable', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email:rfc', 'max:255', $emailRule],
-            'gender' => ['required', 'string', 'max:50'],
-            'date_of_birth' => ['required', 'date', 'before:today', 'after:1900-01-01'],
+            'username' => ['required', 'string', 'regex:/^[a-zA-Z0-9.\-]+$/', 'max:255', $usernameRule],
+            'email' => ['required', 'email:rfc', 'max:255'],
+            'gender' => ['nullable', 'string', 'max:50'],
+            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1900-01-01'],
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
-            'id_number' => ['required', 'string', 'max:50'],
+            'id_number' => [$this->isPrivateStudent() ? 'nullable' : 'required', 'string', 'max:50'],
             'timezone' => ['required', Rule::in(array_keys(UsTimezones::TIMEZONES))],
-            'grade_level' => ['required', 'string', 'max:50'],
+            'grade_level' => ['nullable', 'string', 'max:50'],
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'schedule_email' => ['nullable', 'email:rfc', 'max:255'],
             'address' => ['nullable', 'string'],
-            'city' => ['required', 'string', 'max:255'],
-            'state' => ['required', Rule::in(array_keys(UsStates::STATES))],
-            'zip_code' => ['required', 'string', 'max:20'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'state' => ['nullable', Rule::in(array_keys(UsStates::STATES))],
+            'zip_code' => ['nullable', 'string', 'max:20'],
         ];
     }
 
+    /** @return array<string, string> */
     public function messages(): array
     {
         return [
-            'email.unique' => 'This email is already registered in the system',
+            'username.unique' => 'This username is already taken',
+            'username.regex' => 'Username can only contain letters, numbers, dots, and dashes.',
             'parent_guardian_phone.regex' => 'Phone number can only contain digits and dashes.',
             'date_of_birth.before' => 'Date of birth must be in the past',
             'date_of_birth.after' => 'Date of birth must be after 1900-01-01',
+            'id_number.required' => 'Student ID is required for non-private students/families.',
         ];
+    }
+
+    protected function isPrivateStudent(): bool
+    {
+        $schoolId = $this->input('school_id');
+        if ($schoolId === null || $schoolId === '') {
+            return false;
+        }
+
+        $school = School::find((int) $schoolId);
+
+        return $school !== null && $school->is_private_student;
     }
 }

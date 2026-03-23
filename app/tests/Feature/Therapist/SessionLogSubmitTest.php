@@ -54,7 +54,7 @@ final class SessionLogSubmitTest extends TestCase
         $response = $this->actingAs($therapist2)
             ->post(route('therapist.session-logs.submit', $sessionLog));
 
-        $response->assertForbidden();
+        $response->assertStatus(404);
     }
 
     public function test_therapist_cannot_submit_approved_session_log(): void
@@ -68,5 +68,24 @@ final class SessionLogSubmitTest extends TestCase
             ->post(route('therapist.session-logs.submit', $sessionLog));
 
         $response->assertForbidden();
+    }
+
+    public function test_therapist_can_resubmit_sent_back_session_log(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $sessionLog = SessionLog::factory()->sentBack()->create([
+            'therapist_id' => $therapist->id,
+        ]);
+        $this->assertTrue($sessionLog->isSentBack());
+        $this->assertNotNull($sessionLog->sent_back_at);
+
+        $response = $this->actingAs($therapist)
+            ->post(route('therapist.session-logs.submit', $sessionLog));
+
+        $response->assertRedirect(route('therapist.session-logs.show', $sessionLog));
+        $sessionLog->refresh();
+        $this->assertTrue($sessionLog->isSubmitted());
+        $this->assertNull($sessionLog->sent_back_at);
+        $this->assertNull($sessionLog->sent_back_by_id);
     }
 }

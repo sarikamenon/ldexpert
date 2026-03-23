@@ -129,17 +129,17 @@
         <h3 class="text-lg font-semibold text-foreground mb-4">Usage Metrics</h3>
         <dl class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-6">
             <div>
-                <dt class="text-sm font-medium text-foreground/70">THO Minutes</dt>
-                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->tho_minutes) }}</dd>
+                <dt class="text-sm font-medium text-foreground/70">THO Hours</dt>
+                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->tho_hours, 2) }}</dd>
             </div>
             <div>
-                <dt class="text-sm font-medium text-foreground/70">Served Minutes</dt>
-                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->served_minutes) }}</dd>
+                <dt class="text-sm font-medium text-foreground/70">Served Hours</dt>
+                <dd class="mt-1 text-sm text-foreground font-semibold">{{ number_format($ssa->served_hours, 2) }}</dd>
             </div>
             <div>
-                <dt class="text-sm font-medium text-foreground/70">Remaining Minutes</dt>
+                <dt class="text-sm font-medium text-foreground/70">Remaining Hours</dt>
                 <dd class="mt-1 text-sm text-foreground font-semibold">
-                    {{ number_format(max(0, $ssa->tho_minutes - $ssa->served_minutes)) }}
+                    {{ number_format(max(0, $ssa->tho_hours - $ssa->served_hours), 2) }}
                 </dd>
             </div>
         </dl>
@@ -181,6 +181,13 @@
                     </dd>
                 </div>
             </dl>
+        </x-ui::card>
+    @endif
+
+    @if ($ssa->additional_notes)
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Additional Notes</h3>
+            <p class="text-sm text-foreground whitespace-pre-line">{{ $ssa->additional_notes }}</p>
         </x-ui::card>
     @endif
 </div>

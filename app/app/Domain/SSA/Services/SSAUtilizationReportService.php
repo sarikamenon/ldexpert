@@ -14,6 +14,9 @@ final class SSAUtilizationReportService
         private readonly SSARepositoryInterface $repository,
     ) {}
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getReportData(UtilizationReportFilterDTO $filters): array
     {
         $ssas = $this->repository->getUtilizationReport($filters);
@@ -26,6 +29,7 @@ final class SSAUtilizationReportService
         ];
     }
 
+    /** @return Collection<int, \App\Models\ServiceSupportAgreement> */
     public function export(UtilizationReportFilterDTO $filters): Collection
     {
         // Get all records without pagination for export
@@ -48,6 +52,7 @@ final class SSAUtilizationReportService
 
     /**
      * @param  array<int, \App\Models\ServiceSupportAgreement>  $ssas
+     * @return array<string, mixed>
      */
     private function calculateSummary(array $ssas): array
     {
@@ -79,8 +84,8 @@ final class SSAUtilizationReportService
         $overallUtilization = $totalTho > 0 ? ($totalServed / $totalTho) * 100 : 0;
 
         return [
-            'total_tho_minutes' => $totalTho,
-            'total_served_minutes' => $totalServed,
+            'total_tho_hours' => round($totalTho / 60, 2),
+            'total_served_hours' => round($totalServed / 60, 2),
             'overall_utilization_percent' => round($overallUtilization, 2),
             'under_served_count' => $underServed,
             'on_target_count' => $onTarget,

@@ -13,6 +13,7 @@ final class ChangeSSAStatusDTO
         public readonly ?string $reason,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $status = $data['status'] instanceof SSAStatus
@@ -25,6 +26,7 @@ final class ChangeSSAStatusDTO
         );
     }
 
+    /** @return array<string, mixed> */
     public function toArray(): array
     {
         return [

@@ -24,10 +24,12 @@ final class StudentDocumentController extends Controller
     {
         $validated = $request->validated();
 
+        /** @var \App\Models\User $user */
+        $user = $request->user();
         $dto = CreateStudentDocumentDTO::fromArray([
             'documentable_type' => User::class,
             'documentable_id' => $student->id,
-            'uploaded_by_id' => $request->user()->id,
+            'uploaded_by_id' => $user->id,
             'document_type' => $validated['document_type'],
             'file' => $request->file('file'),
             'description' => $validated['description'] ?? null,
@@ -44,8 +46,8 @@ final class StudentDocumentController extends Controller
                     'id' => $document->id,
                     'file_name' => $document->file_name,
                     'document_type' => $document->document_type->label(),
-                    'uploaded_by_name' => $document->uploadedBy->name,
-                    'created_at' => $document->created_at->toIso8601String(),
+                    'uploaded_by_name' => $document->uploadedBy?->name,
+                    'created_at' => $document->created_at?->toIso8601String(),
                 ],
             ]);
         }

@@ -6,9 +6,9 @@ namespace Database\Seeders;
 
 use App\Enums\EmployeeType;
 use App\Enums\Role;
-use App\Enums\TherapistPosition;
 use App\Enums\TherapistTitle;
 use App\Enums\UserStatus;
+use App\Models\Position;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -46,7 +46,7 @@ class TherapistSeeder extends Seeder
                 'ld_email' => $ldEmail,
                 'address' => env('THERAPIST_ADDRESS', '1234 Therapy Lane, San Diego, CA 92101'),
                 'comments' => env('THERAPIST_COMMENTS', 'Seeder generated therapist account for manual QA.'),
-                'position' => env('THERAPIST_POSITION', TherapistPosition::SLP->value),
+                'position_id' => Position::where('name', env('THERAPIST_POSITION', 'SLP'))->first()?->id,
                 'state' => env('THERAPIST_STATE', 'CA'),
                 'timezone' => env('THERAPIST_TIMEZONE', 'America/Los_Angeles'),
                 'manager_id' => $managerId,
@@ -57,7 +57,7 @@ class TherapistSeeder extends Seeder
 
         TherapistProfile::factory()
             ->count(15)
-            ->state(fn() => ['manager_id' => $managerId])
+            ->state(fn () => ['manager_id' => $managerId])
             ->create()
             ->each(function (TherapistProfile $profile): void {
                 if (fake()->boolean(40)) {

@@ -17,11 +17,34 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            @if ($invoice->isDraft())
+                <a href="{{ route('admin.invoices.attach-sessions', $invoice) }}">
+                    <x-ui::button variant="secondary">
+                        Add or remove sessions
+                    </x-ui::button>
+                </a>
+            @endif
+
+            @if (!$invoice->isDraft() && !$invoice->isPaid())
+                <x-ui::button type="button" x-data=""
+                    x-on:click="$dispatch('open-record-payment-modal')">
+                    Record Payment
+                </x-ui::button>
+            @endif
+
+            @if ($invoice->isSent() && !$invoice->isPaid())
+                <x-ui::button type="button" variant="secondary" x-data=""
+                    x-on:click="$dispatch('open-resend-email-modal')">
+                    Resend Email
+                </x-ui::button>
+            @endif
+
             <a href="{{ route('admin.invoices.download', $invoice) }}">
                 <x-ui::button>
                     Download PDF
                 </x-ui::button>
             </a>
+
             @if ($invoice->isDraft())
                 <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
                     x-data="{ loading: false }" x-on:submit="loading = true">
@@ -105,6 +128,8 @@
         </div>
     </x-ui::card>
 
+    @include('admin.invoices._email-history')
+
     <x-ui::card class="p-6">
         <h2 class="text-lg font-semibold text-foreground mb-4">Line Items</h2>
 
@@ -170,4 +195,63 @@
             </div>
         @endif
     </x-ui::card>
+
+    {{-- Record Payment Modal --}}
+    @include('admin.invoices._record-payment-modal')
+
+    {{-- Resend Email Modal --}}
+    @if ($invoice->isSent() && !$invoice->isPaid())
+        <div x-data="{ open: false }" x-on:open-resend-email-modal.window="open = true" x-show="open"
+            class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black opacity-50" x-on:click="open = false"></div>
+
+                <div class="relative bg-card rounded-lg shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-foreground mb-4">Resend Invoice Email</h3>
+
+                    <form method="POST" action="{{ route('admin.invoices.resend-email', $invoice) }}"
+                        id="resend-email-form">
+                        @csrf
+
+                        <div class="space-y-4">
+                            <div>
+                                <x-input-label for="resend_email" value="Recipient Email *" />
+                                <p class="mt-1 text-xs text-foreground/60" id="resend_email_help">
+                                    The email address to send the invoice to. Change if the original was incorrect.
+                                </p>
+                                <x-text-input id="resend_email" name="email" type="email"
+                                    class="mt-1 block w-full"
+                                    aria-describedby="resend_email_help"
+                                    value="{{ old('email', $invoice->school_invoice_email ?? $invoice->school_contact_email) }}"
+                                    required />
+                                <x-input-error :messages="$errors->get('email')" class="mt-2" />
+                            </div>
+
+                            <div>
+                                <x-input-label for="resend_message" value="Custom Message" />
+                                <p class="mt-1 text-xs text-foreground/60" id="resend_message_help">
+                                    Optional message to include in the email body. Leave blank to use the default.
+                                </p>
+                                <textarea id="resend_message" name="message" rows="3"
+                                    aria-describedby="resend_message_help"
+                                    class="mt-1 block w-full border-border rounded-md shadow-sm focus:ring-2 focus:ring-ring">{{ old('message') }}</textarea>
+                                <x-input-error :messages="$errors->get('message')" class="mt-2" />
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3 mt-6">
+                            <button type="button" x-on:click="open = false"
+                                class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-background/subtle">
+                                Cancel
+                            </button>
+                            <button type="submit"
+                                class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                                Resend Email
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 </x-admin.layouts.app>

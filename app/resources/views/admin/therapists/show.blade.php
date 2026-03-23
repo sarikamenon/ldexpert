@@ -16,6 +16,9 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            <a href="{{ route('admin.ssas.index', ['status' => 'pending']) }}">
+                <x-ui::button variant="primary">Assign SSA</x-ui::button>
+            </a>
             <x-ui::status-toggle :status="$therapist->status?->value" data-therapist-id="{{ $therapist->id }}" />
         </x-slot>
     </x-ui::show-header>
@@ -57,12 +60,12 @@
                 </div>
                 <div class="mt-4 space-y-2">
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Served Minutes</span>
-                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0) }}</span>
+                        <span class="text-foreground/70">Served Hours</span>
+                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Remaining Minutes</span>
-                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0) }}</span>
+                        <span class="text-foreground/70">Remaining Hours</span>
+                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0, 2) }}</span>
                     </div>
                 </div>
             </x-ui::card>
@@ -74,7 +77,7 @@
                         <p class="text-foreground/70">Title</p>
                         <p class="font-semibold">{{ $therapist->therapistProfile?->title?->label() ?? '—' }}</p>
                         <p class="text-foreground/70">Position</p>
-                        <p>{{ $therapist->therapistProfile?->position?->label() ?? '—' }}</p>
+                        <p>{{ $therapist->therapistProfile?->position?->name ?? '—' }}</p>
                     </div>
                     <div class="space-y-1">
                         <p class="text-foreground/70">Manager</p>
@@ -95,28 +98,32 @@
                         <p class="text-foreground/70">Employee Type</p>
                         <p>{{ $therapist->therapistProfile?->employee_type?->label() ?? '—' }}</p>
                     </div>
+                    <div class="space-y-1">
+                        <p class="text-foreground/70">Hourly Rate</p>
+                        <p>{{ $therapist->therapistProfile?->hourly_rate !== null ? '$' . number_format((float) $therapist->therapistProfile->hourly_rate, 2) : '—' }}</p>
+                    </div>
                 </div>
             </x-ui::card>
         </div>
     @elseif (($activeTab ?? 'dashboard') === 'overview')
         <x-therapist.overview-details :therapist="$therapist" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'contracts' && isset($contracts))
-        <x-admin.therapist-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []" context="detail" />
+        <x-admin.therapist-contracts-list :contracts="$contracts" :filters="$contractFilters ?? []" :statuses="$statuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
-            :services="$services ?? []" context="detail" />
+            :services="$services ?? []" :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'students' && isset($students))
         <x-admin.students-list :students="$students" :filters="$studentFilters ?? []" :schools="$schools ?? []" :statuses="$statuses ?? []"
-            context="detail" />
-    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogs))
-        <x-admin.session-logs-list :sessionLogs="$sessionLogs" :columns="$sessionLogColumns ?? []" :rows="$sessionLogRows ?? []"
-            :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []" context="detail" />
+            :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
+        <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
+            :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
     @endif
 
     <x-slot name="scripts">
-        @if (($activeTab ?? 'dashboard') === 'dashboard')
-            @vite(['resources/js/pages/admin-therapists-show.js'])
-        @elseif (($activeTab ?? 'dashboard') === 'students')
+        @vite(['resources/js/pages/admin-therapists-show.js'])
+        @if (($activeTab ?? 'dashboard') === 'students')
             @vite(['resources/js/pages/admin-students-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'contracts')
             @vite(['resources/js/pages/admin-contracts-therapists-index.js'])

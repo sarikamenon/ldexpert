@@ -1,4 +1,5 @@
 import { initSelectBoxes } from '../common/select-box';
+import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
 
 (function ($) {
     'use strict';
@@ -14,10 +15,118 @@ import { initSelectBoxes } from '../common/select-box';
         const $scheduleFiltersForm = $('#scheduleFiltersForm');
         const $scheduleList = $('#scheduleList');
         const $schoolEventList = $('#schoolEventList');
+        let selectedDate = null;
         const addScheduleButton = document.getElementById('addScheduleButton');
         const ssaSelectionModal = document.getElementById('ssaSelectionModal');
         const ssaSelectionForm = document.getElementById('ssaSelectionForm');
         const cancelSSASelection = document.getElementById('cancelSSASelection');
+
+        function bindScheduleCardActions() {
+            function renderScheduleDetails(schedule) {
+                const $content = $('#scheduleDetailsContent');
+                if (! $content.length) return;
+                let html = '';
+                html += '<div class="grid grid-cols-2 gap-4 mb-4">';
+                if (schedule.ssa) {
+                    html += `
+                        <div class="bg-background/subtle rounded-lg p-4">
+                            <h4 class="text-sm font-semibold text-foreground mb-3">SSA Basic Details</h4>
+                            <div class="space-y-2.5 text-sm">
+                                <div><div class="text-foreground/70 mb-1">Service</div><div class="text-foreground font-medium" title="${schedule.ssa.service?.name || schedule.service?.name || '-'}">${schedule.ssa.service?.name || schedule.service?.name || '-'}</div></div>
+                                <div><div class="text-foreground/70 mb-1">Date Range</div><div class="text-foreground font-medium">${schedule.ssa.start_date_formatted || schedule.ssa.start_date || '-'}</div><div class="text-foreground font-medium">${schedule.ssa.end_date_formatted || schedule.ssa.end_date || '-'}</div></div>
+                                <div><div class="text-foreground/70 mb-1">Session Details</div><div class="text-foreground font-medium">Minutes: ${schedule.ssa.minutes_per_session || '-'} x ${schedule.ssa.sessions_per_frequency || '-'}</div><div class="text-foreground font-medium">Frequency: ${schedule.ssa.frequency ? schedule.ssa.frequency.replace('_', '-').replace(/\b\w/g, l => l.toUpperCase()) : '-'}</div></div>
+                                <div><div class="text-foreground/70 mb-1">Hours & Status</div><div class="text-foreground font-medium">THO: ${schedule.ssa.tho_hours != null ? Number(schedule.ssa.tho_hours).toFixed(2) : '0'}</div><div class="text-foreground font-medium">Served: ${schedule.ssa.served_hours != null ? Number(schedule.ssa.served_hours).toFixed(2) : '0'}</div><div class="text-foreground font-medium">Status: ${schedule.ssa.status ? schedule.ssa.status.toUpperCase() : '-'}</div></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                html += `
+                    <div class="bg-background/subtle rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-foreground mb-3">Schedule Details</h4>
+                        <div class="space-y-2.5 text-sm">
+                            <div><div class="text-foreground/70 mb-1">Date</div><div class="text-foreground font-medium">${schedule.schedule_date_formatted || schedule.schedule_date || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Time</div><div class="text-foreground font-medium">${schedule.start_time_formatted || schedule.start_time || '-'} - ${schedule.end_time_formatted || schedule.end_time || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Duration</div><div class="text-foreground font-medium">${schedule.duration_formatted || (schedule.duration_minutes != null ? schedule.duration_minutes + 'm' : '-')}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Service</div><div class="text-foreground font-medium" title="${schedule.service?.name || '-'}">${schedule.service?.name || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Billing Status</div><div class="text-foreground font-medium">${schedule.billing_status ? schedule.billing_status.replace('_', ' ').toUpperCase() : '-'}</div></div>
+                            ${schedule.location_details ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Meeting Details</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.location_details}</div></div>` : ''}
+                            ${schedule.notes ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Notes</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.notes}</div></div>` : ''}
+                        </div>
+                    </div>
+                `;
+                html += '</div><div class="grid grid-cols-2 gap-4">';
+                html += `
+                    <div class="bg-background/subtle rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-foreground mb-3">Student Details</h4>
+                        <div class="space-y-2.5 text-sm">
+                            <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium" title="${schedule.student?.name || '-'}">${schedule.student?.name || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">ID Number</div><div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium" title="${schedule.student?.email || '-'}">${schedule.student?.email || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">School</div><div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Timezone</div><div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div></div>
+                        </div>
+                    </div>
+                    <div class="bg-background/subtle rounded-lg p-4">
+                        <h4 class="text-sm font-semibold text-foreground mb-3">Parent Information</h4>
+                        <div class="space-y-2.5 text-sm">
+                            <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium" title="${schedule.parent?.name || '-'}">${schedule.parent?.name || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium" title="${schedule.parent?.email || '-'}">${schedule.parent?.email || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Phone</div><div class="text-foreground font-medium">${schedule.parent?.phone || '-'}</div></div>
+                        </div>
+                    </div>
+                `;
+                html += '</div>';
+                $content.html(html);
+            }
+
+            $(document).on('click', '.schedule-edit-btn', function () {
+                const scheduleId = $(this).data('schedule-id');
+                if (scheduleId) window.location.href = `/therapist/schedule/${scheduleId}/edit`;
+            });
+
+            $(document).on('click', '.schedule-delete-btn', async function () {
+                const $btn = $(this);
+                const scheduleId = $btn.data('schedule-id');
+                if (!scheduleId) return;
+                const result = await confirmDialog({ title: 'Delete Schedule?', text: 'This will remove the schedule from your calendar. This action cannot be undone.', icon: 'warning', confirmButtonText: 'Yes, delete it', showCancelButton: true, cancelButtonText: 'Cancel' });
+                if (!result.isConfirmed) return;
+                showLoading('Deleting schedule...');
+                try {
+                    const response = await fetch(`/therapist/schedule/${scheduleId}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '', 'X-Requested-With': 'XMLHttpRequest' } });
+                    closeAlert();
+                    if (!response.ok) { const err = await response.json().catch(() => ({})); throw new Error(err.message || 'Failed to delete schedule'); }
+                    successToast('Schedule deleted successfully.');
+
+                    const dateToReload = getSelectedDate() || selectedDate;
+                    if ($scheduleList.length && dateToReload instanceof Date && !Number.isNaN(dateToReload.getTime())) {
+                        loadScheduleForDate(dateToReload);
+                    } else {
+                        // Fallback for dashboard cards where the date-based list is not available.
+                        $btn.parents('div.border.border-border.rounded-lg').first().remove();
+                    }
+                } catch (error) {
+                    errorAlert(error.message || 'An error occurred while deleting the schedule');
+                }
+            });
+
+            $(document).on('click', '.schedule-details-view-btn, .schedule-view-session-btn', function () {
+                const scheduleId = $(this).data('schedule-id');
+                if (!scheduleId) return;
+                const $content = $('#scheduleDetailsContent');
+                if ($content.length) $content.html('<div class="text-center py-12"><p class="text-foreground/70">Loading schedule details...</p></div>');
+                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'scheduleDetailsModal' }));
+                $.ajax({ url: `/therapist/schedule/${scheduleId}`, method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                    success(response) { renderScheduleDetails(response.schedule); },
+                    error(xhr) {
+                        const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to load schedule details.';
+                        if ($content.length) $content.html(`<div class="text-center py-12"><p class="text-danger">${msg}</p></div>`);
+                    }
+                });
+            });
+        }
+
+        // Bind schedule card actions (view, edit, delete) so they work on dashboard and calendar
+        bindScheduleCardActions();
 
         if (! $calendarEl.length) {
             return;
@@ -27,7 +136,7 @@ import { initSelectBoxes } from '../common/select-box';
         const calendarEventsUrl = $calendarEl.data('calendar-events-url');
         let calendarEvents = parseCalendarEvents($calendarEl.data('calendar-events'));
         const selectedDateStr = $calendarEl.data('selected-date');
-        let selectedDate = selectedDateStr
+        selectedDate = selectedDateStr
             ? new Date(`${selectedDateStr}T00:00:00`)
             : new Date();
 
@@ -129,187 +238,6 @@ import { initSelectBoxes } from '../common/select-box';
                     $scheduleFiltersForm.submit();
                 }
             });
-        }
-
-        // Handle edit button clicks (fallback for dynamically rendered schedules)
-        $(document).on('click', '.schedule-edit-btn', function () {
-            const scheduleId = $(this).data('schedule-id');
-            if (scheduleId) {
-                window.location.href = `/therapist/schedule/${scheduleId}/edit`;
-            }
-        });
-
-        // Handle schedule details view button clicks (details + view session)
-        $(document).on('click', '.schedule-details-view-btn, .schedule-view-session-btn', function () {
-            const scheduleId = $(this).data('schedule-id');
-            if (! scheduleId) {
-                return;
-            }
-
-            const $content = $('#scheduleDetailsContent');
-            $content.html('<div class="text-center py-12"><p class="text-foreground/70">Loading schedule details...</p></div>');
-
-            // Open modal
-            window.dispatchEvent(new CustomEvent('open-modal', { detail: 'scheduleDetailsModal' }));
-
-            // Fetch schedule details
-            $.ajax({
-                url: `/therapist/schedule/${scheduleId}`,
-                method: 'GET',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                success(response) {
-                    renderScheduleDetails(response.schedule);
-                },
-                error(xhr) {
-                    let errorMessage = 'Failed to load schedule details.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMessage = xhr.responseJSON.message;
-                    }
-                    $content.html(`<div class="text-center py-12"><p class="text-danger">${errorMessage}</p></div>`);
-                },
-            });
-        });
-
-        function renderScheduleDetails(schedule) {
-            const $content = $('#scheduleDetailsContent');
-            let html = '';
-
-            // Top row: SSA Basic Details and Schedule Details side by side
-            html += '<div class="grid grid-cols-2 gap-4 mb-4">';
-
-            // SSA Basic Details (Left Column)
-            if (schedule.ssa) {
-                html += `
-                    <div class="bg-background/subtle rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-foreground mb-3">SSA Basic Details</h4>
-                        <div class="space-y-2.5 text-sm">
-                            <div>
-                                <div class="text-foreground/70 mb-1">Service</div>
-                                <div class="text-foreground font-medium" title="${schedule.ssa.service?.name || schedule.service?.name || '-'}">${schedule.ssa.service?.name || schedule.service?.name || '-'}</div>
-                            </div>
-                            <div>
-                                <div class="text-foreground/70 mb-1">Date Range</div>
-                                <div class="text-foreground font-medium">${schedule.ssa.start_date_formatted || schedule.ssa.start_date || '-'}</div>
-                                <div class="text-foreground font-medium">${schedule.ssa.end_date_formatted || schedule.ssa.end_date || '-'}</div>
-                            </div>
-                            <div>
-                                <div class="text-foreground/70 mb-1">Session Details</div>
-                                <div class="text-foreground font-medium">Minutes: ${schedule.ssa.minutes_per_session || '-'} x ${schedule.ssa.sessions_per_frequency || '-'}</div>
-                                <div class="text-foreground font-medium">Frequency: ${schedule.ssa.frequency ? schedule.ssa.frequency.replace('_', '-').replace(/\b\w/g, l => l.toUpperCase()) : '-'}</div>
-                            </div>
-                            <div>
-                                <div class="text-foreground/70 mb-1">Minutes & Status</div>
-                                <div class="text-foreground font-medium">THO: ${schedule.ssa.tho_minutes ? schedule.ssa.tho_minutes.toLocaleString() : '0'}</div>
-                                <div class="text-foreground font-medium">Served: ${schedule.ssa.served_minutes ? schedule.ssa.served_minutes.toLocaleString() : '0'}</div>
-                                <div class="text-foreground font-medium">Status: ${schedule.ssa.status ? schedule.ssa.status.toUpperCase() : '-'}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Schedule Details (Right Column)
-            html += `
-                <div class="bg-background/subtle rounded-lg p-4">
-                    <h4 class="text-sm font-semibold text-foreground mb-3">Schedule Details</h4>
-                    <div class="space-y-2.5 text-sm">
-                        <div>
-                            <div class="text-foreground/70 mb-1">Date</div>
-                            <div class="text-foreground font-medium">${schedule.schedule_date_formatted || schedule.schedule_date || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Time</div>
-                            <div class="text-foreground font-medium">${schedule.start_time_formatted || schedule.start_time || '-'} - ${schedule.end_time_formatted || schedule.end_time || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Duration</div>
-                            <div class="text-foreground font-medium">${schedule.duration_formatted || schedule.duration_minutes + 'm' || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Service</div>
-                            <div class="text-foreground font-medium" title="${schedule.service?.name || '-'}">${schedule.service?.name || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Billing Status</div>
-                            <div class="text-foreground font-medium">${schedule.billing_status ? schedule.billing_status.replace('_', ' ').toUpperCase() : '-'}</div>
-                        </div>
-                        ${schedule.location_details ? `
-                            <div class="pt-2.5">
-                                <div class="text-foreground/70 mb-1">Meeting Details</div>
-                                <div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.location_details}</div>
-                            </div>
-                        ` : ''}
-                        ${schedule.notes ? `
-                            <div class="pt-2.5">
-                                <div class="text-foreground/70 mb-1">Notes</div>
-                                <div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.notes}</div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-
-            html += '</div>'; // Close top row grid
-
-            // Bottom row: Student Details and Parent Information side by side
-            html += '<div class="grid grid-cols-2 gap-4">';
-
-            // Student Details (Left Column)
-            html += `
-                <div class="bg-background/subtle rounded-lg p-4">
-                    <h4 class="text-sm font-semibold text-foreground mb-3">Student Details</h4>
-                    <div class="space-y-2.5 text-sm">
-                        <div>
-                            <div class="text-foreground/70 mb-1">Name</div>
-                            <div class="text-foreground font-medium" title="${schedule.student?.name || '-'}">${schedule.student?.name || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">ID Number</div>
-                            <div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Email</div>
-                            <div class="text-foreground font-medium" title="${schedule.student?.email || '-'}">${schedule.student?.email || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">School</div>
-                            <div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Timezone</div>
-                            <div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Parent Details (Right Column)
-            html += `
-                <div class="bg-background/subtle rounded-lg p-4">
-                    <h4 class="text-sm font-semibold text-foreground mb-3">Parent Information</h4>
-                    <div class="space-y-2.5 text-sm">
-                        <div>
-                            <div class="text-foreground/70 mb-1">Name</div>
-                            <div class="text-foreground font-medium" title="${schedule.parent?.name || '-'}">${schedule.parent?.name || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Email</div>
-                            <div class="text-foreground font-medium" title="${schedule.parent?.email || '-'}">${schedule.parent?.email || '-'}</div>
-                        </div>
-                        <div>
-                            <div class="text-foreground/70 mb-1">Phone</div>
-                            <div class="text-foreground font-medium">${schedule.parent?.phone || '-'}</div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            html += '</div>'; // Close bottom row grid
-
-            $content.html(html);
         }
 
         function renderCalendar(year, month, selected) {
@@ -651,6 +579,7 @@ import { initSelectBoxes } from '../common/select-box';
             let html = '';
             schedules.forEach((schedule) => {
                 const isPast = Boolean(schedule.is_past);
+                const hasEventStarted = Boolean(schedule.has_event_started);
                 const isBilled = Boolean(schedule.is_billed);
                 const isPendingBilling = schedule.billing_status === 'pending';
 
@@ -700,8 +629,15 @@ import { initSelectBoxes } from '../common/select-box';
                                             </button>
                                         `
                                 ) : ''}
+                                ${!isBilled ? `
+                                    <button type="button" class="schedule-delete-btn p-2 border border-danger/30 rounded-lg hover:bg-danger/10 hover:border-danger/50 transition-colors text-danger" data-schedule-id="${schedule.id}" title="Delete Schedule">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                ` : ''}
 
-                                ${isPast && isPendingBilling ? (
+                                ${hasEventStarted && isPendingBilling ? (
                                     schedule.bill_url
                                         ? `
                                             <a href="${schedule.bill_url}" class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" title="Bill Your Session">

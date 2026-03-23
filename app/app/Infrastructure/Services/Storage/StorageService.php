@@ -19,9 +19,9 @@ final class StorageService implements StorageServiceInterface
         $this->resolve()->put($path, $contents);
     }
 
-    public function get(string $path): string|false
+    public function get(string $path): ?string
     {
-        return $this->resolve()->get($path);
+        return $this->resolve()->get($path) ?: null;
     }
 
     public function exists(string $path): bool

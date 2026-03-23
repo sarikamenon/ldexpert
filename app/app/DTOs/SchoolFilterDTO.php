@@ -14,13 +14,14 @@ final class SchoolFilterDTO
         public readonly bool $includeDeactivated = false,
     ) {}
 
+    /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
         $statusValue = $data['status'] ?? null;
 
         // Parse status if provided
         $status = null;
-        if (isset($statusValue) && $statusValue !== null && $statusValue !== '') {
+        if (isset($statusValue) && $statusValue !== '') {
             $status = $statusValue instanceof SchoolStatus
                 ? $statusValue
                 : SchoolStatus::from($statusValue);

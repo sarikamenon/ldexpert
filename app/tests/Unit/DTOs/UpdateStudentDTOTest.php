@@ -15,6 +15,7 @@ final class UpdateStudentDTOTest extends TestCase
             'first_name' => 'Liam',
             'middle_name' => 'J',
             'last_name' => 'Park',
+            'username' => 'liam.park',
             'email' => 'liam@example.com',
             'gender' => 'Male',
             'date_of_birth' => '2011-09-09',
@@ -37,6 +38,7 @@ final class UpdateStudentDTOTest extends TestCase
         $this->assertSame('Liam', $dto->firstName);
         $this->assertSame('J', $dto->middleName);
         $this->assertSame('Park', $dto->lastName);
+        $this->assertSame('liam.park', $dto->username);
         $this->assertSame('liam@example.com', $dto->email);
         $this->assertSame('Male', $dto->gender);
         $this->assertSame('2011-09-09', $dto->dateOfBirth);
@@ -60,6 +62,7 @@ final class UpdateStudentDTOTest extends TestCase
             firstName: 'Olivia',
             middleName: null,
             lastName: 'Chen',
+            username: 'olivia.chen',
             email: 'olivia@example.com',
             gender: 'Female',
             dateOfBirth: '2013-12-01',
@@ -80,6 +83,7 @@ final class UpdateStudentDTOTest extends TestCase
         $userArray = $dto->toUserArray();
 
         $this->assertSame('Olivia Chen', $userArray['name']);
+        $this->assertSame('olivia.chen', $userArray['username']);
         $this->assertSame('olivia@example.com', $userArray['email']);
     }
 
@@ -89,6 +93,7 @@ final class UpdateStudentDTOTest extends TestCase
             firstName: 'Noah',
             middleName: 'A',
             lastName: 'Rivera',
+            username: 'noah.rivera',
             email: 'noah@example.com',
             gender: 'Male',
             dateOfBirth: '2012-02-14',

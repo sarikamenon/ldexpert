@@ -25,12 +25,12 @@ class TherapistProfilePolicy
         return $this->isAdmin($user);
     }
 
-    public function update(User $user, $therapistProfile = null): bool
+    public function update(User $user, ?TherapistProfile $therapistProfile = null): bool
     {
         return $this->isAdmin($user);
     }
 
-    public function changeStatus(User $user, $therapistProfile = null): bool
+    public function changeStatus(User $user, ?TherapistProfile $therapistProfile = null): bool
     {
         return $this->isAdmin($user);
     }
@@ -42,8 +42,6 @@ class TherapistProfilePolicy
 
     private function isAdmin(User $user): bool
     {
-        $role = $user->role instanceof Role ? $user->role : Role::tryFrom($user->role);
-
-        return $role === Role::ADMIN;
+        return $user->role === Role::ADMIN;
     }
 }

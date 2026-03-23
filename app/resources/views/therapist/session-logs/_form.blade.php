@@ -14,6 +14,17 @@
         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}" />
     @endif
 
+    {{-- Billing window blocked banner (shown/hidden by JS) --}}
+    <div id="billing-window-blocked" class="hidden">
+        <x-ui::alert variant="danger" class="mb-4">
+            <p class="font-semibold">Billing window closed</p>
+            <p class="text-sm mt-1">The billing entry window for this session's week closed on
+                <span id="billing-window-cutoff" class="font-medium"></span>.
+                You can no longer create or edit session logs for this date.
+                Please contact an administrator if you need to make changes.</p>
+        </x-ui::alert>
+    </div>
+
     {{-- Session Details --}}
     <x-ui::card class="p-6 space-y-4">
         <h3 class="text-lg font-semibold text-foreground">Session Details</h3>
@@ -52,7 +63,7 @@
         {{-- Row 2: Service + Session Date --}}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Service</label>
+                <label class="block text-sm font-medium text-gray-700">Service *</label>
                 <p class="mt-1 text-xs text-foreground/60">Service provided during this session</p>
                 @if (isset($schedule))
                     {{-- From schedule: service is read-only --}}
@@ -76,6 +87,7 @@
                         @endif
                     </x-ui::select>
                 @endif
+                <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
             </div>
 
             <div>
@@ -93,15 +105,16 @@
         {{-- Row 3: Start Time + Duration + End Time --}}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700">Start Time</label>
+                <label class="block text-sm font-medium text-gray-700">Start Time *</label>
                 <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
                 <x-ui::input type="time" name="start_time" id="session-log-start-time"
                     value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
                     class="mt-1" required />
+                <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                <label class="block text-sm font-medium text-gray-700">Duration (minutes) *</label>
                 <p class="mt-1 text-xs text-foreground/60" id="session-log-duration-help">
                     Session duration in minutes (min {{ config('session_minutes.min') }}, max
                     {{ config('session_minutes.max') }}).
@@ -110,6 +123,7 @@
                     value="{{ old('duration_minutes', isset($sessionLog) ? $sessionLog->duration_minutes ?? '' : (isset($schedule) ? $schedule->durationMinutes() : '')) }}"
                     min="{{ config('session_minutes.min') }}" max="{{ config('session_minutes.max') }}" step="1"
                     class="mt-1" aria-describedby="session-log-duration-help" required />
+                <x-input-error :messages="$errors->get('duration_minutes')" class="mt-2" />
             </div>
 
             <div>
@@ -118,35 +132,26 @@
                 <x-ui::input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
                     value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
                     class="mt-1 bg-gray-100" required />
+                <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
             </div>
         </div>
 
-        <div x-data="{ open: true }" class="space-y-4 mt-4">
-            <div class="flex items-center justify-between">
-                <h4 class="text-sm font-medium text-foreground/70">Notes & Outcome</h4>
-                <button type="button"
-                    class="text-xs text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-base px-2 py-1"
-                    @click="open = !open" x-bind:aria-expanded="open.toString()">
-                    <span x-show="!open">Show</span>
-                    <span x-show="open">Hide</span>
-                </button>
-            </div>
+        <div class="space-y-4 mt-4">
+            <h4 class="text-sm font-medium text-foreground/70">Notes & Outcome</h4>
 
-            <div x-show="open" x-cloak class="space-y-4">
+            <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-foreground">Notes</label>
+                    <label class="block text-sm font-medium text-foreground">Notes *</label>
                     <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
                         Session notes must be at least 50 characters. Describe what occurred during the session.
                     </p>
                     <textarea name="notes" rows="4"
                         class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
                         aria-describedby="session-notes-help" required>{{ old('notes', $sessionLog->notes ?? '') }}</textarea>
-                    @error('notes')
-                        <p class="mt-1 text-sm text-danger">{{ $message }}</p>
-                    @enderror
+                    <x-input-error :messages="$errors->get('notes')" class="mt-2" />
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-foreground">Session Outcome</label>
+                    <label class="block text-sm font-medium text-foreground">Session Outcome *</label>
                     <p class="mt-1 text-xs text-foreground/60">Select the outcome of this session</p>
                     <x-ui::select name="outcome" class="mt-1" placeholder="Select outcome">
                         <option value="">Select outcome</option>
@@ -156,10 +161,7 @@
                             </option>
                         @endforeach
                     </x-ui::select>
-                    @error('outcome')
-                        <p class="mt-1 text-sm text-danger">{{ $message }}</p>
-                    @enderror
-                    {{-- Always billable flags are handled automatically; keep default as billable --}}
+                    <x-input-error :messages="$errors->get('outcome')" class="mt-2" />
                     <input type="hidden" name="is_billable_therapist"
                         value="{{ old('is_billable_therapist', $sessionLog->is_billable_therapist ?? 1) }}">
                     <input type="hidden" name="is_billable_school" value="1">
@@ -170,8 +172,62 @@
 
     <div class="flex justify-end gap-3">
         <x-ui::loading-button variant="primary" loadingText="{{ $isEdit ? 'Updating...' : 'Creating...' }}"
-            x-on:click="$nextTick(() => loading = true)">
+            x-on:click="if ($el.closest('form').checkValidity()) { $nextTick(() => loading = true) }">
             {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
         </x-ui::loading-button>
     </div>
 </form>
+
+@if ($isEdit && $sessionLog->comments->count() > 0)
+    <x-ui::card class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-foreground">Comments</h3>
+        <p class="text-sm text-foreground/60">Conversation between admin and therapist about this session log.</p>
+        <div class="space-y-3">
+            @foreach ($sessionLog->comments->sortBy('created_at') as $comment)
+                @php
+                    $isAdmin = $comment->type === \App\Enums\SessionLogCommentType::SENT_BACK;
+                @endphp
+                <div class="rounded-lg border border-border p-4 {{ $isAdmin ? 'bg-muted/30' : 'bg-primary/5' }}">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs font-medium {{ $isAdmin ? 'text-warning' : 'text-primary' }}">
+                            {{ $isAdmin ? 'Admin' : 'Therapist' }}
+                        </span>
+                        <span class="text-xs text-foreground/60">
+                            {{ $comment->author?->name ?? ($isAdmin ? 'Admin' : 'Therapist') }} · {{ $comment->created_at?->format('M d, Y g:i A') }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-foreground whitespace-pre-wrap">{{ $comment->comment }}</p>
+                </div>
+            @endforeach
+        </div>
+
+        <form method="POST" action="{{ route('therapist.session-logs.comment', $sessionLog) }}" class="space-y-3"
+            x-data="{ submitAfter: false }">
+            @csrf
+            <input type="hidden" name="submit_after_comment" x-bind:value="submitAfter ? '1' : '0'" />
+            <div>
+                <label class="block text-sm font-medium text-foreground">Add a Reply</label>
+                <p class="mt-1 text-xs text-foreground/60" id="therapist-comment-help">
+                    Add a comment to respond to admin feedback or provide additional context.
+                </p>
+                <textarea name="comment" rows="3"
+                    class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
+                    aria-describedby="therapist-comment-help"
+                    placeholder="Type your reply here..." required>{{ old('comment') }}</textarea>
+                @error('comment')
+                    <p class="mt-1 text-sm text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+            <div class="flex justify-end gap-3">
+                <x-ui::button type="submit" variant="primary" @click="submitAfter = false">
+                    Add Comment
+                </x-ui::button>
+                @if ($sessionLog->status?->canSubmit())
+                    <x-ui::button type="submit" variant="success" @click="submitAfter = true">
+                        Add Comment & Submit
+                    </x-ui::button>
+                @endif
+            </div>
+        </form>
+    </x-ui::card>
+@endif

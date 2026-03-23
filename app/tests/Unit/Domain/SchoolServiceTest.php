@@ -9,7 +9,6 @@ use App\DTOs\UpdateSchoolDTO;
 use App\Enums\SchoolStatus;
 use App\Models\School;
 use App\Models\User;
-use App\Services\ActivityLogService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
@@ -18,8 +17,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->repository = Mockery::mock(SchoolRepositoryInterface::class);
-    $this->activityLog = Mockery::mock(ActivityLogService::class);
-    $this->service = new SchoolService($this->repository, $this->activityLog);
+    $this->service = new SchoolService($this->repository);
 });
 
 afterEach(function () {
@@ -63,9 +61,6 @@ test('school service wraps writes via repository', function () {
     $this->repository->shouldReceive('create')->once()->andReturn($school);
     $this->repository->shouldReceive('update')->once()->andReturn($school);
     $this->repository->shouldReceive('changeStatus')->once()->andReturn($school);
-    $this->activityLog->shouldReceive('logCreated')->once()->with($school);
-    $this->activityLog->shouldReceive('logUpdated')->zeroOrMoreTimes();
-    $this->activityLog->shouldReceive('logStatusChanged')->once();
 
     $this->service->createSchool($createDto);
     $this->service->updateSchool($school, UpdateSchoolDTO::fromArray($createDto->toArray()));
