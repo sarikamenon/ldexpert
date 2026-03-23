@@ -97,7 +97,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
                     'rate' => $dto->rate,
                     'rate_type' => $dto->rateType->value,
                     'no_show_rate' => $dto->noShowRate,
-                    'no_show_rate_type' => $dto->noShowRateType->value,
+                    'no_show_rate_type' => $dto->noShowRateType?->value,
                 ],
                 $services,
             )
@@ -163,7 +163,7 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
             return null;
         }
 
-        $noShowRate = (float) $contractService->no_show_rate;
+        $noShowRate = $contractService->no_show_rate !== null ? (float) $contractService->no_show_rate : null;
         $noShowRateType = $contractService->no_show_rate_type ?? null;
 
         return [

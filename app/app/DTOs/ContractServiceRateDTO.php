@@ -12,14 +12,14 @@ final class ContractServiceRateDTO
         public readonly int $serviceId,
         public readonly string $rate,
         public readonly RateType $rateType,
-        public readonly string $noShowRate,
-        public readonly RateType $noShowRateType,
+        public readonly ?string $noShowRate,
+        public readonly ?RateType $noShowRateType,
     ) {}
 
     /** @param array<string, mixed> $data */
     public static function fromArray(array $data): self
     {
-        $noShowRateType = $data['no_show_rate_type'] ?? RateType::HOURLY;
+        $noShowRateType = $data['no_show_rate_type'] ?? null;
 
         return new self(
             serviceId: (int) $data['service_id'],
@@ -27,10 +27,12 @@ final class ContractServiceRateDTO
             rateType: $data['rate_type'] instanceof RateType
                 ? $data['rate_type']
                 : RateType::from($data['rate_type']),
-            noShowRate: self::normalizeRate($data['no_show_rate'] ?? 0),
-            noShowRateType: $noShowRateType instanceof RateType
-                ? $noShowRateType
-                : RateType::from($noShowRateType),
+            noShowRate: isset($data['no_show_rate']) && $data['no_show_rate'] !== null && $data['no_show_rate'] !== ''
+                ? self::normalizeRate($data['no_show_rate'])
+                : null,
+            noShowRateType: $noShowRateType === null || $noShowRateType === ''
+                ? null
+                : ($noShowRateType instanceof RateType ? $noShowRateType : RateType::from($noShowRateType)),
         );
     }
 
@@ -42,7 +44,7 @@ final class ContractServiceRateDTO
             'rate' => $this->rate,
             'rate_type' => $this->rateType->value,
             'no_show_rate' => $this->noShowRate,
-            'no_show_rate_type' => $this->noShowRateType->value,
+            'no_show_rate_type' => $this->noShowRateType?->value,
         ];
     }
 
