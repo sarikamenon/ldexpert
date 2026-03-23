@@ -14,7 +14,7 @@
                     ],
                 )
                 ->toArray()
-            : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value, 'no_show_rate' => null, 'no_show_rate_type' => \App\Enums\RateType::HOURLY->value]],
+            : [['service_id' => null, 'rate' => null, 'rate_type' => \App\Enums\RateType::HOURLY->value, 'no_show_rate' => null, 'no_show_rate_type' => null]],
     );
 
     $startDateValue = old('start_date', $isEdit ? optional($contract->start_date)->toDateString() : null);
@@ -66,7 +66,7 @@
 
                 <div>
                     <x-input-label value="End Date" />
-                    <p class="mt-1 text-xs text-foreground/60">Contract end date (optional)</p>
+                    <p class="mt-1 text-xs text-foreground/60">Contract end date</p>
                     <x-ui::input type="date" name="end_date" class="mt-1 w-full" value="{{ $endDateValue }}" />
                     @error('end_date')
                         <p class="text-sm text-danger mt-1">{{ $message }}</p>

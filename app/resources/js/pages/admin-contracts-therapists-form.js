@@ -20,6 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
         rowIndex += 1;
     });
 
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+
+    if (startDateInput && endDateInput) {
+        startDateInput.addEventListener('change', () => {
+            if (!startDateInput.value) {
+                return;
+            }
+            const startDate = new Date(startDateInput.value);
+            const year = startDate.getFullYear();
+            endDateInput.value = `${year + 1}-05-31`;
+        });
+    }
+
     tableBody.addEventListener('click', (event) => {
         const removeButton = event.target.closest('.remove-service-row');
         if (!removeButton) {

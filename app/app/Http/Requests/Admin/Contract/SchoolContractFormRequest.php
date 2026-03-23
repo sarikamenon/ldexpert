@@ -34,8 +34,8 @@ abstract class SchoolContractFormRequest extends FormRequest
             ],
             'services.*.rate' => ['required', 'numeric', 'min:0'],
             'services.*.rate_type' => ['required', Rule::in(RateType::values())],
-            'services.*.no_show_rate' => ['required', 'numeric', 'min:0'],
-            'services.*.no_show_rate_type' => ['required', Rule::in(RateType::values())],
+            'services.*.no_show_rate' => ['nullable', 'required_with:services.*.no_show_rate_type', 'numeric', 'min:0'],
+            'services.*.no_show_rate_type' => ['nullable', 'required_with:services.*.no_show_rate', Rule::in(RateType::values())],
         ];
     }
 
@@ -50,10 +50,10 @@ abstract class SchoolContractFormRequest extends FormRequest
             'services.*.rate.numeric' => 'Rate must be a valid number.',
             'services.*.rate.min' => 'Rate must be 0 or greater.',
             'services.*.rate_type.required' => 'Rate type is required.',
-            'services.*.no_show_rate.required' => 'No-show rate is required.',
+            'services.*.no_show_rate.required_with' => 'No-show rate is required when no-show rate type is provided.',
             'services.*.no_show_rate.numeric' => 'No-show rate must be a valid number.',
             'services.*.no_show_rate.min' => 'No-show rate must be 0 or greater.',
-            'services.*.no_show_rate_type.required' => 'No-show rate type is required.',
+            'services.*.no_show_rate_type.required_with' => 'No-show rate type is required when no-show rate is provided.',
         ];
     }
 }
