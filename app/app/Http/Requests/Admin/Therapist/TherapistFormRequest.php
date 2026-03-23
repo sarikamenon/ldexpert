@@ -32,7 +32,7 @@ abstract class TherapistFormRequest extends FormRequest
 
         return [
             'employee_type' => ['required', Rule::in(EmployeeType::values())],
-            'title' => ['required', Rule::in(TherapistTitle::values())],
+            'title' => ['nullable', Rule::in(TherapistTitle::values())],
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
             'personal_email' => ['required', 'email:rfc', $personalEmailRule],

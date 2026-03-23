@@ -170,11 +170,22 @@ final class StudentController extends Controller
         );
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
         $this->authorize('create', StudentProfile::class);
 
-        return view('admin.students.create', $this->referenceData());
+        $data = $this->referenceData();
+
+        $schoolId = $request->query('school_id');
+        if ($schoolId) {
+            $school = $this->schoolRepository->find((int) $schoolId);
+            if ($school) {
+                $data['preselectedSchoolId'] = $school->id;
+                $data['preselectedTimezone'] = $school->timezone;
+            }
+        }
+
+        return view('admin.students.create', $data);
     }
 
     public function store(StoreStudentRequest $request): RedirectResponse

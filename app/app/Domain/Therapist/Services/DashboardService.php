@@ -8,6 +8,7 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
+use App\Enums\BillingStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
@@ -94,6 +95,9 @@ class DashboardService
         /** @var Collection<int, array<string, mixed>> */
         return $schedules->map(function (Schedule $schedule): array {
             $studentProfile = $schedule->student?->studentProfile;
+            $eventStart = $schedule->schedule_date->copy()->setTimeFrom($schedule->start_time);
+            $hasEventStarted = now()->gte($eventStart);
+            $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
 
             return [
                 'id' => $schedule->id,
@@ -117,6 +121,9 @@ class DashboardService
                 'parent_email' => $studentProfile->parent_guardian_email ?? '-',
                 'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
+                'bill_url' => $hasEventStarted && $isPendingBilling
+                    ? route('therapist.session-logs.create.from-schedule', $schedule->id)
+                    : null,
             ];
         });
     }

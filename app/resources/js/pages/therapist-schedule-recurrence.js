@@ -133,7 +133,25 @@ $(function () {
     }
 
     /**
-     * Render occurrence dates as editable inputs
+     * Update the occurrence counter text
+     */
+    function updateOccurrenceCounter() {
+        const $counter = $occurrenceDatesContainer.find('.occurrence-counter');
+        const count = $occurrenceDatesContainer.find('.occurrence-date-row').length;
+        $counter.text(count + (count === 1 ? ' session' : ' sessions') + ' scheduled');
+    }
+
+    /**
+     * Re-index occurrence labels after removal
+     */
+    function reIndexOccurrenceLabels() {
+        $occurrenceDatesContainer.find('.occurrence-date-row').each(function (i) {
+            $(this).find('.occurrence-label').text(i === 0 ? 'Start Date:' : 'Occurrence ' + (i + 1) + ':');
+        });
+    }
+
+    /**
+     * Render occurrence dates as editable inputs with remove buttons
      */
     function renderOccurrenceDates(dates) {
         $occurrenceDatesContainer.empty();
@@ -142,6 +160,10 @@ $(function () {
             return;
         }
 
+        // Counter showing total sessions
+        const $counter = $('<p class="occurrence-counter text-sm font-medium text-primary mb-2"></p>');
+        $occurrenceDatesContainer.append($counter);
+
         const $list = $('<div class="space-y-3"></div>');
         
         dates.forEach((date, index) => {
@@ -149,12 +171,13 @@ $(function () {
             const isWeekendDate = isWeekend(dateStr);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
             
-            const $item = $('<div class="flex items-start gap-3"></div>');
-            const $label = $('<label class="block w-32 text-sm text-foreground/70 pt-2">' + 
+            const $item = $('<div class="flex items-start gap-3 occurrence-date-row"></div>');
+            const $label = $('<label class="occurrence-label block w-32 text-sm text-foreground/70 pt-2">' + 
                 (index === 0 ? 'Start Date:' : 'Occurrence ' + (index + 1) + ':') + 
                 '</label>');
             
             const $inputGroup = $('<div class="flex-1"></div>');
+            const $inputRow = $('<div class="flex items-center gap-2"></div>');
             const $input = $('<input>')
                 .attr('type', 'date')
                 .attr('name', 'occurrence_dates[]')
@@ -166,10 +189,22 @@ $(function () {
             if (isWeekendDate) {
                 $input.addClass('border-warning bg-warning/10');
             }
+
+            $inputRow.append($input);
+
+            // Add remove button for all occurrences except the first (start date)
+            if (index > 0) {
+                const $removeBtn = $('<button type="button" class="occurrence-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors" title="Remove this occurrence">' +
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' +
+                    '</svg>' +
+                    '</button>');
+                $inputRow.append($removeBtn);
+            }
             
             const $errorDiv = $('<div class="occurrence-error text-xs text-danger mt-1"></div>');
             
-            $inputGroup.append($input);
+            $inputGroup.append($inputRow);
             if (isWeekendDate) {
                 $inputGroup.append($('<p class="text-xs text-warning mt-1">⚠️ ' + dayName + ' (Weekend)</p>'));
             }
@@ -181,6 +216,7 @@ $(function () {
 
         $occurrenceDatesContainer.append($list);
         $occurrenceDatesContainer.removeClass('hidden');
+        updateOccurrenceCounter();
     }
 
     /**
@@ -228,7 +264,7 @@ $(function () {
         $('.occurrence-date-input').each(function() {
             const $input = $(this);
             const dateStr = $input.val();
-            const $errorDiv = $input.siblings('.occurrence-error');
+            const $errorDiv = $input.closest('.occurrence-date-row').find('.occurrence-error');
             $errorDiv.empty();
             $input.removeClass('border-danger border-warning bg-warning/10');
 
@@ -283,6 +319,17 @@ $(function () {
     // Validate individual occurrence date changes
     $(document).on('change', '.occurrence-date-input', function() {
         validateAllOccurrenceDates();
+    });
+
+    // Handle removal of occurrence dates
+    $(document).on('click', '.occurrence-remove-btn', function() {
+        const $row = $(this).closest('.occurrence-date-row');
+        $row.fadeOut(200, function() {
+            $row.remove();
+            reIndexOccurrenceLabels();
+            updateOccurrenceCounter();
+            validateAllOccurrenceDates();
+        });
     });
 
     // Validate on form submit
