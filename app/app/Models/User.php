@@ -38,6 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'status',
+        'password_change_prompted_at',
     ];
 
     /**
@@ -60,6 +61,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_change_prompted_at' => 'datetime',
             'role' => Role::class,
             'status' => UserStatus::class,
         ];
