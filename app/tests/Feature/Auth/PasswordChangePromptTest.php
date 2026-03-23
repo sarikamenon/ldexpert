@@ -66,7 +66,7 @@ describe('Password Change Prompt', function () {
                     'password_confirmation' => 'new-password',
                 ]);
 
-            $response->assertSessionHasErrors('current_password');
+            $response->assertSessionHasErrors('current_password', null, 'updatePassword');
 
             $user->refresh();
             $this->assertNull(
@@ -89,7 +89,7 @@ describe('Password Change Prompt', function () {
                     'password_confirmation' => 'different-password',
                 ]);
 
-            $response->assertSessionHasErrors();
+            $response->assertSessionHasErrors(null, null, 'updatePassword');
 
             $user->refresh();
             $this->assertNull(
