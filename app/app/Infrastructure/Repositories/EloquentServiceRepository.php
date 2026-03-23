@@ -10,7 +10,6 @@ use App\DTOs\CreateServiceDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ServiceFilterDTO;
 use App\DTOs\UpdateServiceDTO;
-use App\Enums\ContractStatus;
 use App\Enums\ServiceStatus;
 use App\Models\Service;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -168,24 +167,20 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->get();
     }
 
-    /** @return Collection<int, Service> */
-    public function listCommonIndirectServices(int $therapistProfileId, int $schoolId): Collection
+    /**
+     * @param  Collection<int, int>  $commonServiceIds  Pre-computed intersection of therapist & school contract service IDs
+     * @return Collection<int, Service>
+     */
+    public function listCommonIndirectServices(Collection $commonServiceIds): Collection
     {
+        if ($commonServiceIds->isEmpty()) {
+            return collect();
+        }
+
         return Service::query()
             ->where('status', ServiceStatus::ACTIVE)
             ->where('is_direct_service', false)
-            ->whereHas('therapistContractServices', function (Builder $query) use ($therapistProfileId) {
-                $query->whereHas('contract', function (Builder $query) use ($therapistProfileId) {
-                    $query->where('therapist_contracts.therapist_id', $therapistProfileId)
-                        ->where('therapist_contracts.status', ContractStatus::ACTIVE->value);
-                });
-            })
-            ->whereHas('schoolContractServices', function (Builder $query) use ($schoolId) {
-                $query->whereHas('contract', function (Builder $query) use ($schoolId) {
-                    $query->where('school_contracts.school_id', $schoolId)
-                        ->where('school_contracts.status', ContractStatus::ACTIVE->value);
-                });
-            })
+            ->whereIn('id', $commonServiceIds)
             ->select(['id', 'name'])
             ->orderBy('name')
             ->get();
