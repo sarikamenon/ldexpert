@@ -29,7 +29,8 @@ async function initSchoolContractsTable() {
             columnDefs,
             getExtraData(d) {
                 if (!form) return;
-                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                const statusVal = form.querySelector('[name="status"]')?.value ?? 'active';
+                d.filter_status = statusVal === 'all' ? '' : statusVal;
                 d.filter_school_id = form.querySelector('[name="school_id"]')?.value ?? '';
                 const formData = new FormData(form);
                 d.filter_school_ids = Array.from(formData.getAll('school_ids[]') || []);

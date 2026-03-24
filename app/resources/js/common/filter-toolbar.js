@@ -41,9 +41,10 @@ function clearFilterForm(form) {
                 return;
             }
 
-            el.value = '';
+            const defaultVal = el.getAttribute('data-default-value') || '';
+            el.value = defaultVal;
             if (typeof window.jQuery !== 'undefined') {
-                window.jQuery(el).trigger('change');
+                window.jQuery(el).val(defaultVal).trigger('change');
             } else {
                 el.dispatchEvent(new Event('change', { bubbles: true }));
             }

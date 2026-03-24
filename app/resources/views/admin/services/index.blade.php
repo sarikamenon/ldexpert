@@ -30,11 +30,11 @@
                 <x-ui::input type="text" name="search" class="w-48" placeholder="Search services"
                     value="{{ $filters['search'] ?? '' }}" />
 
-                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true"
-                    class="w-32">
-                    <option value="">All Statuses</option>
+                <x-ui::select name="status" :searchable="false" :inline="true"
+                    class="w-32" data-default-value="active">
+                    <option value="all">All</option>
                     @foreach ($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? 'active') === $status->value)>
                             {{ $status->label() }}
                         </option>
                     @endforeach
