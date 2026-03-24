@@ -149,7 +149,7 @@ const initializeSelect = (element) => {
     const config = {
         width: selectWidth,
         placeholder,
-        allowClear: toBoolean(allowClear, !!placeholder && !element.hasAttribute('multiple')),
+        allowClear: toBoolean(allowClear, !!placeholder && !element.hasAttribute('multiple') && !element.hasAttribute('required')),
         tags: toBoolean(tags),
         dropdownParent: dropdownParent ? window.jQuery(dropdownParent) : undefined,
         minimumResultsForSearch: getMinimumResultsForSearch(searchable, searchThreshold),
@@ -181,6 +181,40 @@ const initializeSelect = (element) => {
                 $container.addClass(widthClasses.join(' '));
             }
         }
+
+        // Open dropdown when select2 receives focus via Tab key
+        $el.on('select2:open', () => {
+            // Auto-focus the search field so typing works immediately
+            const searchField = document.querySelector('.select2-container--open .select2-search__field');
+            if (searchField) {
+                searchField.focus();
+            }
+        });
+
+        // When the select2 selection container receives keyboard focus (Tab),
+        // open the dropdown so keyboard users can immediately search/select.
+        // Use mousedown flag to distinguish mouse clicks from Tab navigation.
+        let mouseDown = false;
+        let justClosed = false;
+        const $focusContainer = $el.next('.select2-container');
+
+        $focusContainer.on('mousedown', '.select2-selection', () => {
+            mouseDown = true;
+        });
+        $(document).on('mouseup', () => {
+            // Reset after a tick so the focus handler sees the flag
+            setTimeout(() => { mouseDown = false; }, 0);
+        });
+        $el.on('select2:close', () => {
+            justClosed = true;
+            setTimeout(() => { justClosed = false; }, 100);
+        });
+        $focusContainer.on('focus', '.select2-selection', function () {
+            // Only open on keyboard (Tab) focus, not mouse click
+            if (!mouseDown && !justClosed && !$focusContainer.hasClass('select2-container--open')) {
+                $el.select2('open');
+            }
+        });
 
         if (element.form) {
             element.form.addEventListener('reset', () => {
