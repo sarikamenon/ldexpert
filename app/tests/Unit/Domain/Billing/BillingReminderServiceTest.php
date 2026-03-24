@@ -21,7 +21,7 @@ test('sends upcoming due reminder for sent invoice within reminder window', func
     // Settings: reminder_days_before_due = 5 (default)
     $invoice = Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3), // within 5-day window
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     $result = $this->service->processReminders();
@@ -39,7 +39,7 @@ test('sends upcoming due reminder for sent invoice within reminder window', func
 test('skips upcoming due reminder if already sent', function () {
     $invoice = Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     BillingReminder::create([
@@ -57,7 +57,7 @@ test('skips upcoming due reminder if already sent', function () {
 test('does not send upcoming due reminder for invoices outside window', function () {
     Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(10), // outside 5-day window
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     $result = $this->service->processReminders();
@@ -80,7 +80,7 @@ test('sends overdue reminder for invoice past due threshold', function () {
     // Settings: reminder_days_after_due = 3 (default)
     $invoice = Invoice::factory()->sent()->create([
         'due_date' => now()->subDays(5), // 5 days overdue, > 3 threshold
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     $result = $this->service->processReminders();
@@ -98,7 +98,7 @@ test('sends overdue reminder for invoice past due threshold', function () {
 test('skips overdue reminder if sent within repeat interval', function () {
     $invoice = Invoice::factory()->sent()->create([
         'due_date' => now()->subDays(10),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     // Recent overdue reminder sent 2 days ago (within 7-day repeat interval)
@@ -118,7 +118,7 @@ test('skips overdue reminder if sent within repeat interval', function () {
 test('caps overdue reminders at max_overdue_reminders setting', function () {
     $invoice = Invoice::factory()->sent()->create([
         'due_date' => now()->subDays(60),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     // Create 3 overdue reminders (max_overdue_reminders default is 3)
@@ -140,7 +140,7 @@ test('caps overdue reminders at max_overdue_reminders setting', function () {
 test('sends overdue followup when previous overdue exists and repeat interval passed', function () {
     $invoice = Invoice::factory()->sent()->create([
         'due_date' => now()->subDays(20),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     // Previous overdue sent 10 days ago (> 7-day repeat)
@@ -165,7 +165,7 @@ test('sends overdue followup when previous overdue exists and repeat interval pa
 test('dry run counts reminders without sending', function () {
     Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     $result = $this->service->processReminders(dryRun: true);
@@ -188,10 +188,9 @@ test('returns zero counts when no eligible invoices', function () {
 });
 
 test('resolves recipient email with fallback chain', function () {
-    // parent_email takes priority
-    $invoiceWithParent = Invoice::factory()->sent()->create([
+    // school_invoice_email takes priority
+    Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3),
-        'parent_email' => 'parent@example.com',
         'school_invoice_email' => 'invoice@school.com',
         'school_contact_email' => 'contact@school.com',
     ]);
@@ -200,6 +199,6 @@ test('resolves recipient email with fallback chain', function () {
 
     expect($result['sent'])->toBe(1);
     Mail::assertSent(\App\Mail\InvoiceReminderMail::class, function ($mail) {
-        return $mail->hasTo('parent@example.com');
+        return $mail->hasTo('invoice@school.com');
     });
 });

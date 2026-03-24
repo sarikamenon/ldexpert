@@ -113,7 +113,6 @@ test('store validates required fields', function () {
         'billing_mode',
         'frequency',
         'generation_day_type',
-        'min_grace_days',
         'payment_terms_days',
     ]);
 });

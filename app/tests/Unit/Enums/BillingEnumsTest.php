@@ -54,11 +54,9 @@ test('billing schedule run status has expected cases and labels', function () {
 });
 
 test('billing schedule type has expected cases and labels', function () {
-    expect(BillingScheduleType::cases())->toHaveCount(3)
+    expect(BillingScheduleType::cases())->toHaveCount(2)
         ->and(BillingScheduleType::SCHOOL_INVOICE->value)->toBe('school_invoice')
-        ->and(BillingScheduleType::PRIVATE_STUDENT_INVOICE->value)->toBe('private_student_invoice')
         ->and(BillingScheduleType::THERAPIST_BILL->value)->toBe('therapist_bill')
         ->and(BillingScheduleType::SCHOOL_INVOICE->label())->toBe('School Invoice')
-        ->and(BillingScheduleType::PRIVATE_STUDENT_INVOICE->label())->toBe('Private Student Invoice')
         ->and(BillingScheduleType::THERAPIST_BILL->label())->toBe('Therapist Bill');
 });

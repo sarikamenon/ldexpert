@@ -64,15 +64,6 @@ class BillingScheduleFactory extends Factory
         ]);
     }
 
-    public function forPrivateStudent(?User $student = null): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'schedulable_type' => User::class,
-            'schedulable_id' => $student?->id ?? User::factory()->student(),
-            'schedule_type' => BillingScheduleType::PRIVATE_STUDENT_INVOICE->value,
-        ]);
-    }
-
     public function advance(): static
     {
         return $this->state(fn (array $attributes) => [

@@ -11,8 +11,8 @@
         @method('PUT')
 
         <x-ui::card class="p-6 space-y-6 mb-6">
-            <h2 class="text-lg font-semibold text-foreground">Default Schedule Configuration</h2>
-            <p class="text-sm text-foreground/60">These defaults are applied when creating new billing schedules.</p>
+            <h2 class="text-lg font-semibold text-foreground">Standard Billing Defaults</h2>
+            <p class="text-sm text-foreground/60">These defaults are applied when creating new billing schedules for regular schools.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -90,6 +90,93 @@
                             <div>
                                 <x-input-label for="default_auto_send" value="Auto-send by default" />
                                 <p class="text-xs text-foreground/60">New schedules will auto-send without review.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6 space-y-6 mb-6">
+            <h2 class="text-lg font-semibold text-foreground">Advance Billing Defaults (Prepaid Schools)</h2>
+            <p class="text-sm text-foreground/60">These defaults are applied to schools with the Private Student flag enabled. They can be overridden per school.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <x-input-label for="advance_default_frequency" value="Frequency *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="adv_freq_help">Default billing frequency for advance schedules.</p>
+                    <x-ui::select id="advance_default_frequency" name="advance_default_frequency" class="mt-1" required :searchable="false" aria-describedby="adv_freq_help">
+                        @foreach (\App\Enums\BillingFrequency::cases() as $freq)
+                            <option value="{{ $freq->value }}" @selected(old('advance_default_frequency', $settings->advance_default_frequency->value) === $freq->value)>{{ $freq->label() }}</option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('advance_default_frequency')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="advance_default_generation_day_type" value="Generation Type *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="adv_gen_type_help">How generation timing is determined for advance schedules.</p>
+                    <x-ui::select id="advance_default_generation_day_type" name="advance_default_generation_day_type" class="mt-1" required :searchable="false" aria-describedby="adv_gen_type_help">
+                        @foreach (\App\Enums\GenerationDayType::cases() as $type)
+                            <option value="{{ $type->value }}" @selected(old('advance_default_generation_day_type', $settings->advance_default_generation_day_type->value) === $type->value)>{{ $type->label() }}</option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('advance_default_generation_day_type')" class="mt-2" />
+                </div>
+
+                <div id="adv_dow_wrapper" style="{{ old('advance_default_generation_day_type', $settings->advance_default_generation_day_type->value) === 'fixed_delay' ? 'display:none' : '' }}">
+                    <x-input-label for="advance_default_generation_day_of_week" value="Day of Week *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="adv_dow_help">Which weekday to generate on for advance schedules.</p>
+                    <x-ui::select id="advance_default_generation_day_of_week" name="advance_default_generation_day_of_week" class="mt-1" :searchable="false" aria-describedby="adv_dow_help">
+                        @php $advDow = old('advance_default_generation_day_of_week', (string) $settings->advance_default_generation_day_of_week); @endphp
+                        <option value="0" @selected($advDow === '0')>Sunday</option>
+                        <option value="1" @selected($advDow === '1')>Monday</option>
+                        <option value="2" @selected($advDow === '2')>Tuesday</option>
+                        <option value="3" @selected($advDow === '3')>Wednesday</option>
+                        <option value="4" @selected($advDow === '4')>Thursday</option>
+                        <option value="5" @selected($advDow === '5')>Friday</option>
+                        <option value="6" @selected($advDow === '6')>Saturday</option>
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('advance_default_generation_day_of_week')" class="mt-2" />
+                </div>
+
+                <div id="adv_grace_wrapper" style="{{ old('advance_default_generation_day_type', $settings->advance_default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
+                    <x-input-label for="advance_default_min_grace_days" value="Grace Days *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="adv_grace_help">Minimum days to wait after period ends before generating.</p>
+                    <x-ui::input type="number" id="advance_default_min_grace_days" name="advance_default_min_grace_days" class="mt-1 block w-full"
+                        value="{{ old('advance_default_min_grace_days', $settings->advance_default_min_grace_days) }}" min="0" max="14" aria-describedby="adv_grace_help" />
+                    <x-input-error :messages="$errors->get('advance_default_min_grace_days')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="advance_default_payment_terms_days" value="Payment Terms (Days) *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="adv_terms_help">Due date = generation date + this many days.</p>
+                    <x-ui::input type="number" id="advance_default_payment_terms_days" name="advance_default_payment_terms_days" class="mt-1 block w-full" required
+                        value="{{ old('advance_default_payment_terms_days', $settings->advance_default_payment_terms_days) }}" min="1" max="90" aria-describedby="adv_terms_help" />
+                    <x-input-error :messages="$errors->get('advance_default_payment_terms_days')" class="mt-2" />
+                </div>
+
+                <div class="flex items-start gap-3 md:col-span-2">
+                    <div class="flex items-start gap-6">
+                        <div class="flex items-start gap-3">
+                            <input type="hidden" name="advance_default_auto_generate" value="0">
+                            <input type="checkbox" id="advance_default_auto_generate" name="advance_default_auto_generate" value="1"
+                                class="mt-1 rounded border-border text-primary focus:ring-ring"
+                                @checked(old('advance_default_auto_generate', $settings->advance_default_auto_generate))>
+                            <div>
+                                <x-input-label for="advance_default_auto_generate" value="Auto-generate by default" />
+                                <p class="text-xs text-foreground/60">Advance schedules will auto-generate drafts.</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-3">
+                            <input type="hidden" name="advance_default_auto_send" value="0">
+                            <input type="checkbox" id="advance_default_auto_send" name="advance_default_auto_send" value="1"
+                                class="mt-1 rounded border-border text-primary focus:ring-ring"
+                                @checked(old('advance_default_auto_send', $settings->advance_default_auto_send))>
+                            <div>
+                                <x-input-label for="advance_default_auto_send" value="Auto-send by default" />
+                                <p class="text-xs text-foreground/60">Advance schedules will auto-send without review.</p>
                             </div>
                         </div>
                     </div>

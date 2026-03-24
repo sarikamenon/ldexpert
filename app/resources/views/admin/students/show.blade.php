@@ -38,9 +38,6 @@
             ['key' => 'comments', 'label' => 'Comments', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'comments'])],
             ['key' => 'documents', 'label' => 'Documents', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'documents'])],
         ];
-        if ($student->studentProfile?->school?->is_private_student) {
-            $tabs[] = ['key' => 'billing', 'label' => 'Billing', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'billing'])];
-        }
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
@@ -132,11 +129,6 @@
         <x-student.comments-section :student="$student" :comments="$comments" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))
         <x-student.documents-section :student="$student" :documents="$documents" context="admin" />
-    @elseif (($activeTab ?? 'dashboard') === 'billing' && $student->studentProfile?->school?->is_private_student)
-        @include('admin.billing._entity-billing-tab', [
-            'entityType' => 'private_student',
-            'entityId' => $student->id,
-        ])
     @endif
 
     <x-slot name="scripts">
@@ -153,8 +145,6 @@
             @vite(['resources/js/pages/admin-students-comments.js'])
         @elseif (($activeTab ?? 'dashboard') === 'documents')
             @vite(['resources/js/pages/admin-student-documents.js'])
-        @elseif (($activeTab ?? 'dashboard') === 'billing')
-            @vite(['resources/js/pages/admin-entity-billing.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

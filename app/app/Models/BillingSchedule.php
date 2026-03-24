@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property BillingMode $billing_mode
  * @property BillingFrequency $frequency
  * @property GenerationDayType $generation_day_type
+ * @property Carbon|null $billing_start_date
  * @property Carbon|null $last_run_at
  * @property Carbon|null $next_run_at
  * @property Carbon|null $last_period_end
@@ -51,6 +52,7 @@ class BillingSchedule extends Model
         'last_period_end',
         'next_run_at',
         'notes',
+        'billing_start_date',
     ];
 
     protected function casts(): array
@@ -67,6 +69,7 @@ class BillingSchedule extends Model
             'auto_generate' => 'boolean',
             'auto_send' => 'boolean',
             'is_active' => 'boolean',
+            'billing_start_date' => 'date',
             'last_run_at' => 'datetime',
             'last_period_end' => 'date',
             'next_run_at' => 'date',
@@ -132,15 +135,6 @@ class BillingSchedule extends Model
      * @param  Builder<BillingSchedule>  $query
      * @return Builder<BillingSchedule>
      */
-    public function scopeForPrivateStudents(Builder $query): Builder
-    {
-        return $query->where('schedule_type', BillingScheduleType::PRIVATE_STUDENT_INVOICE->value);
-    }
-
-    /**
-     * @param  Builder<BillingSchedule>  $query
-     * @return Builder<BillingSchedule>
-     */
     public function scopeForTherapists(Builder $query): Builder
     {
         return $query->where('schedule_type', BillingScheduleType::THERAPIST_BILL->value);
@@ -157,11 +151,6 @@ class BillingSchedule extends Model
     public function isForSchool(): bool
     {
         return $this->schedule_type === BillingScheduleType::SCHOOL_INVOICE;
-    }
-
-    public function isForPrivateStudent(): bool
-    {
-        return $this->schedule_type === BillingScheduleType::PRIVATE_STUDENT_INVOICE;
     }
 
     public function isForTherapist(): bool

@@ -24,8 +24,6 @@ use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
 use App\Models\Schedule;
 use App\Models\SessionLog;
-use App\Models\StudentProfile;
-use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +42,7 @@ final class AdvanceBillingService
     ) {}
 
     /**
-     * Process an advance billing schedule for a private student.
+     * Process an advance billing schedule for a school.
      */
     public function processAdvanceSchedule(BillingSchedule $schedule, bool $dryRun = false): BillingRunResultDTO
     {
@@ -55,9 +53,9 @@ final class AdvanceBillingService
         $completedPeriod = $this->resolveCompletedPeriod($schedule);
         $upcomingPeriod = $this->resolveUpcomingPeriod($schedule);
 
-        $studentId = $schedule->schedulable_id;
+        $schoolId = $schedule->schedulable_id;
 
-        $previousInvoice = $this->lineItemRepository->getPreviousAdvanceInvoice($studentId);
+        $previousInvoice = $this->lineItemRepository->getPreviousAdvanceInvoice($schoolId);
 
         $adjustmentLines = $this->buildAdjustmentLines(
             $previousInvoice,
@@ -66,7 +64,7 @@ final class AdvanceBillingService
         );
 
         $advanceLines = $this->buildAdvanceChargeLines(
-            $studentId,
+            $schoolId,
             $upcomingPeriod['start'],
             $upcomingPeriod['end'],
         );
@@ -144,7 +142,7 @@ final class AdvanceBillingService
 
         return DB::transaction(function () use (
             $schedule,
-            $studentId,
+            $schoolId,
             $completedPeriod,
             $upcomingPeriod,
             $adjustmentLines,
@@ -155,7 +153,7 @@ final class AdvanceBillingService
             $newCarryForward,
         ): BillingRunResultDTO {
             $invoice = $this->createAdvanceInvoice(
-                $studentId,
+                $schoolId,
                 $upcomingPeriod['start'],
                 $upcomingPeriod['end'],
                 $advanceTotal,
@@ -195,12 +193,12 @@ final class AdvanceBillingService
     }
 
     /**
-     * Generate a settlement invoice when a student leaves (adjustments only, no advance).
+     * Generate a settlement invoice when a school stops advance billing (adjustments only, no advance).
      */
     public function generateSettlementInvoice(BillingSchedule $schedule, Carbon $finalPeriodEnd): BillingRunResultDTO
     {
-        $studentId = $schedule->schedulable_id;
-        $previousInvoice = $this->lineItemRepository->getPreviousAdvanceInvoice($studentId);
+        $schoolId = $schedule->schedulable_id;
+        $previousInvoice = $this->lineItemRepository->getPreviousAdvanceInvoice($schoolId);
 
         $completedPeriod = $this->resolveCompletedPeriod($schedule);
 
@@ -234,7 +232,7 @@ final class AdvanceBillingService
 
         return DB::transaction(function () use (
             $schedule,
-            $studentId,
+            $schoolId,
             $completedPeriod,
             $adjustmentLines,
             $adjustmentTotal,
@@ -242,7 +240,7 @@ final class AdvanceBillingService
             $newCarryForward,
         ): BillingRunResultDTO {
             $invoice = $this->createAdvanceInvoice(
-                $studentId,
+                $schoolId,
                 $completedPeriod['start'],
                 $completedPeriod['end'],
                 0.0,
@@ -357,7 +355,7 @@ final class AdvanceBillingService
      * @return Collection<int, InvoiceLineItemDTO>
      */
     public function buildAdvanceChargeLines(
-        int $studentId,
+        int $schoolId,
         Carbon $periodStart,
         Carbon $periodEnd,
     ): Collection {
@@ -366,7 +364,7 @@ final class AdvanceBillingService
 
         /** @var Collection<int, Schedule> $schedules */
         $schedules = Schedule::query()
-            ->where('student_id', $studentId)
+            ->where('school_id', $schoolId)
             ->where('schedule_date', '>=', $periodStart->toDateString())
             ->where('schedule_date', '<=', $periodEnd->toDateString())
             ->where('status', ScheduleStatus::SCHEDULED->value)
@@ -380,7 +378,7 @@ final class AdvanceBillingService
             if ($rate === null) {
                 Log::warning('Could not determine rate for scheduled session', [
                     'schedule_id' => $schedule->id,
-                    'student_id' => $studentId,
+                    'school_id' => $schoolId,
                 ]);
 
                 continue;
@@ -533,14 +531,14 @@ final class AdvanceBillingService
     ): void {
         $billedScheduleIds = $advanceLines->pluck('schedule_id')->filter()->all();
 
-        $studentId = $previousInvoice->student_id;
-        if ($studentId === null) {
+        $schoolId = $previousInvoice->school_id;
+        if ($schoolId === null) {
             return;
         }
 
         /** @var Collection<int, SessionLog> $extraSessions */
         $extraSessions = SessionLog::query()
-            ->where('student_id', $studentId)
+            ->where('school_id', $schoolId)
             ->where('status', SessionLogStatus::APPROVED->value)
             ->where('is_billable_school', true)
             ->where('session_date', '>=', $periodStart->toDateString())
@@ -598,10 +596,10 @@ final class AdvanceBillingService
     }
 
     /**
-     * Create the advance invoice record.
+     * Create the advance invoice record for a school.
      */
     private function createAdvanceInvoice(
-        int $studentId,
+        int $schoolId,
         Carbon $periodStart,
         Carbon $periodEnd,
         float $advanceTotal,
@@ -610,36 +608,21 @@ final class AdvanceBillingService
         float $carryForward,
         int $paymentTermsDays,
     ): Invoice {
-        /** @var User $student */
-        $student = User::findOrFail($studentId);
-        $studentProfile = StudentProfile::where('user_id', $studentId)->first();
-
-        $schoolId = $studentProfile?->school_id;
-        $parentId = $studentProfile?->parent_id;
-
-        $school = $schoolId !== null ? $this->schoolRepository->find($schoolId) : null;
-        /** @var User|null $parentUser */
-        $parentUser = $parentId !== null ? User::find($parentId) : null;
-
+        $school = $this->schoolRepository->find($schoolId);
         $schoolSnapshot = $school !== null
             ? $this->invoiceService->copySchoolSnapshot($school)
-            : $this->emptySchoolSnapshot();
+            : [];
 
         $companySnapshot = $this->invoiceService->copyCompanySnapshot();
-        $parentSnapshot = $this->copyParentSnapshot($parentUser);
-
         $invoiceNumber = $this->invoiceRepository->generateInvoiceNumber();
 
         $invoice = $this->invoiceRepository->create([
             'school_id' => $schoolId,
-            'student_id' => $studentId,
-            'parent_id' => $parentId,
             'invoice_number' => $invoiceNumber,
             'invoice_date' => now()->toDateString(),
             'billing_period_start' => $periodStart->toDateString(),
             'billing_period_end' => $periodEnd->toDateString(),
             'billing_mode' => BillingMode::ADVANCE->value,
-            'invoice_type' => 'private_student',
             'status' => InvoiceStatus::DRAFT->value,
             'subtotal' => round($advanceTotal, 2),
             'tax_total' => 0,
@@ -648,53 +631,9 @@ final class AdvanceBillingService
             'due_date' => now()->addDays($paymentTermsDays)->toDateString(),
             ...$schoolSnapshot,
             ...$companySnapshot,
-            ...$parentSnapshot,
         ]);
 
         return $invoice;
-    }
-
-    /**
-     * @return array<string, string|null>
-     */
-    private function copyParentSnapshot(?User $parent): array
-    {
-        if ($parent === null) {
-            return [
-                'parent_name' => null,
-                'parent_email' => null,
-                'parent_phone' => null,
-                'parent_address' => null,
-            ];
-        }
-
-        /** @var \App\Models\ParentProfile|null $parentProfile */
-        $parentProfile = $parent->parentProfile;
-
-        return [
-            'parent_name' => $parent->name,
-            'parent_email' => $parent->email,
-            'parent_phone' => $parentProfile->phone ?? null,
-            'parent_address' => $parentProfile->address ?? null,
-        ];
-    }
-
-    /**
-     * @return array<string, null>
-     */
-    private function emptySchoolSnapshot(): array
-    {
-        return [
-            'school_name' => null,
-            'school_display_name' => null,
-            'school_address' => null,
-            'school_state' => null,
-            'school_contact_first_name' => null,
-            'school_contact_last_name' => null,
-            'school_contact_phone' => null,
-            'school_contact_email' => null,
-            'school_invoice_email' => null,
-        ];
     }
 
     /**

@@ -15,7 +15,7 @@ beforeEach(function () {
 test('billing send reminders command processes reminders', function () {
     Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     $this->artisan('billing:send-reminders')
@@ -26,7 +26,7 @@ test('billing send reminders command processes reminders', function () {
 test('billing send reminders dry run does not send emails', function () {
     Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3),
-        'parent_email' => 'parent@example.com',
+        'school_invoice_email' => 'billing@school.com',
     ]);
 
     $this->artisan('billing:send-reminders', ['--dry-run' => true])

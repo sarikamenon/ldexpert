@@ -59,14 +59,7 @@ class Invoice extends Model
         'company_email',
         'company_tax_id',
         'billing_mode',
-        'invoice_type',
-        'student_id',
-        'parent_id',
         'carry_forward_balance',
-        'parent_name',
-        'parent_email',
-        'parent_phone',
-        'parent_address',
         'sent_at',
         'sent_by_id',
         'paid_at',
@@ -101,22 +94,6 @@ class Invoice extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
-    }
-
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function student(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'student_id');
-    }
-
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'parent_id');
     }
 
     /**

@@ -34,6 +34,13 @@ test('admin can update billing settings', function () {
         'default_payment_terms_days' => 45,
         'default_auto_generate' => true,
         'default_auto_send' => false,
+        'advance_default_frequency' => 'weekly',
+        'advance_default_generation_day_type' => 'day_of_week',
+        'advance_default_generation_day_of_week' => 1,
+        'advance_default_min_grace_days' => 3,
+        'advance_default_payment_terms_days' => 15,
+        'advance_default_auto_generate' => true,
+        'advance_default_auto_send' => true,
         'reminder_days_before_due' => 7,
         'reminder_days_after_due' => 5,
         'reminder_overdue_repeat_days' => 10,
@@ -49,6 +56,8 @@ test('admin can update billing settings', function () {
         'default_frequency' => 'monthly',
         'default_payment_terms_days' => 45,
         'max_overdue_reminders' => 5,
+        'advance_default_frequency' => 'weekly',
+        'advance_default_payment_terms_days' => 15,
     ]);
 });
 
@@ -63,6 +72,11 @@ test('billing settings update validates required fields', function () {
         'default_generation_day_of_week',
         'default_min_grace_days',
         'default_payment_terms_days',
+        'advance_default_frequency',
+        'advance_default_generation_day_type',
+        'advance_default_generation_day_of_week',
+        'advance_default_min_grace_days',
+        'advance_default_payment_terms_days',
         'reminder_days_before_due',
         'reminder_days_after_due',
         'reminder_overdue_repeat_days',
@@ -81,6 +95,13 @@ test('billing settings update validates boundary values', function () {
         'default_payment_terms_days' => 0, // min is 1
         'default_auto_generate' => true,
         'default_auto_send' => false,
+        'advance_default_frequency' => 'invalid',
+        'advance_default_generation_day_type' => 'invalid',
+        'advance_default_generation_day_of_week' => 7, // max is 6
+        'advance_default_min_grace_days' => 15, // max is 14
+        'advance_default_payment_terms_days' => 0, // min is 1
+        'advance_default_auto_generate' => true,
+        'advance_default_auto_send' => false,
         'reminder_days_before_due' => 0, // min is 1
         'reminder_days_after_due' => 31, // max is 30
         'reminder_overdue_repeat_days' => 0, // min is 1
@@ -95,6 +116,11 @@ test('billing settings update validates boundary values', function () {
         'default_generation_day_of_week',
         'default_min_grace_days',
         'default_payment_terms_days',
+        'advance_default_frequency',
+        'advance_default_generation_day_type',
+        'advance_default_generation_day_of_week',
+        'advance_default_min_grace_days',
+        'advance_default_payment_terms_days',
         'reminder_days_before_due',
         'reminder_days_after_due',
         'reminder_overdue_repeat_days',

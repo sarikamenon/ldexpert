@@ -13,6 +13,13 @@ test('billing settings dto creates from array with all fields', function () {
         'default_payment_terms_days' => 45,
         'default_auto_generate' => false,
         'default_auto_send' => true,
+        'advance_default_frequency' => 'weekly',
+        'advance_default_generation_day_type' => 'fixed_delay',
+        'advance_default_generation_day_of_week' => 1,
+        'advance_default_min_grace_days' => 3,
+        'advance_default_payment_terms_days' => 15,
+        'advance_default_auto_generate' => true,
+        'advance_default_auto_send' => true,
         'reminder_days_before_due' => 7,
         'reminder_days_after_due' => 5,
         'reminder_overdue_repeat_days' => 10,
@@ -28,6 +35,13 @@ test('billing settings dto creates from array with all fields', function () {
         ->and($dto->defaultPaymentTermsDays)->toBe(45)
         ->and($dto->defaultAutoGenerate)->toBeFalse()
         ->and($dto->defaultAutoSend)->toBeTrue()
+        ->and($dto->advanceDefaultFrequency)->toBe('weekly')
+        ->and($dto->advanceDefaultGenerationDayType)->toBe('fixed_delay')
+        ->and($dto->advanceDefaultGenerationDayOfWeek)->toBe(1)
+        ->and($dto->advanceDefaultMinGraceDays)->toBe(3)
+        ->and($dto->advanceDefaultPaymentTermsDays)->toBe(15)
+        ->and($dto->advanceDefaultAutoGenerate)->toBeTrue()
+        ->and($dto->advanceDefaultAutoSend)->toBeTrue()
         ->and($dto->reminderDaysBeforeDue)->toBe(7)
         ->and($dto->reminderDaysAfterDue)->toBe(5)
         ->and($dto->reminderOverdueRepeatDays)->toBe(10)
@@ -44,6 +58,13 @@ test('billing settings dto uses defaults for missing fields', function () {
         ->and($dto->defaultPaymentTermsDays)->toBe(30)
         ->and($dto->defaultAutoGenerate)->toBeTrue()
         ->and($dto->defaultAutoSend)->toBeFalse()
+        ->and($dto->advanceDefaultFrequency)->toBe('semi_monthly')
+        ->and($dto->advanceDefaultGenerationDayType)->toBe('day_of_week')
+        ->and($dto->advanceDefaultGenerationDayOfWeek)->toBe(2)
+        ->and($dto->advanceDefaultMinGraceDays)->toBe(2)
+        ->and($dto->advanceDefaultPaymentTermsDays)->toBe(30)
+        ->and($dto->advanceDefaultAutoGenerate)->toBeTrue()
+        ->and($dto->advanceDefaultAutoSend)->toBeFalse()
         ->and($dto->reminderDaysBeforeDue)->toBe(5)
         ->and($dto->reminderDaysAfterDue)->toBe(3)
         ->and($dto->reminderOverdueRepeatDays)->toBe(7)
@@ -59,6 +80,13 @@ test('billing settings dto round-trips via toArray', function () {
         'default_payment_terms_days' => 60,
         'default_auto_generate' => true,
         'default_auto_send' => false,
+        'advance_default_frequency' => 'monthly',
+        'advance_default_generation_day_type' => 'fixed_delay',
+        'advance_default_generation_day_of_week' => 4,
+        'advance_default_min_grace_days' => 1,
+        'advance_default_payment_terms_days' => 20,
+        'advance_default_auto_generate' => false,
+        'advance_default_auto_send' => true,
         'reminder_days_before_due' => 3,
         'reminder_days_after_due' => 1,
         'reminder_overdue_repeat_days' => 14,

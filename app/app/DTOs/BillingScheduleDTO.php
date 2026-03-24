@@ -20,6 +20,7 @@ final class BillingScheduleDTO
         public readonly bool $autoGenerate = true,
         public readonly bool $autoSend = false,
         public readonly ?string $notes = null,
+        public readonly ?string $billingStartDate = null,
     ) {}
 
     /**
@@ -41,6 +42,7 @@ final class BillingScheduleDTO
             autoGenerate: (bool) ($data['auto_generate'] ?? true),
             autoSend: (bool) ($data['auto_send'] ?? false),
             notes: $data['notes'] ?? null,
+            billingStartDate: $data['billing_start_date'] ?? null,
         );
     }
 
@@ -63,6 +65,7 @@ final class BillingScheduleDTO
             'auto_generate' => $this->autoGenerate,
             'auto_send' => $this->autoSend,
             'notes' => $this->notes,
+            'billing_start_date' => $this->billingStartDate,
         ];
     }
 }

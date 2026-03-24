@@ -177,8 +177,7 @@ final class BillingReminderService
 
     private function resolveRecipientEmail(Invoice $invoice): ?string
     {
-        return $invoice->parent_email
-            ?? $invoice->school_invoice_email
+        return $invoice->school_invoice_email
             ?? $invoice->school_contact_email;
     }
 }

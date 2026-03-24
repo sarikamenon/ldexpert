@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const fixedDelayGroup = document.getElementById("fixedDelayGroup");
     const scheduleTypeSelect = document.getElementById("schedule_type");
     const schedulableTypeInput = document.getElementById("schedulable_type");
-    const billingModeSelect = document.getElementById("billing_mode");
 
     function toggleGenerationFields() {
         if (!genTypeSelect || !dayOfWeekGroup || !fixedDelayGroup) return;
@@ -29,21 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const type = scheduleTypeSelect.value;
         if (type === "therapist_bill") {
             schedulableTypeInput.value = "App\\Models\\User";
-        } else if (type === "private_student_invoice") {
-            schedulableTypeInput.value = "App\\Models\\User";
         } else {
             schedulableTypeInput.value = "App\\Models\\School";
-        }
-    }
-
-    function updateBillingMode() {
-        if (!scheduleTypeSelect || !billingModeSelect) return;
-
-        const type = scheduleTypeSelect.value;
-        if (type === "private_student_invoice") {
-            billingModeSelect.value = "advance";
-        } else {
-            billingModeSelect.value = "standard";
         }
     }
 
@@ -55,7 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (scheduleTypeSelect) {
         scheduleTypeSelect.addEventListener("change", () => {
             updateSchedulableType();
-            updateBillingMode();
         });
     }
 });

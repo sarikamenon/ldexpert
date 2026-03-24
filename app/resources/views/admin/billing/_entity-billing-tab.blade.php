@@ -1,5 +1,5 @@
 {{-- Entity Billing Configuration Tab --}}
-{{-- Required vars: $entityType (school|therapist|private_student), $entityId --}}
+{{-- Required vars: $entityType (school|therapist), $entityId --}}
 @php
     $configUrl = route('admin.billing.entity-config.show', ['entity_type' => $entityType, 'entity_id' => $entityId]);
     $saveUrl = route('admin.billing.entity-config.store');
@@ -99,11 +99,13 @@
                     value="3" min="1" max="30" aria-describedby="eb_delay_help" />
             </div>
 
+            <input type="hidden" id="eb_min_grace_days" name="min_grace_days" value="2">
+
             <div>
-                <x-input-label for="eb_min_grace_days" value="Minimum Grace Days *" />
-                <p class="mt-1 text-xs text-foreground/60" id="eb_grace_help">Wait at least this many days after period ends before generating.</p>
-                <x-ui::input type="number" id="eb_min_grace_days" name="min_grace_days" class="mt-1 block w-full" required
-                    value="2" min="0" max="14" aria-describedby="eb_grace_help" />
+                <x-input-label for="eb_billing_start_date" value="Billing Start Date" />
+                <p class="mt-1 text-xs text-foreground/60" id="eb_start_date_help">The date from which invoicing begins. No invoices will be generated for periods before this date.</p>
+                <x-ui::input type="date" id="eb_billing_start_date" name="billing_start_date" class="mt-1 block w-full"
+                    aria-describedby="eb_start_date_help" />
             </div>
 
             <div>

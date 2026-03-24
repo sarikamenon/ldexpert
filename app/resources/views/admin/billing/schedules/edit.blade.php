@@ -104,12 +104,14 @@
                     <x-input-error :messages="$errors->get('generation_delay_days')" class="mt-2" />
                 </div>
 
+                <input type="hidden" name="min_grace_days" value="{{ old('min_grace_days', $schedule->min_grace_days) }}">
+
                 <div>
-                    <x-input-label for="min_grace_days" value="Minimum Grace Days *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="grace_help">Wait at least this many days after period ends before generating.</p>
-                    <x-ui::input type="number" id="min_grace_days" name="min_grace_days" class="mt-1 block w-full" required
-                        value="{{ old('min_grace_days', $schedule->min_grace_days) }}" min="0" max="14" aria-describedby="grace_help" />
-                    <x-input-error :messages="$errors->get('min_grace_days')" class="mt-2" />
+                    <x-input-label for="billing_start_date" value="Billing Start Date" />
+                    <p class="mt-1 text-xs text-foreground/60" id="start_date_help">The date from which invoicing begins. Leave empty to start immediately.</p>
+                    <x-ui::input type="date" id="billing_start_date" name="billing_start_date" class="mt-1 block w-full"
+                        value="{{ old('billing_start_date', $schedule->billing_start_date?->toDateString()) }}" aria-describedby="start_date_help" />
+                    <x-input-error :messages="$errors->get('billing_start_date')" class="mt-2" />
                 </div>
 
                 <div>

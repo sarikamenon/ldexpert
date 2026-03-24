@@ -68,16 +68,6 @@ test('billing schedule forTherapists scope filters therapist bills', function ()
         ->and($therapistSchedules->first()->schedule_type)->toBe(BillingScheduleType::THERAPIST_BILL);
 });
 
-test('billing schedule forPrivateStudents scope filters private student invoices', function () {
-    BillingSchedule::factory()->forPrivateStudent()->create();
-    BillingSchedule::factory()->forSchool()->create();
-
-    $privateSchedules = BillingSchedule::forPrivateStudents()->get();
-
-    expect($privateSchedules)->toHaveCount(1)
-        ->and($privateSchedules->first()->schedule_type)->toBe(BillingScheduleType::PRIVATE_STUDENT_INVOICE);
-});
-
 test('billing schedule isDue returns true when schedule is due', function () {
     $schedule = BillingSchedule::factory()->due()->create();
 
@@ -115,14 +105,6 @@ test('billing schedule isForTherapist returns correct value', function () {
 
     expect($therapistSchedule->isForTherapist())->toBeTrue()
         ->and($schoolSchedule->isForTherapist())->toBeFalse();
-});
-
-test('billing schedule isForPrivateStudent returns correct value', function () {
-    $privateSchedule = BillingSchedule::factory()->forPrivateStudent()->create();
-    $schoolSchedule = BillingSchedule::factory()->forSchool()->create();
-
-    expect($privateSchedule->isForPrivateStudent())->toBeTrue()
-        ->and($schoolSchedule->isForPrivateStudent())->toBeFalse();
 });
 
 test('billing schedule isAdvanceMode returns correct value', function () {

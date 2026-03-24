@@ -13,7 +13,7 @@ use Illuminate\Console\Command;
 class BillingGenerate extends Command
 {
     protected $signature = 'billing:generate
-        {--type=all : Schedule type to process (school_invoice|private_student_invoice|therapist_bill|all)}
+        {--type=all : Schedule type to process (school_invoice|therapist_bill|all)}
         {--schedule= : Run a specific schedule by ID}
         {--dry-run : Show what would be generated without creating}';
 

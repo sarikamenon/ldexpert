@@ -64,10 +64,10 @@ final class EloquentInvoiceLineItemRepository implements InvoiceLineItemReposito
         return $result;
     }
 
-    public function getPreviousAdvanceInvoice(int $studentId, ?int $currentInvoiceId = null): ?Invoice
+    public function getPreviousAdvanceInvoice(int $schoolId, ?int $currentInvoiceId = null): ?Invoice
     {
         $query = Invoice::query()
-            ->where('student_id', $studentId)
+            ->where('school_id', $schoolId)
             ->where('billing_mode', BillingMode::ADVANCE->value)
             ->orderByDesc('billing_period_end')
             ->orderByDesc('id');

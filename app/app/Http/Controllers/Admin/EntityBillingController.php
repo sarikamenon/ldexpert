@@ -10,6 +10,7 @@ use App\DTOs\BillingScheduleDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreEntityBillingRequest;
 use App\Models\BillingSchedule;
+use App\Models\School;
 use Illuminate\Http\JsonResponse;
 
 final class EntityBillingController extends Controller
@@ -23,10 +24,6 @@ final class EntityBillingController extends Controller
         'therapist' => [
             'schedulable_type' => 'App\\Models\\User',
             'schedule_type' => 'therapist_bill',
-        ],
-        'private_student' => [
-            'schedulable_type' => 'App\\Models\\User',
-            'schedule_type' => 'private_student_invoice',
         ],
     ];
 
@@ -59,6 +56,32 @@ final class EntityBillingController extends Controller
 
         $settings = $this->settingsService->getSettings();
 
+        $useAdvanceDefaults = false;
+        if ($entityType === 'school') {
+            /** @var School|null $school */
+            $school = School::find($entityId);
+            $useAdvanceDefaults = $school?->is_private_student === true;
+        }
+
+        if ($useAdvanceDefaults) {
+            return response()->json([
+                'is_default' => true,
+                'data' => [
+                    'billing_mode' => 'advance',
+                    'frequency' => $settings->advance_default_frequency->value,
+                    'generation_day_type' => $settings->advance_default_generation_day_type->value,
+                    'generation_day_of_week' => $settings->advance_default_generation_day_of_week,
+                    'generation_delay_days' => null,
+                    'min_grace_days' => $settings->advance_default_min_grace_days,
+                    'payment_terms_days' => $settings->advance_default_payment_terms_days,
+                    'auto_generate' => $settings->advance_default_auto_generate,
+                    'auto_send' => $settings->advance_default_auto_send,
+                    'billing_start_date' => null,
+                    'notes' => null,
+                ],
+            ]);
+        }
+
         return response()->json([
             'is_default' => true,
             'data' => [
@@ -71,6 +94,7 @@ final class EntityBillingController extends Controller
                 'payment_terms_days' => $settings->default_payment_terms_days,
                 'auto_generate' => $settings->default_auto_generate,
                 'auto_send' => $settings->default_auto_send,
+                'billing_start_date' => null,
                 'notes' => null,
             ],
         ]);
@@ -104,6 +128,7 @@ final class EntityBillingController extends Controller
             'auto_generate' => $request->validated('auto_generate'),
             'auto_send' => $request->validated('auto_send'),
             'notes' => $request->validated('notes'),
+            'billing_start_date' => $request->validated('billing_start_date'),
         ];
 
         $dto = BillingScheduleDTO::fromArray($dtoData);
@@ -167,6 +192,7 @@ final class EntityBillingController extends Controller
             'auto_generate' => $schedule->auto_generate,
             'auto_send' => $schedule->auto_send,
             'notes' => $schedule->notes,
+            'billing_start_date' => $schedule->billing_start_date?->toDateString(),
             'is_active' => $schedule->is_active,
             'next_run_at' => $schedule->next_run_at?->toDateString(),
             'last_run_at' => $schedule->last_run_at?->toDateTimeString(),

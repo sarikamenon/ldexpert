@@ -15,7 +15,7 @@ interface BillingScheduleRepositoryInterface
     public function find(int $id): ?BillingSchedule;
 
     /**
-     * @param  string  $type  'school_invoice'|'private_student_invoice'|'therapist_bill'|'all'
+     * @param  string  $type  'school_invoice'|'therapist_bill'|'all'
      * @return Collection<int, BillingSchedule>
      */
     public function getDueSchedules(string $type = 'all'): Collection;

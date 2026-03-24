@@ -27,5 +27,5 @@ interface InvoiceLineItemRepositoryInterface
      */
     public function getAdvanceLinesForPeriod(int $invoiceId, Carbon $periodStart, Carbon $periodEnd): Collection;
 
-    public function getPreviousAdvanceInvoice(int $studentId, ?int $currentInvoiceId = null): ?Invoice;
+    public function getPreviousAdvanceInvoice(int $schoolId, ?int $currentInvoiceId = null): ?Invoice;
 }

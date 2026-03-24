@@ -78,6 +78,40 @@ describe('show', function (): void {
             ->assertJson(['is_default' => true]);
     });
 
+    it('returns advance defaults for private student school with no custom config', function (): void {
+        $school = School::factory()->create(['is_private_student' => true]);
+
+        $response = $this->getJson(route('admin.billing.entity-config.show', [
+            'entity_type' => 'school',
+            'entity_id' => $school->id,
+        ]));
+
+        $response->assertOk()
+            ->assertJson([
+                'is_default' => true,
+                'data' => [
+                    'billing_mode' => 'advance',
+                ],
+            ]);
+    });
+
+    it('returns standard defaults for regular school with no custom config', function (): void {
+        $school = School::factory()->create(['is_private_student' => false]);
+
+        $response = $this->getJson(route('admin.billing.entity-config.show', [
+            'entity_type' => 'school',
+            'entity_id' => $school->id,
+        ]));
+
+        $response->assertOk()
+            ->assertJson([
+                'is_default' => true,
+                'data' => [
+                    'billing_mode' => 'standard',
+                ],
+            ]);
+    });
+
     it('rejects invalid entity type', function (): void {
         $response = $this->getJson(route('admin.billing.entity-config.show', [
             'entity_type' => 'invalid',
@@ -184,7 +218,7 @@ describe('storeOrUpdate', function (): void {
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['entity_id', 'billing_mode', 'frequency', 'generation_day_type', 'min_grace_days', 'payment_terms_days']);
+            ->assertJsonValidationErrors(['entity_id', 'billing_mode', 'frequency', 'generation_day_type', 'payment_terms_days']);
     });
 });
 

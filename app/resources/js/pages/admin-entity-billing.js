@@ -110,6 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         $("#eb_min_grace_days").val(data.min_grace_days);
+        $("#eb_billing_start_date").val(data.billing_start_date || "");
         $("#eb_payment_terms_days").val(data.payment_terms_days);
         $("#eb_auto_generate").prop("checked", !!data.auto_generate);
         $("#eb_auto_send").prop("checked", !!data.auto_send);
@@ -144,6 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
             generation_day_of_week: $("#eb_generation_day_of_week").val(),
             generation_delay_days: $("#eb_generation_delay_days").val(),
             min_grace_days: $("#eb_min_grace_days").val(),
+            billing_start_date: $("#eb_billing_start_date").val() || null,
             payment_terms_days: $("#eb_payment_terms_days").val(),
             auto_generate: $("#eb_auto_generate").is(":checked") ? 1 : 0,
             auto_send: $("#eb_auto_send").is(":checked") ? 1 : 0,
