@@ -19,7 +19,7 @@ final class DashboardTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_dashboard_shows_minutes_submitted_this_week_for_submitted_and_approved_logs(): void
+    public function test_dashboard_shows_session_time_submitted_this_week_for_submitted_and_approved_logs(): void
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
@@ -87,7 +87,7 @@ final class DashboardTest extends TestCase
             ->get(route('therapist.dashboard'));
 
         $response->assertOk();
-        $response->assertSeeText('Minutes Submitted This Week');
+        $response->assertSeeText('Session Time Submitted This Week');
         $response->assertSeeText('1h 45m');
         $response->assertSeeText('2 submitted');
     }

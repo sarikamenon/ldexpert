@@ -39,7 +39,7 @@
                         </span>
                     </x-slot>
                 </x-dashboard::metric>
-                <x-dashboard::metric :title="'Minutes Submitted This Week'" :value="$submittedMinutesLabel">
+                <x-dashboard::metric :title="'Session Time Submitted This Week'" :value="$submittedMinutesLabel">
                     <x-slot name="badge">
                         <span class="text-xs text-foreground/60">
                             {{ $submittedSessionsThisWeek ?? 0 }} submitted
