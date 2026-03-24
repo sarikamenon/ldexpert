@@ -52,7 +52,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
-            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->count();
     }
 
@@ -63,7 +63,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
-            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->with(['student', 'service', 'ssa', 'school']);
 
         if ($filters) {
@@ -475,11 +475,8 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         return Schedule::query()
             ->forTherapist($therapist)
-            ->whereBetween('schedule_date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
-            ->whereIn('status', [
-                ScheduleStatus::SCHEDULED->value,
-                ScheduleStatus::COMPLETED->value,
-            ])
+            ->betweenScheduleDates($startOfWeek->toDateString(), $endOfWeek->toDateString())
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->count();
     }
 

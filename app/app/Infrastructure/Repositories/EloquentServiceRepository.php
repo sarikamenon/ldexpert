@@ -167,6 +167,25 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->get();
     }
 
+    /**
+     * @param  Collection<int, int>  $commonServiceIds  Pre-computed intersection of therapist & school contract service IDs
+     * @return Collection<int, Service>
+     */
+    public function listCommonIndirectServices(Collection $commonServiceIds): Collection
+    {
+        if ($commonServiceIds->isEmpty()) {
+            return collect();
+        }
+
+        return Service::query()
+            ->where('status', ServiceStatus::ACTIVE)
+            ->where('is_direct_service', false)
+            ->whereIn('id', $commonServiceIds)
+            ->select(['id', 'name'])
+            ->orderBy('name')
+            ->get();
+    }
+
     public function findOrFail(int $id): Service
     {
         return Service::findOrFail($id);

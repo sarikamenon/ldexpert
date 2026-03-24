@@ -10,10 +10,6 @@ final class UpdateSSADTO
 {
     public function __construct(
         public readonly ?int $assignedTherapistId,
-        /**
-         * @var array<int>|null
-         */
-        public readonly ?array $additionalServiceIds,
         public readonly ?string $startDate,
         public readonly ?string $endDate,
         public readonly ?int $minutesPerSession,
@@ -36,23 +32,10 @@ final class UpdateSSADTO
                 : ServiceFrequency::from($data['frequency']);
         }
 
-        $additionalServiceIds = null;
-        if (array_key_exists('additional_service_ids', $data)) {
-            /** @var array<int, mixed> $rawIds */
-            $rawIds = $data['additional_service_ids'] ?? [];
-            $additionalServiceIds = collect($rawIds)
-                ->filter(static fn ($value): bool => $value !== null && $value !== '')
-                ->map(static fn ($value): int => (int) $value)
-                ->unique()
-                ->values()
-                ->all();
-        }
-
         return new self(
             assignedTherapistId: array_key_exists('assigned_therapist_id', $data)
                 ? ($data['assigned_therapist_id'] !== null && $data['assigned_therapist_id'] !== '' ? (int) $data['assigned_therapist_id'] : null)
                 : -1,
-            additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'] ?? null,
             endDate: $data['end_date'] ?? null,
             minutesPerSession: isset($data['minutes_per_session']) ? (int) $data['minutes_per_session'] : null,

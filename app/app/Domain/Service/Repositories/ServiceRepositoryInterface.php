@@ -46,5 +46,11 @@ interface ServiceRepositoryInterface
     /** @return Collection<int, Service> */
     public function listIndirectServices(): Collection;
 
+    /**
+     * @param  Collection<int, int>  $commonServiceIds  Pre-computed intersection of therapist & school contract service IDs
+     * @return Collection<int, Service>
+     */
+    public function listCommonIndirectServices(Collection $commonServiceIds): Collection;
+
     public function findOrFail(int $id): Service;
 }

@@ -193,6 +193,28 @@ final class StoreSessionLogRequest extends FormRequest
                 }
             }
 
+            // For standalone (non-scheduled) session logs:
+            // - service must be an indirect service
+            // - session date must be a past date
+            $serviceId = $this->input('service_id');
+            $sessionDate = $this->input('session_date');
+            if (! $scheduleId) {
+                if ($serviceId) {
+                    /** @var Service|null $svc */
+                    $svc = Service::find((int) $serviceId);
+                    if ($svc && $svc->is_direct_service) {
+                        $validator->errors()->add('service_id', 'Only indirect services can be selected for non-scheduled session logs.');
+                    }
+                }
+
+                if ($sessionDate) {
+                    $parsedDate = Carbon::parse((string) $sessionDate);
+                    if ($parsedDate->isToday() || $parsedDate->isFuture()) {
+                        $validator->errors()->add('session_date', 'Session date must be a past date for non-scheduled session logs.');
+                    }
+                }
+            }
+
             // Validate session date is not a holiday
             $calendarService = app(SchoolCalendarService::class);
             $studentRepository = app(StudentRepositoryInterface::class);

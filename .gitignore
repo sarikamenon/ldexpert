@@ -23,6 +23,7 @@ $RECYCLE.BIN/
 .vscode/
 .fleet/
 .zed/
+.cursor/rules/
 *.swp
 *.swo
 *~

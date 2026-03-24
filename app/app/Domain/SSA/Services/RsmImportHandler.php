@@ -47,14 +47,12 @@ final class RsmImportHandler
      * Process an RSM row with status-based upsert logic.
      *
      * @param  array<string, mixed>  $mappedData
-     * @param  array<int, int>  $additionalServiceIds
      */
     public function processRow(
         SSAImportRow $importRow,
         array $mappedData,
         User $student,
         Service $primaryService,
-        array $additionalServiceIds,
         ?int $therapistId,
         int $thoMinutes,
     ): void {
@@ -114,7 +112,6 @@ final class RsmImportHandler
         $createData = [
             'student_id' => $student->id,
             'primary_service_id' => $primaryService->id,
-            'additional_service_ids' => $additionalServiceIds,
             'start_date' => $mappedData['start_date'],
             'end_date' => $mappedData['end_date'],
             'minutes_per_session' => (int) $mappedData['minutes_per_session'],

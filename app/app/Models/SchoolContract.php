@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ContractStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,5 +37,23 @@ class SchoolContract extends Model
     public function services(): HasMany
     {
         return $this->hasMany(SchoolContractService::class);
+    }
+
+    /**
+     * @param  Builder<SchoolContract>  $query
+     * @return Builder<SchoolContract>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', ContractStatus::ACTIVE);
+    }
+
+    /**
+     * @param  Builder<SchoolContract>  $query
+     * @return Builder<SchoolContract>
+     */
+    public function scopeForSchool(Builder $query, int $schoolId): Builder
+    {
+        return $query->where('school_id', $schoolId);
     }
 }

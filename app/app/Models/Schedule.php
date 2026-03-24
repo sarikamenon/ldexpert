@@ -154,6 +154,16 @@ class Schedule extends Model
 
     /**
      * @param  Builder<Schedule>  $query
+     * @param  array<int, ScheduleStatus|string>  $statuses
+     * @return Builder<Schedule>
+     */
+    public function scopeWithStatuses(Builder $query, array $statuses): Builder
+    {
+        return ScheduleScope::withStatuses($query, $this, $statuses);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
     public function scopePendingBilling(Builder $query): Builder
@@ -240,6 +250,15 @@ class Schedule extends Model
     public function scopeForSSA(Builder $query, ServiceSupportAgreement $ssa): Builder
     {
         return ScheduleScope::forSSA($query, $this, $ssa);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeBetweenScheduleDates(Builder $query, string $startDate, string $endDate): Builder
+    {
+        return ScheduleScope::betweenScheduleDates($query, $this, $startDate, $endDate);
     }
 
     /**

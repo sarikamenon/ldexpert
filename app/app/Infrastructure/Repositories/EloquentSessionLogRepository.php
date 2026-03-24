@@ -13,6 +13,7 @@ use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\SessionLogComment;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -20,11 +21,31 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentSessionLogRepository implements SessionLogRepositoryInterface
 {
+    /**
+     * @return array{minutes: int, sessions: int}
+     */
+    public function getSubmittedSummaryForWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): array
+    {
+        /** @var Collection<int, SessionLog> $sessionLogs */
+        $sessionLogs = SessionLog::query()
+            ->forTherapist($therapist)
+            ->betweenSubmittedDates($startOfWeek->toDateTimeString(), $endOfWeek->toDateTimeString())
+            ->withStatuses([SessionLogStatus::SUBMITTED, SessionLogStatus::APPROVED])
+            ->get();
+
+        return [
+            'minutes' => (int) $sessionLogs->sum(
+                static fn (SessionLog $sessionLog): int => (int) $sessionLog->duration_minutes
+            ),
+            'sessions' => $sessionLogs->count(),
+        ];
+    }
+
     public function findForTherapist(User $therapist, int $sessionLogId): ?SessionLog
     {
         return SessionLog::query()
             ->where('id', $sessionLogId)
-            ->where('therapist_id', $therapist->id)
+            ->forTherapist($therapist)
             ->with(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule'])
             ->first();
     }
@@ -36,11 +57,11 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
     public function getSessionLogsForTherapist(User $therapist, array $filters = []): Collection
     {
         $query = SessionLog::query()
-            ->where('therapist_id', $therapist->id)
+            ->forTherapist($therapist)
             ->with(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule']);
 
         if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->withStatuses([$filters['status']]);
         }
 
         if (isset($filters['student_id'])) {
@@ -71,11 +92,11 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
     public function paginateForTherapist(User $therapist, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         $query = SessionLog::query()
-            ->where('therapist_id', $therapist->id)
+            ->forTherapist($therapist)
             ->with(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule']);
 
         if (isset($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->withStatuses([$filters['status']]);
         }
 
         if (isset($filters['student_id'])) {
@@ -262,7 +283,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->whereIn('schedule_id', $scheduleIds);
 
         if ($therapist !== null) {
-            $query->where('therapist_id', $therapist->id);
+            $query->forTherapist($therapist);
         }
 
         /** @var Collection<int|string, Collection<int, SessionLog>> */
@@ -288,7 +309,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         }
 
         if (! empty($filters['therapist_id'])) {
-            $query->where('therapist_id', $filters['therapist_id']);
+            $query->forTherapistId((int) $filters['therapist_id']);
         }
 
         if (! empty($filters['service_id'])) {
@@ -331,7 +352,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $query->where('student_id', $filters['student_id']);
         }
         if (! empty($filters['therapist_id'])) {
-            $query->where('therapist_id', $filters['therapist_id']);
+            $query->forTherapistId((int) $filters['therapist_id']);
         }
         if (! empty($filters['service_id'])) {
             $query->where('service_id', $filters['service_id']);
@@ -340,7 +361,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             $query->where('ssa_id', $filters['ssa_id']);
         }
         if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->withStatuses([$filters['status']]);
         }
         if (! empty($filters['date_from'])) {
             $query->whereDate('session_date', '>=', $filters['date_from']);
@@ -387,7 +408,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
     public function listForDataTablesForTherapist(User $therapist, array $filters, DataTablesParamsDTO $params): array
     {
         $query = SessionLog::query()
-            ->where('therapist_id', $therapist->id)
+            ->forTherapist($therapist)
             ->with(['student', 'ssa', 'service', 'school'])
             ->latest('session_date');
 

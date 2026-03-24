@@ -10,7 +10,9 @@ use App\DTOs\CreateServiceDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ServiceFilterDTO;
 use App\DTOs\UpdateServiceDTO;
+use App\Models\SchoolContractService;
 use App\Models\Service;
+use App\Models\TherapistContractService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
@@ -77,5 +79,25 @@ final class ServiceCatalogService
     public function listIndirectServices(): Collection
     {
         return $this->repository->listIndirectServices();
+    }
+
+    /** @return Collection<int, Service> */
+    public function listCommonIndirectServices(int $therapistProfileId, int $schoolId): Collection
+    {
+        $therapistServiceIds = TherapistContractService::query()
+            ->whereHas('contract', function ($query) use ($therapistProfileId) {
+                $query->active()->forTherapist($therapistProfileId); // @phpstan-ignore method.notFound
+            })
+            ->pluck('service_id');
+
+        $schoolServiceIds = SchoolContractService::query()
+            ->whereHas('contract', function ($query) use ($schoolId) {
+                $query->active()->forSchool($schoolId); // @phpstan-ignore method.notFound
+            })
+            ->pluck('service_id');
+
+        $commonServiceIds = $therapistServiceIds->intersect($schoolServiceIds)->values();
+
+        return $this->repository->listCommonIndirectServices($commonServiceIds);
     }
 }

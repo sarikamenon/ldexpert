@@ -10,8 +10,6 @@ use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 // uses(TestCase::class, RefreshDatabase::class);
@@ -61,7 +59,6 @@ function ssaPayload(array $overrides = []): array
     return array_merge([
         'student_id' => $student->id,
         'primary_service_id' => $service->id,
-        'additional_service_ids' => [],
         'start_date' => now()->addDays(1)->format('Y-m-d'),
         'end_date' => now()->addDays(365)->format('Y-m-d'),
         // Use a non-5-multiple value to ensure SSA accepts arbitrary minute values
@@ -200,43 +197,6 @@ test('allows updating an SSA to one time with the same start and end date', func
         ->and($ssa->sessions_per_frequency)->toBe(1)
         ->and($ssa->calculated_minutes)->toBe(50)
         ->and($ssa->tho_minutes)->toBe(50);
-});
-
-test('stores indirect additional services for SSA', function () {
-    $admin = ssaAdmin();
-    $indirectA = ssaIndirectService();
-    $indirectB = ssaIndirectService();
-    $payload = ssaPayload([
-        'additional_service_ids' => [$indirectA->id, $indirectB->id],
-    ]);
-
-    $this->actingAs($admin)
-        ->post(route('admin.ssas.store'), $payload)
-        ->assertRedirect(route('admin.ssas.index'));
-
-    $ssa = ServiceSupportAgreement::with('additionalServices')->first();
-    expect($ssa)->not->toBeNull();
-    expect($ssa->additionalServices->pluck('id')->sort()->values()->all())
-        ->toEqual(collect([$indirectA->id, $indirectB->id])->sort()->values()->all());
-
-    $primaryServiceId = DB::table('ssa_services')
-        ->where('ssa_id', $ssa->id)
-        ->where('is_primary', true)
-        ->value('service_id');
-
-    expect($primaryServiceId)->toBe($payload['primary_service_id']);
-
-    $storedIndirects = DB::table('ssa_services')
-        ->where('ssa_id', $ssa->id)
-        ->where('is_primary', false)
-        ->pluck('service_id')
-        ->sort()
-        ->values()
-        ->all();
-
-    expect($storedIndirects)->toEqual(
-        collect([$indirectA->id, $indirectB->id])->sort()->values()->all()
-    );
 });
 
 test('allows admin to create SSA with therapist', function () {

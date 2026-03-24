@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Domain\Billing\Services\BillingEntryWindowService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
@@ -54,6 +55,7 @@ final class SessionLogController extends Controller
         private readonly SSAService $ssaService,
         private readonly StudentDocumentService $documentService,
         private readonly BillingEntryWindowService $billingEntryWindowService,
+        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -176,28 +178,46 @@ final class SessionLogController extends Controller
             ->unique('id')
             ->values();
 
-        // Build SSA -> services mapping for front-end
-        $ssaServiceMappings = $ssas->map(function ($ssa) {
+        // Build SSA -> services mapping for front-end.
+        // For standalone session logs, show indirect services from the school+therapist contracts.
+        $isStandalone = $schedule === null;
+
+        $therapistProfileId = $therapist->therapistProfile?->id;
+        $ssaServiceMappings = $ssas->map(function ($ssa) use ($isStandalone, $therapistProfileId) {
+            if ($isStandalone) {
+                $schoolId = $ssa->student?->studentProfile?->school_id;
+                $availableServices = ($schoolId && $therapistProfileId)
+                    ? $this->serviceCatalogService->listCommonIndirectServices($therapistProfileId, $schoolId)
+                    : collect();
+            } else {
+                $availableServices = $ssa->services;
+            }
+
             return [
                 'ssa_id' => $ssa->id,
-                'primary_service_id' => $ssa->primary_service_id,
-                'services' => $ssa->services->map(function ($service) {
-                    return [
-                        'id' => $service->id,
-                        'name' => $service->name,
-                    ];
-                })->values()->all(),
+                'primary_service_id' => $isStandalone ? null : $ssa->primary_service_id,
+                'services' => $availableServices->map(static fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                ])->values()->all(),
             ];
         })->values();
 
         $services = collect();
         if ($selectedSsa) {
-            $services = $selectedSsa->services->map(function ($service) {
-                return (object) [
-                    'id' => $service->id,
-                    'name' => $service->name,
-                ];
-            });
+            if ($isStandalone) {
+                $schoolId = $selectedSsa->student?->studentProfile?->school_id;
+                $availableServices = ($schoolId && $therapistProfileId)
+                    ? $this->serviceCatalogService->listCommonIndirectServices($therapistProfileId, $schoolId)
+                    : collect();
+            } else {
+                $availableServices = $selectedSsa->services;
+            }
+
+            $services = $availableServices->map(static fn ($s) => (object) [
+                'id' => $s->id,
+                'name' => $s->name,
+            ]);
         }
 
         return view('therapist.session-logs.create', [

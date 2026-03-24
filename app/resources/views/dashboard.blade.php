@@ -4,6 +4,17 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
+            @php
+                $submittedMinutes = (int) ($submittedMinutesThisWeek ?? 0);
+                $submittedHours = intdiv($submittedMinutes, 60);
+                $submittedMinutesRemainder = $submittedMinutes % 60;
+                $submittedMinutesLabel = match (true) {
+                    $submittedHours > 0 && $submittedMinutesRemainder > 0 => "{$submittedHours}h {$submittedMinutesRemainder}m",
+                    $submittedHours > 0 => "{$submittedHours}h",
+                    default => "{$submittedMinutes}m",
+                };
+            @endphp
+
             <!-- Metrics -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="block">
@@ -28,8 +39,12 @@
                         </span>
                     </x-slot>
                 </x-dashboard::metric>
-                <x-dashboard::metric :title="'This Month'" :value="'$8,920'">
-                    <x-slot name="badge">+12% vs last month</x-slot>
+                <x-dashboard::metric :title="'Minutes Submitted This Week'" :value="$submittedMinutesLabel">
+                    <x-slot name="badge">
+                        <span class="text-xs text-foreground/60">
+                            {{ $submittedSessionsThisWeek ?? 0 }} submitted
+                        </span>
+                    </x-slot>
                 </x-dashboard::metric>
             </div>
 

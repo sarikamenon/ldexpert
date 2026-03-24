@@ -20,12 +20,6 @@ abstract class SSAFormRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if (! $this->has('additional_service_ids')) {
-            $this->merge([
-                'additional_service_ids' => [],
-            ]);
-        }
-
         if ($this->input('frequency') === ServiceFrequency::ONE_TIME->value) {
             $frequency = ServiceFrequency::ONE_TIME;
             $normalizedValues = [
@@ -53,14 +47,6 @@ abstract class SSAFormRequest extends FormRequest
                 $query->where('role', 'student');
             })],
             'primary_service_id' => ['required', 'integer', Rule::exists('services', 'id')],
-            'additional_service_ids' => ['nullable', 'array'],
-            'additional_service_ids.*' => [
-                'integer',
-                'distinct',
-                Rule::exists('services', 'id')->where(function ($query) {
-                    $query->where('is_direct_service', false);
-                }),
-            ],
             'start_date' => ['required', 'date'],
             'end_date' => ['required', 'date'],
             'minutes_per_session' => [
@@ -93,8 +79,6 @@ abstract class SSAFormRequest extends FormRequest
             'end_date.after' => 'End date must be after start date.',
             'minutes_per_session.min' => 'Minutes per session must be at least 5 minutes.',
             'assigned_therapist_id.exists' => 'Selected therapist must be an active therapist.',
-            'additional_service_ids.*.distinct' => 'Duplicate additional services are not allowed.',
-            'additional_service_ids.*.exists' => 'Additional services must be indirect services from the catalog.',
         ];
     }
 

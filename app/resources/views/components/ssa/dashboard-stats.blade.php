@@ -65,20 +65,6 @@
                 </p>
             </div>
 
-            {{-- Additional Services --}}
-            <div>
-                <p class="text-sm text-foreground/70">Additional Services</p>
-                <div class="space-y-1">
-                    @if ($ssa->additionalServices->isNotEmpty())
-                        @foreach ($ssa->additionalServices as $service)
-                            <div class="text-base font-medium text-foreground">{{ $service->name }}</div>
-                        @endforeach
-                    @else
-                        <div class="text-base font-medium text-foreground/50">No Additional Services</div>
-                    @endif
-                </div>
-            </div>
-
             <div class="pt-2">
                 <div class="flex items-center gap-2">
                     <span class="text-sm text-foreground/70 w-24">Minutes:</span>

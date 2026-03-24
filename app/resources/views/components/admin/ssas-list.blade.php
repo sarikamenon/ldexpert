@@ -174,16 +174,6 @@
                                     @endif
                                     <span
                                         class="text-sm text-foreground/70">{{ $ssa->primaryService->name ?? '—' }}</span>
-                                    @if ($ssa->additionalServices->isNotEmpty())
-                                        <div class="mt-1 flex flex-wrap gap-1">
-                                            @foreach ($ssa->additionalServices as $service)
-                                                <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-xs font-medium text-foreground/70">
-                                                    {{ $service->name }}
-                                                </span>
-                                            @endforeach
-                                        </div>
-                                    @endif
                                     @if ($ssa->student?->studentProfile?->school)
                                         @if ($context === 'therapist')
                                             <span class="text-xs text-foreground/60 mt-1">
@@ -207,10 +197,7 @@
                                 @elseif ($context !== 'therapist')
                                     <x-ui::button type="button" class="assign-therapist-btn" size="sm"
                                         data-ssa-id="{{ $ssa->id }}"
-                                        data-service-ids="{{ json_encode(array_merge(
-                                            [$ssa->primary_service_id],
-                                            $ssa->additionalServices->pluck('id')->all()
-                                        )) }}"
+                                        data-service-ids="{{ json_encode([$ssa->primary_service_id]) }}"
                                         title="Assign Therapist">
                                         Assign
                                     </x-ui::button>

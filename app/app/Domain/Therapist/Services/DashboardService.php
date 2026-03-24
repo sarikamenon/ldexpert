@@ -6,6 +6,7 @@ namespace App\Domain\Therapist\Services;
 
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
@@ -23,6 +24,7 @@ class DashboardService
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly ScheduleRepositoryInterface $scheduleRepository,
+        private readonly SessionLogRepositoryInterface $sessionLogRepository,
     ) {}
 
     /**
@@ -47,11 +49,16 @@ class DashboardService
         $startOfWeek = now()->startOfWeek();
         $endOfWeek = now()->endOfWeek();
         $lessonsThisWeek = $this->scheduleRepository->countLessonsThisWeek($therapist, $startOfWeek, $endOfWeek);
+        $submittedSummary = $this->sessionLogRepository->getSubmittedSummaryForWeek(
+            $therapist,
+            $startOfWeek,
+            $endOfWeek
+        );
         $pendingScheduleCount = $this->scheduleService->getPendingCount($therapist);
 
         $sentBackSessionLogs = SessionLog::query()
-            ->where('therapist_id', $therapist->id)
-            ->where('status', SessionLogStatus::SENT_BACK)
+            ->forTherapist($therapist)
+            ->withStatuses([SessionLogStatus::SENT_BACK])
             ->orderByDesc('sent_back_at')
             ->limit(10)
             ->with(['student', 'service', 'comments'])
@@ -80,6 +87,8 @@ class DashboardService
             'todaySchedules' => $formattedTodaySchedules,
             'lessonsToday' => $lessonsToday,
             'lessonsThisWeek' => $lessonsThisWeek,
+            'submittedMinutesThisWeek' => $submittedSummary['minutes'],
+            'submittedSessionsThisWeek' => $submittedSummary['sessions'],
             'pendingScheduleCount' => $pendingScheduleCount,
             'sentBackSessionLogs' => $sentBackSessionLogs,
             'pendingSchedulesList' => $pendingSchedulesList,

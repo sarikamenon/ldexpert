@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\RecurrenceType;
-use App\Models\Service;
+use App\Enums\SSAStatus;
+use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -16,6 +18,15 @@ use Illuminate\Validation\Validator;
 
 final class StoreScheduleRequest extends FormRequest
 {
+    public function __construct(
+        private readonly ScheduleRepositoryInterface $scheduleRepository,
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly StudentRepositoryInterface $studentRepository,
+        private readonly SchoolCalendarService $calendarService,
+    ) {
+        parent::__construct();
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->role?->value === 'therapist';
@@ -88,32 +99,30 @@ final class StoreScheduleRequest extends FormRequest
                 return;
             }
 
-            $repository = app(ScheduleRepositoryInterface::class);
-
             // Validate therapist has access to SSA and it's active
             if ($ssaId) {
-                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
-                $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
+                /** @var ServiceSupportAgreement|null $ssa */
+                $ssa = ServiceSupportAgreement::find($ssaId);
                 if (! $ssa) {
                     $validator->errors()->add('ssa_id', 'SSA not found.');
 
                     return;
                 }
 
-                if (! $repository->validateTherapistAccessToSSA($therapist, (int) $ssaId)) {
+                if (! $this->scheduleRepository->validateTherapistAccessToSSA($therapist, (int) $ssaId)) {
                     $validator->errors()->add('ssa_id', 'You do not have access to this SSA.');
                 }
 
                 // Validate SSA is active
-                if ($ssa->status !== \App\Enums\SSAStatus::ACTIVE) {
+                if ($ssa->status !== SSAStatus::ACTIVE) {
                     $validator->errors()->add('ssa_id', 'You can only create schedules for active SSAs.');
                 }
             }
 
             // Validate students belong to SSA if provided
             if ($ssaId && $studentCount > 0) {
-                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
-                $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
+                /** @var ServiceSupportAgreement|null $ssa */
+                $ssa = ServiceSupportAgreement::find($ssaId);
                 if ($ssa) {
                     foreach ($studentIdsArray as $studentId) {
                         if ($ssa->student_id !== (int) $studentId) {
@@ -124,14 +133,20 @@ final class StoreScheduleRequest extends FormRequest
                 }
             }
 
-            // Validate service is available for the student via the SSA
+            // Validate service is available for the student via the SSA or as a common indirect service
             if ($serviceId && $ssaId && $studentCount > 0) {
-                /** @var \App\Models\ServiceSupportAgreement|null $ssa */
-                $ssa = \App\Models\ServiceSupportAgreement::find($ssaId);
+                /** @var ServiceSupportAgreement|null $ssa */
+                $ssa = ServiceSupportAgreement::find($ssaId);
                 if ($ssa && $ssa->primary_service_id !== (int) $serviceId) {
-                    // Check if it's an additional service
-                    $isAdditionalService = $ssa->additionalServices()->where('services.id', $serviceId)->exists();
-                    if (! $isAdditionalService) {
+                    $schoolId = $ssa->student?->studentProfile?->school_id;
+                    $therapistProfileId = $therapist->therapistProfile?->id;
+                    $isCommonIndirect = false;
+                    if ($schoolId && $therapistProfileId) {
+                        $isCommonIndirect = $this->serviceCatalogService
+                            ->listCommonIndirectServices($therapistProfileId, $schoolId)
+                            ->contains('id', (int) $serviceId);
+                    }
+                    if (! $isCommonIndirect) {
                         $validator->errors()->add('service_id', 'This service is not available for the selected SSA.');
                     }
                 }
@@ -139,7 +154,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate students are assigned to therapist
             if ($studentCount > 0) {
-                if (! $repository->validateTherapistAccessToStudents($therapist, $studentIdsArray)) {
+                if (! $this->scheduleRepository->validateTherapistAccessToStudents($therapist, $studentIdsArray)) {
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
                 }
             }
@@ -177,9 +192,7 @@ final class StoreScheduleRequest extends FormRequest
 
             // Validate schedule and occurrence dates are not on holidays
             if ($studentCount > 0) {
-                $studentRepository = app(StudentRepositoryInterface::class);
-                $calendarService = app(SchoolCalendarService::class);
-                $schoolId = $studentRepository->getSchoolIdByUserId((int) $studentIdsArray[0]);
+                $schoolId = $this->studentRepository->getSchoolIdByUserId((int) $studentIdsArray[0]);
 
                 if ($schoolId) {
                     $datesToCheck = array_filter(array_unique(array_merge(
@@ -192,7 +205,7 @@ final class StoreScheduleRequest extends FormRequest
                         $minDate = collect($dateObjects)->min();
                         $maxDate = collect($dateObjects)->max();
 
-                        $holidayEvents = $calendarService->listHolidayEventsBySchoolAndRange($schoolId, $minDate, $maxDate);
+                        $holidayEvents = $this->calendarService->listHolidayEventsBySchoolAndRange($schoolId, $minDate, $maxDate);
 
                         if ($holidayEvents->isNotEmpty()) {
                             $holidayDates = [];

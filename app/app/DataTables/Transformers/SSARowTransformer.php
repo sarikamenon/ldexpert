@@ -28,15 +28,6 @@ final class SSARowTransformer
 
         $primaryService = $ssa->primaryService->name ?? '—';
 
-        $additionalServices = '';
-        if ($ssa->additionalServices->isNotEmpty()) {
-            $badges = $ssa->additionalServices->map(
-                fn ($service): string => '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-xs font-medium text-foreground/70">'
-                    .e($service->name).'</span>'
-            )->implode('');
-            $additionalServices = '<div class="mt-1 flex flex-wrap gap-1">'.$badges.'</div>';
-        }
-
         $schoolCell = '';
         if ($ssa->student?->studentProfile?->school) {
             $school = $ssa->student->studentProfile->school;
@@ -47,7 +38,6 @@ final class SSARowTransformer
         $studentServiceCell = '<div class="flex flex-col">'
             .$studentPart
             .'<span class="text-sm text-foreground/70">'.e($primaryService).'</span>'
-            .$additionalServices
             .$schoolCell
             .'</div>';
 

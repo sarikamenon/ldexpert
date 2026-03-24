@@ -9,12 +9,11 @@ use PHPUnit\Framework\TestCase;
 
 final class CreateSSADTOTest extends TestCase
 {
-    public function test_from_array_filters_non_numeric_additional_services(): void
+    public function test_from_array_creates_dto_with_required_fields(): void
     {
         $dto = CreateSSADTO::fromArray([
             'student_id' => 1,
             'primary_service_id' => 2,
-            'additional_service_ids' => ['Support', '  ', null, '12', 34, '0', 0, '7a'],
             'start_date' => '2026-01-01',
             'end_date' => '2026-02-01',
             'minutes_per_session' => 30,
@@ -27,6 +26,7 @@ final class CreateSSADTOTest extends TestCase
             'assigned_therapist_id' => null,
         ]);
 
-        $this->assertSame([12, 34], $dto->additionalServiceIds);
+        $this->assertSame(1, $dto->studentId);
+        $this->assertSame(2, $dto->primaryServiceId);
     }
 }
