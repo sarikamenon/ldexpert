@@ -3,15 +3,7 @@
         @vite(['resources/css/common/datatables.css'])
     </x-slot>
 
-    <x-page-title title="QGlob Requests" description="Review and create Q-Global access requests.">
-        <x-slot name="actions">
-            <a href="{{ route('admin.qglob-requests.create') }}">
-                <x-ui::button class="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                    New Request
-                </x-ui::button>
-            </a>
-        </x-slot>
-    </x-page-title>
+    <x-page-title title="QGlob Requests" description="Review and respond to Q-Global access requests." />
 
     @if (session('status'))
         <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>

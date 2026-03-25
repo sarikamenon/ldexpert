@@ -144,10 +144,6 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
 
         return User::query()
             ->where('role', Role::STUDENT)
-            ->whereHas('therapists', function (Builder $q) use ($therapistId): void {
-                $q->where('therapist_student.therapist_id', $therapistId)
-                    ->where('therapist_student.status', 'active');
-            })
             ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId, $evaluationNames): void {
                 $q->where('assigned_therapist_id', $therapistId)
                     ->where('status', SSAStatus::ACTIVE)
@@ -170,10 +166,6 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
         return User::query()
             ->whereKey($studentId)
             ->where('role', Role::STUDENT)
-            ->whereHas('therapists', function (Builder $q) use ($therapistId): void {
-                $q->where('therapist_student.therapist_id', $therapistId)
-                    ->where('therapist_student.status', 'active');
-            })
             ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId, $evaluationNames): void {
                 $q->where('assigned_therapist_id', $therapistId)
                     ->where('status', SSAStatus::ACTIVE)

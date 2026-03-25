@@ -23,7 +23,7 @@
                     <div>
                         <x-input-label for="student_id" value="Student *" />
                         <p class="mt-1 text-xs text-foreground/60" id="student_id_help">
-                            Students on your caseload with an active evaluation SSA only.
+                            Students with an active evaluation SSA assigned to you.
                         </p>
                         <x-ui::select id="student_id" name="student_id" searchable required
                             class="mt-1 block w-full" aria-describedby="student_id_help">

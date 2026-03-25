@@ -160,9 +160,6 @@ Route::middleware('role:admin')
 
         Route::prefix('qglob-requests')->name('qglob-requests.')->group(function () {
             Route::get('/', [QGlobRequestController::class, 'index'])->name('index');
-            Route::get('create', [QGlobRequestController::class, 'create'])->name('create');
-            Route::get('eligible-students', [QGlobRequestController::class, 'eligibleStudents'])->name('eligible-students');
-            Route::post('/', [QGlobRequestController::class, 'store'])->name('store');
             Route::post('data', [QGlobRequestController::class, 'data'])->name('data');
             Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
             Route::post('{qglob_request}/respond', [QGlobRequestController::class, 'respond'])->name('respond');

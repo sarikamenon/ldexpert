@@ -25,11 +25,6 @@ final class QGlobRequestTest extends TestCase
             'name' => EvaluationServiceNames::all()[0],
         ]);
 
-        $therapist->students()->attach($student->id, [
-            'assigned_at' => now(),
-            'status' => 'active',
-        ]);
-
         ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
             'primary_service_id' => $evalService->id,

@@ -97,43 +97,5 @@ final class QGlobRequestTest extends TestCase
         $response = $this->actingAs($admin)->get(route('admin.qglob-requests.index'));
         $response->assertOk();
         $response->assertViewIs('admin.qglob-requests.index');
-        $response->assertSee('New Request', false);
-    }
-
-    public function test_admin_can_create_request_for_therapist(): void
-    {
-        $admin = User::factory()->admin()->create();
-        [$therapist, $student] = $this->seedTherapistWithEligibleStudent();
-
-        $response = $this->actingAs($admin)->post(route('admin.qglob-requests.store'), [
-            'therapist_id' => $therapist->id,
-            'student_id' => $student->id,
-            'requested_date' => now()->addDay()->format('Y-m-d'),
-            'requested_time' => '10:00',
-            'note' => 'Admin-entered',
-            '_token' => csrf_token(),
-        ]);
-
-        $response->assertRedirect(route('admin.qglob-requests.index'));
-        $response->assertSessionHasNoErrors();
-
-        $this->assertDatabaseHas('qglob_requests', [
-            'requested_by_id' => $therapist->id,
-            'student_id' => $student->id,
-            'status' => QGlobRequestStatus::PENDING->value,
-        ]);
-    }
-
-    public function test_admin_eligible_students_endpoint_returns_json(): void
-    {
-        $admin = User::factory()->admin()->create();
-        [$therapist, $student] = $this->seedTherapistWithEligibleStudent();
-
-        $response = $this->actingAs($admin)->getJson(
-            route('admin.qglob-requests.eligible-students', ['therapist_id' => $therapist->id])
-        );
-
-        $response->assertOk();
-        $response->assertJsonPath('students.0.id', $student->id);
     }
 }

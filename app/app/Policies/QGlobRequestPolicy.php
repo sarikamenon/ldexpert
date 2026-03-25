@@ -27,7 +27,7 @@ final class QGlobRequestPolicy
 
     public function create(User $user): bool
     {
-        return $this->isTherapist($user) || $this->isAdmin($user);
+        return $this->isTherapist($user);
     }
 
     public function respond(User $user, QGlobRequest $request): bool

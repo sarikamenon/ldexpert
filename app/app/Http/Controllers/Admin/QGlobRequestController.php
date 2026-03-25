@@ -7,21 +7,16 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\Transformers\QGlobRequestRowTransformer;
 use App\Domain\QGlobRequest\Services\QGlobRequestService;
 use App\Domain\User\Services\UserService;
-use App\DTOs\CreateQGlobRequestDTO;
 use App\DTOs\QGlobRequestFilterDTO;
 use App\DTOs\RespondQGlobRequestDTO;
 use App\Enums\QGlobRequestStatus;
-use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\QGlob\CompleteQGlobRequestRequest;
 use App\Http\Requests\Admin\QGlob\QGlobRequestDataRequest;
 use App\Http\Requests\Admin\QGlob\RespondQGlobRequestRequest;
-use App\Http\Requests\Admin\QGlob\EligibleStudentsQGlobRequestRequest;
-use App\Http\Requests\Admin\QGlob\StoreAdminQGlobRequestRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\QGlobRequest;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -54,61 +49,6 @@ final class QGlobRequestController extends Controller
                 ->values(),
             'datatableUrl' => route('admin.qglob-requests.data'),
         ]);
-    }
-
-    public function create(): View
-    {
-        $this->authorize('create', QGlobRequest::class);
-
-        return view('admin.qglob-requests.create', [
-            'therapists' => $this->userService
-                ->listActiveTherapistsForSelect()
-                ->sortBy('name')
-                ->values(),
-        ]);
-    }
-
-    public function store(StoreAdminQGlobRequestRequest $request): RedirectResponse
-    {
-        $this->authorize('create', QGlobRequest::class);
-
-        $validated = $request->validated();
-
-        $dto = new CreateQGlobRequestDTO(
-            requestedById: (int) $validated['therapist_id'],
-            studentId: (int) $validated['student_id'],
-            requestedDate: (string) $validated['requested_date'],
-            requestedTime: (string) $validated['requested_time'],
-            note: isset($validated['note']) ? (string) $validated['note'] : null,
-        );
-
-        $this->service->create($dto);
-
-        return redirect()
-            ->route('admin.qglob-requests.index')
-            ->with('status', 'QGlob request created.');
-    }
-
-    public function eligibleStudents(EligibleStudentsQGlobRequestRequest $request): JsonResponse
-    {
-        $this->authorize('create', QGlobRequest::class);
-
-        $therapistId = (int) $request->validated('therapist_id');
-        /** @var User|null $therapist */
-        $therapist = User::query()->find($therapistId);
-        if (! $therapist || $therapist->role !== Role::THERAPIST) {
-            return response()->json(['students' => []]);
-        }
-
-        $students = $this->service->listEligibleStudentsForTherapist($therapistId);
-
-        /** @var array<int, array{id: int, name: string}> $payload */
-        $payload = $students->map(static fn (User $u): array => [
-            'id' => $u->id,
-            'name' => (string) $u->name,
-        ])->values()->all();
-
-        return response()->json(['students' => $payload]);
     }
 
     public function data(QGlobRequestDataRequest $request): JsonResponse

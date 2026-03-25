@@ -43,7 +43,6 @@ export default defineConfig({
                 'resources/js/pages/admin-session-log-import-history.js',
                 'resources/js/pages/admin-session-logs-index.js',
                 'resources/js/pages/admin-qglob-requests.js',
-                'resources/js/pages/admin-qglob-requests-create.js',
                 'resources/js/pages/admin-qglob-requests-show.js',
                 'resources/js/pages/admin-session-log-override.js',
                 'resources/js/pages/admin-invoices-index.js',
