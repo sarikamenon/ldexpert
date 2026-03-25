@@ -64,6 +64,8 @@ List tables in this project use **server-side processing**: paging, search, orde
 | SSA imports | `admin.ssas.imports.data` | `SSAController::importHistoryData()` | `SSAImportRowTransformer` |
 | Session logs (admin) | `admin.session-logs.data` | `SessionLogController::data()` | `SessionLogRowTransformer` |
 | Session logs (therapist) | `therapist.session-logs.data` | `SessionLogController::data()` (Therapist) | `TherapistSessionLogRowTransformer` |
+| QGlob requests (admin) | `admin.qglob-requests.data` | `Admin\QGlobRequestController::data()` | `QGlobRequestRowTransformer::transformForAdmin()` |
+| QGlob requests (therapist) | `therapist.qglob-requests.data` | `Therapist\QGlobRequestController::data()` | `QGlobRequestRowTransformer::transformForTherapist()` |
 | SSAs (therapist) | `therapist.ssas.data` | `SSAController::data()` (Therapist) | `TherapistSSARowTransformer` |
 | Students (therapist) | `therapist.students.data` | `StudentController::data()` (Therapist) | `TherapistStudentRowTransformer` |
 | Ledger accounts | `admin.ledger.accounts.data` | `LedgerAccountController::data()` | `LedgerAccountRowTransformer` |

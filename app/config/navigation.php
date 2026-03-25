@@ -140,6 +140,11 @@ return [
                 ],
             ],
             [
+                'label' => 'QGlob Requests',
+                'route' => 'admin.qglob-requests.index',
+                'active' => 'admin.qglob-requests.*',
+            ],
+            [
                 'label' => 'Finance',
                 'route' => 'admin.finance.dashboard',
                 'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
@@ -269,6 +274,11 @@ return [
                         'active' => 'therapist.schedule.pending',
                     ],
                 ],
+            ],
+            [
+                'label' => 'QGlob Requests',
+                'route' => 'therapist.qglob-requests.index',
+                'active' => 'therapist.qglob-requests.*',
             ],
             [
                 'label' => 'Session Logs',

@@ -15,6 +15,7 @@ use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
 use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Lead\Repositories\LeadRepositoryInterface;
+use App\Domain\QGlobRequest\Repositories\QGlobRequestRepositoryInterface;
 use App\Domain\Notification\Repositories\NotificationRepositoryInterface;
 use App\Domain\Position\Repositories\PositionRepositoryInterface;
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
@@ -44,6 +45,7 @@ use App\Infrastructure\Repositories\EloquentFinanceSummaryRepository;
 use App\Infrastructure\Repositories\EloquentInvoicePaymentRepository;
 use App\Infrastructure\Repositories\EloquentInvoiceRepository;
 use App\Infrastructure\Repositories\EloquentLeadRepository;
+use App\Infrastructure\Repositories\EloquentQGlobRequestRepository;
 use App\Infrastructure\Repositories\EloquentLedgerEntryRepository;
 use App\Infrastructure\Repositories\EloquentNotificationRepository;
 use App\Infrastructure\Repositories\EloquentPositionRepository;
@@ -73,6 +75,7 @@ use App\Listeners\SendScheduleNotification;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Position;
+use App\Models\QGlobRequest;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\SchoolCalendarEvent;
@@ -92,6 +95,7 @@ use App\Models\User;
 use App\Policies\InvoicePolicy;
 use App\Policies\LeadPolicy;
 use App\Policies\PositionPolicy;
+use App\Policies\QGlobRequestPolicy;
 use App\Policies\SchedulePolicy;
 use App\Policies\ServiceAliasPolicy;
 use App\Policies\SchoolCalendarEventPolicy;
@@ -149,6 +153,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(InvoicePaymentRepositoryInterface::class, EloquentInvoicePaymentRepository::class);
         $this->app->bind(TherapistBillPaymentRepositoryInterface::class, EloquentTherapistBillPaymentRepository::class);
         $this->app->bind(LeadRepositoryInterface::class, EloquentLeadRepository::class);
+        $this->app->bind(QGlobRequestRepositoryInterface::class, EloquentQGlobRequestRepository::class);
         $this->app->bind(FinanceSummaryRepositoryInterface::class, EloquentFinanceSummaryRepository::class);
         $this->app->bind(StorageServiceInterface::class, function (): StorageServiceInterface {
             return match (config('filesystems.default')) {
@@ -167,6 +172,7 @@ class AppServiceProvider extends ServiceProvider
         Blade::anonymousComponentNamespace('components.ui', 'ui');
         Blade::anonymousComponentNamespace('components.dashboard', 'dashboard');
         $router->aliasMiddleware('role', RoleMiddleware::class);
+        $router->model('qglob_request', QGlobRequest::class);
 
         Gate::policy(School::class, SchoolPolicy::class);
         Gate::policy(SchoolCalendarEvent::class, SchoolCalendarEventPolicy::class);
@@ -186,6 +192,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ServiceAlias::class, ServiceAliasPolicy::class);
         Gate::policy(ServiceSupportAgreement::class, SSAPolicy::class);
         Gate::policy(Lead::class, LeadPolicy::class);
+        Gate::policy(QGlobRequest::class, QGlobRequestPolicy::class);
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);
         Event::listen(ScheduleUpdated::class, SendScheduleNotification::class);
