@@ -193,11 +193,6 @@ return [
                 'active' => ['admin.reports.*', 'admin.analytics.*', 'admin.qglob-requests.*'],
                 'children' => [
                     [
-                        'label' => 'QGlob Requests',
-                        'route' => 'admin.qglob-requests.index',
-                        'active' => 'admin.qglob-requests.*',
-                    ],
-                    [
                         'label' => 'Utilization & Compliance',
                         'route' => 'admin.reports.ssa.utilization.index',
                         'active' => 'admin.reports.ssa.utilization.*',
@@ -216,6 +211,11 @@ return [
                         'label' => 'Analytics',
                         'route' => 'admin.analytics.index',
                         'active' => 'admin.analytics.*',
+                    ],
+                    [
+                        'label' => 'QGlob Requests',
+                        'route' => 'admin.qglob-requests.index',
+                        'active' => 'admin.qglob-requests.*',
                     ],
                 ],
             ],
@@ -276,18 +276,6 @@ return [
                 ],
             ],
             [
-                'label' => 'Reports',
-                'route' => 'therapist.qglob-requests.index',
-                'active' => 'therapist.qglob-requests.*',
-                'children' => [
-                    [
-                        'label' => 'QGlob Requests',
-                        'route' => 'therapist.qglob-requests.index',
-                        'active' => 'therapist.qglob-requests.*',
-                    ],
-                ],
-            ],
-            [
                 'label' => 'Session Logs',
                 'route' => 'therapist.session-logs.index',
                 'active' => 'therapist.session-logs.*',
@@ -325,6 +313,18 @@ return [
                 'label' => 'Students',
                 'route' => 'therapist.students.index',
                 'active' => 'therapist.students.*',
+            ],
+            [
+                'label' => 'Reports',
+                'route' => 'therapist.qglob-requests.index',
+                'active' => 'therapist.qglob-requests.*',
+                'children' => [
+                    [
+                        'label' => 'QGlob Requests',
+                        'route' => 'therapist.qglob-requests.index',
+                        'active' => 'therapist.qglob-requests.*',
+                    ],
+                ],
             ],
         ],
         'student' => [
