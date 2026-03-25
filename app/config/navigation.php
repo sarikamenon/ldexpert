@@ -116,6 +116,12 @@ return [
                         'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
                     ],
                     [
+                        'label' => 'Sent back',
+                        'route' => 'admin.session-logs.index',
+                        'query' => ['status' => 'sent_back'],
+                        'active' => ['admin.session-logs.index', 'admin.session-logs.show', 'admin.session-logs.edit'],
+                    ],
+                    [
                         'label' => 'Approved',
                         'route' => 'admin.session-logs.index',
                         'query' => ['status' => 'approved'],
