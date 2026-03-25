@@ -219,6 +219,44 @@ test('admin can view run history', function () {
     $response->assertOk();
 });
 
+test('admin can load run history datatable data', function () {
+    $admin = scheduleAdminUser();
+    $schedule = BillingSchedule::factory()->forSchool()->create();
+    BillingScheduleRun::factory()->count(2)->create(['billing_schedule_id' => $schedule->id]);
+
+    $response = $this->actingAs($admin)->post(route('admin.billing.schedules.history.data', $schedule), [
+        'draw' => 1,
+        'start' => 0,
+        'length' => 10,
+        'order' => [['column' => 0, 'dir' => 'desc']],
+        'columns' => [],
+        'search' => ['value' => ''],
+    ]);
+
+    $response->assertOk();
+    $response->assertJsonStructure(['draw', 'recordsTotal', 'recordsFiltered', 'data']);
+    expect($response->json('recordsTotal'))->toBe(2)
+        ->and($response->json('data'))->toHaveCount(2);
+});
+
+test('run history datatable returns empty data when no runs', function () {
+    $admin = scheduleAdminUser();
+    $schedule = BillingSchedule::factory()->forSchool()->create();
+
+    $response = $this->actingAs($admin)->post(route('admin.billing.schedules.history.data', $schedule), [
+        'draw' => 1,
+        'start' => 0,
+        'length' => 10,
+        'order' => [['column' => 0, 'dir' => 'desc']],
+        'columns' => [],
+        'search' => ['value' => ''],
+    ]);
+
+    $response->assertOk();
+    expect($response->json('recordsTotal'))->toBe(0)
+        ->and($response->json('data'))->toBe([]);
+});
+
 // --- DataTables ---
 
 test('admin can access billing schedules data endpoint', function () {

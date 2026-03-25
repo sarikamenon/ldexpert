@@ -70,6 +70,7 @@ List tables in this project use **server-side processing**: paging, search, orde
 | Ledger account transactions | `admin.ledger.accounts.transactions.data` | `LedgerAccountController::transactionsData()` | `LedgerEntryRowTransformer` |
 | Pay Stub report | `admin.finance.pay-stub-report.data` | `PayStubReportController::data()` | `PayStubReportRowTransformer` |
 | Student schedules (admin student detail) | `admin.students.schedules.data` | `StudentController::scheduleData()` | `ScheduleRowTransformer` |
+| Billing schedule run history | `admin.billing.schedules.history.data` | `BillingScheduleController::runHistoryData()` | `BillingScheduleRunRowTransformer` |
 
 ## Reference implementation: Admin Students list
 

@@ -1,29 +1,29 @@
 <x-admin.layouts.app>
     <x-ui::page-header title="Finance Dashboard" subtitle="Financial Overview (all-time totals)" />
 
-    {{-- Quick links --}}
-    <div class="flex flex-wrap gap-2 mb-6">
-        <a href="{{ route('admin.invoices.index') }}"
-            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted/50 rounded-md hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-            Invoices
-        </a>
-        <a href="{{ route('admin.billing.therapist-bills.index') }}"
-            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted/50 rounded-md hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-            Therapist Bills
-        </a>
-        <a href="{{ route('admin.expenses.index') }}"
-            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted/50 rounded-md hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-            Expenses
-        </a>
-        <a href="{{ route('admin.payments.invoices.index') }}"
-            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted/50 rounded-md hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-            Payments Received
-        </a>
-        <a href="{{ route('admin.payments.therapist-bills.index') }}"
-            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-foreground/80 bg-muted/50 rounded-md hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-            Payments Made
-        </a>
-    </div>
+    @php
+        $financeQuickNavClass =
+            'inline-flex items-center justify-center min-h-9 whitespace-nowrap px-4 py-2 text-sm font-medium rounded-base shadow-sm transition-colors bg-primary text-primary-foreground border border-transparent hover:bg-primary/90 active:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring';
+    @endphp
+    <x-ui::card class="p-4 mb-6">
+        <nav class="flex flex-wrap gap-2" aria-label="Finance sections">
+            <a href="{{ route('admin.invoices.index') }}" class="{{ $financeQuickNavClass }}">
+                Invoices
+            </a>
+            <a href="{{ route('admin.billing.therapist-bills.index') }}" class="{{ $financeQuickNavClass }}">
+                Therapist Bills
+            </a>
+            <a href="{{ route('admin.expenses.index') }}" class="{{ $financeQuickNavClass }}">
+                Expenses
+            </a>
+            <a href="{{ route('admin.payments.invoices.index') }}" class="{{ $financeQuickNavClass }}">
+                Payments Received
+            </a>
+            <a href="{{ route('admin.payments.therapist-bills.index') }}" class="{{ $financeQuickNavClass }}">
+                Payments Made
+            </a>
+        </nav>
+    </x-ui::card>
 
     {{-- Key Metrics - All-time --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">

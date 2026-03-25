@@ -186,6 +186,47 @@ describe('storeOrUpdate', function (): void {
         ]);
     });
 
+    it('restores and updates soft-deleted schedule instead of duplicate insert', function (): void {
+        $school = School::factory()->create();
+        $schedule = BillingSchedule::factory()->create([
+            'schedulable_type' => 'App\\Models\\School',
+            'schedulable_id' => $school->id,
+            'schedule_type' => BillingScheduleType::SCHOOL_INVOICE->value,
+            'billing_mode' => BillingMode::STANDARD->value,
+            'frequency' => BillingFrequency::SEMI_MONTHLY->value,
+        ]);
+        $schedule->delete();
+
+        $response = $this->postJson(route('admin.billing.entity-config.store'), [
+            'entity_type' => 'school',
+            'entity_id' => $school->id,
+            'billing_mode' => 'standard',
+            'frequency' => 'weekly',
+            'generation_day_type' => 'day_of_week',
+            'generation_day_of_week' => 2,
+            'min_grace_days' => 2,
+            'payment_terms_days' => 30,
+            'auto_generate' => true,
+            'auto_send' => false,
+        ]);
+
+        $response->assertOk()
+            ->assertJson(['success' => true]);
+
+        $schedule->refresh();
+        expect($schedule->trashed())->toBeFalse()
+            ->and($schedule->frequency)->toBe(BillingFrequency::WEEKLY);
+
+        $this->assertDatabaseHas('billing_schedules', [
+            'id' => $schedule->id,
+            'schedulable_type' => 'App\\Models\\School',
+            'schedulable_id' => $school->id,
+            'schedule_type' => 'school_invoice',
+            'frequency' => 'weekly',
+            'deleted_at' => null,
+        ]);
+    });
+
     it('creates schedule for therapist', function (): void {
         $therapist = User::factory()->therapist()->create();
 

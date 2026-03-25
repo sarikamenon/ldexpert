@@ -28,6 +28,8 @@ final class ActionButtons
 
     private const ICON_SUBMIT = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
 
+    private const ICON_HISTORY = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+
     // ── Base CSS classes ───────────────────────────────────────
 
     private const BTN_BASE = 'inline-flex items-center justify-center w-8 h-8 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -75,6 +77,16 @@ final class ActionButtons
     public static function edit(string $url, string $label = 'Edit', array $attrs = []): string
     {
         return self::link($url, self::ICON_EDIT, self::VARIANT_SECONDARY, $label, $attrs);
+    }
+
+    /**
+     * Run history button (link).
+     *
+     * @param  array<string, string|int|null>  $attrs
+     */
+    public static function history(string $url, string $label = 'Run History', array $attrs = []): string
+    {
+        return self::link($url, self::ICON_HISTORY, self::VARIANT_PRIMARY, $label, $attrs);
     }
 
     /**

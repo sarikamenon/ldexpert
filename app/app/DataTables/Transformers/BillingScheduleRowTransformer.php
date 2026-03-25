@@ -6,6 +6,9 @@ namespace App\DataTables\Transformers;
 
 use App\DataTables\ActionButtons;
 use App\Models\BillingSchedule;
+use App\Models\School;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
 
 final class BillingScheduleRowTransformer
 {
@@ -14,12 +17,12 @@ final class BillingScheduleRowTransformer
      */
     public static function transform(BillingSchedule $schedule): array
     {
-        $editUrl = route('admin.billing.schedules.edit', $schedule);
+        $schedulable = $schedule->schedulable;
+        $editUrl = self::resolveEntityBillingEditUrl($schedule, $schedulable);
         $historyUrl = route('admin.billing.schedules.history', $schedule);
 
         // Column 0: Entity name
         $entityName = '—';
-        $schedulable = $schedule->schedulable;
         if ($schedulable !== null) {
             $entityName = (string) ($schedulable->getAttribute('display_name')
                 ?? $schedulable->getAttribute('name')
@@ -67,8 +70,8 @@ final class BillingScheduleRowTransformer
         $toggleLabel = $schedule->is_active ? 'Deactivate' : 'Activate';
 
         $actions = ActionButtons::wrap(
-            ActionButtons::edit($editUrl, 'Edit Schedule'),
-            '<a href="'.e($historyUrl).'" class="inline-flex items-center justify-center w-8 h-8 rounded-md text-foreground/60 hover:text-foreground hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring" title="Run History" aria-label="Run History"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></a>',
+            ActionButtons::edit($editUrl, 'Edit billing'),
+            ActionButtons::history($historyUrl, 'Run History'),
         );
 
         return [
@@ -81,5 +84,18 @@ final class BillingScheduleRowTransformer
             $statusBadge,
             $actions,
         ];
+    }
+
+    private static function resolveEntityBillingEditUrl(BillingSchedule $schedule, ?Model $schedulable): string
+    {
+        if ($schedulable instanceof School && $schedule->isForSchool()) {
+            return route('admin.schools.show', ['school' => $schedulable, 'tab' => 'billing']);
+        }
+
+        if ($schedulable instanceof User && $schedule->isForTherapist()) {
+            return route('admin.therapists.show', ['therapist' => $schedulable, 'tab' => 'billing']);
+        }
+
+        return route('admin.billing.schedules.edit', $schedule);
     }
 }

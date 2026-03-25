@@ -132,6 +132,46 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             ->update(['therapist_bill_id' => $bill->id]);
     }
 
+    public function unlinkAllSessionsForTherapistBill(TherapistBill $bill): void
+    {
+        SessionLog::where('therapist_bill_id', $bill->id)
+            ->update(['therapist_bill_id' => null]);
+    }
+
+    /**
+     * @param  array<int>  $sessionLogIds
+     * @return Collection<int, SessionLog>
+     */
+    public function getSessionLogsForTherapistBillUpdate(TherapistBill $bill, array $sessionLogIds): Collection
+    {
+        if (empty($sessionLogIds)) {
+            return collect();
+        }
+
+        return SessionLog::query()
+            ->whereIn('id', $sessionLogIds)
+            ->where('therapist_id', $bill->therapist_id)
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->where('is_billable_therapist', true)
+            ->where(function ($q) use ($bill): void {
+                $q->whereNull('therapist_bill_id')
+                    ->orWhere('therapist_bill_id', $bill->id);
+            })
+            ->with(['student', 'service', 'therapist', 'school'])
+            ->get();
+    }
+
+    public function updateTotals(TherapistBill $bill, float $subtotal, float $adjustmentsTotal, float $totalDue): TherapistBill
+    {
+        $bill->update([
+            'subtotal' => $subtotal,
+            'adjustments_total' => $adjustmentsTotal,
+            'total_due' => $totalDue,
+        ]);
+
+        return $bill->refresh();
+    }
+
     public function markAsSent(TherapistBill $bill, int $sentById): TherapistBill
     {
         $bill->update([

@@ -223,6 +223,8 @@ Route::middleware('role:admin')
             Route::get('{bill}', [TherapistBillController::class, 'show'])->name('show');
             Route::get('{bill}/download', [TherapistBillController::class, 'download'])->name('download');
             Route::post('{bill}/send', [TherapistBillController::class, 'send'])->name('send');
+            Route::get('{bill}/attach-sessions', [TherapistBillController::class, 'attachSessions'])->name('attach-sessions');
+            Route::post('{bill}/attach-sessions', [TherapistBillController::class, 'storeAttachedSessions'])->name('attach-sessions.store');
         });
 
         // Therapist Bill Payments
@@ -257,6 +259,7 @@ Route::middleware('role:admin')
             Route::put('{schedule}', [App\Http\Controllers\Admin\BillingScheduleController::class, 'update'])->name('update');
             Route::patch('{schedule}/toggle', [App\Http\Controllers\Admin\BillingScheduleController::class, 'toggleActive'])->name('toggle');
             Route::post('{schedule}/run', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runNow'])->name('run');
+            Route::post('{schedule}/history/data', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runHistoryData'])->name('history.data');
             Route::get('{schedule}/history', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runHistory'])->name('history');
         });
 

@@ -23,6 +23,11 @@ interface BillingScheduleRepositoryInterface
     public function getForEntity(string $schedulableType, int $schedulableId, string $scheduleType): ?BillingSchedule;
 
     /**
+     * Includes soft-deleted rows so upserts can restore instead of violating the entity unique index.
+     */
+    public function findForEntityIncludingTrashed(string $schedulableType, int $schedulableId, string $scheduleType): ?BillingSchedule;
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public function create(array $data): BillingSchedule;
@@ -46,6 +51,11 @@ interface BillingScheduleRepositoryInterface
      * @return Collection<int, BillingScheduleRun>
      */
     public function getRunHistory(int $scheduleId, int $limit = 20): Collection;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, BillingScheduleRun>}
+     */
+    public function listRunsForDataTables(int $scheduleId, DataTablesParamsDTO $params): array;
 
     public function delete(BillingSchedule $schedule): bool;
 }

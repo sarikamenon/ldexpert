@@ -31,6 +31,12 @@
             </a>
 
             @if ($bill->isDraft())
+                <a href="{{ route('admin.billing.therapist-bills.attach-sessions', $bill) }}">
+                    <x-ui::button variant="secondary">
+                        Add or remove sessions
+                    </x-ui::button>
+                </a>
+
                 <form method="POST" action="{{ route('admin.billing.therapist-bills.send', $bill) }}"
                     class="inline" id="sendBillForm">
                     @csrf

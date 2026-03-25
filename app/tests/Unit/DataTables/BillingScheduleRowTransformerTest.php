@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\DataTables\Transformers\BillingScheduleRowTransformer;
 use App\Models\BillingSchedule;
 use App\Models\BillingScheduleRun;
+use App\Models\School;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -46,6 +48,38 @@ test('transforms inactive schedule with secondary badge', function () {
     $row = BillingScheduleRowTransformer::transform($schedule);
 
     expect($row[6])->toContain('Inactive');
+});
+
+test('edit link targets school billing tab for school invoice schedules', function () {
+    $school = School::factory()->create();
+    $schedule = BillingSchedule::factory()->forSchool($school)->create();
+    $schedule->load('schedulable', 'latestRun');
+
+    $expected = route('admin.schools.show', ['school' => $school, 'tab' => 'billing']);
+    $row = BillingScheduleRowTransformer::transform($schedule);
+
+    expect($row[7])->toContain(e($expected));
+});
+
+test('edit link targets therapist billing tab for therapist bill schedules', function () {
+    $therapist = User::factory()->therapist()->create();
+    $schedule = BillingSchedule::factory()->forTherapist($therapist)->create();
+    $schedule->load('schedulable', 'latestRun');
+
+    $expected = route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'billing']);
+    $row = BillingScheduleRowTransformer::transform($schedule);
+
+    expect($row[7])->toContain(e($expected));
+});
+
+test('actions include primary-styled history link', function () {
+    $schedule = BillingSchedule::factory()->forSchool()->create();
+    $schedule->load('schedulable', 'latestRun');
+
+    $row = BillingScheduleRowTransformer::transform($schedule);
+
+    expect($row[7])->toContain('bg-primary')
+        ->and($row[7])->toContain('Run History');
 });
 
 test('includes run status indicator from latest run', function () {

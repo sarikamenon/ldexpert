@@ -33,6 +33,11 @@ final class TherapistBillPolicy
         return $user->role === Role::ADMIN;
     }
 
+    public function update(User $user, TherapistBill $bill): bool
+    {
+        return $user->role === Role::ADMIN && $bill->isDraft();
+    }
+
     public function send(User $user, TherapistBill $bill): bool
     {
         return $user->role === Role::ADMIN && $bill->isDraft();

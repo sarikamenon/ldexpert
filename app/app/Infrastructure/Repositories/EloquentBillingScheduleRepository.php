@@ -47,6 +47,15 @@ final class EloquentBillingScheduleRepository implements BillingScheduleReposito
             ->first();
     }
 
+    public function findForEntityIncludingTrashed(string $schedulableType, int $schedulableId, string $scheduleType): ?BillingSchedule
+    {
+        return BillingSchedule::withTrashed()
+            ->where('schedulable_type', $schedulableType)
+            ->where('schedulable_id', $schedulableId)
+            ->where('schedule_type', $scheduleType)
+            ->first();
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -123,6 +132,54 @@ final class EloquentBillingScheduleRepository implements BillingScheduleReposito
             ->get();
 
         return $result;
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, BillingScheduleRun>}
+     */
+    public function listRunsForDataTables(int $scheduleId, DataTablesParamsDTO $params): array
+    {
+        /** @var Builder<BillingScheduleRun> $baseQuery */
+        $baseQuery = BillingScheduleRun::query()
+            ->where('billing_schedule_id', $scheduleId)
+            ->with(['invoice', 'therapistBill']);
+
+        $recordsTotal = (clone $baseQuery)->count('billing_schedule_runs.id');
+
+        if ($params->searchValue !== null) {
+            $search = '%'.$params->searchValue.'%';
+            $baseQuery->where(function (Builder $q) use ($search): void {
+                $q->where('billing_schedule_runs.status', 'like', $search)
+                    ->orWhere('billing_schedule_runs.error_message', 'like', $search)
+                    ->orWhereHas('invoice', static function ($query) use ($search): void {
+                        $query->where('invoice_number', 'like', $search); // @phpstan-ignore argument.type
+                    })
+                    ->orWhereHas('therapistBill', static function ($query) use ($search): void {
+                        $query->where('bill_number', 'like', $search); // @phpstan-ignore argument.type
+                    });
+            });
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count('billing_schedule_runs.id');
+
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        if ($params->orderColumn !== null) {
+            $baseQuery->orderBy('billing_schedule_runs.'.$params->orderColumn, $orderDir);
+        } else {
+            $baseQuery->orderByDesc('billing_schedule_runs.started_at');
+        }
+
+        /** @var Collection<int, BillingScheduleRun> $rows */
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
     }
 
     public function delete(BillingSchedule $schedule): bool

@@ -31,6 +31,37 @@ final class BillingScheduleService
         return $this->repository->getForEntity($schedulableType, $schedulableId, $scheduleType);
     }
 
+    /**
+     * Create or update entity billing; restores a soft-deleted schedule when the user saves again
+     * after "remove custom configuration" (unique key still holds the old row).
+     *
+     * @return array{schedule: BillingSchedule, created: bool}
+     */
+    public function upsertEntitySchedule(BillingScheduleDTO $dto): array
+    {
+        $existing = $this->repository->findForEntityIncludingTrashed(
+            $dto->schedulableType,
+            $dto->schedulableId,
+            $dto->scheduleType,
+        );
+
+        if ($existing !== null) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
+
+            return [
+                'schedule' => $this->updateSchedule($existing, $dto),
+                'created' => false,
+            ];
+        }
+
+        return [
+            'schedule' => $this->createSchedule($dto),
+            'created' => true,
+        ];
+    }
+
     public function deleteSchedule(BillingSchedule $schedule): bool
     {
         return $this->repository->delete($schedule);
@@ -104,6 +135,14 @@ final class BillingScheduleService
     public function getRunHistory(int $scheduleId, int $limit = 20): Collection
     {
         return $this->repository->getRunHistory($scheduleId, $limit);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, BillingScheduleRun>}
+     */
+    public function listRunsForDataTables(int $scheduleId, DataTablesParamsDTO $params): array
+    {
+        return $this->repository->listRunsForDataTables($scheduleId, $params);
     }
 
     /**

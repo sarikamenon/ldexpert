@@ -108,12 +108,6 @@ final class EntityBillingController extends Controller
         $entityId = (int) $request->validated('entity_id');
         $mapping = self::ENTITY_MAP[$entityType];
 
-        $existing = $this->scheduleService->getEntityConfig(
-            $mapping['schedulable_type'],
-            $entityId,
-            $mapping['schedule_type'],
-        );
-
         $dtoData = [
             'schedulable_type' => $mapping['schedulable_type'],
             'schedulable_id' => $entityId,
@@ -133,13 +127,11 @@ final class EntityBillingController extends Controller
 
         $dto = BillingScheduleDTO::fromArray($dtoData);
 
-        if ($existing !== null) {
-            $schedule = $this->scheduleService->updateSchedule($existing, $dto);
-            $message = 'Billing configuration updated.';
-        } else {
-            $schedule = $this->scheduleService->createSchedule($dto);
-            $message = 'Custom billing configuration saved.';
-        }
+        $result = $this->scheduleService->upsertEntitySchedule($dto);
+        $schedule = $result['schedule'];
+        $message = $result['created']
+            ? 'Custom billing configuration saved.'
+            : 'Billing configuration updated.';
 
         return response()->json([
             'success' => true,
