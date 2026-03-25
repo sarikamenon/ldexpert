@@ -60,7 +60,7 @@ final class QGlobRequestTest extends TestCase
         ]);
     }
 
-    public function test_admin_can_approve_and_complete(): void
+    public function test_admin_can_approve(): void
     {
         $admin = User::factory()->admin()->create();
         $request = $this->makePendingRequest();
@@ -79,15 +79,55 @@ final class QGlobRequestTest extends TestCase
         self::assertSame(QGlobRequestStatus::APPROVED, $request->status);
         self::assertSame('Approved for slot', $request->admin_response);
         self::assertSame($admin->id, (int) $request->responded_by_id);
+    }
 
-        $complete = $this->actingAs($admin)->post(
-            route('admin.qglob-requests.complete', $request),
-            ['_token' => csrf_token()]
+    public function test_admin_can_reject(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $request = $this->makePendingRequest();
+
+        $respond = $this->actingAs($admin)->post(
+            route('admin.qglob-requests.respond', $request),
+            [
+                'decision' => QGlobRequestStatus::REJECTED->value,
+                'admin_response' => 'Not eligible at this time',
+                '_token' => csrf_token(),
+            ]
         );
 
-        $complete->assertRedirect(route('admin.qglob-requests.show', $request));
+        $respond->assertRedirect(route('admin.qglob-requests.show', $request));
         $request->refresh();
-        self::assertSame(QGlobRequestStatus::COMPLETED, $request->status);
+        self::assertSame(QGlobRequestStatus::REJECTED, $request->status);
+        self::assertSame('Not eligible at this time', $request->admin_response);
+    }
+
+    public function test_admin_cannot_respond_to_non_pending_request(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $request = $this->makePendingRequest();
+        $request->update(['status' => QGlobRequestStatus::APPROVED]);
+
+        $respond = $this->actingAs($admin)->post(
+            route('admin.qglob-requests.respond', $request),
+            [
+                'decision' => QGlobRequestStatus::REJECTED->value,
+                '_token' => csrf_token(),
+            ]
+        );
+
+        $respond->assertForbidden();
+        $request->refresh();
+        self::assertSame(QGlobRequestStatus::APPROVED, $request->status);
+    }
+
+    public function test_admin_show_loads(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $request = $this->makePendingRequest();
+
+        $response = $this->actingAs($admin)->get(route('admin.qglob-requests.show', $request));
+        $response->assertOk();
+        $response->assertViewIs('admin.qglob-requests.show');
     }
 
     public function test_admin_index_loads(): void

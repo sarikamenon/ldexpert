@@ -43,7 +43,19 @@ final class QGlobRequestRowTransformer
         $statusCell = self::statusCell($request->status);
 
         $viewUrl = route('therapist.qglob-requests.show', ['qglob_request' => $request]);
-        $actionsCell = ActionButtons::wrap(ActionButtons::view($viewUrl, 'View'));
+        $buttons = [ActionButtons::view($viewUrl, 'View')];
+
+        if ($request->status === QGlobRequestStatus::PENDING) {
+            $deleteUrl = route('therapist.qglob-requests.destroy', ['qglob_request' => $request]);
+            $buttons[] = ActionButtons::delete(
+                $deleteUrl,
+                'Delete',
+                'Delete request?',
+                'This will permanently remove this QGlob request.',
+            );
+        }
+
+        $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [
             $dateCell,
@@ -92,7 +104,7 @@ final class QGlobRequestRowTransformer
     {
         $label = $status->label();
         $variant = match ($status) {
-            QGlobRequestStatus::APPROVED, QGlobRequestStatus::COMPLETED => 'success',
+            QGlobRequestStatus::APPROVED => 'success',
             QGlobRequestStatus::REJECTED => 'danger',
             default => 'warning',
         };

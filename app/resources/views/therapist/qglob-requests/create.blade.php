@@ -23,7 +23,7 @@
                     <div>
                         <x-input-label for="student_id" value="Student *" />
                         <p class="mt-1 text-xs text-foreground/60" id="student_id_help">
-                            Students with an active evaluation SSA assigned to you.
+                            Students with an active SSA assigned to you.
                         </p>
                         <x-ui::select id="student_id" name="student_id" searchable required
                             class="mt-1 block w-full" aria-describedby="student_id_help">
@@ -37,26 +37,28 @@
                         <x-input-error :messages="$errors->get('student_id')" class="mt-2" />
                     </div>
 
-                    <div>
-                        <x-input-label for="requested_date" value="Requested date *" />
-                        <p class="mt-1 text-xs text-foreground/60" id="requested_date_help">
-                            The calendar date you need Q-Global access.
-                        </p>
-                        <x-ui::input id="requested_date" type="date" name="requested_date" required
-                            value="{{ old('requested_date') }}" class="mt-1 block w-full max-w-xs"
-                            aria-describedby="requested_date_help" />
-                        <x-input-error :messages="$errors->get('requested_date')" class="mt-2" />
-                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="requested_date" value="Requested date *" />
+                            <p class="mt-1 text-xs text-foreground/60" id="requested_date_help">
+                                The date you need Q-Global access.
+                            </p>
+                            <x-ui::input id="requested_date" type="date" name="requested_date" required
+                                value="{{ old('requested_date') }}" class="mt-1 block w-full"
+                                aria-describedby="requested_date_help" />
+                            <x-input-error :messages="$errors->get('requested_date')" class="mt-2" />
+                        </div>
 
-                    <div>
-                        <x-input-label for="requested_time" value="Requested time *" />
-                        <p class="mt-1 text-xs text-foreground/60" id="requested_time_help">
-                            Start time for the evaluation session (24-hour picker).
-                        </p>
-                        <x-ui::input id="requested_time" type="time" name="requested_time" required
-                            value="{{ old('requested_time') }}" class="mt-1 block w-full max-w-xs"
-                            aria-describedby="requested_time_help" />
-                        <x-input-error :messages="$errors->get('requested_time')" class="mt-2" />
+                        <div>
+                            <x-input-label for="requested_time" value="Requested time *" />
+                            <p class="mt-1 text-xs text-foreground/60" id="requested_time_help">
+                                Start time for the session.
+                            </p>
+                            <x-ui::input id="requested_time" type="time" name="requested_time" required
+                                value="{{ old('requested_time') }}" class="mt-1 block w-full"
+                                aria-describedby="requested_time_help" />
+                            <x-input-error :messages="$errors->get('requested_time')" class="mt-2" />
+                        </div>
                     </div>
 
                     <div>

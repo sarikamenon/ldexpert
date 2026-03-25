@@ -79,6 +79,7 @@ export default defineConfig({
                 'resources/js/pages/therapist-students-documents.js',
                 'resources/js/pages/therapist-session-logs-index.js',
                 'resources/js/pages/therapist-qglob-requests.js',
+                'resources/js/pages/therapist-qglob-requests-show.js',
                 'resources/js/pages/therapist-session-logs-documents.js',
                 'resources/js/pages/therapist-session-log-form.js',
                 'resources/css/fullcalendar-custom.css',

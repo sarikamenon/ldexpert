@@ -11,7 +11,6 @@ use App\DTOs\QGlobRequestFilterDTO;
 use App\DTOs\RespondQGlobRequestDTO;
 use App\Enums\QGlobRequestStatus;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\QGlob\CompleteQGlobRequestRequest;
 use App\Http\Requests\Admin\QGlob\QGlobRequestDataRequest;
 use App\Http\Requests\Admin\QGlob\RespondQGlobRequestRequest;
 use App\Http\Support\DataTablesRequest;
@@ -108,14 +107,4 @@ final class QGlobRequestController extends Controller
             ->with('status', 'Request updated.');
     }
 
-    public function complete(CompleteQGlobRequestRequest $request, QGlobRequest $qglob_request): RedirectResponse
-    {
-        $this->authorize('complete', $qglob_request);
-
-        $this->service->markCompleted($qglob_request);
-
-        return redirect()
-            ->route('admin.qglob-requests.show', $qglob_request)
-            ->with('status', 'Request marked as completed.');
-    }
 }

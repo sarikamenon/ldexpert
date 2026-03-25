@@ -120,4 +120,15 @@ final class QGlobRequestController extends Controller
             'qglobRequest' => $qglob_request,
         ]);
     }
+
+    public function destroy(Request $request, QGlobRequest $qglob_request): RedirectResponse
+    {
+        $this->authorize('delete', $qglob_request);
+
+        $this->service->delete($qglob_request);
+
+        return redirect()
+            ->route('therapist.qglob-requests.index')
+            ->with('status', 'QGlob request deleted successfully.');
+    }
 }

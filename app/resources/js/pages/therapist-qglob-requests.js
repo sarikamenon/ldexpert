@@ -1,4 +1,28 @@
 import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { confirmDialog } from '../common/sweetalert';
+
+function bindDelegatedConfirmations() {
+    document.body.addEventListener('click', async (event) => {
+        const button = event.target.closest('#therapistQglobRequestsTable button[data-confirm-title]');
+        if (!button) return;
+
+        const form = button.closest('form');
+        if (!form) return;
+
+        event.preventDefault();
+
+        const result = await confirmDialog({
+            title: button.dataset.confirmTitle || 'Are you sure?',
+            text: button.dataset.confirmText || '',
+            icon: button.dataset.confirmIcon || 'warning',
+            confirmButtonText: 'Yes, delete',
+        });
+
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+}
 
 async function initTable() {
     const table = document.getElementById('therapistQglobRequestsTable');
@@ -40,5 +64,6 @@ async function initTable() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    bindDelegatedConfirmations();
     void initTable();
 });

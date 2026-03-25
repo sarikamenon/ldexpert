@@ -9,7 +9,6 @@ enum QGlobRequestStatus: string
     case PENDING = 'pending';
     case APPROVED = 'approved';
     case REJECTED = 'rejected';
-    case COMPLETED = 'completed';
 
     public function label(): string
     {
@@ -17,7 +16,6 @@ enum QGlobRequestStatus: string
             self::PENDING => 'Pending',
             self::APPROVED => 'Approved',
             self::REJECTED => 'Rejected',
-            self::COMPLETED => 'Completed',
         };
     }
 

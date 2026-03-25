@@ -34,11 +34,6 @@ final class QGlobRequestService
         return $this->repository->respond($request, $dto);
     }
 
-    public function markCompleted(QGlobRequest $request): QGlobRequest
-    {
-        return $this->repository->markCompleted($request);
-    }
-
     /**
      * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, QGlobRequest>}
      */
@@ -61,5 +56,10 @@ final class QGlobRequestService
     public function studentIsEligibleForTherapist(int $studentId, int $therapistId): bool
     {
         return $this->repository->isStudentEligibleForTherapist($studentId, $therapistId);
+    }
+
+    public function delete(QGlobRequest $request): bool
+    {
+        return $this->repository->delete($request);
     }
 }

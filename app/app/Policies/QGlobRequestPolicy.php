@@ -30,6 +30,16 @@ final class QGlobRequestPolicy
         return $this->isTherapist($user);
     }
 
+    public function delete(User $user, QGlobRequest $request): bool
+    {
+        if (! $this->isTherapist($user)) {
+            return false;
+        }
+
+        return (int) $request->requested_by_id === $user->id
+            && $request->status === QGlobRequestStatus::PENDING;
+    }
+
     public function respond(User $user, QGlobRequest $request): bool
     {
         if (! $this->isAdmin($user)) {
@@ -37,15 +47,6 @@ final class QGlobRequestPolicy
         }
 
         return $request->status === QGlobRequestStatus::PENDING;
-    }
-
-    public function complete(User $user, QGlobRequest $request): bool
-    {
-        if (! $this->isAdmin($user)) {
-            return false;
-        }
-
-        return $request->status === QGlobRequestStatus::APPROVED;
     }
 
     private function isAdmin(User $user): bool

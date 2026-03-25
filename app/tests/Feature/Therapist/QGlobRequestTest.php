@@ -86,4 +86,95 @@ final class QGlobRequestTest extends TestCase
         $response->assertSessionHasErrors('student_id');
         self::assertSame(0, QGlobRequest::query()->count());
     }
+
+    public function test_therapist_can_delete_pending_request(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create(['user_id' => $student->id]);
+        $this->seedEligibleStudent($therapist, $student);
+
+        $req = QGlobRequest::factory()->create([
+            'requested_by_id' => $therapist->id,
+            'student_id' => $student->id,
+            'status' => QGlobRequestStatus::PENDING,
+        ]);
+
+        $response = $this->actingAs($therapist)->delete(
+            route('therapist.qglob-requests.destroy', $req),
+            ['_token' => csrf_token()]
+        );
+
+        $response->assertRedirect(route('therapist.qglob-requests.index'));
+        self::assertNotNull($req->fresh()?->deleted_at);
+    }
+
+    public function test_therapist_cannot_delete_approved_request(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create(['user_id' => $student->id]);
+        $this->seedEligibleStudent($therapist, $student);
+
+        $req = QGlobRequest::factory()->create([
+            'requested_by_id' => $therapist->id,
+            'student_id' => $student->id,
+            'status' => QGlobRequestStatus::APPROVED,
+        ]);
+
+        $response = $this->actingAs($therapist)->delete(
+            route('therapist.qglob-requests.destroy', $req),
+            ['_token' => csrf_token()]
+        );
+
+        $response->assertForbidden();
+        self::assertNull($req->fresh()?->deleted_at);
+    }
+
+    public function test_therapist_cannot_delete_another_therapists_request(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $otherTherapist = User::factory()->therapist()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create(['user_id' => $student->id]);
+        $this->seedEligibleStudent($therapist, $student);
+
+        $req = QGlobRequest::factory()->create([
+            'requested_by_id' => $therapist->id,
+            'student_id' => $student->id,
+            'status' => QGlobRequestStatus::PENDING,
+        ]);
+
+        $response = $this->actingAs($otherTherapist)->delete(
+            route('therapist.qglob-requests.destroy', $req),
+            ['_token' => csrf_token()]
+        );
+
+        $response->assertForbidden();
+        self::assertNull($req->fresh()?->deleted_at);
+    }
+
+    public function test_eligible_students_includes_non_evaluation_ssa(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        $student = User::factory()->student()->create();
+        StudentProfile::factory()->create(['user_id' => $student->id]);
+
+        $nonEvalService = Service::factory()->create([
+            'name' => 'Speech Therapy',
+        ]);
+
+        ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $nonEvalService->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+            'start_date' => now()->subDay(),
+            'end_date' => now()->addMonth(),
+        ]);
+
+        $create = $this->actingAs($therapist)->get(route('therapist.qglob-requests.create'));
+        $create->assertOk();
+        $create->assertSee($student->name, false);
+    }
 }

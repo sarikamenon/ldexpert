@@ -20,8 +20,6 @@ interface QGlobRequestRepositoryInterface
 
     public function respond(QGlobRequest $request, RespondQGlobRequestDTO $dto): QGlobRequest;
 
-    public function markCompleted(QGlobRequest $request): QGlobRequest;
-
     /**
      * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, QGlobRequest>}
      */
@@ -39,4 +37,6 @@ interface QGlobRequestRepositoryInterface
     public function listEligibleStudentsForTherapist(int $therapistId): EloquentCollection;
 
     public function isStudentEligibleForTherapist(int $studentId, int $therapistId): bool;
+
+    public function delete(QGlobRequest $request): bool;
 }

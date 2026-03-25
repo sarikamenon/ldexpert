@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
-use App\Constants\EvaluationServiceNames;
 use App\Domain\QGlobRequest\Repositories\QGlobRequestRepositoryInterface;
 use App\DTOs\CreateQGlobRequestDTO;
 use App\DTOs\DataTablesParamsDTO;
@@ -45,18 +44,6 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
             'admin_response' => $dto->adminResponse,
             'responded_by_id' => $dto->respondedById,
             'responded_at' => Carbon::now(),
-        ]);
-
-        /** @var QGlobRequest $fresh */
-        $fresh = $request->fresh(['requestedBy', 'student.studentProfile.school', 'respondedBy']);
-
-        return $fresh;
-    }
-
-    public function markCompleted(QGlobRequest $request): QGlobRequest
-    {
-        $request->update([
-            'status' => QGlobRequestStatus::COMPLETED,
         ]);
 
         /** @var QGlobRequest $fresh */
@@ -140,20 +127,11 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
     /** @return EloquentCollection<int, User> */
     public function listEligibleStudentsForTherapist(int $therapistId): EloquentCollection
     {
-        $evaluationNames = EvaluationServiceNames::all();
-
         return User::query()
             ->where('role', Role::STUDENT)
-            ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId, $evaluationNames): void {
+            ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId): void {
                 $q->where('assigned_therapist_id', $therapistId)
-                    ->where('status', SSAStatus::ACTIVE)
-                    ->where(function (Builder $inner) use ($evaluationNames): void {
-                        $inner->whereHas('primaryService', function (Builder $svc) use ($evaluationNames): void {
-                            $svc->whereIn('name', $evaluationNames);
-                        })->orWhereHas('services', function (Builder $svc) use ($evaluationNames): void {
-                            $svc->whereIn('name', $evaluationNames);
-                        });
-                    });
+                    ->where('status', SSAStatus::ACTIVE);
             })
             ->orderBy('name')
             ->get();
@@ -161,22 +139,18 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
 
     public function isStudentEligibleForTherapist(int $studentId, int $therapistId): bool
     {
-        $evaluationNames = EvaluationServiceNames::all();
-
         return User::query()
             ->whereKey($studentId)
             ->where('role', Role::STUDENT)
-            ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId, $evaluationNames): void {
+            ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId): void {
                 $q->where('assigned_therapist_id', $therapistId)
-                    ->where('status', SSAStatus::ACTIVE)
-                    ->where(function (Builder $inner) use ($evaluationNames): void {
-                        $inner->whereHas('primaryService', function (Builder $svc) use ($evaluationNames): void {
-                            $svc->whereIn('name', $evaluationNames);
-                        })->orWhereHas('services', function (Builder $svc) use ($evaluationNames): void {
-                            $svc->whereIn('name', $evaluationNames);
-                        });
-                    });
+                    ->where('status', SSAStatus::ACTIVE);
             })
             ->exists();
+    }
+
+    public function delete(QGlobRequest $request): bool
+    {
+        return (bool) $request->delete();
     }
 }

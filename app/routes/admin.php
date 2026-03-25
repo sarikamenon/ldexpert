@@ -163,7 +163,6 @@ Route::middleware('role:admin')
             Route::post('data', [QGlobRequestController::class, 'data'])->name('data');
             Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
             Route::post('{qglob_request}/respond', [QGlobRequestController::class, 'respond'])->name('respond');
-            Route::post('{qglob_request}/complete', [QGlobRequestController::class, 'complete'])->name('complete');
         });
 
         // Session Logs

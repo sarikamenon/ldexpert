@@ -312,13 +312,13 @@ return [
             [
                 'label' => 'Students',
                 'route' => 'therapist.students.index',
-                'active' => 'therapist.students.*',
-            ],
-            [
-                'label' => 'Reports',
-                'route' => 'therapist.qglob-requests.index',
-                'active' => 'therapist.qglob-requests.*',
+                'active' => ['therapist.students.*', 'therapist.qglob-requests.*'],
                 'children' => [
+                    [
+                        'label' => 'Student List',
+                        'route' => 'therapist.students.index',
+                        'active' => 'therapist.students.*',
+                    ],
                     [
                         'label' => 'QGlob Requests',
                         'route' => 'therapist.qglob-requests.index',

@@ -67,6 +67,7 @@ Route::middleware('role:therapist')
             Route::get('create', [QGlobRequestController::class, 'create'])->name('create');
             Route::post('/', [QGlobRequestController::class, 'store'])->name('store');
             Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
+            Route::delete('{qglob_request}', [QGlobRequestController::class, 'destroy'])->name('destroy');
         });
 
         // Session Log routes

@@ -8,7 +8,7 @@
     @php
         $status = $qglobRequest->status;
         $badgeClass = match ($status) {
-            \App\Enums\QGlobRequestStatus::APPROVED, \App\Enums\QGlobRequestStatus::COMPLETED => 'bg-success/10 text-success border border-success/20',
+            \App\Enums\QGlobRequestStatus::APPROVED => 'bg-success/10 text-success border border-success/20',
             \App\Enums\QGlobRequestStatus::REJECTED => 'bg-danger/10 text-danger border border-danger/20',
             default => 'bg-warning/10 text-warning border border-warning/20',
         };
@@ -105,23 +105,6 @@
                         </div>
                         <x-ui::button type="submit" class="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                             Save response
-                        </x-ui::button>
-                    </form>
-                </x-ui::card>
-            @endif
-
-            @if ($status === \App\Enums\QGlobRequestStatus::APPROVED)
-                <x-ui::card class="p-6">
-                    <h3 class="text-lg font-semibold text-foreground mb-2">After session</h3>
-                    <p class="text-sm text-foreground/60 mb-4">Mark complete once the Q-Global session is finished.</p>
-                    <form method="post" action="{{ route('admin.qglob-requests.complete', $qglobRequest) }}">
-                        @csrf
-                        <x-ui::button type="submit"
-                            data-confirm-title="Mark as completed?"
-                            data-confirm-text="This indicates the Q-Global session is done."
-                            data-confirm-icon="question"
-                            class="focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                            Mark completed
                         </x-ui::button>
                     </form>
                 </x-ui::card>
