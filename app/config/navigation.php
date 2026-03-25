@@ -140,11 +140,6 @@ return [
                 ],
             ],
             [
-                'label' => 'QGlob Requests',
-                'route' => 'admin.qglob-requests.index',
-                'active' => 'admin.qglob-requests.*',
-            ],
-            [
                 'label' => 'Finance',
                 'route' => 'admin.finance.dashboard',
                 'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
@@ -195,8 +190,13 @@ return [
             [
                 'label' => 'Reports',
                 'route' => 'admin.reports.ssa.utilization.index',
-                'active' => ['admin.reports.*', 'admin.analytics.*'],
+                'active' => ['admin.reports.*', 'admin.analytics.*', 'admin.qglob-requests.*'],
                 'children' => [
+                    [
+                        'label' => 'QGlob Requests',
+                        'route' => 'admin.qglob-requests.index',
+                        'active' => 'admin.qglob-requests.*',
+                    ],
                     [
                         'label' => 'Utilization & Compliance',
                         'route' => 'admin.reports.ssa.utilization.index',
@@ -276,9 +276,16 @@ return [
                 ],
             ],
             [
-                'label' => 'QGlob Requests',
+                'label' => 'Reports',
                 'route' => 'therapist.qglob-requests.index',
                 'active' => 'therapist.qglob-requests.*',
+                'children' => [
+                    [
+                        'label' => 'QGlob Requests',
+                        'route' => 'therapist.qglob-requests.index',
+                        'active' => 'therapist.qglob-requests.*',
+                    ],
+                ],
             ],
             [
                 'label' => 'Session Logs',
