@@ -148,7 +148,7 @@ return [
             [
                 'label' => 'Finance',
                 'route' => 'admin.finance.dashboard',
-                'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.therapist-bills.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
+                'active' => ['admin.finance.*', 'admin.invoices.*', 'admin.billing.*', 'admin.expenses.*', 'admin.payments.*', 'admin.ledger.*'],
                 'children' => [
                     [
                         'label' => 'Dashboard',
@@ -190,6 +190,16 @@ return [
                         'label' => 'Pay Stub Report',
                         'route' => 'admin.finance.pay-stub-report.index',
                         'active' => 'admin.finance.pay-stub-report.*',
+                    ],
+                    [
+                        'label' => 'Billing Schedules',
+                        'route' => 'admin.billing.schedules.index',
+                        'active' => ['admin.billing.schedules.*'],
+                    ],
+                    [
+                        'label' => 'Billing Settings',
+                        'route' => 'admin.billing.settings.edit',
+                        'active' => ['admin.billing.settings.*'],
                     ],
                 ],
             ],

@@ -124,6 +124,7 @@ final class SessionLogController extends Controller
 
         return view('admin.session-logs.edit', [
             'sessionLog' => $sessionLog,
+            'rateOverrideLocked' => $sessionLog->isAttachedToInvoiceOrTherapistBill(),
         ]);
     }
 

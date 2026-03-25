@@ -37,6 +37,12 @@
                 </x-ui::alert>
             @endif
 
+            @if ($rateOverrideLocked)
+                <x-ui::alert variant="warning" class="mb-4" role="status">
+                    <p class="text-sm text-foreground">{{ \App\Models\SessionLog::RATE_OVERRIDE_BLOCKED_MESSAGE }}</p>
+                </x-ui::alert>
+            @endif
+
             <x-ui::card class="p-6 space-y-6">
                 <form method="POST" action="{{ route('admin.session-logs.update', $sessionLog) }}" class="space-y-6" id="admin-session-log-override-form">
                     @csrf
@@ -49,7 +55,8 @@
                                 Therapist Rate Type
                             </label>
                             <select name="therapist_rate_type" id="therapist_rate_type"
-                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary js-rate-sync-therapist-type">
+                                @disabled($rateOverrideLocked)
+                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary js-rate-sync-therapist-type disabled:opacity-50 disabled:pointer-events-none">
                                 <option value="">Select</option>
                                 <option value="H"
                                     @selected(old('therapist_rate_type', $sessionLog->therapist_rate_type?->value ?? '') === 'H')>
@@ -66,6 +73,7 @@
                                 Therapist Rate Amount
                             </label>
                             <x-ui::input type="number" step="0.01" name="therapist_rate_amount" id="therapist_rate_amount"
+                                :disabled="$rateOverrideLocked"
                                 value="{{ old('therapist_rate_amount', $sessionLog->therapist_rate_amount ?? '') }}"
                                 class="js-rate-sync-therapist-rate" />
                         </div>
@@ -74,6 +82,7 @@
                                 Therapist Billable Amount
                             </label>
                             <x-ui::input type="number" step="0.01" name="therapist_billable_amount" id="therapist_billable_amount"
+                                :disabled="$rateOverrideLocked"
                                 value="{{ old('therapist_billable_amount', $sessionLog->therapist_billable_amount ?? '') }}"
                                 class="js-rate-sync-therapist-amount" />
                         </div>
@@ -85,7 +94,8 @@
                                 School Rate Type
                             </label>
                             <select name="school_rate_type" id="school_rate_type"
-                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary js-rate-sync-school-type">
+                                @disabled($rateOverrideLocked)
+                                class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary js-rate-sync-school-type disabled:opacity-50 disabled:pointer-events-none">
                                 <option value="">Select</option>
                                 <option value="H"
                                     @selected(old('school_rate_type', $sessionLog->school_rate_type?->value ?? '') === 'H')>
@@ -102,6 +112,7 @@
                                 School Rate Amount
                             </label>
                             <x-ui::input type="number" step="0.01" name="school_rate_amount" id="school_rate_amount"
+                                :disabled="$rateOverrideLocked"
                                 value="{{ old('school_rate_amount', $sessionLog->school_rate_amount ?? '') }}"
                                 class="js-rate-sync-school-rate" />
                         </div>
@@ -110,6 +121,7 @@
                                 School Invoice Amount
                             </label>
                             <x-ui::input type="number" step="0.01" name="school_invoice_amount" id="school_invoice_amount"
+                                :disabled="$rateOverrideLocked"
                                 value="{{ old('school_invoice_amount', $sessionLog->school_invoice_amount ?? '') }}"
                                 class="js-rate-sync-school-amount" />
                         </div>
@@ -120,19 +132,30 @@
                             Override Reason
                         </label>
                         <textarea name="override_reason" rows="3"
-                            class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary"
+                            @disabled($rateOverrideLocked)
+                            class="border border-border rounded-lg px-3 py-2 text-sm w-full focus:ring-2 focus:ring-primary focus:border-primary disabled:opacity-50 disabled:pointer-events-none"
                             placeholder="Explain why these rates are being overridden">{{ old('override_reason', $sessionLog->override_reason ?? '') }}</textarea>
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 text-sm font-medium">
-                            Save
-                        </button>
-                        <a href="{{ route('admin.session-logs.show', $sessionLog) }}"
-                            class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background/subtle">
+                        @if ($rateOverrideLocked)
+                            <span
+                                class="inline-flex rounded-base focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                title="{{ \App\Models\SessionLog::RATE_OVERRIDE_BLOCKED_MESSAGE }}"
+                                tabindex="0"
+                            >
+                                <x-ui::button type="button" disabled>
+                                    Save
+                                </x-ui::button>
+                            </span>
+                        @else
+                            <x-ui::button type="submit">
+                                Save
+                            </x-ui::button>
+                        @endif
+                        <x-ui::button href="{{ route('admin.session-logs.show', $sessionLog) }}" variant="secondary">
                             Cancel
-                        </a>
+                        </x-ui::button>
                     </div>
                 </form>
             </x-ui::card>

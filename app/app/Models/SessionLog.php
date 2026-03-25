@@ -28,6 +28,8 @@ class SessionLog extends Model
     /** @use HasFactory<\Database\Factories\SessionLogFactory> */
     use HasFactory, HasSessionLogScopes, SoftDeletes;
 
+    public const RATE_OVERRIDE_BLOCKED_MESSAGE = 'Rates cannot be overridden because this session is already attached to an invoice or therapist bill.';
+
     protected $fillable = [
         'therapist_id',
         'student_id',
@@ -219,6 +221,11 @@ class SessionLog extends Model
     public function isSentBack(): bool
     {
         return $this->status === SessionLogStatus::SENT_BACK;
+    }
+
+    public function isAttachedToInvoiceOrTherapistBill(): bool
+    {
+        return $this->invoice_id !== null || $this->therapist_bill_id !== null;
     }
 
     public function getStatusAttribute(mixed $value): ?SessionLogStatus

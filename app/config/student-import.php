@@ -160,7 +160,7 @@ return [
                     'sources' => ['parent_guardian_first_name', 'parent_guardian_last_name'],
                     'separator' => ' ',
                 ],
-            ]
+            ],
         ],
     ],
 

@@ -210,6 +210,10 @@ final class SessionLogService
                 throw new \InvalidArgumentException('Session log cannot be edited in its current status.');
             }
 
+            if ($isAdmin && $sessionLog->isAttachedToInvoiceOrTherapistBill()) {
+                throw new \InvalidArgumentException(SessionLog::RATE_OVERRIDE_BLOCKED_MESSAGE);
+            }
+
             if ($isAdmin && $sessionLog->isApproved()) {
                 throw new \InvalidArgumentException('Approved session logs cannot be edited.');
             }

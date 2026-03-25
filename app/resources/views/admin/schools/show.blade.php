@@ -33,6 +33,7 @@
             ['key' => 'contracts', 'label' => 'Contracts', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'contracts'])],
             ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'ssas'])],
             ['key' => 'calendar', 'label' => 'Calendar', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'calendar'])],
+            ['key' => 'billing', 'label' => 'Billing', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'billing'])],
         ];
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -108,6 +109,11 @@
             'school' => $school,
             'selectedDate' => $selectedDate ?? now(),
         ])
+    @elseif (($activeTab ?? 'dashboard') === 'billing')
+        @include('admin.billing._entity-billing-tab', [
+            'entityType' => 'school',
+            'entityId' => $school->id,
+        ])
     @endif
 
     <x-slot name="scripts">
@@ -122,6 +128,8 @@
             @vite(['resources/js/pages/admin-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'calendar')
             @vite(['resources/js/pages/admin-school-calendar-events.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'billing')
+            @vite(['resources/js/pages/admin-entity-billing.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

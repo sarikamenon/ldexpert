@@ -140,6 +140,12 @@ class School extends Model
         return $this->hasMany(Invoice::class, 'school_id');
     }
 
+    /** @return MorphMany<BillingSchedule, $this> */
+    public function billingSchedules(): MorphMany
+    {
+        return $this->morphMany(BillingSchedule::class, 'schedulable');
+    }
+
     /** @return MorphMany<\App\Models\LedgerEntry, $this> */
     public function ledgerEntries(): MorphMany
     {

@@ -5,14 +5,30 @@ declare(strict_types=1);
 namespace App\Http\Requests\Admin;
 
 use App\Enums\RateType;
+use App\Models\SessionLog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 final class UpdateSessionLogRequest extends FormRequest
 {
     public function authorize(): bool
     {
         return $this->user()?->role?->value === 'admin';
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $sessionLog = $this->route('sessionLog');
+            if (! $sessionLog instanceof SessionLog) {
+                return;
+            }
+
+            if ($sessionLog->isAttachedToInvoiceOrTherapistBill()) {
+                $validator->errors()->add('rate_override', SessionLog::RATE_OVERRIDE_BLOCKED_MESSAGE);
+            }
+        });
     }
 
     /** @return array<string, array<int, mixed>|string> */

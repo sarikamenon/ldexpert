@@ -49,6 +49,16 @@ interface TherapistBillRepositoryInterface
      */
     public function getAvailableSessionLogsForBillingCreation(array $filters): Collection;
 
+    public function unlinkAllSessionsForTherapistBill(TherapistBill $bill): void;
+
+    /**
+     * @param  array<int>  $sessionLogIds
+     * @return Collection<int, SessionLog>
+     */
+    public function getSessionLogsForTherapistBillUpdate(TherapistBill $bill, array $sessionLogIds): Collection;
+
+    public function updateTotals(TherapistBill $bill, float $subtotal, float $adjustmentsTotal, float $totalDue): TherapistBill;
+
     /**
      * Get unique therapist IDs from available session logs
      *

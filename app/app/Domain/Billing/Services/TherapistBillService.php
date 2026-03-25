@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Services;
 
+use App\DTOs\AttachSessionsDTO;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Services\CompanyInfoService;
@@ -39,27 +40,11 @@ final class TherapistBillService
     public function generateBill(User $user, CreateTherapistBillDTO $dto): TherapistBill
     {
         return DB::transaction(function () use ($dto): TherapistBill {
-            // Get approved session logs
-            $sessionLogs = $this->repository->getApprovedSessionLogsForBilling($dto->sessionLogIds);
-
-            if ($sessionLogs->isEmpty()) {
-                throw new \InvalidArgumentException('No eligible session logs found for bill generation.');
-            }
-
-            // Validate all session logs belong to the selected therapist
-            $invalidSessions = $sessionLogs->filter(fn ($log) => $log->therapist_id !== $dto->therapistId);
-            if ($invalidSessions->isNotEmpty()) {
-                throw new \InvalidArgumentException('All selected session logs must belong to the selected therapist.');
-            }
-
             // Get therapist for snapshot
             $therapist = User::with('therapistProfile')->find($dto->therapistId);
             if (! $therapist) {
                 throw new \InvalidArgumentException('Therapist not found.');
             }
-
-            // Calculate totals
-            $totals = $this->calculateTotals($sessionLogs);
 
             // Generate bill number if not provided or empty
             $billNumber = ! empty($dto->billNumber) ? $dto->billNumber : $this->repository->generateBillNumber();
@@ -71,7 +56,28 @@ final class TherapistBillService
             // Determine due date
             $dueDate = $dto->dueDate ?? now()->addDays(30)->toDateString();
 
-            // Create bill
+            $sessionLogs = $dto->sessionLogIds !== []
+                ? $this->repository->getApprovedSessionLogsForBilling($dto->sessionLogIds)
+                : collect();
+
+            if ($sessionLogs->isNotEmpty()) {
+                // Validate all session logs belong to the selected therapist
+                $invalidSessions = $sessionLogs->filter(fn ($log) => $log->therapist_id !== $dto->therapistId);
+                if ($invalidSessions->isNotEmpty()) {
+                    throw new \InvalidArgumentException('All selected session logs must belong to the selected therapist.');
+                }
+            }
+
+            // Calculate totals (0 when there are no sessions)
+            $totals = $sessionLogs->isEmpty()
+                ? [
+                    'subtotal' => 0.0,
+                    'adjustments_total' => 0.0,
+                    'total_due' => 0.0,
+                ]
+                : $this->calculateTotals($sessionLogs);
+
+            // Create bill (DRAFT-first, sessions can be attached later)
             $bill = $this->repository->create([
                 'therapist_id' => $dto->therapistId,
                 'bill_number' => $billNumber,
@@ -88,10 +94,13 @@ final class TherapistBillService
                 ...$companySnapshot,
             ]);
 
-            // Link session logs to bill
-            $this->repository->linkSessionLogs($bill, $sessionLogs->pluck('id')->toArray());
+            if ($sessionLogs->isNotEmpty()) {
+                // Link session logs to bill
+                $this->repository->linkSessionLogs($bill, $sessionLogs->pluck('id')->toArray());
+            }
 
-            return $bill->load(['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist']);
+            $relations = ['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist'];
+            return $bill->load($relations);
         });
     }
 
@@ -110,6 +119,53 @@ final class TherapistBillService
             'adjustments_total' => round($adjustmentsTotal, 2),
             'total_due' => round($totalDue, 2),
         ];
+    }
+
+    public function attachSessionsToDraft(TherapistBill $bill, AttachSessionsDTO $dto): TherapistBill
+    {
+        if (! $bill->isDraft()) {
+            throw new \InvalidArgumentException('Sessions can only be attached to draft therapist bills.');
+        }
+
+        return DB::transaction(function () use ($bill, $dto): TherapistBill {
+            $this->repository->unlinkAllSessionsForTherapistBill($bill);
+
+            if (empty($dto->sessionLogIds)) {
+                $this->repository->updateTotals($bill, 0, 0, 0);
+
+                return $bill->refresh()->load([
+                    'sessionLogs.student',
+                    'sessionLogs.service',
+                    'sessionLogs.therapist',
+                ]);
+            }
+
+            $sessionLogs = $this->repository->getSessionLogsForTherapistBillUpdate($bill, $dto->sessionLogIds);
+            $requestedIds = $dto->sessionLogIds;
+            $foundIds = $sessionLogs->pluck('id')->all();
+            $missing = array_diff($requestedIds, $foundIds);
+
+            if (! empty($missing)) {
+                throw new \InvalidArgumentException(
+                    'Some selected session logs are not eligible (wrong therapist, not approved, or already on another bill).'
+                );
+            }
+
+            $this->repository->linkSessionLogs($bill, $foundIds);
+            $totals = $this->calculateTotals($sessionLogs);
+            $this->repository->updateTotals(
+                $bill,
+                $totals['subtotal'],
+                $totals['adjustments_total'],
+                $totals['total_due'],
+            );
+
+            return $bill->refresh()->load([
+                'sessionLogs.student',
+                'sessionLogs.service',
+                'sessionLogs.therapist',
+            ]);
+        });
     }
 
     /**
