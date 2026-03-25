@@ -20,7 +20,7 @@ interface QGlobRequestRepositoryInterface
 
     public function respond(QGlobRequest $request, RespondQGlobRequestDTO $dto): QGlobRequest;
 
-    public function markCompleted(QGlobRequest $request, int $adminId): QGlobRequest;
+    public function markCompleted(QGlobRequest $request): QGlobRequest;
 
     /**
      * @return array{recordsTotal: int, recordsFiltered: int, rows: EloquentCollection<int, QGlobRequest>}

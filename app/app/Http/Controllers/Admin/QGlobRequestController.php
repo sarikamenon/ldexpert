@@ -112,9 +112,7 @@ final class QGlobRequestController extends Controller
     {
         $this->authorize('complete', $qglob_request);
 
-        /** @var \App\Models\User $admin */
-        $admin = $request->user();
-        $this->service->markCompleted($qglob_request, $admin->id);
+        $this->service->markCompleted($qglob_request);
 
         return redirect()
             ->route('admin.qglob-requests.show', $qglob_request)

@@ -34,9 +34,9 @@ final class QGlobRequestService
         return $this->repository->respond($request, $dto);
     }
 
-    public function markCompleted(QGlobRequest $request, int $adminId): QGlobRequest
+    public function markCompleted(QGlobRequest $request): QGlobRequest
     {
-        return $this->repository->markCompleted($request, $adminId);
+        return $this->repository->markCompleted($request);
     }
 
     /**

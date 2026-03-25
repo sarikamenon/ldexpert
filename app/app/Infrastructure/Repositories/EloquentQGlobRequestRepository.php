@@ -53,12 +53,10 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
         return $fresh;
     }
 
-    public function markCompleted(QGlobRequest $request, int $adminId): QGlobRequest
+    public function markCompleted(QGlobRequest $request): QGlobRequest
     {
         $request->update([
             'status' => QGlobRequestStatus::COMPLETED,
-            'responded_by_id' => $adminId,
-            'responded_at' => Carbon::now(),
         ]);
 
         /** @var QGlobRequest $fresh */
