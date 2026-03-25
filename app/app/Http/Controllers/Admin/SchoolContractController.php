@@ -27,6 +27,7 @@ use App\Models\SchoolContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SchoolContractController extends Controller
 {
@@ -96,7 +97,9 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('create', SchoolContract::class);
 
-        $dto = CreateSchoolContractDTO::fromArray($request->validated());
+        $data = $request->validated();
+        $data['document'] = $request->file('document');
+        $dto = CreateSchoolContractDTO::fromArray($data);
 
         try {
             $this->service->create($dto);
@@ -133,7 +136,9 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('update', $schoolContract);
 
-        $dto = UpdateSchoolContractDTO::fromArray($request->validated(), $schoolContract->status);
+        $data = $request->validated();
+        $data['document'] = $request->file('document');
+        $dto = UpdateSchoolContractDTO::fromArray($data, $schoolContract->status);
 
         try {
             $this->service->update($schoolContract, $dto);
@@ -172,6 +177,13 @@ final class SchoolContractController extends Controller
             'message' => $message,
             'status' => $contract->status->value,
         ]);
+    }
+
+    public function downloadDocument(SchoolContract $schoolContract): StreamedResponse
+    {
+        $this->authorize('view', $schoolContract);
+
+        return $this->service->downloadDocument($schoolContract);
     }
 
     /** @return array<string, mixed> */

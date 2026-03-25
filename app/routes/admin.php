@@ -126,6 +126,8 @@ Route::middleware('role:admin')
                 Route::post('schools/data', [SchoolContractController::class, 'data'])->name('schools.data');
                 Route::patch('schools/{schoolContract}/status', [SchoolContractController::class, 'updateStatus'])
                     ->name('schools.status');
+                Route::get('schools/{schoolContract}/download-document', [SchoolContractController::class, 'downloadDocument'])
+                    ->name('schools.download-document');
                 Route::resource('schools', SchoolContractController::class)
                     ->parameters(['schools' => 'schoolContract'])
                     ->except(['destroy']);
@@ -133,6 +135,8 @@ Route::middleware('role:admin')
                 Route::post('therapists/data', [TherapistContractController::class, 'data'])->name('therapists.data');
                 Route::patch('therapists/{therapistContract}/status', [TherapistContractController::class, 'updateStatus'])
                     ->name('therapists.status');
+                Route::get('therapists/{therapistContract}/download-document', [TherapistContractController::class, 'downloadDocument'])
+                    ->name('therapists.download-document');
                 Route::resource('therapists', TherapistContractController::class)
                     ->parameters(['therapists' => 'therapistContract'])
                     ->except(['destroy']);

@@ -6,6 +6,7 @@ namespace App\DTOs;
 
 use App\Enums\ContractStatus;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\UploadedFile;
 
 final class CreateSchoolContractDTO
 {
@@ -19,6 +20,7 @@ final class CreateSchoolContractDTO
         public readonly ?string $notes,
         public readonly ContractStatus $status,
         public readonly array $services,
+        public readonly ?UploadedFile $document = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -38,6 +40,7 @@ final class CreateSchoolContractDTO
                 static fn (array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
+            document: $data['document'] instanceof UploadedFile ? $data['document'] : null,
         );
     }
 }

@@ -22,7 +22,7 @@
     $notesValue = old('notes', $isEdit ? $contract->notes : null);
 @endphp
 
-<form method="POST" action="{{ $action }}" class="space-y-6">
+<form method="POST" action="{{ $action }}" class="space-y-6" enctype="multipart/form-data">
     @csrf
     @if ($method !== 'POST')
         @method($method)
@@ -86,6 +86,51 @@
                     <p class="text-sm text-danger mt-1">{{ $message }}</p>
                 @enderror
             </div>
+        </div>
+    </x-ui::card>
+
+    <x-ui::card class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold text-foreground">Contract Document</h3>
+
+        <div>
+            <x-input-label value="Upload Document" />
+            <p class="mt-1 text-xs text-foreground/60" id="document_help">
+                Upload a contract document. Accepted formats: PDF, DOC, DOCX, JPG, PNG. Max 10MB.
+            </p>
+
+            @if ($isEdit && $contract->document_path)
+                <div id="existing-document-name" class="mt-2 flex items-center gap-2">
+                    <span class="text-sm font-medium text-foreground">{{ $contract->document_name }}</span>
+                    <x-ui::button type="button" variant="danger" size="sm" id="remove-existing-document"
+                        title="Remove document">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </x-ui::button>
+                    <input type="hidden" name="remove_document" id="remove_document_input" value="0">
+                </div>
+            @endif
+
+            <div class="mt-1 inline-flex items-center gap-2">
+                <x-ui::file-input name="document" id="document_input" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                    class="!w-auto" aria-describedby="document_help" />
+                <x-ui::button type="button" variant="danger" size="sm" id="remove-selected-document"
+                    class="hidden" title="Remove selected file">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </x-ui::button>
+            </div>
+
+            @error('document')
+                <p class="text-sm text-danger mt-1">{{ $message }}</p>
+            @enderror
         </div>
     </x-ui::card>
 
