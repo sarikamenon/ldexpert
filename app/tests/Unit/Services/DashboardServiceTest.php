@@ -84,6 +84,21 @@ final class DashboardServiceTest extends TestCase
         $this->assertArrayHasKey('utilization_trend', $result);
     }
 
+    public function test_get_quick_actions_includes_invoice_and_billing_and_excludes_analytics(): void
+    {
+        $repository = Mockery::mock(DashboardRepositoryInterface::class);
+        $timezoneService = Mockery::mock(UserTimezoneService::class);
+
+        $service = new DashboardService($timezoneService, $repository);
+        $actions = $service->getQuickActions();
+
+        $routes = array_map(static fn (array $a): string => (string) $a['route'], $actions);
+
+        $this->assertContains('admin.invoices.create', $routes);
+        $this->assertContains('admin.billing.therapist-bills.create', $routes);
+        $this->assertNotContains('admin.analytics.index', $routes);
+    }
+
     protected function tearDown(): void
     {
         Mockery::close();
