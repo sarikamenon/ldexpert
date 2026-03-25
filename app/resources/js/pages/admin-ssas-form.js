@@ -251,17 +251,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let calculatedTho = numberOfFrequencies * sessionsValue * minutesValue;
+        let calculatedThoMinutes = numberOfFrequencies * sessionsValue * minutesValue;
 
         if (adjustedMinutes?.value) {
             const adjusted = parseInt(adjustedMinutes.value, 10);
             if (!Number.isNaN(adjusted)) {
-                calculatedTho += adjusted;
+                calculatedThoMinutes += adjusted;
             }
         }
 
-        if (thoMinutes && calculatedTho > 0) {
-            thoMinutes.value = String(calculatedTho);
+        if (thoMinutes && calculatedThoMinutes > 0) {
+            const calculatedThoHours = (calculatedThoMinutes / 60).toFixed(2);
+            thoMinutes.value = String(calculatedThoHours);
         }
     }
 
