@@ -264,11 +264,18 @@ class DashboardService
                 'color' => 'primary',
             ],
             [
-                'title' => 'View Analytics',
-                'description' => 'Detailed insights',
-                'route' => 'admin.analytics.index',
-                'icon' => 'chart',
-                'color' => 'secondary',
+                'title' => 'Create Invoice',
+                'description' => 'Bill a school or client',
+                'route' => 'admin.invoices.create',
+                'icon' => 'invoice',
+                'color' => 'primary',
+            ],
+            [
+                'title' => 'Create Billing',
+                'description' => 'New therapist bill',
+                'route' => 'admin.billing.therapist-bills.create',
+                'icon' => 'billing',
+                'color' => 'primary',
             ],
         ];
     }
