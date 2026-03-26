@@ -1,74 +1,84 @@
 # NOVA Knowledge Base
 
-NOVA is LD Expert's bird-care platform that coordinates schools, therapists, students, and financial operations. This wiki holds the product requirements for every module, capturing both the **current implementation** in this repository and the **planned capabilities** requested for the NOVA launch.
+Last Updated: 26 Mar 2026
+
+NOVA is LD Expert's therapy services management platform that coordinates schools, therapists, students, and financial operations. This wiki holds the product requirements for every module, capturing both the **current implementation** in this repository and the **planned capabilities**.
 
 ## How to Use This Wiki
 
--   PRDs now live inside domain folders under `app/wiki` (`admin`, `finance`, `therapist`, `student`). Each file follows the same structure: purpose, personas, current vs. planned scope, domain model (DB + states), API/routes, workflows, integrations, metrics, and open risks.
--   Cross-cutting concepts (roles, authentication, notifications, auditing) are referenced inside each PRD and summarized in the "Shared Concepts" section below.
--   Update PRDs alongside code changes. When a module ships, move items from "Planned" to "Current" and link to the relevant pull request.
+-   PRDs live inside domain folders under `app/wiki` (`admin`, `finance`, `therapist`, `student`). Each file follows the same structure: purpose, personas, current vs. planned scope, domain model, routes, workflows, and open risks.
+-   Cross-cutting concepts (roles, notifications, integrations) are referenced inside each PRD and summarized in the "Shared Concepts" section below.
+-   Update PRDs alongside code changes. When a module ships, move items from "Planned" to "Current".
 
 ## Module Index
 
 ### Admin Operations (`app/wiki/admin`)
 
--   [Admin Dashboard](./admin/dashboard.md) — landing page with key metrics, critical alerts, charts, operational status, and quick actions.
--   [Manage Schools](./admin/schools.md) — onboard, edit, activate/deactivate schools plus contracted services/rates.
--   [Manage Therapists](./admin/therapists.md) — lifecycle of therapist providers, credentials, compensation rates, availability sync.
--   [Manage Students](./admin/students.md) — admin-only student master data and guardians; powers SSA creation, scheduling, and billing.
--   [Student Import](./admin/student-import.md) — bulk import students via CSV files with validation, duplicate detection, and error reporting.
--   [Student Documents](./admin/student-documents.md) — upload, manage, and track documents associated with students or session logs.
--   [Manage SSA](./admin/ssa.md) — service agreements per student outlining services, duration, frequency, therapist assignments. **Currently links existing students to services/therapists; future iterations may embed student intake directly into the SSA flow.**
--   [Manage Services](./admin/services.md) — catalog definitions (SLP, OT, PT, Progress Reports, IEP meetings, etc.) with billing metadata.
--   [Session Logs](./admin/session-logs.md) — review, approve, send back, cancel, and import session logs submitted by therapists.
--   [Reports](./admin/reports.md) — SSA utilization, caseload, and expiration reports with export functionality.
+-   [Admin Dashboard](./admin/dashboard.md) — landing page with key metrics, critical alerts, charts, operational metrics, and quick actions.
+-   [Manage Schools](./admin/schools.md) — onboard, edit, activate/deactivate schools plus contracted services/rates and calendar events.
+-   [Manage Therapists](./admin/therapists.md) — lifecycle of therapist providers, credentials, compensation rates, positions.
+-   [Manage Students](./admin/students.md) — admin-only student master data, guardians, import, comments, and documents.
+-   [Student Import](./admin/student-import.md) — bulk import students via CSV (NOVA, RSM, MARVIN, TUTORBIRD formats).
+-   [Student Documents](./admin/student-documents.md) — polymorphic document storage for students and session logs.
+-   [Manage SSA](./admin/ssa.md) — service agreements linking students to services/therapists with status lifecycle and import.
+-   [Manage Services](./admin/services.md) — service catalog definitions with billing metadata and delivery modes.
+-   [Session Logs](./admin/session-logs.md) — review, approve, send back, cancel, and import session logs.
+-   [Schedule Calendar](./admin/schedule-calendar.md) — FullCalendar.js admin view of all schedules across therapists.
+-   [Contracts](./admin/contracts.md) — school and therapist contracts with service rates and no-show rates.
+-   [Leads (CRM)](./admin/leads.md) — prospective student tracking from inquiry through enrollment with follow-up reminders.
+-   [Reports](./admin/reports.md) — SSA utilization, caseload, and expiration reports with CSV export.
+-   [Analytics](./admin/analytics.md) — data visualization dashboards (overview, school, therapist) with date range filters.
+-   [Notifications](./admin/notifications.md) — in-app notification center with mark-read and delete.
+-   [Settings & Configuration](./admin/settings.md) — system settings, positions, service aliases, expense categories.
+-   [Schedule Reminders](./admin/schedule-reminders.md) — automated 48h/2h email reminders for upcoming sessions.
+-   [Admin Menu](./admin/menu.md) — full admin navigation structure from config/navigation.php.
 
 ### Financial Operations (`app/wiki/finance`)
 
--   [Invoice Schools / Private Families](./finance/invoicing.md) — AR pipeline derived from SSA schedules and service delivery.
--   [Bill Therapists](./finance/billing.md) — AP pipeline to compensate therapists per delivered service.
--   [RSM/CAVA Sync](./finance/sync.md) — import canonical records (students, sessions, rates) to eliminate double entry.
+-   [Invoice Schools](./finance/invoicing.md) — AR pipeline: create invoices from approved sessions, PDF generation, email delivery, Stripe payment links.
+-   [Bill Therapists](./finance/billing.md) — AP pipeline: create bills from approved sessions, PDF generation, email delivery, therapist portal access.
+-   [Payments](./finance/payments.md) — invoice and therapist bill payment recording, allocation, and Stripe online payment gateway.
+-   [Billing Automation](./finance/billing-automation.md) — automated billing schedules, entity config overrides, billing reminders, and advance billing.
+-   [Expenses](./finance/expenses.md) — operating expense tracking with categories and date filtering.
+-   [Ledger Accounts](./finance/ledger.md) — double-entry accounting view of school and therapist financial transactions.
+-   [Pay Stub Report](./finance/pay-stub-report.md) — year-filtered therapist payment summaries with PDF download.
+-   [Accounting System](./finance/accounting.md) — planned comprehensive accounting (chart of accounts, fiscal periods, financial reports).
+-   [RSM/CAVA Sync](./finance/sync.md) — planned pluggable sync framework for external data sources.
 
 ### Therapist Experience (`app/wiki/therapist`)
 
--   [Therapist Workspace](./therapist/workspace.md) — dashboard plus implemented schedule calendar with recurring schedule support, read-only caseload/SSA views, and student comments.
--   [Session Management & Logs](./therapist/session-logs.md) — complete session lifecycle management: log therapy sessions with notes, billing metadata, and document attachments. Supports both scheduled and standalone sessions with dual billing calculations.
--   [Student Comments](./therapist/student-comments.md) — add contextual comments on student records visible to admins and assigned therapists.
+-   [Therapist Workspace](./therapist/workspace.md) — dashboard, schedule calendar with recurring support, read-only caseload/SSA views, student comments.
+-   [Session Management & Logs](./therapist/session-logs.md) — complete session lifecycle: create, edit, submit, with dual billing calculations and document attachments.
+-   [Student Comments](./therapist/student-comments.md) — contextual notes on student records visible to admins and assigned therapists.
+-   [Therapist Menu](./therapist/menu.md) — full therapist navigation structure from config/navigation.php.
 
 ### Student Experience (`app/wiki/student`)
 
--   [Student Portal](./student/portal.md) — schedules, past sessions, progress reporting aligned to SSA goals.
+-   [Student Portal](./student/portal.md) — minimal dashboard showing today's schedules. Full portal (schedule calendar, progress tracking) is planned.
+-   [Student Menu](./student/menu.md) — planned student navigation structure.
 
 ## Shared Concepts
 
--   **Roles & Authorization** — Implemented via `App\Enums\Role` and policies (e.g., `StudentProfilePolicy`). Future PRDs should reference these enums instead of duplicating logic.
--   **User Status Lifecycle** — `App\Enums\UserStatus` keeps users active/inactive; planned modules should reuse the same state machine.
--   **Soft Deletes & Auditing** — Core tables already include `deleted_at`. New tables must do the same and emit domain events for downstream sync.
--   **Notifications & Emails** — Comprehensive email notification system including schedule reminders, notifications, invoices, bills, and welcome emails. See [Email Notifications PRD](./email-notifications.md) for complete documentation.
--   **Integrations** — All modules that ingest or push data externally should describe API contracts (REST, SFTP, etc.) and retry/logging expectations in their PRDs.
-
-Refer back to this index whenever you add, refine, or discuss a module PRD.
+-   **Roles & Authorization** — `App\Enums\Role` (admin, therapist, student, parent). 22 Policy classes enforce access. `RoleMiddleware` protects routes.
+-   **User Status Lifecycle** — `App\Enums\UserStatus` (active, inactive). Status toggling without hard deletes.
+-   **Soft Deletes & Auditing** — All models use soft deletes (`deleted_at`). Activity logging for audit trail.
+-   **Notifications & Emails** — 12 Mailable classes covering welcome emails, schedule reminders, billing, imports, and follow-ups. See [Email Notifications PRD](./email-notifications.md).
+-   **Integrations** — Sentry (errors), Stripe (payments), email delivery (SMTP/SES/Postmark). See [Integrations](./integrations.md).
 
 ## Current Implementation Snapshot
 
--   **Routing & Roles** — Admin routes live under `/admin/*` with `role:admin`; therapist-facing routes live under `/therapist/*` with `role:therapist`; student dashboard is under `/student/dashboard`.
--   **Dashboards & Metrics** — Admin dashboards expose school/therapist/student/SSA metrics; school detail tabs lazy-load students, therapists, and SSAs via the respective services and DTO filters.
--   **Scheduling UX** — Therapists manage schedules via `Therapist\ScheduleController` (calendar, CRUD, billing status bulk updates) with **advanced recurring schedule support** (daily, weekly, bi-weekly, monthly). System generates all occurrences automatically with parent-child relationships for efficient management. SSAs can be assigned/unassigned to therapists from admin routes.
--   **Session Management** — Complete session lifecycle from creation through approval to billing. Therapists can create session logs from schedules or as standalone entries, with dual billing calculations for both therapist and school sides. Session status workflow: draft → submitted → approved, with document attachments support.
--   **Student Import** — Admins can bulk import students via CSV with support for multiple import types (NOVA, RSM, MARVIN), row-level validation, and comprehensive error reporting.
--   **Student Documents** — Polymorphic document storage for students and session logs with S3 storage, type categorization, and authorization-based access control.
--   **Student Comments** — Shared comment system for admins and therapists to add contextual notes on student detail pages with visibility based on SSA assignments.
--   **Contracts** — School and therapist contracts have their own controllers and status transitions under `/admin/contracts/*`.
--   **Billing for Therapists** — Complete therapist billing workflow: create bills from approved session logs, generate PDFs, send via email, and provide therapist portal access for viewing bills.
--   **Invoicing for Schools** — Complete school invoicing workflow: create invoices from approved session logs, generate PDFs, send via email to school contacts, with snapshot data for historical accuracy.
--   **Email Notifications** — Comprehensive email notification system including automated schedule reminders (48h and 2h before sessions), schedule creation/update notifications, invoice/bill delivery, and welcome emails with timezone-aware content.
--   **Reports** — Comprehensive SSA reporting including utilization & compliance (tracks authorized vs. delivered units), caseload & assignment (therapist workload distribution), and expirations & pipeline (upcoming expirations, expired SSAs) with CSV export functionality.
+-   **38 Admin Controllers** covering schools, therapists, students, SSAs, services, session logs, contracts, leads, billing, invoicing, payments, expenses, ledger, reports, analytics, settings, notifications, and schedule calendar.
+-   **6 Therapist Controllers** covering dashboard, schedules, session logs, SSAs, students, and billing portal.
+-   **1 Student Controller** for the dashboard with today's schedule display.
+-   **43 Enums** defining all status types, billing modes, rate types, import types, etc.
+-   **12 Mailable classes** for email notifications across all modules.
+-   **4 Scheduled Commands** for reminders (30min), follow-ups (daily), billing generation (daily 02:00), and billing reminders (daily 08:00).
+-   **3 Queued Jobs** for async CSV import processing (students, SSAs, session logs).
+-   **2 Events + 1 Listener** for schedule notification dispatch.
+-   **Stripe Payment Gateway** for online invoice payments with checkout sessions and webhook logging.
 
 ## Operations & Integrations
 
--   **Error Monitoring** — Sentry is wired via `sentry/sentry-laravel` and `config/sentry.php`. DSN, sampling, and PII flags are fully environment-driven.
--   **Email Delivery** — Default mailer is `log`; SMTP/Postmark/SES/Resend are available via `config/mail.php` and `config/services.php`. Welcome mails exist for students and therapists; schedule reminders and schedule notifications are queued.
--   **Background Work** — `schedule:send-reminders` runs every 30 minutes (see `app/Console/Kernel.php`) and queues reminder emails 48h and 2h before sessions. Queue default is `database`; workers should be running alongside the scheduler.
--   **Front-end Libraries** — Vite + Tailwind + Alpine power the UI. Select2 and SweetAlert2 are installed; Chart.js is loaded via CDN where charts are rendered in admin views.
-
-See `app/wiki/integrations.md` and `app/wiki/operations.md` for environment variables, runbooks, and cron details.
+See [Operations](./operations.md) for scheduler, queue workers, jobs, and commands.
+See [Integrations](./integrations.md) for Sentry, email delivery, Stripe, logging, and frontend libraries.
+See [Email Notifications](./email-notifications.md) for all 12 mailable classes with trigger details.
