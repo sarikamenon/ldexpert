@@ -12,6 +12,7 @@ NOVA is LD Expert's bird-care platform that coordinates schools, therapists, stu
 
 ### Admin Operations (`app/wiki/admin`)
 
+-   [Admin Dashboard](./admin/dashboard.md) — landing page with key metrics, critical alerts, charts, operational status, and quick actions.
 -   [Manage Schools](./admin/schools.md) — onboard, edit, activate/deactivate schools plus contracted services/rates.
 -   [Manage Therapists](./admin/therapists.md) — lifecycle of therapist providers, credentials, compensation rates, availability sync.
 -   [Manage Students](./admin/students.md) — admin-only student master data and guardians; powers SSA creation, scheduling, and billing.
@@ -19,6 +20,7 @@ NOVA is LD Expert's bird-care platform that coordinates schools, therapists, stu
 -   [Student Documents](./admin/student-documents.md) — upload, manage, and track documents associated with students or session logs.
 -   [Manage SSA](./admin/ssa.md) — service agreements per student outlining services, duration, frequency, therapist assignments. **Currently links existing students to services/therapists; future iterations may embed student intake directly into the SSA flow.**
 -   [Manage Services](./admin/services.md) — catalog definitions (SLP, OT, PT, Progress Reports, IEP meetings, etc.) with billing metadata.
+-   [Session Logs](./admin/session-logs.md) — review, approve, send back, cancel, and import session logs submitted by therapists.
 -   [Reports](./admin/reports.md) — SSA utilization, caseload, and expiration reports with export functionality.
 
 ### Financial Operations (`app/wiki/finance`)

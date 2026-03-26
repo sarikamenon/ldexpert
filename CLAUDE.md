@@ -201,66 +201,18 @@ try {
 
 ## Design System & UI/UX Standards (MANDATORY)
 
-### Design Principles (MANDATORY)
+See `app/docs/DESIGN_SYSTEM.md` for the full design system reference (colors, typography, spacing, component patterns). See `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues.
 
-- **Modern & Clean**: Prioritize whitespace, clear typography, and minimal visual clutter. Avoid busy layouts typical of legacy software.
-- **User-Centric**: Design for task completion, not data display. Hide complexity; reveal progressively.
-- **Consistency**: Establish and reuse UI patterns across all pages. Document any new patterns before implementing.
-
-### Visual Foundation (MANDATORY)
-
-- **Color System**: Use ONLY colors defined in `tailwind.config.js`. NEVER introduce ad-hoc colors (e.g., `bg-[#ff0000]`, `bg-red-50`, `text-red-600`).
-  - Use design system colors: `bg-primary`, `bg-secondary`, `bg-success`, `bg-warning`, `bg-danger`
-  - Use `text-danger` instead of `text-red-600` for error states
-- **Typography**: Follow established scale consistently:
-  - H1: `text-2xl font-semibold text-foreground`
-  - H2: `text-lg font-semibold text-foreground`
-  - H3: `text-sm font-medium text-foreground/70`
-  - Body: `text-sm text-foreground`
-  - Labels: `text-xs font-medium text-foreground/70`
-- **Spacing**: Use standard scale (2, 4, 6, 8) only. Card padding: `p-6`. Section spacing: `mb-6`.
-
-### Component Behavior (MANDATORY)
-
-- **Interactive States**: ALL interactive elements MUST have complete state patterns:
-  - Default: Base styling
-  - Hover: `hover:bg-{variant}/90`
-  - Focus: `focus:outline-none focus:ring-2 focus:ring-ring`
-  - Focus-Visible: `focus-visible:ring-2 focus-visible:ring-ring` (for keyboard navigation)
-  - Active: `active:bg-{variant}/80`
-  - Disabled: `disabled:opacity-50 disabled:pointer-events-none`
-- **Feedback**: Every user action requires immediate visual response
-- **Loading States**: Use SweetAlert2 loading OR button spinners OR skeleton loaders
-- **Empty States**: Use `x-ui::empty-state` component with `py-12` spacing
-- **Errors**: Show contextually near source with `text-danger` color
-
-### User Experience Patterns (MANDATORY)
-
-- **Progressive Disclosure**: Hide complexity behind clear affordances. Use collapsible sections for long forms.
-- **Destructive Actions**: Require explicit confirmation with clear consequence explanation.
-- **Error Recovery**: Provide clear paths to resolve errors; avoid dead ends.
-- **Responsiveness**: Design must work on mobile, tablet, and desktop viewports.
-
-### Accessibility Requirements (MANDATORY)
-
-- Keyboard navigation must work for all interactive elements
-- Color cannot be the only indicator of state or meaning
-- Text must have sufficient contrast against backgrounds
-- Use semantic HTML and appropriate ARIA labels
-- Form fields MUST have help text: Label → Help Text → Input → Error Messages
-- Help text styling: `class="mt-1 text-xs text-foreground/60"`
-- Add `aria-describedby` linking to help text IDs
-
-### Design Quality Gates (MANDATORY)
-
-Before considering UI complete, verify:
-- [ ] Follows established color palette and typography scale
-- [ ] Has clear visual hierarchy with one primary action per view
-- [ ] Includes all states: default, loading, empty, error, success
-- [ ] Related content is properly grouped and visually separated
-- [ ] Works on mobile, tablet, and desktop viewports
-- [ ] Passes keyboard-only navigation test
-- [ ] Matches established patterns from reference pages
+**Key rules enforced here:**
+- **Colors**: ONLY use design system tokens (`bg-primary`, `text-danger`, etc.). NEVER hardcode hex or Tailwind palette colors.
+- **Typography**: H1=`text-2xl font-semibold text-foreground`, H2=`text-lg`, H3=`text-sm font-medium text-foreground/70`, Body=`text-sm`, Labels=`text-xs font-medium text-foreground/70`
+- **Spacing**: Standard scale (2, 4, 6, 8). Card padding: `p-6`. Section spacing: `mb-6`.
+- **Interactive states**: All elements MUST have hover, focus, focus-visible, active, disabled states.
+- **Accessibility**: Keyboard navigation, sufficient contrast, semantic HTML, ARIA labels.
+- **Responsiveness**: Must work on mobile, tablet, desktop.
+- **Empty states**: Use `x-ui::empty-state` component.
+- **Destructive actions**: Require explicit confirmation via SweetAlert2.
+- Document new UI patterns in `app/docs/DESIGN_SYSTEM.md` BEFORE implementing.
 
 ## UI Standards
 
@@ -275,55 +227,11 @@ Before considering UI complete, verify:
 
 ## Form Help Text Standards (MANDATORY)
 
-- **All form inputs MUST have help text** to guide users
-- **Help text MUST be placed BEFORE the input field** (between label and input)
-- Use consistent styling: `class="mt-1 text-xs text-foreground/60"`
-- Standard structure: Label → Help Text → Input → Error Messages
-
-### Required Pattern (MANDATORY):
-
-```blade
-<div>
- <x-input-label for="field_name" value="Field Label *" />
- <p class="mt-1 text-xs text-foreground/60" id="field_name_help">
- Clear, concise help text explaining what this field is for and any requirements.
- </p>
- <x-text-input
- id="field_name"
- name="field_name"
- class="mt-1 block w-full"
- aria-describedby="field_name_help"
- />
- <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
-</div>
-```
-
-### Guidelines (MANDATORY):
-
-- Help text should explain the purpose of the field, format requirements, or constraints
-- Use `aria-describedby` on inputs linking to help text ID for accessibility
-- Keep help text concise (1-2 sentences maximum)
-- For optional fields, mention they're optional in the help text if not obvious
-- For date/time fields, specify timezone context if relevant
-- For numeric fields, specify units, ranges, or increments (e.g., "Duration in minutes (minimum 5, increments of 5)")
-- Never place help text after the input field
-- **VIOLATION**: Any form field without help text is a design standards violation
-
-### Implementation Rules (MANDATORY)
-
-- **ALWAYS** use design system components (`x-ui::*`)
-- **NEVER** use hardcoded colors or arbitrary values
-- **ALWAYS** add help text to form inputs
-- **ALWAYS** include all required interactive states
-- **ALWAYS** test responsive behavior
-- **ALWAYS** verify accessibility requirements
-- **ALWAYS** follow the design quality checklist
-
-### Pattern Documentation Requirement (MANDATORY)
-
-- **MANDATORY**: Document any new UI patterns in `app/docs/DESIGN_SYSTEM.md` BEFORE implementing
-- **MANDATORY**: Update design system documentation when adding new components
-- **MANDATORY**: Reference `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues
+- **All form inputs MUST have help text** placed BEFORE the input (Label → Help Text → Input → Error)
+- Help text styling: `class="mt-1 text-xs text-foreground/60"` with `aria-describedby` linking
+- Pattern: `<x-input-label>` → `<p id="..._help">` → `<x-text-input aria-describedby="..._help">` → `<x-input-error>`
+- Keep help text concise (1-2 sentences). Specify units/ranges for numeric fields, timezone for dates.
+- **ALWAYS** use design system components (`x-ui::*`), never hardcoded colors or arbitrary values.
 
 ## Project-Enforced Conventions
 
@@ -342,160 +250,16 @@ Before considering UI complete, verify:
 
 ## PHPStan Level 8 Compliance (MANDATORY)
 
-This project enforces PHPStan Level 8 with Larastan (`checkModelProperties: true`). All new and modified PHP code MUST pass with zero errors. The rules below prevent the most common violations.
+This project enforces PHPStan Level 8 with Larastan (`checkModelProperties: true`). All new and modified PHP code MUST pass with zero errors.
 
-### General
-
-- Every PHP file MUST start with `declare(strict_types=1);`.
-- Every method MUST have a native return type. If the return type involves generics (Collection, Builder, Paginator, arrays), also add a `@return` PHPDoc tag.
-- Every method parameter MUST be typed (native type + PHPDoc for generics).
-- Never use bare `array` as a type — always specify value types: `array<string, mixed>`, `array<int, string>`, `array{key: type, ...}`, etc.
-
-### Model Relations
-
-Every Eloquent relation method MUST include full generic annotations:
-
-```php
-/** @return HasOne<TherapistProfile, $this> */
-public function therapistProfile(): HasOne { ... }
-
-/** @return BelongsTo<User, $this> */
-public function student(): BelongsTo { ... }
-
-/** @return HasMany<SessionLog, $this> */
-public function sessionLogs(): HasMany { ... }
-
-// BelongsToMany with custom pivot:
-/** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
-public function services(): BelongsToMany { ... }
-
-// BelongsToMany with default pivot (no ->using()):
-/** @return BelongsToMany<User, $this> */
-public function students(): BelongsToMany { ... }
-
-// MorphMany:
-/** @return MorphMany<Document, $this> */
-public function documents(): MorphMany { ... }
-```
-
-### HasFactory Trait
-
-Every model using `HasFactory` MUST have a `@use` annotation:
-
-```php
-// With a dedicated factory:
-/** @use HasFactory<\Database\Factories\UserFactory> */
-use HasFactory;
-
-// Without a dedicated factory:
-/** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
-use HasFactory;
-```
-
-### Eloquent Nullability Rules
-
-- **BelongsTo relations** return `Model|null`. When accessing properties through a BelongsTo, use nullsafe: `$sessionLog->student?->name`.
-- **Cast enum properties** are always the enum type (never null, never string) when the column is NOT nullable. Do NOT use `?->` on them: `$model->status->value` (correct), NOT `$model->status?->value`.
-- **Nullable Carbon columns** (`end_date`, etc.) may be null. Use nullsafe: `$ssa->end_date?->format('Y-m-d') ?? ''`.
-- **Non-nullable Carbon columns** (`start_date`, `created_at`) are always Carbon. Do NOT use `?->`: `$ssa->start_date->format('Y-m-d')`.
-
-### Collections, Builders, and Paginators
-
-Always specify generics on Collection, Builder, and Paginator types:
-
-```php
-/** @return Collection<int, SessionLog> */
-/** @return Builder<User> */
-/** @return LengthAwarePaginator<int, SessionLog> */
-/** @param Collection<int, ServiceSupportAgreement> $ssas */
-```
-
-**Important**: `LengthAwarePaginator` from `Illuminate\Contracts\Pagination` is NOT iterable. Use `->items()` to get the array for `foreach`:
-
-```php
-foreach ($paginator->items() as $item) { ... }
-```
-
-### FormRequest Methods
-
-```php
-// rules() — MUST have this exact annotation:
-/** @return array<string, array<int, mixed>|string> */
-public function rules(): array { ... }
-
-// messages() — MUST have this annotation:
-/** @return array<string, string> */
-public function messages(): array { ... }
-
-// withValidator() — MUST type the parameter:
-public function withValidator(\Illuminate\Validation\Validator $validator): void { ... }
-
-// baseRules() in abstract FormRequests:
-/** @return array<string, array<int, mixed>|string> */
-protected function baseRules(): array { ... }
-```
-
-### Model Scopes
-
-Scope methods MUST type both parameter and return:
-
-```php
-/**
- * @param Builder<User> $query
- * @return Builder<User>
- */
-public function scopeActive(Builder $query): Builder
-{
-    return $query->where('is_active', true);
-}
-```
-
-### Repository & Service Methods
-
-- Interface and implementation MUST have matching `@param` and `@return` PHPDoc.
-- Never return bare `array` — always specify shape or value types:
-
-```php
-/** @param array<string, mixed> $data */
-public function create(array $data): Model;
-
-/** @return array{total: int, active: int, inactive: int} */
-public function metrics(): array;
-
-/** @return array<string, mixed> */
-public function formPayload(): array;
-```
-
-### DTO Methods
-
-```php
-/** @param array<string, mixed> $data */
-public static function fromArray(array $data): self { ... }
-
-/** @return array<string, mixed> */
-public function toArray(): array { ... }
-```
-
-### Common Pitfalls and Fixes
-
-| Pitfall | Wrong | Correct |
-|---------|-------|---------|
-| `file_get_contents()` returns `string\|false` | `$content = file_get_contents($path);` | `$content = (string) file_get_contents($path);` |
-| `fgetcsv()` returns nullable values | `array_map('trim', $row)` | `array_map(static fn ($v): string => trim((string) $v), $row)` |
-| `Model::find()` returns `Model\|null` | `$user = User::find($id);` | `/** @var User $user */ $user = User::findOrFail($id);` |
-| `Model::findOrFail()` union type | `$m = Model::findOrFail($id);` | `/** @var User $m */ $m = User::findOrFail($id);` |
-| Pivot attribute access | `$model->pivot->amount` | `$model->getRelation('pivot')->amount` |
-| Dynamic/computed attribute | `$model->computed_attr` | `$model->getAttribute('computed_attr')` |
-| `Model::delete()` returns `bool\|null` | `return $model->delete();` | `return (bool) $model->delete();` |
-| `groupBy()` key type | `Collection<int, ...>` | `Collection<int\|string, ...>` |
-| Enum `instanceof` on cast prop | `$user->role instanceof Role` | Always true — just use `$user->role === Role::ADMIN` |
-
-### Builder::where() Column Strings
-
-Larastan validates column names in `Builder::where('column', ...)` calls against model properties. When using `@template TModel of Model` on generic query methods, Larastan resolves columns against the base `Model` class (which has no columns). This is a known Larastan limitation. Suppress with:
-
-```php
-$query->where('column_name', $value); // @phpstan-ignore argument.type
-```
-
-Only use this ignore for Builder column string errors, never for other argument.type issues.
+**Key rules** (see `app/docs/PHPSTAN_RULES.md` for full reference with code examples):
+- Every PHP file: `declare(strict_types=1);`
+- Every method: native return type + `@return` PHPDoc for generics
+- Every parameter: typed (native + PHPDoc for generics)
+- Never bare `array` — always specify: `array<string, mixed>`, `array{key: type}`, etc.
+- Model relations: full generic annotations (`/** @return HasMany<SessionLog, $this> */`)
+- HasFactory: `@use` annotation required
+- BelongsTo: always nullsafe (`$model->relation?->property`)
+- Cast enums: never nullsafe on non-nullable (`$model->status->value`)
+- Collections/Builders/Paginators: always specify generics
+- Builder column strings with `@template`: suppress with `// @phpstan-ignore argument.type`
