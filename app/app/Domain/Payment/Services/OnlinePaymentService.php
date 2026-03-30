@@ -33,7 +33,8 @@ final class OnlinePaymentService
             amount: (float) $invoice->total,
             currency: (string) config('payment.currency', 'usd'),
             customerEmail: $customerEmail,
-            successUrl: route('payment.success', ['session_id' => '{CHECKOUT_SESSION_ID}']),
+            // Stripe substitutes {CHECKOUT_SESSION_ID} only if unencoded; route() would encode { }.
+            successUrl: route('payment.success').'?session_id={CHECKOUT_SESSION_ID}',
             cancelUrl: route('payment.cancel', ['token' => $token]),
             metadata: [
                 'invoice_id' => (string) $invoice->id,
