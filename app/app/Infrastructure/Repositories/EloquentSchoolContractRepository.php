@@ -64,25 +64,27 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
         ];
     }
 
-    public function create(CreateSchoolContractDTO $dto): SchoolContract
+    /** @param array<string, mixed> $documentData */
+    public function create(CreateSchoolContractDTO $dto, array $documentData = []): SchoolContract
     {
-        return SchoolContract::create([
+        return SchoolContract::create(array_merge([
             'school_id' => $dto->schoolId,
             'start_date' => $dto->startDate,
             'end_date' => $dto->endDate,
             'notes' => $dto->notes,
             'status' => $dto->status->value,
-        ]);
+        ], $documentData));
     }
 
-    public function update(SchoolContract $contract, UpdateSchoolContractDTO $dto): SchoolContract
+    /** @param array<string, mixed> $documentData */
+    public function update(SchoolContract $contract, UpdateSchoolContractDTO $dto, array $documentData = []): SchoolContract
     {
-        $contract->update([
+        $contract->update(array_merge([
             'start_date' => $dto->startDate,
             'end_date' => $dto->endDate,
             'notes' => $dto->notes,
             'status' => $dto->status->value,
-        ]);
+        ], $documentData));
 
         return $contract->refresh();
     }

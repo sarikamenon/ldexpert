@@ -25,9 +25,11 @@ interface SchoolContractRepositoryInterface
      */
     public function listForDataTables(SchoolContractFilterDTO $filters, DataTablesParamsDTO $params): array;
 
-    public function create(CreateSchoolContractDTO $dto): SchoolContract;
+    /** @param array<string, mixed> $documentData */
+    public function create(CreateSchoolContractDTO $dto, array $documentData = []): SchoolContract;
 
-    public function update(SchoolContract $contract, UpdateSchoolContractDTO $dto): SchoolContract;
+    /** @param array<string, mixed> $documentData */
+    public function update(SchoolContract $contract, UpdateSchoolContractDTO $dto, array $documentData = []): SchoolContract;
 
     /**
      * @param  array<int, ContractServiceRateDTO>  $services

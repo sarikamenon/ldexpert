@@ -16,11 +16,13 @@ use App\Models\TherapistContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class TherapistContractService
 {
     public function __construct(
         private readonly TherapistContractRepositoryInterface $repository,
+        private readonly ContractDocumentService $documentService,
     ) {}
 
     /** @return LengthAwarePaginator<int, TherapistContract> */
@@ -48,7 +50,8 @@ final class TherapistContractService
         $this->guardAgainstOverlap($dto->therapistId, $dto->startDate->toDateString(), $dto->endDate->toDateString());
 
         return DB::transaction(function () use ($dto) {
-            $contract = $this->repository->create($dto);
+            $documentData = $dto->document ? $this->documentService->store($dto->document) : [];
+            $contract = $this->repository->create($dto, $documentData);
             $this->repository->syncServices($contract, $dto->services);
 
             return $contract->load(['therapist.user', 'services.service']);
@@ -67,7 +70,12 @@ final class TherapistContractService
         }
 
         return DB::transaction(function () use ($contract, $dto) {
-            $updated = $this->repository->update($contract, $dto);
+            $documentData = $this->documentService->resolveForUpdate(
+                $contract->document_path,
+                $dto->document,
+                $dto->removeDocument,
+            );
+            $updated = $this->repository->update($contract, $dto, $documentData);
             $this->repository->syncServices($updated, $dto->services);
 
             return $updated->load(['therapist.user', 'services.service']);
@@ -86,6 +94,15 @@ final class TherapistContractService
         }
 
         return $this->repository->changeStatus($contract, $dto->status);
+    }
+
+    public function downloadDocument(TherapistContract $contract): StreamedResponse
+    {
+        if (empty($contract->document_path) || ! $this->documentService->exists($contract->document_path)) {
+            abort(404, 'Document not found');
+        }
+
+        return $this->documentService->download($contract->document_path, $contract->document_name ?? 'document');
     }
 
     private function guardAgainstOverlap(int $therapistId, string $startDate, string $endDate, ?int $ignoreId = null): void

@@ -25,9 +25,11 @@ interface TherapistContractRepositoryInterface
      */
     public function listForDataTables(TherapistContractFilterDTO $filters, DataTablesParamsDTO $params): array;
 
-    public function create(CreateTherapistContractDTO $dto): TherapistContract;
+    /** @param array<string, mixed> $documentData */
+    public function create(CreateTherapistContractDTO $dto, array $documentData = []): TherapistContract;
 
-    public function update(TherapistContract $contract, UpdateTherapistContractDTO $dto): TherapistContract;
+    /** @param array<string, mixed> $documentData */
+    public function update(TherapistContract $contract, UpdateTherapistContractDTO $dto, array $documentData = []): TherapistContract;
 
     /**
      * @param  array<int, ContractServiceRateDTO>  $services

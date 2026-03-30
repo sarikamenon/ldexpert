@@ -41,9 +41,18 @@ final class TherapistContractRowTransformer
             ? ActionButtons::deactivate($toggleTitle, $toggleAttrs)
             : ActionButtons::activate($toggleTitle, $toggleAttrs);
 
+        $downloadBtn = '';
+        if ($contract->document_path) {
+            $downloadBtn = ActionButtons::download(
+                route('admin.contracts.therapists.download-document', $contract),
+                'Download Document',
+            );
+        }
+
         $actions = ActionButtons::wrap(
             ActionButtons::view($showUrl, 'View Contract'),
             ActionButtons::edit(route('admin.contracts.therapists.edit', $contract), 'Edit Contract'),
+            $downloadBtn,
             $toggleBtn,
         );
 
