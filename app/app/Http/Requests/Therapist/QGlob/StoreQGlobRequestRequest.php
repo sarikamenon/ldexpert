@@ -11,6 +11,12 @@ use Illuminate\Validation\Validator;
 
 final class StoreQGlobRequestRequest extends FormRequest
 {
+    public function __construct(
+        private readonly QGlobRequestService $qGlobRequestService,
+    ) {
+        parent::__construct();
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->role === Role::THERAPIST;
@@ -52,9 +58,7 @@ final class StoreQGlobRequestRequest extends FormRequest
                 return;
             }
 
-            /** @var QGlobRequestService $service */
-            $service = app(QGlobRequestService::class);
-            if (! $service->studentIsEligibleForTherapist($studentId, $user->id)) {
+            if (! $this->qGlobRequestService->studentIsEligibleForTherapist($studentId, $user->id)) {
                 $v->errors()->add('student_id', 'The selected student is not eligible for QGlob requests.');
             }
         });
