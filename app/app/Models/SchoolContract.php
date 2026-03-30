@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Domain\Storage\Services\StorageServiceInterface;
 use App\Enums\ContractStatus;
+use App\Models\Concerns\HasContractDocument;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SchoolContract extends Model
 {
+    use HasContractDocument;
+
     /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
@@ -56,36 +58,5 @@ class SchoolContract extends Model
     public function scopeForSchool(Builder $query, int $schoolId): Builder
     {
         return $query->where('school_id', $schoolId);
-    }
-
-    public function getFormattedDocumentSizeAttribute(): string
-    {
-        $size = $this->document_size;
-
-        if ($size === null) {
-            return 'Unknown';
-        }
-
-        $units = ['B', 'KB', 'MB', 'GB'];
-        $unit = 0;
-
-        while ($size >= 1024 && $unit < count($units) - 1) {
-            $size /= 1024;
-            $unit++;
-        }
-
-        return sprintf('%.2f %s', round($size, 2), $units[$unit]);
-    }
-
-    public function getDocumentUrlAttribute(): ?string
-    {
-        if (empty($this->document_path)) {
-            return null;
-        }
-
-        /** @var StorageServiceInterface $storageService */
-        $storageService = app(StorageServiceInterface::class);
-
-        return $storageService->url($this->document_path);
     }
 }

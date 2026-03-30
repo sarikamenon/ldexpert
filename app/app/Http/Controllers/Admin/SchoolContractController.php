@@ -97,9 +97,7 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('create', SchoolContract::class);
 
-        $data = $request->validated();
-        $data['document'] = $request->file('document');
-        $dto = CreateSchoolContractDTO::fromArray($data);
+        $dto = CreateSchoolContractDTO::fromArray($request->validated() + ['document' => $request->file('document')]);
 
         try {
             $this->service->create($dto);
@@ -136,9 +134,7 @@ final class SchoolContractController extends Controller
     {
         $this->authorize('update', $schoolContract);
 
-        $data = $request->validated();
-        $data['document'] = $request->file('document');
-        $dto = UpdateSchoolContractDTO::fromArray($data, $schoolContract->status);
+        $dto = UpdateSchoolContractDTO::fromArray($request->validated() + ['document' => $request->file('document')], $schoolContract->status);
 
         try {
             $this->service->update($schoolContract, $dto);

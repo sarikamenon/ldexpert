@@ -40,7 +40,7 @@ final class CreateTherapistContractDTO
                 static fn (array $row) => ContractServiceRateDTO::fromArray($row),
                 $data['services'] ?? [],
             ),
-            document: $data['document'] instanceof UploadedFile ? $data['document'] : null,
+            document: ($data['document'] ?? null) instanceof UploadedFile ? $data['document'] : null,
         );
     }
 }

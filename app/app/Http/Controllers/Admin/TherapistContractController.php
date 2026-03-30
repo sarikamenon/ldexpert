@@ -98,9 +98,7 @@ final class TherapistContractController extends Controller
     {
         $this->authorize('create', TherapistContract::class);
 
-        $data = $request->validated();
-        $data['document'] = $request->file('document');
-        $dto = CreateTherapistContractDTO::fromArray($data);
+        $dto = CreateTherapistContractDTO::fromArray($request->validated() + ['document' => $request->file('document')]);
 
         try {
             $this->service->create($dto);
@@ -137,9 +135,7 @@ final class TherapistContractController extends Controller
     {
         $this->authorize('update', $therapistContract);
 
-        $data = $request->validated();
-        $data['document'] = $request->file('document');
-        $dto = UpdateTherapistContractDTO::fromArray($data, $therapistContract->status);
+        $dto = UpdateTherapistContractDTO::fromArray($request->validated() + ['document' => $request->file('document')], $therapistContract->status);
 
         try {
             $this->service->update($therapistContract, $dto);
