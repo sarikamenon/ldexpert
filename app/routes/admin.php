@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\TherapistBillPaymentController;
 use App\Http\Controllers\Admin\TherapistBillPaymentsListController;
 use App\Http\Controllers\Admin\TherapistContractController;
 use App\Http\Controllers\Admin\TherapistController;
+use App\Http\Controllers\Admin\QGlobRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('role:admin')
@@ -155,6 +156,13 @@ Route::middleware('role:admin')
             Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
             Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
             Route::get('{id}', [ScheduleCalendarController::class, 'show'])->name('show');
+        });
+
+        Route::prefix('qglob-requests')->name('qglob-requests.')->group(function () {
+            Route::get('/', [QGlobRequestController::class, 'index'])->name('index');
+            Route::post('data', [QGlobRequestController::class, 'data'])->name('data');
+            Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
+            Route::post('{qglob_request}/respond', [QGlobRequestController::class, 'respond'])->name('respond');
         });
 
         // Session Logs

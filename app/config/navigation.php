@@ -206,7 +206,7 @@ return [
             [
                 'label' => 'Reports',
                 'route' => 'admin.reports.ssa.utilization.index',
-                'active' => ['admin.reports.*', 'admin.analytics.*'],
+                'active' => ['admin.reports.*', 'admin.analytics.*', 'admin.qglob-requests.*'],
                 'children' => [
                     [
                         'label' => 'Utilization & Compliance',
@@ -227,6 +227,11 @@ return [
                         'label' => 'Analytics',
                         'route' => 'admin.analytics.index',
                         'active' => 'admin.analytics.*',
+                    ],
+                    [
+                        'label' => 'QGlob Requests',
+                        'route' => 'admin.qglob-requests.index',
+                        'active' => 'admin.qglob-requests.*',
                     ],
                 ],
             ],
@@ -323,7 +328,19 @@ return [
             [
                 'label' => 'Students',
                 'route' => 'therapist.students.index',
-                'active' => 'therapist.students.*',
+                'active' => ['therapist.students.*', 'therapist.qglob-requests.*'],
+                'children' => [
+                    [
+                        'label' => 'Student List',
+                        'route' => 'therapist.students.index',
+                        'active' => 'therapist.students.*',
+                    ],
+                    [
+                        'label' => 'QGlob Requests',
+                        'route' => 'therapist.qglob-requests.index',
+                        'active' => 'therapist.qglob-requests.*',
+                    ],
+                ],
             ],
         ],
         'student' => [

@@ -10,6 +10,7 @@ use App\Http\Controllers\Therapist\SSAController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
 use App\Http\Controllers\Therapist\StudentDocumentController;
+use App\Http\Controllers\Therapist\QGlobRequestController;
 use Illuminate\Support\Facades\Route;
 
 // Therapist area
@@ -58,6 +59,15 @@ Route::middleware('role:therapist')
         Route::prefix('student-documents')->name('student-documents.')->group(function () {
             Route::get('{document}/download', [StudentDocumentController::class, 'download'])->name('download');
             Route::delete('{document}', [StudentDocumentController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::prefix('qglob-requests')->name('qglob-requests.')->group(function () {
+            Route::get('/', [QGlobRequestController::class, 'index'])->name('index');
+            Route::post('data', [QGlobRequestController::class, 'data'])->name('data');
+            Route::get('create', [QGlobRequestController::class, 'create'])->name('create');
+            Route::post('/', [QGlobRequestController::class, 'store'])->name('store');
+            Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
+            Route::delete('{qglob_request}', [QGlobRequestController::class, 'destroy'])->name('destroy');
         });
 
         // Session Log routes
