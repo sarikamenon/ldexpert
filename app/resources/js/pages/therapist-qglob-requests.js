@@ -55,11 +55,16 @@ async function initTable() {
                 }
             }
         };
-        form.addEventListener('change', reload);
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             reload();
         });
+        const clearBtn = form.querySelector('[data-filter-clear]');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                window.setTimeout(() => reload(), 0);
+            });
+        }
     }
 }
 

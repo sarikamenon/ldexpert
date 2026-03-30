@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Admin;
 
-use App\Constants\EvaluationServiceNames;
 use App\Enums\QGlobRequestStatus;
 use App\Enums\SSAStatus;
 use App\Models\QGlobRequest;
@@ -28,9 +27,7 @@ final class QGlobRequestTest extends TestCase
         $student = User::factory()->student()->create();
         StudentProfile::factory()->create(['user_id' => $student->id]);
 
-        $evalService = Service::factory()->create([
-            'name' => EvaluationServiceNames::all()[0],
-        ]);
+        $service = Service::factory()->create();
 
         $therapist->students()->attach($student->id, [
             'assigned_at' => now(),
@@ -39,7 +36,7 @@ final class QGlobRequestTest extends TestCase
 
         ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
-            'primary_service_id' => $evalService->id,
+            'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
             'start_date' => now()->subDay(),

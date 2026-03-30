@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Therapist;
 
-use App\Constants\EvaluationServiceNames;
 use App\Enums\QGlobRequestStatus;
 use App\Enums\SSAStatus;
 use App\Models\QGlobRequest;
@@ -21,13 +20,11 @@ final class QGlobRequestTest extends TestCase
 
     private function seedEligibleStudent(User $therapist, User $student): void
     {
-        $evalService = Service::factory()->create([
-            'name' => EvaluationServiceNames::all()[0],
-        ]);
+        $service = Service::factory()->create();
 
         ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
-            'primary_service_id' => $evalService->id,
+            'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
             'start_date' => now()->subDay(),
@@ -160,13 +157,11 @@ final class QGlobRequestTest extends TestCase
         $student = User::factory()->student()->create();
         StudentProfile::factory()->create(['user_id' => $student->id]);
 
-        $nonEvalService = Service::factory()->create([
-            'name' => 'Speech Therapy',
-        ]);
+        $primaryService = Service::factory()->create();
 
         ServiceSupportAgreement::factory()->create([
             'student_id' => $student->id,
-            'primary_service_id' => $nonEvalService->id,
+            'primary_service_id' => $primaryService->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
             'start_date' => now()->subDay(),

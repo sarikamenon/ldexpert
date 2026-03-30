@@ -30,7 +30,7 @@ interface QGlobRequestRepositoryInterface
     ): array;
 
     /**
-     * Students with an active evaluation SSA assigned to the therapist.
+     * Students with an active SSA assigned to the therapist.
      *
      * @return EloquentCollection<int, User>
      */
