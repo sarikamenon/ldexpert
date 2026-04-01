@@ -405,7 +405,10 @@ final class ScheduleService
      */
     public function generateRecurringOccurrences(Schedule $parentSchedule, array $studentIds, bool $isGroup): Collection
     {
-        if (! $parentSchedule->recurrence_type || $parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
+        if (! $parentSchedule->recurrence_type
+            || $parentSchedule->recurrence_type === RecurrenceType::NONE
+            || $parentSchedule->recurrence_type === RecurrenceType::CUSTOM_WEEKLY
+            || ! $parentSchedule->recurrence_end_date) {
             return collect([]);
         }
 
@@ -605,7 +608,7 @@ final class ScheduleService
             RecurrenceType::WEEKLY => $date->copy()->addWeek(),
             RecurrenceType::BI_WEEKLY => $date->copy()->addWeeks(2),
             RecurrenceType::MONTHLY => $date->copy()->addMonth(),
-            RecurrenceType::NONE => $date->copy(),
+            RecurrenceType::NONE, RecurrenceType::CUSTOM_WEEKLY => $date->copy(),
         };
     }
 

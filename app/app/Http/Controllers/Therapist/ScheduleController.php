@@ -228,6 +228,8 @@ final class ScheduleController extends Controller
         $therapistTimezone = $therapist->therapistProfile->timezone ?? 'America/Chicago';
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
+        $isPrivateStudent = $student?->studentProfile?->school?->is_private_student === true;
+
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
             'students' => $students,
@@ -239,6 +241,7 @@ final class ScheduleController extends Controller
             'preselectedService' => $service,
             'therapistTimezone' => $therapistTimezone,
             'therapistTimezoneLabel' => $therapistTimezoneLabel,
+            'isPrivateStudent' => $isPrivateStudent,
         ]);
     }
 

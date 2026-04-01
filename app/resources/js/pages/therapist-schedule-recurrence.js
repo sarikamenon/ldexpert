@@ -17,6 +17,8 @@ $(function () {
     }
 
     const RECURRENCE_TYPE_NONE = 'none';
+    const RECURRENCE_TYPE_CUSTOM_WEEKLY = 'custom_weekly';
+    const $weeklyDaysContainer = $('#weekly_days_container');
 
     /**
      * Get recurrence type value (handles Select2)
@@ -71,11 +73,55 @@ $(function () {
     }
 
     /**
+     * Get selected weekday indices (0=Sun…6=Sat) from the day checkboxes
+     */
+    function getSelectedWeekdayIndices() {
+        const dayMap = {
+            monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5,
+        };
+        const indices = [];
+        document.querySelectorAll('.weekly-day-checkbox:checked').forEach(function (checkbox) {
+            const val = checkbox.value;
+            if (dayMap[val] !== undefined) {
+                indices.push(dayMap[val]);
+            }
+        });
+        return indices;
+    }
+
+    /**
+     * Generate occurrence dates for custom_weekly: every selected weekday between start and end
+     */
+    function generateCustomWeeklyDates(startDateStr, endDateStr) {
+        const selectedDays = getSelectedWeekdayIndices();
+        if (!startDateStr || !endDateStr || selectedDays.length === 0) {
+            return [];
+        }
+
+        const dates = [];
+        const endDate = new Date(endDateStr + 'T00:00:00');
+        let current = new Date(startDateStr + 'T00:00:00');
+
+        while (current <= endDate) {
+            if (selectedDays.includes(current.getDay())) {
+                dates.push(new Date(current));
+            }
+            current.setDate(current.getDate() + 1);
+        }
+
+        return dates;
+    }
+
+    /**
      * Generate all occurrence dates based on recurrence type, start date, and end date
      */
     function generateOccurrenceDates(startDateStr, endDateStr, recurrenceType) {
         if (!startDateStr || !endDateStr || recurrenceType === RECURRENCE_TYPE_NONE) {
             return [];
+        }
+
+        if (recurrenceType === RECURRENCE_TYPE_CUSTOM_WEEKLY) {
+            return generateCustomWeeklyDates(startDateStr, endDateStr);
         }
 
         const dates = [];
@@ -224,6 +270,20 @@ $(function () {
      */
     function toggleRecurrenceFields() {
         const recurrenceType = getRecurrenceType();
+        const isCustomWeekly = recurrenceType === RECURRENCE_TYPE_CUSTOM_WEEKLY;
+
+        if ($weeklyDaysContainer.length) {
+            if (isCustomWeekly) {
+                $weeklyDaysContainer.removeClass('hidden');
+            } else {
+                $weeklyDaysContainer.addClass('hidden');
+                // Reset all day selections when switching away from custom_weekly
+                document.querySelectorAll('.weekly-day-checkbox').forEach(function (checkbox) {
+                    checkbox.checked = false;
+                    setDaySelected(checkbox.closest('label'), false);
+                });
+            }
+        }
 
         if (recurrenceType && recurrenceType !== RECURRENCE_TYPE_NONE) {
             $recurrenceEndDateContainer.removeClass('hidden');
@@ -297,11 +357,46 @@ $(function () {
 
     // Listen to recurrence type changes
     $recurrenceTypeSelect.on('change', toggleRecurrenceFields);
-    
+
     // If Select2 is available, also listen to its change event
     if ($recurrenceTypeSelect.data('select2')) {
         $recurrenceTypeSelect.on('select2:select select2:change', toggleRecurrenceFields);
     }
+
+    /**
+     * Apply or remove the selected state on a day pill label
+     */
+    function setDaySelected(label, selected) {
+        const check = label.querySelector('.weekly-day-check');
+        if (selected) {
+            label.classList.add('is-selected');
+            if (check) {
+                check.classList.replace('w-0', 'w-3.5');
+                check.classList.replace('opacity-0', 'opacity-100');
+            }
+        } else {
+            label.classList.remove('is-selected');
+            if (check) {
+                check.classList.replace('w-3.5', 'w-0');
+                check.classList.replace('opacity-100', 'opacity-0');
+            }
+        }
+    }
+
+    // Init selected state for any pre-checked boxes (e.g. old() after validation failure)
+    document.querySelectorAll('.weekly-day-checkbox:checked').forEach(function (checkbox) {
+        setDaySelected(checkbox.closest('label'), true);
+    });
+
+    // Toggle selected state and regenerate occurrences when day checkboxes change
+    document.querySelectorAll('.weekly-day-checkbox').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            setDaySelected(this.closest('label'), this.checked);
+            if (getRecurrenceType() === RECURRENCE_TYPE_CUSTOM_WEEKLY) {
+                updateOccurrenceDates();
+            }
+        });
+    });
 
     // Update min date when schedule date changes
     $scheduleDateInput.on('change', function() {
@@ -338,6 +433,13 @@ $(function () {
 
         // Only validate end date if recurrence type is not "none"
         if (recurrenceType && recurrenceType !== RECURRENCE_TYPE_NONE) {
+            // For custom_weekly, require at least one day selected
+            if (recurrenceType === RECURRENCE_TYPE_CUSTOM_WEEKLY && getSelectedWeekdayIndices().length === 0) {
+                event.preventDefault();
+                errorAlert('Please select at least one day of the week for the custom schedule.');
+                return false;
+            }
+
             if (!$recurrenceEndDateInput.val()) {
                 event.preventDefault();
                 errorAlert('End date is required for recurring schedules.');
