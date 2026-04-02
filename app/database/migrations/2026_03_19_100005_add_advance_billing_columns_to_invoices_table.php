@@ -31,14 +31,19 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('invoices', function (Blueprint $table) {
+            // Drop foreign keys first (before indexes)
+            $table->dropForeign(['student_id']);
+            $table->dropForeign(['parent_id']);
+        });
+
+        Schema::table('invoices', function (Blueprint $table) {
+            // Then drop indexes
             $table->dropIndex(['billing_mode']);
             $table->dropIndex(['invoice_type']);
             $table->dropIndex(['student_id']);
             $table->dropIndex(['parent_id']);
 
-            $table->dropForeign(['student_id']);
-            $table->dropForeign(['parent_id']);
-
+            // Finally drop columns
             $table->dropColumn([
                 'billing_mode',
                 'invoice_type',

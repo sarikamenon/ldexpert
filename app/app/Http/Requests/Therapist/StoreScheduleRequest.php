@@ -10,6 +10,7 @@ use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\RecurrenceType;
 use App\Enums\SSAStatus;
+use App\Enums\WeekDay;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
@@ -57,6 +58,8 @@ final class StoreScheduleRequest extends FormRequest
             ],
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
+            'weekly_days' => ['required_if:recurrence_type,'.RecurrenceType::CUSTOM_WEEKLY->value, 'nullable', 'array', 'min:1'],
+            'weekly_days.*' => [Rule::in(array_column(WeekDay::cases(), 'value'))],
             'occurrence_dates' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
             'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -76,6 +79,8 @@ final class StoreScheduleRequest extends FormRequest
             'location_details.max' => 'Location/meeting details may not be greater than :max characters.',
             'recurrence_end_date.required_unless' => 'End date is required for recurring schedules.',
             'recurrence_end_date.after' => 'End date must be after the schedule start date.',
+            'weekly_days.required_if' => 'Please select at least one day of the week for a custom weekly schedule.',
+            'weekly_days.*.in' => 'Invalid day selected. Choose from Monday through Friday.',
             'occurrence_dates.required_unless' => 'Occurrence dates are required for recurring schedules.',
             'occurrence_dates.array' => 'Occurrence dates must be an array.',
             'occurrence_dates.min' => 'At least one occurrence date is required.',

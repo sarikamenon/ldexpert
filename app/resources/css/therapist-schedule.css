@@ -214,6 +214,15 @@
     border: 1px solid #fecaca;
 }
 
+/* Custom weekly day-of-week pill selector */
+.weekly-day-label.is-selected {
+    @apply bg-primary border-primary text-primary-foreground;
+}
+
+.weekly-day-label.is-selected:hover {
+    @apply bg-primary/90 border-primary/90;
+}
+
 /* Day names header */
 .calendar-header .grid {
     display: grid;

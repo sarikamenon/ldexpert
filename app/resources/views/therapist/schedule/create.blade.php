@@ -30,6 +30,7 @@
                 'studentServiceMappings' => $studentServiceMappings,
                 'isEdit' => false,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
+                'isPrivateStudent' => $isPrivateStudent ?? false,
             ])
         </div>
     </div>
@@ -50,8 +51,9 @@
             {!! json_encode([
                 'selected_students' => $preselectedStudent ? [$preselectedStudent->id] : [],
                 'selected_service' => old('service_id', $preselectedService?->id),
+                'is_private_student' => $isPrivateStudent ?? false,
             ]) !!}
         </script>
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
+        @vite(['resources/css/therapist-schedule.css', 'resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
     </x-slot>
 </x-app-layout>
