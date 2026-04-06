@@ -83,7 +83,7 @@ final class SessionLogService
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
-            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile->school_id ?? null;
+            $schoolId = $ssa->student->studentProfile->school_id ?? $schedule->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
 
             $this->assertScheduleNotBilled($schedule);
