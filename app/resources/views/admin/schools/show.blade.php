@@ -10,9 +10,9 @@
     </x-slot>
 
     {{-- Header Card --}}
-    <x-ui::show-header :title="$school->display_name" :subtitle="'School ID #' . $school->id"
+    <x-ui::show-header :title="$school->display_name" :subtitle="'School/Family ID #' . $school->id"
         :back-url="route('admin.schools.index')" back-label="Back to list"
-        :edit-url="route('admin.schools.edit', $school)" edit-label="Edit School">
+        :edit-url="route('admin.schools.edit', $school)" edit-label="Edit School/Family">
         <x-slot name="badge">
             <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'danger'">
                 {{ ucfirst($school->status?->value ?? 'inactive') }}

@@ -106,14 +106,14 @@ final class SessionLogImportRowProcessor
         // Lookups
         $school = $this->lookupSchool($mappedData['school_name'] ?? '');
         if (! $school) {
-            $this->markError($importRow, "School not found by external EMR name: '{$mappedData['school_name']}'.");
+            $this->markError($importRow, "School/family not found by external EMR name: '{$mappedData['school_name']}'.");
 
             return;
         }
 
         $student = $this->lookupStudent($mappedData['student_id_number'] ?? '', $school->id);
         if (! $student) {
-            $this->markError($importRow, "Student not found with ID '{$mappedData['student_id_number']}' at school '{$school->name}'.");
+            $this->markError($importRow, "Student not found with ID '{$mappedData['student_id_number']}' at school/family '{$school->name}'.");
 
             return;
         }

@@ -39,7 +39,7 @@ final class InvoiceService
         return DB::transaction(function () use ($dto): Invoice {
             $school = $this->schoolRepository->find($dto->schoolId);
             if (! $school) {
-                throw new \InvalidArgumentException('School not found.');
+                throw new \InvalidArgumentException('School/family not found.');
             }
 
             $invoiceNumber = ! empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();

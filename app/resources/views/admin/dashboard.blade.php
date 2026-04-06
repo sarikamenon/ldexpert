@@ -20,11 +20,11 @@
         NOVA Admin Dashboard
         
         LIVE DATA:
-        - Schools Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
+        - Schools/Families Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
         - Therapist Capacity: Total, Active, Inactive, New This Month (clickable - links to therapists index)
         - Student Population: Total, Active, Inactive, New This Month (clickable - links to students index)
         - Service Delivery: Active SSAs, Pending, Completed (clickable - links to SSAs index)
-        - Recent Activity: Latest schools, therapists, students, and SSAs added
+        - Recent Activity: Latest schools/families, therapists, students, and SSAs added
         - Upcoming Events: Real SSA expiration dates and contract expirations
         - Charts: Real SSA status distribution, therapist positions, utilization trends
         - Operational Metrics: Real calculated metrics from database
@@ -42,11 +42,11 @@
 
     {{-- Section 1: Key Performance Indicators --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {{-- Schools Overview --}}
+        {{-- Schools/Families Overview --}}
         <a href="{{ route('admin.schools.index') }}" class="block hover:scale-[1.02] transition-transform">
             <x-ui::card class="p-6 h-full hover:shadow-lg transition-shadow">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-sm text-foreground/70">Schools Overview</p>
+                    <p class="text-sm text-foreground/70">Schools/Families Overview</p>
                 </div>
                 <div class="flex items-start justify-between mb-4">
                     <div>

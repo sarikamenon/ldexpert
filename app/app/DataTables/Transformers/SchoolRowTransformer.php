@@ -30,19 +30,19 @@ final class SchoolRowTransformer
             '</span>';
 
         $toggleBtn = $isActive
-            ? ActionButtons::deactivate('Deactivate School', ['data-school' => (int) $school->id, 'data-status' => e($school->status->value ?? 'inactive'), 'class' => 'toggle-status-button'])
-            : ActionButtons::activate('Activate School', ['data-school' => (int) $school->id, 'data-status' => e($school->status->value ?? 'inactive'), 'class' => 'toggle-status-button']);
+            ? ActionButtons::deactivate('Deactivate School/Family', ['data-school' => (int) $school->id, 'data-status' => e($school->status->value ?? 'inactive'), 'class' => 'toggle-status-button'])
+            : ActionButtons::activate('Activate School/Family', ['data-school' => (int) $school->id, 'data-status' => e($school->status->value ?? 'inactive'), 'class' => 'toggle-status-button']);
 
         $actions = ActionButtons::wrap(
-            ActionButtons::view($showUrl, 'View School'),
-            ActionButtons::edit($editUrl, 'Edit School'),
+            ActionButtons::view($showUrl, 'View School/Family'),
+            ActionButtons::edit($editUrl, 'Edit School/Family'),
             $toggleBtn,
         );
 
         $state = $school->state ? UsStates::getStateName($school->state) : '—';
 
         return [
-            '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" title="View School">'.(int) $school->id.'</a>',
+            '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" title="View School/Family">'.(int) $school->id.'</a>',
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($school->display_name).'</a>',
             e($school->manager->name ?? '—'),
             e($state),

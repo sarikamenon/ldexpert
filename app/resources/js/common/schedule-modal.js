@@ -144,7 +144,7 @@ function buildDetailsHtml(schedule) {
                 <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium">${schedule.student?.name || '-'}</div></div>
                 <div><div class="text-foreground/70 mb-1">ID Number</div><div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div></div>
                 <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium">${schedule.student?.email || '-'}</div></div>
-                <div><div class="text-foreground/70 mb-1">School</div><div class="text-foreground font-medium">${schedule.school?.name || '-'}</div></div>
+                <div><div class="text-foreground/70 mb-1">School/Family</div><div class="text-foreground font-medium">${schedule.school?.name || '-'}</div></div>
                 <div><div class="text-foreground/70 mb-1">Timezone</div><div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div></div>
             </div>
         </div>

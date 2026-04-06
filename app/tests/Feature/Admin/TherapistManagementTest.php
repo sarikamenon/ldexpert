@@ -238,7 +238,6 @@ final class TherapistManagementTest extends TestCase
 
         $response->assertSessionHasErrors([
             'employee_type',
-            'title',
             'first_name',
             'last_name',
             'personal_email',

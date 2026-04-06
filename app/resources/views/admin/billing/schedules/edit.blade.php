@@ -34,7 +34,7 @@
 
                 <div>
                     <x-input-label for="schedulable_id" value="Entity *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="entity_help">The school, student, or therapist to bill.</p>
+                    <p class="mt-1 text-xs text-foreground/60" id="entity_help">The school/family, student, or therapist to bill.</p>
                     <x-ui::input type="number" id="schedulable_id" name="schedulable_id" class="mt-1 block w-full" required
                         value="{{ old('schedulable_id', $schedule->schedulable_id) }}" placeholder="Entity ID" aria-describedby="entity_help" />
                     <input type="hidden" name="schedulable_type" id="schedulable_type" value="{{ old('schedulable_type', $schedule->schedulable_type) }}">

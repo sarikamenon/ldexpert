@@ -108,7 +108,7 @@ final class SchoolContractService
     private function guardAgainstOverlap(int $schoolId, string $startDate, string $endDate, ?int $ignoreId = null): void
     {
         if ($this->repository->hasOverlap($schoolId, $startDate, $endDate, $ignoreId)) {
-            throw new ContractOverlapException('An active contract already exists for this school in the selected period.');
+            throw new ContractOverlapException('An active contract already exists for this school/family in the selected period.');
         }
     }
 }

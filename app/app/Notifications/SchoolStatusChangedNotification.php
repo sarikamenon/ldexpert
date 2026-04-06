@@ -28,12 +28,14 @@ class SchoolStatusChangedNotification extends Notification implements ShouldQueu
     /** @return array<string, mixed> */
     public function toArray(object $notifiable): array
     {
+        $nounTitle = $this->school->is_private_student ? 'Family' : 'School';
+
         return [
             'school_id' => $this->school->id,
             'school_name' => $this->school->display_name,
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,
-            'message' => "School '{$this->school->display_name}' status changed from {$this->oldStatus} to {$this->newStatus}.",
+            'message' => "{$nounTitle} '{$this->school->display_name}' status changed from {$this->oldStatus} to {$this->newStatus}.",
             'action_url' => route('admin.schools.edit', $this->school),
         ];
     }

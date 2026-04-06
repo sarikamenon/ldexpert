@@ -2,7 +2,7 @@
     <x-slot name="styles">
         @vite(['resources/css/common/datatables.css'])
     </x-slot>
-    <x-page-title title="Schools" />
+    <x-page-title title="Schools/Families" />
 
     @if (session('status'))
         <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>
@@ -10,7 +10,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <x-ui::card class="p-4">
-            <p class="text-sm text-foreground/70">Total Schools</p>
+            <p class="text-sm text-foreground/70">Total Schools/Families</p>
             <p class="text-3xl font-semibold mt-1">{{ $metrics['total'] ?? 0 }}</p>
         </x-ui::card>
 
@@ -28,7 +28,7 @@
     <x-ui::card class="p-6 space-y-4">
         <x-ui::filter-toolbar formId="schoolFiltersForm">
             <x-slot:filters>
-                <x-ui::input type="text" name="search" class="w-64" placeholder="Search schools"
+                <x-ui::input type="text" name="search" class="w-64" placeholder="Search schools or families"
                     value="{{ $filters['search'] ?? '' }}" />
 
                 <x-ui::select name="status" :searchable="false" :inline="true" data-default-value="active">
@@ -49,7 +49,7 @@
                 </a>
                 <a href="{{ route('admin.schools.create') }}"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add School
+                    Add School/Family
                 </a>
             </x-slot:actions>
         </x-ui::filter-toolbar>
@@ -75,7 +75,7 @@
                                 <td>
                                     <a href="{{ route('admin.schools.show', $school) }}"
                                         class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors"
-                                        title="View School">
+                                        title="View School/Family">
                                         {{ $school->id }}
                                     </a>
                                 </td>
@@ -99,7 +99,7 @@
                                     <div class="flex space-x-1">
                                         <a href="{{ route('admin.schools.show', $school) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors"
-                                            title="View School">
+                                            title="View School/Family">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round">
@@ -109,7 +109,7 @@
                                         </a>
                                         <a href="{{ route('admin.schools.edit', $school) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
-                                            title="Edit School">
+                                            title="Edit School/Family">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24"
                                                 fill="none" stroke="currentColor" stroke-width="2"
                                                 stroke-linecap="round" stroke-linejoin="round">
@@ -126,7 +126,7 @@
                                         <button type="button" data-school="{{ $school->id }}"
                                             data-status="{{ $school->status?->value ?? 'inactive' }}"
                                             class="toggle-status-button inline-flex items-center justify-center w-8 h-8 rounded transition-colors {{ $isActive ? 'bg-danger text-danger-foreground hover:bg-danger/90' : 'bg-success text-success-foreground hover:bg-success/90' }}"
-                                            title="{{ $isActive ? 'Deactivate School' : 'Activate School' }}">
+                                            title="{{ $isActive ? 'Deactivate School/Family' : 'Activate School/Family' }}">
                                             @if ($isActive)
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4"
                                                     viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -154,10 +154,10 @@
             </div>
         @else
             <div class="text-center py-10">
-                <p class="text-foreground/70 mb-4">No schools found.</p>
+                <p class="text-foreground/70 mb-4">No schools or families found.</p>
                 <a href="{{ route('admin.schools.create') }}"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                    Add School
+                    Add School/Family
                 </a>
             </div>
         @endif

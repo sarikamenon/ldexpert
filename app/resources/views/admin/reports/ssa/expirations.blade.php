@@ -46,11 +46,11 @@
                         aria-describedby="expiration_window_days_help" />
                 </div>
                 <div>
-                    <x-input-label for="school_ids" value="Schools" />
+                    <x-input-label for="school_ids" value="Schools/Families" />
                     <p class="mt-1 text-xs text-foreground/60" id="school_ids_help">
-                        Select one or more schools to filter.
+                        Select one or more schools or families to filter.
                     </p>
-                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable placeholder="All Schools"
+                    <x-ui::select id="school_ids" name="school_ids[]" multiple searchable placeholder="All Schools/Families"
                         class="mt-1" aria-describedby="school_ids_help">
                         @foreach ($schools as $school)
                             <option value="{{ $school->id }}" @selected(in_array($school->id, $filters['school_ids'] ?? []))>
@@ -107,7 +107,7 @@
                     <tr>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">SSA ID</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Student</th>
-                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground">School/Family</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Therapist</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Service</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">End Date</th>

@@ -341,7 +341,7 @@ final class StudentController extends Controller
                 'Name',
                 'Username',
                 'Email',
-                'School',
+                'School/Family',
                 'Grade Level',
                 'Date of Birth',
                 'Status',

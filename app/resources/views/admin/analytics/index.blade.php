@@ -54,13 +54,13 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <x-admin.widgets.stat-card 
-            title="Total Schools" 
+            title="Total Schools/Families" 
             :value="$analytics['schools']['total']" 
             icon="school"
             color="primary" />
         
         <x-admin.widgets.stat-card 
-            title="Active Schools" 
+            title="Active Schools/Families" 
             :value="$analytics['schools']['active']" 
             icon="check"
             color="success" />

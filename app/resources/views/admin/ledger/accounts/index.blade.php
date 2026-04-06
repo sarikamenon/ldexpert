@@ -69,7 +69,7 @@
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">
-                                {{ $accountType === 'schools' ? 'School' : 'Therapist' }}
+                                {{ $accountType === 'schools' ? 'School/Family' : 'Therapist' }}
                             </th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Contact</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">
@@ -91,7 +91,7 @@
                     <thead class="bg-background/subtle">
                         <tr>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">
-                                {{ $accountType === 'schools' ? 'School' : 'Therapist' }}
+                                {{ $accountType === 'schools' ? 'School/Family' : 'Therapist' }}
                             </th>
                             <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Contact</th>
                             <th class="text-right py-3 px-4 text-sm font-medium text-foreground">

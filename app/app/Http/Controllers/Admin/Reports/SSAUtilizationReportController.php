@@ -141,7 +141,7 @@ final class SSAUtilizationReportController extends Controller
             fputcsv($handle, [
                 'SSA ID',
                 'Student Name',
-                'School',
+                'School/Family',
                 'Therapist',
                 'Primary Service',
                 'Start Date',

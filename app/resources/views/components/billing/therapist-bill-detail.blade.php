@@ -64,7 +64,7 @@
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Student</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Service</th>
-                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School/Family</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Duration</th>
                         <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Rate</th>
                         <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>

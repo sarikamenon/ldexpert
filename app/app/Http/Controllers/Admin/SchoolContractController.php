@@ -109,7 +109,7 @@ final class SchoolContractController extends Controller
 
         return redirect()
             ->route('admin.contracts.schools.index')
-            ->with('status', 'School contract created successfully.');
+            ->with('status', 'School/family contract created successfully.');
     }
 
     public function show(SchoolContract $schoolContract): View
@@ -146,7 +146,7 @@ final class SchoolContractController extends Controller
 
         return redirect()
             ->route('admin.contracts.schools.index')
-            ->with('status', 'School contract updated successfully.');
+            ->with('status', 'School/family contract updated successfully.');
     }
 
     public function updateStatus(ChangeSchoolContractStatusRequest $request, SchoolContract $schoolContract): JsonResponse

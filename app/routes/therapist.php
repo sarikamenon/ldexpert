@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
+use App\Http\Controllers\Therapist\QGlobRequestController;
 use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
 use App\Http\Controllers\Therapist\SessionLogController;
@@ -10,7 +11,6 @@ use App\Http\Controllers\Therapist\SSAController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
 use App\Http\Controllers\Therapist\StudentDocumentController;
-use App\Http\Controllers\Therapist\QGlobRequestController;
 use Illuminate\Support\Facades\Route;
 
 // Therapist area

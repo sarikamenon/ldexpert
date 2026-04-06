@@ -62,7 +62,7 @@
                     <dd class="font-medium">{{ $lead->date_of_birth?->format('M d, Y') ?? '—' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-foreground/60">School</dt>
+                    <dt class="text-foreground/60">School/Family</dt>
                     <dd class="font-medium">
                         @if ($lead->school)
                             <a href="{{ route('admin.schools.show', $lead->school) }}" class="text-primary hover:underline">{{ $lead->school->display_name }}</a>

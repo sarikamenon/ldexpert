@@ -18,7 +18,7 @@ test('transforms billing schedule to row array', function () {
     $row = BillingScheduleRowTransformer::transform($schedule);
 
     expect($row)->toHaveCount(8)
-        ->and($row[1])->toContain('School Invoice')
+        ->and($row[1])->toContain('School/Family Invoice')
         ->and($row[3])->toContain('Semi-Monthly');
 });
 

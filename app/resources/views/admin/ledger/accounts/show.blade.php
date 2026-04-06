@@ -275,7 +275,7 @@
             @if ($type === 'school')
                 <a href="{{ route('admin.schools.show', $account) }}"
                     class="px-4 py-2 border border-border rounded-md text-sm hover:bg-background/subtle">
-                    View School Profile
+                    View School/Family Profile
                 </a>
                 <a href="{{ route('admin.invoices.index', ['school_id' => $account->id]) }}"
                     class="px-4 py-2 border border-border rounded-md text-sm hover:bg-background/subtle">

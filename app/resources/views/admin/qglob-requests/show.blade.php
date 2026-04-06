@@ -45,7 +45,7 @@
                     <dd class="font-medium">{{ $qglobRequest->student?->name ?? '—' }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs font-medium text-foreground/70">School</dt>
+                    <dt class="text-xs font-medium text-foreground/70">School/Family</dt>
                     <dd>{{ $qglobRequest->student?->studentProfile?->school?->display_name ?? '—' }}</dd>
                 </div>
                 <div>

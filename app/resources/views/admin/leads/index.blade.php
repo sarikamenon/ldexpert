@@ -52,8 +52,8 @@
                     @endforeach
                 </x-ui::select>
 
-                <x-ui::select name="school_id" id="filter_school_id" :searchable="false" placeholder="All Schools" :inline="true">
-                    <option value="">All Schools</option>
+                <x-ui::select name="school_id" id="filter_school_id" :searchable="false" placeholder="All Schools/Families" :inline="true">
+                    <option value="">All Schools/Families</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}">{{ $school->display_name }}</option>
                     @endforeach
@@ -75,7 +75,7 @@
                         <th>ID</th>
                         <th>Name</th>
                         <th>Email</th>
-                        <th>School</th>
+                        <th>School/Family</th>
                         <th>Source</th>
                         <th>Status</th>
                         <th>Follow-up</th>

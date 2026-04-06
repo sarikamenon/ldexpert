@@ -66,8 +66,8 @@
             </x-ui::select>
 
             @if (!empty($schools))
-                <x-ui::select name="school_id" searchable placeholder="All Schools" :inline="true">
-                    <option value="">All Schools</option>
+                <x-ui::select name="school_id" searchable placeholder="All Schools/Families" :inline="true">
+                    <option value="">All Schools/Families</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
                             {{ $school->display_name }}
@@ -112,7 +112,7 @@
                         <th>Name</th>
                         <th>Username</th>
                         <th>Email</th>
-                        <th>School</th>
+                        <th>School/Family</th>
                         <th>Grade Level</th>
                         <th class="w-40">Date of Birth</th>
                         <th>Status</th>

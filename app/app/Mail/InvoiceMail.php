@@ -30,6 +30,8 @@ class InvoiceMail extends Mailable
 
     public function content(): Content
     {
+        $this->invoice->loadMissing('school');
+
         return new Content(
             view: 'emails.invoice',
             with: [

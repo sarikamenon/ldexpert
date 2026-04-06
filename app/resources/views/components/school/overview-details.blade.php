@@ -2,16 +2,16 @@
 
 <div class="space-y-6">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {{-- Section A: School Information --}}
+        {{-- Section A: School/Family Information --}}
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">School Information</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">School/Family Information</h3>
             <dl class="space-y-4">
                 <div>
-                    <dt class="text-sm font-medium text-foreground/70">Full School Name</dt>
+                    <dt class="text-sm font-medium text-foreground/70">Full School/Family Name</dt>
                     <dd class="mt-1 text-sm text-foreground">{{ $school->full_name }}</dd>
                 </div>
                 <div>
-                    <dt class="text-sm font-medium text-foreground/70">NOVA School Name</dt>
+                    <dt class="text-sm font-medium text-foreground/70">NOVA School/Family Name</dt>
                     <dd class="mt-1 text-sm text-foreground">{{ $school->display_name }}</dd>
                 </div>
                 <div>
@@ -71,12 +71,12 @@
         </x-ui::card>
     </div>
 
-    {{-- Section C: School Characteristics --}}
+    {{-- Section C: School/Family Characteristics --}}
     <x-ui::card class="p-6">
-        <h3 class="text-lg font-semibold text-foreground mb-4">School Characteristics</h3>
+        <h3 class="text-lg font-semibold text-foreground mb-4">School/Family Characteristics</h3>
         <dl class="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-6">
             <div>
-                <dt class="text-sm font-medium text-foreground/70">School Type</dt>
+                <dt class="text-sm font-medium text-foreground/70">School/Family Type</dt>
                 <dd class="mt-1 text-sm text-foreground">{{ $school->school_type ?? '—' }}</dd>
             </div>
             <div>
@@ -96,7 +96,7 @@
                 </dd>
             </div>
             <div class="md:col-span-3">
-                <dt class="text-sm font-medium text-foreground/70">External EMR School Name</dt>
+                <dt class="text-sm font-medium text-foreground/70">External EMR School/Family Name</dt>
                 <dd class="mt-1 text-sm text-foreground">{{ $school->external_emr_name ?? '—' }}</dd>
             </div>
         </dl>

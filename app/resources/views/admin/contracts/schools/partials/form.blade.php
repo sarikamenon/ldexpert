@@ -32,17 +32,17 @@
         <h3 class="text-lg font-semibold text-foreground">Contract Details</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {{-- Left column: School, Start Date, End Date --}}
+            {{-- Left column: School/Family, Start Date, End Date --}}
             <div class="space-y-4">
                 <div>
-                    <x-input-label value="School" />
-                    <p class="mt-1 text-xs text-foreground/60">School for this contract</p>
+                    <x-input-label value="School/Family" />
+                    <p class="mt-1 text-xs text-foreground/60">School or family for this contract</p>
                     @if ($isEdit)
                         <p class="mt-2 font-medium">{{ $contract->school?->display_name ?? '—' }}</p>
                     @else
                         <select name="school_id"
                             class="mt-1 w-full border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary">
-                            <option value="">Select School</option>
+                            <option value="">Select School/Family</option>
                             @foreach ($schools as $school)
                                 <option value="{{ $school->id }}" @selected(old('school_id') == $school->id)>
                                     {{ $school->display_name }}

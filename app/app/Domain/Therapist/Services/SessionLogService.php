@@ -398,7 +398,7 @@ final class SessionLogService
         if (! $billing['school']['contract_id']) {
             throw ValidationException::withMessages([
                 'session_date' => [
-                    'No active school contract was found for this date. Please add or activate a school contract that covers the session date (Admin → Contracts → School Contracts).',
+                    'No active school/family contract was found for this date. Please add or activate a school/family contract that covers the session date (Admin → Contracts → School Contracts).',
                 ],
             ]);
         }
@@ -406,7 +406,7 @@ final class SessionLogService
         if (! $billing['school']['rate_type'] || $billing['school']['rate_amount'] === null) {
             throw ValidationException::withMessages([
                 'service_id' => [
-                    'The school rate for this service is not set. Please configure the service rate in the school contract (Admin → Contracts → School Contracts).',
+                    'The school/family rate for this service is not set. Please configure the service rate in the school/family contract (Admin → Contracts → School Contracts).',
                 ],
             ]);
         }
@@ -429,7 +429,7 @@ final class SessionLogService
     private function assertSchoolIdPresent(?int $schoolId): void
     {
         if (! $schoolId) {
-            throw new \InvalidArgumentException('A school must be associated before creating a session log.');
+            throw new \InvalidArgumentException('A school/family must be associated before creating a session log.');
         }
     }
 

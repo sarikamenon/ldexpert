@@ -58,7 +58,7 @@ class DashboardService
         if ($schoolsWithoutManagers > 0) {
             $alerts[] = [
                 'type' => 'danger',
-                'message' => "{$schoolsWithoutManagers} ".($schoolsWithoutManagers === 1 ? 'School' : 'Schools').' without assigned managers',
+                'message' => "{$schoolsWithoutManagers} ".($schoolsWithoutManagers === 1 ? 'School/Family' : 'Schools/Families').' without assigned managers',
                 'link' => route('admin.schools.index'),
                 'icon' => 'alert',
             ];
@@ -172,7 +172,7 @@ class DashboardService
 
                 $events[] = [
                     'title' => 'Contract Expiring',
-                    'entity' => "School Contract - {$contract->school?->display_name}",
+                    'entity' => "School/Family Contract - {$contract->school?->display_name}",
                     'due_date' => $contract->end_date,
                     'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
                     'priority' => $priority,
@@ -201,9 +201,9 @@ class DashboardService
 
         return [
             [
-                'label' => 'School-Therapist Ratio',
+                'label' => 'School/Family–Therapist Ratio',
                 'value' => $activeTherapists > 0 ? number_format($activeSchools / $activeTherapists, 1).':1' : 'N/A',
-                'help' => 'Active schools divided by active therapists, shown as a ratio.',
+                'help' => 'Active schools/families divided by active therapists, shown as a ratio.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
@@ -224,7 +224,7 @@ class DashboardService
             [
                 'label' => 'Active Contracts',
                 'value' => "{$contractActivationRate}%",
-                'help' => 'Percent of school and therapist contracts currently active.',
+                'help' => 'Percent of school/family and therapist contracts currently active.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
@@ -243,8 +243,8 @@ class DashboardService
                 'color' => 'primary',
             ],
             [
-                'title' => 'Add School',
-                'description' => 'Onboard new school',
+                'title' => 'Add School/Family',
+                'description' => 'Onboard new school or family',
                 'route' => 'admin.schools.create',
                 'icon' => 'school',
                 'color' => 'primary',
@@ -265,7 +265,7 @@ class DashboardService
             ],
             [
                 'title' => 'Create Invoice',
-                'description' => 'Bill a school or client',
+                'description' => 'Bill a school/family or client',
                 'route' => 'admin.invoices.create',
                 'icon' => 'invoice',
                 'color' => 'primary',

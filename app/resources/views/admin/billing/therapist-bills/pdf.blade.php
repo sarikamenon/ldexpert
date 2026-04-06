@@ -150,7 +150,7 @@
                 <th>Date</th>
                 <th>Student</th>
                 <th>Service</th>
-                <th>School</th>
+                <th>School/Family</th>
                 <th class="text-right">Duration</th>
                 <th class="text-right">Rate</th>
                 <th class="text-right">Amount</th>

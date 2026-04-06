@@ -73,9 +73,9 @@
                     <tr>
                         <th>Date / Time</th>
                         <th>Entry Info</th>
-                        <th>Student / School</th>
+                        <th>Student / School/Family</th>
                         <th>Therapist / Service</th>
-                        <th>School Amount</th>
+                        <th>School/Family Amount</th>
                         <th>Therapist Amount</th>
                         <th>Status</th>
                         <th>Actions</th>

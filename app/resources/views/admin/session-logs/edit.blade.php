@@ -11,7 +11,7 @@
                 <p class="text-sm text-foreground/60">Admin · Session Logs</p>
                 <h1 class="text-2xl font-semibold text-foreground">Override Session Log Rates</h1>
                 <p class="text-sm text-foreground/60 mt-1">
-                    Adjust therapist and school billing amounts for this session.
+                    Adjust therapist and school/family billing amounts for this session.
                 </p>
                 <div class="mt-2 flex items-center gap-2 flex-wrap">
                     <span class="text-xs font-medium text-foreground/70">Session outcome:</span>
@@ -91,7 +91,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1" for="school_rate_type">
-                                School Rate Type
+                                School/Family Rate Type
                             </label>
                             <select name="school_rate_type" id="school_rate_type"
                                 @disabled($rateOverrideLocked)
@@ -109,7 +109,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1" for="school_rate_amount">
-                                School Rate Amount
+                                School/Family Rate Amount
                             </label>
                             <x-ui::input type="number" step="0.01" name="school_rate_amount" id="school_rate_amount"
                                 :disabled="$rateOverrideLocked"
@@ -118,7 +118,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-medium text-foreground/70 mb-1" for="school_invoice_amount">
-                                School Invoice Amount
+                                School/Family Invoice Amount
                             </label>
                             <x-ui::input type="number" step="0.01" name="school_invoice_amount" id="school_invoice_amount"
                                 :disabled="$rateOverrideLocked"

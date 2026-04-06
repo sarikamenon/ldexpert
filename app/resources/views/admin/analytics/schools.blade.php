@@ -17,7 +17,7 @@
     </x-slot>
 
     <div class="flex items-center justify-between mb-6">
-        <x-page-title title="Schools Analytics" />
+        <x-page-title title="Schools/Families Analytics" />
         <a href="{{ route('admin.analytics.index') }}" class="text-sm text-primary hover:underline">← Back to Overview</a>
     </div>
 
@@ -57,13 +57,13 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <x-admin.widgets.stat-card 
-            title="Total Schools" 
+            title="Total Schools/Families" 
             :value="$analytics['total']" 
             icon="school"
             color="primary" />
         
         <x-admin.widgets.stat-card 
-            title="Active Schools" 
+            title="Active Schools/Families" 
             :value="$analytics['active']" 
             icon="check"
             color="success" />
