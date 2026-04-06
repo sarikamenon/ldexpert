@@ -337,7 +337,7 @@ final class SessionLogImportTest extends TestCase
 
         $row = SessionLogImportRow::where('session_log_import_id', $import->id)->first();
         $this->assertEquals(SessionLogImportRowStatus::VALIDATION_ERROR, $row->status);
-        $this->assertStringContainsString('School not found', (string) $row->error_message);
+        $this->assertStringContainsString('School/family not found', (string) $row->error_message);
     }
 
     public function test_import_handles_nonexistent_student(): void

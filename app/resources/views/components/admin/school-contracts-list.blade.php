@@ -38,7 +38,7 @@
                         ->map(fn($id) => (int) $id)
                         ->toArray();
                 @endphp
-                <x-ui::select name="school_ids[]" multiple searchable placeholder="All Schools" :inline="true">
+                <x-ui::select name="school_ids[]" multiple searchable placeholder="All Schools/Families" :inline="true">
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}" @selected(in_array($school->id, $selectedSchoolIds, true))>
                             {{ $school->display_name }}
@@ -82,7 +82,7 @@
                     <tr>
                         <th>ID</th>
                         @if ($context !== 'detail' || !empty($datatableUrl))
-                            <th>School</th>
+                            <th>School/Family</th>
                         @endif
                         <th>Start Date</th>
                         <th>End Date</th>

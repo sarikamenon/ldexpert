@@ -159,7 +159,7 @@
                     @foreach ($recentPaymentsReceived as $payment)
                         <div class="flex justify-between items-start">
                             <div class="flex-1">
-                                <p class="text-sm font-medium">{{ $payment->school?->name ?? 'Unknown school' }}</p>
+                                <p class="text-sm font-medium">{{ $payment->school?->name ?? 'Unknown school/family' }}</p>
                                 <p class="text-xs text-foreground/70">{{ $payment->paid_at->format('M d, Y') }}</p>
                             </div>
                             <p class="text-sm font-semibold text-success">${{ number_format($payment->amount, 2) }}
@@ -169,7 +169,7 @@
                 </div>
             @else
                 <x-ui::empty-state title="No recent payments"
-                    description="Payments received from schools will appear here."
+                    description="Payments received from schools or families will appear here."
                     actionLabel="View invoice payments"
                     actionHref="{{ route('admin.payments.invoices.index') }}" />
             @endif

@@ -21,7 +21,7 @@ enum LeadSource: string
         return match ($this) {
             self::REFERRAL => 'Referral',
             self::WEBSITE => 'Website',
-            self::SCHOOL => 'School',
+            self::SCHOOL => 'School/Family',
             self::EVENT => 'Event',
             self::PHONE => 'Phone',
             self::EMAIL => 'Email',

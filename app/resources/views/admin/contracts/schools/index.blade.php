@@ -3,7 +3,7 @@
         @vite(['resources/css/common/datatables.css'])
     </x-slot>
 
-    <x-page-title title="School Contracts" />
+    <x-page-title title="School/Family Contracts" />
 
     @if (session('status'))
         <x-ui::alert variant="success" class="mb-4">{{ session('status') }}</x-ui::alert>

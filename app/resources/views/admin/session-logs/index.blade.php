@@ -8,11 +8,11 @@
     <x-ui::card class="p-6 space-y-4">
         <x-ui::filter-toolbar formId="adminSessionLogsFiltersForm">
             <x-slot:filters>
-                <x-ui::select name="school_id" searchable placeholder="All Schools" :inline="true" class="w-36">
-                    <option value="">All Schools</option>
+                <x-ui::select name="school_id" searchable placeholder="All Schools/Families" :inline="true" class="w-36">
+                    <option value="">All Schools/Families</option>
                     @foreach ($schools ?? [] as $school)
                         <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
-                            {{ $school->display_name ?? ($school->name ?? 'School #' . $school->id) }}
+                            {{ $school->display_name ?? ($school->name ?? 'School/Family #' . $school->id) }}
                         </option>
                     @endforeach
                 </x-ui::select>
@@ -71,9 +71,9 @@
                     <tr>
                         <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Date & Time / Duration</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Entry Date</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School/Family</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist & Service</th>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">School Amount</th>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">School/Family Amount</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist Amount</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Status</th>
                         <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Actions</th>

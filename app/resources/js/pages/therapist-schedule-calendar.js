@@ -62,7 +62,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                             <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium" title="${schedule.student?.name || '-'}">${schedule.student?.name || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">ID Number</div><div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium" title="${schedule.student?.email || '-'}">${schedule.student?.email || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">School</div><div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">School/Family</div><div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">Timezone</div><div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div></div>
                         </div>
                     </div>
@@ -497,17 +497,17 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             if (! dayEvents.length) {
                 $schoolEventList.html(`
                     <div class="mb-4">
-                        <h3 class="text-sm font-semibold text-foreground">School Events</h3>
+                        <h3 class="text-sm font-semibold text-foreground">School/Family Events</h3>
                         <p class="text-xs text-foreground/60">For ${dateLabel}</p>
                     </div>
-                    <p class="text-sm text-foreground/60">No school events on this date.</p>
+                    <p class="text-sm text-foreground/60">No school/family events on this date.</p>
                 `);
                 return;
             }
 
             let html = `
                 <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-foreground">School Events</h3>
+                    <h3 class="text-sm font-semibold text-foreground">School/Family Events</h3>
                     <p class="text-xs text-foreground/60">For ${dateLabel}</p>
                 </div>
                 <div class="space-y-3">

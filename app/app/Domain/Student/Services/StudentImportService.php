@@ -119,7 +119,7 @@ final class StudentImportService
             if (! $schoolName) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
-                    'error_message' => 'School name is required.',
+                    'error_message' => 'School/family name is required.',
                     'processed_at' => now(),
                 ]);
 
@@ -130,7 +130,7 @@ final class StudentImportService
             if (! $school) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
-                    'error_message' => "School with name '{$schoolName}' not found.",
+                    'error_message' => "School/family with name '{$schoolName}' not found.",
                     'processed_at' => now(),
                 ]);
 

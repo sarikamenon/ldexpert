@@ -61,7 +61,7 @@
                 </div>
                 @if (auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN)
                     <div class="flex justify-between gap-4">
-                        <dt class="text-foreground/60">School Amount</dt>
+                        <dt class="text-foreground/60">School/Family Amount</dt>
                         <dd class="text-foreground font-medium">
                             {{ $sessionLog->school_invoice_amount ?? '—' }}
                         </dd>

@@ -82,7 +82,7 @@
                         <thead class="bg-background/subtle">
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Date & Time</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School/Family</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Service</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Entry</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist Amount</th>

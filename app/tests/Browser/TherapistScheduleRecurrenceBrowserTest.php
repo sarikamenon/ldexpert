@@ -99,7 +99,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
     private function createPageUrl(): string
     {
-        return '/therapist/schedule/create?ssa_id=' . $this->ssa->id;
+        return '/therapist/schedule/create?ssa_id='.$this->ssa->id;
     }
 
     // -------------------------------------------------------------------------
@@ -133,7 +133,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
         $this->browse(function (Browser $browser) use ($privateSsa) {
             $browser->loginAs($this->therapist)
-                ->visit('/therapist/schedule/create?ssa_id=' . $privateSsa->id)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
                 ->pause(1000)
                 ->assertSee('Custom Weekly');
         });
@@ -433,7 +433,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
         $this->browse(function (Browser $browser) use ($privateSsa, $scheduleDate) {
             $browser->loginAs($this->therapist)
-                ->visit('/therapist/schedule/create?ssa_id=' . $privateSsa->id)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
                 ->pause(400);
             $browser->script("document.getElementById('schedule_date').value = '$scheduleDate';");
             $browser->script("$('#recurrence_type').val('custom_weekly').trigger('change');");
@@ -449,7 +449,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
         $this->browse(function (Browser $browser) use ($privateSsa) {
             $browser->loginAs($this->therapist)
-                ->visit('/therapist/schedule/create?ssa_id=' . $privateSsa->id)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
                 ->pause(400);
             $browser->script("$('#recurrence_type').val('custom_weekly').trigger('change');");
             $browser->pause(400)
@@ -470,7 +470,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
         $this->browse(function (Browser $browser) use ($privateSsa, $scheduleDate, $endDate) {
             $browser->loginAs($this->therapist)
-                ->visit('/therapist/schedule/create?ssa_id=' . $privateSsa->id)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
                 ->pause(400);
             $browser->script("document.getElementById('schedule_date').value = '$scheduleDate';");
             $browser->script("$('#recurrence_type').val('custom_weekly').trigger('change');");
@@ -499,7 +499,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
         $this->browse(function (Browser $browser) use ($privateSsa, $scheduleDate) {
             $browser->loginAs($this->therapist)
-                ->visit('/therapist/schedule/create?ssa_id=' . $privateSsa->id)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
                 ->pause(400);
             $browser->script("document.getElementById('schedule_date').value = '$scheduleDate';");
             // First select custom_weekly
@@ -521,7 +521,7 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
 
         $this->browse(function (Browser $browser) use ($privateSsa, $scheduleDate, $endDate) {
             $browser->loginAs($this->therapist)
-                ->visit('/therapist/schedule/create?ssa_id=' . $privateSsa->id)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
                 ->pause(400);
             $browser->script("document.getElementById('schedule_date').value = '$scheduleDate';");
             $browser->script("document.getElementById('start_time').value = '09:00';");

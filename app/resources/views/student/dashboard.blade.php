@@ -84,7 +84,7 @@
                                             </div>
                                             @if ($schedule['school'])
                                                 <div class="text-sm">
-                                                    <span class="text-foreground/70">School:</span>
+                                                    <span class="text-foreground/70">School/Family:</span>
                                                     <span
                                                         class="font-medium text-foreground ml-1">{{ $schedule['school'] }}</span>
                                                 </div>

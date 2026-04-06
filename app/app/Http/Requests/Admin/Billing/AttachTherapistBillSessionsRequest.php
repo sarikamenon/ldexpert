@@ -62,4 +62,3 @@ final class AttachTherapistBillSessionsRequest extends FormRequest
         });
     }
 }
-

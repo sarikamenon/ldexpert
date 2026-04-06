@@ -18,7 +18,7 @@
                 <p class="font-medium">{{ $lead->email ?? '—' }}</p>
             </div>
             <div>
-                <span class="text-foreground/60">School</span>
+                <span class="text-foreground/60">School/Family</span>
                 <p class="font-medium">{{ $lead->school?->display_name ?? '—' }}</p>
             </div>
             <div>
@@ -57,10 +57,10 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <x-input-label for="school_id" value="School *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="school_help">School where the student is enrolled</p>
-                    <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School" aria-describedby="school_help">
-                        <option value="">Select School</option>
+                    <x-input-label for="school_id" value="School/Family *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="school_help">School or family where the student is enrolled</p>
+                    <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School/Family" aria-describedby="school_help">
+                        <option value="">Select School/Family</option>
                         @foreach ($schools as $school)
                             <option value="{{ $school->id }}" @selected((string) old('school_id', $lead->school_id) === (string) $school->id)>
                                 {{ $school->display_name }}
@@ -72,7 +72,7 @@
 
                 <div>
                     <x-input-label for="id_number" value="Student ID *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="id_number_help">Unique student identifier from the school</p>
+                    <p class="mt-1 text-xs text-foreground/60" id="id_number_help">Unique student identifier from the school or family</p>
                     <x-ui::input id="id_number" name="id_number" type="text" class="mt-1 block w-full"
                         :value="old('id_number')" aria-describedby="id_number_help" />
                     <x-input-error :messages="$errors->get('id_number')" class="mt-2" />

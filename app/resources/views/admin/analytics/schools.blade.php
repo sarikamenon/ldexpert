@@ -17,7 +17,7 @@
     </x-slot>
 
     <div class="flex items-center justify-between mb-6">
-        <x-page-title title="Schools Analytics" />
+        <x-page-title title="Schools/Families Analytics" />
         <a href="{{ route('admin.analytics.index') }}" class="text-sm text-primary hover:underline">← Back to Overview</a>
     </div>
 
@@ -57,19 +57,19 @@
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <x-admin.widgets.stat-card 
-            title="Total Schools" 
+            title="Total Schools/Families" 
             :value="$analytics['total']" 
             icon="school"
             color="primary" />
         
         <x-admin.widgets.stat-card 
-            title="Active Schools" 
+            title="Active Schools/Families" 
             :value="$analytics['active']" 
             icon="check"
             color="success" />
         
         <x-admin.widgets.stat-card 
-            title="Inactive Schools" 
+            title="Inactive Schools/Families" 
             :value="$analytics['inactive']" 
             icon="user"
             color="danger" />
@@ -79,7 +79,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <!-- Schools by State -->
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Schools by State</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Schools/Families by State</h3>
             <div style="position: relative; height: 300px;">
                 <canvas id="schoolsByStateChart"></canvas>
             </div>
@@ -87,7 +87,7 @@
 
         <!-- Schools by Type -->
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Schools by Type</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Schools/Families by Type</h3>
             <div style="position: relative; height: 300px;">
                 <canvas id="schoolsByTypeChart"></canvas>
             </div>
@@ -103,7 +103,7 @@
 
         <!-- Schools by Manager -->
         <x-ui::card class="p-6 lg:col-span-2">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Top 10 Managers by School Count</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Top 10 Managers by Schools/Families Count</h3>
             <div style="position: relative; height: 300px;">
                 <canvas id="schoolsByManagerChart"></canvas>
             </div>
@@ -112,7 +112,7 @@
 
     <!-- Recent Additions -->
     <x-ui::card class="p-6">
-        <h3 class="text-lg font-semibold text-foreground mb-4">Recent School Additions</h3>
+        <h3 class="text-lg font-semibold text-foreground mb-4">Recent Schools/Families Additions</h3>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="border-b border-border">
@@ -162,7 +162,7 @@
                     data: {
                         labels: byStateData.labels,
                         datasets: [{
-                            label: 'Schools',
+                            label: 'Schools/Families',
                             data: byStateData.data,
                             backgroundColor: novaColors.primary,
                         }]
@@ -198,7 +198,7 @@
                     data: {
                         labels: growthData.labels,
                         datasets: [{
-                            label: 'New Schools',
+                            label: 'New Schools/Families',
                             data: growthData.data,
                             borderColor: novaColors.primary,
                             backgroundColor: novaColors.primaryBg,
@@ -218,7 +218,7 @@
                     data: {
                         labels: byManagerData.labels,
                         datasets: [{
-                            label: 'Schools',
+                            label: 'Schools/Families',
                             data: byManagerData.data,
                             backgroundColor: novaColors.accent,
                         }]

@@ -183,6 +183,7 @@ final class SessionLogCreateTest extends TestCase
             'school_id' => $school->id,
         ]);
         $service = Service::factory()->create([
+            'is_direct_service' => false,
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
         ]);
@@ -195,10 +196,11 @@ final class SessionLogCreateTest extends TestCase
             'end_date' => now()->addMonth(),
         ]);
 
-        $this->seedContracts($therapist, $school, $service, now());
+        $sessionDay = now()->subDay();
+        $this->seedContracts($therapist, $school, $service, $sessionDay);
 
-        $sessionDate = now()->format('Y-m-d');
-        $startTime = now()->setTime(10, 0, 0);
+        $sessionDate = $sessionDay->format('Y-m-d');
+        $startTime = $sessionDay->copy()->setTime(10, 0, 0);
         $endTime = $startTime->copy()->addHour();
 
         $response = $this->actingAs($therapist)
@@ -237,6 +239,7 @@ final class SessionLogCreateTest extends TestCase
             'school_id' => $school->id,
         ]);
         $service = Service::factory()->create([
+            'is_direct_service' => false,
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
         ]);
@@ -249,10 +252,11 @@ final class SessionLogCreateTest extends TestCase
             'end_date' => now()->addMonth(),
         ]);
 
-        $this->seedContracts($therapist, $school, $service, now());
+        $sessionDay = now()->subDay();
+        $this->seedContracts($therapist, $school, $service, $sessionDay);
 
-        $sessionDate = now()->format('Y-m-d');
-        $startTime = now()->setTime(10, 0, 0);
+        $sessionDate = $sessionDay->format('Y-m-d');
+        $startTime = $sessionDay->copy()->setTime(10, 0, 0);
         $endTime = $startTime->copy()->addHour();
 
         $response = $this->actingAs($therapist)
@@ -593,6 +597,7 @@ final class SessionLogCreateTest extends TestCase
         $student = User::factory()->student()->create();
         $student->studentProfile->update(['school_id' => $school->id]);
         $service = Service::factory()->create([
+            'is_direct_service' => false,
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
         ]);
@@ -605,7 +610,7 @@ final class SessionLogCreateTest extends TestCase
             'end_date' => now()->addMonth(),
         ]);
 
-        $sessionDate = now();
+        $sessionDate = now()->subDay();
 
         // Create active contracts but WITHOUT service rates
         $therapistProfile = $therapist->therapistProfile

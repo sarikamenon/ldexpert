@@ -19,7 +19,7 @@ uses(RefreshDatabase::class);
 /**
  * Helper: base DataTables POST payload.
  *
- * @param array<string, mixed> $filters
+ * @param  array<string, mixed>  $filters
  * @return array<string, mixed>
  */
 function dtPayload(array $filters = []): array

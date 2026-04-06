@@ -8,7 +8,6 @@ use App\Constants\UsStates;
 use App\Constants\UsTimezones;
 use App\DataTables\Transformers\SchoolRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
-use App\Support\SystemAdmin;
 use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
@@ -34,6 +33,7 @@ use App\Http\Requests\Admin\School\UpdateSchoolRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\School;
+use App\Support\SystemAdmin;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -127,7 +127,7 @@ final class SchoolController extends Controller
 
         return redirect()
             ->route('admin.schools.index')
-            ->with('status', 'School added successfully.');
+            ->with('status', 'School/family added successfully.');
     }
 
     public function edit(School $school): View
@@ -148,7 +148,7 @@ final class SchoolController extends Controller
 
         return redirect()
             ->route('admin.schools.index')
-            ->with('status', 'School information updated successfully.');
+            ->with('status', 'School/family information updated successfully.');
     }
 
     public function updateStatus(ChangeSchoolStatusRequest $request, School $school): JsonResponse
@@ -159,8 +159,8 @@ final class SchoolController extends Controller
         $this->schoolService->changeStatus($school, $dto);
 
         $message = $dto->status->value === 'active'
-            ? 'School activated successfully.'
-            : 'School deactivated successfully.';
+            ? 'School/family activated successfully.'
+            : 'School/family deactivated successfully.';
 
         return response()->json([
             'success' => true,

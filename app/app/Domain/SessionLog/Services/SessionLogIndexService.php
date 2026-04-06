@@ -95,9 +95,9 @@ final class SessionLogIndexService
         return [
             ['key' => 'date_time', 'label' => 'Date & Time / Duration'],
             ['key' => 'entry_info', 'label' => 'Entry Date'],
-            ['key' => 'student_service_school', 'label' => 'Student & School'],
+            ['key' => 'student_service_school', 'label' => 'Student & School/Family'],
             ['key' => 'therapist', 'label' => 'Therapist & Service'],
-            ['key' => 'school_amount', 'label' => 'School Amount'],
+            ['key' => 'school_amount', 'label' => 'School/Family Amount'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],
             ['key' => 'status', 'label' => 'Status'],
             ['key' => 'actions', 'label' => 'Actions'],
@@ -111,7 +111,7 @@ final class SessionLogIndexService
     {
         return [
             ['key' => 'date_time', 'label' => 'Date & Time'],
-            ['key' => 'student_service_school', 'label' => 'Student & School'],
+            ['key' => 'student_service_school', 'label' => 'Student & School/Family'],
             ['key' => 'Service', 'label' => 'Service'],
             ['key' => 'entry_info', 'label' => 'Entry'],
             ['key' => 'therapist_amount', 'label' => 'Therapist Amount'],

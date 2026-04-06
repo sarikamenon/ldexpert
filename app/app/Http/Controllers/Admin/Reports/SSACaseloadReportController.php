@@ -163,7 +163,7 @@ final class SSACaseloadReportController extends Controller
             }
             fputcsv($handle, [
                 'Therapist Name',
-                'School',
+                'School/Family',
                 'Student Name',
                 'Primary Service',
                 'Active SSA Count',

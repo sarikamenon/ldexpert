@@ -48,7 +48,7 @@ it('allows admin to view school contracts index', function () {
     $this->actingAs($admin)
         ->get(route('admin.contracts.schools.index'))
         ->assertOk()
-        ->assertSee('School Contracts');
+        ->assertSee('School/Family Contracts');
 });
 
 it('creates a school contract with services', function () {
@@ -85,7 +85,7 @@ it('creates a school contract with services', function () {
     $this->actingAs($admin)
         ->post(route('admin.contracts.schools.store'), $payload)
         ->assertRedirect(route('admin.contracts.schools.index'))
-        ->assertSessionHas('status', 'School contract created successfully.');
+        ->assertSessionHas('status', 'School/family contract created successfully.');
 
     $this->assertDatabaseHas('school_contracts', [
         'school_id' => $school->id,

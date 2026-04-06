@@ -9,23 +9,23 @@
         @method('PATCH')
     @endif
 
-    {{-- Section A: School Information --}}
+    {{-- Section A: School/Family Information --}}
     <x-ui::card class="p-6">
-        <h3 class="text-lg font-semibold mb-4">School Information</h3>
+        <h3 class="text-lg font-semibold mb-4">School/Family Information</h3>
 
         <div class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <x-input-label for="full_name" value="Full School Name *" />
-                    <p class="mt-1 text-xs text-foreground/60">Complete official name of the school</p>
+                    <x-input-label for="full_name" value="Full School/Family Name *" />
+                    <p class="mt-1 text-xs text-foreground/60">Complete official name of the school or family</p>
                     <x-ui::input id="full_name" name="full_name" type="text" class="mt-1 block w-full"
                         :value="old('full_name', $school->full_name ?? '')" required />
                     <x-input-error :messages="$errors->get('full_name')" class="mt-2" />
                 </div>
 
                 <div>
-                    <x-input-label for="display_name" value="NOVA School Name *" />
-                    <p class="mt-1 text-xs text-foreground/60">Name used within NOVA system for this school</p>
+                    <x-input-label for="display_name" value="NOVA School/Family Name *" />
+                    <p class="mt-1 text-xs text-foreground/60">Name used within NOVA for this school or family</p>
                     <x-ui::input id="display_name" name="display_name" type="text" class="mt-1 block w-full"
                         :value="old('display_name', $school->display_name ?? '')" required />
                     <x-input-error :messages="$errors->get('display_name')" class="mt-2" />
@@ -34,7 +34,7 @@
 
             <div>
                 <x-input-label for="address" value="Address" />
-                <p class="mt-1 text-xs text-foreground/60">Physical address of the school (optional)</p>
+                <p class="mt-1 text-xs text-foreground/60">Physical address of the school or family (optional)</p>
                 <textarea id="address" name="address" rows="3"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('address', $school->address ?? '') }}</textarea>
                 <x-input-error :messages="$errors->get('address')" class="mt-2" />
@@ -43,7 +43,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <x-input-label for="state" value="State *" />
-                    <p class="mt-1 text-xs text-foreground/60">US state where the school is located</p>
+                    <p class="mt-1 text-xs text-foreground/60">US state where the school or family is located</p>
                     <x-ui::select id="state" name="state" class="mt-1" placeholder="Select State">
                         <option value="">Select State</option>
                         @foreach ($states as $code => $label)
@@ -71,7 +71,7 @@
 
                 <div>
                     <x-input-label for="manager_id" value="Manager *" />
-                    <p class="mt-1 text-xs text-foreground/60">Assigned manager for this school</p>
+                    <p class="mt-1 text-xs text-foreground/60">Assigned manager for this school or family</p>
                     <x-ui::select id="manager_id" name="manager_id" class="mt-1" placeholder="Select Manager">
                         <option value="">Select Manager</option>
                         @foreach ($managers as $manager)
@@ -94,7 +94,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <x-input-label for="contact_first_name" value="Primary Contact First Name" />
-                    <p class="mt-1 text-xs text-foreground/60">First name of the primary school contact</p>
+                    <p class="mt-1 text-xs text-foreground/60">First name of the primary school or family contact</p>
                     <x-ui::input id="contact_first_name" name="contact_first_name" type="text"
                         class="mt-1 block w-full" :value="old('contact_first_name', $school->contact_first_name ?? '')" />
                     <x-input-error :messages="$errors->get('contact_first_name')" class="mt-2" />
@@ -102,7 +102,7 @@
 
                 <div>
                     <x-input-label for="contact_last_name" value="Primary Contact Last Name" />
-                    <p class="mt-1 text-xs text-foreground/60">Last name of the primary school contact</p>
+                    <p class="mt-1 text-xs text-foreground/60">Last name of the primary school or family contact</p>
                     <x-ui::input id="contact_last_name" name="contact_last_name" type="text"
                         class="mt-1 block w-full" :value="old('contact_last_name', $school->contact_last_name ?? '')" />
                     <x-input-error :messages="$errors->get('contact_last_name')" class="mt-2" />
@@ -137,17 +137,17 @@
         </div>
     </x-ui::card>
 
-    {{-- Section C: School Characteristics --}}
+    {{-- Section C: School/Family Characteristics --}}
     <x-ui::card class="p-6">
-        <h3 class="text-lg font-semibold mb-4">School Characteristics</h3>
+        <h3 class="text-lg font-semibold mb-4">School/Family Characteristics</h3>
         <div class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <x-input-label for="school_type" value="School Type *" />
-                    <p class="mt-1 text-xs text-foreground/60">Type of educational institution</p>
+                    <x-input-label for="school_type" value="School/Family Type *" />
+                    <p class="mt-1 text-xs text-foreground/60">Type of educational institution or family placement</p>
                     <x-ui::select id="school_type" name="school_type" class="mt-1"
-                        placeholder="Select school type">
-                        <option value="">Select school type</option>
+                        placeholder="Select school/family type">
+                        <option value="">Select school/family type</option>
                         @foreach ($schoolTypes as $type)
                             <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? '') === $type)>
                                 {{ $type }}
@@ -159,15 +159,15 @@
 
                 <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <x-input-label value="Private Student?" />
-                    <p class="mt-1 text-xs text-foreground/60 mb-3">Check if this school serves private students
-                        rather than district-enrolled students.</p>
+                    <p class="mt-1 text-xs text-foreground/60 mb-3">Check if this record is a private family (not a
+                        district-enrolled school).</p>
                     <div class="flex items-center gap-2">
                         <input type="hidden" name="is_private_student" value="0">
                         <input id="is_private_student" name="is_private_student" type="checkbox" value="1"
                             class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
                             @checked(old('is_private_student', $school->is_private_student ?? false))>
                         <label for="is_private_student" class="text-sm font-medium text-foreground/80 cursor-pointer">
-                            Mark as private student school
+                            Private students only (family; not district school)
                         </label>
                     </div>
                     <x-input-error :messages="$errors->get('is_private_student')" class="mt-2" />
@@ -175,7 +175,7 @@
 
                 <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <x-input-label value="Non-Billable Scheduling?" />
-                    <p class="mt-1 text-xs text-foreground/60 mb-3">Check if sessions at this school should not
+                    <p class="mt-1 text-xs text-foreground/60 mb-3">Check if sessions at this school or family should not
                         be included in billing calculations.</p>
                     <div class="flex items-center gap-2">
                         <input type="hidden" name="non_billable_scheduling" value="0">
@@ -192,7 +192,7 @@
             </div>
 
             <div>
-                <x-input-label for="external_emr_name" value="External EMR School Name" />
+                <x-input-label for="external_emr_name" value="External EMR School/Family Name" />
                 <p class="mt-1 text-xs text-foreground/60">Name used in external EMR system (if applicable)</p>
                 <x-ui::input id="external_emr_name" name="external_emr_name" type="text"
                     class="mt-1 block w-full" :value="old('external_emr_name', $school->external_emr_name ?? '')" />
@@ -209,7 +209,7 @@
             </x-ui::button>
         </a>
         <x-ui::button type="submit">
-            {{ $isEdit ? 'Update School' : 'Create School' }}
+            {{ $isEdit ? 'Update School/Family' : 'Create School/Family' }}
         </x-ui::button>
     </div>
 </form>

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Billing\Services;
 
-use App\DTOs\AttachSessionsDTO;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Services\CompanyInfoService;
+use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateTherapistBillDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\SendTherapistBillDTO;
@@ -100,6 +100,7 @@ final class TherapistBillService
             }
 
             $relations = ['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist'];
+
             return $bill->load($relations);
         });
     }

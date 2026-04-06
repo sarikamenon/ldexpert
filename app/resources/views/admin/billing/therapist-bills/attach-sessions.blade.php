@@ -71,13 +71,13 @@
                 </div>
 
                 <div class="space-y-1">
-                    <x-input-label for="filter_school_id" value="School" />
+                    <x-input-label for="filter_school_id" value="School/Family" />
                     <p class="mt-1 text-xs text-foreground/60" id="filter_school_id_help">
-                        Filter by school.
+                        Filter by school or family.
                     </p>
-                    <x-ui::select id="filter_school_id" name="school_id" class="mt-1 block w-full" searchable placeholder="All Schools"
+                    <x-ui::select id="filter_school_id" name="school_id" class="mt-1 block w-full" searchable placeholder="All Schools/Families"
                         aria-describedby="filter_school_id_help">
-                        <option value="">All Schools</option>
+                        <option value="">All Schools/Families</option>
                         @foreach ($schools ?? [] as $school)
                             <option value="{{ $school->id }}" @selected(($filters['school_id'] ?? null) == $school->id)>
                                 {{ $school->display_name }}
@@ -144,7 +144,7 @@
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Student</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Service</th>
-                                <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School</th>
+                                <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School/Family</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Duration</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
                             </tr>

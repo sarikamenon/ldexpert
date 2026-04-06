@@ -89,7 +89,7 @@
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Therapist</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">SSA</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Service</th>
-                    <th class="px-3 py-2 text-left font-semibold text-foreground/70">School</th>
+                    <th class="px-3 py-2 text-left font-semibold text-foreground/70">School/Family</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Status</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Billing</th>
                 </tr>

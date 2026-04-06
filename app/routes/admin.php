@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\LeadNoteController;
 use App\Http\Controllers\Admin\LedgerAccountController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\QGlobRequestController;
 use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
 use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
 use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
@@ -35,7 +36,6 @@ use App\Http\Controllers\Admin\TherapistBillPaymentController;
 use App\Http\Controllers\Admin\TherapistBillPaymentsListController;
 use App\Http\Controllers\Admin\TherapistContractController;
 use App\Http\Controllers\Admin\TherapistController;
-use App\Http\Controllers\Admin\QGlobRequestController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('role:admin')

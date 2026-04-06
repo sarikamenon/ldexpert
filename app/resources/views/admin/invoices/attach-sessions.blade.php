@@ -37,7 +37,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 <div class="space-y-1">
                     <x-input-label for="filter_therapist_id" value="Therapist" />
-                    <p class="mt-1 text-xs text-foreground/60" id="filter_therapist_id_help">Filter by therapist for this school.</p>
+                    <p class="mt-1 text-xs text-foreground/60" id="filter_therapist_id_help">Filter by therapist for this school or family.</p>
                     <x-ui::select id="filter_therapist_id" name="therapist_id" class="mt-1 block w-full" searchable placeholder="All Therapists" aria-describedby="filter_therapist_id_help">
                         <option value="">All Therapists</option>
                         @foreach ($therapists ?? [] as $t)
@@ -47,7 +47,7 @@
                 </div>
                 <div class="space-y-1">
                     <x-input-label for="filter_student_id" value="Student" />
-                    <p class="mt-1 text-xs text-foreground/60" id="filter_student_id_help">Filter by student for this school.</p>
+                    <p class="mt-1 text-xs text-foreground/60" id="filter_student_id_help">Filter by student for this school or family.</p>
                     <x-ui::select id="filter_student_id" name="student_id" class="mt-1 block w-full" searchable placeholder="All Students" aria-describedby="filter_student_id_help">
                         <option value="">All Students</option>
                         @foreach ($students ?? [] as $s)
@@ -110,7 +110,7 @@
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Student</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Service</th>
-                                <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School</th>
+                                <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School/Family</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Duration</th>
                                 <th scope="col" class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
                             </tr>
@@ -140,7 +140,7 @@
             @else
                 <x-ui::empty-state
                     title="No sessions found"
-                    description="No session logs match the current filters, or there are no uninvoiced sessions for this school in the selected period."
+                    description="No session logs match the current filters, or there are no uninvoiced sessions for this school or family in the selected period."
                 />
             @endif
 

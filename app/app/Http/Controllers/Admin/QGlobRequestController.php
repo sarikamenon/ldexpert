@@ -106,5 +106,4 @@ final class QGlobRequestController extends Controller
             ->route('admin.qglob-requests.show', $qglob_request)
             ->with('status', 'Request updated.');
     }
-
 }

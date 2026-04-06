@@ -11,7 +11,7 @@
         * **Name:** {{ $lead->full_name }}
         * **Email:** {{ $lead->email ?? 'Not provided' }}
         * **Status:** {{ $lead->status->label() }}
-        * **School:** {{ $lead->school?->display_name ?? 'Not assigned' }}
+        * **{{ ($lead->school?->is_private_student ?? false) ? 'Family' : 'School' }}:** {{ $lead->school?->display_name ?? 'Not assigned' }}
         * **Follow-up Date:** {{ $lead->follow_up_date?->format('M d, Y') }}
     </x-mail::panel>
 

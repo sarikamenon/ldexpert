@@ -25,11 +25,11 @@
         </div>
     </div>
 
-    {{-- Billing Mode Card (Schools Only) --}}
+    {{-- Billing Mode Card (School/Family entities only) --}}
     @if ($entityType === 'school')
         <x-ui::card class="p-6 mb-6">
             <h2 class="text-lg font-semibold text-foreground mb-4">Billing Mode</h2>
-            <p class="text-xs text-foreground/60 mb-4">Choose how this school is billed. Standard (postpaid) bills after sessions are delivered. Advance (prepaid) bills before sessions occur.</p>
+            <p class="text-xs text-foreground/60 mb-4">Choose how this school or family is billed. Standard (postpaid) bills after sessions are delivered. Advance (prepaid) bills before sessions occur.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <label class="billing-mode-card relative flex items-start gap-4 rounded-lg border-2 p-4 cursor-pointer transition-all hover:border-primary/50" data-mode="standard">

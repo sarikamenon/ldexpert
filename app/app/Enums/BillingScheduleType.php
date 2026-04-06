@@ -12,7 +12,7 @@ enum BillingScheduleType: string
     public function label(): string
     {
         return match ($this) {
-            self::SCHOOL_INVOICE => 'School Invoice',
+            self::SCHOOL_INVOICE => 'School/Family Invoice',
             self::THERAPIST_BILL => 'Therapist Bill',
         };
     }

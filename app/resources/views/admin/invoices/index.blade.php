@@ -16,8 +16,8 @@
     <x-ui::card class="p-6 space-y-4">
         <x-ui::filter-toolbar formId="invoiceFiltersForm">
             <x-slot:filters>
-                <x-ui::select name="school_id" searchable placeholder="All Schools" :inline="true" class="w-40">
-                    <option value="">All Schools</option>
+                <x-ui::select name="school_id" searchable placeholder="All Schools/Families" :inline="true" class="w-40">
+                    <option value="">All Schools/Families</option>
                     @foreach ($schools ?? [] as $school)
                         <option value="{{ $school->id }}" @selected((int) ($filters['school_id'] ?? 0) === $school->id)>
                             {{ $school->display_name }}
@@ -57,7 +57,7 @@
                 <thead>
                     <tr>
                         <th>Invoice #</th>
-                        <th>School</th>
+                        <th>School/Family</th>
                         <th>Period</th>
                         <th>Total</th>
                         <th>Status</th>

@@ -24,7 +24,7 @@ final class SessionLogAdminTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Session Logs');
-        $response->assertSee('School Amount');
+        $response->assertSee('School/Family Amount');
         $response->assertSee('Therapist Amount');
         $response->assertSee('Duration');
     }

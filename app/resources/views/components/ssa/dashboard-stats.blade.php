@@ -40,7 +40,7 @@
             </div>
 
             <div>
-                <p class="text-sm text-foreground/70">School</p>
+                <p class="text-sm text-foreground/70">School/Family</p>
                 @if ($ssa->student->studentProfile?->school)
                     <a href="{{ request()->routeIs('admin.*') ? route('admin.schools.show', $ssa->student->studentProfile->school) : '#' }}"
                         class="text-base font-medium {{ request()->routeIs('admin.*') ? 'text-primary hover:underline' : 'text-foreground' }}">

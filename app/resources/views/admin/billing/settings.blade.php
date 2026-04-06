@@ -12,7 +12,7 @@
 
         <x-ui::card class="p-6 space-y-6 mb-6">
             <h2 class="text-lg font-semibold text-foreground">Standard Billing Defaults</h2>
-            <p class="text-sm text-foreground/60">These defaults are applied when creating new billing schedules for regular schools.</p>
+            <p class="text-sm text-foreground/60">These defaults are applied when creating new billing schedules for regular schools or families.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -98,8 +98,8 @@
         </x-ui::card>
 
         <x-ui::card class="p-6 space-y-6 mb-6">
-            <h2 class="text-lg font-semibold text-foreground">Advance Billing Defaults (Prepaid Schools)</h2>
-            <p class="text-sm text-foreground/60">These defaults are applied to schools with the Private Student flag enabled. They can be overridden per school.</p>
+            <h2 class="text-lg font-semibold text-foreground">Advance Billing Defaults (Prepaid School/Family)</h2>
+            <p class="text-sm text-foreground/60">These defaults are applied to school/family records with the Private Student flag enabled. They can be overridden per record.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>

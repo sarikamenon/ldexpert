@@ -6,7 +6,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
 const entityConfigs = {
     school: {
         routePrefix: '/admin/schools',
-        entityName: 'School',
+        entityName: 'School/Family',
         useFormSubmission: false,
         statusLabels: {
             active: 'Activate',

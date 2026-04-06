@@ -1,5 +1,5 @@
 <x-admin.layouts.app>
-    <x-page-title title="Edit School Contract #{{ $contract->id }}" />
+    <x-page-title title="Edit School/Family Contract #{{ $contract->id }}" />
 
     @if ($errors->any())
         <x-ui::alert variant="danger" class="mb-4">

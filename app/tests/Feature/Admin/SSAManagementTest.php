@@ -154,7 +154,7 @@ test('normalizes one time frequency fields when creating an SSA', function () {
         'frequency' => ServiceFrequency::ONE_TIME->value,
         'sessions_per_frequency' => 1,
         'calculated_minutes' => 45,
-        'tho_minutes' => 45,
+        'tho_minutes' => 2700,
     ]);
 });
 
@@ -196,7 +196,7 @@ test('allows updating an SSA to one time with the same start and end date', func
         ->and($ssa->end_date->format('Y-m-d'))->toBe('2026-02-15')
         ->and($ssa->sessions_per_frequency)->toBe(1)
         ->and($ssa->calculated_minutes)->toBe(50)
-        ->and($ssa->tho_minutes)->toBe(50);
+        ->and($ssa->tho_minutes)->toBe(3000);
 });
 
 test('allows admin to create SSA with therapist', function () {

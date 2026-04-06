@@ -143,7 +143,7 @@ class LedgerAccountController extends Controller
             }
 
             fputcsv($handle, [
-                $accountType === 'schools' ? 'School' : 'Therapist',
+                $accountType === 'schools' ? 'School/Family' : 'Therapist',
                 'Email',
                 'Phone',
                 $accountType === 'schools' ? 'Total Invoiced' : 'Total Billed',
@@ -155,7 +155,7 @@ class LedgerAccountController extends Controller
 
             foreach ($accounts as $account) {
                 $name = $account instanceof School
-                    ? ($account->display_name ?? $account->full_name ?? ('School #'.$account->id))
+                    ? ($account->display_name ?? $account->full_name ?? ('School/Family #'.$account->id))
                     : $account->name;
 
                 fputcsv($handle, [
@@ -180,8 +180,8 @@ class LedgerAccountController extends Controller
     {
         if ($type === 'school') {
             $account = School::findOrFail($id);
-            $accountName = $account->display_name ?? $account->full_name ?? ('School #'.$account->id);
-            $accountType = 'School';
+            $accountName = $account->display_name ?? $account->full_name ?? ('School/Family #'.$account->id);
+            $accountType = 'School/Family';
         } else {
             $account = User::where('role', Role::THERAPIST)->findOrFail($id);
             $accountName = $account->name;

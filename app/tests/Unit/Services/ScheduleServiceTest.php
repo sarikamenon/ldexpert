@@ -154,6 +154,7 @@ final class ScheduleServiceTest extends TestCase
         StudentProfile::factory()->create(['user_id' => $studentUser2->id]);
         $service = Service::factory()->create([
             'is_group_service' => true,
+            'is_direct_service' => true,
         ]);
 
         $this->repository->shouldReceive('validateTherapistAccessToSSA')

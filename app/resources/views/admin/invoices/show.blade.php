@@ -47,6 +47,7 @@
 
             @if ($invoice->isDraft())
                 <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
+                    data-is-private-family="{{ ($invoice->school?->is_private_student ?? false) ? '1' : '0' }}"
                     x-data="{ loading: false }" x-on:submit="loading = true">
                     @csrf
                     <x-ui::button type="submit" variant="success" x-bind:disabled="loading">

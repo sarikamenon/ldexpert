@@ -65,7 +65,7 @@
                             </span>
                         </div>
                         <div>
-                            <span class="text-foreground/70 block mb-1">School:</span>
+                            <span class="text-foreground/70 block mb-1">School/Family:</span>
                             <span class="font-medium text-foreground">
                                 {{ $currentSsa->student?->studentProfile?->school?->display_name ?? 'N/A' }}
                             </span>

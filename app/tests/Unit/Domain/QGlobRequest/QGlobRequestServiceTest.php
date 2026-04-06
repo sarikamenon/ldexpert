@@ -35,7 +35,7 @@ final class QGlobRequestServiceTest extends TestCase
     {
         $filters = new QGlobRequestFilterDTO(null, null, null, null);
         $params = new DataTablesParamsDTO(1, 0, 10, null, null, 'asc');
-        $rows = new EloquentCollection();
+        $rows = new EloquentCollection;
 
         $repo = Mockery::mock(QGlobRequestRepositoryInterface::class);
         $repo->expects('listForDataTables')

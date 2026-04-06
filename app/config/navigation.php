@@ -9,7 +9,7 @@ return [
                 'active' => 'dashboard',
             ],
             [
-                'label' => 'Schools',
+                'label' => 'Schools/Families',
                 'route' => 'admin.schools.index',
                 'active' => ['admin.schools.*', 'admin.contracts.schools.*'],
                 'children' => [

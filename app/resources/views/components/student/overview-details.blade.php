@@ -38,12 +38,12 @@
         </dl>
     </x-ui::card>
 
-    {{-- Section B: School & Academic Info --}}
+    {{-- Section B: School/Family & Academic Info --}}
     <x-ui::card class="p-6">
-        <h3 class="text-lg font-semibold text-foreground mb-4">School & Academic Information</h3>
+        <h3 class="text-lg font-semibold text-foreground mb-4">School/Family & Academic Information</h3>
         <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
             <div>
-                <dt class="text-sm font-medium text-foreground/70">School</dt>
+                <dt class="text-sm font-medium text-foreground/70">School/Family</dt>
                 <dd class="mt-1 text-sm text-foreground">
                     @if ($context === 'admin' && $student->studentProfile?->school)
                         <a href="{{ route('admin.schools.show', $student->studentProfile->school) }}"

@@ -113,7 +113,7 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
 
             const result = await confirmDialog({
                 title: 'Delete calendar event?',
-                text: 'This event will be removed from the school calendar.',
+                text: 'This event will be removed from the school/family calendar.',
                 confirmButtonText: 'Delete',
             });
 
