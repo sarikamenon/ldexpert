@@ -5,9 +5,19 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
-            <div class="mb-6">
-                <h1 class="text-xl font-semibold text-foreground">Schedule Calendar</h1>
-                <p class="text-sm text-foreground/60">View your schedules in day, week, or month format.</p>
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h1 class="text-xl font-semibold text-foreground">Schedule Calendar</h1>
+                    <p class="text-sm text-foreground/60">View your schedules in day, week, or month format.</p>
+                </div>
+                <button id="addScheduleButton" type="button" data-create-base="{{ route('therapist.schedule.create') }}"
+                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
+                    @if ($activeSSAs->count() === 0) disabled title="No active SSAs available" @endif>
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add New Schedule
+                </button>
             </div>
 
             <x-ui::card class="p-6">
@@ -58,6 +68,9 @@
 
             {{-- Schedule Details Modal --}}
             <x-schedule.schedule-details-modal />
+
+            {{-- SSA Selection Modal --}}
+            <x-schedule.ssa-selection-modal :activeSSAs="$activeSSAs" />
         </div>
     </div>
 
