@@ -191,7 +191,7 @@ export function setupStatusChanges(entityType, selector = '.change-status-btn', 
                 },
                 body: JSON.stringify({
                     status,
-                    reason: result.value || null,
+                    reason: (typeof result.value === 'string' && result.value) ? result.value : null,
                 }),
             });
 
