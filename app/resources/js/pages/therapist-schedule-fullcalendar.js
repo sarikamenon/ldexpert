@@ -33,8 +33,16 @@ import { initSelectBoxes } from '../common/select-box';
             },
         });
 
-        // Wire filter changes to refetch events
-        $('#scheduleCalendarFilters').on('change', 'select', function () {
+        // Apply filters on button click
+        $('#applyCalendarFilters').on('click', function () {
+            refetchCalendarEvents(calendar);
+        });
+
+        // Clear all filters and refetch
+        $('#clearCalendarFilters').on('click', function () {
+            $('#filter_student_ids').val(null).trigger('change.select2');
+            $('#filter_status').val(null).trigger('change.select2');
+            $('#filter_billing_status').val(null).trigger('change.select2');
             refetchCalendarEvents(calendar);
         });
 

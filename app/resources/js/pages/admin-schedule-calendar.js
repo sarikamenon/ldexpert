@@ -40,9 +40,11 @@ import { initSelectBoxes } from '../common/select-box';
 
         // Clear all filters and refetch
         $('#clearCalendarFilters').on('click', function () {
-            $('#filter_therapist_ids').val(null).trigger('change');
-            $('#filter_status').val('').trigger('change');
-            $('#filter_billing_status').val('').trigger('change');
+            $('#filter_therapist_ids').val(null).trigger('change.select2');
+            $('#filter_student_id').val(null).trigger('change.select2');
+            $('#filter_school_id').val(null).trigger('change.select2');
+            $('#filter_status').val(null).trigger('change.select2');
+            $('#filter_billing_status').val(null).trigger('change.select2');
             refetchCalendarEvents(calendar);
         });
     });

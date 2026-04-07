@@ -43,6 +43,11 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <div class="flex gap-2">
+                        <x-ui::button type="button" id="applyCalendarFilters">Filter</x-ui::button>
+                        <x-ui::button type="button" variant="secondary" id="clearCalendarFilters">Clear</x-ui::button>
+                    </div>
                 </div>
 
                 {{-- Calendar --}}
