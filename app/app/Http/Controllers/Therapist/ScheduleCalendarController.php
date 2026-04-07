@@ -31,9 +31,11 @@ final class ScheduleCalendarController extends Controller
         $therapist = $request->user();
 
         $students = $this->ssaService->getUniqueStudentsForTherapist($therapist->id);
+        $activeSSAs = $this->ssaService->getActiveSSAsForTherapist($therapist->id);
 
         return view('therapist.schedule.fullcalendar', [
             'students' => $students,
+            'activeSSAs' => $activeSSAs,
         ]);
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Models\Schedule;
+use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -18,6 +19,32 @@ it('allows therapist to view full calendar page', function () {
 
     $response->assertOk();
     $response->assertSee('Schedule Calendar');
+    $response->assertSee('Add New Schedule');
+});
+
+it('shows active SSAs in the SSA selection modal', function () {
+    $therapist = User::factory()->therapist()->create();
+
+    $ssa = ServiceSupportAgreement::factory()->active()->create([
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $response = $this->actingAs($therapist)
+        ->get(route('therapist.schedule-calendar.index'));
+
+    $response->assertOk();
+    $response->assertSee('Select Active SSA');
+    $response->assertSee("SSA #{$ssa->id}");
+});
+
+it('disables add schedule button when therapist has no active SSAs', function () {
+    $therapist = User::factory()->therapist()->create();
+
+    $response = $this->actingAs($therapist)
+        ->get(route('therapist.schedule-calendar.index'));
+
+    $response->assertOk();
+    $response->assertSee('No active SSAs available');
 });
 
 it('forbids admin from viewing therapist full calendar', function () {
