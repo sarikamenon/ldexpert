@@ -7,6 +7,7 @@ namespace Tests\Unit\Services;
 use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Exceptions\BillingWindowClosedException;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 final class BillingEntryWindowServiceTest extends TestCase
@@ -16,6 +17,7 @@ final class BillingEntryWindowServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        Config::set('billing.entry_window_days_after_week_start', 9);
         $this->service = new BillingEntryWindowService;
     }
 
@@ -145,5 +147,15 @@ final class BillingEntryWindowServiceTest extends TestCase
         $this->assertSame('2026-01-26', $array['session_date']);
         $this->assertSame('2026-01-26', $array['week_start']);
         $this->assertIsBool($array['is_within_window']);
+    }
+
+    public function test_cutoff_respects_configured_days_after_week_start(): void
+    {
+        Config::set('billing.entry_window_days_after_week_start', 12);
+        $sessionDate = Carbon::parse('2026-01-26');
+        $result = $this->service->checkWindow($sessionDate);
+
+        $this->assertSame('2026-01-26', $result->weekStart);
+        $this->assertSame('2026-02-07 23:59:59', $result->cutoff);
     }
 }

@@ -13,15 +13,18 @@ final class BillingEntryWindowService
     /**
      * Check whether a session date falls within the billing entry window.
      *
-     * Work week: Monday–Sunday. Cutoff: end of the following Wednesday (app timezone).
+     * Work week: Monday–Sunday. Cutoff: end of day on the day given by
+     * config billing.entry_window_days_after_week_start (days after Monday week start, app timezone).
      */
     public function checkWindow(Carbon $sessionDate, ?Carbon $now = null): BillingEntryWindowDTO
     {
         $appTz = (string) config('app.timezone', 'UTC');
         $now = ($now ?? Carbon::now($appTz))->copy()->setTimezone($appTz);
 
+        $daysAfterWeekStart = max(0, (int) config('billing.entry_window_days_after_week_start', 9));
+
         $weekStart = $sessionDate->copy()->setTimezone($appTz)->startOfWeek(Carbon::MONDAY);
-        $cutoff = $weekStart->copy()->addDays(9)->endOfDay();
+        $cutoff = $weekStart->copy()->addDays($daysAfterWeekStart)->endOfDay();
 
         return new BillingEntryWindowDTO(
             sessionDate: $sessionDate->format('Y-m-d'),
