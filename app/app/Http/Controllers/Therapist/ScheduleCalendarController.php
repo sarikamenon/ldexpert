@@ -13,6 +13,7 @@ use App\Http\Requests\Therapist\ScheduleCalendarEventsRequest;
 use App\Models\Schedule;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class ScheduleCalendarController extends Controller
@@ -22,20 +23,14 @@ final class ScheduleCalendarController extends Controller
         private readonly SSAService $ssaService,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('viewAny', Schedule::class);
 
         /** @var User $therapist */
-        $therapist = request()->user();
+        $therapist = $request->user();
 
-        $students = $this->ssaService
-            ->getActiveSSAsForTherapist($therapist->id)
-            ->pluck('student')
-            ->filter()
-            ->unique('id')
-            ->sortBy('name')
-            ->values();
+        $students = $this->ssaService->getUniqueStudentsForTherapist($therapist->id);
 
         return view('therapist.schedule.fullcalendar', [
             'students' => $students,

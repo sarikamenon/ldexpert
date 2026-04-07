@@ -62,11 +62,14 @@ final class ScheduleCalendarEventTransformer
     /**
      * Colour by status + billing. Cancelled overrides everything; otherwise
      * the billing status owns the colour logic via BillingStatus::calendarColor().
+     *
+     * Hex value required: FullCalendar's JS API accepts only CSS colour strings,
+     * not Tailwind utility classes. #9ca3af = foreground/30 (cancelled/muted).
      */
     private static function eventColor(Schedule $schedule): string
     {
         if ($schedule->status === ScheduleStatus::CANCELLED) {
-            return '#9ca3af';
+            return '#9ca3af'; // foreground/30 — muted cancelled state
         }
 
         return $schedule->billing_status->calendarColor($schedule->status);

@@ -22,19 +22,22 @@ enum BillingStatus: string
     /**
      * Calendar event colour for this billing status within a given schedule status.
      * Cancelled schedules never reach here — the caller handles that case first.
+     *
+     * Hex values are required: FullCalendar's JS API accepts only CSS colour strings,
+     * not Tailwind utility classes. Keep these in sync with the design system palette.
      */
     public function calendarColor(ScheduleStatus $scheduleStatus): string
     {
         return match ($scheduleStatus) {
             ScheduleStatus::COMPLETED => match ($this) {
-                self::BILLED       => '#059669',
-                self::PENDING      => '#d97706',
-                self::NOT_BILLABLE => '#6b7280',
+                self::BILLED       => '#059669', // success-600
+                self::PENDING      => '#d97706', // warning-600
+                self::NOT_BILLABLE => '#6b7280', // foreground/40
             },
             default => match ($this) {
-                self::BILLED       => '#10b981',
-                self::PENDING      => '#5563b8',
-                self::NOT_BILLABLE => '#94a3b8',
+                self::BILLED       => '#10b981', // success-500
+                self::PENDING      => '#5563b8', // primary
+                self::NOT_BILLABLE => '#94a3b8', // foreground/30
             },
         };
     }
