@@ -428,6 +428,13 @@ final class ScheduleController extends Controller
 
         $this->authorize('delete', $schedule);
 
+        if (! $schedule->recurring_batch_number) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Schedule is not part of a recurring series.',
+            ], 422);
+        }
+
         $deletedCount = $this->scheduleService->deleteFutureRecurringSchedules($therapist, $id);
 
         return response()->json([

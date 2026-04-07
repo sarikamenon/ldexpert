@@ -92,7 +92,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Use Tailwind CSS for styling following utility-first approach.
 - Organize JavaScript files by feature/page in `resources/js/pages/`.
 - Use shared utilities in `resources/js/common/`.
-- **Use jQuery for DOM/AJAX interactivity**; avoid vanilla JS for features.
+- **Use vanilla JS for new DOM/AJAX interactivity**. Migrate touched jQuery sections incrementally when modifying existing files.
 - **Keep CSS and JS in separate files**. Use Tailwind for styles.
 
 ## User Interactions & Confirmations

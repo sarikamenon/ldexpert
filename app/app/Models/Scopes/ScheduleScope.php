@@ -93,7 +93,7 @@ final class ScheduleScope extends BaseModelScope
      */
     public static function unbilled(Builder $builder, Model $model): Builder
     {
-        return $builder->where(self::qualify($model, 'billing_status'), '!=', BillingStatus::BILLED->value);
+        return $builder->where(self::qualify($model, 'billing_status'), BillingStatus::PENDING->value);
     }
 
     /**

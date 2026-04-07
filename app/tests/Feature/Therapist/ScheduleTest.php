@@ -549,7 +549,7 @@ final class ScheduleTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertJson(['success' => true]);
-        $this->assertGreaterThanOrEqual(2, $response->json('deleted_count'));
+        $this->assertEquals(2, $response->json('deleted_count'));
 
         // Past schedule should NOT be deleted
         $this->assertDatabaseHas('schedules', ['id' => $pastSchedule->id]);
