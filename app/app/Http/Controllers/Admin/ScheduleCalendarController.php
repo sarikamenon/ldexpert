@@ -27,7 +27,7 @@ final class ScheduleCalendarController extends Controller
 
         $therapists = $this->therapistService->listActiveTherapists();
 
-        return view('admin.schedule-calendar.index', [
+        return view('admin.schedule.calendar.index', [
             'therapists' => $therapists,
         ]);
     }
@@ -39,7 +39,7 @@ final class ScheduleCalendarController extends Controller
         $validated = $request->validated();
 
         $filters = ScheduleFilterDTO::fromRequest([
-            'therapist_id' => $validated['therapist_id'] ?? null,
+            'therapist_ids' => $validated['therapist_ids'] ?? null,
             'student_id' => $validated['student_id'] ?? null,
             'school_id' => $validated['school_id'] ?? null,
             'status' => $validated['status'] ?? null,

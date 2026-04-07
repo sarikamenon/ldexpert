@@ -1,4 +1,5 @@
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from './sweetalert';
+import { getBillingBadge } from './billing-status';
 
 /**
  * Load and display schedule details in the modal.
@@ -90,14 +91,7 @@ function buildStatusBadge(status) {
 }
 
 function buildBillingBadge(billingStatus) {
-    const map = {
-        billed: { label: 'Billed', cls: 'bg-success/10 text-success' },
-        pending: { label: 'Pending', cls: 'bg-warning/10 text-warning' },
-        not_billable: { label: 'Not Billable', cls: 'bg-foreground/10 text-foreground/70' },
-        waived: { label: 'Waived', cls: 'bg-purple-100 text-purple-700' },
-    };
-    const b = map[billingStatus] || { label: billingStatus || '-', cls: 'bg-foreground/10 text-foreground/70' };
-    return `<span class="text-xs font-medium px-2 py-0.5 rounded-full ${b.cls}">${b.label}</span>`;
+    return getBillingBadge(billingStatus);
 }
 
 function buildDetailsHtml(schedule) {

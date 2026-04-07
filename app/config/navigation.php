@@ -271,16 +271,11 @@ return [
             ],
             [
                 'label' => 'Schedule',
-                'route' => 'therapist.schedule.index',
+                'route' => 'therapist.schedule-calendar.index',
                 'active' => ['therapist.schedule.*', 'therapist.schedule-calendar.*'],
                 'children' => [
                     [
                         'label' => 'Calendar',
-                        'route' => 'therapist.schedule.calendar',
-                        'active' => 'therapist.schedule.calendar',
-                    ],
-                    [
-                        'label' => 'Full Calendar',
                         'route' => 'therapist.schedule-calendar.index',
                         'active' => 'therapist.schedule-calendar.*',
                     ],

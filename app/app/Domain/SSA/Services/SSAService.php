@@ -15,6 +15,7 @@ use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
 use App\Exceptions\ContractOverlapException;
 use App\Models\ServiceSupportAgreement;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -181,6 +182,21 @@ final class SSAService
     public function getActiveSSAsForTherapist(int $therapistId): EloquentCollection
     {
         return $this->repository->getActiveSSAsForTherapist($therapistId);
+    }
+
+    /**
+     * Returns unique, sorted students across all active SSAs for a therapist.
+     *
+     * @return Collection<int, User>
+     */
+    public function getUniqueStudentsForTherapist(int $therapistId): Collection
+    {
+        return $this->getActiveSSAsForTherapist($therapistId)
+            ->pluck('student')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
     }
 
     public function findSSAForSchedule(int $ssaId, int $therapistId): ?ServiceSupportAgreement

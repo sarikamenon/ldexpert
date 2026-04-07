@@ -17,7 +17,7 @@ it('allows therapist to view full calendar page', function () {
         ->get(route('therapist.schedule-calendar.index'));
 
     $response->assertOk();
-    $response->assertSee('Full Calendar View');
+    $response->assertSee('Schedule Calendar');
 });
 
 it('forbids admin from viewing therapist full calendar', function () {

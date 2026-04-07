@@ -6,6 +6,10 @@ namespace App\DTOs;
 
 final class ScheduleFilterDTO
 {
+    /**
+     * @param array<int, int>|null $therapistIds
+     * @param array<int, int>|null $studentIds
+     */
     public function __construct(
         public readonly ?string $date = null,
         public readonly ?int $schoolId = null,
@@ -17,6 +21,8 @@ final class ScheduleFilterDTO
         public readonly ?string $dateFrom = null,
         public readonly ?string $dateTo = null,
         public readonly ?int $therapistId = null,
+        public readonly ?array $therapistIds = null,
+        public readonly ?array $studentIds = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -43,6 +49,12 @@ final class ScheduleFilterDTO
             therapistId: isset($data['therapist_id']) && $data['therapist_id'] !== ''
                 ? (int) $data['therapist_id']
                 : null,
+            therapistIds: isset($data['therapist_ids']) && is_array($data['therapist_ids']) && $data['therapist_ids'] !== []
+                ? array_map('intval', $data['therapist_ids'])
+                : null,
+            studentIds: isset($data['student_ids']) && is_array($data['student_ids']) && $data['student_ids'] !== []
+                ? array_map('intval', $data['student_ids'])
+                : null,
         );
     }
 
@@ -60,6 +72,8 @@ final class ScheduleFilterDTO
             'date_from' => $this->dateFrom,
             'date_to' => $this->dateTo,
             'therapist_id' => $this->therapistId,
+            'therapist_ids' => $this->therapistIds,
+            'student_ids' => $this->studentIds,
         ];
     }
 }

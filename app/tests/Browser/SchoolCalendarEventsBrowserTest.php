@@ -48,7 +48,7 @@ class SchoolCalendarEventsBrowserTest extends DuskTestCase
                 ->assertSeeIn('#calendar', 'Winter Break');
 
             $browser->loginAs($therapist)
-                ->visit(route('therapist.schedule.calendar', ['date' => $holidayDate]))
+                ->visit(route('therapist.schedule-calendar.index'))
                 ->waitForText('School Events')
                 ->assertSee('Winter Break');
         });

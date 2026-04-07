@@ -22,24 +22,21 @@ Route::middleware('role:therapist')
 
         // Schedule routes
         Route::prefix('schedule')->name('schedule.')->group(function () {
-            Route::get('calendar', [ScheduleController::class, 'calendar'])->name('calendar');
-            Route::get('calendar-events', [ScheduleController::class, 'getCalendarEvents'])->name('calendar-events');
             Route::get('create', [ScheduleController::class, 'create'])->name('create');
             Route::get('schedules', [ScheduleController::class, 'getSchedules'])->name('schedules');
             Route::get('pending', [ScheduleController::class, 'pending'])->name('pending');
-            Route::get('/', [ScheduleController::class, 'calendar'])->name('index');
             Route::post('/', [ScheduleController::class, 'store'])->name('store');
-            Route::get('{id}/edit', [ScheduleController::class, 'edit'])->name('edit');
-            Route::get('{id}', [ScheduleController::class, 'show'])->name('show');
-            Route::put('{id}', [ScheduleController::class, 'update'])->name('update');
-            Route::delete('{id}', [ScheduleController::class, 'destroy'])->name('destroy');
-            Route::post('{id}/remove-student', [ScheduleController::class, 'removeStudent'])->name('remove-student');
-            Route::put('{id}/billing-status', [ScheduleController::class, 'updateBillingStatus'])->name('update-billing-status');
+            Route::get('{id}/edit', [ScheduleController::class, 'edit'])->name('edit')->whereNumber('id');
+            Route::get('{id}', [ScheduleController::class, 'show'])->name('show')->whereNumber('id');
+            Route::put('{id}', [ScheduleController::class, 'update'])->name('update')->whereNumber('id');
+            Route::delete('{id}', [ScheduleController::class, 'destroy'])->name('destroy')->whereNumber('id');
+            Route::post('{id}/remove-student', [ScheduleController::class, 'removeStudent'])->name('remove-student')->whereNumber('id');
+            Route::put('{id}/billing-status', [ScheduleController::class, 'updateBillingStatus'])->name('update-billing-status')->whereNumber('id');
             Route::post('bulk-billing-status', [ScheduleController::class, 'bulkUpdateBillingStatus'])->name('bulk-billing-status');
         });
 
         // Schedule Full Calendar
-        Route::prefix('schedule-calendar')->name('schedule-calendar.')->group(function () {
+        Route::prefix('schedule/calendar')->name('schedule-calendar.')->group(function () {
             Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
             Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
         });

@@ -13,7 +13,7 @@
                         Update schedule date, time, location, and notes.
                     </p>
                 </div>
-                <a href="{{ route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) }}"
+                <a href="{{ route('therapist.schedule-calendar.index') }}"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                     Back to Calendar
                 </a>

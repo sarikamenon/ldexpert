@@ -20,19 +20,6 @@ final class ScheduleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_therapist_can_view_schedule_calendar(): void
-    {
-        $therapist = User::factory()->create([
-            'role' => Role::THERAPIST,
-        ]);
-
-        $response = $this->actingAs($therapist)
-            ->get(route('therapist.schedule.calendar'));
-
-        $response->assertStatus(200);
-        $response->assertViewIs('therapist.schedule.calendar');
-    }
-
     public function test_non_therapist_cannot_view_schedule_calendar(): void
     {
         $admin = User::factory()->create([
@@ -40,7 +27,7 @@ final class ScheduleTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->get(route('therapist.schedule.calendar'));
+            ->get(route('therapist.schedule-calendar.index'));
 
         $response->assertForbidden();
     }
@@ -251,7 +238,7 @@ final class ScheduleTest extends TestCase
         $response = $this->actingAs($therapist)
             ->post(route('therapist.schedule.store'), $payload);
 
-        $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+        $response->assertRedirect(route('therapist.schedule-calendar.index'));
 
         $this->assertDatabaseHas('schedules', [
             'therapist_id' => $therapist->id,
@@ -474,7 +461,7 @@ final class ScheduleTest extends TestCase
         $response = $this->actingAs($therapist)
             ->put(route('therapist.schedule.update', $schedule->id), $payload);
 
-        $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+        $response->assertRedirect(route('therapist.schedule-calendar.index'));
         $response->assertSessionHas('status', 'Schedule updated successfully.');
 
         $this->assertDatabaseHas('schedules', [

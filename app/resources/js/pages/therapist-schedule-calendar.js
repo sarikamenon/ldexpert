@@ -1,5 +1,6 @@
 import { initSelectBoxes } from '../common/select-box';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
+import { getBillingLabel } from '../common/billing-status';
 
 (function ($) {
     'use strict';
@@ -48,7 +49,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                             <div><div class="text-foreground/70 mb-1">Time</div><div class="text-foreground font-medium">${schedule.start_time_formatted || schedule.start_time || '-'} - ${schedule.end_time_formatted || schedule.end_time || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">Duration</div><div class="text-foreground font-medium">${schedule.duration_formatted || (schedule.duration_minutes != null ? schedule.duration_minutes + 'm' : '-')}</div></div>
                             <div><div class="text-foreground/70 mb-1">Service</div><div class="text-foreground font-medium" title="${schedule.service?.name || '-'}">${schedule.service?.name || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Billing Status</div><div class="text-foreground font-medium">${schedule.billing_status ? schedule.billing_status.replace('_', ' ').toUpperCase() : '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Billing Status</div><div class="text-foreground font-medium">${getBillingLabel(schedule.billing_status)}</div></div>
                             ${schedule.location_details ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Meeting Details</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.location_details}</div></div>` : ''}
                             ${schedule.notes ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Notes</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.notes}</div></div>` : ''}
                         </div>

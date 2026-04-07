@@ -81,7 +81,7 @@ it('returns events in fullcalendar json format', function () {
     ]);
 });
 
-it('filters events by therapist id', function () {
+it('filters events by a single therapist id', function () {
     $admin = scheduleCalendarAdmin();
     $therapist1 = User::factory()->therapist()->create();
     $therapist2 = User::factory()->therapist()->create();
@@ -99,13 +99,38 @@ it('filters events by therapist id', function () {
         ->getJson(route('admin.schedule-calendar.events', [
             'start' => '2026-03-01',
             'end' => '2026-03-31',
-            'therapist_id' => $therapist1->id,
+            'therapist_ids' => [$therapist1->id],
         ]));
 
     $response->assertOk();
     $events = $response->json();
     expect($events)->toHaveCount(1);
     expect($events[0]['extendedProps']['therapist_name'])->toBe($therapist1->name);
+});
+
+it('filters events by multiple therapist ids', function () {
+    $admin = scheduleCalendarAdmin();
+    $therapist1 = User::factory()->therapist()->create();
+    $therapist2 = User::factory()->therapist()->create();
+    $therapist3 = User::factory()->therapist()->create();
+
+    Schedule::factory()->create(['therapist_id' => $therapist1->id, 'schedule_date' => '2026-03-10']);
+    Schedule::factory()->create(['therapist_id' => $therapist2->id, 'schedule_date' => '2026-03-10']);
+    Schedule::factory()->create(['therapist_id' => $therapist3->id, 'schedule_date' => '2026-03-10']);
+
+    $response = $this->actingAs($admin)
+        ->getJson(route('admin.schedule-calendar.events', [
+            'start' => '2026-03-01',
+            'end' => '2026-03-31',
+            'therapist_ids' => [$therapist1->id, $therapist2->id],
+        ]));
+
+    $response->assertOk();
+    $events = $response->json();
+    expect($events)->toHaveCount(2);
+    $therapistNames = collect($events)->pluck('extendedProps.therapist_name');
+    expect($therapistNames)->toContain($therapist1->name);
+    expect($therapistNames)->toContain($therapist2->name);
 });
 
 it('filters events by status', function () {

@@ -193,15 +193,6 @@ class Schedule extends Model
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
-    public function scopeWaived(Builder $query): Builder
-    {
-        return ScheduleScope::waived($query, $this);
-    }
-
-    /**
-     * @param  Builder<Schedule>  $query
-     * @return Builder<Schedule>
-     */
     public function scopeRecurring(Builder $query): Builder
     {
         return ScheduleScope::recurring($query, $this);

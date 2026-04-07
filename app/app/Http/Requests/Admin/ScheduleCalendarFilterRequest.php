@@ -19,7 +19,8 @@ final class ScheduleCalendarFilterRequest extends FormRequest
         return [
             'start' => ['required', 'date'],
             'end' => ['required', 'date', 'after_or_equal:start'],
-            'therapist_id' => ['nullable', 'integer', 'exists:users,id'],
+            'therapist_ids' => ['nullable', 'array'],
+            'therapist_ids.*' => ['integer', 'exists:users,id'],
             'student_id' => ['nullable', 'integer', 'exists:users,id'],
             'school_id' => ['nullable', 'integer', 'exists:schools,id'],
             'status' => ['nullable', 'string'],
