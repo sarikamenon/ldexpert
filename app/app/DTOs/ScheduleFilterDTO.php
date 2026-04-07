@@ -7,8 +7,8 @@ namespace App\DTOs;
 final class ScheduleFilterDTO
 {
     /**
-     * @param array<int, int>|null $therapistIds
-     * @param array<int, int>|null $studentIds
+     * @param  array<int, int>|null  $therapistIds
+     * @param  array<int, int>|null  $studentIds
      */
     public function __construct(
         public readonly ?string $date = null,

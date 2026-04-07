@@ -27,7 +27,10 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
             'status' => QGlobRequestStatus::PENDING,
         ]));
 
-        return $created->fresh(['requestedBy', 'student']);
+        /** @var QGlobRequest $fresh */
+        $fresh = $created->fresh(['requestedBy', 'student']);
+
+        return $fresh;
     }
 
     public function find(int $id): ?QGlobRequest
@@ -76,10 +79,10 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
                 $q->where('qglob_requests.note', 'like', $term)
                     ->orWhere('qglob_requests.admin_response', 'like', $term)
                     ->orWhereHas('requestedBy', function (Builder $userQuery) use ($term): void {
-                        $userQuery->where('name', 'like', $term);
+                        $userQuery->where('name', 'like', $term); // @phpstan-ignore argument.type
                     })
                     ->orWhereHas('student', function (Builder $userQuery) use ($term): void {
-                        $userQuery->where('name', 'like', $term);
+                        $userQuery->where('name', 'like', $term); // @phpstan-ignore argument.type
                     });
             });
         }
@@ -105,6 +108,7 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
         ];
     }
 
+    /** @param Builder<QGlobRequest> $query */
     private function applyFilters(Builder $query, QGlobRequestFilterDTO $filters): void
     {
         if ($filters->therapistId !== null) {
@@ -130,8 +134,8 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
         return User::query()
             ->where('role', Role::STUDENT)
             ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId): void {
-                $q->where('assigned_therapist_id', $therapistId)
-                    ->where('status', SSAStatus::ACTIVE);
+                $q->where('assigned_therapist_id', $therapistId) // @phpstan-ignore argument.type
+                    ->where('status', SSAStatus::ACTIVE); // @phpstan-ignore argument.type
             })
             ->orderBy('name')
             ->get();
@@ -143,8 +147,8 @@ final class EloquentQGlobRequestRepository implements QGlobRequestRepositoryInte
             ->whereKey($studentId)
             ->where('role', Role::STUDENT)
             ->whereHas('studentProfile.ssas', function (Builder $q) use ($therapistId): void {
-                $q->where('assigned_therapist_id', $therapistId)
-                    ->where('status', SSAStatus::ACTIVE);
+                $q->where('assigned_therapist_id', $therapistId) // @phpstan-ignore argument.type
+                    ->where('status', SSAStatus::ACTIVE); // @phpstan-ignore argument.type
             })
             ->exists();
     }

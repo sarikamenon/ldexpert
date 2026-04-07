@@ -17,7 +17,7 @@ final class QGlobRequestRowTransformer
     public static function transformForAdmin(QGlobRequest $request): array
     {
         $dateCell = self::dateTimeCell($request);
-        $therapistCell = e($request->requestedBy?->name ?? '—');
+        $therapistCell = e($request->requestedBy->name ?? '—');
         $studentCell = self::studentCell($request);
         $statusCell = self::statusCell($request->status);
 

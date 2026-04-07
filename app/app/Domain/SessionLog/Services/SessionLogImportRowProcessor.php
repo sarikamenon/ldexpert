@@ -293,20 +293,20 @@ final class SessionLogImportRowProcessor
         }
 
         return Service::query()
-            ->where('name', $name) // @phpstan-ignore argument.type
-            ->where('status', ServiceStatus::ACTIVE) // @phpstan-ignore argument.type
+            ->where('name', $name)
+            ->where('status', ServiceStatus::ACTIVE)
             ->first();
     }
 
     public function lookupSSA(int $studentId, int $serviceId, string $sessionDate, int $therapistId): ?ServiceSupportAgreement
     {
         return ServiceSupportAgreement::query()
-            ->where('student_id', $studentId) // @phpstan-ignore argument.type
-            ->where('primary_service_id', $serviceId) // @phpstan-ignore argument.type
-            ->where('assigned_therapist_id', $therapistId) // @phpstan-ignore argument.type
-            ->where('start_date', '<=', $sessionDate) // @phpstan-ignore argument.type
-            ->where('end_date', '>=', $sessionDate) // @phpstan-ignore argument.type
-            ->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING]) // @phpstan-ignore argument.type
+            ->where('student_id', $studentId)
+            ->where('primary_service_id', $serviceId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->where('start_date', '<=', $sessionDate)
+            ->where('end_date', '>=', $sessionDate)
+            ->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING])
             ->orderByRaw("FIELD(status, 'active', 'pending')")
             ->orderByDesc('start_date')
             ->first();

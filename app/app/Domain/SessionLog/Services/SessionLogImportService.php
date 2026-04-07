@@ -63,7 +63,7 @@ final class SessionLogImportService
         // Pre-load already-processed reference_ids for duplicate detection
         /** @var array<string, bool> $alreadyProcessed */
         $alreadyProcessed = SessionLogImportRow::query()
-            ->where('status', SessionLogImportRowStatus::DONE) // @phpstan-ignore argument.type
+            ->where('status', SessionLogImportRowStatus::DONE)
             ->whereNotNull('reference_id')
             ->pluck('reference_id')
             ->filter()
@@ -76,8 +76,8 @@ final class SessionLogImportService
         foreach ($rows as $rowNumber => $rowData) {
             $mappedData = $this->mapColumns($rowData, $template);
 
-            $importRow = SessionLogImportRow::where('session_log_import_id', $import->id) // @phpstan-ignore argument.type
-                ->where('row_number', $rowNumber + 1) // @phpstan-ignore argument.type
+            $importRow = SessionLogImportRow::where('session_log_import_id', $import->id)
+                ->where('row_number', $rowNumber + 1)
                 ->first();
 
             if (! $importRow) {

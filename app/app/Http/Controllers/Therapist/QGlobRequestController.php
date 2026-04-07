@@ -110,7 +110,7 @@ final class QGlobRequestController extends Controller
     {
         $this->authorize('view', $qglob_request);
 
-        if ((int) $qglob_request->requested_by_id !== $request->user()->id) {
+        if ((int) $qglob_request->requested_by_id !== $request->user()?->id) {
             abort(403);
         }
 
