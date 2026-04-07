@@ -91,6 +91,24 @@ final class ScheduleScope extends BaseModelScope
      * @param  Builder<Schedule>  $builder
      * @return Builder<Schedule>
      */
+    public static function unbilled(Builder $builder, Model $model): Builder
+    {
+        return $builder->where(self::qualify($model, 'billing_status'), BillingStatus::PENDING->value);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function scheduleDateFrom(Builder $builder, Model $model, string $fromDate): Builder
+    {
+        return $builder->where(self::qualify($model, 'schedule_date'), '>=', $fromDate);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
     public static function recurring(Builder $builder, Model $model): Builder
     {
         return $builder->where(self::qualify($model, 'recurrence_type'), '!=', RecurrenceType::NONE->value);

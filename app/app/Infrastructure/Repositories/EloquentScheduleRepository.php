@@ -235,6 +235,18 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     }
 
     /** @return Collection<int, Schedule> */
+    public function getUnbilledFutureRecurringOccurrencesByBatch(string $recurringBatchNumber, string $fromDate): Collection
+    {
+        return Schedule::query()
+            ->byRecurringBatch($recurringBatchNumber)
+            ->scheduleDateFrom($fromDate)
+            ->unbilled()
+            ->orderBy('schedule_date')
+            ->orderBy('start_time')
+            ->get();
+    }
+
+    /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection
     {
         return Schedule::query()

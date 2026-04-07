@@ -184,9 +184,27 @@ class Schedule extends Model
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
+    public function scopeUnbilled(Builder $query): Builder
+    {
+        return ScheduleScope::unbilled($query, $this);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeNotBillable(Builder $query): Builder
     {
         return ScheduleScope::notBillable($query, $this);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeScheduleDateFrom(Builder $query, string $fromDate): Builder
+    {
+        return ScheduleScope::scheduleDateFrom($query, $this, $fromDate);
     }
 
     /**

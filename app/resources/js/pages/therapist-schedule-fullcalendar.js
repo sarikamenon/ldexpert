@@ -1,5 +1,5 @@
 import { initFullCalendar, refetchCalendarEvents } from '../common/fullcalendar';
-import { openScheduleDetailsModal, bindDeleteHandler } from '../common/schedule-modal';
+import { openScheduleDetailsModal, bindDeleteHandler, bindDeleteFutureHandler } from '../common/schedule-modal';
 import { initSelectBoxes } from '../common/select-box';
 
 (function ($) {
@@ -48,6 +48,11 @@ import { initSelectBoxes } from '../common/select-box';
 
         // Delete handler for therapist
         bindDeleteHandler('/therapist/schedule', function () {
+            refetchCalendarEvents(calendar);
+        });
+
+        // Delete future recurring schedules handler
+        bindDeleteFutureHandler('/therapist/schedule', function () {
             refetchCalendarEvents(calendar);
         });
 

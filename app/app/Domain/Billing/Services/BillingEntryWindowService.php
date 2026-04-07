@@ -21,7 +21,7 @@ final class BillingEntryWindowService
         $appTz = (string) config('app.timezone', 'UTC');
         $now = ($now ?? Carbon::now($appTz))->copy()->setTimezone($appTz);
 
-        $daysAfterWeekStart = max(0, (int) config('billing.entry_window_days_after_week_start', 9));
+        $daysAfterWeekStart = max(0, (int) config('billing.entry_window_days_after_week_start'));
 
         $weekStart = $sessionDate->copy()->setTimezone($appTz)->startOfWeek(Carbon::MONDAY);
         $cutoff = $weekStart->copy()->addDays($daysAfterWeekStart)->endOfDay();
