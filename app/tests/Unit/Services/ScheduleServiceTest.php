@@ -356,7 +356,7 @@ final class ScheduleServiceTest extends TestCase
         $serviceLayer->deleteSchedule($therapist, $schedule->id);
     }
 
-    public function test_delete_schedule_removes_series_if_recurring(): void
+    public function test_delete_schedule_only_removes_single_record_even_if_recurring(): void
     {
         $therapist = User::factory()->create();
         $batchId = 'REC-123';
@@ -368,25 +368,12 @@ final class ScheduleServiceTest extends TestCase
             'parent_schedule_id' => null,
         ]);
 
-        $occurrence = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'recurrence_type' => RecurrenceType::WEEKLY,
-            'recurring_batch_number' => $batchId,
-            'parent_schedule_id' => $parent->id,
-        ]);
-
         $this->repository->shouldReceive('findForTherapist')
+            ->once()
             ->with($therapist, $parent->id)
             ->andReturn($parent);
 
-        $this->repository->shouldReceive('getRecurringOccurrencesByBatch')
-            ->once()
-            ->with($batchId)
-            ->andReturn(collect([$occurrence]));
-
-        $this->repository->shouldReceive('delete')
-            ->once()
-            ->with($occurrence);
+        $this->repository->shouldNotReceive('getRecurringOccurrencesByBatch');
 
         $this->repository->shouldReceive('delete')
             ->once()
@@ -431,6 +418,127 @@ final class ScheduleServiceTest extends TestCase
         $this->expectExceptionMessage('Cannot delete a schedule that has already been billed.');
 
         $serviceLayer->deleteSchedule($therapist, $schedule->id);
+    }
+
+    public function test_delete_future_recurring_schedules_deletes_current_and_future_but_not_past(): void
+    {
+        $therapist = User::factory()->create();
+        $batchId = 'REC-456';
+        $lastWeek = now()->subWeek()->format('Y-m-d');
+        $today = now()->format('Y-m-d');
+        $nextWeek = now()->addWeek()->format('Y-m-d');
+
+        $pastSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => $lastWeek,
+        ]);
+
+        $currentSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => $today,
+        ]);
+
+        $futureSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => $nextWeek,
+        ]);
+
+        $this->repository->shouldReceive('findForTherapist')
+            ->once()
+            ->with($therapist, $currentSchedule->id)
+            ->andReturn($currentSchedule);
+
+        // Repository only returns current + future (unbilled), not past
+        $this->repository->shouldReceive('getUnbilledFutureRecurringOccurrencesByBatch')
+            ->once()
+            ->with($batchId, $today)
+            ->andReturn(collect([$currentSchedule, $futureSchedule]));
+
+        $this->repository->shouldReceive('delete')
+            ->once()
+            ->with($currentSchedule);
+
+        $this->repository->shouldReceive('delete')
+            ->once()
+            ->with($futureSchedule);
+
+        // Past schedule must NOT be deleted
+        $this->repository->shouldNotReceive('delete')
+            ->with($pastSchedule);
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
+
+        $count = $serviceLayer->deleteFutureRecurringSchedules($therapist, $currentSchedule->id);
+
+        $this->assertEquals(2, $count);
+    }
+
+    public function test_delete_future_recurring_schedules_returns_zero_when_no_batch(): void
+    {
+        $therapist = User::factory()->create();
+
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::NONE,
+            'recurring_batch_number' => null,
+        ]);
+
+        $this->repository->shouldReceive('findForTherapist')
+            ->once()
+            ->with($therapist, $schedule->id)
+            ->andReturn($schedule);
+
+        $this->repository->shouldNotReceive('getUnbilledFutureRecurringOccurrencesByBatch');
+        $this->repository->shouldNotReceive('delete');
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
+
+        $count = $serviceLayer->deleteFutureRecurringSchedules($therapist, $schedule->id);
+
+        $this->assertEquals(0, $count);
+    }
+
+    public function test_delete_future_recurring_schedules_returns_zero_when_not_found(): void
+    {
+        $therapist = User::factory()->create();
+
+        $this->repository->shouldReceive('findForTherapist')
+            ->once()
+            ->with($therapist, 999)
+            ->andReturnNull();
+
+        $this->repository->shouldNotReceive('getUnbilledFutureRecurringOccurrencesByBatch');
+        $this->repository->shouldNotReceive('delete');
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository
+        );
+
+        $count = $serviceLayer->deleteFutureRecurringSchedules($therapist, 999);
+
+        $this->assertEquals(0, $count);
     }
 
     public function test_create_schedule_throws_exception_on_therapist_overlap(): void

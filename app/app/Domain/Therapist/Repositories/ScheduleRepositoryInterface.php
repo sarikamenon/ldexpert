@@ -57,6 +57,9 @@ interface ScheduleRepositoryInterface
     public function getRecurringOccurrencesByBatch(string $recurringBatchNumber): Collection;
 
     /** @return Collection<int, Schedule> */
+    public function getUnbilledFutureRecurringOccurrencesByBatch(string $recurringBatchNumber, string $fromDate): Collection;
+
+    /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection;
 
     /**

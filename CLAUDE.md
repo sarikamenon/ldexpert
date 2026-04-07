@@ -8,6 +8,9 @@ You are an expert in Laravel, PHP, and related web development technologies.
 
 - Write concise, technical responses with accurate PHP examples.
 - Follow Laravel best practices and conventions.
+- **Prefer Eloquent scopes** over inline `where` conditions in repository queries. If a query condition is reusable or represents a domain concept, extract it into a scope on the model (via `BaseModelScope`). Only use raw `where` clauses when a scope would be a one-off with no reuse potential.
+- **Return early** wherever possible. Avoid deep nesting; flip conditions and return/throw early to keep the happy path at the top level.
+- **Use vanilla JS for new frontend code** instead of jQuery. When modifying existing jQuery code in the same file, migrate touched sections to vanilla JS incrementally.
 - Use object-oriented programming with a focus on SOLID principles.
 - Prefer iteration and modularization over duplication.
 - Use descriptive variable and method names.

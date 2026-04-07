@@ -376,13 +376,31 @@ final class ScheduleService
                 throw new CannotDeleteBilledScheduleException;
             }
 
-            // If this is the parent of a recurring series, delete all in the batch
-            if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
-                $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                    ->each(fn (Schedule $occurrence) => $this->repository->delete($occurrence));
+            $this->repository->delete($schedule);
+        });
+    }
+
+    public function deleteFutureRecurringSchedules(User $therapist, int $scheduleId): int
+    {
+        return DB::transaction(function () use ($therapist, $scheduleId): int {
+            $schedule = $this->repository->findForTherapist($therapist, $scheduleId);
+
+            if (! $schedule || ! $schedule->recurring_batch_number) {
+                return 0;
             }
 
-            $this->repository->delete($schedule);
+            $futureSchedules = $this->repository->getUnbilledFutureRecurringOccurrencesByBatch(
+                $schedule->recurring_batch_number,
+                $schedule->schedule_date->format('Y-m-d'),
+            );
+
+            if ($futureSchedules->isEmpty()) {
+                return 0;
+            }
+
+            $futureSchedules->each(fn (Schedule $s) => $this->repository->delete($s));
+
+            return $futureSchedules->count();
         });
     }
 

@@ -183,6 +183,14 @@ function renderFooter(schedule, actionUrls) {
         </button>`;
     }
 
+    // Delete Future Schedules button: visible when recurring AND not billed AND has actions
+    if (!isBilled && hasAnyAction && schedule.is_recurring) {
+        buttons += `<button type="button" class="schedule-delete-future-btn inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium transition-colors" data-schedule-id="${schedule.id}">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Delete Future Schedules
+        </button>`;
+    }
+
     // Bill Session button: past + pending billing + URL provided
     if (isPast && isPendingBilling && !isCancelled && actionUrls.billUrl) {
         buttons += `<a href="${actionUrls.billUrl(schedule.id)}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium transition-colors">
@@ -219,8 +227,11 @@ function renderFooter(schedule, actionUrls) {
  * @param {Function} onSuccess - Callback after successful deletion
  */
 export function bindDeleteHandler(deleteUrl, onSuccess) {
-    $(document).on('click', '.schedule-delete-btn', async function () {
-        const scheduleId = $(this).data('schedule-id');
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.schedule-delete-btn');
+        if (!btn) return;
+
+        const scheduleId = btn.dataset.scheduleId;
         if (!scheduleId) return;
 
         const result = await confirmDialog({
@@ -253,6 +264,55 @@ export function bindDeleteHandler(deleteUrl, onSuccess) {
             if (typeof onSuccess === 'function') onSuccess();
         } catch (error) {
             errorAlert(error.message || 'An error occurred while deleting the schedule');
+        }
+    });
+}
+
+/**
+ * Bind the delete-future handler for recurring schedule deletion.
+ *
+ * @param {string} deleteUrl - Base URL for DELETE request (e.g., '/therapist/schedule')
+ * @param {Function} onSuccess - Callback after successful deletion
+ */
+export function bindDeleteFutureHandler(deleteUrl, onSuccess) {
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.schedule-delete-future-btn');
+        if (!btn) return;
+
+        const scheduleId = btn.dataset.scheduleId;
+        if (!scheduleId) return;
+
+        const result = await confirmDialog({
+            title: 'Delete Future Recurring Schedules?',
+            text: 'This will permanently delete this schedule and all future recurring schedules in this series. Past schedules will not be affected. This action cannot be undone.',
+            icon: 'warning',
+            confirmButtonText: 'Yes, delete future schedules',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+        });
+
+        if (!result.isConfirmed) return;
+
+        showLoading('Deleting future schedules...');
+        try {
+            const response = await fetch(`${deleteUrl}/${scheduleId}/future-recurring`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            closeAlert();
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || 'Failed to delete future schedules');
+            }
+            const data = await response.json();
+            successToast(`${data.deleted_count} future schedule(s) deleted successfully.`);
+            window.dispatchEvent(new CustomEvent('close-modal', { detail: 'scheduleDetailsModal' }));
+            if (typeof onSuccess === 'function') onSuccess();
+        } catch (error) {
+            errorAlert(error.message || 'An error occurred while deleting future schedules');
         }
     });
 }

@@ -30,6 +30,7 @@ Route::middleware('role:therapist')
             Route::get('{id}', [ScheduleController::class, 'show'])->name('show')->whereNumber('id');
             Route::put('{id}', [ScheduleController::class, 'update'])->name('update')->whereNumber('id');
             Route::delete('{id}', [ScheduleController::class, 'destroy'])->name('destroy')->whereNumber('id');
+            Route::delete('{id}/future-recurring', [ScheduleController::class, 'destroyFutureRecurring'])->name('destroy-future-recurring')->whereNumber('id');
             Route::post('{id}/remove-student', [ScheduleController::class, 'removeStudent'])->name('remove-student')->whereNumber('id');
             Route::put('{id}/billing-status', [ScheduleController::class, 'updateBillingStatus'])->name('update-billing-status')->whereNumber('id');
             Route::post('bulk-billing-status', [ScheduleController::class, 'bulkUpdateBillingStatus'])->name('bulk-billing-status');

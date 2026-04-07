@@ -415,6 +415,27 @@ final class ScheduleController extends Controller
         ]);
     }
 
+    public function destroyFutureRecurring(Request $request, int $id): JsonResponse
+    {
+        /** @var User $therapist */
+        $therapist = $request->user();
+
+        $schedule = $this->scheduleService->findForTherapist($therapist, $id);
+
+        if (! $schedule) {
+            abort(404);
+        }
+
+        $this->authorize('delete', $schedule);
+
+        $deletedCount = $this->scheduleService->deleteFutureRecurringSchedules($therapist, $id);
+
+        return response()->json([
+            'success' => true,
+            'deleted_count' => $deletedCount,
+        ]);
+    }
+
     public function removeStudent(Request $request, int $id): JsonResponse
     {
         /** @var User $therapist */
@@ -538,6 +559,7 @@ final class ScheduleController extends Controller
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'is_past' => $schedule->schedule_date->lt(now()->startOfDay()),
+                'is_recurring' => $schedule->isRecurring() || $schedule->isOccurrence(),
                 'service' => [
                     'id' => $schedule->service?->id,
                     'name' => $schedule->service?->name,
