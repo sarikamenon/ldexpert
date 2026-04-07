@@ -24,7 +24,7 @@ import { initSelectBoxes } from '../common/select-box';
             },
             getExtraParams: function () {
                 return {
-                    therapist_id: $('#filter_therapist_id').val() || '',
+                    therapist_ids: $('#filter_therapist_ids').val() || [],
                     student_id: $('#filter_student_id').val() || '',
                     school_id: $('#filter_school_id').val() || '',
                     status: $('#filter_status').val() || '',
@@ -33,8 +33,16 @@ import { initSelectBoxes } from '../common/select-box';
             },
         });
 
-        // Wire filter changes to refetch events
-        $('#scheduleCalendarFilters').on('change', 'select', function () {
+        // Apply filters on button click
+        $('#applyCalendarFilters').on('click', function () {
+            refetchCalendarEvents(calendar);
+        });
+
+        // Clear all filters and refetch
+        $('#clearCalendarFilters').on('click', function () {
+            $('#filter_therapist_ids').val(null).trigger('change');
+            $('#filter_status').val('').trigger('change');
+            $('#filter_billing_status').val('').trigger('change');
             refetchCalendarEvents(calendar);
         });
     });

@@ -316,7 +316,7 @@
 
     <div class="flex justify-end gap-3">
         <a
-            href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}">
+            href="{{ route('therapist.schedule-calendar.index') }}">
             <x-ui::button variant="secondary">
                 Cancel
             </x-ui::button>

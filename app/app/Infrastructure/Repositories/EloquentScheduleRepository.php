@@ -8,6 +8,7 @@ use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
+use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
@@ -386,7 +387,14 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                         ->where('end_time', '>', $startTime);
                 });
             })
-            ->where('status', '!=', ScheduleStatus::CANCELLED->value);
+            ->where('status', '!=', ScheduleStatus::CANCELLED->value)
+            // Exclude recurring parent records — they are rule templates, not actual sessions.
+            // Real sessions are either non-recurring (recurrence_type = none) or child occurrences
+            // (parent_schedule_id is not null).
+            ->where(function ($q) {
+                $q->where('recurrence_type', RecurrenceType::NONE->value)
+                    ->orWhereNotNull('parent_schedule_id');
+            });
 
         // Check for therapist or student overlap
         $query->where(function ($q) use ($user) {
@@ -456,7 +464,9 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             $query->where('ssa_id', $filters->ssaId);
         }
 
-        if ($filters->therapistId) {
+        if ($filters->therapistIds !== null) {
+            $query->whereIn('therapist_id', $filters->therapistIds);
+        } elseif ($filters->therapistId) {
             $query->where('therapist_id', $filters->therapistId);
         }
 
@@ -486,11 +496,15 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         $query = Schedule::query()
             ->with(['therapist', 'student', 'service', 'school']);
 
-        if ($filters->therapistId) {
+        if ($filters->therapistIds !== null) {
+            $query->whereIn('therapist_id', $filters->therapistIds);
+        } elseif ($filters->therapistId) {
             $query->where('therapist_id', $filters->therapistId);
         }
 
-        if ($filters->studentId) {
+        if ($filters->studentIds !== null) {
+            $query->whereIn('student_id', $filters->studentIds);
+        } elseif ($filters->studentId) {
             $query->where('student_id', $filters->studentId);
         }
 

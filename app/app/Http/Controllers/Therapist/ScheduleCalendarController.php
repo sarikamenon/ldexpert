@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\ScheduleCalendarEventTransformer;
+use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\DTOs\ScheduleFilterDTO;
 use App\Http\Controllers\Controller;
@@ -18,13 +19,27 @@ final class ScheduleCalendarController extends Controller
 {
     public function __construct(
         private readonly ScheduleService $scheduleService,
+        private readonly SSAService $ssaService,
     ) {}
 
     public function index(): View
     {
         $this->authorize('viewAny', Schedule::class);
 
-        return view('therapist.schedule.fullcalendar');
+        /** @var User $therapist */
+        $therapist = request()->user();
+
+        $students = $this->ssaService
+            ->getActiveSSAsForTherapist($therapist->id)
+            ->pluck('student')
+            ->filter()
+            ->unique('id')
+            ->sortBy('name')
+            ->values();
+
+        return view('therapist.schedule.fullcalendar', [
+            'students' => $students,
+        ]);
     }
 
     public function events(ScheduleCalendarEventsRequest $request): JsonResponse
@@ -36,7 +51,7 @@ final class ScheduleCalendarController extends Controller
 
         $filters = ScheduleFilterDTO::fromRequest([
             'therapist_id' => $therapist->id,
-            'student_id' => $validated['student_id'] ?? null,
+            'student_ids' => $validated['student_ids'] ?? null,
             'school_id' => $validated['school_id'] ?? null,
             'status' => $validated['status'] ?? null,
             'billing_status' => $validated['billing_status'] ?? null,

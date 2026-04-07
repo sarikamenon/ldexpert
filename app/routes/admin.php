@@ -156,7 +156,7 @@ Route::middleware('role:admin')
         Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
         // Schedule Calendar
-        Route::prefix('schedule-calendar')->name('schedule-calendar.')->group(function () {
+        Route::prefix('schedule/calendar')->name('schedule-calendar.')->group(function () {
             Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
             Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
             Route::get('{id}', [ScheduleCalendarController::class, 'show'])->name('show');

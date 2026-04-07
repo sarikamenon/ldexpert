@@ -91,15 +91,6 @@ final class ScheduleScope extends BaseModelScope
      * @param  Builder<Schedule>  $builder
      * @return Builder<Schedule>
      */
-    public static function waived(Builder $builder, Model $model): Builder
-    {
-        return $builder->where(self::qualify($model, 'billing_status'), BillingStatus::WAIVED->value);
-    }
-
-    /**
-     * @param  Builder<Schedule>  $builder
-     * @return Builder<Schedule>
-     */
     public static function recurring(Builder $builder, Model $model): Builder
     {
         return $builder->where(self::qualify($model, 'recurrence_type'), '!=', RecurrenceType::NONE->value);

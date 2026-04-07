@@ -1,10 +1,13 @@
 import { initFullCalendar, refetchCalendarEvents } from '../common/fullcalendar';
 import { openScheduleDetailsModal, bindDeleteHandler } from '../common/schedule-modal';
+import { initSelectBoxes } from '../common/select-box';
 
 (function ($) {
     'use strict';
 
     $(document).ready(function () {
+        initSelectBoxes();
+
         const calendarEl = document.getElementById('fullCalendar');
         if (!calendarEl) return;
 
@@ -21,6 +24,18 @@ import { openScheduleDetailsModal, bindDeleteHandler } from '../common/schedule-
                     billUrl: (id) => `/therapist/session-logs/create/schedule/${id}`,
                 });
             },
+            getExtraParams: function () {
+                return {
+                    student_ids: $('#filter_student_ids').val() || [],
+                    status: $('#filter_status').val() || '',
+                    billing_status: $('#filter_billing_status').val() || '',
+                };
+            },
+        });
+
+        // Wire filter changes to refetch events
+        $('#scheduleCalendarFilters').on('change', 'select', function () {
+            refetchCalendarEvents(calendar);
         });
 
         // Delete handler for therapist

@@ -9,10 +9,9 @@
         {{-- Filters --}}
         <div id="scheduleCalendarFilters" class="flex flex-wrap gap-3 items-end mb-6">
             <div>
-                <label for="filter_therapist_id" class="block text-xs font-medium text-foreground/70 mb-1">Therapist</label>
-                <select id="filter_therapist_id" name="therapist_id" data-select-box data-placeholder="All Therapists"
-                    class="w-48">
-                    <option value="">All Therapists</option>
+                <label for="filter_therapist_ids" class="block text-xs font-medium text-foreground/70 mb-1">Therapist</label>
+                <select id="filter_therapist_ids" name="therapist_ids[]" data-select-box data-placeholder="All Therapists"
+                    data-width="256px" multiple>
                     @foreach ($therapists as $therapist)
                         <option value="{{ $therapist->id }}">{{ $therapist->name }}</option>
                     @endforeach
@@ -21,7 +20,7 @@
 
             <div>
                 <label for="filter_status" class="block text-xs font-medium text-foreground/70 mb-1">Status</label>
-                <select id="filter_status" name="status" data-select-box data-placeholder="All Statuses" class="w-36">
+                <select id="filter_status" name="status" data-select-box data-placeholder="All Statuses" data-width="160px">
                     <option value="">All Statuses</option>
                     @foreach (\App\Enums\ScheduleStatus::cases() as $status)
                         <option value="{{ $status->value }}">{{ $status->label() }}</option>
@@ -32,19 +31,24 @@
             <div>
                 <label for="filter_billing_status" class="block text-xs font-medium text-foreground/70 mb-1">Billing</label>
                 <select id="filter_billing_status" name="billing_status" data-select-box data-placeholder="All Billing"
-                    class="w-36">
+                    data-width="160px">
                     <option value="">All Billing</option>
                     @foreach (\App\Enums\BillingStatus::cases() as $status)
                         <option value="{{ $status->value }}">{{ $status->label() }}</option>
                     @endforeach
                 </select>
             </div>
+
+            <div class="flex gap-2">
+                <x-ui::button type="button" id="applyCalendarFilters">Filter</x-ui::button>
+                <x-ui::button type="button" variant="secondary" id="clearCalendarFilters">Clear</x-ui::button>
+            </div>
         </div>
 
         {{-- Calendar --}}
         <div id="fullCalendar"
             data-events-url="{{ route('admin.schedule-calendar.events') }}"
-            data-details-url="{{ url('/admin/schedule-calendar') }}">
+            data-details-url="{{ url('/admin/schedule/calendar') }}">
         </div>
     </x-ui::card>
 

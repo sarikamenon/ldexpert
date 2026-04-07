@@ -48,7 +48,9 @@ export function initFullCalendar(calendarEl, options) {
             if (typeof options.getExtraParams === 'function') {
                 const extra = options.getExtraParams();
                 Object.entries(extra).forEach(([key, value]) => {
-                    if (value !== null && value !== undefined && value !== '') {
+                    if (Array.isArray(value)) {
+                        value.forEach((v) => params.append(`${key}[]`, String(v)));
+                    } else if (value !== null && value !== undefined && value !== '') {
                         params.append(key, String(value));
                     }
                 });

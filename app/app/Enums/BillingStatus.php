@@ -9,7 +9,6 @@ enum BillingStatus: string
     case PENDING = 'pending';
     case BILLED = 'billed';
     case NOT_BILLABLE = 'not_billable';
-    case WAIVED = 'waived';
 
     public function label(): string
     {
@@ -17,7 +16,26 @@ enum BillingStatus: string
             self::PENDING => 'Pending',
             self::BILLED => 'Billed',
             self::NOT_BILLABLE => 'Not Billable',
-            self::WAIVED => 'Waived',
+        };
+    }
+
+    /**
+     * Calendar event colour for this billing status within a given schedule status.
+     * Cancelled schedules never reach here — the caller handles that case first.
+     */
+    public function calendarColor(ScheduleStatus $scheduleStatus): string
+    {
+        return match ($scheduleStatus) {
+            ScheduleStatus::COMPLETED => match ($this) {
+                self::BILLED       => '#059669',
+                self::PENDING      => '#d97706',
+                self::NOT_BILLABLE => '#6b7280',
+            },
+            default => match ($this) {
+                self::BILLED       => '#10b981',
+                self::PENDING      => '#5563b8',
+                self::NOT_BILLABLE => '#94a3b8',
+            },
         };
     }
 

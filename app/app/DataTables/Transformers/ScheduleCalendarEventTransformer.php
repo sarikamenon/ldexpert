@@ -60,27 +60,15 @@ final class ScheduleCalendarEventTransformer
     }
 
     /**
-     * Color by status + billing combination for clear visual distinction.
-     *
-     * Scheduled: blue shades | Completed: green/teal shades | Cancelled: gray
-     * Billing adjusts the shade within each status group.
+     * Colour by status + billing. Cancelled overrides everything; otherwise
+     * the billing status owns the colour logic via BillingStatus::calendarColor().
      */
     private static function eventColor(Schedule $schedule): string
     {
-        return match ($schedule->status) {
-            ScheduleStatus::CANCELLED => '#9ca3af',
-            ScheduleStatus::COMPLETED => match ($schedule->billing_status) {
-                BillingStatus::BILLED => '#059669',
-                BillingStatus::PENDING => '#d97706',
-                BillingStatus::NOT_BILLABLE => '#6b7280',
-                BillingStatus::WAIVED => '#8b5cf6',
-            },
-            ScheduleStatus::SCHEDULED => match ($schedule->billing_status) {
-                BillingStatus::BILLED => '#10b981',
-                BillingStatus::PENDING => '#5563b8',
-                BillingStatus::NOT_BILLABLE => '#94a3b8',
-                BillingStatus::WAIVED => '#a78bfa',
-            },
-        };
+        if ($schedule->status === ScheduleStatus::CANCELLED) {
+            return '#9ca3af';
+        }
+
+        return $schedule->billing_status->calendarColor($schedule->status);
     }
 }

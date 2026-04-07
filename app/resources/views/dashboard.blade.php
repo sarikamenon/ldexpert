@@ -50,7 +50,7 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Schedule -->
-                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule.calendar', ['date' => now()->format('Y-m-d')])">
+                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule-calendar.index')">
                     @forelse($todaySchedules ?? [] as $schedule)
                         <x-schedule.schedule-list-item :schedule="$schedule" class="mb-3" />
                     @empty
