@@ -21,12 +21,12 @@ final class QGlobRequestFilterDTO
     public static function fromArray(array $data): self
     {
         $status = null;
-        if (isset($data['status']) && $data['status'] !== '' && $data['status'] !== null) {
+        if (filled($data['status'] ?? null)) {
             $status = QGlobRequestStatus::from((string) $data['status']);
         }
 
         return new self(
-            therapistId: isset($data['therapist_id']) && $data['therapist_id'] !== '' && $data['therapist_id'] !== null
+            therapistId: filled($data['therapist_id'] ?? null)
                 ? (int) $data['therapist_id']
                 : null,
             status: $status,

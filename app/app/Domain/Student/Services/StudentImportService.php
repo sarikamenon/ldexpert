@@ -472,6 +472,11 @@ final class StudentImportService
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $mappedData
+     * @param  array<string, mixed>  $template
+     * @return array<string, mixed>
+     */
     private function applyTemplateTransformations(array $mappedData, array $template, School $school): array
     {
         // 1. Apply transformations (combine, split)
@@ -547,7 +552,7 @@ final class StudentImportService
 
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D/', '', $phone);
+        $digits = (string) preg_replace('/\D/', '', $phone);
 
         if (strlen($digits) === 10) {
             return substr($digits, 0, 3).'-'.substr($digits, 3, 3).'-'.substr($digits, 6, 4);

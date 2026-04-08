@@ -111,7 +111,12 @@ final class SSACaseloadReportService
             ServiceFrequency::BI_WEEKLY => 2,
             ServiceFrequency::MONTHLY => 4.33,
             ServiceFrequency::QUARTERLY => 13,
+            ServiceFrequency::ONE_TIME => null,
         };
+
+        if ($weeksPerFrequency === null) {
+            return (float) ($ssa->minutes_per_session * $ssa->sessions_per_frequency);
+        }
 
         return ($ssa->minutes_per_session * $ssa->sessions_per_frequency) / $weeksPerFrequency;
     }

@@ -30,13 +30,13 @@ enum BillingStatus: string
     {
         return match ($scheduleStatus) {
             ScheduleStatus::COMPLETED => match ($this) {
-                self::BILLED       => '#059669', // success-600
-                self::PENDING      => '#d97706', // warning-600
+                self::BILLED => '#059669', // success-600
+                self::PENDING => '#d97706', // warning-600
                 self::NOT_BILLABLE => '#6b7280', // foreground/40
             },
             default => match ($this) {
-                self::BILLED       => '#10b981', // success-500
-                self::PENDING      => '#5563b8', // primary
+                self::BILLED => '#10b981', // success-500
+                self::PENDING => '#5563b8', // primary
                 self::NOT_BILLABLE => '#94a3b8', // foreground/30
             },
         };
