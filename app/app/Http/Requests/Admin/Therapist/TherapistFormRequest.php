@@ -38,6 +38,7 @@ abstract class TherapistFormRequest extends FormRequest
             'personal_email' => ['required', 'email:rfc', $personalEmailRule],
             'phone' => ['required', 'regex:/^[\d-]+$/'],
             'ld_email' => ['nullable', 'email:rfc'],
+            'llc_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string'],
             'comments' => ['nullable', 'string'],
             'position_id' => ['required', 'integer', Rule::exists('positions', 'id')->where('status', 'active')],

@@ -45,6 +45,11 @@
             </div>
 
             <div>
+                <dt class="text-sm font-medium text-foreground/70">LLC Name</dt>
+                <dd class="mt-1 text-sm text-foreground">{{ $therapist->therapistProfile?->llc_name ?? '—' }}</dd>
+            </div>
+
+            <div>
                 <dt class="text-sm font-medium text-foreground/70">Address</dt>
                 <dd class="mt-1 text-sm text-foreground whitespace-pre-line">
                     {{ $therapist->therapistProfile?->address ?? '—' }}</dd>

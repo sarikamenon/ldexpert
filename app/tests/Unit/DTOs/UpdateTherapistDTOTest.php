@@ -62,6 +62,7 @@ final class UpdateTherapistDTOTest extends TestCase
             personalEmail: 'michael.b@example.com',
             phone: '111-222-3333',
             ldEmail: 'michael.b@ldexpert.com',
+            llcName: 'Michael Brown LLC',
             address: '321 Pine St',
             comments: 'New comment',
             positionId: 7,
@@ -90,6 +91,7 @@ final class UpdateTherapistDTOTest extends TestCase
             personalEmail: 'emily.d@example.com',
             phone: '444-555-6666',
             ldEmail: 'emily.d@ldexpert.com',
+            llcName: 'Emily Davis LLC',
             address: '999 Main St',
             comments: 'Test',
             positionId: 1,
@@ -111,6 +113,7 @@ final class UpdateTherapistDTOTest extends TestCase
         $this->assertSame('emily.d@example.com', $array['personal_email']);
         $this->assertSame('444-555-6666', $array['phone']);
         $this->assertSame('emily.d@ldexpert.com', $array['ld_email']);
+        $this->assertSame('Emily Davis LLC', $array['llc_name']);
         $this->assertSame('999 Main St', $array['address']);
         $this->assertSame('Test', $array['comments']);
         $this->assertSame(1, $array['position_id']);
