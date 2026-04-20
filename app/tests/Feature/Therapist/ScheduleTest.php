@@ -477,6 +477,52 @@ final class ScheduleTest extends TestCase
         $this->assertEquals($payload['start_time'], $updatedSchedule->start_time->format('H:i'));
     }
 
+    public function test_editing_recurring_parent_does_not_false_positive_on_own_children(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        $batchNumber = 'REC-TEST-' . time();
+
+        $parent = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchNumber,
+            'parent_schedule_id' => null,
+            'schedule_date' => now()->addDays(1)->format('Y-m-d'),
+            'start_time' => '09:00',
+            'end_time' => '09:30',
+            'recurrence_end_date' => now()->addDays(15)->format('Y-m-d'),
+        ]);
+
+        // Simulate a child occurrence at same time one week later
+        Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchNumber,
+            'parent_schedule_id' => $parent->id,
+            'schedule_date' => now()->addDays(8)->format('Y-m-d'),
+            'start_time' => '09:00',
+            'end_time' => '09:30',
+        ]);
+
+        $payload = [
+            'schedule_date' => now()->addDays(1)->format('Y-m-d'),
+            'start_time' => '09:00',
+            'duration_minutes' => 30,
+            'notes' => 'Updated notes',
+            'recurrence_type' => RecurrenceType::WEEKLY->value,
+            'recurrence_end_date' => now()->addDays(15)->format('Y-m-d'),
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->put(route('therapist.schedule.update', $parent->id), $payload);
+
+        $response->assertRedirect(route('therapist.schedule-calendar.index'));
+        $response->assertSessionHas('status', 'Schedule updated successfully.');
+    }
+
     public function test_therapist_can_delete_schedule(): void
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);

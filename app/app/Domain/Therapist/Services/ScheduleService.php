@@ -303,23 +303,10 @@ final class ScheduleService
             $data['start_time'] = $utcStart->toTimeString();
             $data['end_time'] = $utcEnd->toTimeString();
 
-            // If recurrence type or end date changed, regenerate occurrences
             $recurrenceTypeChanged = array_key_exists('recurrence_type', $data)
                 && $schedule->recurrence_type?->value !== $data['recurrence_type'];
-            $recurrenceEndChanged = array_key_exists('recurrence_end_date', $data)
-                && $schedule->recurrence_end_date?->format('Y-m-d') !== $data['recurrence_end_date'];
 
-            if ($recurrenceTypeChanged || $recurrenceEndChanged) {
-                // Remove existing occurrences (but keep current schedule as parent)
-                if ($schedule->recurring_batch_number) {
-                    $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                        ->each(function (Schedule $occurrence) use ($schedule): void {
-                            if ($occurrence->id !== $schedule->id) {
-                                $this->repository->delete($occurrence);
-                            }
-                        });
-                }
-
+            if ($recurrenceTypeChanged) {
                 if (! isset($data['recurrence_type'])) {
                     $data['recurrence_type'] = RecurrenceType::NONE->value;
                 }
@@ -330,6 +317,17 @@ final class ScheduleService
                     $data['recurring_batch_number'] = null;
                     $data['recurrence_end_date'] = null;
                 }
+            }
+
+            // Always remove existing child occurrences before re-generating so
+            // the overlap check does not false-positive against its own stale children.
+            if ($schedule->isRecurring() && $schedule->recurring_batch_number) {
+                $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
+                    ->each(function (Schedule $occurrence) use ($schedule): void {
+                        if ($occurrence->id !== $schedule->id) {
+                            $this->repository->delete($occurrence);
+                        }
+                    });
             }
 
             $updated = $this->repository->update($schedule, $data);
