@@ -91,6 +91,7 @@ final class CreateTherapistDTOTest extends TestCase
             personalEmail: 'jane.smith@example.com',
             phone: '987-654-3210',
             ldEmail: 'jane.smith@ldexpert.com',
+            llcName: 'Acme Therapy LLC',
             address: '456 Oak Ave',
             comments: 'Another comment',
             positionId: 3,
@@ -123,6 +124,7 @@ final class CreateTherapistDTOTest extends TestCase
             personalEmail: 'alice@example.com',
             phone: '555-555-5555',
             ldEmail: null,
+            llcName: null,
             address: null,
             comments: null,
             positionId: 4,
@@ -146,6 +148,7 @@ final class CreateTherapistDTOTest extends TestCase
         $this->assertSame('alice@example.com', $array['personal_email']);
         $this->assertSame('555-555-5555', $array['phone']);
         $this->assertNull($array['ld_email']);
+        $this->assertNull($array['llc_name']);
         $this->assertNull($array['address']);
         $this->assertNull($array['comments']);
         $this->assertSame(4, $array['position_id']);
