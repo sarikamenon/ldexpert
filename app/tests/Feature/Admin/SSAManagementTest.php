@@ -394,3 +394,102 @@ test('prevents non-admin from viewing SSA show page', function () {
         ->get(route('admin.ssas.show', $ssa))
         ->assertForbidden();
 });
+
+test('show page renders assign therapist button in header when SSA has no therapist', function () {
+    $admin = ssaAdmin();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.show', $ssa))
+        ->assertOk()
+        ->assertSee('assign-therapist-btn', false)
+        ->assertSee('Assign Therapist');
+});
+
+test('show page does not render assign therapist button when therapist is already assigned', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.show', $ssa))
+        ->assertOk()
+        ->assertDontSee('assign-therapist-btn', false);
+});
+
+test('prevents non-admin from assigning therapist to SSA', function () {
+    $therapist = ssaTherapist();
+    $anotherTherapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($therapist)
+        ->post(route('admin.ssas.assign-therapist', $ssa), [
+            'therapist_id' => $anotherTherapist->id,
+        ])
+        ->assertForbidden();
+});
+
+test('prevents non-admin from unassigning therapist from SSA', function () {
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($therapist)
+        ->post(route('admin.ssas.unassign-therapist', $ssa), [
+            'reason' => 'Test',
+        ])
+        ->assertForbidden();
+});
+
+test('assigning therapist to pending SSA auto-activates it', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.assign-therapist', $ssa), [
+            'therapist_id' => $therapist->id,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+});
+
+test('unassigning therapist reverts SSA to pending status', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.unassign-therapist', $ssa), [])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+});
