@@ -129,7 +129,7 @@ final class StripePaymentGateway implements PaymentGatewayInterface
         }
 
         /** @var \Stripe\Checkout\Session $session */
-        $session = $event->data->object; // @phpstan-ignore property.notFound
+        $session = $event->data->object;
 
         if ($session->payment_status !== 'paid') {
             return null;
