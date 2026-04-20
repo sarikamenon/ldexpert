@@ -481,7 +481,7 @@ final class ScheduleTest extends TestCase
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
         $student = User::factory()->create(['role' => Role::STUDENT]);
-        $batchNumber = 'REC-TEST-' . time();
+        $batchNumber = 'REC-TEST-'.time();
 
         $parent = Schedule::factory()->create([
             'therapist_id' => $therapist->id,

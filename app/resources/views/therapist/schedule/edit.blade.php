@@ -29,11 +29,12 @@
                 'studentServiceMappings' => collect(),
                 'isEdit' => true,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
+                'isPrivateStudent' => $isPrivateStudent,
             ])
         </div>
     </div>
 
     <x-slot name="scripts">
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-time.js'])
+        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
     </x-slot>
 </x-app-layout>

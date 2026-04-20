@@ -6,6 +6,8 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\OverlapCheckDTO;
+use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
@@ -389,14 +391,14 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->update(['billing_status' => $status]);
     }
 
-    public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool
+    public function hasOverlap(User $user, OverlapCheckDTO $check, OverlapExclusionsDTO $exclusions): bool
     {
         $query = Schedule::query()
-            ->where('schedule_date', $date)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where(function ($query) use ($startTime, $endTime) {
-                    $query->where('start_time', '<', $endTime)
-                        ->where('end_time', '>', $startTime);
+            ->where('schedule_date', $check->date)
+            ->where(function ($q) use ($check) {
+                $q->where(function ($query) use ($check) {
+                    $query->where('start_time', '<', $check->endTime)
+                        ->where('end_time', '>', $check->startTime);
                 });
             })
             ->where('status', '!=', ScheduleStatus::CANCELLED->value)
@@ -414,8 +416,15 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                 ->orWhere('student_id', $user->id);
         });
 
-        if ($excludeScheduleId) {
-            $query->where('id', '!=', $excludeScheduleId);
+        if ($exclusions->scheduleId !== null) {
+            $query->where('id', '!=', $exclusions->scheduleId);
+        }
+
+        if ($exclusions->batchNumber !== null) {
+            $query->where(function ($q) use ($exclusions) {
+                $q->whereNull('recurring_batch_number')
+                    ->orWhere('recurring_batch_number', '!=', $exclusions->batchNumber);
+            });
         }
 
         return $query->exists();

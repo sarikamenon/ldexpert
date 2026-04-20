@@ -55,6 +55,10 @@ final class UpdateScheduleRequest extends FormRequest
             ],
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
+            'weekly_days' => ['nullable', 'array'],
+            'weekly_days.*' => ['string', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])],
+            'occurrence_dates' => ['nullable', 'array'],
+            'occurrence_dates.*' => ['required', 'date'],
             'location_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'billing_status' => ['nullable', Rule::in($billingStatuses)],
@@ -97,6 +101,20 @@ final class UpdateScheduleRequest extends FormRequest
             if ($studentIds && is_array($studentIds)) {
                 if (! $repository->validateTherapistAccessToStudents($therapist, array_map('intval', $studentIds))) {
                     $validator->errors()->add('student_ids', 'One or more students are not assigned to you.');
+                }
+            }
+
+            // Require end date when a non-none recurrence type is submitted
+            $recurrenceType = $this->input('recurrence_type');
+            if ($recurrenceType && $recurrenceType !== 'none' && ! $this->input('recurrence_end_date')) {
+                $validator->errors()->add('recurrence_end_date', 'An end date is required for recurring schedules.');
+            }
+
+            // Require at least one day selected for custom_weekly
+            if ($recurrenceType === 'custom_weekly') {
+                $weeklyDays = $this->input('weekly_days');
+                if (! is_array($weeklyDays) || count($weeklyDays) === 0) {
+                    $validator->errors()->add('weekly_days', 'Please select at least one day for the custom weekly schedule.');
                 }
             }
 

@@ -10,14 +10,43 @@ $(function () {
     const $occurrenceDatesContainer = $('#occurrence_dates_container');
     const $scheduleDateInput = $('#schedule_date');
     const $form = $('#scheduleCreateForm, #scheduleEditForm');
+    const $warningBanner = $('#recurrence_change_warning');
 
-    // Only proceed if we're on the create form (recurrence options are only shown there)
     if (!$recurrenceTypeSelect.length || !$recurrenceEndDateContainer.length || !$occurrenceDatesContainer.length) {
         return;
     }
 
     const RECURRENCE_TYPE_NONE = 'none';
     const RECURRENCE_TYPE_CUSTOM_WEEKLY = 'custom_weekly';
+
+    // Edit mode: read original values from the warning banner's data attributes.
+    const isEditMode = $warningBanner.length > 0;
+    const originalRecurrenceType = $warningBanner.data('original-recurrence-type') ?? null;
+    const originalRecurrenceEndDate = $warningBanner.data('original-recurrence-end-date') ?? null;
+
+    /**
+     * Show or hide the recurrence change warning banner (edit mode only).
+     */
+    function updateWarningBanner() {
+        if (!isEditMode) {
+            return;
+        }
+
+        const currentType = getRecurrenceType();
+        const currentEndDate = $recurrenceEndDateInput.val() || '';
+
+        const typeChanged = currentType !== originalRecurrenceType;
+        const endDateChanged = currentEndDate !== originalRecurrenceEndDate;
+
+        const selectedDaysChanged = currentType === RECURRENCE_TYPE_CUSTOM_WEEKLY
+            && isEditMode;
+
+        if (typeChanged || endDateChanged || selectedDaysChanged) {
+            $warningBanner.removeClass('hidden');
+        } else {
+            $warningBanner.addClass('hidden');
+        }
+    }
     const $weeklyDaysContainer = $('#weekly_days_container');
 
     /**
@@ -158,7 +187,7 @@ $(function () {
 
         if (end <= schedule) {
             errorAlert('End date must be after the schedule start date.');
-            $recurrenceEndDateInput.focus();
+            $recurrenceEndDateInput[0]?.focus();
             return false;
         }
 
@@ -342,25 +371,21 @@ $(function () {
         });
     }
 
-    /**
-     * Check for overlapping schedules (client-side basic validation)
-     * Note: Full overlap validation will be done on the backend
-     */
-    function checkOverlaps() {
-        // This would require an API call to check existing schedules
-        // For now, we'll rely on backend validation
-        // But we can add visual indicators here if needed
-    }
-
     // Initialize: Check initial recurrence type value
     toggleRecurrenceFields();
 
     // Listen to recurrence type changes
-    $recurrenceTypeSelect.on('change', toggleRecurrenceFields);
+    $recurrenceTypeSelect.on('change', function () {
+        toggleRecurrenceFields();
+        updateWarningBanner();
+    });
 
     // If Select2 is available, also listen to its change event
     if ($recurrenceTypeSelect.data('select2')) {
-        $recurrenceTypeSelect.on('select2:select select2:change', toggleRecurrenceFields);
+        $recurrenceTypeSelect.on('select2:select select2:change', function () {
+            toggleRecurrenceFields();
+            updateWarningBanner();
+        });
     }
 
     /**
@@ -395,6 +420,7 @@ $(function () {
             if (getRecurrenceType() === RECURRENCE_TYPE_CUSTOM_WEEKLY) {
                 updateOccurrenceDates();
             }
+            updateWarningBanner();
         });
     });
 
@@ -404,11 +430,12 @@ $(function () {
         updateOccurrenceDates();
     });
 
-    // Update occurrence dates when end date changes
+    // Update occurrence dates and warning when end date changes
     $recurrenceEndDateInput.on('change', function() {
         if (validateEndDate()) {
             updateOccurrenceDates();
         }
+        updateWarningBanner();
     });
 
     // Validate individual occurrence date changes
@@ -443,7 +470,7 @@ $(function () {
             if (!$recurrenceEndDateInput.val()) {
                 event.preventDefault();
                 errorAlert('End date is required for recurring schedules.');
-                $recurrenceEndDateInput.focus();
+                $recurrenceEndDateInput[0]?.focus();
                 return false;
             }
 
@@ -476,7 +503,7 @@ $(function () {
             if (emptyDates.length > 0) {
                 event.preventDefault();
                 errorAlert('Please fill in all occurrence dates.');
-                emptyDates.first().focus();
+                emptyDates[0]?.focus();
                 return false;
             }
         }
