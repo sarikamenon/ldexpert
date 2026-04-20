@@ -44,10 +44,8 @@ final class SessionLogCreateTest extends TestCase
         $therapist = User::factory()->therapist()->create();
         $school = School::factory()->create();
         $student = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $school->id,
-        ]);
+        $sessionDate = now();
+        $student->studentProfile->update(['school_id' => $school->id]);
         $service = Service::factory()->create([
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
@@ -57,8 +55,8 @@ final class SessionLogCreateTest extends TestCase
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addMonth(),
+            'start_date' => $sessionDate->clone()->subDay(),
+            'end_date' => $sessionDate->clone()->addMonth(),
         ]);
         $schedule = Schedule::factory()->create([
             'therapist_id' => $therapist->id,
@@ -68,10 +66,10 @@ final class SessionLogCreateTest extends TestCase
             'school_id' => $school->id,
         ]);
 
-        $this->seedContracts($therapist, $school, $service, now());
+        $this->seedContracts($therapist, $school, $service, $sessionDate);
 
-        $sessionDate = now()->format('Y-m-d');
-        $startTime = now()->setTime(10, 0, 0);
+        $sessionDateStr = $sessionDate->format('Y-m-d');
+        $startTime = $sessionDate->clone()->setTime(10, 0, 0);
         // Use a non-5-multiple duration (37 minutes) to ensure we no longer round to 5-minute increments
         $endTime = $startTime->copy()->addMinutes(37);
 
@@ -81,7 +79,7 @@ final class SessionLogCreateTest extends TestCase
                 'student_id' => $student->id,
                 'ssa_id' => $ssa->id,
                 'service_id' => $service->id,
-                'session_date' => $sessionDate,
+                'session_date' => $sessionDateStr,
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 50), // Minimum 50 characters
@@ -116,10 +114,8 @@ final class SessionLogCreateTest extends TestCase
         $therapist = User::factory()->therapist()->create();
         $school = School::factory()->create(['is_private_student' => false]);
         $student = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $school->id,
-        ]);
+        $sessionDate = now();
+        $student->studentProfile->update(['school_id' => $school->id]);
         $service = Service::factory()->create([
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
@@ -129,8 +125,8 @@ final class SessionLogCreateTest extends TestCase
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addMonth(),
+            'start_date' => $sessionDate->clone()->subDay(),
+            'end_date' => $sessionDate->clone()->addMonth(),
         ]);
         $schedule = Schedule::factory()->create([
             'therapist_id' => $therapist->id,
@@ -140,10 +136,10 @@ final class SessionLogCreateTest extends TestCase
             'school_id' => $school->id,
         ]);
 
-        $this->seedContracts($therapist, $school, $service, now());
+        $this->seedContracts($therapist, $school, $service, $sessionDate);
 
-        $sessionDate = now()->format('Y-m-d');
-        $startTime = now()->setTime(10, 0, 0);
+        $sessionDateStr = $sessionDate->format('Y-m-d');
+        $startTime = $sessionDate->clone()->setTime(10, 0, 0);
         $endTime = $startTime->copy()->addMinutes(60);
 
         $response = $this->actingAs($therapist)
@@ -152,7 +148,7 @@ final class SessionLogCreateTest extends TestCase
                 'student_id' => $student->id,
                 'ssa_id' => $ssa->id,
                 'service_id' => $service->id,
-                'session_date' => $sessionDate,
+                'session_date' => $sessionDateStr,
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'outcome' => SessionOutcome::NO_SHOW->value,
@@ -506,10 +502,8 @@ final class SessionLogCreateTest extends TestCase
         $therapist = User::factory()->therapist()->create();
         $school = School::factory()->create();
         $student = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $school->id,
-        ]);
+        $sessionDate = now();
+        $student->studentProfile->update(['school_id' => $school->id]);
         $service = Service::factory()->create([
             'min_duration_minutes' => 30,
             'max_duration_minutes' => 120,
@@ -519,8 +513,8 @@ final class SessionLogCreateTest extends TestCase
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addMonth(),
+            'start_date' => $sessionDate->clone()->subDay(),
+            'end_date' => $sessionDate->clone()->addMonth(),
         ]);
         $schedule = Schedule::factory()->create([
             'therapist_id' => $therapist->id,
@@ -531,7 +525,7 @@ final class SessionLogCreateTest extends TestCase
             'billing_status' => BillingStatus::PENDING,
         ]);
 
-        $this->seedContracts($therapist, $school, $service, now());
+        $this->seedContracts($therapist, $school, $service, $sessionDate);
 
         $this->actingAs($therapist)
             ->post(route('therapist.session-logs.store'), [
@@ -539,9 +533,9 @@ final class SessionLogCreateTest extends TestCase
                 'student_id' => $student->id,
                 'ssa_id' => $ssa->id,
                 'service_id' => $service->id,
-                'session_date' => now()->format('Y-m-d'),
-                'start_time' => now()->format('Y-m-d H:i:s'),
-                'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
+                'session_date' => $sessionDate->format('Y-m-d'),
+                'start_time' => $sessionDate->format('Y-m-d H:i:s'),
+                'end_time' => $sessionDate->clone()->addHour()->format('Y-m-d H:i:s'),
                 'notes' => str_repeat('a', 60),
                 'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
