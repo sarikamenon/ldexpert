@@ -97,6 +97,15 @@
                 </div>
             </div>
 
+            {{-- LLC Name --}}
+            <div>
+                <x-input-label for="llc_name" value="LLC Name" />
+                <p id="llc_name_help" class="mt-1 text-xs text-foreground/60">Legal LLC business name used for payroll and contractor records</p>
+                <x-ui::input id="llc_name" name="llc_name" type="text" class="mt-1 block w-full"
+                    :value="old('llc_name', $profile?->llc_name)" aria-describedby="llc_name_help" dusk="therapist-llc-name" />
+                <x-input-error :messages="$errors->get('llc_name')" class="mt-2" />
+            </div>
+
             {{-- Address --}}
             <div>
                 <x-input-label for="address" value="Address" />
