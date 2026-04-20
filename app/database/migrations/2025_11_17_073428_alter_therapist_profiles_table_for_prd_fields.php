@@ -113,35 +113,53 @@ return new class extends Migration
         return false;
     }
 
+    private function hasForeignKey(string $table, string $constraint): bool
+    {
+        $results = DB::select(
+            "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
+             WHERE TABLE_NAME = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = 'FOREIGN KEY'",
+            [$table, $constraint]
+        );
+
+        return ! empty($results);
+    }
+
     /**
      * Reverse the migrations.
      */
     public function down(): void
     {
-        Schema::table('therapist_profiles', function (Blueprint $table) {
-            // Remove indexes
-            $table->dropIndex(['manager_id']);
-            $table->dropIndex(['state']);
-            $table->dropIndex(['position']);
+        // Drop FK first in its own statement — must precede dropping the index it relies on
+        if ($this->hasForeignKey('therapist_profiles', 'therapist_profiles_manager_id_foreign')) {
+            Schema::table('therapist_profiles', function (Blueprint $table) {
+                $table->dropForeign(['manager_id']);
+            });
+        }
 
-            // Drop PRD columns
+        Schema::table('therapist_profiles', function (Blueprint $table) {
+            // Remove plain indexes only if they exist
+            if ($this->hasIndex('therapist_profiles', 'therapist_profiles_manager_id_index')) {
+                $table->dropIndex('therapist_profiles_manager_id_index');
+            }
+            if ($this->hasIndex('therapist_profiles', 'therapist_profiles_state_index')) {
+                $table->dropIndex('therapist_profiles_state_index');
+            }
+            if ($this->hasIndex('therapist_profiles', 'therapist_profiles_position_index')) {
+                $table->dropIndex('therapist_profiles_position_index');
+            }
+
+            // Drop PRD columns (guard against later migrations having already removed them)
             $table->dropSoftDeletes();
-            $table->dropColumn([
-                'employee_type',
-                'title',
-                'first_name',
-                'last_name',
-                'personal_email',
-                'phone',
-                'ld_email',
-                'address',
-                'comments',
-                'position',
-                'state',
-                'timezone',
-                'manager_id',
-                'dob',
-            ]);
+
+            $columnsToDrop = array_filter([
+                'manager_id', 'employee_type', 'title', 'first_name', 'last_name',
+                'personal_email', 'phone', 'ld_email', 'address', 'comments',
+                'position', 'state', 'timezone', 'dob',
+            ], fn (string $col) => Schema::hasColumn('therapist_profiles', $col));
+
+            if ($columnsToDrop !== []) {
+                $table->dropColumn(array_values($columnsToDrop));
+            }
 
             // Restore original columns
             $table->string('phone')->nullable();
