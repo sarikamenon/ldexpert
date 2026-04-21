@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\Role;
 use App\Models\Expense;
 use App\Models\User;
 
@@ -15,7 +14,7 @@ class ExpensePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
@@ -23,7 +22,7 @@ class ExpensePolicy
      */
     public function view(User $user, Expense $expense): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
@@ -31,22 +30,36 @@ class ExpensePolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
      * Determine whether the user can update the expense.
+     *
+     * Expenses auto-created from another module (e.g. a therapist bill payment)
+     * are owned by that source and cannot be edited here.
      */
     public function update(User $user, Expense $expense): bool
     {
-        return $user->role === Role::ADMIN;
+        if ($expense->source_type !== null) {
+            return false;
+        }
+
+        return $user->isAdmin();
     }
 
     /**
      * Determine whether the user can delete the expense.
+     *
+     * Expenses auto-created from another module are removed only by deleting
+     * the source record; admins cannot delete them directly.
      */
     public function delete(User $user, Expense $expense): bool
     {
-        return $user->role === Role::ADMIN;
+        if ($expense->source_type !== null) {
+            return false;
+        }
+
+        return $user->isAdmin();
     }
 }

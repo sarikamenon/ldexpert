@@ -101,6 +101,10 @@ class ExpenseCategoryController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
+        if ($expenseCategory->isProtected()) {
+            $validated['is_active'] = true;
+        }
+
         $expenseCategory->update($validated);
 
         return redirect()
@@ -110,6 +114,14 @@ class ExpenseCategoryController extends Controller
 
     public function toggleStatus(ExpenseCategory $expenseCategory): JsonResponse
     {
+        if ($expenseCategory->isProtected()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This category is required by the system and cannot be deactivated.',
+                'is_active' => $expenseCategory->is_active,
+            ], 403);
+        }
+
         $expenseCategory->update(['is_active' => ! $expenseCategory->is_active]);
 
         $message = $expenseCategory->is_active

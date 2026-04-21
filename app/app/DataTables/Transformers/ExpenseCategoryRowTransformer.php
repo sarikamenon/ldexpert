@@ -14,7 +14,11 @@ final class ExpenseCategoryRowTransformer
      */
     public static function transform(ExpenseCategory $category): array
     {
+        $isProtected = $category->isProtected();
         $name = e($category->name);
+        if ($isProtected) {
+            $name .= ' <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-base text-[10px] font-medium bg-background/subtle text-foreground/70 border border-border" title="Required by the system">System</span>';
+        }
         $slug = '<code class="text-xs bg-background/subtle px-2 py-1 rounded">'.e($category->slug).'</code>';
         $isActive = (bool) $category->is_active;
         $statusBadge = $isActive
@@ -26,15 +30,15 @@ final class ExpenseCategoryRowTransformer
         $editUrl = route('admin.settings.expense-categories.edit', $category);
         $toggleUrl = route('admin.settings.expense-categories.toggle-status', $category);
 
-        $toggleAttrs = ['data-category-id' => (int) $category->id, 'data-status' => $isActive ? 'active' : 'inactive', 'data-toggle-url' => e($toggleUrl), 'class' => 'toggle-expense-category-status'];
-        $toggleBtn = $isActive
-            ? ActionButtons::deactivate('Deactivate Category', $toggleAttrs)
-            : ActionButtons::activate('Activate Category', $toggleAttrs);
+        $buttons = [ActionButtons::edit($editUrl, 'Edit Category')];
+        if (! $isProtected) {
+            $toggleAttrs = ['data-category-id' => (int) $category->id, 'data-status' => $isActive ? 'active' : 'inactive', 'data-toggle-url' => e($toggleUrl), 'class' => 'toggle-expense-category-status'];
+            $buttons[] = $isActive
+                ? ActionButtons::deactivate('Deactivate Category', $toggleAttrs)
+                : ActionButtons::activate('Activate Category', $toggleAttrs);
+        }
 
-        $actions = ActionButtons::wrap(
-            ActionButtons::edit($editUrl, 'Edit Category'),
-            $toggleBtn,
-        );
+        $actions = ActionButtons::wrap(...$buttons);
 
         return [
             $name,

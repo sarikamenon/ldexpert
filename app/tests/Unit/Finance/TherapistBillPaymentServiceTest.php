@@ -8,7 +8,9 @@ use App\Domain\Finance\Services\TherapistBillPaymentService;
 use App\DTOs\RecordTherapistBillPaymentDTO;
 use App\Enums\PaymentMethod;
 use App\Enums\TherapistBillStatus;
+use App\Models\Expense;
 use App\Models\TherapistBill;
+use App\Models\TherapistBillPayment;
 use App\Models\TherapistBillPaymentAllocation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -108,5 +110,72 @@ class TherapistBillPaymentServiceTest extends TestCase
 
         $this->assertFalse($bill->fresh()->isFullyPaid());
         $this->assertEquals(0.0, $bill->fresh()->total_paid);
+    }
+
+    public function test_record_payment_creates_matching_expense_row(): void
+    {
+        $admin = User::factory()->create();
+        $therapist = User::factory()->create(['name' => 'Jane Therapist']);
+
+        $bill = TherapistBill::factory()->create([
+            'therapist_id' => $therapist->id,
+            'status' => TherapistBillStatus::SENT,
+            'total_due' => 500.00,
+        ]);
+
+        $service = app(TherapistBillPaymentService::class);
+
+        $dto = new RecordTherapistBillPaymentDTO(
+            therapistBillId: $bill->id,
+            paidAt: '2026-04-01',
+            amount: 500.00,
+            method: PaymentMethod::DIRECT_DEPOSIT,
+            reference: 'CHK-999',
+            notes: null,
+            recordedById: $admin->id,
+        );
+
+        $payment = $service->recordPayment($dto);
+
+        $this->assertDatabaseHas('expenses', [
+            'source_type' => TherapistBillPayment::class,
+            'source_id' => $payment->id,
+            'expense_category_id' => 10,
+            'amount' => 500.00,
+            'vendor_payee' => 'Jane Therapist',
+            'reference' => 'CHK-999',
+            'created_by_id' => $admin->id,
+        ]);
+    }
+
+    public function test_delete_payment_soft_deletes_linked_expense(): void
+    {
+        $admin = User::factory()->create();
+        $therapist = User::factory()->create();
+
+        $bill = TherapistBill::factory()->create([
+            'therapist_id' => $therapist->id,
+            'status' => TherapistBillStatus::SENT,
+            'total_due' => 300.00,
+        ]);
+
+        $service = app(TherapistBillPaymentService::class);
+
+        $dto = new RecordTherapistBillPaymentDTO(
+            therapistBillId: $bill->id,
+            paidAt: '2026-04-01',
+            amount: 300.00,
+            method: PaymentMethod::DIRECT_DEPOSIT,
+            reference: null,
+            notes: null,
+            recordedById: $admin->id,
+        );
+
+        $payment = $service->recordPayment($dto);
+        $expense = Expense::forSource($payment)->firstOrFail();
+
+        $service->deletePayment($payment);
+
+        $this->assertSoftDeleted('expenses', ['id' => $expense->id]);
     }
 }

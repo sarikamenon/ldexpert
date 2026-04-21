@@ -77,6 +77,7 @@ use App\Infrastructure\Services\Storage\LocalStorageService;
 use App\Infrastructure\Services\Storage\S3StorageService;
 use App\Listeners\SendScheduleNotification;
 use App\Models\BillingSchedule;
+use App\Models\ExpenseCategory;
 use App\Models\Invoice;
 use App\Models\Lead;
 use App\Models\Position;
@@ -98,6 +99,7 @@ use App\Models\TherapistContract;
 use App\Models\TherapistProfile;
 use App\Models\User;
 use App\Policies\BillingSchedulePolicy;
+use App\Policies\ExpenseCategoryPolicy;
 use App\Policies\InvoicePolicy;
 use App\Policies\LeadPolicy;
 use App\Policies\PositionPolicy;
@@ -202,6 +204,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ServiceSupportAgreement::class, SSAPolicy::class);
         Gate::policy(Lead::class, LeadPolicy::class);
         Gate::policy(QGlobRequest::class, QGlobRequestPolicy::class);
+        Gate::policy(ExpenseCategory::class, ExpenseCategoryPolicy::class);
 
         Event::listen(ScheduleCreated::class, SendScheduleNotification::class);
         Event::listen(ScheduleUpdated::class, SendScheduleNotification::class);
