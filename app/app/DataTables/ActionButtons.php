@@ -262,10 +262,11 @@ final class ActionButtons
     ): string {
         $token = e(csrf_token());
         $formClass = self::extractAttr($attrs, 'form-class', 'inline');
+        $formAttrs = self::extractFormAttrs($attrs);
         $classes = self::buildClasses($variant, $attrs);
         $extra = self::renderAttrs($attrs);
 
-        $html = '<form method="POST" action="'.e($actionUrl).'" class="'.$formClass.'">';
+        $html = '<form method="POST" action="'.e($actionUrl).'" class="'.$formClass.'"'.$formAttrs.'>';
         $html .= '<input type="hidden" name="_token" value="'.$token.'">';
         if ($method !== 'POST') {
             $html .= '<input type="hidden" name="_method" value="'.e($method).'">';
@@ -307,6 +308,24 @@ final class ActionButtons
         }
 
         return $default;
+    }
+
+    /**
+     * Extract data-confirm-* keys from attrs and render them as HTML attributes for the form tag.
+     *
+     * @param  array<string, string|int|null>  $attrs
+     */
+    private static function extractFormAttrs(array &$attrs): string
+    {
+        $html = '';
+        foreach (array_keys($attrs) as $key) {
+            if (str_starts_with((string) $key, 'data-confirm-')) {
+                $html .= ' '.e($key).'="'.e((string) $attrs[$key]).'"';
+                unset($attrs[$key]);
+            }
+        }
+
+        return $html;
     }
 
     /**
