@@ -65,4 +65,22 @@ final class SessionLogScope extends BaseModelScope
     {
         return $builder->whereBetween(self::qualify($model, 'submitted_at'), [$startDateTime, $endDateTime]);
     }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function forTherapistBill(Builder $builder, Model $model, int $billId): Builder
+    {
+        return $builder->where(self::qualify($model, 'therapist_bill_id'), $billId);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function withoutTherapistBill(Builder $builder, Model $model): Builder
+    {
+        return $builder->whereNull(self::qualify($model, 'therapist_bill_id'));
+    }
 }

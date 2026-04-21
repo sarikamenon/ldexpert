@@ -56,4 +56,22 @@ trait HasSessionLogScopes
     {
         return SessionLogScope::betweenSubmittedDates($query, $this, $startDateTime, $endDateTime);
     }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForTherapistBill(Builder $query, int $billId): Builder
+    {
+        return SessionLogScope::forTherapistBill($query, $this, $billId);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeWithoutTherapistBill(Builder $query): Builder
+    {
+        return SessionLogScope::withoutTherapistBill($query, $this);
+    }
 }

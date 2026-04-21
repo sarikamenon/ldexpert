@@ -229,6 +229,17 @@ final class TherapistBillService
         });
     }
 
+    public function deleteBill(TherapistBill $bill): void
+    {
+        if ($bill->isPaid()) {
+            throw new \InvalidArgumentException('Paid bills cannot be deleted.');
+        }
+
+        DB::transaction(function () use ($bill): void {
+            $this->repository->delete($bill);
+        });
+    }
+
     public function find(int $id): ?TherapistBill
     {
         return $this->repository->find($id);

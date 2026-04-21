@@ -91,9 +91,11 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
         }
         $recordsFiltered = (clone $baseQuery)->count('therapist_bills.id');
 
-        $orderColumn = $params->orderColumn ?? 'created_at';
-        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
-        $baseQuery->orderBy($orderColumn, $orderDir);
+        if ($params->orderColumn !== null) {
+            $baseQuery->orderBy($params->orderColumn, $params->orderDir === 'desc' ? 'desc' : 'asc');
+        } else {
+            $baseQuery->orderBy('created_at', 'desc');
+        }
 
         /** @var Collection<int, TherapistBill> $rows */
         $rows = (clone $baseQuery)
@@ -134,8 +136,18 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
 
     public function unlinkAllSessionsForTherapistBill(TherapistBill $bill): void
     {
-        SessionLog::where('therapist_bill_id', $bill->id)
+        SessionLog::query()->forTherapistBill($bill->id)
             ->update(['therapist_bill_id' => null]);
+    }
+
+    public function delete(TherapistBill $bill): void
+    {
+        SessionLog::query()->forTherapistBill($bill->id)
+            ->update(['therapist_bill_id' => null]);
+
+        $bill->paymentAllocations()->delete();
+        $bill->ledgerEntries()->delete();
+        $bill->delete();
     }
 
     /**
@@ -186,7 +198,8 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
     public function generateBillNumber(): string
     {
         $date = now()->format('Ymd');
-        $lastBill = TherapistBill::whereDate('created_at', now()->toDateString())
+        $lastBill = TherapistBill::withTrashed()
+            ->whereDate('created_at', now()->toDateString())
             ->orderBy('id', 'desc')
             ->first();
 
