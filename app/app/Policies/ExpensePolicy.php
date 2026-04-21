@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\Role;
 use App\Models\Expense;
 use App\Models\User;
 
@@ -15,7 +14,7 @@ class ExpensePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
@@ -23,7 +22,7 @@ class ExpensePolicy
      */
     public function view(User $user, Expense $expense): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
@@ -31,7 +30,7 @@ class ExpensePolicy
      */
     public function create(User $user): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
@@ -46,7 +45,7 @@ class ExpensePolicy
             return false;
         }
 
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 
     /**
@@ -61,6 +60,6 @@ class ExpensePolicy
             return false;
         }
 
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin();
     }
 }
