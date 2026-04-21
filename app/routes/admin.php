@@ -237,6 +237,7 @@ Route::middleware('role:admin')
             Route::post('{bill}/send', [TherapistBillController::class, 'send'])->name('send');
             Route::get('{bill}/attach-sessions', [TherapistBillController::class, 'attachSessions'])->name('attach-sessions');
             Route::post('{bill}/attach-sessions', [TherapistBillController::class, 'storeAttachedSessions'])->name('attach-sessions.store');
+            Route::delete('{bill}', [TherapistBillController::class, 'destroy'])->name('destroy');
         });
 
         // Therapist Bill Payments

@@ -45,6 +45,17 @@
                     </x-ui::button>
                 </form>
             @endif
+
+            @can('delete', $bill)
+                <form method="POST" action="{{ route('admin.billing.therapist-bills.destroy', $bill) }}"
+                    class="inline" id="deleteBillForm">
+                    @csrf
+                    @method('DELETE')
+                    <x-ui::button type="submit" variant="danger" id="deleteBillBtn">
+                        Delete Bill
+                    </x-ui::button>
+                </form>
+            @endcan
         </x-slot>
     </x-ui::show-header>
 

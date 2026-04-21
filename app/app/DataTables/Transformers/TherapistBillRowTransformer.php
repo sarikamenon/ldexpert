@@ -17,6 +17,7 @@ final class TherapistBillRowTransformer
     {
         $showUrl = route('admin.billing.therapist-bills.show', $bill);
         $downloadUrl = route('admin.billing.therapist-bills.download', $bill);
+        $deleteUrl = route('admin.billing.therapist-bills.destroy', $bill);
 
         $billNumberBtn = '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" title="View Bill" aria-label="View bill '.e($bill->bill_number).'">'.e($bill->bill_number).'</a>';
         $therapistCell = '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($bill->therapist_name ?? '—').'</a>';
@@ -37,6 +38,13 @@ final class TherapistBillRowTransformer
         $actions = ActionButtons::wrap(
             ActionButtons::view($showUrl, 'View Bill'),
             ActionButtons::download($downloadUrl, 'Download PDF'),
+            ...($bill->isPaid() ? [] : [ActionButtons::delete(
+                $deleteUrl,
+                'Delete Bill',
+                'Delete Bill?',
+                'This will unlink all sessions and remove the bill. This cannot be undone.',
+                ['form-class' => 'inline js-therapist-bill-delete-form'],
+            )]),
         );
 
         return [

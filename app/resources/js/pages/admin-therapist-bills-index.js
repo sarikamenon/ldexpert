@@ -1,4 +1,5 @@
 import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { confirmDialog } from '../common/sweetalert';
 
 async function initTherapistBillsTable() {
     const table = document.getElementById('therapistBillsTable');
@@ -13,7 +14,7 @@ async function initTherapistBillsTable() {
         const form = document.getElementById('therapistBillsFiltersForm');
 
         await initServerSideDataTable('#therapistBillsTable', dataUrl, {
-            order: [[0, 'asc']],
+            order: [],
             pageLength: 25,
             columnDefs: [
                 { orderable: false, targets: -1 },
@@ -48,10 +49,31 @@ async function initTherapistBillsTable() {
     }
 }
 
+function initDeleteConfirmation() {
+    const table = document.getElementById('therapistBillsTable');
+    if (!table) return;
+
+    table.addEventListener('submit', async (e) => {
+        const form = e.target.closest('.js-therapist-bill-delete-form');
+        if (!form) return;
+
+        e.preventDefault();
+        const result = await confirmDialog({
+            title: form.dataset.confirmTitle || 'Delete Bill?',
+            text: form.dataset.confirmText || 'This will unlink all sessions and remove the bill. This cannot be undone.',
+            icon: 'warning',
+            confirmButtonText: 'Yes, delete bill',
+            cancelButtonText: 'Cancel',
+        });
+        if (result.isConfirmed) form.submit();
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!document.getElementById('therapistBillsTable')) {
         return;
     }
 
     initTherapistBillsTable();
+    initDeleteConfirmation();
 });

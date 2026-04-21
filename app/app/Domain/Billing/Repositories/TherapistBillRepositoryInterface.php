@@ -73,4 +73,6 @@ interface TherapistBillRepositoryInterface
      * @return LengthAwarePaginator<int, TherapistBill>
      */
     public function getBillsByTherapist(int $therapistId, TherapistBillFilterDTO $filters, int $perPage = 15): LengthAwarePaginator;
+
+    public function delete(TherapistBill $bill): void;
 }

@@ -232,6 +232,23 @@ final class TherapistBillController extends Controller
         }
     }
 
+    public function destroy(TherapistBill $bill): RedirectResponse
+    {
+        $this->authorize('delete', $bill);
+
+        try {
+            $this->billService->deleteBill($bill);
+
+            return redirect()
+                ->route('admin.billing.therapist-bills.index')
+                ->with('success', 'Bill deleted successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->with('error', $e->getMessage());
+        }
+    }
+
     public function download(TherapistBill $bill): Response
     {
         $this->authorize('view', $bill);

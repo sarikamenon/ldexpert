@@ -243,3 +243,80 @@ it('allows admin to send therapist bill', function () {
     expect($bill->status)->toBe(TherapistBillStatus::SENT);
     expect($bill->sent_at)->not->toBeNull();
 });
+
+it('allows admin to delete a draft bill and unlinks sessions', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create();
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+    ]);
+
+    $session = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
+    $session->update(['therapist_bill_id' => $bill->id]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertRedirect(route('admin.billing.therapist-bills.index'));
+    $response->assertSessionHas('success');
+
+    expect(TherapistBill::find($bill->id))->toBeNull();
+    expect(TherapistBill::withTrashed()->find($bill->id))->not->toBeNull();
+    expect($session->fresh()->therapist_bill_id)->toBeNull();
+});
+
+it('allows admin to delete a sent bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::SENT->value,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertRedirect(route('admin.billing.therapist-bills.index'));
+    expect(TherapistBill::withTrashed()->find($bill->id)->deleted_at)->not->toBeNull();
+});
+
+it('prevents admin from deleting a paid bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::PAID->value,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertForbidden();
+    expect(TherapistBill::find($bill->id))->not->toBeNull();
+});
+
+it('prevents therapist from deleting a bill', function () {
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+    ]);
+
+    $response = $this->actingAs($therapist)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertForbidden();
+    expect(TherapistBill::find($bill->id))->not->toBeNull();
+});
