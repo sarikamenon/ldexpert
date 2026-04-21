@@ -6,19 +6,24 @@ namespace App\Domain\Finance\Services;
 
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
 use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
+use App\DTOs\CreateExpenseDTO;
 use App\DTOs\RecordTherapistBillPaymentDTO;
 use App\Enums\TransactionType;
+use App\Models\Expense;
+use App\Models\ExpenseCategory;
 use App\Models\LedgerEntry;
 use App\Models\TherapistBill;
 use App\Models\TherapistBillPayment;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class TherapistBillPaymentService
 {
     public function __construct(
         private readonly TherapistBillPaymentRepositoryInterface $payments,
         private readonly LedgerEntryRepositoryInterface $ledgerEntries,
+        private readonly ExpenseService $expenses,
     ) {}
 
     public function recordPayment(RecordTherapistBillPaymentDTO $dto): TherapistBillPayment
@@ -45,8 +50,35 @@ class TherapistBillPaymentService
 
             $this->createLedgerEntry($payment, $therapistId);
 
+            $this->createLinkedExpense($payment, $bill);
+
             return $payment->load('allocations', 'recordedBy', 'therapistBill');
         });
+    }
+
+    protected function createLinkedExpense(TherapistBillPayment $payment, TherapistBill $bill): void
+    {
+        $categoryId = (int) config('expenses.protected_categories.therapist-payouts');
+        $category = ExpenseCategory::find($categoryId);
+        if ($category === null) {
+            throw new RuntimeException("Expense category #{$categoryId} (therapist payouts) is missing. Run migrations.");
+        }
+
+        /** @var User $therapist */
+        $therapist = $bill->therapist;
+        $therapistName = $therapist->name;
+
+        $dto = new CreateExpenseDTO(
+            expenseCategoryId: (int) $category->id,
+            expenseDate: $payment->paid_at->format('Y-m-d'),
+            amount: (float) $payment->amount,
+            vendorPayee: $therapistName,
+            description: "Payment for therapist bill #{$bill->id}",
+            reference: $payment->reference,
+            createdById: $payment->recorded_by_id,
+        );
+
+        $this->expenses->createExpenseFromSource($dto, $payment);
     }
 
     protected function createLedgerEntry(TherapistBillPayment $payment, int $therapistId): void
@@ -75,9 +107,8 @@ class TherapistBillPaymentService
             $this->payments->deleteAllocationsForPayment($payment);
             $this->payments->softDeletePayment($payment);
 
-            LedgerEntry::where('reference_type', TherapistBillPayment::class)
-                ->where('reference_id', $payment->id)
-                ->delete();
+            Expense::forSource($payment)->delete();
+            LedgerEntry::forReference($payment)->delete();
 
             return true;
         });

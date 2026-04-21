@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\TransactionType;
+use App\Models\Scopes\LedgerEntryScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -65,5 +67,14 @@ class LedgerEntry extends Model
     public function recordedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recorded_by_id');
+    }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeForReference(Builder $query, Model $reference): Builder
+    {
+        return LedgerEntryScope::forReference($query, $reference);
     }
 }

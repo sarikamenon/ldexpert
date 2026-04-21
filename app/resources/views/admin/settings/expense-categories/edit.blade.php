@@ -28,15 +28,27 @@
 
                     <div>
                         <div class="flex items-center gap-3">
-                            <input id="is_active" name="is_active" type="checkbox" value="1"
-                                class="rounded border-border text-primary focus:ring-primary"
-                                {{ old('is_active', $expenseCategory->is_active) ? 'checked' : '' }}>
-                            <div>
-                                <label for="is_active" class="text-sm font-medium text-foreground">Active</label>
-                                <p class="mt-0.5 text-xs text-foreground/60">
-                                    Inactive categories won't be available when creating expenses.
-                                </p>
-                            </div>
+                            @if ($expenseCategory->isProtected())
+                                <input type="hidden" name="is_active" value="1">
+                                <input id="is_active" type="checkbox" value="1" checked disabled
+                                    class="rounded border-border text-primary focus:ring-primary opacity-60 cursor-not-allowed">
+                                <div>
+                                    <label for="is_active" class="text-sm font-medium text-foreground">Active</label>
+                                    <p class="mt-0.5 text-xs text-foreground/60">
+                                        This category is required by the system and must remain active.
+                                    </p>
+                                </div>
+                            @else
+                                <input id="is_active" name="is_active" type="checkbox" value="1"
+                                    class="rounded border-border text-primary focus:ring-primary"
+                                    {{ old('is_active', $expenseCategory->is_active) ? 'checked' : '' }}>
+                                <div>
+                                    <label for="is_active" class="text-sm font-medium text-foreground">Active</label>
+                                    <p class="mt-0.5 text-xs text-foreground/60">
+                                        Inactive categories won't be available when creating expenses.
+                                    </p>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -79,7 +91,15 @@
                 </dl>
             </x-ui::card>
 
-            @if ($expenseCategory->expenses()->count() > 0)
+            @if ($expenseCategory->isProtected())
+                <x-ui::card class="p-4 bg-warning/10 border-warning/40">
+                    <h6 class="text-sm font-semibold text-warning mb-2">System Category</h6>
+                    <p class="text-xs text-foreground/80">
+                        This category is required by the system and cannot be deleted or deactivated.
+                        You can only update its name.
+                    </p>
+                </x-ui::card>
+            @elseif ($expenseCategory->expenses()->count() > 0)
                 <x-ui::card class="p-4 bg-warning/10 border-warning/40">
                     <h6 class="text-sm font-semibold text-warning mb-2">Note</h6>
                     <p class="text-xs text-foreground/80">

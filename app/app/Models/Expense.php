@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Scopes\ExpenseScope;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -26,6 +29,8 @@ class Expense extends Model
         'vendor_payee',
         'description',
         'reference',
+        'source_type',
+        'source_id',
         'created_by_id',
     ];
 
@@ -56,5 +61,20 @@ class Expense extends Model
     public function ledgerEntries(): MorphMany
     {
         return $this->morphMany(LedgerEntry::class, 'reference');
+    }
+
+    /** @return MorphTo<Model, $this> */
+    public function source(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @param  Builder<Expense>  $query
+     * @return Builder<Expense>
+     */
+    public function scopeForSource(Builder $query, Model $source): Builder
+    {
+        return ExpenseScope::forSource($query, $source);
     }
 }
