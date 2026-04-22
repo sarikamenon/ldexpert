@@ -98,12 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
             updateModeCards();
         }
 
-        $("#eb_frequency").val(data.frequency);
-        $("#eb_generation_day_type").val(data.generation_day_type);
+        $("#eb_frequency").val(data.frequency).trigger("change");
+        $("#eb_generation_day_type").val(data.generation_day_type).trigger("change");
         toggleGenerationFields();
 
         if (data.generation_day_of_week !== null) {
-            $("#eb_generation_day_of_week").val(data.generation_day_of_week);
+            $("#eb_generation_day_of_week").val(data.generation_day_of_week).trigger("change");
         }
         if (data.generation_delay_days !== null) {
             $("#eb_generation_delay_days").val(data.generation_delay_days);
