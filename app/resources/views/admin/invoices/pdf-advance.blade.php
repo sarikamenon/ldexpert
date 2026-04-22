@@ -181,20 +181,14 @@
     <div class="bill-to">
         <h3>Bill To:</h3>
         <div>
-            @if ($invoice->parent_name)
-                <strong>{{ $invoice->parent_name }}</strong><br>
-                @if ($invoice->student)
-                    (Parent of {{ $invoice->student->name }})<br>
-                @endif
-            @else
-                <strong>{{ $invoice->school_display_name ?? $invoice->school_name ?? '—' }}</strong><br>
+            <strong>{{ $invoice->school_display_name ?? $invoice->school_name ?? '—' }}</strong><br>
+            @if ($invoice->school_address)
+                {{ $invoice->school_address }}<br>
             @endif
-            @if ($invoice->parent_address)
-                {{ $invoice->parent_address }}<br>
+            @if ($invoice->school_state)
+                {{ $invoice->school_state }}<br>
             @endif
-            @if ($invoice->parent_email)
-                {{ $invoice->parent_email }}
-            @elseif ($invoice->school_contact_email)
+            @if ($invoice->school_contact_email)
                 {{ $invoice->school_contact_email }}
             @endif
         </div>
