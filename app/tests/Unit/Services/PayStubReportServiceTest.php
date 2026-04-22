@@ -6,9 +6,6 @@ namespace Tests\Unit\Services;
 
 use App\Domain\Finance\Services\PayStubReportService;
 use App\Enums\PaymentMethod;
-use App\Enums\Role;
-use App\Enums\TherapistBillStatus;
-use App\Models\TherapistBill;
 use App\Models\TherapistBillPayment;
 use App\Models\TherapistProfile;
 use App\Models\User;
@@ -27,56 +24,17 @@ final class PayStubReportServiceTest extends TestCase
         $this->service = app(PayStubReportService::class);
     }
 
-    /**
-     * @return array{therapist: User, bill: TherapistBill}
-     */
-    private function createTherapistWithBill(string $name, float $hourlyRate, string $billNumber, string $periodStart, string $periodEnd, float $totalDue): array
-    {
-        $therapist = User::factory()->therapist()->create(['name' => $name]);
-        TherapistProfile::factory()->create(['user_id' => $therapist->id, 'hourly_rate' => $hourlyRate]);
-
-        $admin = User::factory()->create(['role' => Role::ADMIN]);
-        $bill = TherapistBill::factory()->create([
-            'therapist_id' => $therapist->id,
-            'bill_number' => $billNumber,
-            'therapist_name' => $name,
-            'status' => TherapistBillStatus::SENT,
-            'billing_period_start' => $periodStart,
-            'billing_period_end' => $periodEnd,
-            'total_due' => $totalDue,
-            'sent_at' => now(),
-            'sent_by_id' => $admin->id,
-        ]);
-
-        return ['therapist' => $therapist, 'bill' => $bill];
-    }
-
-    private function createPayment(User $therapist, TherapistBill $bill, string $paidAt, float $amount, PaymentMethod $method): TherapistBillPayment
-    {
-        $admin = User::factory()->create(['role' => Role::ADMIN]);
-
-        $payment = new TherapistBillPayment;
-        $payment->therapist_id = $therapist->id;
-        $payment->therapist_bill_id = $bill->id;
-        $payment->paid_at = $paidAt;
-        $payment->amount = $amount;
-        $payment->method = $method;
-        $payment->recorded_by_id = $admin->id;
-        $payment->save();
-
-        return $payment;
-    }
-
     public function test_get_therapists_with_payments_returns_correct_aggregate(): void
     {
-        $data = $this->createTherapistWithBill('Test Therapist', 60.00, 'PST-AGG-001', '2026-01-01', '2026-01-15', 600.00);
+        $therapist = User::factory()->therapist()->create(['name' => 'Test Therapist']);
+        TherapistProfile::factory()->create(['user_id' => $therapist->id, 'hourly_rate' => 60.00]);
 
-        $this->createPayment($data['therapist'], $data['bill'], '2026-01-20', 300.00, PaymentMethod::ACH);
-        $this->createPayment($data['therapist'], $data['bill'], '2026-01-25', 300.00, PaymentMethod::ACH);
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist->id, 'paid_at' => '2026-01-20', 'amount' => 300.00, 'method' => PaymentMethod::ACH]);
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist->id, 'paid_at' => '2026-01-25', 'amount' => 300.00, 'method' => PaymentMethod::ACH]);
 
         $result = $this->service->getTherapistsWithPayments(2026);
 
-        $match = array_filter($result, fn ($r) => $r['therapist_id'] === $data['therapist']->id);
+        $match = array_filter($result, fn ($r) => $r['therapist_id'] === $therapist->id);
         $this->assertCount(1, $match);
         $row = array_values($match)[0];
         $this->assertEquals('Test Therapist', $row['therapist_name']);
@@ -86,23 +44,24 @@ final class PayStubReportServiceTest extends TestCase
 
     public function test_get_therapists_with_payments_filters_by_year(): void
     {
-        $data = $this->createTherapistWithBill('Year Filter Therapist', 50.00, 'PST-YRF-001', '2026-06-01', '2026-06-15', 400.00);
+        $therapist = User::factory()->therapist()->create(['name' => 'Year Filter Therapist']);
+        TherapistProfile::factory()->create(['user_id' => $therapist->id, 'hourly_rate' => 50.00]);
 
-        $this->createPayment($data['therapist'], $data['bill'], '2026-06-20', 400.00, PaymentMethod::ACH);
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist->id, 'paid_at' => '2026-06-20', 'amount' => 400.00, 'method' => PaymentMethod::ACH]);
 
-        // Should not appear in year 2025
         $result = $this->service->getTherapistsWithPayments(2025);
-        $match = array_filter($result, fn ($r) => $r['therapist_id'] === $data['therapist']->id);
+        $match = array_filter($result, fn ($r) => $r['therapist_id'] === $therapist->id);
         $this->assertEmpty($match);
     }
 
     public function test_get_therapist_pay_stub_data_returns_rows_with_ytd(): void
     {
-        $data = $this->createTherapistWithBill('Jane Smith', 50.00, 'PST-YTD-001', '2026-01-01', '2026-01-15', 500.00);
+        $therapist = User::factory()->therapist()->create(['name' => 'Jane Smith']);
+        TherapistProfile::factory()->create(['user_id' => $therapist->id, 'hourly_rate' => 50.00]);
 
-        $this->createPayment($data['therapist'], $data['bill'], '2026-01-20', 500.00, PaymentMethod::DIRECT_DEPOSIT);
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist->id, 'paid_at' => '2026-01-20', 'amount' => 500.00, 'method' => PaymentMethod::DIRECT_DEPOSIT]);
 
-        $result = $this->service->getTherapistPayStubData($data['therapist']->id, 2026);
+        $result = $this->service->getTherapistPayStubData($therapist->id, 2026);
 
         $this->assertCount(1, $result['rows']);
         $this->assertEquals('Jane Smith', $result['therapist_name']);
@@ -119,5 +78,41 @@ final class PayStubReportServiceTest extends TestCase
 
         $this->assertEmpty($result['rows']);
         $this->assertEquals(0, $result['summary']['row_count']);
+    }
+
+    public function test_get_years_with_payments_returns_years_descending(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+        TherapistProfile::factory()->create(['user_id' => $therapist->id, 'hourly_rate' => 60.00]);
+
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist->id, 'paid_at' => '2025-03-10', 'amount' => 300.00]);
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist->id, 'paid_at' => '2026-04-15', 'amount' => 300.00]);
+
+        $years = $this->service->getYearsWithPayments($therapist->id);
+
+        $this->assertEquals([2026, 2025], $years);
+    }
+
+    public function test_get_years_with_payments_returns_empty_for_therapist_without_payments(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+
+        $years = $this->service->getYearsWithPayments($therapist->id);
+
+        $this->assertEmpty($years);
+    }
+
+    public function test_get_years_with_payments_only_returns_own_years(): void
+    {
+        $therapist1 = User::factory()->therapist()->create();
+        $therapist2 = User::factory()->therapist()->create();
+        TherapistProfile::factory()->create(['user_id' => $therapist1->id, 'hourly_rate' => 60.00]);
+
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist1->id, 'paid_at' => '2026-03-10', 'amount' => 300.00]);
+        TherapistBillPayment::factory()->create(['therapist_id' => $therapist2->id, 'paid_at' => '2025-03-10', 'amount' => 300.00]);
+
+        $years = $this->service->getYearsWithPayments($therapist1->id);
+
+        $this->assertEquals([2026], $years);
     }
 }
