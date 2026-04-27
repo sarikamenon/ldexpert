@@ -238,10 +238,10 @@
         </x-ui::card>
     </div>
 
-    {{-- Section 4: Upcoming Events --}}
+    {{-- Section 4: Expiring Events --}}
     <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Upcoming School/Family Contracts</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring School/Family Contracts</h3>
             <div class="space-y-3">
                 @forelse ($upcomingSchoolContracts as $event)
                     <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
@@ -282,7 +282,7 @@
         </x-ui::card>
 
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Upcoming SSAs</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring SSAs</h3>
             <div class="space-y-3">
                 @forelse ($upcomingSSAs as $event)
                     <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
