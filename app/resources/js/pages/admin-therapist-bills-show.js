@@ -17,20 +17,21 @@ function initSendForm() {
                 text: 'This bill total is $0.00, so it cannot be sent. Add billable sessions or keep it as draft/delete it.',
                 icon: 'warning',
                 showDenyButton: canDelete,
-                confirmButtonText: 'Add or remove sessions',
-                denyButtonText: 'Close',
-                cancelButtonText: 'Delete bill',
-                denyButtonColor: '#6e7881',
-                cancelButtonColor: '#d33',
-                reverseButtons: false,
+                confirmButtonText: 'Delete bill',
+                confirmButtonColor: '#d33',
+                denyButtonText: 'Add or remove sessions',
+                denyButtonColor: '#3085d6',
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#6e7881',
+                reverseButtons: true,
             });
 
-            if (result.isConfirmed && attachSessionsUrl) {
+            if (result.isDenied && attachSessionsUrl) {
                 window.location.href = attachSessionsUrl;
                 return;
             }
 
-            if (result.dismiss === 'cancel' && deleteForm) {
+            if (result.isConfirmed && deleteForm) {
                 deleteForm.requestSubmit();
             }
             return;

@@ -45,7 +45,7 @@ final class TherapistBillSendGuardTest extends DuskTestCase
                 ->assertSee('Delete bill');
 
             $buttonOrder = $browser->script("return Array.from(document.querySelectorAll('.swal2-actions button')).map((button) => button.textContent.trim());");
-            $this->assertSame(['Add or remove sessions', 'Close', 'Delete bill'], $buttonOrder[0] ?? []);
+            $this->assertSame(['Cancel', 'Add or remove sessions', 'Delete bill'], $buttonOrder[0] ?? []);
         });
     }
 
