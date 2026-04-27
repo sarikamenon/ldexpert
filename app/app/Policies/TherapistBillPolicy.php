@@ -44,7 +44,7 @@ final class TherapistBillPolicy
 
     public function delete(User $user, TherapistBill $bill): bool
     {
-        return $user->isAdmin() && ! $bill->isPaid();
+        return $user->isAdmin() && ($bill->isDraft() || $bill->isZeroAmount());
     }
 
     public function download(User $user, TherapistBill $bill): bool

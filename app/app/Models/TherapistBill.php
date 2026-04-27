@@ -129,6 +129,11 @@ class TherapistBill extends Model
         return $this->status === TherapistBillStatus::PAID;
     }
 
+    public function isZeroAmount(): bool
+    {
+        return (float) $this->total_due <= 0.0;
+    }
+
     public function getTotalPaidAttribute(): float
     {
         return (float) $this->paymentAllocations()->sum('allocated_amount');
