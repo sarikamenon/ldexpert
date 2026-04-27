@@ -8,7 +8,7 @@ use App\Enums\Role;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 
-final class SSAPolicy
+final class ServiceSupportAgreementPolicy
 {
     public function viewAny(User $user): bool
     {

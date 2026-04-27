@@ -545,6 +545,7 @@ final class ScheduleController extends Controller
             'ssa',
             'ssa.primaryService',
             'school',
+            'emailLogs.sentBy',
         ]);
 
         $this->authorize('view', $schedule);
@@ -609,6 +610,13 @@ final class ScheduleController extends Controller
                     'email' => $studentProfile->parent_guardian_email ?? '-',
                     'phone' => $studentProfile->parent_guardian_phone ?? '-',
                 ],
+                'email_logs' => $schedule->emailLogs->sortByDesc('sent_at')->map(fn ($log) => [
+                    'sent_at'         => $log->sent_at->format('M d, Y g:i A'),
+                    'type_label'      => $log->type->label(),
+                    'type_value'      => $log->type->value,
+                    'recipient_email' => $log->recipient_email,
+                    'sent_by'         => $log->sentBy !== null ? $log->sentBy->name : 'System',
+                ])->values()->toArray(),
             ],
         ]);
     }

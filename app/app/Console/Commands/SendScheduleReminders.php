@@ -6,11 +6,14 @@ namespace App\Console\Commands;
 
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
+use App\Enums\ScheduleEmailType;
+use App\Events\ScheduleEmailSent;
 use App\Mail\ScheduleReminderMail;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 
 class SendScheduleReminders extends Command
@@ -121,8 +124,14 @@ class SendScheduleReminders extends Command
             }
         }
 
+        $emailType = $type === '48h'
+            ? ScheduleEmailType::REMINDER_48H
+            : ScheduleEmailType::REMINDER_2H;
+
         foreach ($uniqueRecipients as $recipient) {
-            Mail::to($recipient['email'])->queue(
+            /** @var string $email */
+            $email = $recipient['email'];
+            Mail::to($email)->send(
                 new ScheduleReminderMail(
                     $schedule,
                     $type,
@@ -130,6 +139,7 @@ class SendScheduleReminders extends Command
                     $recipient['timezone']
                 )
             );
+            Event::dispatch(new ScheduleEmailSent($schedule->id, $emailType, $email));
         }
     }
 }

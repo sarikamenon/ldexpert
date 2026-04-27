@@ -152,6 +152,43 @@ function buildDetailsHtml(schedule) {
         </div>
     `;
     html += '</div>';
+
+    if (schedule.email_logs && schedule.email_logs.length > 0) {
+        html += `
+            <div class="mt-4">
+                <h4 class="text-sm font-semibold text-foreground mb-3">Email History</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Date/Time</th>
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Type</th>
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Recipient</th>
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Sent By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${schedule.email_logs.map(log => `
+                                <tr class="border-b border-border last:border-0">
+                                    <td class="py-2 px-3">${log.sent_at}</td>
+                                    <td class="py-2 px-3">
+                                        <span class="text-xs font-medium px-2 py-0.5 rounded-full ${
+                                            ['notification_created', 'notification_updated'].includes(log.type_value)
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'bg-foreground/10 text-foreground/70'
+                                        }">${log.type_label}</span>
+                                    </td>
+                                    <td class="py-2 px-3">${log.recipient_email}</td>
+                                    <td class="py-2 px-3">${log.sent_by}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
     return html;
 }
 

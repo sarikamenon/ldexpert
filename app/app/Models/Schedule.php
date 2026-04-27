@@ -126,6 +126,14 @@ class Schedule extends Model
     }
 
     /**
+     * @return HasMany<ScheduleEmailLog, $this>
+     */
+    public function emailLogs(): HasMany
+    {
+        return $this->hasMany(ScheduleEmailLog::class, 'schedule_id');
+    }
+
+    /**
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
