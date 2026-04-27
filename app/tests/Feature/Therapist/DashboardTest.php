@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
+use App\Models\Schedule;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
@@ -90,5 +91,43 @@ final class DashboardTest extends TestCase
         $response->assertSeeText('Session Time Submitted This Week');
         $response->assertSeeText('1h 45m');
         $response->assertSeeText('2 submitted');
+    }
+
+    public function test_dashboard_shows_today_schedule_summary_and_full_calendar_link(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
+
+        foreach (range(1, 8) as $index) {
+            $student = User::factory()->create([
+                'role' => Role::STUDENT,
+                'name' => "Dashboard Student {$index}",
+            ]);
+            $ssa = ServiceSupportAgreement::factory()->create([
+                'student_id' => $student->id,
+                'primary_service_id' => $service->id,
+                'assigned_therapist_id' => $therapist->id,
+                'status' => SSAStatus::ACTIVE,
+            ]);
+
+            Schedule::factory()->create([
+                'therapist_id' => $therapist->id,
+                'student_id' => $student->id,
+                'ssa_id' => $ssa->id,
+                'service_id' => $service->id,
+                'schedule_date' => now()->toDateString(),
+                'start_time' => now()->startOfDay()->addHours($index)->format('H:i'),
+                'end_time' => now()->startOfDay()->addHours($index)->addMinutes(45)->format('H:i'),
+            ]);
+        }
+
+        $response = $this->actingAs($therapist)
+            ->get(route('therapist.dashboard'));
+
+        $response->assertOk();
+        $response->assertSeeText('8 schedules today');
+        $response->assertSeeText('View full calendar');
+        $response->assertSeeText('Show 2 more schedules');
+        $response->assertSee(route('therapist.schedule-calendar.index'), false);
     }
 }

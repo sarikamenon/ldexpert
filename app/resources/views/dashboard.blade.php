@@ -50,14 +50,32 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Schedule -->
-                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule-calendar.index')">
-                    @forelse($todaySchedules ?? [] as $schedule)
-                        <x-schedule.schedule-list-item :schedule="$schedule" class="mb-3" />
+                @php
+                    $todayScheduleList = collect($todaySchedules ?? []);
+                    $todayScheduleCount = (int) ($lessonsToday ?? $todayScheduleList->count());
+                    $visibleTodayScheduleLimit = 6;
+                    $remainingTodayScheduleCount = max(0, $todayScheduleCount - $visibleTodayScheduleLimit);
+                    $todayScheduleCountLabel = $todayScheduleCount . ' ' . Str::plural('schedule', $todayScheduleCount) . ' today';
+                @endphp
+                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule-calendar.index')"
+                    view-all-label="View full calendar" :count-label="$todayScheduleCountLabel">
+                    @forelse($todayScheduleList as $schedule)
+                        <x-schedule.schedule-list-item :schedule="$schedule" compact :class="$loop->iteration > $visibleTodayScheduleLimit ? 'dashboard-schedule-extra hidden' : ''" />
                     @empty
                         <div class="text-sm text-foreground/60">
                             No schedules for today.
                         </div>
                     @endforelse
+
+                    @if ($remainingTodayScheduleCount > 0)
+                        <button type="button"
+                            class="dashboard-schedule-toggle mt-3 inline-flex w-full items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background/subtle active:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                            data-expanded="false"
+                            data-show-label="Show {{ $remainingTodayScheduleCount }} more {{ Str::plural('schedule', $remainingTodayScheduleCount) }}"
+                            data-hide-label="Show less">
+                            Show {{ $remainingTodayScheduleCount }} more {{ Str::plural('schedule', $remainingTodayScheduleCount) }}
+                        </button>
+                    @endif
                 </x-dashboard::schedule>
 
                 <!-- Sessions to rectify -->
