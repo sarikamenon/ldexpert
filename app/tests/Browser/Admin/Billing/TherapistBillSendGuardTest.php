@@ -88,4 +88,3 @@ final class TherapistBillSendGuardTest extends DuskTestCase
         $this->assertSoftDeleted('therapist_bills', ['id' => $bill->id]);
     }
 }
-
