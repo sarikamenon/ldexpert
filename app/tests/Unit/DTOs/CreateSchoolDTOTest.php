@@ -17,6 +17,7 @@ it('creates dto from array and casts booleans', function () {
         'invoice_email' => 'billing@example.com',
         'school_type' => 'Virtual',
         'is_private_student' => true,
+        'is_auto_extend' => false,
         'non_billable_scheduling' => false,
         'external_emr_name' => 'EMR X',
     ];
@@ -25,7 +26,44 @@ it('creates dto from array and casts booleans', function () {
 
     expect($dto->fullName)->toBe('Full School')
         ->and($dto->isPrivateStudent)->toBeTrue()
+        ->and($dto->isAutoExtend)->toBeFalse()
         ->and($dto->nonBillableScheduling)->toBeFalse();
 
     expect($dto->toArray())->toMatchArray($payload);
+});
+
+it('defaults is_auto_extend to false when missing from array', function () {
+    $payload = [
+        'full_name' => 'Full School',
+        'display_name' => 'Display School',
+        'state' => 'CA',
+        'timezone' => 'America/Los_Angeles',
+        'manager_id' => 1,
+        'school_type' => 'Virtual',
+        'is_private_student' => true,
+        'non_billable_scheduling' => false,
+    ];
+
+    $dto = CreateSchoolDTO::fromArray($payload);
+
+    expect($dto->isAutoExtend)->toBeFalse();
+});
+
+it('sets is_auto_extend to true when passed', function () {
+    $payload = [
+        'full_name' => 'Full School',
+        'display_name' => 'Display School',
+        'state' => 'CA',
+        'timezone' => 'America/Los_Angeles',
+        'manager_id' => 1,
+        'school_type' => 'Virtual',
+        'is_private_student' => true,
+        'is_auto_extend' => true,
+        'non_billable_scheduling' => false,
+    ];
+
+    $dto = CreateSchoolDTO::fromArray($payload);
+
+    expect($dto->isAutoExtend)->toBeTrue()
+        ->and($dto->toArray()['is_auto_extend'])->toBeTrue();
 });

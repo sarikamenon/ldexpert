@@ -71,7 +71,7 @@ final class TherapistBillPaymentDeleteTest extends DuskTestCase
             'recorded_by_id' => $this->admin->id,
         ]);
 
-        $this->browse(function (Browser $browser) use ($payment) {
+        $this->browse(function (Browser $browser) {
             $browser->loginAs($this->admin)
                 ->visit(route('admin.payments.therapist-bills.index'))
                 ->waitFor('#therapistBillPaymentsTable tbody tr')

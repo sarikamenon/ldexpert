@@ -12,6 +12,7 @@ export default defineConfig({
                 'resources/js/common/select-box.js',
                 // Page-specific files
                 'resources/js/pages/admin-schools-index.js',
+                'resources/js/pages/admin-schools-form.js',
                 'resources/js/pages/admin-therapists-index.js',
                 'resources/js/pages/admin-students-index.js',
                 'resources/js/pages/admin-students-form.js',

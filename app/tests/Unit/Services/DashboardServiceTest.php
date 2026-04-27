@@ -6,7 +6,11 @@ namespace Tests\Unit\Services;
 
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
+use App\Models\School;
+use App\Models\SchoolContract;
+use App\Models\User;
 use App\Services\DashboardService;
+use Illuminate\Support\Facades\Auth;
 use Mockery;
 use Tests\TestCase;
 
@@ -97,6 +101,56 @@ final class DashboardServiceTest extends TestCase
         $this->assertContains('admin.invoices.create', $routes);
         $this->assertContains('admin.billing.therapist-bills.create', $routes);
         $this->assertNotContains('admin.analytics.index', $routes);
+    }
+
+    public function test_get_expiring_school_contract_events_includes_private_and_auto_extend_flags(): void
+    {
+        $school = new School([
+            'display_name' => 'Test School',
+            'is_private_student' => true,
+            'is_auto_extend' => true,
+        ]);
+        $contract = new SchoolContract([
+            'end_date' => now()->addDays(10)->toDateString(),
+        ]);
+        $contract->setRelation('school', $school);
+
+        $repository = Mockery::mock(DashboardRepositoryInterface::class);
+        $timezoneService = Mockery::mock(UserTimezoneService::class);
+
+        $repository->shouldReceive('getExpiringSchoolContracts')->once()
+            ->with(30, 4)
+            ->andReturn(collect([$contract]));
+
+        $timezoneService->shouldReceive('toUserTimezone')->andReturn(now()->addDays(10));
+
+        Auth::shouldReceive('user')->andReturn(new User);
+
+        $service = new DashboardService($timezoneService, $repository);
+        $events = $service->getExpiringSchoolContractEvents();
+
+        $this->assertCount(1, $events);
+        $this->assertSame('Test School', $events[0]['entity']);
+        $this->assertTrue($events[0]['is_private_student']);
+        $this->assertTrue($events[0]['is_auto_extend']);
+    }
+
+    public function test_get_expiring_ssa_events_returns_structured_data(): void
+    {
+        $repository = Mockery::mock(DashboardRepositoryInterface::class);
+        $timezoneService = Mockery::mock(UserTimezoneService::class);
+
+        $repository->shouldReceive('getExpiringSSAs')->once()
+            ->with(30, 4)
+            ->andReturn(collect());
+
+        Auth::shouldReceive('user')->andReturn(new User);
+
+        $service = new DashboardService($timezoneService, $repository);
+        $events = $service->getExpiringSSAEvents();
+
+        $this->assertIsArray($events);
+        $this->assertCount(0, $events);
     }
 
     protected function tearDown(): void

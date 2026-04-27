@@ -253,7 +253,8 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     {
         return ServiceSupportAgreement::with(['student.studentProfile', 'primaryService'])
             ->where('status', SSAStatus::ACTIVE)
-            ->whereBetween('end_date', [now(), now()->addDays($days)])
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->whereDate('end_date', '<=', now()->addDays($days)->toDateString())
             ->orderBy('end_date', 'asc')
             ->take($limit)
             ->get();
@@ -264,7 +265,8 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     {
         return SchoolContract::with('school')
             ->where('status', ContractStatus::ACTIVE)
-            ->whereBetween('end_date', [now(), now()->addDays($days)])
+            ->whereDate('end_date', '>=', now()->toDateString())
+            ->whereDate('end_date', '<=', now()->addDays($days)->toDateString())
             ->orderBy('end_date', 'asc')
             ->take($limit)
             ->get();
