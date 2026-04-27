@@ -206,6 +206,10 @@ final class TherapistBillService
             throw new \InvalidArgumentException('Bill cannot be sent in its current status.');
         }
 
+        if ($bill->isZeroAmount()) {
+            throw new \InvalidArgumentException('Zero amount bills cannot be sent.');
+        }
+
         return DB::transaction(function () use ($user, $bill, $dto) {
             // Determine recipient email
             $recipientEmail = $dto->email
@@ -231,8 +235,8 @@ final class TherapistBillService
 
     public function deleteBill(TherapistBill $bill): void
     {
-        if ($bill->isPaid()) {
-            throw new \InvalidArgumentException('Paid bills cannot be deleted.');
+        if (! $bill->isDraft() && ! $bill->isZeroAmount()) {
+            throw new \InvalidArgumentException('Only draft or zero amount bills can be deleted.');
         }
 
         DB::transaction(function () use ($bill): void {
