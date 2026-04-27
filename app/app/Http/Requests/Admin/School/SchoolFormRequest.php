@@ -44,6 +44,7 @@ abstract class SchoolFormRequest extends FormRequest
             'invoice_email' => ['nullable', 'email:rfc,dns'],
             'school_type' => ['required', Rule::in(SchoolType::values())],
             'is_private_student' => ['sometimes', 'boolean'],
+            'is_auto_extend' => ['sometimes', 'boolean'],
             'non_billable_scheduling' => ['sometimes', 'boolean'],
             'external_emr_name' => ['nullable', 'string', 'max:255'],
         ];

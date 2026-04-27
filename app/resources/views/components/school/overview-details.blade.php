@@ -87,6 +87,16 @@
                     </x-ui::badge>
                 </dd>
             </div>
+            @if($school->is_private_student)
+            <div>
+                <dt class="text-sm font-medium text-foreground/70">Auto-Extend Contract & SSAs?</dt>
+                <dd class="mt-1 text-sm text-foreground">
+                    <x-ui::badge :variant="$school->is_auto_extend ? 'primary' : 'secondary'">
+                        {{ $school->is_auto_extend ? 'Yes' : 'No' }}
+                    </x-ui::badge>
+                </dd>
+            </div>
+            @endif
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Non-billable Scheduling?</dt>
                 <dd class="mt-1 text-sm text-foreground">

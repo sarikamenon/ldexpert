@@ -141,7 +141,7 @@
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold mb-4">School/Family Characteristics</h3>
         <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                     <x-input-label for="school_type" value="School/Family Type *" />
                     <p class="mt-1 text-xs text-foreground/60">Type of educational institution or family placement</p>
@@ -173,6 +173,26 @@
                     <x-input-error :messages="$errors->get('is_private_student')" class="mt-2" />
                 </div>
 
+                <div id="is_auto_extend_section" class="p-4 border border-gray-200 rounded-lg bg-gray-50"
+                     style="{{ old('is_private_student', $school->is_private_student ?? false) ? '' : 'display:none' }}">
+                    <x-input-label value="Auto-Extend Contract & SSAs?" />
+                    <p id="is_auto_extend_help" class="mt-1 text-xs text-foreground/60 mb-3">
+                        When enabled, this school's active contract and all active SSAs will be automatically
+                        extended by 1 year on their expiry date. The assigned manager will be notified by email.
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <input type="hidden" name="is_auto_extend" value="0">
+                        <input id="is_auto_extend" name="is_auto_extend" type="checkbox" value="1"
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                               aria-describedby="is_auto_extend_help"
+                               @checked(old('is_auto_extend', $school->is_auto_extend ?? false))>
+                        <label for="is_auto_extend" class="text-sm font-medium text-foreground/80 cursor-pointer">
+                            Auto-extend contract and SSAs annually
+                        </label>
+                    </div>
+                    <x-input-error :messages="$errors->get('is_auto_extend')" class="mt-2" />
+                </div>
+
                 <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
                     <x-input-label value="Non-Billable Scheduling?" />
                     <p class="mt-1 text-xs text-foreground/60 mb-3">Check if sessions at this school or family should not
@@ -200,6 +220,17 @@
             </div>
         </div>
     </x-ui::card>
+
+    {{-- JS: show/hide is_auto_extend when is_private_student is toggled --}}
+    <script>
+        document.getElementById('is_private_student').addEventListener('change', function () {
+            const section = document.getElementById('is_auto_extend_section');
+            section.style.display = this.checked ? '' : 'none';
+            if (!this.checked) {
+                document.getElementById('is_auto_extend').checked = false;
+            }
+        });
+    </script>
 
     {{-- Action Buttons --}}
     <div class="flex items-center justify-end gap-3">
