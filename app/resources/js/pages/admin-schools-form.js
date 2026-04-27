@@ -8,8 +8,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     privateStudentCheckbox.addEventListener('change', function () {
-        autoExtendSection.style.display = this.checked ? '' : 'none';
-        if (!this.checked) {
+        if (this.checked) {
+            autoExtendSection.style.display = '';
+            if (!autoExtendSection.dataset.everShown) {
+                autoExtendCheckbox.checked = true;
+            }
+            autoExtendSection.dataset.everShown = '1';
+        } else {
+            autoExtendSection.style.display = 'none';
             autoExtendCheckbox.checked = false;
         }
     });

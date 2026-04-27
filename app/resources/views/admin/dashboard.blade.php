@@ -294,8 +294,20 @@
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-foreground">{{ $event['title'] }}</p>
-                            <p class="text-xs text-foreground/70 mt-1">{{ $event['entity'] }}</p>
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
                             <p class="text-xs text-foreground/60 mt-1">
                                 Due: {{ $event['due_date']->format('M d, Y') }}
                                 ({{ $event['due_date_local']->diffForHumans() }})

@@ -190,6 +190,7 @@ class DashboardService
                 ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
                 : 'Student';
             $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
+            $school = $ssa->student?->studentProfile?->school;
 
             $events[] = [
                 'title' => 'SSA Expiring',
@@ -197,6 +198,8 @@ class DashboardService
                 'due_date' => $ssa->end_date,
                 'due_date_local' => $ssa->end_date ? $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser) : null,
                 'priority' => $priority,
+                'is_private_student' => (bool) ($school?->is_private_student),
+                'is_auto_extend' => (bool) ($school?->is_auto_extend),
             ];
         }
 
