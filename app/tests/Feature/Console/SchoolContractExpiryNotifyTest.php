@@ -80,7 +80,6 @@ test('does not notify when contract expires on a different day', function () {
     Mail::assertNothingQueued();
 });
 
-
 test('dry run lists schools without sending email', function () {
     $manager = User::factory()->admin()->create(['email' => 'manager@example.com']);
     $school = School::factory()->create([

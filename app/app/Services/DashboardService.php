@@ -136,7 +136,7 @@ class DashboardService
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<string, array<int, array<string, mixed>>> */
     public function getUpcomingEvents(): array
     {
         return [
@@ -161,7 +161,7 @@ class DashboardService
 
             $events[] = [
                 'title' => 'Contract Expiring',
-                'entity' => $school?->display_name ?? 'School/Family',
+                'entity' => $school !== null ? $school->display_name : 'School/Family',
                 'due_date' => $contract->end_date,
                 'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
                 'priority' => $priority,

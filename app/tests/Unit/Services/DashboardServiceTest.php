@@ -6,7 +6,11 @@ namespace Tests\Unit\Services;
 
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
+use App\Models\School;
+use App\Models\SchoolContract;
+use App\Models\User;
 use App\Services\DashboardService;
+use Illuminate\Support\Facades\Auth;
 use Mockery;
 use Tests\TestCase;
 
@@ -101,12 +105,12 @@ final class DashboardServiceTest extends TestCase
 
     public function test_get_expiring_school_contract_events_includes_private_and_auto_extend_flags(): void
     {
-        $school = new \App\Models\School([
+        $school = new School([
             'display_name' => 'Test School',
             'is_private_student' => true,
             'is_auto_extend' => true,
         ]);
-        $contract = new \App\Models\SchoolContract([
+        $contract = new SchoolContract([
             'end_date' => now()->addDays(10)->toDateString(),
         ]);
         $contract->setRelation('school', $school);
@@ -120,7 +124,7 @@ final class DashboardServiceTest extends TestCase
 
         $timezoneService->shouldReceive('toUserTimezone')->andReturn(now()->addDays(10));
 
-        \Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn(new \App\Models\User);
+        Auth::shouldReceive('user')->andReturn(new User);
 
         $service = new DashboardService($timezoneService, $repository);
         $events = $service->getExpiringSchoolContractEvents();
@@ -140,7 +144,7 @@ final class DashboardServiceTest extends TestCase
             ->with(30, 4)
             ->andReturn(collect());
 
-        \Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn(new \App\Models\User);
+        Auth::shouldReceive('user')->andReturn(new User);
 
         $service = new DashboardService($timezoneService, $repository);
         $events = $service->getExpiringSSAEvents();
