@@ -163,7 +163,7 @@
                     <x-ui::select name="outcome" class="mt-1" placeholder="Select outcome">
                         <option value="">Select outcome</option>
                         @foreach ($sessionOutcomes ?? [] as $outcome)
-                            <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
+                            <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'services_administered') === $outcome->value)>
                                 {{ $outcome->label() }}
                             </option>
                         @endforeach

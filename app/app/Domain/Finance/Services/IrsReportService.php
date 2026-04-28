@@ -21,8 +21,10 @@ final class IrsReportService
     {
         $query = TherapistBillPayment::query()
             ->with(['therapist.therapistProfile', 'therapistBill'])
-            ->orderBy('paid_at')
-            ->orderBy('therapist_id');
+            ->join('therapist_bills', 'therapist_bills.id', '=', 'therapist_bill_payments.therapist_bill_id')
+            ->orderBy('therapist_bills.billing_period_end')
+            ->orderBy('therapist_bill_payments.id')
+            ->select('therapist_bill_payments.*');
 
         if ($filters->dateFrom === null && $filters->dateTo === null) {
             return [
@@ -35,13 +37,13 @@ final class IrsReportService
             ];
         }
         if ($filters->dateFrom !== null) {
-            $query->whereDate('paid_at', '>=', $filters->dateFrom);
+            $query->whereDate('therapist_bill_payments.paid_at', '>=', $filters->dateFrom);
         }
         if ($filters->dateTo !== null) {
-            $query->whereDate('paid_at', '<=', $filters->dateTo);
+            $query->whereDate('therapist_bill_payments.paid_at', '<=', $filters->dateTo);
         }
         if ($filters->therapistIds !== null && $filters->therapistIds !== []) {
-            $query->whereIn('therapist_id', $filters->therapistIds);
+            $query->whereIn('therapist_bill_payments.therapist_id', $filters->therapistIds);
         }
 
         $payments = $query->get();
@@ -200,20 +202,34 @@ final class IrsReportService
             return array_fill_keys($payments->pluck('id')->all(), 0.0);
         }
 
+        // Fetch all payments for these therapists/years, ordered by billing period then paid_at timestamp.
+        // paid_at is now a timestamp so same-period payments recorded at different times sort correctly.
         $allPayments = TherapistBillPayment::query()
-            ->whereIn('therapist_id', $therapistIds)
-            ->whereRaw('YEAR(paid_at) IN ('.implode(',', array_map('intval', $years)).')')
-            ->orderBy('paid_at')
-            ->get(['id', 'therapist_id', 'paid_at', 'amount']);
+            ->join('therapist_bills', 'therapist_bills.id', '=', 'therapist_bill_payments.therapist_bill_id')
+            ->whereIn('therapist_bill_payments.therapist_id', $therapistIds)
+            ->whereRaw('YEAR(therapist_bill_payments.paid_at) IN ('.implode(',', array_map('intval', $years)).')')
+            ->orderBy('therapist_bills.billing_period_end')
+            ->orderBy('therapist_bill_payments.paid_at')
+            ->orderBy('therapist_bill_payments.id')
+            ->get([
+                'therapist_bill_payments.id',
+                'therapist_bill_payments.therapist_id',
+                'therapist_bill_payments.amount',
+                'therapist_bill_payments.paid_at',
+            ]);
 
-        $byPaymentId = [];
-        foreach ($payments as $payment) {
-            $byPaymentId[$payment->id] = (float) $allPayments
-                ->where('therapist_id', $payment->therapist_id)
-                ->filter(fn ($p) => $p->paid_at->year === $payment->paid_at->year && $p->paid_at->lte($payment->paid_at))
-                ->sum('amount');
-        }
+        // Build a running cumulative sum per therapist in a single O(n) pass.
+        // $allPayments is already sorted in the correct YTD order by the query above.
+        /** @var array<int, float> $runningTotal */
+        $runningTotal = [];
 
-        return $byPaymentId;
+        return $allPayments
+            ->mapWithKeys(function (TherapistBillPayment $p) use (&$runningTotal): array {
+                $key = (int) $p->therapist_id . '_' . $p->paid_at->year;
+                $runningTotal[$key] = ($runningTotal[$key] ?? 0.0) + (float) $p->amount;
+
+                return [(int) $p->id => $runningTotal[$key]];
+            })
+            ->all();
     }
 }
