@@ -154,11 +154,12 @@
                 <x-input-label for="schedule_date" value="Schedule Date *" />
                 @if ($isEdit)
                     <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
-                        value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}" required />
+                        value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}"
+                        min="{{ now()->format('Y-m-d') }}" required />
                 @else
                     <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
                         value="{{ old('schedule_date', $selectedDate?->format('Y-m-d')) }}"
-                        min="{{ now()->format('Y-m-d') }}" required />
+                        required />
                 @endif
                 <x-input-error :messages="$errors->get('schedule_date')" class="mt-2" />
             </div>

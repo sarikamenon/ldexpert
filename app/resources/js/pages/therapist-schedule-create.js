@@ -10,17 +10,14 @@ import { errorAlert } from '../common/sweetalert';
         initSelectBoxes();
 
         const serviceSelect = document.getElementById('service_id');
-        const scheduleDateInput = document.getElementById('schedule_date');
         const startTimeInput = document.getElementById('start_time');
         const durationSelect = document.getElementById('duration_minutes');
-        const notesInput = document.getElementById('notes');
         const form = document.getElementById('scheduleCreateForm');
 
         if (form) {
             form.addEventListener('submit', function(e) {
                 const startTime = startTimeInput.value;
                 const duration = durationSelect?.value;
-                const scheduleDate = scheduleDateInput.value;
 
                 if (! startTime) {
                     e.preventDefault();
@@ -35,18 +32,6 @@ import { errorAlert } from '../common/sweetalert';
                     return;
                 }
 
-                // Validate future date (basic check against today in local time)
-                if (scheduleDate) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const selectedDate = new Date(scheduleDate + 'T00:00:00'); // Append time to avoid timezone shift
-                    
-                    if (selectedDate < today) {
-                         e.preventDefault();
-                         errorAlert('Schedule date cannot be in the past.');
-                         return;
-                    }
-                }
             });
         }
 
