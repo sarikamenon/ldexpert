@@ -520,6 +520,27 @@ final class SSAController extends Controller
         ]);
     }
 
+    public function downloadImported(Request $request, SSAImport $import): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        try {
+            return \Illuminate\Support\Facades\Storage::download(
+                $import->file_path,
+                $import->file_name,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SSA import file download failed', [
+                'import_id' => $import->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'The original import file could not be found.');
+        }
+    }
+
     /** @return array<string, mixed> */
     private function formData(): array
     {

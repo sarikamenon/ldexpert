@@ -524,6 +524,27 @@ final class StudentController extends Controller
         ]);
     }
 
+    public function downloadImported(Request $request, StudentImport $import): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        try {
+            return \Illuminate\Support\Facades\Storage::download(
+                $import->file_path,
+                $import->file_name,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Student import file download failed', [
+                'import_id' => $import->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'The original import file could not be found.');
+        }
+    }
+
     /** @return array<string, mixed> */
     private function referenceData(): array
     {
