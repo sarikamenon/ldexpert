@@ -9,6 +9,7 @@ use App\Events\ScheduleCreated;
 use App\Events\ScheduleEmailSent;
 use App\Events\ScheduleUpdated;
 use App\Mail\ScheduleNotificationMail;
+use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,11 @@ class SendScheduleNotification implements ShouldQueue
     public function handle(ScheduleCreated|ScheduleUpdated $event): void
     {
         $schedule = $event->schedule;
+
+        // Skip notifications for past-date schedules created retroactively
+        if ($schedule->schedule_date->startOfDay()->lt(Carbon::today())) {
+            return;
+        }
 
         // Eager load relationships if missing to avoid N+1 in loop/mail view
         $schedule->loadMissing(['therapist', 'student.studentProfile', 'service']);
