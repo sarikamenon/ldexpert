@@ -19,6 +19,7 @@ use App\Models\TherapistBill;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 final class TherapistBillService
@@ -221,7 +222,16 @@ final class TherapistBillService
             }
 
             // Send email with PDF attachment
-            Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
+            try {
+                Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
+            } catch (\Throwable $e) {
+                Log::error('TherapistBillService: failed to send bill email', [
+                    'bill_id' => $bill->id,
+                    'email' => $recipientEmail,
+                    'error' => $e->getMessage(),
+                ]);
+                throw $e;
+            }
 
             // Mark bill as sent
             $bill = $this->repository->markAsSent($bill, $user->id);

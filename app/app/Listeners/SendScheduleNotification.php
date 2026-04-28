@@ -11,6 +11,7 @@ use App\Events\ScheduleUpdated;
 use App\Mail\ScheduleNotificationMail;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendScheduleNotification implements ShouldQueue
@@ -30,19 +31,37 @@ class SendScheduleNotification implements ShouldQueue
 
         // Notify Therapist
         if ($schedule->therapist && $schedule->therapist->email) {
-            Mail::to($schedule->therapist->email)->send(
-                new ScheduleNotificationMail($schedule, $mailType, isRecipientStudent: false)
-            );
-            Event::dispatch(new ScheduleEmailSent($schedule->id, $logType, $schedule->therapist->email));
+            try {
+                Mail::to($schedule->therapist->email)->send(
+                    new ScheduleNotificationMail($schedule, $mailType, isRecipientStudent: false)
+                );
+                Event::dispatch(new ScheduleEmailSent($schedule->id, $logType, $schedule->therapist->email));
+            } catch (\Throwable $e) {
+                Log::error('SendScheduleNotification: failed to send therapist mail', [
+                    'schedule_id' => $schedule->id,
+                    'type' => $mailType,
+                    'email' => $schedule->therapist->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         // Student side: only schedule_email (no student user email or parent/guardian emails)
         if ($schedule->student?->studentProfile?->schedule_email) {
             $studentEmail = $schedule->student->studentProfile->schedule_email;
-            Mail::to($studentEmail)->send(
-                new ScheduleNotificationMail($schedule, $mailType, isRecipientStudent: true)
-            );
-            Event::dispatch(new ScheduleEmailSent($schedule->id, $logType, $studentEmail));
+            try {
+                Mail::to($studentEmail)->send(
+                    new ScheduleNotificationMail($schedule, $mailType, isRecipientStudent: true)
+                );
+                Event::dispatch(new ScheduleEmailSent($schedule->id, $logType, $studentEmail));
+            } catch (\Throwable $e) {
+                Log::error('SendScheduleNotification: failed to send student mail', [
+                    'schedule_id' => $schedule->id,
+                    'type' => $mailType,
+                    'email' => $studentEmail,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 }

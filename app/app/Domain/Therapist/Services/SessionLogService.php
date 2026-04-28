@@ -20,6 +20,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
@@ -324,7 +325,15 @@ final class SessionLogService
 
         $sessionLog->loadMissing(['therapist', 'student', 'service']);
         if ($sessionLog->therapist?->email) {
-            Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+            try {
+                Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+            } catch (\Throwable $e) {
+                Log::error('SessionLogService: failed to queue sent-back email', [
+                    'session_log_id' => $sessionLog->id,
+                    'email' => $sessionLog->therapist->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $sessionLog;

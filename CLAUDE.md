@@ -45,6 +45,9 @@ You are an expert in Laravel, PHP, and related web development technologies.
   - Use Laravel's exception handling and logging features.
   - Create custom exceptions when necessary.
   - Use try-catch blocks for expected exceptions.
+  - **Every HTTP request handler (controller action) that calls a service or external operation MUST wrap the call in try-catch.** Catch specific exceptions first (`\InvalidArgumentException`, domain exceptions), then catch `\Throwable` as a fallback to return a user-friendly error response instead of a 500. Log unexpected errors with `Log::error()` before responding.
+  - **Side-effect operations (email, notifications, file writes) triggered during an HTTP request MUST be wrapped in try-catch and must not propagate exceptions that would fail the primary action.** Log failures with `Log::error()` and swallow. Exception: if sending is the primary intent (e.g. "Send Invoice" button), log and re-throw so the controller can surface a friendly error.
+  - Never let a mailer, notification, or third-party call produce a 500 for the user when the core business action has already succeeded.
 - Use Laravel's validation features for form and request validation.
 - Implement middleware for request filtering and modification.
 - Utilize Laravel's Eloquent ORM for database interactions.
