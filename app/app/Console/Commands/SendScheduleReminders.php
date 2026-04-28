@@ -131,7 +131,7 @@ class SendScheduleReminders extends Command
         foreach ($uniqueRecipients as $recipient) {
             /** @var string $email */
             $email = $recipient['email'];
-            Mail::to($email)->send(
+            Mail::to($email)->queue(
                 new ScheduleReminderMail(
                     $schedule,
                     $type,

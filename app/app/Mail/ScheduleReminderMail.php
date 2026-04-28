@@ -63,7 +63,7 @@ class ScheduleReminderMail extends Mailable
         $endLocal = $timezoneService->toUserTimezone($endUtc, overrideTz: $this->timezone);
 
         return new Content(
-            markdown: 'emails.schedule-reminder',
+            view: 'emails.schedule-reminder',
             with: [
                 'scheduleDate' => $startLocal->format('M d, Y'),
                 'startTime' => $startLocal->format('h:i A'),
