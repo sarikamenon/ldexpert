@@ -14,6 +14,7 @@ use App\Http\Requests\Admin\Finance\PayStubReportRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\TherapistBill;
+use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
@@ -99,7 +100,11 @@ final class PayStubReportController extends Controller
         $year = (int) $request->validated('year');
 
         $pdf = $this->pdfService->generatePdf($therapistId, $year);
-        $filename = sprintf('pay-stub-%d-%d.pdf', $therapistId, $year);
+
+        /** @var User|null $therapist */
+        $therapist = User::find($therapistId);
+        $therapistName = $therapist !== null ? strtolower(str_replace(' ', '-', $therapist->name)) : 'unknown';
+        $filename = sprintf('pay-stub-%s-%02d-%d.pdf', $therapistName, $therapistId, $year);
 
         return $pdf->download($filename);
     }
