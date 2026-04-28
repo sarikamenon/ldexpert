@@ -209,8 +209,8 @@ final class StoreSessionLogRequest extends FormRequest
 
                 if ($sessionDate) {
                     $parsedDate = Carbon::parse((string) $sessionDate);
-                    if ($parsedDate->isToday() || $parsedDate->isFuture()) {
-                        $validator->errors()->add('session_date', 'Session date must be a past date for non-scheduled session logs.');
+                    if ($parsedDate->isFuture()) {
+                        $validator->errors()->add('session_date', 'Session date cannot be a future date for non-scheduled session logs.');
                     }
                 }
             }

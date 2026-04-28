@@ -102,8 +102,8 @@
                 @else
                     <p class="mt-1 text-xs text-foreground/60">Date when the session occurred. Must be a past date.</p>
                     <x-ui::input type="date" name="session_date" id="session-log-date" class="mt-1 block w-full"
-                        value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : '') }}"
-                        max="{{ now()->subDay()->format('Y-m-d') }}" required />
+                        value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : now()->format('Y-m-d')) }}"
+                        max="{{ now()->format('Y-m-d') }}" required />
                 @endif
                 <x-input-error :messages="$errors->get('session_date')" class="mt-2" />
             </div>
