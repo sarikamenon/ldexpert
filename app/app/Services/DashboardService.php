@@ -136,14 +136,51 @@ class DashboardService
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<string, array<int, array<string, mixed>>> */
     public function getUpcomingEvents(): array
+    {
+        return [
+            'schools' => $this->getExpiringSchoolContractEvents(),
+            'ssas' => $this->getExpiringSSAEvents(),
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getExpiringSchoolContractEvents(int $limit = 4): array
     {
         /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
         $events = [];
 
-        $expiringSSAs = $this->repository->getExpiringSSAs(30, 4);
+        $expiringContracts = $this->repository->getExpiringSchoolContracts(30, $limit);
+
+        foreach ($expiringContracts as $contract) {
+            $school = $contract->school;
+            $daysUntilExpiry = now()->diffInDays($contract->end_date);
+            $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
+
+            $events[] = [
+                'title' => 'Contract Expiring',
+                'entity' => $school !== null ? $school->display_name : 'School/Family',
+                'due_date' => $contract->end_date,
+                'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
+                'priority' => $priority,
+                'is_private_student' => (bool) ($school?->is_private_student),
+                'is_auto_extend' => (bool) ($school?->is_auto_extend),
+            ];
+        }
+
+        return $events;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getExpiringSSAEvents(int $limit = 4): array
+    {
+        /** @var \App\Models\User $currentUser */
+        $currentUser = Auth::user();
+        $events = [];
+
+        $expiringSSAs = $this->repository->getExpiringSSAs(30, $limit);
 
         foreach ($expiringSSAs as $ssa) {
             $daysUntilExpiry = now()->diffInDays($ssa->end_date);
@@ -153,6 +190,7 @@ class DashboardService
                 ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
                 : 'Student';
             $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
+            $school = $ssa->student?->studentProfile?->school;
 
             $events[] = [
                 'title' => 'SSA Expiring',
@@ -160,29 +198,12 @@ class DashboardService
                 'due_date' => $ssa->end_date,
                 'due_date_local' => $ssa->end_date ? $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser) : null,
                 'priority' => $priority,
+                'is_private_student' => (bool) ($school?->is_private_student),
+                'is_auto_extend' => (bool) ($school?->is_auto_extend),
             ];
         }
 
-        if (count($events) < 4) {
-            $expiringContracts = $this->repository->getExpiringSchoolContracts(30, 4 - count($events));
-
-            foreach ($expiringContracts as $contract) {
-                $daysUntilExpiry = now()->diffInDays($contract->end_date);
-                $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
-
-                $events[] = [
-                    'title' => 'Contract Expiring',
-                    'entity' => "School/Family Contract - {$contract->school?->display_name}",
-                    'due_date' => $contract->end_date,
-                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
-                    'priority' => $priority,
-                ];
-            }
-        }
-
-        usort($events, fn ($a, $b) => $a['due_date'] <=> $b['due_date']);
-
-        return array_slice($events, 0, 4);
+        return $events;
     }
 
     /** @return array<int, array<string, mixed>> */

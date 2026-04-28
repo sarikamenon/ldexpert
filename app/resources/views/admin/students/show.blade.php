@@ -37,6 +37,7 @@
             ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'session_logs'])],
             ['key' => 'comments', 'label' => 'Comments', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'comments'])],
             ['key' => 'documents', 'label' => 'Documents', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'documents'])],
+            ['key' => 'email_history', 'label' => 'Email History', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'email_history'])],
         ];
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -129,6 +130,8 @@
         <x-student.comments-section :student="$student" :comments="$comments" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))
         <x-student.documents-section :student="$student" :documents="$documents" context="admin" />
+    @elseif (($activeTab ?? 'dashboard') === 'email_history' && isset($emailLogs))
+        <x-student.email-history-section :student="$student" :email-logs="$emailLogs" />
     @endif
 
     <x-slot name="scripts">

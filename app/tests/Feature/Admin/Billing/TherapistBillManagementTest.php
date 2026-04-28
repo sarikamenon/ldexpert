@@ -244,6 +244,33 @@ it('allows admin to send therapist bill', function () {
     expect($bill->sent_at)->not->toBeNull();
 });
 
+it('prevents admin from sending zero amount therapist bill', function () {
+    Mail::fake();
+
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+        'total_due' => 0,
+        'therapist_email' => 'therapist@example.com',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.billing.therapist-bills.send', $bill), [
+            'email' => null,
+            'message' => null,
+        ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors(['error' => 'Zero amount bills cannot be sent.']);
+    Mail::assertNothingSent();
+
+    $bill->refresh();
+    expect($bill->status)->toBe(TherapistBillStatus::DRAFT)
+        ->and($bill->sent_at)->toBeNull();
+});
+
 it('allows admin to delete a draft bill and unlinks sessions', function () {
     $admin = billingAdminUser();
     $therapist = User::factory()->therapist()->create();
@@ -274,13 +301,31 @@ it('allows admin to delete a draft bill and unlinks sessions', function () {
     expect($session->fresh()->therapist_bill_id)->toBeNull();
 });
 
-it('allows admin to delete a sent bill', function () {
+it('prevents admin from deleting a sent non-zero bill', function () {
     $admin = billingAdminUser();
     $therapist = User::factory()->therapist()->create();
 
     $bill = TherapistBill::factory()->create([
         'therapist_id' => $therapist->id,
         'status' => TherapistBillStatus::SENT->value,
+        'total_due' => 125.00,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertForbidden();
+    expect(TherapistBill::find($bill->id))->not->toBeNull();
+});
+
+it('allows admin to delete a sent zero amount bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::SENT->value,
+        'total_due' => 0,
     ]);
 
     $response = $this->actingAs($admin)

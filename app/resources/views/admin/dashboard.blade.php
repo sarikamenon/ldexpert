@@ -238,12 +238,12 @@
         </x-ui::card>
     </div>
 
-    {{-- Section 4: Upcoming Events --}}
-    <div class="mb-6">
+    {{-- Section 4: Expiring Events --}}
+    <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Upcoming Events & Deadlines</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring School/Family Contracts</h3>
             <div class="space-y-3">
-                @foreach ($upcomingEvents as $event)
+                @forelse ($upcomingSchoolContracts as $event)
                     <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
                         <div class="flex-shrink-0">
                             <div
@@ -253,15 +253,70 @@
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-foreground">{{ $event['title'] }}</p>
-                            <p class="text-xs text-foreground/70 mt-1">{{ $event['entity'] }}</p>
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span
+                                        class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span
+                                            class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
                             <p class="text-xs text-foreground/60 mt-1">
                                 Due: {{ $event['due_date']->format('M d, Y') }}
                                 ({{ $event['due_date_local']->diffForHumans() }})
                             </p>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <p class="text-sm text-foreground/60">No school/family contracts expiring in the next 30 days.</p>
+                @endforelse
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring SSAs</h3>
+            <div class="space-y-3">
+                @forelse ($upcomingSSAs as $event)
+                    <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
+                        <div class="flex-shrink-0">
+                            <div
+                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
+                                <span
+                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
+                            <p class="text-xs text-foreground/60 mt-1">
+                                Due: {{ $event['due_date']->format('M d, Y') }}
+                                ({{ $event['due_date_local']->diffForHumans() }})
+                            </p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-foreground/60">No SSAs expiring in the next 30 days.</p>
+                @endforelse
             </div>
         </x-ui::card>
     </div>

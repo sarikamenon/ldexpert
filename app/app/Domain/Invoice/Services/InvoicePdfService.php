@@ -38,7 +38,6 @@ final class InvoicePdfService
     {
         $invoice->load([
             'lineItems',
-            'student.studentProfile',
         ]);
 
         $adjustmentLines = $invoice->lineItems->filter(

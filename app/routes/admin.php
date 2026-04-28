@@ -69,6 +69,7 @@ Route::middleware('role:admin')
         Route::post('students/imports/data', [StudentController::class, 'importHistoryData'])->name('students.imports.data');
         Route::get('students/imports/{import}', [StudentController::class, 'showImportStatus'])->name('students.imports.show');
         Route::get('students/imports/{import}/status', [StudentController::class, 'showImportStatus'])->name('students.imports.status');
+        Route::get('students/imports/{import}/download', [StudentController::class, 'downloadImported'])->name('students.imports.download');
         Route::get('students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
@@ -114,6 +115,7 @@ Route::middleware('role:admin')
         Route::post('ssas/imports/data', [SSAController::class, 'importHistoryData'])->name('ssas.imports.data');
         Route::get('ssas/imports/{import}', [SSAController::class, 'showImportStatus'])->name('ssas.imports.show');
         Route::get('ssas/imports/{import}/status', [SSAController::class, 'showImportStatus'])->name('ssas.imports.status');
+        Route::get('ssas/imports/{import}/download', [SSAController::class, 'downloadImported'])->name('ssas.imports.download');
         Route::get('ssas/import/template', [SSAController::class, 'downloadTemplate'])->name('ssas.import.template');
         Route::post('ssas/data', [SSAController::class, 'data'])->name('ssas.data');
         Route::patch('ssas/{ssa}/status', [SSAController::class, 'updateStatus'])->name('ssas.status');
@@ -177,6 +179,7 @@ Route::middleware('role:admin')
             Route::post('imports/data', [SessionLogImportController::class, 'importHistoryData'])->name('imports.data');
             Route::get('imports/{import}', [SessionLogImportController::class, 'showImportStatus'])->name('imports.show');
             Route::get('imports/{import}/status', [SessionLogImportController::class, 'showImportStatus'])->name('imports.status');
+            Route::get('imports/{import}/download', [SessionLogImportController::class, 'downloadImported'])->name('imports.download');
             Route::get('import/template', [SessionLogImportController::class, 'downloadTemplate'])->name('import.template');
 
             Route::get('/', [SessionLogController::class, 'index'])->name('index');

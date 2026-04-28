@@ -43,7 +43,7 @@ class DashboardService
         $today = now()->toDateString();
         $todayFilters = new ScheduleFilterDTO(date: $today);
         $todaySchedules = $this->scheduleService->getSchedules($therapist, $todayFilters);
-        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules)->take(3);
+        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules);
         $lessonsToday = $todaySchedules->count();
 
         $startOfWeek = now()->startOfWeek();

@@ -38,13 +38,13 @@ final class TherapistBillRowTransformer
         $actions = ActionButtons::wrap(
             ActionButtons::view($showUrl, 'View Bill'),
             ActionButtons::download($downloadUrl, 'Download PDF'),
-            ...($bill->isPaid() ? [] : [ActionButtons::delete(
+            ...($bill->isDraft() || $bill->isZeroAmount() ? [ActionButtons::delete(
                 $deleteUrl,
                 'Delete Bill',
                 'Delete Bill?',
                 'This will unlink all sessions and remove the bill. This cannot be undone.',
                 ['form-class' => 'inline js-therapist-bill-delete-form'],
-            )]),
+            )] : []),
         );
 
         return [

@@ -80,9 +80,24 @@ final class TherapistBillDeleteTest extends DuskTestCase
         $this->assertSoftDeleted('therapist_bills', ['id' => $bill->id]);
     }
 
-    public function test_admin_can_delete_sent_bill_from_show_page(): void
+    public function test_delete_button_not_visible_for_sent_non_zero_bill(): void
     {
-        $bill = TherapistBill::factory()->sent($this->admin)->create();
+        $bill = TherapistBill::factory()->sent($this->admin)->create([
+            'total_due' => 125.00,
+        ]);
+
+        $this->browse(function (Browser $browser) use ($bill) {
+            $browser->loginAs($this->admin)
+                ->visit(route('admin.billing.therapist-bills.show', $bill))
+                ->assertDontSee('Delete Bill');
+        });
+    }
+
+    public function test_admin_can_delete_sent_zero_amount_bill_from_show_page(): void
+    {
+        $bill = TherapistBill::factory()->sent($this->admin)->create([
+            'total_due' => 0,
+        ]);
 
         $this->browse(function (Browser $browser) use ($bill) {
             $browser->loginAs($this->admin)

@@ -229,6 +229,10 @@ final class TherapistBillController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to send bill email. Please try again later.']);
         }
     }
 

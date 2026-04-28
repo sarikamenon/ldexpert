@@ -60,12 +60,14 @@ final class LedgerEntryRowTransformer
             $refCell = '<span class="text-foreground/40">—</span>';
         }
 
-        $debitCell = $entry->amount < 0
+        $isDebit = in_array($entry->transaction_type->value, ['invoice_generated', 'bill_generated'], true);
+
+        $debitCell = $isDebit
             ? '<span class="font-semibold text-danger-600">$'.number_format(abs((float) $entry->amount), 2).'</span>'
             : '<span class="text-foreground/30">—</span>';
 
-        $creditCell = $entry->amount > 0
-            ? '<span class="font-semibold text-success-600">$'.number_format((float) $entry->amount, 2).'</span>'
+        $creditCell = ! $isDebit
+            ? '<span class="font-semibold text-success-600">$'.number_format(abs((float) $entry->amount), 2).'</span>'
             : '<span class="text-foreground/30">—</span>';
 
         $balance = (float) $entry->balance_after;

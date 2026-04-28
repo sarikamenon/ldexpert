@@ -19,6 +19,7 @@ use App\Models\TherapistBill;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 final class TherapistBillService
@@ -206,6 +207,10 @@ final class TherapistBillService
             throw new \InvalidArgumentException('Bill cannot be sent in its current status.');
         }
 
+        if ($bill->isZeroAmount()) {
+            throw new \InvalidArgumentException('Zero amount bills cannot be sent.');
+        }
+
         return DB::transaction(function () use ($user, $bill, $dto) {
             // Determine recipient email
             $recipientEmail = $dto->email
@@ -217,7 +222,16 @@ final class TherapistBillService
             }
 
             // Send email with PDF attachment
-            Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
+            try {
+                Mail::to($recipientEmail)->send(new TherapistBillMail($bill, $dto->message));
+            } catch (\Throwable $e) {
+                Log::error('TherapistBillService: failed to send bill email', [
+                    'bill_id' => $bill->id,
+                    'email' => $recipientEmail,
+                    'error' => $e->getMessage(),
+                ]);
+                throw $e;
+            }
 
             // Mark bill as sent
             $bill = $this->repository->markAsSent($bill, $user->id);
@@ -231,8 +245,8 @@ final class TherapistBillService
 
     public function deleteBill(TherapistBill $bill): void
     {
-        if ($bill->isPaid()) {
-            throw new \InvalidArgumentException('Paid bills cannot be deleted.');
+        if (! $bill->isDraft() && ! $bill->isZeroAmount()) {
+            throw new \InvalidArgumentException('Only draft or zero amount bills can be deleted.');
         }
 
         DB::transaction(function () use ($bill): void {

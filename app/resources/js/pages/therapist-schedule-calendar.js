@@ -126,8 +126,25 @@ import { getBillingLabel } from '../common/billing-status';
             });
         }
 
+        function bindDashboardScheduleToggle() {
+            document.querySelectorAll('.dashboard-schedule-toggle').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const isExpanded = button.dataset.expanded === 'true';
+                    const scheduleList = button.closest('.p-5') || document;
+
+                    scheduleList.querySelectorAll('.dashboard-schedule-extra').forEach((row) => {
+                        row.classList.toggle('hidden', isExpanded);
+                    });
+
+                    button.dataset.expanded = isExpanded ? 'false' : 'true';
+                    button.textContent = isExpanded ? button.dataset.showLabel : button.dataset.hideLabel;
+                });
+            });
+        }
+
         // Bind schedule card actions (view, edit, delete) so they work on dashboard and calendar
         bindScheduleCardActions();
+        bindDashboardScheduleToggle();
 
         if (! $calendarEl.length) {
             return;

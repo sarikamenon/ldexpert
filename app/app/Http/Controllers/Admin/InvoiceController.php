@@ -157,8 +157,38 @@ final class InvoiceController extends Controller
             'emailLogs.sentBy',
         ]);
 
+        $adjustmentLines = collect();
+        $advanceLines = collect();
+        $standardLines = collect();
+        $adjustmentSubtotal = 0.0;
+        $advanceSubtotal = 0.0;
+
+        if ($invoice->isAdvanceMode()) {
+            $invoice->load('lineItems');
+
+            $adjustmentLines = $invoice->lineItems->filter(
+                fn ($item) => $item->isAdjustment()
+            )->values();
+
+            $advanceLines = $invoice->lineItems->filter(
+                fn ($item) => $item->isAdvanceCharge()
+            )->values();
+
+            $standardLines = $invoice->lineItems->filter(
+                fn ($item) => ! $item->isAdjustment() && ! $item->isAdvanceCharge()
+            )->values();
+
+            $adjustmentSubtotal = (float) $adjustmentLines->sum('total');
+            $advanceSubtotal = (float) $advanceLines->sum('total');
+        }
+
         return view('admin.invoices.show', [
             'invoice' => $invoice,
+            'adjustmentLines' => $adjustmentLines,
+            'advanceLines' => $advanceLines,
+            'standardLines' => $standardLines,
+            'adjustmentSubtotal' => $adjustmentSubtotal,
+            'advanceSubtotal' => $advanceSubtotal,
         ]);
     }
 
@@ -180,6 +210,10 @@ final class InvoiceController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to send invoice email. Please try again later.']);
         }
     }
 
@@ -201,6 +235,10 @@ final class InvoiceController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to resend invoice email. Please try again later.']);
         }
     }
 

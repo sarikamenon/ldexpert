@@ -48,7 +48,7 @@ final class StoreScheduleRequest extends FormRequest
             'student_ids.*' => ['required', 'integer', Rule::exists('users', 'id')->where(function ($query) {
                 $query->where('role', 'student');
             })],
-            'schedule_date' => ['required', 'date', 'after_or_equal:today'],
+            'schedule_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:H:i'],
             'duration_minutes' => [
                 'required',
@@ -74,7 +74,6 @@ final class StoreScheduleRequest extends FormRequest
             'duration_minutes.required' => 'Duration is required.',
             'duration_minutes.min' => 'Duration must be at least :min minutes.',
             'duration_minutes.max' => 'Duration may not be greater than :max minutes.',
-            'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'location_details.required' => 'Please enter the location or meeting details for this session.',
             'location_details.max' => 'Location/meeting details may not be greater than :max characters.',
             'recurrence_end_date.required_unless' => 'End date is required for recurring schedules.',

@@ -68,6 +68,56 @@ function updateProgress(stats) {
     }
 }
 
+// Row CSV data modal
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('rowDataModal');
+    const closeBtn = document.getElementById('closeRowModal');
+    const rowDataBody = document.getElementById('rowDataBody');
+
+    if (!modal || !closeBtn || !rowDataBody) {
+        return;
+    }
+
+    function openModal(rawData) {
+        rowDataBody.innerHTML = '';
+        Object.entries(rawData).forEach(([key, value]) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="px-4 py-2 font-medium text-foreground/70 whitespace-nowrap">${key}</td>`
+                + `<td class="px-4 py-2 text-foreground break-all">${value !== null && value !== undefined ? String(value) : '—'}</td>`;
+            rowDataBody.appendChild(tr);
+        });
+        modal.classList.remove('hidden');
+    }
+
+    function closeModal() {
+        modal.classList.add('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.view-row-data');
+        if (btn) {
+            try {
+                const raw = JSON.parse(btn.dataset.raw);
+                openModal(raw);
+            } catch {
+                // malformed data — silently ignore
+            }
+        }
+    });
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeModal();
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+});
+
 // Filter functionality
 document.addEventListener('DOMContentLoaded', () => {
     const filterButtons = {

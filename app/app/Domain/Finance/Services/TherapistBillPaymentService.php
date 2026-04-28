@@ -15,6 +15,7 @@ use App\Models\LedgerEntry;
 use App\Models\TherapistBill;
 use App\Models\TherapistBillPayment;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -39,6 +40,9 @@ class TherapistBillPaymentService
             $paymentData = $dto->toArray();
             $paymentData['therapist_id'] = $therapistId;
             $paymentData['therapist_bill_id'] = $bill->id;
+            // Combine the user-selected date with the current time so same-day payments
+            // get distinct timestamps and can be ordered correctly for YTD calculation.
+            $paymentData['paid_at'] = now()->setDateFrom(Carbon::parse($dto->paidAt))->toDateTimeString();
 
             $payment = $this->payments->createPayment($paymentData);
 

@@ -38,7 +38,9 @@
                 </a>
 
                 <form method="POST" action="{{ route('admin.billing.therapist-bills.send', $bill) }}"
-                    class="inline" id="sendBillForm">
+                    class="inline" id="sendBillForm"
+                    data-total-due="{{ number_format((float) $bill->total_due, 2, '.', '') }}"
+                    data-attach-sessions-url="{{ route('admin.billing.therapist-bills.attach-sessions', $bill) }}">
                     @csrf
                     <x-ui::button type="submit" variant="success">
                         Send Bill

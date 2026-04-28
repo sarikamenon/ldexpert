@@ -40,6 +40,7 @@ class School extends Model
         'invoice_email',
         'school_type',
         'is_private_student',
+        'is_auto_extend',
         'non_billable_scheduling',
         'external_emr_name',
         'status',
@@ -50,6 +51,7 @@ class School extends Model
     {
         return [
             'is_private_student' => 'boolean',
+            'is_auto_extend' => 'boolean',
             'non_billable_scheduling' => 'boolean',
             'status' => SchoolStatus::class,
         ];
@@ -132,6 +134,12 @@ class School extends Model
     public function calendarEvents(): HasMany
     {
         return $this->hasMany(SchoolCalendarEvent::class);
+    }
+
+    /** @return HasMany<SchoolContract, $this> */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(SchoolContract::class);
     }
 
     /** @return HasMany<Invoice, $this> */

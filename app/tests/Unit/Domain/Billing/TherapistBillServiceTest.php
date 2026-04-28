@@ -121,3 +121,22 @@ test('therapist bill service sends bill via email', function () {
     Mail::assertSent(\App\Mail\TherapistBillMail::class);
     expect($result)->toBe($bill);
 });
+
+test('therapist bill service prevents sending zero amount bill', function () {
+    $user = User::factory()->admin()->create();
+    $bill = TherapistBill::factory()->create([
+        'status' => TherapistBillStatus::DRAFT->value,
+        'total_due' => 0,
+        'therapist_email' => 'therapist@example.com',
+    ]);
+
+    $dto = SendTherapistBillDTO::fromArray([
+        'email' => null,
+        'message' => null,
+    ]);
+
+    $this->repository->shouldNotReceive('markAsSent');
+    $this->ledgerService->shouldNotReceive('createBillGeneratedEntry');
+
+    $this->service->sendBill($user, $bill, $dto);
+})->throws(\InvalidArgumentException::class, 'Zero amount bills cannot be sent.');
