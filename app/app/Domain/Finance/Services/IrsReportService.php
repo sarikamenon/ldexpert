@@ -225,7 +225,7 @@ final class IrsReportService
 
         return $allPayments
             ->mapWithKeys(function (TherapistBillPayment $p) use (&$runningTotal): array {
-                $key = (int) $p->therapist_id . '_' . $p->paid_at->year;
+                $key = "{$p->therapist_id}_{$p->paid_at->year}";
                 $runningTotal[$key] = ($runningTotal[$key] ?? 0.0) + (float) $p->amount;
 
                 return [(int) $p->id => $runningTotal[$key]];
