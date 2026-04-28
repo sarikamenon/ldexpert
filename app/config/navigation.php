@@ -306,12 +306,17 @@ return [
             [
                 'label' => 'Billing',
                 'route' => 'therapist.billing.index',
-                'active' => 'therapist.billing.*',
+                'active' => ['therapist.billing.*', 'therapist.finance.pay-stub.*'],
                 'children' => [
                     [
                         'label' => 'My Bills',
                         'route' => 'therapist.billing.index',
                         'active' => 'therapist.billing.index',
+                    ],
+                    [
+                        'label' => 'Pay Stub Report',
+                        'route' => 'therapist.finance.pay-stub.index',
+                        'active' => 'therapist.finance.pay-stub.*',
                     ],
                 ],
             ],

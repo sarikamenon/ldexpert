@@ -28,7 +28,7 @@ final class PayStubReportService
                 DB::raw('COUNT(*) as payment_count'),
                 DB::raw('SUM(amount) as total_amount'),
             ])
-            ->whereYear('paid_at', $year)
+            ->forYear($year)
             ->groupBy('therapist_id')
             ->get();
 
@@ -52,6 +52,23 @@ final class PayStubReportService
         }
 
         return $rows;
+    }
+
+    /**
+     * Get all calendar years in which a therapist has at least one payment, descending.
+     *
+     * @return array<int, int>
+     */
+    public function getYearsWithPayments(int $therapistId): array
+    {
+        return TherapistBillPayment::query()
+            ->selectRaw('YEAR(paid_at) as pay_year')
+            ->forTherapist($therapistId)
+            ->groupByRaw('YEAR(paid_at)')
+            ->orderByRaw('YEAR(paid_at) DESC')
+            ->pluck('pay_year') // @phpstan-ignore argument.type
+            ->map(fn (mixed $y): int => (int) $y)
+            ->all();
     }
 
     /**

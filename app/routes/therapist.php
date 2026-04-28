@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
+use App\Http\Controllers\Therapist\Finance\PayStubController;
 use App\Http\Controllers\Therapist\QGlobRequestController;
 use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
@@ -96,4 +97,10 @@ Route::middleware('role:therapist')
         Route::get('billing/{bill}/download', [TherapistBillController::class, 'download'])->name('billing.download');
         Route::get('billing/{bill}', [TherapistBillController::class, 'show'])->name('billing.show');
         Route::get('billing', [TherapistBillController::class, 'index'])->name('billing.index');
+
+        // Pay Stub routes
+        Route::prefix('finance/pay-stub')->name('finance.pay-stub.')->group(function () {
+            Route::get('download', [PayStubController::class, 'download'])->name('download');
+            Route::get('/', [PayStubController::class, 'index'])->name('index');
+        });
     });
