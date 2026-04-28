@@ -22,26 +22,36 @@ class SendScheduleNotification implements ShouldQueue
 
         $type = $event instanceof ScheduleCreated ? 'created' : 'updated';
 
-        try {
-            // Notify Therapist
-            if ($schedule->therapist && $schedule->therapist->email) {
+        // Notify Therapist
+        if ($schedule->therapist && $schedule->therapist->email) {
+            try {
                 Mail::to($schedule->therapist->email)->send(
                     new ScheduleNotificationMail($schedule, $type, isRecipientStudent: false)
                 );
+            } catch (\Throwable $e) {
+                Log::error('SendScheduleNotification: failed to send therapist mail', [
+                    'schedule_id' => $schedule->id,
+                    'type' => $type,
+                    'email' => $schedule->therapist->email,
+                    'error' => $e->getMessage(),
+                ]);
             }
+        }
 
-            // Student side: only schedule_email (no student user email or parent/guardian emails)
-            if ($schedule->student?->studentProfile?->schedule_email) {
+        // Student side: only schedule_email (no student user email or parent/guardian emails)
+        if ($schedule->student?->studentProfile?->schedule_email) {
+            try {
                 Mail::to($schedule->student->studentProfile->schedule_email)->send(
                     new ScheduleNotificationMail($schedule, $type, isRecipientStudent: true)
                 );
+            } catch (\Throwable $e) {
+                Log::error('SendScheduleNotification: failed to send student mail', [
+                    'schedule_id' => $schedule->id,
+                    'type' => $type,
+                    'email' => $schedule->student->studentProfile->schedule_email,
+                    'error' => $e->getMessage(),
+                ]);
             }
-        } catch (\Throwable $e) {
-            Log::error('SendScheduleNotification: failed to send mail', [
-                'schedule_id' => $schedule->id,
-                'type' => $type,
-                'error' => $e->getMessage(),
-            ]);
         }
     }
 }

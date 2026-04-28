@@ -11,7 +11,6 @@ use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Mail\WelcomeStudentMail;
-use Illuminate\Support\Facades\Log;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -19,6 +18,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 final class StudentService
