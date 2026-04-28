@@ -36,7 +36,7 @@ class TherapistBillPayment extends Model
     protected function casts(): array
     {
         return [
-            'paid_at' => 'date',
+            'paid_at' => 'datetime',
             'amount' => 'decimal:2',
             'method' => PaymentMethod::class,
             'created_at' => 'datetime',
@@ -86,4 +86,5 @@ class TherapistBillPayment extends Model
     {
         return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
     }
+
 }
