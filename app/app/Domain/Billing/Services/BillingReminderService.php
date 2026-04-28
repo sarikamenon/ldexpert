@@ -157,7 +157,15 @@ final class BillingReminderService
 
         $paymentUrl = $invoice->getPaymentUrl();
 
-        Mail::to($recipientEmail)->send(new InvoiceReminderMail($invoice, $paymentUrl));
+        try {
+            Mail::to($recipientEmail)->send(new InvoiceReminderMail($invoice, $paymentUrl));
+        } catch (\Throwable $e) {
+            Log::error('BillingReminderService: failed to send reminder email', [
+                'invoice_id' => $invoice->id,
+                'email' => $recipientEmail,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function sendOverdueEmail(Invoice $invoice, int $daysOverdue): void
@@ -172,7 +180,15 @@ final class BillingReminderService
 
         $paymentUrl = $invoice->getPaymentUrl();
 
-        Mail::to($recipientEmail)->send(new InvoiceOverdueMail($invoice, $daysOverdue, $paymentUrl));
+        try {
+            Mail::to($recipientEmail)->send(new InvoiceOverdueMail($invoice, $daysOverdue, $paymentUrl));
+        } catch (\Throwable $e) {
+            Log::error('BillingReminderService: failed to send overdue email', [
+                'invoice_id' => $invoice->id,
+                'email' => $recipientEmail,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function resolveRecipientEmail(Invoice $invoice): ?string
