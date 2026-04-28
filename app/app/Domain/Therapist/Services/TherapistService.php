@@ -16,6 +16,7 @@ use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 final class TherapistService
@@ -35,13 +36,20 @@ final class TherapistService
         );
 
         // Send welcome email
-        Mail::to($dto->personalEmail)->send(
-            new WelcomeTherapistMail(
-                name: $dto->firstName.' '.$dto->lastName,
-                email: $dto->personalEmail,
-                plainPassword: $dto->password
-            )
-        );
+        try {
+            Mail::to($dto->personalEmail)->send(
+                new WelcomeTherapistMail(
+                    name: $dto->firstName.' '.$dto->lastName,
+                    email: $dto->personalEmail,
+                    plainPassword: $dto->password
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::error('TherapistService: failed to send welcome email', [
+                'email' => $dto->personalEmail,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $profile;
     }

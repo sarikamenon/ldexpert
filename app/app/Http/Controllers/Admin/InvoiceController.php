@@ -210,6 +210,10 @@ final class InvoiceController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to send invoice email. Please try again later.']);
         }
     }
 
@@ -231,6 +235,10 @@ final class InvoiceController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to resend invoice email. Please try again later.']);
         }
     }
 

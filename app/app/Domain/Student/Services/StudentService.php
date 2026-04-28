@@ -11,6 +11,7 @@ use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Mail\WelcomeStudentMail;
+use Illuminate\Support\Facades\Log;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -46,14 +47,21 @@ final class StudentService
         );
 
         // Send welcome email to student's user email
-        Mail::to($dto->email)->send(
-            new WelcomeStudentMail(
-                name: $dto->firstName.' '.$dto->lastName,
-                username: $dto->username,
-                email: $dto->email,
-                plainPassword: $dto->password
-            )
-        );
+        try {
+            Mail::to($dto->email)->send(
+                new WelcomeStudentMail(
+                    name: $dto->firstName.' '.$dto->lastName,
+                    username: $dto->username,
+                    email: $dto->email,
+                    plainPassword: $dto->password
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::error('StudentService: failed to send welcome email', [
+                'email' => $dto->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $profile;
     }
