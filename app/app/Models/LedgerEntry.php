@@ -94,4 +94,23 @@ class LedgerEntry extends Model
     {
         return LedgerEntryScope::forReference($query, $reference);
     }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @param  class-string  $ledgerableType
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeForAccount(Builder $query, string $ledgerableType, int $ledgerableId): Builder
+    {
+        return LedgerEntryScope::forAccount($query, $ledgerableType, $ledgerableId);
+    }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeChainOrder(Builder $query, string $direction = 'asc'): Builder
+    {
+        return LedgerEntryScope::chainOrder($query, $direction);
+    }
 }

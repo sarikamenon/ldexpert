@@ -611,11 +611,11 @@ final class ScheduleController extends Controller
                     'phone' => $studentProfile->parent_guardian_phone ?? '-',
                 ],
                 'email_logs' => $schedule->emailLogs->sortByDesc('sent_at')->map(fn ($log) => [
-                    'sent_at'         => $log->sent_at->format('M d, Y g:i A'),
-                    'type_label'      => $log->type->label(),
-                    'type_value'      => $log->type->value,
+                    'sent_at' => $log->sent_at->format('M d, Y g:i A'),
+                    'type_label' => $log->type->label(),
+                    'type_value' => $log->type->value,
                     'recipient_email' => $log->recipient_email,
-                    'sent_by'         => $log->sentBy !== null ? $log->sentBy->name : 'System',
+                    'sent_by' => $log->sentBy !== null ? $log->sentBy->name : 'System',
                 ])->values()->toArray(),
             ],
         ]);

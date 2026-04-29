@@ -585,6 +585,144 @@ class LedgerAdjustmentTest extends TestCase
         }
     }
 
+    public function test_non_admin_user_cannot_edit_or_delete_adjustment(): void
+    {
+        $school = School::factory()->create();
+        $therapist = User::factory()->therapist()->create();
+
+        $creditNote = LedgerEntry::create([
+            'ledgerable_type' => School::class,
+            'ledgerable_id' => $school->id,
+            'transaction_type' => TransactionType::CREDIT_NOTE,
+            'amount' => 100.00,
+            'balance_after' => -100.00,
+            'recorded_at' => now()->subDay(),
+            'reference_type' => null,
+            'reference_id' => null,
+            'notes' => 'goodwill',
+            'recorded_by_id' => $this->admin->id,
+        ]);
+
+        // role middleware blocks non-admins on the route group; assert that
+        // the same gate also covers PUT and DELETE adjustment endpoints (not
+        // just the create path tested above).
+        $editResponse = $this->actingAs($therapist)->putJson(
+            route('admin.ledger.adjustment.update', ['entry' => $creditNote->id]),
+            ['amount' => 200.00, 'recorded_at' => now()->toDateString()]
+        );
+        $this->assertContains($editResponse->status(), [403, 302]);
+
+        $deleteResponse = $this->actingAs($therapist)->deleteJson(
+            route('admin.ledger.adjustment.destroy', ['entry' => $creditNote->id])
+        );
+        $this->assertContains($deleteResponse->status(), [403, 302]);
+
+        // Row was not soft-deleted nor mutated.
+        $fresh = LedgerEntry::find($creditNote->id);
+        $this->assertNotNull($fresh);
+        $this->assertNull($fresh->deleted_at);
+        $this->assertEqualsWithDelta(100.00, (float) $fresh->amount, 0.001);
+    }
+
+    public function test_ledger_verify_exits_zero_on_clean_dataset(): void
+    {
+        $school = School::factory()->create();
+
+        /** @var LedgerService $service */
+        $service = app(LedgerService::class);
+        $service->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::INVOICE_GENERATED,
+            amount: 200.00,
+            recordedAt: now()->subDays(2),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $service->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::PAYMENT_RECEIVED,
+            amount: 50.00,
+            recordedAt: now()->subDay(),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+
+        $exitCode = Artisan::call('ledger:verify', [
+            '--account-type' => School::class,
+            '--account-id' => (string) $school->id,
+        ]);
+
+        $this->assertSame(0, $exitCode);
+        $this->assertStringNotContainsString('DRIFT', Artisan::output());
+    }
+
+    public function test_edit_moves_recorded_at_backward_across_other_rows_and_chain_recomputes(): void
+    {
+        $school = School::factory()->create();
+
+        /** @var LedgerService $service */
+        $service = app(LedgerService::class);
+
+        // Build a chain in order: invoice (D-5) → payment (D-3) → credit note (D-1).
+        $invoice = $service->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::INVOICE_GENERATED,
+            amount: 500.00,
+            recordedAt: now()->subDays(5),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $payment = $service->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::PAYMENT_RECEIVED,
+            amount: 200.00,
+            recordedAt: now()->subDays(3),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $creditNote = $service->createCreditNoteForSchool(
+            $school->id,
+            100.00,
+            'goodwill',
+            $this->admin->id,
+            now()->subDay()->toDateString(),
+        );
+
+        // Sanity: invoice 500, payment 300, credit 200.
+        $this->assertEqualsWithDelta(200.00, (float) $creditNote->fresh()->balance_after, 0.001);
+
+        // Move the credit note 4 days back — now ordering is invoice (D-5) →
+        // credit note (D-4) → payment (D-3). Chain must recompute.
+        $response = $this->actingAs($this->admin)->putJson(
+            route('admin.ledger.adjustment.update', ['entry' => $creditNote->id]),
+            [
+                'amount' => 100.00,
+                'recorded_at' => now()->subDays(4)->toDateString(),
+                'notes' => 'goodwill (moved earlier)',
+            ]
+        );
+        $response->assertOk();
+
+        // Invoice unchanged.
+        $this->assertEqualsWithDelta(500.00, (float) $invoice->fresh()->balance_after, 0.001);
+        // Credit note now sits between invoice and payment: 500 - 100 = 400.
+        $this->assertEqualsWithDelta(400.00, (float) $creditNote->fresh()->balance_after, 0.001);
+        // Payment last: 400 - 200 = 200.
+        $this->assertEqualsWithDelta(200.00, (float) $payment->fresh()->balance_after, 0.001);
+    }
+
     public function test_recompute_chain_from_heals_drift_on_rows_earlier_than_from(): void
     {
         $school = School::factory()->create();

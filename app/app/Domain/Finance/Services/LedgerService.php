@@ -16,8 +16,17 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
+/**
+ * Source-of-truth for ledger writes. Owns the business rules around which
+ * transaction types can be created/edited/deleted from where; delegates the
+ * chain-walk and locking mechanics to LedgerChainService.
+ */
 class LedgerService
 {
+    public function __construct(
+        private readonly LedgerChainService $chain = new LedgerChainService,
+    ) {}
+
     /**
      * Create a ledger entry when an invoice is generated.
      */
@@ -32,7 +41,7 @@ class LedgerService
             ledgerableId: $invoice->school_id,
             type: TransactionType::INVOICE_GENERATED,
             amount: (float) $invoice->total,
-            recordedAt: $this->resolveInvoiceRecordedAt($invoice),
+            recordedAt: self::resolveDateOnlyRecordedAt($invoice->invoice_date),
             referenceType: Invoice::class,
             referenceId: $invoice->id,
             notes: 'Invoice generated: '.$invoice->invoice_number,
@@ -45,32 +54,63 @@ class LedgerService
      */
     public function createBillGeneratedEntry(TherapistBill $bill): LedgerEntry
     {
-        $entry = $this->createEntry(
+        return $this->createEntry(
             ledgerableType: User::class,
             ledgerableId: $bill->therapist_id,
             type: TransactionType::BILL_GENERATED,
             amount: (float) $bill->total_due,
-            recordedAt: $this->resolveBillRecordedAt($bill),
+            recordedAt: self::resolveDateOnlyRecordedAt($bill->bill_date),
             referenceType: TherapistBill::class,
             referenceId: $bill->id,
             notes: 'Bill generated: '.$bill->bill_number,
             recordedById: $bill->sent_by_id,
         );
-
-        return $entry;
     }
 
     /**
-     * Create a credit note ledger entry for a school (decreases what they owe).
+     * Create an adjustment (credit_note or refund) for a school.
+     *
+     * Date input is filled in with current time-of-day inside the service —
+     * see resolveDateOnlyRecordedAt() and LEDGER_SYSTEM.md "Backdating caveats".
      */
-    public function createCreditNoteForSchool(int $schoolId, float $amount, ?string $notes, int $recordedById, CarbonInterface $recordedAt): LedgerEntry
+    public function createCreditNoteForSchool(int $schoolId, float $amount, ?string $notes, int $recordedById, CarbonInterface|string $recordedAt): LedgerEntry
     {
+        return $this->createAdjustment(School::class, $schoolId, TransactionType::CREDIT_NOTE, $amount, $notes, $recordedById, $recordedAt);
+    }
+
+    public function createRefundForSchool(int $schoolId, float $amount, ?string $notes, int $recordedById, CarbonInterface|string $recordedAt): LedgerEntry
+    {
+        return $this->createAdjustment(School::class, $schoolId, TransactionType::REFUND, $amount, $notes, $recordedById, $recordedAt);
+    }
+
+    public function createCreditNoteForTherapist(int $therapistId, float $amount, ?string $notes, int $recordedById, CarbonInterface|string $recordedAt): LedgerEntry
+    {
+        return $this->createAdjustment(User::class, $therapistId, TransactionType::CREDIT_NOTE, $amount, $notes, $recordedById, $recordedAt);
+    }
+
+    public function createRefundForTherapist(int $therapistId, float $amount, ?string $notes, int $recordedById, CarbonInterface|string $recordedAt): LedgerEntry
+    {
+        return $this->createAdjustment(User::class, $therapistId, TransactionType::REFUND, $amount, $notes, $recordedById, $recordedAt);
+    }
+
+    /**
+     * @param  class-string  $ledgerableType
+     */
+    private function createAdjustment(
+        string $ledgerableType,
+        int $ledgerableId,
+        TransactionType $type,
+        float $amount,
+        ?string $notes,
+        int $recordedById,
+        CarbonInterface|string $recordedAt,
+    ): LedgerEntry {
         return $this->createEntry(
-            ledgerableType: School::class,
-            ledgerableId: $schoolId,
-            type: TransactionType::CREDIT_NOTE,
+            ledgerableType: $ledgerableType,
+            ledgerableId: $ledgerableId,
+            type: $type,
             amount: $amount,
-            recordedAt: $recordedAt,
+            recordedAt: self::resolveDateOnlyRecordedAt($recordedAt),
             referenceType: null,
             referenceId: null,
             notes: $notes,
@@ -79,107 +119,44 @@ class LedgerService
     }
 
     /**
-     * Create a refund ledger entry for a school (cash sent back; reverses a prior credit position).
-     */
-    public function createRefundForSchool(int $schoolId, float $amount, ?string $notes, int $recordedById, CarbonInterface $recordedAt): LedgerEntry
-    {
-        return $this->createEntry(
-            ledgerableType: School::class,
-            ledgerableId: $schoolId,
-            type: TransactionType::REFUND,
-            amount: $amount,
-            recordedAt: $recordedAt,
-            referenceType: null,
-            referenceId: null,
-            notes: $notes,
-            recordedById: $recordedById,
-        );
-    }
-
-    /**
-     * Create a credit note ledger entry for a therapist (we owe them less).
-     */
-    public function createCreditNoteForTherapist(int $therapistId, float $amount, ?string $notes, int $recordedById, CarbonInterface $recordedAt): LedgerEntry
-    {
-        return $this->createEntry(
-            ledgerableType: User::class,
-            ledgerableId: $therapistId,
-            type: TransactionType::CREDIT_NOTE,
-            amount: $amount,
-            recordedAt: $recordedAt,
-            referenceType: null,
-            referenceId: null,
-            notes: $notes,
-            recordedById: $recordedById,
-        );
-    }
-
-    /**
-     * Create a refund ledger entry for a therapist (therapist returns money to us).
-     */
-    public function createRefundForTherapist(int $therapistId, float $amount, ?string $notes, int $recordedById, CarbonInterface $recordedAt): LedgerEntry
-    {
-        return $this->createEntry(
-            ledgerableType: User::class,
-            ledgerableId: $therapistId,
-            type: TransactionType::REFUND,
-            amount: $amount,
-            recordedAt: $recordedAt,
-            referenceType: null,
-            referenceId: null,
-            notes: $notes,
-            recordedById: $recordedById,
-        );
-    }
-
-    /**
-     * Edit an existing credit-note or refund entry. Recomputes the chain from the
-     * earlier of (old recorded_at, new recorded_at) so any later rows stay correct.
+     * Edit an existing credit-note or refund entry. Recomputes the chain
+     * unconditionally so any later rows stay correct.
      */
     public function editAdjustment(LedgerEntry $entry, UpdateLedgerAdjustmentDTO $dto): LedgerEntry
     {
         $this->assertIsAdjustment($entry);
 
         return DB::transaction(function () use ($entry, $dto) {
-            $oldRecordedAt = $entry->recorded_at;
-            $newRecordedAt = self::resolveDateOnlyRecordedAt($dto->recordedAt);
-
             $entry->amount = (string) $dto->amount;
             $entry->notes = $dto->notes;
-            $entry->recorded_at = $newRecordedAt;
+            $entry->recorded_at = self::resolveDateOnlyRecordedAt($dto->recordedAt);
             $entry->save();
-
-            // Recompute from the earliest of the two timestamps so every potentially
-            // affected row gets rewritten. compareKey() lets us pick the older one
-            // even when the timestamps are equal but ids differ.
-            $from = $newRecordedAt->lessThan($oldRecordedAt) ? $newRecordedAt : $oldRecordedAt;
 
             /** @var class-string $ledgerableType */
             $ledgerableType = $entry->ledgerable_type;
-            $this->recomputeChainFrom($ledgerableType, (int) $entry->ledgerable_id, $from);
+            $this->chain->recomputeChain($ledgerableType, (int) $entry->ledgerable_id);
 
             return $entry->refresh();
         });
     }
 
     /**
-     * Soft-delete a credit-note or refund and recompute the chain from its position.
-     * Soft-deleted rows are excluded by Eloquent's SoftDeletes scope and therefore
-     * stop contributing to the running balance.
+     * Soft-delete a credit-note or refund and recompute the chain.
+     * Soft-deleted rows are excluded by Eloquent's SoftDeletes scope and
+     * therefore stop contributing to the running balance.
      */
     public function deleteAdjustment(LedgerEntry $entry): void
     {
         $this->assertIsAdjustment($entry);
 
         DB::transaction(function () use ($entry): void {
-            $recordedAt = $entry->recorded_at;
             /** @var class-string $ledgerableType */
             $ledgerableType = $entry->ledgerable_type;
             $ledgerableId = (int) $entry->ledgerable_id;
 
             $entry->delete();
 
-            $this->recomputeChainFrom($ledgerableType, $ledgerableId, $recordedAt);
+            $this->chain->recomputeChain($ledgerableType, $ledgerableId);
         });
     }
 
@@ -197,20 +174,14 @@ class LedgerService
         }
     }
 
-    /**
-     * Get ledger balance for a school.
-     */
     public function getSchoolBalance(int $schoolId): float
     {
-        return $this->getCurrentBalance(School::class, $schoolId);
+        return $this->chain->getCurrentBalance(School::class, $schoolId);
     }
 
-    /**
-     * Get ledger balance for a therapist.
-     */
     public function getTherapistBalance(int $therapistId): float
     {
-        return $this->getCurrentBalance(User::class, $therapistId);
+        return $this->chain->getCurrentBalance(User::class, $therapistId);
     }
 
     /**
@@ -233,37 +204,20 @@ class LedgerService
         ?int $recordedById,
     ): LedgerEntry {
         return DB::transaction(function () use ($ledgerableType, $ledgerableId, $type, $amount, $recordedAt, $referenceType, $referenceId, $notes, $recordedById) {
-            $latest = $this->lockedLatestEntry($ledgerableType, $ledgerableId);
+            $latest = $this->chain->lockedLatestEntry($ledgerableType, $ledgerableId);
 
             $isBackdated = $latest !== null
                 && $this->compareKey([$recordedAt, PHP_INT_MAX], [$latest->recorded_at, $latest->id]) <= 0;
 
             $signed = $amount * $type->balanceDelta();
+            $previousBalance = $latest !== null ? (float) $latest->balance_after : 0.0;
 
-            if (! $isBackdated) {
-                $previousBalance = $latest !== null ? (float) $latest->balance_after : 0.0;
-
-                return LedgerEntry::create([
-                    'ledgerable_type' => $ledgerableType,
-                    'ledgerable_id' => $ledgerableId,
-                    'transaction_type' => $type,
-                    'amount' => $amount,
-                    'balance_after' => $previousBalance + $signed,
-                    'recorded_at' => $recordedAt,
-                    'reference_type' => $referenceType,
-                    'reference_id' => $referenceId,
-                    'notes' => $notes,
-                    'recorded_by_id' => $recordedById,
-                ]);
-            }
-
-            // Backdated insert: create with a placeholder balance, then walk the chain.
             $entry = LedgerEntry::create([
                 'ledgerable_type' => $ledgerableType,
                 'ledgerable_id' => $ledgerableId,
                 'transaction_type' => $type,
                 'amount' => $amount,
-                'balance_after' => 0,
+                'balance_after' => $isBackdated ? 0 : $previousBalance + $signed,
                 'recorded_at' => $recordedAt,
                 'reference_type' => $referenceType,
                 'reference_id' => $referenceId,
@@ -271,78 +225,27 @@ class LedgerService
                 'recorded_by_id' => $recordedById,
             ]);
 
-            $this->recomputeChainFrom($ledgerableType, $ledgerableId, $recordedAt);
+            if ($isBackdated) {
+                $this->chain->recomputeChain($ledgerableType, $ledgerableId);
 
-            return $entry->refresh();
-        });
-    }
-
-    /**
-     * Walk the entire chain for an account (in (recorded_at, id) order) and
-     * rewrite balance_after on every row whose stored value disagrees with the
-     * running signed-amount total. Locks the account chain via SELECT ... FOR
-     * UPDATE so concurrent writers serialize per-account.
-     *
-     * Soft-deleted rows are excluded by Eloquent's SoftDeletes scope.
-     *
-     * The $from parameter is retained for backwards compatibility but no longer
-     * gates which rows are eligible to heal — any drift detected anywhere in
-     * the chain is corrected. This makes the function self-healing against
-     * historical residue from earlier partial recomputes.
-     *
-     * @param  class-string  $ledgerableType
-     */
-    public function recomputeChainFrom(string $ledgerableType, int $ledgerableId, CarbonInterface $from): void
-    {
-        DB::transaction(function () use ($ledgerableType, $ledgerableId): void {
-            /** @var \Illuminate\Support\Collection<int, LedgerEntry> $rows */
-            $rows = LedgerEntry::query()
-                ->where('ledgerable_type', $ledgerableType)
-                ->where('ledgerable_id', $ledgerableId)
-                ->orderBy('recorded_at')
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
-
-            $running = 0.0;
-            foreach ($rows as $row) {
-                $running += $row->signedAmount();
-
-                if ((float) $row->balance_after !== $running) {
-                    $row->balance_after = (string) $running;
-                    $row->save();
-                }
+                return $entry->refresh();
             }
+
+            return $entry;
         });
     }
 
     /**
+     * Backwards-compatible alias that forwards to LedgerChainService.
+     * Kept so external callers (LedgerVerifyCommand, payment services) keep
+     * working without churn while they're migrated to inject the chain
+     * service directly.
+     *
      * @param  class-string  $ledgerableType
      */
-    private function lockedLatestEntry(string $ledgerableType, int $ledgerableId): ?LedgerEntry
+    public function recomputeChainFrom(string $ledgerableType, int $ledgerableId, ?CarbonInterface $from = null): void
     {
-        return LedgerEntry::query()
-            ->where('ledgerable_type', $ledgerableType)
-            ->where('ledgerable_id', $ledgerableId)
-            ->orderByDesc('recorded_at')
-            ->orderByDesc('id')
-            ->lockForUpdate()
-            ->first();
-    }
-
-    /**
-     * @param  class-string  $ledgerableType
-     */
-    private function getCurrentBalance(string $ledgerableType, int $ledgerableId): float
-    {
-        $lastEntry = LedgerEntry::query()
-            ->where('ledgerable_type', $ledgerableType)
-            ->where('ledgerable_id', $ledgerableId)
-            ->orderByDesc('recorded_at')
-            ->orderByDesc('id')
-            ->first();
-
-        return $lastEntry !== null ? (float) $lastEntry->balance_after : 0.0;
+        $this->chain->recomputeChainFrom($ledgerableType, $ledgerableId, $from);
     }
 
     /**
@@ -358,26 +261,15 @@ class LedgerService
         return $cmp !== 0 ? $cmp : ($a[1] <=> $b[1]);
     }
 
-    private function resolveInvoiceRecordedAt(Invoice $invoice): CarbonInterface
-    {
-        return self::resolveDateOnlyRecordedAt($invoice->invoice_date);
-    }
-
-    private function resolveBillRecordedAt(TherapistBill $bill): CarbonInterface
-    {
-        return self::resolveDateOnlyRecordedAt($bill->bill_date);
-    }
-
     /**
      * Combine a date-only source value with the current time-of-day so the
      * resulting recorded_at carries a real timestamp (not 00:00:00 or 23:59:59).
      * The picked date is preserved; only the time portion is filled in from
-     * Carbon::now(), so rows sort deterministically by insertion moment within
-     * their date and interleave naturally with same-day rows.
-     *
-     * @param  \Carbon\CarbonInterface|\DateTimeInterface|string|null  $source
+     * Carbon::now(). A backdated row is therefore stamped with *today's*
+     * time-of-day, so it may sort *after* same-day historical rows that were
+     * inserted earlier in the day. See LEDGER_SYSTEM.md "Backdating caveats".
      */
-    public static function resolveDateOnlyRecordedAt($source): Carbon
+    public static function resolveDateOnlyRecordedAt(CarbonInterface|\DateTimeInterface|string|null $source): Carbon
     {
         $now = Carbon::now();
 

@@ -41,7 +41,7 @@ The invariant holds **per row**, not just at the tail: every row's stored `balan
 
 Two timestamps with very different meanings:
 
-- **`recorded_at`** — when the underlying transaction *occurred*. User-controlled date (the form field on credit notes/refunds; backfilled from source-document dates for invoice/bill/payment/expense rows). May be backdated. Adjustments combine the user-picked **date** with the **current time-of-day** at submit so rows sort deterministically by insertion moment within their date and so the new row interleaves naturally with same-day invoices/payments.
+- **`recorded_at`** — when the underlying transaction *occurred*. User-controlled date (the form field on credit notes/refunds; backfilled from source-document dates for invoice/bill/payment/expense rows). May be backdated. Adjustments combine the user-picked **date** with the **current time-of-day** at submit so rows sort deterministically by insertion moment within their date and so the new row interleaves naturally with same-day invoices/payments. See **Backdating caveats** below for the implication this has on intra-day ordering of backdated rows.
 - **`created_at`** — when the row was inserted into the database. DB-controlled. Never user-controlled.
 
 **Naming gotcha**: `recorded_by_id` (the user who clicked Save) is unrelated to `recorded_at` (when the underlying transaction happened). Read these as two independent fields.
@@ -62,23 +62,36 @@ The four credit-note / refund methods (`createCreditNoteForSchool`, etc.) and th
 
 ## 6. The recompute walker
 
-`LedgerService::recomputeChainFrom(string $ledgerableType, int $ledgerableId, CarbonInterface $from): void`
+`LedgerChainService::recomputeChain(string $ledgerableType, int $ledgerableId): void`
 
-Inside `DB::transaction`:
+Called from inside the calling service's `DB::transaction` (createEntry, editAdjustment, deleteAdjustment all open one):
 
-1. `SELECT id, transaction_type, amount, balance_after FROM ledger_entries WHERE ledgerable_type = ? AND ledgerable_id = ? ORDER BY recorded_at, id FOR UPDATE`. Locks the entire chain (typically 50–350 rows for an active account).
+1. `SELECT … FROM ledger_entries WHERE ledgerable_type = ? AND ledgerable_id = ? ORDER BY recorded_at, id FOR UPDATE`. Locks the entire chain (typically 50–350 rows for an active account).
 2. Walk from row 1, accumulating `running += row.signedAmount()`.
-3. For **every** row whose stored `balance_after` differs from `running`, write the corrected value.
+3. For **every** row whose stored `balance_after` differs from `running` by ≥ 0.005 (half a cent — the storage precision is `decimal(*,2)`), write the corrected value. Float equality is **not** used; rounding noise within ½ cent is treated as no drift.
 
-The walker is fully self-healing: it rewrites any row in the chain that drifts, regardless of position. The `$from` parameter is retained in the signature for callers that want to communicate intent, but it does not gate which rows are eligible to heal — historical residue from earlier partial recomputes is corrected on the next touch.
+The walker is fully self-healing: it rewrites any row in the chain that drifts, regardless of position.
+
+`LedgerService::recomputeChainFrom($type, $id, $from = null)` is kept as a backwards-compatible alias that opens its own transaction and delegates to `recomputeChain`. The `$from` cursor is **ignored** — historical drift older than `$from` was never load-bearing and would have been silently skipped before. New code should use `LedgerChainService::recomputeChain` directly inside its own transaction.
 
 Soft-deleted rows are excluded by Eloquent's `SoftDeletes` scope — they don't contribute and don't get rewritten.
 
 The walker fires on:
 - Backdated `createEntry` calls.
-- `editAdjustment` (recomputes from the earlier of old/new `recorded_at`).
-- `deleteAdjustment` (recomputes from the deleted row's `recorded_at`).
+- `editAdjustment` (recomputes the entire chain after save).
+- `deleteAdjustment` (recomputes after soft-delete).
 - `InvoicePaymentService::deletePayment` and `TherapistBillPaymentService::deletePayment` (cascade soft-delete + recompute).
+
+### Backdating caveats
+
+Two non-obvious consequences of how `recorded_at` is stamped:
+
+1. **Backdated rows take *today's* time-of-day.** `LedgerService::resolveDateOnlyRecordedAt` overlays `Carbon::now()` onto the user-picked date. A row backdated to *2026-03-01* recorded today at 14:37 will sort *after* a real same-day historical row recorded at 09:00 on 2026-03-01. This is intentional — it preserves natural insertion order for new same-day rows — but means the chain order is "submit moment within date", not "real-world moment within date". For a strict moment-of-truth view, sort by `(recorded_at, created_at)` instead of `(recorded_at, id)` in your query, or extend the form to accept time too.
+2. **Editing twice in the same day moves the row's time-of-day.** Each edit re-stamps the time portion from `now()`, so a row edited at 09:00 then again at 14:00 will end up at 14:00 even if its date didn't change. Cosmetic — never affects balances — but slightly surprising in audit logs.
+
+### Caller responsibility: never query the table raw
+
+`SoftDeletes` lives on the Eloquent model. `DB::table('ledger_entries')->…` and `LedgerEntry::withTrashed()->…` both bypass the global scope and **will return tombstoned rows**. Any aggregator (stats, reports, exports) that uses raw queries here will silently double-count deleted entries. The audit-trail value of soft-deletes is preserved by intent: when in doubt, query through the Eloquent model.
 
 ## 7. Edit / delete matrix
 
@@ -94,7 +107,10 @@ Only `credit_note` and `refund` rows are mutable from the ledger UI. All other t
 | `credit_note` | ✅ | — |
 | `refund` | ✅ | — |
 
-The guard is enforced server-side in `LedgerAccountController::updateAdjustment` and `destroyAdjustment` (returns **403** on non-adjustment rows) and again inside `LedgerService::editAdjustment` / `deleteAdjustment` (throws `InvalidArgumentException`). UI is defense-in-depth; the controller is authoritative.
+The guard has three layers, in order:
+1. **`role:admin` middleware** on the route group — non-admins never reach the controller.
+2. **`LedgerEntryPolicy::update` / `delete`** invoked via `$this->authorize(...)` in `LedgerAdjustmentController` — returns **403** on a non-credit-note/refund row before the action runs.
+3. **`LedgerService::editAdjustment` / `deleteAdjustment`** — throws `InvalidArgumentException` if a service caller bypasses the controller. Defence in depth.
 
 ## 8. Soft-delete semantics
 
@@ -155,7 +171,17 @@ Admin deletes the payment. `InvoicePaymentService::deletePayment` soft-deletes t
 2026-04-29 refund              $50   bal +550  ← walked
 ```
 
-## 12. Future work (not in scope)
+## 12. Migration / large-table notes
+
+The `recorded_at` column was introduced in three steps so production rollouts don't down-time:
+
+1. `2026_04_29_100000_add_recorded_at_to_ledger_entries_table` — add the column **nullable** plus the `(ledgerable_type, ledgerable_id, recorded_at)` index.
+2. `2026_04_29_100003_backfill_recorded_at_on_ledger_entries` — `UPDATE ledger_entries SET recorded_at = created_at WHERE recorded_at IS NULL`.
+3. `2026_04_29_100004_make_recorded_at_not_nullable_on_ledger_entries` — change to NOT NULL once the backfill is done.
+
+The backfill is a single `UPDATE` statement. **For tables in the millions of rows, chunk the backfill manually before running step 3** (e.g. `WHERE id BETWEEN ? AND ?` slices in a separate one-off command), otherwise the single statement can grow the InnoDB undo log and lock the table for an extended window. This codebase's row counts are well under that threshold, so the simple form is shipped — re-evaluate before the table grows past ~1M rows.
+
+## 13. Future work (not in scope)
 
 - **Forward-dating** — `recorded_at` is currently constrained to `<= today`. A separate feature could relax this for known scheduled transactions.
 - **Automatic-vs-manual badge** — derivable from `reference->gateway` if a future audit view wants it.

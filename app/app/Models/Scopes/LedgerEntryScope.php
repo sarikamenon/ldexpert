@@ -20,4 +20,32 @@ final class LedgerEntryScope extends BaseModelScope
             ->where('reference_type', $reference::class)
             ->where('reference_id', $reference->getKey());
     }
+
+    /**
+     * Filter to a single ledger account (morph pair).
+     *
+     * @param  Builder<LedgerEntry>  $builder
+     * @param  class-string  $ledgerableType
+     * @return Builder<LedgerEntry>
+     */
+    public static function forAccount(Builder $builder, string $ledgerableType, int $ledgerableId): Builder
+    {
+        return $builder
+            ->where('ledgerable_type', $ledgerableType)
+            ->where('ledgerable_id', $ledgerableId);
+    }
+
+    /**
+     * Order rows in canonical chain order (oldest → newest).
+     * recorded_at, then id as tiebreak — same key the chain walker uses.
+     *
+     * @param  Builder<LedgerEntry>  $builder
+     * @return Builder<LedgerEntry>
+     */
+    public static function chainOrder(Builder $builder, string $direction = 'asc'): Builder
+    {
+        $dir = $direction === 'desc' ? 'desc' : 'asc';
+
+        return $builder->orderBy('recorded_at', $dir)->orderBy('id', $dir);
+    }
 }

@@ -6,7 +6,11 @@ namespace App\DataTables\Transformers;
 
 use App\DataTables\ActionButtons;
 use App\Enums\TransactionType;
+use App\Models\Invoice;
+use App\Models\InvoicePayment;
 use App\Models\LedgerEntry;
+use App\Models\TherapistBill;
+use App\Models\TherapistBillPayment;
 
 final class LedgerEntryRowTransformer
 {
@@ -33,34 +37,7 @@ final class LedgerEntryRowTransformer
         $typeCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium whitespace-nowrap '.$badgeClass.'">'
             .e($entry->transaction_type->label()).'</span>';
 
-        /** @var \Illuminate\Database\Eloquent\Model|null $ref */
-        $ref = $entry->reference;
-        $refType = $entry->reference_type;
-        if ($ref) {
-            if ($refType === 'App\\Models\\Invoice') {
-                /** @var \App\Models\Invoice $ref */
-                $refCell = '<a href="'.e(route('admin.invoices.show', ['invoice' => $ref->id])).'" class="text-primary hover:underline">Invoice #'.e($ref->invoice_number ?? (string) $ref->id).'</a>';
-            } elseif ($refType === 'App\\Models\\TherapistBill') {
-                /** @var \App\Models\TherapistBill $ref */
-                $refCell = '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $ref->id])).'" class="text-primary hover:underline">Bill #'.e($ref->bill_number ?? (string) $ref->id).'</a>';
-            } elseif ($refType === 'App\\Models\\InvoicePayment') {
-                /** @var \App\Models\InvoicePayment $ref */
-                $invoiceFromPayment = $ref->invoice()->first()?->id;
-                $refCell = $invoiceFromPayment
-                    ? '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoiceFromPayment])).'" class="text-primary hover:underline">Payment #'.$ref->id.'</a>'
-                    : 'Payment #'.($entry->reference_id ?? 'N/A');
-            } elseif ($refType === 'App\\Models\\TherapistBillPayment') {
-                /** @var \App\Models\TherapistBillPayment $ref */
-                $billFromPayment = $ref->therapistBill()->first()?->id;
-                $refCell = $billFromPayment
-                    ? '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $billFromPayment])).'" class="text-primary hover:underline">Payment #'.$ref->id.'</a>'
-                    : 'Payment #'.($entry->reference_id ?? 'N/A');
-            } else {
-                $refCell = e(class_basename($refType ?? '')).' #'.($entry->reference_id ?? '');
-            }
-        } else {
-            $refCell = '<span class="text-foreground/40">—</span>';
-        }
+        $refCell = self::renderReferenceCell($entry);
 
         $isDebit = in_array($entry->transaction_type->value, ['invoice_generated', 'bill_generated', 'refund'], true);
 
@@ -115,5 +92,65 @@ final class LedgerEntryRowTransformer
             $recordedByCell,
             $actionsCell,
         ];
+    }
+
+    /**
+     * Render the "Reference" column. Relies on eager-loaded relations
+     * (`reference` + nested `invoice`/`therapistBill` for payment morph types)
+     * to avoid per-row queries.
+     */
+    private static function renderReferenceCell(LedgerEntry $entry): string
+    {
+        $ref = $entry->reference;
+        if ($ref === null) {
+            return '<span class="text-foreground/40">—</span>';
+        }
+
+        $refType = $entry->reference_type;
+
+        if ($ref instanceof Invoice && $refType === Invoice::class) {
+            return self::invoiceLink($ref);
+        }
+        if ($ref instanceof TherapistBill && $refType === TherapistBill::class) {
+            return self::therapistBillLink($ref);
+        }
+        if ($ref instanceof InvoicePayment && $refType === InvoicePayment::class) {
+            return self::invoicePaymentLink($ref, $entry->reference_id);
+        }
+        if ($ref instanceof TherapistBillPayment && $refType === TherapistBillPayment::class) {
+            return self::therapistBillPaymentLink($ref, $entry->reference_id);
+        }
+
+        return e(class_basename($refType ?? '')).' #'.($entry->reference_id ?? '');
+    }
+
+    private static function invoiceLink(Invoice $invoice): string
+    {
+        return '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoice->id])).'" class="text-primary hover:underline">Invoice #'
+            .e($invoice->invoice_number ?? (string) $invoice->id).'</a>';
+    }
+
+    private static function therapistBillLink(TherapistBill $bill): string
+    {
+        return '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $bill->id])).'" class="text-primary hover:underline">Bill #'
+            .e($bill->bill_number ?? (string) $bill->id).'</a>';
+    }
+
+    private static function invoicePaymentLink(InvoicePayment $payment, ?int $fallbackId): string
+    {
+        $invoiceId = $payment->invoice?->id;
+
+        return $invoiceId
+            ? '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoiceId])).'" class="text-primary hover:underline">Payment #'.$payment->id.'</a>'
+            : 'Payment #'.($fallbackId ?? 'N/A');
+    }
+
+    private static function therapistBillPaymentLink(TherapistBillPayment $payment, ?int $fallbackId): string
+    {
+        $billId = $payment->therapistBill?->id;
+
+        return $billId
+            ? '<a href="'.e(route('admin.billing.therapist-bills.show', ['bill' => $billId])).'" class="text-primary hover:underline">Payment #'.$payment->id.'</a>'
+            : 'Payment #'.($fallbackId ?? 'N/A');
     }
 }

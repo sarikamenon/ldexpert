@@ -7,22 +7,15 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\Transformers\LedgerAccountRowTransformer;
 use App\DataTables\Transformers\LedgerEntryRowTransformer;
 use App\Domain\Finance\Services\LedgerAccountService;
-use App\Domain\Finance\Services\LedgerService;
-use App\DTOs\CreateLedgerAdjustmentDTO;
 use App\DTOs\LedgerAccountsFilterDTO;
-use App\DTOs\UpdateLedgerAdjustmentDTO;
 use App\Enums\Role;
-use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\Ledger\CreateLedgerAdjustmentRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsDataRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsExportRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsIndexRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountTransactionsDataRequest;
-use App\Http\Requests\Admin\Ledger\UpdateLedgerAdjustmentRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
-use App\Models\LedgerEntry;
 use App\Models\School;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -54,7 +47,6 @@ class LedgerAccountController extends Controller
 
     public function __construct(
         private readonly LedgerAccountService $ledgerAccountService,
-        private readonly LedgerService $ledgerService,
     ) {}
 
     public function index(LedgerAccountsIndexRequest $request): View
@@ -250,177 +242,5 @@ class LedgerAccountController extends Controller
                 'message' => 'Could not refresh stats.',
             ], 500);
         }
-    }
-
-    public function storeAdjustment(CreateLedgerAdjustmentRequest $request, string $type, int $id): JsonResponse
-    {
-        $validated = $request->validated();
-        $validated['type'] = $type;
-        $validated['account_id'] = $id;
-
-        $dto = CreateLedgerAdjustmentDTO::fromArray($validated);
-        /** @var \App\Models\User $admin */
-        $admin = $request->user();
-        $recordedById = (int) $admin->id;
-
-        $recordedAt = LedgerService::resolveDateOnlyRecordedAt($dto->recordedAt);
-
-        try {
-            $entry = match ([$dto->type, $dto->transactionType]) {
-                ['school', TransactionType::CREDIT_NOTE] => $this->ledgerService->createCreditNoteForSchool(
-                    $dto->accountId,
-                    $dto->amount,
-                    $dto->notes,
-                    $recordedById,
-                    $recordedAt,
-                ),
-                ['school', TransactionType::REFUND] => $this->ledgerService->createRefundForSchool(
-                    $dto->accountId,
-                    $dto->amount,
-                    $dto->notes,
-                    $recordedById,
-                    $recordedAt,
-                ),
-                ['therapist', TransactionType::CREDIT_NOTE] => $this->ledgerService->createCreditNoteForTherapist(
-                    $dto->accountId,
-                    $dto->amount,
-                    $dto->notes,
-                    $recordedById,
-                    $recordedAt,
-                ),
-                ['therapist', TransactionType::REFUND] => $this->ledgerService->createRefundForTherapist(
-                    $dto->accountId,
-                    $dto->amount,
-                    $dto->notes,
-                    $recordedById,
-                    $recordedAt,
-                ),
-                default => throw new \InvalidArgumentException('Unsupported adjustment type combination.'),
-            };
-
-            $message = $dto->transactionType === TransactionType::CREDIT_NOTE
-                ? 'Credit note recorded successfully.'
-                : 'Refund recorded successfully.';
-
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'entry_id' => $entry->id,
-            ]);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        } catch (\Throwable $e) {
-            Log::error('Failed to create ledger adjustment', [
-                'error' => $e->getMessage(),
-                'type' => $type,
-                'account_id' => $id,
-                'transaction_type' => $dto->transactionType->value,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An unexpected error occurred while recording the adjustment.',
-            ], 500);
-        }
-    }
-
-    public function showAdjustment(LedgerEntry $entry): JsonResponse
-    {
-        if (! $this->isAdjustmentRow($entry)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only credit notes and refunds can be edited from the ledger.',
-            ], 403);
-        }
-
-        return response()->json([
-            'success' => true,
-            'entry' => [
-                'id' => $entry->id,
-                'transaction_type' => $entry->transaction_type->value,
-                'amount' => (float) $entry->amount,
-                'recorded_at' => $entry->recorded_at->toDateString(),
-                'notes' => $entry->notes,
-            ],
-        ]);
-    }
-
-    public function updateAdjustment(UpdateLedgerAdjustmentRequest $request, LedgerEntry $entry): JsonResponse
-    {
-        if (! $this->isAdjustmentRow($entry)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only credit notes and refunds can be edited from the ledger.',
-            ], 403);
-        }
-
-        $dto = UpdateLedgerAdjustmentDTO::fromArray($request->validated());
-
-        try {
-            $this->ledgerService->editAdjustment($entry, $dto);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Adjustment updated successfully.',
-            ]);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        } catch (\Throwable $e) {
-            Log::error('Failed to update ledger adjustment', [
-                'error' => $e->getMessage(),
-                'entry_id' => $entry->id,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An unexpected error occurred while updating the adjustment.',
-            ], 500);
-        }
-    }
-
-    public function destroyAdjustment(LedgerEntry $entry): JsonResponse
-    {
-        if (! $this->isAdjustmentRow($entry)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Only credit notes and refunds can be deleted from the ledger.',
-            ], 403);
-        }
-
-        try {
-            $this->ledgerService->deleteAdjustment($entry);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Adjustment deleted successfully.',
-            ]);
-        } catch (\InvalidArgumentException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 422);
-        } catch (\Throwable $e) {
-            Log::error('Failed to delete ledger adjustment', [
-                'error' => $e->getMessage(),
-                'entry_id' => $entry->id,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An unexpected error occurred while deleting the adjustment.',
-            ], 500);
-        }
-    }
-
-    private function isAdjustmentRow(LedgerEntry $entry): bool
-    {
-        return $entry->transaction_type === TransactionType::CREDIT_NOTE
-            || $entry->transaction_type === TransactionType::REFUND;
     }
 }
