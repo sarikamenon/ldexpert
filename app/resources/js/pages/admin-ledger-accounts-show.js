@@ -9,6 +9,7 @@ window.jQuery(function () {
             closeAllAdjustmentModals();
             await successToast(data.message || 'Saved successfully.');
             reloadLedgerTable();
+            void reloadStats();
         },
     });
     initRowActions();
@@ -246,6 +247,7 @@ function initEditFormSubmit() {
             closeAllAdjustmentModals();
             await successToast(data.message || 'Adjustment updated.');
             reloadLedgerTable();
+            void reloadStats();
         } catch (err) {
             console.error('Edit submit failed', err);
             await errorAlert('An unexpected error occurred. Please try again.');
@@ -299,6 +301,7 @@ async function confirmAndDelete(form, deleteButton) {
 
         await successToast(data.message || 'Adjustment deleted.');
         reloadLedgerTable();
+        void reloadStats();
     } catch (err) {
         console.error('Delete failed', err);
         await errorAlert('An unexpected error occurred. Please try again.');
@@ -322,10 +325,33 @@ function renderValidationErrors(form, errors) {
     });
 }
 
+async function reloadStats() {
+    const container = document.getElementById('ledgerAccountStats');
+    const url = container?.getAttribute('data-stats-url');
+    if (!container || !url) {
+        return;
+    }
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                Accept: 'application/json',
+            },
+            credentials: 'same-origin',
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || data.success === false || typeof data.html !== 'string') {
+            return;
+        }
+        container.innerHTML = data.html;
+    } catch (err) {
+        console.error('Failed to refresh stats', err);
+    }
+}
+
 // TODO: migrate to vanilla JS once a vanilla DataTables reload helper exists in
 // resources/js/common/datatables.js. DataTables' ajax.reload() API is jQuery-only.
-// Stats card (Total Invoiced / Outstanding / etc.) is rendered server-side and is
-// NOT refreshed here — balance_after on the table rows remains the source of truth.
 function reloadLedgerTable() {
     const $ = window.jQuery;
     const tableEl = document.getElementById('ledgerTransactionsTable');
