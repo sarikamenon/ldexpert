@@ -38,7 +38,7 @@ class TherapistBillPayment extends Model
     protected function casts(): array
     {
         return [
-            'paid_at' => 'date',
+            'paid_at' => 'datetime',
             'amount' => 'decimal:2',
             'method' => PaymentMethod::class,
             'created_at' => 'datetime',

@@ -4,17 +4,19 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\DataTables\ActionButtons;
+use App\Enums\TransactionType;
 use App\Models\LedgerEntry;
 
 final class LedgerEntryRowTransformer
 {
     /**
-     * @return array<int, string> 8 cell HTML strings
+     * @return array<int, string> 9 cell HTML strings
      */
     public static function transform(LedgerEntry $entry): array
     {
-        $dateCell = '<div>'.$entry->created_at->format('M d, Y').'</div>'
-            .'<div class="text-xs text-foreground/60">'.$entry->created_at->format('h:i A').'</div>';
+        $dateCell = '<div class="whitespace-nowrap">'.$entry->recorded_at->format('M d, Y').'</div>'
+            .'<div class="text-xs text-foreground/60 whitespace-nowrap">'.$entry->recorded_at->format('h:i A').'</div>';
 
         $variant = match ($entry->transaction_type->value) {
             'invoice_generated', 'bill_generated' => 'primary',
@@ -28,7 +30,7 @@ final class LedgerEntryRowTransformer
             'danger' => 'bg-danger/10 text-danger border border-danger/20',
             default => 'bg-secondary/10 text-secondary border border-secondary/20',
         };
-        $typeCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$badgeClass.'">'
+        $typeCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium whitespace-nowrap '.$badgeClass.'">'
             .e($entry->transaction_type->label()).'</span>';
 
         /** @var \Illuminate\Database\Eloquent\Model|null $ref */
@@ -71,14 +73,36 @@ final class LedgerEntryRowTransformer
             : '<span class="text-foreground/30">—</span>';
 
         $balance = (float) $entry->balance_after;
-        $balanceCell = '<span class="font-semibold '.($balance >= 0 ? 'text-success-600' : 'text-danger-600').'">'
-            .'$'.number_format(abs($balance), 2).($balance < 0 ? ' DR' : ' CR').'</span>';
+        $balanceCell = '<span class="font-semibold '.($balance > 0 ? 'text-danger-600' : 'text-success-600').'">'
+            .'$'.number_format(abs($balance), 2).($balance > 0 ? ' DR' : ' CR').'</span>';
 
         $notesCell = $entry->notes
             ? '<span class="text-foreground/80">'.e(\Illuminate\Support\Str::limit($entry->notes, 60)).'</span>'
             : '<span class="text-foreground/30">—</span>';
 
         $recordedByCell = e($entry->recordedBy->name ?? 'System');
+
+        $type = $entry->transaction_type;
+        $isAdjustment = $type === TransactionType::CREDIT_NOTE || $type === TransactionType::REFUND;
+        if ($isAdjustment) {
+            $editUrl = route('admin.ledger.adjustment.show', ['entry' => $entry->id]);
+            $deleteUrl = route('admin.ledger.adjustment.destroy', ['entry' => $entry->id]);
+            $actionsCell = ActionButtons::wrap(
+                ActionButtons::edit($editUrl, 'Edit adjustment', [
+                    'data-edit-adjustment' => '1',
+                    'data-entry-id' => $entry->id,
+                    'data-fetch-url' => $editUrl,
+                ]),
+                ActionButtons::delete(
+                    $deleteUrl,
+                    'Delete adjustment',
+                    'Delete adjustment?',
+                    'This will remove the adjustment and recompute later balances. This cannot be undone.',
+                ),
+            );
+        } else {
+            $actionsCell = '<span class="text-foreground/30">—</span>';
+        }
 
         return [
             $dateCell,
@@ -89,6 +113,7 @@ final class LedgerEntryRowTransformer
             $balanceCell,
             $notesCell,
             $recordedByCell,
+            $actionsCell,
         ];
     }
 }

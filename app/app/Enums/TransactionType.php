@@ -28,6 +28,20 @@ enum TransactionType: string
     }
 
     /**
+     * Sign of this transaction's effect on the running ledger balance.
+     *
+     * +1 increases what the counterparty owes (or what we owe them);
+     * -1 decreases it. Single source of truth for the ledger sign convention.
+     */
+    public function balanceDelta(): int
+    {
+        return match ($this) {
+            self::INVOICE_GENERATED, self::BILL_GENERATED, self::REFUND => 1,
+            self::PAYMENT_RECEIVED, self::PAYMENT_MADE, self::CREDIT_NOTE, self::EXPENSE => -1,
+        };
+    }
+
+    /**
      * @return array<int, string>
      */
     public static function values(): array

@@ -41,19 +41,19 @@ async function initInvoicePaymentsTable() {
             });
         }
 
-        if (form && typeof window.jQuery !== 'undefined') {
-            form.addEventListener('change', () => {
-                const dataTable = window.jQuery('#invoicePaymentsTable').DataTable();
-                if (dataTable && dataTable.ajax && dataTable.ajax.reload) {
-                    dataTable.ajax.reload();
-                }
-            });
+        const reloadTable = () => {
+            if (typeof window.jQuery === 'undefined') return;
+            const dataTable = window.jQuery('#invoicePaymentsTable').DataTable();
+            if (dataTable && dataTable.ajax && dataTable.ajax.reload) {
+                dataTable.ajax.reload();
+            }
+        };
+
+        if (form) {
+            form.addEventListener('change', reloadTable);
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const dataTable = window.jQuery('#invoicePaymentsTable').DataTable();
-                if (dataTable && dataTable.ajax && dataTable.ajax.reload) {
-                    dataTable.ajax.reload();
-                }
+                reloadTable();
             });
         }
     } catch (error) {
@@ -61,23 +61,20 @@ async function initInvoicePaymentsTable() {
     }
 }
 
-window.jQuery(function ($) {
-    const $table = $('#invoicePaymentsTable');
-
-    if (!$table.length) {
-        return;
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    const table = document.getElementById('invoicePaymentsTable');
+    if (!table) return;
 
     void initInvoicePaymentsTable();
 
-    $table.on('submit', '.js-invoice-payment-delete-form', async function (event) {
+    table.addEventListener('submit', async (event) => {
+        const form = event.target.closest('form[data-confirm-title], form.js-invoice-payment-delete-form');
+        if (!form || !table.contains(form)) return;
+
         event.preventDefault();
 
-        const form = this;
-        const $form = $(form);
-
-        const title = $form.data('confirm-title') || 'Delete payment?';
-        const text = $form.data('confirm-text') || 'This will delete the payment. This action cannot be undone.';
+        const title = form.getAttribute('data-confirm-title') || 'Delete payment?';
+        const text = form.getAttribute('data-confirm-text') || 'This will delete the payment. This action cannot be undone.';
 
         const result = await confirmDialog({
             title,

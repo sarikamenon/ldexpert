@@ -38,9 +38,10 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         }
         $recordsFiltered = (clone $baseQuery)->count();
 
-        $orderColumn = $params->orderColumn ?? 'ledger_entries.created_at';
+        $orderColumn = $params->orderColumn ?? 'ledger_entries.recorded_at';
         $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
-        $baseQuery->orderBy($orderColumn, $orderDir);
+        $baseQuery->orderBy($orderColumn, $orderDir)
+            ->orderBy('ledger_entries.id', $orderDir);
 
         $rows = (clone $baseQuery)
             ->skip($params->start)
@@ -58,7 +59,7 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
     {
         return LedgerEntry::where('ledgerable_type', School::class)
             ->where('ledgerable_id', $schoolId)
-            ->orderByDesc('created_at')
+            ->orderByDesc('recorded_at')
             ->orderByDesc('id')
             ->first();
     }
@@ -67,11 +68,26 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
     {
         return LedgerEntry::where('ledgerable_type', User::class)
             ->where('ledgerable_id', $therapistId)
-            ->orderByDesc('created_at')
+            ->orderByDesc('recorded_at')
             ->orderByDesc('id')
             ->first();
     }
 
+    /**
+     * @return array{
+     *     total_invoiced: float,
+     *     total_paid: float,
+     *     outstanding: float,
+     *     invoice_count: int,
+     *     payment_count: int,
+     *     total_credit_notes: float,
+     *     credit_note_count: int,
+     *     total_refunds: float,
+     *     refund_count: int,
+     *     current_balance: float,
+     *     transaction_count: int
+     * }
+     */
     public function getSchoolStats(int $schoolId): array
     {
         $ledgerQuery = LedgerEntry::where('ledgerable_type', School::class)
@@ -94,8 +110,24 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
             ->where('transaction_type', TransactionType::PAYMENT_RECEIVED)
             ->count();
 
+        $totalCreditNotes = (float) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::CREDIT_NOTE)
+            ->sum('amount');
+
+        $creditNoteCount = (int) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::CREDIT_NOTE)
+            ->count();
+
+        $totalRefunds = (float) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::REFUND)
+            ->sum('amount');
+
+        $refundCount = (int) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::REFUND)
+            ->count();
+
         $lastEntry = (clone $ledgerQuery)
-            ->orderByDesc('created_at')
+            ->orderByDesc('recorded_at')
             ->orderByDesc('id')
             ->first();
 
@@ -105,14 +137,33 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         return [
             'total_invoiced' => $totalInvoiced,
             'total_paid' => $totalPaid,
-            'outstanding' => $totalInvoiced - $totalPaid,
+            'outstanding' => $totalInvoiced - $totalPaid - $totalCreditNotes + $totalRefunds,
             'invoice_count' => $invoiceCount,
             'payment_count' => $paymentCount,
+            'total_credit_notes' => $totalCreditNotes,
+            'credit_note_count' => $creditNoteCount,
+            'total_refunds' => $totalRefunds,
+            'refund_count' => $refundCount,
             'current_balance' => $currentBalance,
             'transaction_count' => (int) $transactionCount,
         ];
     }
 
+    /**
+     * @return array{
+     *     total_billed: float,
+     *     total_paid: float,
+     *     outstanding: float,
+     *     bill_count: int,
+     *     payment_count: int,
+     *     total_credit_notes: float,
+     *     credit_note_count: int,
+     *     total_refunds: float,
+     *     refund_count: int,
+     *     current_balance: float,
+     *     transaction_count: int
+     * }
+     */
     public function getTherapistStats(int $therapistId): array
     {
         $ledgerQuery = LedgerEntry::where('ledgerable_type', User::class)
@@ -135,8 +186,24 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
             ->where('transaction_type', TransactionType::PAYMENT_MADE)
             ->count();
 
+        $totalCreditNotes = (float) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::CREDIT_NOTE)
+            ->sum('amount');
+
+        $creditNoteCount = (int) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::CREDIT_NOTE)
+            ->count();
+
+        $totalRefunds = (float) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::REFUND)
+            ->sum('amount');
+
+        $refundCount = (int) (clone $ledgerQuery)
+            ->where('transaction_type', TransactionType::REFUND)
+            ->count();
+
         $lastEntry = (clone $ledgerQuery)
-            ->orderByDesc('created_at')
+            ->orderByDesc('recorded_at')
             ->orderByDesc('id')
             ->first();
 
@@ -146,9 +213,13 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         return [
             'total_billed' => $totalBilled,
             'total_paid' => $totalPaid,
-            'outstanding' => $totalBilled - $totalPaid,
+            'outstanding' => $totalBilled - $totalPaid - $totalCreditNotes + $totalRefunds,
             'bill_count' => $billCount,
             'payment_count' => $paymentCount,
+            'total_credit_notes' => $totalCreditNotes,
+            'credit_note_count' => $creditNoteCount,
+            'total_refunds' => $totalRefunds,
+            'refund_count' => $refundCount,
             'current_balance' => $currentBalance,
             'transaction_count' => (int) $transactionCount,
         ];

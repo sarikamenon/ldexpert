@@ -211,6 +211,9 @@ Route::middleware('role:admin')
         Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
         Route::post('ledger/accounts/{type}/{id}/adjustment', [LedgerAccountController::class, 'storeAdjustment'])->name('ledger.accounts.adjustment.store');
+        Route::get('ledger/adjustments/{entry}', [LedgerAccountController::class, 'showAdjustment'])->name('ledger.adjustment.show');
+        Route::put('ledger/adjustments/{entry}', [LedgerAccountController::class, 'updateAdjustment'])->name('ledger.adjustment.update');
+        Route::delete('ledger/adjustments/{entry}', [LedgerAccountController::class, 'destroyAdjustment'])->name('ledger.adjustment.destroy');
 
         // Invoices
         Route::post('invoices/data', [InvoiceController::class, 'data'])->name('invoices.data');

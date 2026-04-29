@@ -10,6 +10,8 @@
     $submitLabel = $isCreditNote ? 'Record Credit Note' : 'Record Refund';
     $amountHelpId = $formId.'_amount_help';
     $notesHelpId = $formId.'_notes_help';
+    $recordedAtHelpId = $formId.'_recorded_at_help';
+    $today = now()->toDateString();
 @endphp
 
 <form id="{{ $formId }}"
@@ -24,6 +26,23 @@
     <input type="hidden" name="type" value="{{ $type }}">
     <input type="hidden" name="account_id" value="{{ $accountId }}">
     <input type="hidden" name="transaction_type" value="{{ $transactionType }}">
+
+    <div>
+        <x-input-label :for="$formId.'_recorded_at'" :value="'Transaction Date'" />
+        <p id="{{ $recordedAtHelpId }}" class="mt-1 text-xs text-foreground/60">
+            When this transaction occurred. Backdate if needed.
+        </p>
+        <x-text-input
+            :id="$formId.'_recorded_at'"
+            name="recorded_at"
+            type="date"
+            :value="$today"
+            :max="$today"
+            required
+            :aria-describedby="$recordedAtHelpId"
+            class="mt-1 block w-full" />
+        <x-input-error :messages="[]" data-error-for="recorded_at" class="mt-1 hidden" />
+    </div>
 
     <div>
         <x-input-label :for="$formId.'_amount'" :value="'Amount'" />

@@ -32,6 +32,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - **Use soft deletes by default** on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
 - **No public registration routes**; users created via command or privileged UI.
 - **Roles system**: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
+- **Ledger writes** (`ledger_entries`): every insert MUST go through `App\Domain\Finance\Services\LedgerService` (`createEntry`, the four credit-note/refund creators, or the source-document creators). Never call `LedgerEntry::create()` directly outside the service. Every entry MUST have `recorded_at` set from a real source-document date — never let it default. Backdated, edited, or deleted entries MUST run through `LedgerService::recomputeChainFrom()` to maintain the `balance_after` invariant. Only `credit_note` and `refund` types are editable/deletable from the ledger UI; all other types must be edited via their source-document page (Invoices, Bills, Payments, Expenses). Sign convention lives in `TransactionType::balanceDelta()` — never hardcode `+/-`. Run `php artisan ledger:verify` to audit drift. See [LEDGER_SYSTEM.md](app/docs/LEDGER_SYSTEM.md) for the full reference.
 - **Follow PSR-12**; run `make qa` before commits.
 
 ## PHP/Laravel
@@ -242,8 +243,8 @@ See `app/docs/DESIGN_SYSTEM.md` for the full design system reference (colors, ty
 ## Project-Enforced Conventions
 
 - **Always run commands via Docker**:
-  - Use `docker compose exec -T app bash -lc 'cd app && <command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly.
-  - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'cd app && php artisan migrate'`).
+  - Use `docker compose exec -T app bash -lc '<command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly. The container's WORKDIR is already `/var/www/html/app` — do NOT prepend `cd app &&`; the nested `app/` does not exist inside the container and the command will fail with "Could not open input file: artisan".
+  - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'php artisan migrate'`).
 - **After any frontend asset changes** (`resources/js`, `resources/css`, etc.), run `make assets-build` before QA or deployment so the Vite manifest stays updated.
 - **When introducing a new page-specific JS/CSS entry**, immediately register it in `vite.config.js` and rerun `make assets-build` so Vite's manifest includes the chunk before opening the corresponding Blade view.
 - **Local-only documentation**: Implementation plans, feature analysis, test failure analysis, implementation summaries, and similar "done but not implemented" or temporary analysis documents must be stored in the **`_local_docs/`** folder at the repository root. This folder is in `.gitignore` and must not be committed or pushed. When creating or saving such artifacts, always place them in `_local_docs/` to keep the repo clean and data structured.

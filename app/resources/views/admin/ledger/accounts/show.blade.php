@@ -8,12 +8,11 @@
         back-label="Back to Accounts" />
 
     @php
-        $lastEntry = $ledgerEntries->first();
-        $balance = $lastEntry ? $lastEntry->balance_after : 0;
+        $balance = (float) ($stats['current_balance'] ?? 0);
     @endphp
 
     {{-- Summary --}}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         @if ($type === 'school')
             <x-ui::card class="p-4">
                 <p class="text-sm text-foreground/70">Total Invoiced</p>
@@ -32,6 +31,26 @@
                 </p>
                 <p class="text-xs text-foreground/60 mt-1">
                     {{ $stats['payment_count'] }} payment(s)
+                </p>
+            </x-ui::card>
+
+            <x-ui::card class="p-4">
+                <p class="text-sm text-foreground/70">Total Credit Notes</p>
+                <p class="text-2xl font-bold mt-1">
+                    ${{ number_format($stats['total_credit_notes'] ?? 0, 2) }}
+                </p>
+                <p class="text-xs text-foreground/60 mt-1">
+                    {{ $stats['credit_note_count'] ?? 0 }} credit note(s)
+                </p>
+            </x-ui::card>
+
+            <x-ui::card class="p-4">
+                <p class="text-sm text-foreground/70">Total Refunds</p>
+                <p class="text-2xl font-bold mt-1">
+                    ${{ number_format($stats['total_refunds'] ?? 0, 2) }}
+                </p>
+                <p class="text-xs text-foreground/60 mt-1">
+                    {{ $stats['refund_count'] ?? 0 }} refund(s)
                 </p>
             </x-ui::card>
         @else
@@ -54,6 +73,26 @@
                     {{ $stats['payment_count'] }} payment(s)
                 </p>
             </x-ui::card>
+
+            <x-ui::card class="p-4">
+                <p class="text-sm text-foreground/70">Total Credit Notes</p>
+                <p class="text-2xl font-bold mt-1">
+                    ${{ number_format($stats['total_credit_notes'] ?? 0, 2) }}
+                </p>
+                <p class="text-xs text-foreground/60 mt-1">
+                    {{ $stats['credit_note_count'] ?? 0 }} credit note(s)
+                </p>
+            </x-ui::card>
+
+            <x-ui::card class="p-4">
+                <p class="text-sm text-foreground/70">Total Refunds</p>
+                <p class="text-2xl font-bold mt-1">
+                    ${{ number_format($stats['total_refunds'] ?? 0, 2) }}
+                </p>
+                <p class="text-xs text-foreground/60 mt-1">
+                    {{ $stats['refund_count'] ?? 0 }} refund(s)
+                </p>
+            </x-ui::card>
         @endif
 
         <x-ui::card class="p-4">
@@ -71,7 +110,7 @@
             <p class="text-2xl font-bold mt-1">
                 ${{ number_format(abs($balance), 2) }}
                 <span class="text-sm font-normal">
-                    {{ $balance < 0 ? 'DR' : 'CR' }}
+                    {{ $balance > 0 ? 'DR' : 'CR' }}
                 </span>
             </p>
             <p class="text-xs text-foreground/60 mt-1">
@@ -90,13 +129,14 @@
                         <thead class="bg-background/subtle">
                             <tr>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
-                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Transaction Type</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Type</th>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
                                 <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Debit</th>
                                 <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Credit</th>
                                 <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Balance</th>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Notes</th>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Recorded By</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -109,7 +149,7 @@
                         <thead class="bg-background/subtle">
                             <tr>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
-                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Transaction Type</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Type</th>
                                 <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Reference</th>
                                 <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Debit</th>
                                 <th class="text-right py-3 px-4 text-sm font-medium text-foreground">Credit</th>
@@ -236,9 +276,9 @@
                                     </td>
                                     <td class="py-3 px-4 text-sm text-right">
                                         <span
-                                            class="font-semibold {{ $entry->balance_after >= 0 ? 'text-success-600' : 'text-danger-600' }}">
+                                            class="font-semibold {{ $entry->balance_after > 0 ? 'text-danger-600' : 'text-success-600' }}">
                                             ${{ number_format(abs($entry->balance_after), 2) }}
-                                            {{ $entry->balance_after < 0 ? 'DR' : 'CR' }}
+                                            {{ $entry->balance_after > 0 ? 'DR' : 'CR' }}
                                         </span>
                                     </td>
                                     <td class="py-3 px-4 text-sm">
@@ -283,7 +323,7 @@
                 </a>
                 <a href="{{ route('admin.invoices.create', ['school_id' => $account->id]) }}"
                     class="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
-                    Create New Invoice
+                    + New Invoice
                 </a>
             @else
                 <a href="{{ route('admin.therapists.show', $account) }}"
@@ -296,17 +336,17 @@
                 </a>
                 <a href="{{ route('admin.billing.therapist-bills.create', ['therapist_id' => $account->id]) }}"
                     class="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90">
-                    Create New Bill
+                    + New Bill
                 </a>
             @endif
 
             <button type="button" data-open-modal="creditNoteModal"
                 class="px-4 py-2 border border-border rounded-md text-sm hover:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-                Create Credit Note
+                + Credit Note
             </button>
             <button type="button" data-open-modal="refundModal"
                 class="px-4 py-2 border border-border rounded-md text-sm hover:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
-                Create Refund
+                + Refund
             </button>
         </div>
     </x-ui::card>
@@ -370,6 +410,75 @@
                     :account-id="$account->id"
                     transaction-type="refund"
                     form-id="refundForm" />
+            </div>
+        </div>
+    </div>
+
+    {{-- Edit Adjustment Modal --}}
+    <div id="editAdjustmentModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+        role="dialog" aria-modal="true" aria-labelledby="editAdjustmentModalTitle"
+        data-ledger-adjustment-modal>
+        <div class="w-full max-w-md rounded-lg bg-background shadow-xl">
+            <div class="flex items-center justify-between border-b border-border px-6 py-4">
+                <h2 id="editAdjustmentModalTitle" class="text-lg font-semibold text-foreground">Edit Adjustment</h2>
+                <button type="button" data-close-modal="editAdjustmentModal"
+                    class="rounded p-1 text-foreground/60 hover:bg-secondary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    aria-label="Close modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5">
+                <form id="editAdjustmentForm" data-ledger-adjustment-edit-form
+                    method="POST" class="space-y-4">
+                    @csrf
+                    @method('PUT')
+
+                    <div>
+                        <x-input-label for="editAdjustmentRecordedAt" :value="'Transaction Date'" />
+                        <p id="editAdjustmentRecordedAt_help" class="mt-1 text-xs text-foreground/60">
+                            When this transaction occurred. Backdate if needed.
+                        </p>
+                        <x-text-input id="editAdjustmentRecordedAt" name="recorded_at" type="date"
+                            :max="now()->toDateString()" required
+                            aria-describedby="editAdjustmentRecordedAt_help"
+                            class="mt-1 block w-full" />
+                        <x-input-error :messages="[]" data-error-for="recorded_at" class="mt-1 hidden" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="editAdjustmentAmount" :value="'Amount'" />
+                        <p id="editAdjustmentAmount_help" class="mt-1 text-xs text-foreground/60">
+                            Enter amount in USD (e.g. 100.00).
+                        </p>
+                        <x-text-input id="editAdjustmentAmount" name="amount" type="number"
+                            step="0.01" min="0.01" max="999999.99" required
+                            aria-describedby="editAdjustmentAmount_help"
+                            class="mt-1 block w-full" />
+                        <x-input-error :messages="[]" data-error-for="amount" class="mt-1 hidden" />
+                    </div>
+
+                    <div>
+                        <x-input-label for="editAdjustmentNotes" :value="'Notes (optional)'" />
+                        <textarea id="editAdjustmentNotes" name="notes" rows="3" maxlength="500"
+                            class="mt-1 block w-full border border-input bg-white text-foreground rounded-base shadow-sm focus:ring-2 focus:ring-ring focus:border-ring text-sm"></textarea>
+                        <x-input-error :messages="[]" data-error-for="notes" class="mt-1 hidden" />
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button type="button" data-close-modal="editAdjustmentModal"
+                            class="inline-flex items-center rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="inline-flex items-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>

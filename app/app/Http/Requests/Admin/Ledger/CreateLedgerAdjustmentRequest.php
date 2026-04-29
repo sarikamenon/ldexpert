@@ -36,6 +36,17 @@ class CreateLedgerAdjustmentRequest extends FormRequest
             'transaction_type' => ['required', 'string', 'in:credit_note,refund'],
             'amount' => ['required', 'numeric', 'min:0.01', 'max:999999.99'],
             'notes' => ['nullable', 'string', 'max:500'],
+            'recorded_at' => ['required', 'date', 'before_or_equal:today'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'recorded_at.before_or_equal' => 'Transaction date cannot be in the future.',
         ];
     }
 

@@ -13,6 +13,7 @@ final readonly class CreateLedgerAdjustmentDTO
         public int $accountId,
         public TransactionType $transactionType,
         public float $amount,
+        public string $recordedAt,
         public ?string $notes = null,
     ) {}
 
@@ -28,6 +29,7 @@ final readonly class CreateLedgerAdjustmentDTO
                 ? $data['transaction_type']
                 : TransactionType::from((string) $data['transaction_type']),
             amount: (float) $data['amount'],
+            recordedAt: (string) $data['recorded_at'],
             notes: isset($data['notes']) ? (string) $data['notes'] : null,
         );
     }
@@ -43,6 +45,7 @@ final readonly class CreateLedgerAdjustmentDTO
             'transaction_type' => $this->transactionType->value,
             'amount' => $this->amount,
             'notes' => $this->notes,
+            'recorded_at' => $this->recordedAt,
         ];
     }
 }
