@@ -82,6 +82,7 @@
                             </div>
                         </div>
 
+                        {{-- Auto-send disabled: invoices must be reviewed and sent manually.
                         <div class="flex items-start gap-3">
                             <input type="hidden" name="default_auto_send" value="0">
                             <input type="checkbox" id="default_auto_send" name="default_auto_send" value="1"
@@ -92,6 +93,7 @@
                                 <p class="text-xs text-foreground/60">New schedules will auto-send without review.</p>
                             </div>
                         </div>
+                        --}}
                     </div>
                 </div>
             </div>
@@ -169,6 +171,7 @@
                             </div>
                         </div>
 
+                        {{-- Auto-send disabled: invoices must be reviewed and sent manually.
                         <div class="flex items-start gap-3">
                             <input type="hidden" name="advance_default_auto_send" value="0">
                             <input type="checkbox" id="advance_default_auto_send" name="advance_default_auto_send" value="1"
@@ -179,6 +182,7 @@
                                 <p class="text-xs text-foreground/60">Advance schedules will auto-send without review.</p>
                             </div>
                         </div>
+                        --}}
                     </div>
                 </div>
             </div>

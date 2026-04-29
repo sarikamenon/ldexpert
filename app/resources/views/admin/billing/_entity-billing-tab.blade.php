@@ -132,6 +132,7 @@
                 </div>
             </div>
 
+            {{-- Auto-send disabled: invoices must be reviewed and sent manually.
             <div class="flex items-start gap-3">
                 <input type="hidden" name="auto_send" value="0">
                 <input type="checkbox" id="eb_auto_send" name="auto_send" value="1"
@@ -141,6 +142,7 @@
                     <p class="text-xs text-foreground/60">Automatically send invoices/bills without admin review.</p>
                 </div>
             </div>
+            --}}
         </div>
 
         <div>
