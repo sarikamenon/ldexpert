@@ -18,8 +18,8 @@ final class LedgerEntryRowTransformer
 
         $variant = match ($entry->transaction_type->value) {
             'invoice_generated', 'bill_generated' => 'primary',
-            'payment_received' => 'success',
-            'payment_made' => 'danger',
+            'payment_received', 'credit_note' => 'success',
+            'payment_made', 'refund' => 'danger',
             default => 'secondary',
         };
         $badgeClass = match ($variant) {
@@ -60,7 +60,7 @@ final class LedgerEntryRowTransformer
             $refCell = '<span class="text-foreground/40">—</span>';
         }
 
-        $isDebit = in_array($entry->transaction_type->value, ['invoice_generated', 'bill_generated'], true);
+        $isDebit = in_array($entry->transaction_type->value, ['invoice_generated', 'bill_generated', 'refund'], true);
 
         $debitCell = $isDebit
             ? '<span class="font-semibold text-danger-600">$'.number_format(abs((float) $entry->amount), 2).'</span>'

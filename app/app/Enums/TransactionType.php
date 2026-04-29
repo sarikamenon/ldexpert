@@ -11,6 +11,8 @@ enum TransactionType: string
     case BILL_GENERATED = 'bill_generated';
     case PAYMENT_MADE = 'payment_made';
     case EXPENSE = 'expense';
+    case CREDIT_NOTE = 'credit_note';
+    case REFUND = 'refund';
 
     public function label(): string
     {
@@ -20,6 +22,8 @@ enum TransactionType: string
             self::BILL_GENERATED => 'Bill Generated',
             self::PAYMENT_MADE => 'Payment Made',
             self::EXPENSE => 'Expense',
+            self::CREDIT_NOTE => 'Credit Note',
+            self::REFUND => 'Refund',
         };
     }
 

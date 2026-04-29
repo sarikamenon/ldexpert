@@ -83,6 +83,122 @@ class LedgerService
     }
 
     /**
+     * Create a credit note ledger entry for a school (decreases what they owe).
+     */
+    public function createCreditNoteForSchool(int $schoolId, float $amount, ?string $notes, int $recordedById): LedgerEntry
+    {
+        return DB::transaction(function () use ($schoolId, $amount, $notes, $recordedById) {
+            $lastEntry = LedgerEntry::where('ledgerable_type', School::class)
+                ->where('ledgerable_id', $schoolId)
+                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0;
+            $newBalance = $previousBalance - $amount;
+
+            return LedgerEntry::create([
+                'ledgerable_type' => School::class,
+                'ledgerable_id' => $schoolId,
+                'transaction_type' => TransactionType::CREDIT_NOTE,
+                'amount' => $amount,
+                'balance_after' => $newBalance,
+                'reference_type' => null,
+                'reference_id' => null,
+                'notes' => $notes,
+                'recorded_by_id' => $recordedById,
+            ]);
+        });
+    }
+
+    /**
+     * Create a refund ledger entry for a school (cash sent back; reverses a prior credit position).
+     */
+    public function createRefundForSchool(int $schoolId, float $amount, ?string $notes, int $recordedById): LedgerEntry
+    {
+        return DB::transaction(function () use ($schoolId, $amount, $notes, $recordedById) {
+            $lastEntry = LedgerEntry::where('ledgerable_type', School::class)
+                ->where('ledgerable_id', $schoolId)
+                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0;
+            $newBalance = $previousBalance + $amount;
+
+            return LedgerEntry::create([
+                'ledgerable_type' => School::class,
+                'ledgerable_id' => $schoolId,
+                'transaction_type' => TransactionType::REFUND,
+                'amount' => $amount,
+                'balance_after' => $newBalance,
+                'reference_type' => null,
+                'reference_id' => null,
+                'notes' => $notes,
+                'recorded_by_id' => $recordedById,
+            ]);
+        });
+    }
+
+    /**
+     * Create a credit note ledger entry for a therapist (we owe them less).
+     */
+    public function createCreditNoteForTherapist(int $therapistId, float $amount, ?string $notes, int $recordedById): LedgerEntry
+    {
+        return DB::transaction(function () use ($therapistId, $amount, $notes, $recordedById) {
+            $lastEntry = LedgerEntry::where('ledgerable_type', User::class)
+                ->where('ledgerable_id', $therapistId)
+                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0;
+            $newBalance = $previousBalance - $amount;
+
+            return LedgerEntry::create([
+                'ledgerable_type' => User::class,
+                'ledgerable_id' => $therapistId,
+                'transaction_type' => TransactionType::CREDIT_NOTE,
+                'amount' => $amount,
+                'balance_after' => $newBalance,
+                'reference_type' => null,
+                'reference_id' => null,
+                'notes' => $notes,
+                'recorded_by_id' => $recordedById,
+            ]);
+        });
+    }
+
+    /**
+     * Create a refund ledger entry for a therapist (therapist returns money to us).
+     */
+    public function createRefundForTherapist(int $therapistId, float $amount, ?string $notes, int $recordedById): LedgerEntry
+    {
+        return DB::transaction(function () use ($therapistId, $amount, $notes, $recordedById) {
+            $lastEntry = LedgerEntry::where('ledgerable_type', User::class)
+                ->where('ledgerable_id', $therapistId)
+                ->orderBy('created_at', 'desc')
+                ->orderBy('id', 'desc')
+                ->first();
+
+            $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0;
+            $newBalance = $previousBalance + $amount;
+
+            return LedgerEntry::create([
+                'ledgerable_type' => User::class,
+                'ledgerable_id' => $therapistId,
+                'transaction_type' => TransactionType::REFUND,
+                'amount' => $amount,
+                'balance_after' => $newBalance,
+                'reference_type' => null,
+                'reference_id' => null,
+                'notes' => $notes,
+                'recorded_by_id' => $recordedById,
+            ]);
+        });
+    }
+
+    /**
      * Get ledger balance for a school.
      */
     public function getSchoolBalance(int $schoolId): float

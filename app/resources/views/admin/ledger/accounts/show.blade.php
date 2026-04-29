@@ -299,8 +299,80 @@
                     Create New Bill
                 </a>
             @endif
+
+            <button type="button" data-open-modal="creditNoteModal"
+                class="px-4 py-2 border border-border rounded-md text-sm hover:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
+                Create Credit Note
+            </button>
+            <button type="button" data-open-modal="refundModal"
+                class="px-4 py-2 border border-border rounded-md text-sm hover:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
+                Create Refund
+            </button>
         </div>
     </x-ui::card>
+
+    {{-- Credit Note Modal --}}
+    <div id="creditNoteModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+        role="dialog" aria-modal="true" aria-labelledby="creditNoteModalTitle"
+        data-ledger-adjustment-modal>
+        <div class="w-full max-w-md rounded-lg bg-background shadow-xl">
+            <div class="flex items-center justify-between border-b border-border px-6 py-4">
+                <h2 id="creditNoteModalTitle" class="text-lg font-semibold text-foreground">Create Credit Note</h2>
+                <button type="button" data-close-modal="creditNoteModal"
+                    class="rounded p-1 text-foreground/60 hover:bg-secondary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    aria-label="Close modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5">
+                <p class="text-xs text-foreground/60 mb-4">
+                    A credit note reduces what
+                    {{ $type === 'school' ? 'the school owes you' : 'we owe the therapist' }}.
+                    No cash moves.
+                </p>
+                <x-admin.ledger.adjustment-form
+                    :type="$type"
+                    :account-id="$account->id"
+                    transaction-type="credit_note"
+                    form-id="creditNoteForm" />
+            </div>
+        </div>
+    </div>
+
+    {{-- Refund Modal --}}
+    <div id="refundModal"
+        class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4"
+        role="dialog" aria-modal="true" aria-labelledby="refundModalTitle"
+        data-ledger-adjustment-modal>
+        <div class="w-full max-w-md rounded-lg bg-background shadow-xl">
+            <div class="flex items-center justify-between border-b border-border px-6 py-4">
+                <h2 id="refundModalTitle" class="text-lg font-semibold text-foreground">Create Refund</h2>
+                <button type="button" data-close-modal="refundModal"
+                    class="rounded p-1 text-foreground/60 hover:bg-secondary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                    aria-label="Close modal">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5">
+                <p class="text-xs text-foreground/60 mb-4">
+                    A refund records cash leaving your account back to
+                    {{ $type === 'school' ? 'the school' : 'the therapist' }}.
+                </p>
+                <x-admin.ledger.adjustment-form
+                    :type="$type"
+                    :account-id="$account->id"
+                    transaction-type="refund"
+                    form-id="refundForm" />
+            </div>
+        </div>
+    </div>
 
     <x-slot name="scripts">
         @vite(['resources/js/pages/admin-ledger-accounts-show.js'])

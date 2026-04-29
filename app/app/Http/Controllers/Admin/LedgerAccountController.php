@@ -7,9 +7,13 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\Transformers\LedgerAccountRowTransformer;
 use App\DataTables\Transformers\LedgerEntryRowTransformer;
 use App\Domain\Finance\Services\LedgerAccountService;
+use App\Domain\Finance\Services\LedgerService;
+use App\DTOs\CreateLedgerAdjustmentDTO;
 use App\DTOs\LedgerAccountsFilterDTO;
 use App\Enums\Role;
+use App\Enums\TransactionType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Ledger\CreateLedgerAdjustmentRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsDataRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsExportRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsIndexRequest;
@@ -21,6 +25,7 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LedgerAccountController extends Controller
@@ -46,6 +51,7 @@ class LedgerAccountController extends Controller
 
     public function __construct(
         private readonly LedgerAccountService $ledgerAccountService,
+        private readonly LedgerService $ledgerService,
     ) {}
 
     public function index(LedgerAccountsIndexRequest $request): View
@@ -202,5 +208,74 @@ class LedgerAccountController extends Controller
             'datatableFilterType' => $type,
             'datatableFilterId' => $id,
         ]);
+    }
+
+    public function storeAdjustment(CreateLedgerAdjustmentRequest $request, string $type, int $id): JsonResponse
+    {
+        $validated = $request->validated();
+        $validated['type'] = $type;
+        $validated['account_id'] = $id;
+
+        $dto = CreateLedgerAdjustmentDTO::fromArray($validated);
+        /** @var \App\Models\User $admin */
+        $admin = $request->user();
+        $recordedById = (int) $admin->id;
+
+        try {
+            $entry = match ([$dto->type, $dto->transactionType]) {
+                ['school', TransactionType::CREDIT_NOTE] => $this->ledgerService->createCreditNoteForSchool(
+                    $dto->accountId,
+                    $dto->amount,
+                    $dto->notes,
+                    $recordedById,
+                ),
+                ['school', TransactionType::REFUND] => $this->ledgerService->createRefundForSchool(
+                    $dto->accountId,
+                    $dto->amount,
+                    $dto->notes,
+                    $recordedById,
+                ),
+                ['therapist', TransactionType::CREDIT_NOTE] => $this->ledgerService->createCreditNoteForTherapist(
+                    $dto->accountId,
+                    $dto->amount,
+                    $dto->notes,
+                    $recordedById,
+                ),
+                ['therapist', TransactionType::REFUND] => $this->ledgerService->createRefundForTherapist(
+                    $dto->accountId,
+                    $dto->amount,
+                    $dto->notes,
+                    $recordedById,
+                ),
+                default => throw new \InvalidArgumentException('Unsupported adjustment type combination.'),
+            };
+
+            $message = $dto->transactionType === TransactionType::CREDIT_NOTE
+                ? 'Credit note recorded successfully.'
+                : 'Refund recorded successfully.';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'entry_id' => $entry->id,
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            Log::error('Failed to create ledger adjustment', [
+                'error' => $e->getMessage(),
+                'type' => $type,
+                'account_id' => $id,
+                'transaction_type' => $dto->transactionType->value,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred while recording the adjustment.',
+            ], 500);
+        }
     }
 }
