@@ -280,7 +280,7 @@ return [
                         'active' => 'therapist.schedule-calendar.*',
                     ],
                     [
-                        'label' => 'Pending Schedule',
+                        'label' => 'Past Sessions Queue',
                         'route' => 'therapist.schedule.pending',
                         'active' => 'therapist.schedule.pending',
                     ],
@@ -297,7 +297,7 @@ return [
                         'active' => 'therapist.session-logs.index',
                     ],
                     [
-                        'label' => 'Add Non-Schedule Log',
+                        'label' => 'Add Indirect Service',
                         'route' => 'therapist.session-logs.select-ssa',
                         'active' => ['therapist.session-logs.select-ssa', 'therapist.session-logs.create'],
                     ],
