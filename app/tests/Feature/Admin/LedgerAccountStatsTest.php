@@ -226,6 +226,90 @@ class LedgerAccountStatsTest extends TestCase
         $this->assertSame(0, $stats['transaction_count']);
     }
 
+    public function test_school_outstanding_floors_at_zero_when_account_is_in_credit(): void
+    {
+        $school = School::factory()->create();
+
+        Invoice::factory()->sent($this->admin)->create([
+            'school_id' => $school->id,
+            'subtotal' => 350.00,
+            'tax_total' => 0,
+            'total' => 350.00,
+        ]);
+
+        $this->ledger->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::INVOICE_GENERATED,
+            amount: 350.00,
+            recordedAt: now()->subDays(5),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $this->ledger->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::PAYMENT_RECEIVED,
+            amount: 450.00,
+            recordedAt: now()->subDays(3),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $this->ledger->createCreditNoteForSchool($school->id, 80.00, null, $this->admin->id, now()->subDay());
+
+        $stats = $this->repo->getSchoolStats($school->id);
+
+        // Net position is -180 (overpayment). Outstanding clamps to 0; the credit
+        // is reflected on the chain tail (current_balance = -180 → shown as $180 CR).
+        $this->assertEqualsWithDelta(0.0, $stats['outstanding'], 0.001);
+        $this->assertEqualsWithDelta(-180.00, $stats['current_balance'], 0.001);
+    }
+
+    public function test_therapist_outstanding_floors_at_zero_when_account_is_in_credit(): void
+    {
+        $therapist = User::factory()->therapist()->create();
+
+        TherapistBill::factory()->state([
+            'therapist_id' => $therapist->id,
+            'status' => TherapistBillStatus::SENT->value,
+            'subtotal' => 200.00,
+            'adjustments_total' => 0,
+            'total_due' => 200.00,
+        ])->create();
+
+        $this->ledger->createEntry(
+            ledgerableType: User::class,
+            ledgerableId: $therapist->id,
+            type: TransactionType::BILL_GENERATED,
+            amount: 200.00,
+            recordedAt: now()->subDays(5),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $this->ledger->createEntry(
+            ledgerableType: User::class,
+            ledgerableId: $therapist->id,
+            type: TransactionType::PAYMENT_MADE,
+            amount: 300.00,
+            recordedAt: now()->subDays(3),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+
+        $stats = $this->repo->getTherapistStats($therapist->id);
+
+        $this->assertEqualsWithDelta(0.0, $stats['outstanding'], 0.001);
+        $this->assertEqualsWithDelta(-100.00, $stats['current_balance'], 0.001);
+    }
+
     public function test_current_balance_uses_chain_tail_not_latest_created_at(): void
     {
         // Inserts a backdated row LAST (highest created_at, earliest recorded_at).

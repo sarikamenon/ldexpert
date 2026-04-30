@@ -127,7 +127,7 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         return [
             'total_invoiced' => $totalInvoiced,
             'total_paid' => $totalPaid,
-            'outstanding' => $totalInvoiced - $totalPaid - $totalCreditNotes + $totalRefunds,
+            'outstanding' => max(0.0, $totalInvoiced - $totalPaid - $totalCreditNotes + $totalRefunds),
             'invoice_count' => $invoiceCount,
             'payment_count' => $totals[TransactionType::PAYMENT_RECEIVED->value]['count'],
             'total_credit_notes' => $totalCreditNotes,
@@ -179,7 +179,7 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         return [
             'total_billed' => $totalBilled,
             'total_paid' => $totalPaid,
-            'outstanding' => $totalBilled - $totalPaid - $totalCreditNotes + $totalRefunds,
+            'outstanding' => max(0.0, $totalBilled - $totalPaid - $totalCreditNotes + $totalRefunds),
             'bill_count' => $billCount,
             'payment_count' => $totals[TransactionType::PAYMENT_MADE->value]['count'],
             'total_credit_notes' => $totalCreditNotes,
