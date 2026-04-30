@@ -109,15 +109,15 @@ final class TherapistSessionLogsBrowserTest extends DuskTestCase
         });
     }
 
-    public function test_navigation_menu_has_add_non_schedule_log_link(): void
+    public function test_navigation_menu_has_add_indirect_service_link(): void
     {
         $therapist = User::factory()->therapist()->create();
 
         $this->browse(function (Browser $browser) use ($therapist) {
             $browser->loginAs($therapist)
                 ->visit('/therapist/dashboard')
-                ->assertSee('Add Non-Schedule Log')
-                ->clickLink('Add Non-Schedule Log')
+                ->assertSee('Add Indirect Service')
+                ->clickLink('Add Indirect Service')
                 ->assertPathIs('/therapist/session-logs/select-ssa')
                 ->assertSee('Select SSA');
         });

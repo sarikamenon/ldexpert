@@ -100,7 +100,7 @@ final class StoreSessionLogRequest extends FormRequest
                 'max:'.config('session_minutes.max'),
             ],
             'outcome' => ['required', 'string', Rule::in(SessionOutcome::values())],
-            'notes' => ['required', 'string', 'min:50', 'max:5000'],
+            'notes' => ['required', 'string', 'min:20', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],
             'is_billable_school' => ['nullable', 'boolean'],
             // Therapists cannot override rates; this is reserved for admins.

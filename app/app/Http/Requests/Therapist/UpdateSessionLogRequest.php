@@ -73,7 +73,7 @@ final class UpdateSessionLogRequest extends FormRequest
             'start_time' => ['sometimes', 'date_format:Y-m-d H:i:s'],
             'end_time' => ['sometimes', 'date_format:Y-m-d H:i:s', 'after:start_time'],
             'outcome' => ['sometimes', 'string', Rule::in(SessionOutcome::values())],
-            'notes' => ['sometimes', 'string', 'min:50', 'max:5000'],
+            'notes' => ['sometimes', 'string', 'min:20', 'max:5000'],
             'is_billable_therapist' => ['sometimes', 'boolean'],
             'is_billable_school' => ['sometimes', 'boolean'],
             'is_rate_override' => ['sometimes', 'boolean'],

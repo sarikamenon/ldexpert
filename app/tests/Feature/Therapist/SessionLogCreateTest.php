@@ -82,7 +82,7 @@ final class SessionLogCreateTest extends TestCase
                 'session_date' => $sessionDateStr,
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
-                'notes' => str_repeat('a', 50), // Minimum 50 characters
+                'notes' => str_repeat('a', 20), // Minimum 20 characters
                 'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
@@ -152,7 +152,7 @@ final class SessionLogCreateTest extends TestCase
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
                 'outcome' => SessionOutcome::NO_SHOW->value,
-                'notes' => str_repeat('a', 50),
+                'notes' => str_repeat('a', 20),
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
                 '_token' => csrf_token(),
@@ -208,7 +208,7 @@ final class SessionLogCreateTest extends TestCase
                 'session_date' => $sessionDate,
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
-                'notes' => str_repeat('a', 50),
+                'notes' => str_repeat('a', 20),
                 'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
@@ -264,7 +264,7 @@ final class SessionLogCreateTest extends TestCase
                 'session_date' => $sessionDate,
                 'start_time' => $startTime->format('Y-m-d H:i:s'),
                 'end_time' => $endTime->format('Y-m-d H:i:s'),
-                'notes' => str_repeat('a', 50),
+                'notes' => str_repeat('a', 20),
                 'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 'is_billable_school' => true,
@@ -305,7 +305,7 @@ final class SessionLogCreateTest extends TestCase
                 'session_date' => now()->format('Y-m-d'),
                 'start_time' => now()->format('Y-m-d H:i:s'),
                 'end_time' => now()->addHour()->format('Y-m-d H:i:s'),
-                'notes' => 'Short', // Less than 50 characters
+                'notes' => 'Short', // Less than 20 characters
                 'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
                 'is_billable_therapist' => true,
                 '_token' => csrf_token(),

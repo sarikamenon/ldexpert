@@ -150,7 +150,7 @@
                 <div>
                     <label class="block text-sm font-medium text-foreground">Notes *</label>
                     <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
-                        Session notes must be at least 50 characters. Describe what occurred during the session.
+                        Session notes must be at least 20 characters. Describe what occurred during the session.
                     </p>
                     <textarea name="notes" rows="4"
                         class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
