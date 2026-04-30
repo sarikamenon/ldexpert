@@ -11,6 +11,8 @@ enum TransactionType: string
     case BILL_GENERATED = 'bill_generated';
     case PAYMENT_MADE = 'payment_made';
     case EXPENSE = 'expense';
+    case CREDIT_NOTE = 'credit_note';
+    case REFUND = 'refund';
 
     public function label(): string
     {
@@ -20,6 +22,22 @@ enum TransactionType: string
             self::BILL_GENERATED => 'Bill Generated',
             self::PAYMENT_MADE => 'Payment Made',
             self::EXPENSE => 'Expense',
+            self::CREDIT_NOTE => 'Credit Note',
+            self::REFUND => 'Refund',
+        };
+    }
+
+    /**
+     * Sign of this transaction's effect on the running ledger balance.
+     *
+     * +1 increases what the counterparty owes (or what we owe them);
+     * -1 decreases it. Single source of truth for the ledger sign convention.
+     */
+    public function balanceDelta(): int
+    {
+        return match ($this) {
+            self::INVOICE_GENERATED, self::BILL_GENERATED, self::REFUND => 1,
+            self::PAYMENT_RECEIVED, self::PAYMENT_MADE, self::CREDIT_NOTE, self::EXPENSE => -1,
         };
     }
 

@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\InvoicePaymentsListController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\LeadNoteController;
 use App\Http\Controllers\Admin\LedgerAccountController;
+use App\Http\Controllers\Admin\LedgerAdjustmentController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\QGlobRequestController;
@@ -210,6 +211,11 @@ Route::middleware('role:admin')
         Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
         Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
+        Route::get('ledger/accounts/{type}/{id}/stats', [LedgerAccountController::class, 'statsData'])->name('ledger.accounts.stats');
+        Route::post('ledger/accounts/{type}/{id}/adjustment', [LedgerAdjustmentController::class, 'store'])->name('ledger.accounts.adjustment.store');
+        Route::get('ledger/adjustments/{entry}', [LedgerAdjustmentController::class, 'show'])->name('ledger.adjustment.show');
+        Route::put('ledger/adjustments/{entry}', [LedgerAdjustmentController::class, 'update'])->name('ledger.adjustment.update');
+        Route::delete('ledger/adjustments/{entry}', [LedgerAdjustmentController::class, 'destroy'])->name('ledger.adjustment.destroy');
 
         // Invoices
         Route::post('invoices/data', [InvoiceController::class, 'data'])->name('invoices.data');

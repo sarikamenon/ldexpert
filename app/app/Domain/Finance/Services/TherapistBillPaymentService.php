@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Services;
 
-use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
 use App\Domain\Finance\Repositories\TherapistBillPaymentRepositoryInterface;
 use App\DTOs\CreateExpenseDTO;
 use App\DTOs\RecordTherapistBillPaymentDTO;
@@ -23,8 +22,8 @@ class TherapistBillPaymentService
 {
     public function __construct(
         private readonly TherapistBillPaymentRepositoryInterface $payments,
-        private readonly LedgerEntryRepositoryInterface $ledgerEntries,
         private readonly ExpenseService $expenses,
+        private readonly LedgerService $ledgerService,
     ) {}
 
     public function recordPayment(RecordTherapistBillPaymentDTO $dto): TherapistBillPayment
@@ -87,22 +86,19 @@ class TherapistBillPaymentService
 
     protected function createLedgerEntry(TherapistBillPayment $payment, int $therapistId): void
     {
-        $lastEntry = $this->ledgerEntries->getLastEntryForTherapist($therapistId);
-        $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0.0;
-
-        $newBalance = $previousBalance - (float) $payment->amount;
-
-        LedgerEntry::create([
-            'ledgerable_type' => User::class,
-            'ledgerable_id' => $therapistId,
-            'transaction_type' => TransactionType::PAYMENT_MADE,
-            'amount' => (float) $payment->amount,
-            'balance_after' => $newBalance,
-            'reference_type' => TherapistBillPayment::class,
-            'reference_id' => $payment->id,
-            'notes' => 'Payment made',
-            'recorded_by_id' => $payment->recorded_by_id,
-        ]);
+        // Stamp the picked date with the current time-of-day so the entry sorts
+        // deterministically and doesn't collapse to 00:00:00. See LEDGER_SYSTEM.md.
+        $this->ledgerService->createEntry(
+            ledgerableType: User::class,
+            ledgerableId: $therapistId,
+            type: TransactionType::PAYMENT_MADE,
+            amount: (float) $payment->amount,
+            recordedAt: LedgerService::resolveDateOnlyRecordedAt($payment->paid_at),
+            referenceType: TherapistBillPayment::class,
+            referenceId: $payment->id,
+            notes: 'Payment made',
+            recordedById: $payment->recorded_by_id,
+        );
     }
 
     public function deletePayment(TherapistBillPayment $payment): bool
@@ -112,7 +108,22 @@ class TherapistBillPaymentService
             $this->payments->softDeletePayment($payment);
 
             Expense::forSource($payment)->delete();
-            LedgerEntry::forReference($payment)->delete();
+
+            // Soft-delete the ledger row and recompute the chain so any later rows
+            // have correct balance_after. Pre-step-5 behaviour hard-deleted the row
+            // and left stale balances on every later entry.
+            $entries = LedgerEntry::forReference($payment)->get();
+            foreach ($entries as $entry) {
+                $recordedAt = $entry->recorded_at;
+                /** @var class-string $ledgerableType */
+                $ledgerableType = $entry->ledgerable_type;
+                $entry->delete();
+                $this->ledgerService->recomputeChainFrom(
+                    $ledgerableType,
+                    (int) $entry->ledgerable_id,
+                    $recordedAt,
+                );
+            }
 
             return true;
         });

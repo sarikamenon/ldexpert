@@ -630,7 +630,7 @@ final class ScheduleController extends Controller
                     'type_label'      => $log->type->label(),
                     'type_value'      => $log->type->value,
                     'recipient_email' => $log->recipient_email,
-                    'sent_by'         => $log->sentBy !== null ? $log->sentBy->name : 'System',
+                    'sent_by' => $log->sentBy !== null ? $log->sentBy->name : 'System',
                 ])->values()->toArray(),
             ],
         ]);

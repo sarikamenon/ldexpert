@@ -21,6 +21,7 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LedgerAccountController extends Controller
@@ -40,7 +41,7 @@ class LedgerAccountController extends Controller
     ];
 
     private const LEDGER_ENTRIES_ORDER_WHITELIST = [
-        0 => 'ledger_entries.created_at',
+        0 => 'ledger_entries.recorded_at',
         6 => 'ledger_entries.notes',
     ];
 
@@ -202,5 +203,44 @@ class LedgerAccountController extends Controller
             'datatableFilterType' => $type,
             'datatableFilterId' => $id,
         ]);
+    }
+
+    public function statsData(Request $request, string $type, int $id): JsonResponse
+    {
+        if ($type === 'school') {
+            $account = School::findOrFail($id);
+        } elseif ($type === 'therapist') {
+            $account = User::where('role', Role::THERAPIST)->findOrFail($id);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unsupported account type.',
+            ], 422);
+        }
+
+        try {
+            $stats = $this->ledgerAccountService->calculateAccountStats($account, $type);
+
+            $html = view('admin.ledger.accounts._stats', [
+                'stats' => $stats,
+                'type' => $type,
+            ])->render();
+
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to load ledger account stats', [
+                'error' => $e->getMessage(),
+                'type' => $type,
+                'account_id' => $id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not refresh stats.',
+            ], 500);
+        }
     }
 }

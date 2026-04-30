@@ -13,11 +13,11 @@ class LogScheduleEmail implements ShouldQueue
     public function handle(ScheduleEmailSent $event): void
     {
         ScheduleEmailLog::create([
-            'schedule_id'     => $event->scheduleId,
-            'type'            => $event->type->value,
+            'schedule_id' => $event->scheduleId,
+            'type' => $event->type->value,
             'recipient_email' => $event->recipientEmail,
-            'sent_by_id'      => null,
-            'sent_at'         => now(),
+            'sent_by_id' => null,
+            'sent_at' => now(),
         ]);
     }
 }

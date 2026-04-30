@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Finance\Services;
 
 use App\Domain\Finance\Repositories\InvoicePaymentRepositoryInterface;
-use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
 use App\DTOs\RecordInvoicePaymentDTO;
 use App\Enums\TransactionType;
 use App\Models\Invoice;
@@ -18,7 +17,7 @@ class InvoicePaymentService
 {
     public function __construct(
         private readonly InvoicePaymentRepositoryInterface $payments,
-        private readonly LedgerEntryRepositoryInterface $ledgerEntries,
+        private readonly LedgerService $ledgerService,
     ) {}
 
     public function recordPayment(RecordInvoicePaymentDTO $dto): InvoicePayment
@@ -56,22 +55,20 @@ class InvoicePaymentService
 
     protected function createLedgerEntry(InvoicePayment $payment, int $schoolId): void
     {
-        $lastEntry = $this->ledgerEntries->getLastEntryForSchool($schoolId);
-        $previousBalance = $lastEntry ? (float) $lastEntry->balance_after : 0.0;
-
-        $newBalance = $previousBalance - (float) $payment->amount;
-
-        LedgerEntry::create([
-            'ledgerable_type' => School::class,
-            'ledgerable_id' => $schoolId,
-            'transaction_type' => TransactionType::PAYMENT_RECEIVED,
-            'amount' => (float) $payment->amount,
-            'balance_after' => $newBalance,
-            'reference_type' => InvoicePayment::class,
-            'reference_id' => $payment->id,
-            'notes' => 'Payment received',
-            'recorded_by_id' => $payment->recorded_by_id,
-        ]);
+        // paid_at is a date column on invoice_payments. Stamp the picked date
+        // with the current time-of-day so the entry sorts deterministically and
+        // doesn't collapse to 00:00:00. See LEDGER_SYSTEM.md.
+        $this->ledgerService->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $schoolId,
+            type: TransactionType::PAYMENT_RECEIVED,
+            amount: (float) $payment->amount,
+            recordedAt: LedgerService::resolveDateOnlyRecordedAt($payment->paid_at),
+            referenceType: InvoicePayment::class,
+            referenceId: $payment->id,
+            notes: 'Payment received',
+            recordedById: $payment->recorded_by_id,
+        );
     }
 
     public function deletePayment(InvoicePayment $payment): bool
@@ -80,9 +77,24 @@ class InvoicePaymentService
             $this->payments->deleteAllocationsForPayment($payment);
             $this->payments->softDeletePayment($payment);
 
-            LedgerEntry::where('reference_type', InvoicePayment::class)
+            // Soft-delete the ledger row (so it stops contributing to balance) and
+            // recompute the chain so any later rows have correct balance_after.
+            // Pre-step-5 behaviour was hard-delete + leaving stale balances downstream.
+            $entries = LedgerEntry::where('reference_type', InvoicePayment::class)
                 ->where('reference_id', $payment->id)
-                ->delete();
+                ->get();
+
+            foreach ($entries as $entry) {
+                $recordedAt = $entry->recorded_at;
+                /** @var class-string $ledgerableType */
+                $ledgerableType = $entry->ledgerable_type;
+                $entry->delete();
+                $this->ledgerService->recomputeChainFrom(
+                    $ledgerableType,
+                    (int) $entry->ledgerable_id,
+                    $recordedAt,
+                );
+            }
 
             return true;
         });
