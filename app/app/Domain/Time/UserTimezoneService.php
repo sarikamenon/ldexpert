@@ -14,14 +14,34 @@ class UserTimezoneService
         private readonly string $defaultTimezone = 'UTC',
     ) {}
 
-    private function resolveTimezone(?User $user, ?string $overrideTz = null): string
+    public function resolveTimezone(?User $user, ?string $overrideTz = null): string
     {
         if ($overrideTz !== null && $overrideTz !== '') {
             return $overrideTz;
         }
 
-        if ($user !== null && $user->timezone) {
-            return (string) $user->timezone;
+        if ($user !== null) {
+            $userTz = (string) ($user->timezone ?? '');
+
+            if ($userTz !== '' && $userTz !== 'UTC') {
+                return $userTz;
+            }
+
+            $therapistProfile = $user->therapistProfile;
+            $studentProfile = $user->studentProfile;
+            $profileTz = (string) (
+                ($therapistProfile !== null ? $therapistProfile->timezone : null)
+                ?? ($studentProfile !== null ? $studentProfile->timezone : null)
+                ?? ''
+            );
+
+            if ($profileTz !== '') {
+                return $profileTz;
+            }
+
+            if ($userTz !== '') {
+                return $userTz;
+            }
         }
 
         return $this->defaultTimezone;

@@ -154,7 +154,7 @@
                 <x-input-label for="schedule_date" value="Schedule Date *" />
                 @if ($isEdit)
                     <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
-                        value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}"
+                        value="{{ old('schedule_date', $scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) }}"
                         min="{{ now()->format('Y-m-d') }}" required />
                 @else
                     <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
@@ -168,7 +168,7 @@
                 <div>
                     <x-input-label for="start_time" value="Start Time *" />
                     <x-ui::input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
-                        value="{{ old('start_time', $isEdit ? $schedule->start_time?->format('H:i') : '09:00') }}"
+                        value="{{ old('start_time', $isEdit ? ($scheduleLocalStartTime ?? $schedule->start_time?->format('H:i')) : '09:00') }}"
                         required />
                     <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
                 </div>
@@ -224,7 +224,7 @@
                 role="alert"
                 data-original-recurrence-type="{{ $originalRecurrenceType }}"
                 data-original-recurrence-end-date="{{ $originalRecurrenceEndDate }}"
-                data-schedule-date="{{ $schedule->schedule_date?->format('M d, Y') }}">
+                data-schedule-date="{{ $scheduleLocalDateFormatted ?? $schedule->schedule_date?->format('M d, Y') }}">
                 <div class="flex items-start gap-2">
                     <svg class="mt-0.5 h-4 w-4 shrink-0 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
@@ -232,7 +232,7 @@
                     <p>
                         <span class="font-medium">Recurrence changed.</span>
                         Saving will delete and regenerate all unbilled future sessions from
-                        <span class="font-medium">{{ $schedule->schedule_date?->format('M d, Y') }}</span> onward.
+                        <span class="font-medium">{{ $scheduleLocalDateFormatted ?? $schedule->schedule_date?->format('M d, Y') }}</span> onward.
                         Past and billed sessions will not be affected.
                     </p>
                 </div>
@@ -298,7 +298,7 @@
                 <x-ui::input id="recurrence_end_date" name="recurrence_end_date" type="date"
                     class="mt-1 block w-full"
                     value="{{ $currentRecurrenceEndDate }}"
-                    min="{{ old('schedule_date', $isEdit ? $schedule->schedule_date?->format('Y-m-d') : ($selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d'))) }}" />
+                    min="{{ old('schedule_date', $isEdit ? ($scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) : ($selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d'))) }}" />
                 <p class="text-xs text-foreground/60 mt-1">
                     The last occurrence will be created on or before this date. Must be after the schedule start date.
                 </p>

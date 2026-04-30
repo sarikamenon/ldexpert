@@ -35,7 +35,12 @@
                                                 &middot; {{ $log->schedule->service->name }}
                                             @endif
                                         </a>
-                                        <span class="text-xs text-foreground/60">{{ $log->schedule->schedule_date->format('M d, Y') }}</span>
+                                        @php
+                                            $emailHistoryTz = $log->schedule->therapist?->therapistProfile?->timezone
+                                                ?? $log->schedule->therapist?->timezone
+                                                ?? 'UTC';
+                                        @endphp
+                                        <span class="text-xs text-foreground/60">{{ $log->schedule->localStart($emailHistoryTz)->format('M d, Y') }}</span>
                                     </div>
                                 @else
                                     <span class="text-foreground/40">—</span>

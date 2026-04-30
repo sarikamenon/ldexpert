@@ -2,9 +2,9 @@
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
             <div class="mb-6">
-                <h1 class="text-2xl font-semibold text-foreground">Bill Your Schedule</h1>
+                <h1 class="text-2xl font-semibold text-foreground">Past Sessions Queue</h1>
                 <p class="text-sm text-foreground/60 mt-1">
-                    Past schedules that haven't been billed yet ({{ $pendingCount ?? 0 }} total)
+                    Past sessions that haven't been billed yet ({{ $pendingCount ?? 0 }} total)
                 </p>
             </div>
 
@@ -119,17 +119,20 @@
                                                     ($minutesRemainder > 0 ? $minutesRemainder . 'm' : ''),
                                             )
                                             : $minutesRemainder . 'm';
-                                    
-                                    $startTime = $schedule->start_time?->format('g:i A');
-                                    $endTime = $schedule->end_time?->format('g:i A');
-                                    $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : null;
+
+                                    $pendingTz = $schedule->therapist?->therapistProfile?->timezone
+                                        ?? $schedule->therapist?->timezone
+                                        ?? 'UTC';
+                                    $pendingLocalStart = $schedule->localStart($pendingTz);
+                                    $pendingLocalEnd = $schedule->localEnd($pendingTz);
+                                    $startTime = $pendingLocalStart->format('g:i A');
+                                    $endTime = $pendingLocalEnd->format('g:i A');
+                                    $timeRange = "{$startTime} - {$endTime}";
                                 @endphp
                                 <tr data-schedule-id="{{ $schedule->id }}">
                                     <td class="px-6 py-4 text-sm">
                                         <div class="flex flex-col space-y-1">
-                                            @if ($schedule->schedule_date)
-                                                <span class="text-foreground font-medium">{{ $schedule->schedule_date->format('M d, Y') }}</span>
-                                            @endif
+                                            <span class="text-foreground font-medium">{{ $pendingLocalStart->format('M d, Y') }}</span>
                                             @if ($timeRange)
                                                 <span class="text-foreground">{{ $timeRange }}</span>
                                             @endif
@@ -172,7 +175,7 @@
                             @empty
                                 <tr>
                                     <td colspan="3" class="px-6 py-12 text-center">
-                                        <p class="text-foreground/70">No pending schedules found.</p>
+                                        <p class="text-foreground/70">No past sessions found.</p>
                                         <p class="text-sm text-foreground/60 mt-2">
                                             All past schedules have been billed or marked appropriately.
                                         </p>

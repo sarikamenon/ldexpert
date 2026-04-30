@@ -98,13 +98,17 @@
                 @if(isset($datatableUrl))
                 @else
                 @forelse ($schedules as $schedule)
+                    @php
+                        $rowTz = $schedule->therapist?->therapistProfile?->timezone
+                            ?? $schedule->therapist?->timezone
+                            ?? 'UTC';
+                        $rowLocalStart = $schedule->localStart($rowTz);
+                        $rowLocalEnd = $schedule->localEnd($rowTz);
+                    @endphp
                     <tr>
-                        <td class="px-3 py-2">{{ optional($schedule->schedule_date)->format('Y-m-d') }}</td>
+                        <td class="px-3 py-2">{{ $rowLocalStart->format('Y-m-d') }}</td>
                         <td class="px-3 py-2">
-                            {{ optional($schedule->start_time)->format('H:i') }}
-                            @if ($schedule->end_time)
-                                - {{ $schedule->end_time->format('H:i') }}
-                            @endif
+                            {{ $rowLocalStart->format('H:i') }} - {{ $rowLocalEnd->format('H:i') }}
                         </td>
                         <td class="px-3 py-2">
                             @if ($schedule->therapist)

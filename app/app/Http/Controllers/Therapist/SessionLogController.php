@@ -11,6 +11,7 @@ use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\SessionLogCommentType;
@@ -56,6 +57,7 @@ final class SessionLogController extends Controller
         private readonly StudentDocumentService $documentService,
         private readonly BillingEntryWindowService $billingEntryWindowService,
         private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -220,6 +222,18 @@ final class SessionLogController extends Controller
             ]);
         }
 
+        $scheduleLocalDate = null;
+        $scheduleLocalStartTime = null;
+        $scheduleLocalEndTime = null;
+        if ($schedule !== null) {
+            $tz = $this->timezoneService->resolveTimezone($therapist);
+            $localStart = $schedule->localStart($tz);
+            $localEnd = $schedule->localEnd($tz);
+            $scheduleLocalDate = $localStart->format('Y-m-d');
+            $scheduleLocalStartTime = $localStart->format('H:i');
+            $scheduleLocalEndTime = $localEnd->format('H:i');
+        }
+
         return view('therapist.session-logs.create', [
             'schedule' => $schedule,
             'students' => $students,
@@ -228,6 +242,9 @@ final class SessionLogController extends Controller
             'ssaServiceMappings' => $ssaServiceMappings,
             'selectedSsa' => $selectedSsa,
             'sessionOutcomes' => SessionOutcome::cases(),
+            'scheduleLocalDate' => $scheduleLocalDate,
+            'scheduleLocalStartTime' => $scheduleLocalStartTime,
+            'scheduleLocalEndTime' => $scheduleLocalEndTime,
         ]);
     }
 

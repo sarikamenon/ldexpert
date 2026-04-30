@@ -17,15 +17,20 @@ final class ScheduleCalendarEventTransformer
      */
     public static function transform(Schedule $schedule): array
     {
-        $isPast = $schedule->schedule_date->lt(now()->startOfDay());
+        $therapist = $schedule->therapist;
+        $profileTz = $therapist?->therapistProfile?->timezone;
+        $tz = $profileTz ?? ($therapist !== null ? $therapist->timezone : 'UTC');
+        $localStart = $schedule->localStart($tz);
+        $localEnd = $schedule->localEnd($tz);
+        $isPast = $localStart->lt(now($tz)->startOfDay());
         $isBilled = $schedule->billing_status === BillingStatus::BILLED;
         $color = self::eventColor($schedule);
 
         return [
             'id' => $schedule->id,
             'title' => self::buildTitle($schedule),
-            'start' => $schedule->schedule_date->format('Y-m-d').'T'.$schedule->start_time->format('H:i:s'),
-            'end' => $schedule->schedule_date->format('Y-m-d').'T'.$schedule->end_time->format('H:i:s'),
+            'start' => $localStart->format('Y-m-d\TH:i:s'),
+            'end' => $localEnd->format('Y-m-d\TH:i:s'),
             'backgroundColor' => $color,
             'borderColor' => $color,
             'textColor' => '#ffffff',

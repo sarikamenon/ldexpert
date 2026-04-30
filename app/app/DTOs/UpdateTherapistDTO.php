@@ -58,6 +58,7 @@ final class UpdateTherapistDTO
         return [
             'name' => $this->firstName.' '.$this->lastName,
             'email' => $this->personalEmail,
+            'timezone' => $this->timezone,
         ];
     }
 

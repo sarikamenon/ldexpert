@@ -89,22 +89,27 @@ final class ScheduleCalendarController extends Controller
         $studentProfile = $schedule->student?->studentProfile;
         $ssa = $schedule->ssa;
         $durationMinutes = $schedule->durationMinutes();
+        $therapist = $schedule->therapist;
+        $profileTz = $therapist?->therapistProfile?->timezone;
+        $tz = $profileTz ?? ($therapist !== null ? $therapist->timezone : 'UTC');
+        $localStart = $schedule->localStart($tz);
+        $localEnd = $schedule->localEnd($tz);
 
         return [
             'id' => $schedule->id,
-            'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
-            'schedule_date_formatted' => $schedule->schedule_date->format('M d, Y'),
-            'start_time' => $schedule->start_time->format('H:i'),
-            'start_time_formatted' => $schedule->start_time->format('g:i A'),
-            'end_time' => $schedule->end_time->format('H:i'),
-            'end_time_formatted' => $schedule->end_time->format('g:i A'),
+            'schedule_date' => $localStart->format('Y-m-d'),
+            'schedule_date_formatted' => $localStart->format('M d, Y'),
+            'start_time' => $localStart->format('H:i'),
+            'start_time_formatted' => $localStart->format('g:i A'),
+            'end_time' => $localEnd->format('H:i'),
+            'end_time_formatted' => $localEnd->format('g:i A'),
             'duration_minutes' => $durationMinutes,
             'duration_formatted' => $this->formatDuration($durationMinutes),
             'status' => $schedule->status->value,
             'billing_status' => $schedule->billing_status->value,
             'notes' => $schedule->notes,
             'location_details' => $schedule->location_details,
-            'is_past' => $schedule->schedule_date->lt(now()->startOfDay()),
+            'is_past' => $localStart->lt(now($tz)->startOfDay()),
             'therapist' => [
                 'id' => $schedule->therapist?->id,
                 'name' => $schedule->therapist?->name,
