@@ -30,6 +30,10 @@
                 'isEdit' => true,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
                 'isPrivateStudent' => $isPrivateStudent,
+                'scheduleLocalDate' => $scheduleLocalDate,
+                'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
+                'scheduleLocalStartTime' => $scheduleLocalStartTime,
+                'scheduleLocalEndTime' => $scheduleLocalEndTime,
             ])
         </div>
     </div>

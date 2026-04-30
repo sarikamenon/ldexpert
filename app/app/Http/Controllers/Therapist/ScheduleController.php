@@ -10,6 +10,7 @@ use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\SessionLogService;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateScheduleDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
@@ -39,6 +40,7 @@ final class ScheduleController extends Controller
         private readonly SessionLogService $sessionLogService,
         private readonly SchoolCalendarService $calendarService,
         private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function create(Request $request): View|RedirectResponse
@@ -166,11 +168,19 @@ final class ScheduleController extends Controller
 
         $isPrivateStudent = $schedule->student?->studentProfile?->school?->is_private_student === true;
 
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $localStart = $schedule->localStart($tz);
+        $localEnd = $schedule->localEnd($tz);
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
             'therapistTimezone' => $therapistTimezone,
             'therapistTimezoneLabel' => $therapistTimezoneLabel,
             'isPrivateStudent' => $isPrivateStudent,
+            'scheduleLocalDate' => $localStart->format('Y-m-d'),
+            'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
+            'scheduleLocalStartTime' => $localStart->format('H:i'),
+            'scheduleLocalEndTime' => $localEnd->format('H:i'),
         ]);
     }
 
@@ -210,12 +220,14 @@ final class ScheduleController extends Controller
             $schedules->pluck('id')->toArray()
         );
 
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+
         return response()->json([
-            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule) {
-                $scheduleDate = $schedule->schedule_date;
-                $isPast = $scheduleDate->lt(now()->startOfDay());
-                $eventStart = $scheduleDate->copy()->setTimeFrom($schedule->start_time);
-                $hasEventStarted = now()->gte($eventStart);
+            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule, $tz) {
+                $localStart = $schedule->localStart($tz);
+                $localEnd = $schedule->localEnd($tz);
+                $isPast = $localStart->lt(now($tz)->startOfDay());
+                $hasEventStarted = now()->gte($schedule->startUtc());
                 $isBilled = $schedule->billing_status === BillingStatus::BILLED;
                 $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
                 /** @var \App\Models\SessionLog|null $sessionLog */
@@ -223,9 +235,9 @@ final class ScheduleController extends Controller
 
                 return [
                     'id' => $schedule->id,
-                    'schedule_date' => $scheduleDate->format('Y-m-d'),
-                    'start_time' => $schedule->start_time->format('H:i'),
-                    'end_time' => $schedule->end_time->format('H:i'),
+                    'schedule_date' => $localStart->format('Y-m-d'),
+                    'start_time' => $localStart->format('H:i'),
+                    'end_time' => $localEnd->format('H:i'),
                     'school' => $schedule->school?->display_name,
                     'student' => $schedule->student?->name,
                     'service' => $schedule->service?->name,
@@ -553,23 +565,26 @@ final class ScheduleController extends Controller
         $studentProfile = $schedule->student?->studentProfile;
         $ssa = $schedule->ssa;
         $durationMinutes = $schedule->durationMinutes();
+        $tz = $this->timezoneService->resolveTimezone($schedule->therapist ?? $therapist);
+        $localStart = $schedule->localStart($tz);
+        $localEnd = $schedule->localEnd($tz);
 
         return response()->json([
             'schedule' => [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
-                'schedule_date_formatted' => $schedule->schedule_date->format('M d, Y'),
-                'start_time' => $schedule->start_time->format('H:i'),
-                'start_time_formatted' => $schedule->start_time->format('g:i A'),
-                'end_time' => $schedule->end_time->format('H:i'),
-                'end_time_formatted' => $schedule->end_time->format('g:i A'),
+                'schedule_date' => $localStart->format('Y-m-d'),
+                'schedule_date_formatted' => $localStart->format('M d, Y'),
+                'start_time' => $localStart->format('H:i'),
+                'start_time_formatted' => $localStart->format('g:i A'),
+                'end_time' => $localEnd->format('H:i'),
+                'end_time_formatted' => $localEnd->format('g:i A'),
                 'duration_minutes' => $durationMinutes,
                 'duration_formatted' => $this->formatDuration($durationMinutes),
                 'status' => $schedule->status->value,
                 'billing_status' => $schedule->billing_status->value,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
-                'is_past' => $schedule->schedule_date->lt(now()->startOfDay()),
+                'is_past' => $localStart->lt(now($tz)->startOfDay()),
                 'is_recurring' => $schedule->isRecurring() || $schedule->isOccurrence(),
                 'service' => [
                     'id' => $schedule->service?->id,
@@ -611,7 +626,7 @@ final class ScheduleController extends Controller
                     'phone' => $studentProfile->parent_guardian_phone ?? '-',
                 ],
                 'email_logs' => $schedule->emailLogs->sortByDesc('sent_at')->map(fn ($log) => [
-                    'sent_at'         => $log->sent_at->format('M d, Y g:i A'),
+                    'sent_at'         => $log->sent_at->copy()->setTimezone($tz)->format('M d, Y g:i A'),
                     'type_label'      => $log->type->label(),
                     'type_value'      => $log->type->value,
                     'recipient_email' => $log->recipient_email,

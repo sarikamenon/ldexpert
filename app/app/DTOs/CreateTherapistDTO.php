@@ -64,6 +64,7 @@ final class CreateTherapistDTO
             'password' => $this->password,
             'role' => 'therapist',
             'status' => 'active',
+            'timezone' => $this->timezone,
         ];
     }
 

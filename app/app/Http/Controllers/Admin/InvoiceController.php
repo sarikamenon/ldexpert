@@ -182,6 +182,11 @@ final class InvoiceController extends Controller
             $advanceSubtotal = (float) $advanceLines->sum('total');
         }
 
+        $invoiceTz = $invoice->school !== null ? $invoice->school->timezone : 'UTC';
+        $invoice->emailLogs->each(function ($log) use ($invoiceTz): void {
+            $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($invoiceTz)->format('M d, Y h:i A');
+        });
+
         return view('admin.invoices.show', [
             'invoice' => $invoice,
             'adjustmentLines' => $adjustmentLines,

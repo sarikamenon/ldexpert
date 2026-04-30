@@ -117,7 +117,7 @@
                 <!-- Pending Schedules -->
                 <x-ui::card>
                     <div class="p-5 border-b border-border flex items-center justify-between">
-                        <h3 class="text-lg font-medium text-foreground">Pending Schedules</h3>
+                        <h3 class="text-lg font-medium text-foreground">Past Sessions Queue</h3>
                         <a href="{{ route('therapist.schedule.pending') }}" class="text-sm text-accent hover:underline">View all</a>
                     </div>
                     <div class="p-5 space-y-4">

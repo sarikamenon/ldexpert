@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Domain\Time\UserTimezoneService;
 use App\Models\Schedule;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -24,7 +25,7 @@ class ScheduleNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         $action = $this->type === 'created' ? 'New Schedule' : 'Schedule Update';
-        $date = $this->schedule->schedule_date->format('M d, Y');
+        $date = $this->schedule->localStart($this->resolveRecipientTimezone())->format('M d, Y');
 
         return new Envelope(
             subject: "NOVA - {$action}: {$date}",
@@ -33,8 +34,27 @@ class ScheduleNotificationMail extends Mailable
 
     public function content(): Content
     {
+        $tz = $this->resolveRecipientTimezone();
+        $localStart = $this->schedule->localStart($tz);
+        $localEnd = $this->schedule->localEnd($tz);
+
         return new Content(
             view: 'emails.schedule-notification',
+            with: [
+                'scheduleDateLong' => $localStart->format('l, F j, Y'),
+                'scheduleStartTime' => $localStart->format('g:i A'),
+                'scheduleEndTime' => $localEnd->format('g:i A'),
+                'scheduleTimezone' => $tz,
+            ],
         );
+    }
+
+    private function resolveRecipientTimezone(): string
+    {
+        if (! $this->isRecipientStudent) {
+            return $this->schedule->displayTimezone();
+        }
+
+        return app(UserTimezoneService::class)->resolveTimezone($this->schedule->student);
     }
 }

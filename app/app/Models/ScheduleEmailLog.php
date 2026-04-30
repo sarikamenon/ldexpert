@@ -14,6 +14,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property ScheduleEmailType $type
  * @property Carbon $sent_at
+ * @property string|null $sent_at_formatted Set transiently by controllers — pre-formatted in viewer/owner timezone for display.
+ * @property string|null $schedule_local_date Set transiently by controllers — schedule date pre-formatted in viewer/owner timezone for display.
  */
 class ScheduleEmailLog extends Model
 {

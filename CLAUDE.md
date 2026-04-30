@@ -34,6 +34,19 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - **Roles system**: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
 - **Follow PSR-12**; run `make qa` before commits.
 
+## Dates & Timezones (MANDATORY)
+
+- **Store all timestamps and date-times in UTC.** No exceptions for new code or new columns. Schedules, session logs, and any future event/instant data go in as UTC.
+- **Convert to the user-relevant timezone on read**, never store user-local. The conversion service is `App\Domain\Time\UserTimezoneService` (`parseUserLocalToUtc()` for writes, `toUserTimezone()` for reads, `resolveTimezone()` to look up a user's effective TZ).
+- **Whose timezone for display:** schedule owner = the schedule's therapist. Session log owner = the session log's therapist. Invoice = the invoice's school. Per-row, not per-viewer — so admin viewing a therapist's schedule sees the therapist's local time (consistent across viewers).
+- **Pre-format dates in controllers/services, not in Blade.** Blade should only print strings. Controllers attach pre-formatted strings (e.g. `$log->sent_at_formatted`) to view-models or transient model properties (annotate with `@property string|null` for PHPStan).
+- **`users.timezone` must mirror the profile's timezone.** Therapist DTOs write to both `users.timezone` and `therapist_profiles.timezone`; student DTOs write to both `users.timezone` and `student_profiles.timezone`. `UserTimezoneService::resolveTimezone()` falls back to the profile if the user row is empty/UTC.
+- **Pure calendar dates (not instants)** — e.g. `recurrence_end_date`, `ssa.start_date`, contract effective dates — are stored as the user typed them (no UTC conversion). These represent "the date in the operating timezone," not a specific moment in time. When in doubt, ask before adding a new date column.
+- **DTOs must include `timezone`** in `toUserArray()` for any user create/update flow that exposes a timezone field, so `users.timezone` stays in sync with the profile.
+- **Never assume the database date matches the user's local date.** A late-evening session in PT will store as the next-day UTC date. Date-range queries (`whereBetween('schedule_date', ...)`) must convert the user's local range to a UTC range using `UserTimezoneService::userDayUtcRange()` before querying.
+- **MySQL `CONVERT_TZ` is NOT available** in all environments (staging lacks the named-zone tables). Do timezone conversions in PHP/Carbon, never in SQL.
+- **Migrations that re-interpret existing data** (e.g. backfilling from local-as-UTC to true UTC) must snapshot original values to a backup table for reversibility. See `2026_04_30_000001_backfill_schedules_utc_from_therapist_timezone.php` for the canonical pattern.
+
 ## PHP/Laravel
 
 - Use PHP 8.2+ features when appropriate (e.g., typed properties, match expressions).

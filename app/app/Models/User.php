@@ -38,6 +38,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'status',
+        'timezone',
         'password_change_prompted_at',
     ];
 

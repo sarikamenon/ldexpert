@@ -66,6 +66,7 @@ final class CreateStudentDTO
             'password' => $this->password,
             'role' => 'student',
             'status' => 'active',
+            'timezone' => $this->timezone,
         ];
     }
 

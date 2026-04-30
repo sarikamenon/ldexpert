@@ -401,14 +401,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                         ->where('end_time', '>', $check->startTime);
                 });
             })
-            ->where('status', '!=', ScheduleStatus::CANCELLED->value)
-            // Exclude recurring parent records — they are rule templates, not actual sessions.
-            // Real sessions are either non-recurring (recurrence_type = none) or child occurrences
-            // (parent_schedule_id is not null).
-            ->where(function ($q) {
-                $q->where('recurrence_type', RecurrenceType::NONE->value)
-                    ->orWhereNotNull('parent_schedule_id');
-            });
+            ->where('status', '!=', ScheduleStatus::CANCELLED->value);
 
         // Check for therapist or student overlap
         $query->where(function ($q) use ($user) {

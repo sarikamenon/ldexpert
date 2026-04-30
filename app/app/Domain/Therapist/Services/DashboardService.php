@@ -7,6 +7,7 @@ namespace App\Domain\Therapist\Services;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
@@ -25,6 +26,7 @@ class DashboardService
         private readonly UserRepositoryInterface $userRepository,
         private readonly ScheduleRepositoryInterface $scheduleRepository,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -104,15 +106,17 @@ class DashboardService
         /** @var Collection<int, array<string, mixed>> */
         return $schedules->map(function (Schedule $schedule): array {
             $studentProfile = $schedule->student?->studentProfile;
-            $eventStart = $schedule->schedule_date->copy()->setTimeFrom($schedule->start_time);
-            $hasEventStarted = now()->gte($eventStart);
+            $tz = $this->timezoneService->resolveTimezone($schedule->therapist);
+            $localStart = $schedule->localStart($tz);
+            $localEnd = $schedule->localEnd($tz);
+            $hasEventStarted = now()->gte($schedule->startUtc());
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
 
             return [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
-                'start_time' => $schedule->start_time->format('H:i'),
-                'end_time' => $schedule->end_time->format('H:i'),
+                'schedule_date' => $localStart->format('Y-m-d'),
+                'start_time' => $localStart->format('H:i'),
+                'end_time' => $localEnd->format('H:i'),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id
