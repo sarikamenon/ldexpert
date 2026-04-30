@@ -555,20 +555,15 @@ final class ScheduleService
         $students = $this->userRepository->findByIds($studentIds);
         $occurrences = collect();
 
-        // Get time from parent schedule (stored as UTC)
-        $startTime = $parentSchedule->start_time->format('H:i');
-        $endTime = $parentSchedule->end_time->format('H:i');
-
-        // Format schedule date to ensure it's just a date string
-        $parentScheduleDateStr = $parentSchedule->schedule_date->format('Y-m-d');
-
-        // Parse parent schedule date/time to get duration
-        $parentUtcStart = Carbon::parse($parentScheduleDateStr.' '.$startTime);
-        $parentUtcEnd = Carbon::parse($parentScheduleDateStr.' '.$endTime);
-        if ($parentUtcEnd->lt($parentUtcStart)) {
-            $parentUtcEnd->addDay();
-        }
+        // Parent stores UTC. Convert to therapist-local so we can combine with
+        // user-local occurrence dates and reconvert to UTC per occurrence.
+        $parentUtcStart = $parentSchedule->startUtc();
+        $parentUtcEnd = $parentSchedule->endUtc();
         $durationMinutes = (int) $parentUtcStart->diffInMinutes($parentUtcEnd);
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $parentLocalStart = $parentUtcStart->setTimezone($tz);
+        $localStartTime = $parentLocalStart->format('H:i');
 
         // Filter out dates that match the parent schedule date (already created as parent schedule)
         $occurrenceDates = array_filter($occurrenceDates, function ($dateStr) use ($parentScheduleDate) {
@@ -582,17 +577,9 @@ final class ScheduleService
                 $cleanOccurrenceDate = explode(' ', $occurrenceDateStr)[0];
             }
 
-            // Ensure start time is in H:i format
-            $cleanStartTime = $startTime;
-            if (str_contains($startTime, ':')) {
-                $parts = explode(':', $startTime);
-                $cleanStartTime = $parts[0].':'.$parts[1]; // Take only H:i
-            }
-
-            // Parse local date string and combine with start time
-            $localDateTimeStr = $cleanOccurrenceDate.' '.$cleanStartTime;
-
-            // Convert to UTC for storage/validation
+            // Combine the user-local occurrence date with the user-local start
+            // time, then convert to UTC for storage.
+            $localDateTimeStr = $cleanOccurrenceDate.' '.$localStartTime;
             $occurrenceUtcStart = $this->timezoneService->parseUserLocalToUtc($localDateTimeStr, $therapist);
             $occurrenceUtcEnd = $occurrenceUtcStart->copy()->addMinutes($durationMinutes);
 

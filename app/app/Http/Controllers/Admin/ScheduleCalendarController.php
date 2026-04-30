@@ -152,7 +152,7 @@ final class ScheduleCalendarController extends Controller
                 'phone' => $studentProfile->parent_guardian_phone ?? '-',
             ],
             'email_logs' => $schedule->emailLogs->sortByDesc('sent_at')->map(fn ($log) => [
-                'sent_at'         => $log->sent_at->format('M d, Y g:i A'),
+                'sent_at'         => $log->sent_at->copy()->setTimezone($tz)->format('M d, Y g:i A'),
                 'type_label'      => $log->type->label(),
                 'type_value'      => $log->type->value,
                 'recipient_email' => $log->recipient_email,

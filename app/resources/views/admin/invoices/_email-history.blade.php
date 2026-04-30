@@ -15,7 +15,7 @@
                 <tbody>
                     @foreach ($invoice->emailLogs->sortByDesc('sent_at') as $log)
                         <tr class="border-b border-border">
-                            <td class="py-3 px-4 text-sm">{{ $log->sent_at->format('M d, Y h:i A') }}</td>
+                            <td class="py-3 px-4 text-sm">{{ $log->sent_at_formatted }}</td>
                             <td class="py-3 px-4 text-sm">
                                 <x-ui::badge :variant="$log->type === \App\Enums\InvoiceEmailType::INITIAL ? 'primary' : 'secondary'">
                                     {{ $log->type->label() }}

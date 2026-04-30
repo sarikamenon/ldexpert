@@ -19,7 +19,7 @@
                 <tbody>
                     @foreach ($emailLogs as $log)
                         <tr class="border-b border-border last:border-0">
-                            <td class="py-3 px-4 text-sm">{{ $log->sent_at->format('M d, Y h:i A') }}</td>
+                            <td class="py-3 px-4 text-sm">{{ $log->sent_at_formatted }}</td>
                             <td class="py-3 px-4 text-sm">
                                 <x-ui::badge variant="{{ in_array($log->type->value, ['notification_created', 'notification_updated']) ? 'primary' : 'secondary' }}">
                                     {{ $log->type->label() }}
@@ -35,12 +35,7 @@
                                                 &middot; {{ $log->schedule->service->name }}
                                             @endif
                                         </a>
-                                        @php
-                                            $emailHistoryTz = $log->schedule->therapist?->therapistProfile?->timezone
-                                                ?? $log->schedule->therapist?->timezone
-                                                ?? 'UTC';
-                                        @endphp
-                                        <span class="text-xs text-foreground/60">{{ $log->schedule->localStart($emailHistoryTz)->format('M d, Y') }}</span>
+                                        <span class="text-xs text-foreground/60">{{ $log->schedule_local_date }}</span>
                                     </div>
                                 @else
                                     <span class="text-foreground/40">—</span>
