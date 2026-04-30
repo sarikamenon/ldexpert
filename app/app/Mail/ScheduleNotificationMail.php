@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Constants\UsTimezones;
 use App\Domain\Time\UserTimezoneService;
 use App\Models\Schedule;
 use Illuminate\Bus\Queueable;
@@ -44,7 +45,7 @@ class ScheduleNotificationMail extends Mailable
                 'scheduleDateLong' => $localStart->format('l, F j, Y'),
                 'scheduleStartTime' => $localStart->format('g:i A'),
                 'scheduleEndTime' => $localEnd->format('g:i A'),
-                'scheduleTimezone' => $tz,
+                'scheduleTimezone' => UsTimezones::getTimezoneLabel($tz),
             ],
         );
     }
