@@ -112,28 +112,16 @@
                         </button>
                     @endif
 
-                    @if ($hasEventStarted && $isPendingBilling)
-                        @if (isset($schedule['bill_url']))
-                            <a href="{{ $schedule['bill_url'] }}"
-                                class="rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                title="Bill Your Session"
-                                aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </a>
-                        @else
-                            <button type="button"
-                                class="schedule-bill-btn rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                                data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Bill Your Session"
-                                aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
-                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </button>
-                        @endif
+                    @if (!empty($schedule['bill_url']))
+                        <a href="{{ $schedule['bill_url'] }}"
+                            class="rounded-lg bg-primary p-1.5 text-white transition-colors hover:bg-primary/90 active:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            title="Bill Your Session"
+                            aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </a>
                     @elseif ($isPast && $isBilled)
                         <button type="button"
                             class="schedule-view-session-btn rounded-lg bg-primary/10 p-1.5 text-primary transition-colors hover:bg-primary/20 active:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
@@ -242,28 +230,16 @@
                 @endif
 
                 {{-- Billing / View Session Buttons (after event start time) --}}
-                @if ($hasEventStarted && $isPendingBilling)
-                    @if (isset($schedule['bill_url']))
-                        <a href="{{ $schedule['bill_url'] }}"
-                            class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                            title="Bill Your Session"
-                            aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </a>
-                    @else
-                        <button type="button"
-                            class="schedule-bill-btn p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                            data-schedule-id="{{ $schedule['id'] ?? '' }}" title="Bill Your Session"
-                            aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </button>
-                    @endif
+                @if (!empty($schedule['bill_url']))
+                    <a href="{{ $schedule['bill_url'] }}"
+                        class="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        title="Bill Your Session"
+                        aria-label="Bill session for {{ $schedule['student'] ?? $schedule['therapist'] ?? 'schedule' }}">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </a>
                 @elseif ($isPast && $isBilled)
                     <button type="button"
                         class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"

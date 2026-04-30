@@ -34,7 +34,7 @@
                         <strong>Service:</strong> {{ $sessionLog->service?->name ?? 'N/A' }}
                     </p>
                     <p style="margin:0 0 4px; color:#92400e;">
-                        <strong>Session date:</strong> {{ $sessionLog->session_date?->format('M d, Y') ?? 'N/A' }}
+                        <strong>Session date:</strong> {{ $sessionDateFormatted ?? 'N/A' }}
                     </p>
                 </div>
 

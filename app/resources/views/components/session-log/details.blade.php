@@ -8,19 +8,19 @@
                 <div class="flex justify-between gap-4">
                     <dt class="text-foreground/60">Session Date</dt>
                     <dd class="text-foreground font-medium">
-                        {{ $sessionLog->session_date?->format('M d, Y') ?? '—' }}
+                        {{ $sessionLog->session_date_formatted ?? '—' }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-4">
                     <dt class="text-foreground/60">Start Time</dt>
                     <dd class="text-foreground font-medium">
-                        {{ $sessionLog->start_time?->format('g:i A') ?? '—' }}
+                        {{ $sessionLog->start_time_formatted ?? '—' }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-4">
                     <dt class="text-foreground/60">End Time</dt>
                     <dd class="text-foreground font-medium">
-                        {{ $sessionLog->end_time?->format('g:i A') ?? '—' }}
+                        {{ $sessionLog->end_time_formatted ?? '—' }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-4">

@@ -49,6 +49,12 @@ final class SessionLogScope extends BaseModelScope
     }
 
     /**
+     * KNOWN GAP — compares against UTC `session_date` after the UTC migration,
+     * not the therapist's local date. A session at 11pm PT April 30 stored as
+     * `2026-05-01 UTC` will land in the wrong bucket. Fix later by accepting
+     * a TZ and converting bounds via `UserTimezoneService::userDayUtcRange()`.
+     * See `_local_docs/session-logs-utc-migration-plan.md` ("Known gaps").
+     *
      * @param  Builder<SessionLog>  $builder
      * @return Builder<SessionLog>
      */

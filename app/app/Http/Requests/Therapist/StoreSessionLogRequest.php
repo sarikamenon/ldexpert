@@ -6,6 +6,7 @@ namespace App\Http\Requests\Therapist;
 
 use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Enums\SessionOutcome;
@@ -254,11 +255,16 @@ final class StoreSessionLogRequest extends FormRequest
                 });
             }
 
-            // Validate billing entry window (hard block for therapists)
+            // Validate billing entry window (hard block for therapists).
+            // Use the therapist's TZ so the weekly cutoff aligns with where
+            // the work was done (per CLAUDE.md UTC rules).
             $sessionDate = $this->input('session_date');
             if ($sessionDate) {
+                /** @var \App\Models\User|null $therapistUser */
+                $therapistUser = $this->user();
+                $tz = app(UserTimezoneService::class)->resolveTimezone($therapistUser);
                 $windowService = app(BillingEntryWindowService::class);
-                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate));
+                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate, $tz), null, $tz);
                 if (! $windowResult->isWithinWindow) {
                     $validator->errors()->add(
                         'session_date',

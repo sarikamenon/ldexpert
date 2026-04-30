@@ -19,6 +19,18 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * KNOWN GAP — TZ-aware date filters not yet implemented.
+ * After the session_log UTC migration, `session_date` is stored in UTC. The
+ * `whereDate('session_date', ...)` filters using `date_from` / `date_to` in
+ * this file (and `betweenSessionDates` on `SessionLogScope`) compare against
+ * the UTC date, not the therapist's local date — so a session at 11pm PT
+ * April 30 (stored as `2026-05-01 UTC`) can land in the wrong day bucket
+ * when a therapist filters their "April" list. Fix later by converting
+ * filter inputs to UTC datetime ranges via `UserTimezoneService::userDayUtcRange()`
+ * and using `whereBetween` on the start_time UTC column. See
+ * `_local_docs/session-logs-utc-migration-plan.md` ("Known gaps") for context.
+ */
 final class EloquentSessionLogRepository implements SessionLogRepositoryInterface
 {
     /**

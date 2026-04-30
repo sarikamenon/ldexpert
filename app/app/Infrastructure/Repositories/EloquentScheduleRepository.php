@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\OverlapCheckDTO;
 use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
-use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
@@ -25,6 +25,10 @@ use Illuminate\Support\Str;
 
 final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 {
+    public function __construct(
+        private readonly UserTimezoneService $timezoneService,
+    ) {}
+
     /** @return Collection<int, Schedule> */
     public function getSchedulesForTherapist(User $therapist, ScheduleFilterDTO $filters): Collection
     {
@@ -32,8 +36,19 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->with(['student', 'student.studentProfile', 'service', 'ssa', 'school']);
 
+        // PERF NOTE: TIMESTAMP(schedule_date, start_time) is computed per-row
+        // and not indexable, so the BETWEEN filter and the ORDER BY below both
+        // force a filesort. Acceptable while per-therapist daily lists stay
+        // small; if this grows, add a stored generated column
+        // `start_at_utc TIMESTAMP GENERATED ALWAYS AS (TIMESTAMP(schedule_date,
+        // start_time)) STORED` and an index on it, then switch to whereBetween
+        // / orderBy on that column.
         if ($filters->date) {
-            $query->whereDate('schedule_date', $filters->date);
+            [$startUtc, $endUtc] = $this->timezoneService->userDayUtcRange($filters->date, $therapist);
+            $query->whereRaw(
+                'TIMESTAMP(schedule_date, start_time) BETWEEN ? AND ?',
+                [$startUtc->format('Y-m-d H:i:s'), $endUtc->format('Y-m-d H:i:s')],
+            );
         }
 
         if ($filters->schoolId) {
@@ -44,9 +59,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             $query->where('student_id', $filters->studentId);
         }
 
-        return $query->orderBy('schedule_date')
-            ->orderBy('start_time')
-            ->get();
+        return $query->orderByRaw('TIMESTAMP(schedule_date, start_time)')->get();
     }
 
     public function getPendingCount(User $therapist): int

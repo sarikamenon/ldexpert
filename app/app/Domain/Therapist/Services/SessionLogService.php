@@ -7,6 +7,7 @@ namespace App\Domain\Therapist\Services;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
@@ -31,6 +32,7 @@ final class SessionLogService
         private readonly SessionLogRateService $rateService,
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly ServiceRepositoryInterface $serviceRepository,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -126,6 +128,11 @@ final class SessionLogService
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
             }
 
+            // Convert user-local session_date/start_time/end_time to UTC last,
+            // so billing/contract lookups above used the local date (correct
+            // for "the day the work was done") while storage uses UTC.
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $therapist);
+
             $sessionLog = $this->repository->create($data);
 
             $schedule->update(['billing_status' => BillingStatus::BILLED]);
@@ -193,6 +200,11 @@ final class SessionLogService
                 $data['school_rate_amount'] = $billing['school']['rate_amount'];
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
             }
+
+            // Convert user-local session_date/start_time/end_time to UTC last,
+            // so billing/contract lookups above used the local date (correct
+            // for "the day the work was done") while storage uses UTC.
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $therapist);
 
             return $this->repository->create($data);
         });
@@ -290,6 +302,12 @@ final class SessionLogService
                     );
                 }
             }
+
+            // Convert user-local session_date/start_time/end_time to UTC last,
+            // so billing/contract lookups above used the local date (correct
+            // for "the day the work was done") while storage uses UTC.
+            $rowOwner = $sessionLog->therapist ?? $therapist;
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $rowOwner);
 
             return $this->repository->update($sessionLog, $data);
         });

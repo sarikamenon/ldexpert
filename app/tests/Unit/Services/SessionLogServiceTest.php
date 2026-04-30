@@ -9,6 +9,7 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
 use App\Domain\Therapist\Services\SessionLogService;
+use App\Domain\Time\UserTimezoneService;
 use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,7 +36,7 @@ final class SessionLogServiceTest extends TestCase
         $rateService = Mockery::mock(SessionLogRateService::class);
         $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
         $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
-        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository, app(UserTimezoneService::class));
 
         $result = $service->submit($therapist, $sessionLog);
 
@@ -54,7 +55,7 @@ final class SessionLogServiceTest extends TestCase
         $rateService = Mockery::mock(SessionLogRateService::class);
         $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
         $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
-        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository, app(UserTimezoneService::class));
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Therapist does not have access to this session log.');
@@ -76,7 +77,7 @@ final class SessionLogServiceTest extends TestCase
         $rateService = Mockery::mock(SessionLogRateService::class);
         $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
         $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
-        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository, app(UserTimezoneService::class));
 
         $result = $service->approve($admin, $sessionLog);
 
@@ -92,7 +93,7 @@ final class SessionLogServiceTest extends TestCase
         $rateService = Mockery::mock(SessionLogRateService::class);
         $ssaRepository = Mockery::mock(SSARepositoryInterface::class);
         $serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
-        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository);
+        $service = new SessionLogService($repository, $rateService, $ssaRepository, $serviceRepository, app(UserTimezoneService::class));
 
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Session log must be submitted before approval.');

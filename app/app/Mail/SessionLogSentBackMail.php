@@ -18,13 +18,14 @@ class SessionLogSentBackMail extends Mailable
     public function __construct(
         public readonly SessionLog $sessionLog
     ) {
-        $this->sessionLog->loadMissing(['therapist', 'student', 'service']);
+        $this->sessionLog->loadMissing(['therapist', 'therapist.therapistProfile', 'student', 'service']);
     }
 
     public function envelope(): Envelope
     {
         $student = $this->sessionLog->student->name ?? 'Unknown student';
-        $date = $this->sessionLog->session_date->format('M d, Y');
+        $tz = $this->sessionLog->displayTimezone();
+        $date = $this->sessionLog->localDate($tz)->format('M d, Y');
 
         return new Envelope(
             subject: "Session log sent back for rectification – {$student}, {$date}",
@@ -33,8 +34,13 @@ class SessionLogSentBackMail extends Mailable
 
     public function content(): Content
     {
+        $tz = $this->sessionLog->displayTimezone();
+
         return new Content(
             view: 'emails.session-log-sent-back',
+            with: [
+                'sessionDateFormatted' => $this->sessionLog->localDate($tz)->format('M d, Y'),
+            ],
         );
     }
 }

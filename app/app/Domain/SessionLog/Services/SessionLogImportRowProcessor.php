@@ -8,6 +8,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\Enums\Role;
@@ -34,6 +35,7 @@ final class SessionLogImportRowProcessor
         private readonly UserRepositoryInterface $userRepository,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
         private readonly SessionLogRateService $rateService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -232,6 +234,10 @@ final class SessionLogImportRowProcessor
         $logData['approved_by_id'] = $import->user_id;
         $logData['delivery_mode'] = 'virtual';
         $logData['is_group'] = $isGroup;
+
+        // CSV rows are in the importing therapist's local TZ. Convert to UTC
+        // for storage (per CLAUDE.md: all session_log timestamps stored UTC).
+        $logData = $this->timezoneService->convertSessionLocalToUtc($logData, $therapist);
 
         $sessionLog = $this->sessionLogRepository->create($logData);
 

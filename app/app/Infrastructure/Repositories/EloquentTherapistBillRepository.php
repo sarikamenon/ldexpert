@@ -224,6 +224,8 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             ->whereNull('therapist_bill_id')
             ->with(['student', 'service', 'therapist', 'school']);
 
+        // KNOWN GAP — UTC `session_date` filter, not therapist-local. See
+        // `_local_docs/session-logs-utc-migration-plan.md` ("Known gaps").
         if (isset($filters['date_from']) && isset($filters['date_to'])) {
             $query->whereBetween('session_date', [$filters['date_from'], $filters['date_to']]);
         }
@@ -269,6 +271,8 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             ->where('is_billable_therapist', true)
             ->whereNull('therapist_bill_id');
 
+        // KNOWN GAP — UTC `session_date` filter, not therapist-local. See
+        // `_local_docs/session-logs-utc-migration-plan.md` ("Known gaps").
         if (isset($filters['date_from']) && isset($filters['date_to'])) {
             $query->whereBetween('session_date', [$filters['date_from'], $filters['date_to']]);
         }

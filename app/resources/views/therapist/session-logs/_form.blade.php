@@ -95,14 +95,14 @@
                 @if (isset($schedule))
                     <p class="mt-1 text-xs text-foreground/60">Date when the session occurred (from schedule)</p>
                     <input type="hidden" name="session_date"
-                        value="{{ old('session_date', $schedule->schedule_date?->format('Y-m-d')) }}" />
+                        value="{{ old('session_date', $scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) }}" />
                     <x-ui::input type="date" id="session-log-date" class="mt-1 block w-full bg-muted"
-                        value="{{ old('session_date', $schedule->schedule_date?->format('Y-m-d')) }}"
+                        value="{{ old('session_date', $scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) }}"
                         readonly :disabled="true" />
                 @else
                     <p class="mt-1 text-xs text-foreground/60">Date when the session occurred. Must be a past date.</p>
                     <x-ui::input type="date" name="session_date" id="session-log-date" class="mt-1 block w-full"
-                        value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : now()->format('Y-m-d')) }}"
+                        value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date_input : now()->format('Y-m-d')) }}"
                         max="{{ now()->format('Y-m-d') }}" required />
                 @endif
                 <x-input-error :messages="$errors->get('session_date')" class="mt-2" />
@@ -115,7 +115,7 @@
                 <label class="block text-sm font-medium text-gray-700">Start Time *</label>
                 <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
                 <x-ui::input type="time" name="start_time" id="session-log-start-time"
-                    value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
+                    value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time_input : (isset($scheduleLocalStartTime) ? $scheduleLocalStartTime : '')) }}"
                     class="mt-1" required />
                 <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
             </div>
@@ -137,7 +137,7 @@
                 <label class="block text-sm font-medium text-gray-700">End Time</label>
                 <p class="mt-1 text-xs text-foreground/60">Calculated based on start time and duration</p>
                 <x-ui::input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
-                    value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
+                    value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time_input : (isset($scheduleLocalEndTime) ? $scheduleLocalEndTime : '')) }}"
                     class="mt-1 bg-muted" required />
                 <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
             </div>

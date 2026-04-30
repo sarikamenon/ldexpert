@@ -129,13 +129,13 @@ final class SessionLogIndexService
         /** @var \Illuminate\Pagination\LengthAwarePaginator<int, SessionLog> $paginator */
         return $paginator->getCollection()
             ->map(function (SessionLog $log): array {
-                /** @var \Carbon\Carbon|null $sessionDate */
-                $sessionDate = $log->session_date;
-                $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
+                $tz = $log->displayTimezone();
+                $sessionDate = $log->localDate($tz);
+                $createdAt = $log->created_at ? Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
                 return [
                     'date_time' => [
-                        'date' => $sessionDate?->format('M d, Y') ?? null,
+                        'date' => $sessionDate->format('M d, Y'),
                         'time' => null,
                         'duration' => $log->duration_minutes ? "{$log->duration_minutes} mins" : null,
                     ],
@@ -169,19 +169,21 @@ final class SessionLogIndexService
         /** @var \Illuminate\Pagination\LengthAwarePaginator<int, SessionLog> $paginator */
         return $paginator->getCollection()
             ->map(function (SessionLog $log): array {
-                /** @var \Carbon\Carbon|null $sessionDate */
-                $sessionDate = $log->session_date;
-                $createdAt = $log->created_at ? Carbon::parse($log->created_at) : null;
+                $tz = $log->displayTimezone();
+                $localStart = $log->localStart($tz);
+                $localEnd = $log->localEnd($tz);
+                $sessionDate = $localStart;
+                $createdAt = $log->created_at ? Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
-                $startTime = $log->start_time->format('g:i A');
-                $endTime = $log->end_time->format('g:i A');
+                $startTime = $localStart->format('g:i A');
+                $endTime = $localEnd->format('g:i A');
                 $timeRange = "{$startTime} - {$endTime}";
                 $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
                 return [
-                    'date' => $sessionDate?->format('Y-m-d') ?? null,
+                    'date' => $sessionDate->format('Y-m-d'),
                     'date_time' => [
-                        'date' => $sessionDate?->format('M d, Y') ?? null,
+                        'date' => $sessionDate->format('M d, Y'),
                         'time' => $timeRange,
                         'duration' => $duration,
                     ],

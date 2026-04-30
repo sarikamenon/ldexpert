@@ -14,20 +14,22 @@ final class BillingEntryWindowService
      * Check whether a session date falls within the billing entry window.
      *
      * Work week: Monday–Sunday. Cutoff: end of day on the day given by
-     * config billing.entry_window_days_after_week_start (days after Monday week start, app timezone).
+     * config billing.entry_window_days_after_week_start (days after Monday
+     * week start, in the supplied timezone — caller must pass the therapist's
+     * TZ for session-log windows; defaults to app TZ when omitted).
      */
-    public function checkWindow(Carbon $sessionDate, ?Carbon $now = null): BillingEntryWindowDTO
+    public function checkWindow(Carbon $sessionDate, ?Carbon $now = null, ?string $tz = null): BillingEntryWindowDTO
     {
-        $appTz = (string) config('app.timezone', 'UTC');
-        $now = ($now ?? Carbon::now($appTz))->copy()->setTimezone($appTz);
+        $tz = $tz !== null && $tz !== '' ? $tz : (string) config('app.timezone', 'UTC');
+        $now = ($now ?? Carbon::now($tz))->copy()->setTimezone($tz);
 
         $daysAfterWeekStart = max(0, (int) config('billing.entry_window_days_after_week_start'));
 
-        $weekStart = $sessionDate->copy()->setTimezone($appTz)->startOfWeek(Carbon::MONDAY);
+        $weekStart = $sessionDate->copy()->setTimezone($tz)->startOfWeek(Carbon::MONDAY);
         $cutoff = $weekStart->copy()->addDays($daysAfterWeekStart)->endOfDay();
 
         return new BillingEntryWindowDTO(
-            sessionDate: $sessionDate->format('Y-m-d'),
+            sessionDate: $sessionDate->copy()->setTimezone($tz)->format('Y-m-d'),
             weekStart: $weekStart->format('Y-m-d'),
             cutoff: $cutoff->format('Y-m-d H:i:s'),
             isWithinWindow: $now->lte($cutoff),
@@ -39,13 +41,13 @@ final class BillingEntryWindowService
      *
      * @throws BillingWindowClosedException
      */
-    public function assertWithinWindow(Carbon $sessionDate, ?Carbon $now = null): void
+    public function assertWithinWindow(Carbon $sessionDate, ?Carbon $now = null, ?string $tz = null): void
     {
-        $result = $this->checkWindow($sessionDate, $now);
+        $result = $this->checkWindow($sessionDate, $now, $tz);
 
         if (! $result->isWithinWindow) {
-            $appTz = (string) config('app.timezone', 'UTC');
-            $cutoff = Carbon::parse($result->cutoff, $appTz);
+            $cutoffTz = $tz !== null && $tz !== '' ? $tz : (string) config('app.timezone', 'UTC');
+            $cutoff = Carbon::parse($result->cutoff, $cutoffTz);
 
             throw new BillingWindowClosedException($cutoff);
         }

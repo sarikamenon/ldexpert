@@ -40,4 +40,13 @@
             ])
         </div>
     </div>
+
+    <x-slot name="scripts">
+        @if ($errors->any())
+            <script type="application/json" id="session-log-errors">
+                {!! json_encode(array_values(array_unique($errors->all()))) !!}
+            </script>
+        @endif
+        @vite(['resources/js/pages/therapist-session-log-form.js'])
+    </x-slot>
 </x-app-layout>

@@ -118,9 +118,12 @@ final class UpdateSessionLogRequest extends FormRequest
                 $validator->errors()->add('status', 'Session log cannot be edited in its current status.');
             }
 
-            // Validate billing entry window (hard block for therapists)
+            // Validate billing entry window (hard block for therapists).
+            // Use the session log's therapist TZ so the weekly cutoff aligns
+            // with where the work was done (per CLAUDE.md UTC rules).
             $windowService = app(BillingEntryWindowService::class);
-            $windowResult = $windowService->checkWindow($sessionLog->session_date);
+            $tz = $sessionLog->displayTimezone();
+            $windowResult = $windowService->checkWindow($sessionLog->session_date, null, $tz);
             if (! $windowResult->isWithinWindow) {
                 $validator->errors()->add(
                     'session_date',
