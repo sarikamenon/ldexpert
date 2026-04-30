@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -24,6 +25,14 @@ class SessionLogFactory extends Factory
 
     public function definition(): array
     {
+        // session_date / start_time / end_time are stored in UTC
+        // (per CLAUDE.md). Build a coherent triple here so helpers like
+        // SessionLog::startUtc()/endUtc() return sane values in tests.
+        $start = CarbonImmutable::now('UTC')
+            ->subDays($this->faker->numberBetween(1, 30))
+            ->setTime($this->faker->numberBetween(8, 16), 0);
+        $end = $start->addMinutes(60);
+
         return [
             'therapist_id' => User::factory()->therapist(),
             'student_id' => User::factory()->student(),
@@ -31,9 +40,9 @@ class SessionLogFactory extends Factory
             'schedule_id' => null,
             'service_id' => Service::factory(),
             'school_id' => School::factory(),
-            'session_date' => $this->faker->date(),
-            'start_time' => $this->faker->dateTime(),
-            'end_time' => $this->faker->dateTime(),
+            'session_date' => $start->toDateString(),
+            'start_time' => $start->toDateTimeString(),
+            'end_time' => $end->toDateTimeString(),
             'duration_minutes' => 60,
             'tho_minutes' => 30,
             'notes' => $this->faker->paragraph(3),

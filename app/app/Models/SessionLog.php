@@ -11,6 +11,7 @@ use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Models\Concerns\HasSessionLogScopes;
 use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon $start_time
  * @property Carbon $end_time
  * @property SessionOutcome|null $outcome
+ * @property string|null $session_date_formatted
+ * @property string|null $start_time_formatted
+ * @property string|null $end_time_formatted
+ * @property string|null $session_date_input
+ * @property string|null $start_time_input
+ * @property string|null $end_time_input
  */
 class SessionLog extends Model
 {
@@ -271,6 +278,70 @@ class SessionLog extends Model
         $minutes = (int) $this->start_time->diffInMinutes($this->end_time);
 
         return (int) round($minutes / 5) * 5;
+    }
+
+    public function startUtc(): CarbonImmutable
+    {
+        return CarbonImmutable::parse(
+            $this->session_date->format('Y-m-d').' '.$this->start_time->format('H:i:s'),
+            'UTC',
+        );
+    }
+
+    public function endUtc(): CarbonImmutable
+    {
+        // end_time may be numerically less than start_time when the session
+        // crosses midnight in UTC. Roll the end date forward only when end is
+        // strictly before start; equal times mean a zero-duration row and
+        // should not silently become 24 hours.
+        $startUtc = $this->startUtc();
+        $endSameDay = CarbonImmutable::parse(
+            $this->session_date->format('Y-m-d').' '.$this->end_time->format('H:i:s'),
+            'UTC',
+        );
+
+        return $endSameDay->lessThan($startUtc)
+            ? $endSameDay->addDay()
+            : $endSameDay;
+    }
+
+    public function localStart(string $timezone): CarbonImmutable
+    {
+        return $this->startUtc()->setTimezone($timezone);
+    }
+
+    public function localEnd(string $timezone): CarbonImmutable
+    {
+        return $this->endUtc()->setTimezone($timezone);
+    }
+
+    public function localDate(string $timezone): CarbonImmutable
+    {
+        return $this->localStart($timezone)->startOfDay();
+    }
+
+    /**
+     * Resolve the display timezone for this session log. Per CLAUDE.md, the
+     * session log's owner is its therapist — admin viewing another therapist's
+     * session log still sees the therapist's local time. Falls back through
+     * therapist profile → users.timezone → UTC.
+     */
+    public function displayTimezone(): string
+    {
+        $therapist = $this->therapist;
+
+        if ($therapist === null) {
+            return 'UTC';
+        }
+
+        $profileTz = $therapist->therapistProfile?->timezone;
+        if ($profileTz !== null && $profileTz !== '') {
+            return $profileTz;
+        }
+
+        $userTz = (string) ($therapist->timezone ?? '');
+
+        return $userTz !== '' ? $userTz : 'UTC';
     }
 
     /**

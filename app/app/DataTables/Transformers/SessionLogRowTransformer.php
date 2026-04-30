@@ -16,8 +16,9 @@ final class SessionLogRowTransformer
      */
     public static function transform(SessionLog $log): array
     {
-        $sessionDate = $log->session_date;
-        $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : null;
+        $tz = $log->displayTimezone();
+        $sessionDate = $log->localDate($tz);
+        $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
         $dateTimeDate = $sessionDate->format('M d, Y');
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;

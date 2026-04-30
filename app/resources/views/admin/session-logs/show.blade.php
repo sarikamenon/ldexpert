@@ -9,7 +9,7 @@
                     </h1>
                     <p class="text-sm text-foreground/60 mt-1">
                         {{ $sessionLog->service?->name ?? 'No service' }}
-                        · {{ $sessionLog->session_date?->format('M d, Y') ?? 'No date' }}
+                        · {{ $sessionLog->session_date_formatted ?? 'No date' }}
                     </p>
                 </div>
 

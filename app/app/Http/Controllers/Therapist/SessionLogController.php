@@ -76,11 +76,14 @@ final class SessionLogController extends Controller
 
     public function entryWindow(EntryWindowRequest $request): JsonResponse
     {
-        $sessionDate = Carbon::parse((string) $request->validated('session_date'));
-        $result = $this->billingEntryWindowService->checkWindow($sessionDate);
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $sessionDate = Carbon::parse((string) $request->validated('session_date'), $tz);
+        $result = $this->billingEntryWindowService->checkWindow($sessionDate, null, $tz);
 
         return response()->json(array_merge($result->toArray(), [
-            'cutoff_display' => Carbon::parse($result->cutoff)->format('l, M j, Y'),
+            'cutoff_display' => Carbon::parse($result->cutoff, $tz)->format('l, M j, Y'),
         ]));
     }
 
@@ -286,7 +289,12 @@ final class SessionLogController extends Controller
     {
         $this->authorize('view', $sessionLog);
 
-        $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapistContract', 'schoolContract', 'comments.author']);
+        $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapist', 'therapist.therapistProfile', 'therapistContract', 'schoolContract', 'comments.author']);
+
+        $tz = $sessionLog->displayTimezone();
+        $sessionLog->session_date_formatted = $sessionLog->localDate($tz)->format('M d, Y');
+        $sessionLog->start_time_formatted = $sessionLog->localStart($tz)->format('g:i A');
+        $sessionLog->end_time_formatted = $sessionLog->localEnd($tz)->format('g:i A');
 
         $documents = $this->documentService->listBySessionLog($sessionLog->id);
 
@@ -307,8 +315,17 @@ final class SessionLogController extends Controller
             'ssa.services',
             'service',
             'school',
+            'therapist',
+            'therapist.therapistProfile',
             'comments.author',
         ]);
+
+        $tz = $sessionLog->displayTimezone();
+        $localStart = $sessionLog->localStart($tz);
+        $localEnd = $sessionLog->localEnd($tz);
+        $sessionLog->session_date_input = $localStart->format('Y-m-d');
+        $sessionLog->start_time_input = $localStart->format('H:i');
+        $sessionLog->end_time_input = $localEnd->format('H:i');
 
         return view('therapist.session-logs.edit', [
             'sessionLog' => $sessionLog,
