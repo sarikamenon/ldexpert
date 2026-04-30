@@ -157,8 +157,7 @@
                                 </td>
                                 <td class="px-4 py-3 text-sm text-foreground/70">
                                     @if ($row->error_message)
-                                        <span
-                                            class="text-red-700">{{ \Illuminate\Support\Str::limit($row->error_message, 100) }}</span>
+                                        <span class="text-red-700" title="{{ $row->error_message }}">{{ $row->error_message }}</span>
                                     @else
                                         <span class="text-foreground/40">—</span>
                                     @endif

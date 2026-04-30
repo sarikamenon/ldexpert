@@ -83,10 +83,17 @@ final class SessionLogImportRowProcessor
             return;
         }
 
-        $errorFlag = strtoupper(trim($mappedData['error_flag'] ?? ''));
-        $errorDetails = strtolower(trim($mappedData['error_details'] ?? ''));
+        $rawErrorFlag = trim($mappedData['error_flag'] ?? '');
+        $rawErrorDetails = trim($mappedData['error_details'] ?? '');
+        $errorFlag = strtoupper($rawErrorFlag);
+        $errorDetails = strtolower($rawErrorDetails);
         if ($errorFlag !== 'N' && $errorDetails !== 'no therapist selected') {
-            $this->markSkipped($importRow, 'Row flagged with error by source system.');
+            $flagDisplay = $rawErrorFlag === '' ? 'empty' : "\"{$rawErrorFlag}\"";
+            $detailsDisplay = $rawErrorDetails === '' ? 'empty' : "\"{$rawErrorDetails}\"";
+            $this->markSkipped(
+                $importRow,
+                "Row flagged with error by source system (Error={$flagDisplay}, Error Details={$detailsDisplay}); expected Error column to be \"N\"."
+            );
 
             return;
         }
