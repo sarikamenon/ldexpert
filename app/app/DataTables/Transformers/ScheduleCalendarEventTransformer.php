@@ -17,9 +17,7 @@ final class ScheduleCalendarEventTransformer
      */
     public static function transform(Schedule $schedule): array
     {
-        $therapist = $schedule->therapist;
-        $profileTz = $therapist?->therapistProfile?->timezone;
-        $tz = $profileTz ?? ($therapist !== null ? $therapist->timezone : 'UTC');
+        $tz = $schedule->displayTimezone();
         $localStart = $schedule->localStart($tz);
         $localEnd = $schedule->localEnd($tz);
         $isPast = $localStart->lt(now($tz)->startOfDay());

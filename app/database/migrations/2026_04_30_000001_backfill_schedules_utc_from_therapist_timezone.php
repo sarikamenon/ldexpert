@@ -19,12 +19,20 @@ return new class extends Migration
         // Conversion is done in PHP (Carbon) rather than MySQL CONVERT_TZ
         // because some environments do not have the named-zone tables
         // (mysql.time_zone_name) loaded.
+        //
+        // Note: this migration reads therapist_profiles.timezone directly and
+        // does NOT depend on the users.timezone backfill (000000_*). The two
+        // backfills are independent — order between them does not matter.
+        // The backup table snapshots therapist_id alongside the original
+        // values so a future recompute (e.g. with a different rule) can
+        // reconstruct the join even if therapist_profiles.timezone changes.
 
         if (! Schema::hasTable('schedules_timezone_backfill_backup')) {
             DB::statement('
                 CREATE TABLE schedules_timezone_backfill_backup AS
                 SELECT
                     s.id,
+                    s.therapist_id,
                     s.schedule_date,
                     s.start_time,
                     s.end_time,

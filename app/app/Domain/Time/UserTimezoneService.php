@@ -23,6 +23,10 @@ class UserTimezoneService
         if ($user !== null) {
             $userTz = (string) ($user->timezone ?? '');
 
+            // Treat "UTC" as a sentinel for "not yet backfilled" and prefer
+            // the profile timezone when available. This matches the documented
+            // fallback in CLAUDE.md and protects rows where users.timezone
+            // defaulted to UTC before the backfill migration ran.
             if ($userTz !== '' && $userTz !== 'UTC') {
                 return $userTz;
             }
@@ -39,8 +43,8 @@ class UserTimezoneService
                 return $profileTz;
             }
 
-            if ($userTz !== '') {
-                return $userTz;
+            if ($userTz === 'UTC') {
+                return 'UTC';
             }
         }
 

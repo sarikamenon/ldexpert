@@ -304,9 +304,7 @@ final class StudentController extends Controller
                 ->orderByDesc('sent_at')
                 ->get()
                 ->each(function (ScheduleEmailLog $log) use ($studentFallbackTz): void {
-                    $therapist = $log->schedule?->therapist;
-                    $profileTz = $therapist?->therapistProfile?->timezone;
-                    $rowTz = $profileTz ?? ($therapist !== null ? $therapist->timezone : $studentFallbackTz);
+                    $rowTz = $log->schedule?->displayTimezone() ?? $studentFallbackTz;
 
                     $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($rowTz)->format('M d, Y h:i A');
                     $log->schedule_local_date = $log->schedule?->localStart($rowTz)->format('M d, Y');

@@ -331,15 +331,16 @@ class Schedule extends Model
     public function endUtc(): CarbonImmutable
     {
         // end_time may be numerically less than start_time when the session
-        // crosses midnight in UTC. Detect that and roll the end date forward
-        // so endUtc() is always strictly after startUtc().
+        // crosses midnight in UTC. Roll the end date forward only when end is
+        // strictly before start; equal times mean a zero-duration row (legacy
+        // or otherwise) and should not silently become 24 hours.
         $startUtc = $this->startUtc();
         $endSameDay = CarbonImmutable::parse(
             $this->schedule_date->format('Y-m-d').' '.$this->end_time->format('H:i:s'),
             'UTC',
         );
 
-        return $endSameDay->lessThanOrEqualTo($startUtc)
+        return $endSameDay->lessThan($startUtc)
             ? $endSameDay->addDay()
             : $endSameDay;
     }
@@ -352,6 +353,30 @@ class Schedule extends Model
     public function localEnd(string $timezone): CarbonImmutable
     {
         return $this->endUtc()->setTimezone($timezone);
+    }
+
+    /**
+     * Resolve the display timezone for this schedule. Per CLAUDE.md, the
+     * schedule's owner is its therapist — admin viewing another therapist's
+     * schedule still sees the therapist's local time. Falls back through
+     * therapist profile → users.timezone → UTC.
+     */
+    public function displayTimezone(): string
+    {
+        $therapist = $this->therapist;
+
+        if ($therapist === null) {
+            return 'UTC';
+        }
+
+        $profileTz = $therapist->therapistProfile?->timezone;
+        if ($profileTz !== null && $profileTz !== '') {
+            return $profileTz;
+        }
+
+        $userTz = (string) ($therapist->timezone ?? '');
+
+        return $userTz !== '' ? $userTz : 'UTC';
     }
 
     /**

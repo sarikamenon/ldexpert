@@ -99,9 +99,7 @@
                 @else
                 @forelse ($schedules as $schedule)
                     @php
-                        $rowTz = $schedule->therapist?->therapistProfile?->timezone
-                            ?? $schedule->therapist?->timezone
-                            ?? 'UTC';
+                        $rowTz = $schedule->displayTimezone();
                         $rowLocalStart = $schedule->localStart($rowTz);
                         $rowLocalEnd = $schedule->localEnd($rowTz);
                     @endphp

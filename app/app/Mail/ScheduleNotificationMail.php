@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Domain\Time\UserTimezoneService;
 use App\Models\Schedule;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
@@ -50,16 +51,10 @@ class ScheduleNotificationMail extends Mailable
 
     private function resolveRecipientTimezone(): string
     {
-        if ($this->isRecipientStudent) {
-            $student = $this->schedule->student;
-            $profileTz = $student?->studentProfile?->timezone;
-            $tz = $profileTz ?? ($student !== null ? $student->timezone : null);
-        } else {
-            $therapist = $this->schedule->therapist;
-            $profileTz = $therapist?->therapistProfile?->timezone;
-            $tz = $profileTz ?? ($therapist !== null ? $therapist->timezone : null);
+        if (! $this->isRecipientStudent) {
+            return $this->schedule->displayTimezone();
         }
 
-        return $tz !== null && $tz !== '' ? $tz : 'UTC';
+        return app(UserTimezoneService::class)->resolveTimezone($this->schedule->student);
     }
 }

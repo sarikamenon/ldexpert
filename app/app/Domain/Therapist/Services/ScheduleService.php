@@ -465,25 +465,19 @@ final class ScheduleService
 
         $occurrences = collect();
 
-        // Parent stores UTC. Convert to Local for calculation.
-        // Assuming end date is end of the recurrence period (date only)
+        // Parent stores UTC. Convert to therapist-local for calculation so
+        // recurrence walks happen in the user's wall-clock time.
         $endDate = $parentSchedule->recurrence_end_date;
 
-        $scheduleDate = $parentSchedule->schedule_date->format('Y-m-d');
-        $startTime = $parentSchedule->start_time->format('H:i:s');
-        $endTime = $parentSchedule->end_time->format('H:i:s');
+        $localStart = $this->timezoneService->toUserTimezone($parentSchedule->startUtc(), $therapist);
+        $localEnd = $this->timezoneService->toUserTimezone($parentSchedule->endUtc(), $therapist);
 
-        $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
-        $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
-        if ($utcEnd->lt($utcStart)) {
-            $utcEnd->addDay();
-        }
-
-        $localStart = $this->timezoneService->toUserTimezone($utcStart, $therapist);
-        $localEnd = $this->timezoneService->toUserTimezone($utcEnd, $therapist);
-
-        $currentStart = $localStart->copy();
-        $currentEnd = $localEnd->copy();
+        // Use mutable Carbon for the recurrence walk loop below — the loop
+        // calls nextRecurrenceDate() which mutates via addWeek/addDays etc.
+        // Wall-clock values are what matter; later we re-parse them as
+        // therapist-local strings via parseUserLocalToUtc().
+        $currentStart = Carbon::parse($localStart->toDateTimeString());
+        $currentEnd = Carbon::parse($localEnd->toDateTimeString());
 
         // First occurrence is the parent; start generating from next interval
         $currentStart = $this->nextRecurrenceDate($currentStart, $recurrenceType);

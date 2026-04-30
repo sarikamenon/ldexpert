@@ -120,9 +120,7 @@
                                             )
                                             : $minutesRemainder . 'm';
 
-                                    $pendingTz = $schedule->therapist?->therapistProfile?->timezone
-                                        ?? $schedule->therapist?->timezone
-                                        ?? 'UTC';
+                                    $pendingTz = $schedule->displayTimezone();
                                     $pendingLocalStart = $schedule->localStart($pendingTz);
                                     $pendingLocalEnd = $schedule->localEnd($pendingTz);
                                     $startTime = $pendingLocalStart->format('g:i A');
