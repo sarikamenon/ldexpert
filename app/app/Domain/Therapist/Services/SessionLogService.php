@@ -36,53 +36,6 @@ final class SessionLogService
     ) {}
 
     /**
-     * Convert user-local session_date/start_time/end_time strings on the data
-     * payload to UTC, using the supplied therapist's TZ. Idempotent: if a
-     * date column is missing, leaves it alone. Per CLAUDE.md, all session_log
-     * timestamps are stored in UTC; controllers/form requests pass user-local
-     * strings ("Y-m-d" + "H:i:s"), and this service converts before write.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function convertLocalDateTimesToUtc(array $data, User $therapist): array
-    {
-        $sessionDateLocal = $data['session_date'] ?? null;
-        $startLocal = $data['start_time'] ?? null;
-        $endLocal = $data['end_time'] ?? null;
-
-        if (! is_string($sessionDateLocal) || $sessionDateLocal === '') {
-            return $data;
-        }
-
-        $tz = $this->timezoneService->resolveTimezone($therapist);
-
-        if (is_string($startLocal) && $startLocal !== '') {
-            // start_time may arrive as "Y-m-d H:i:s" or just "H:i" — normalize.
-            $startStr = str_contains($startLocal, ' ')
-                ? $startLocal
-                : $sessionDateLocal.' '.$startLocal;
-            $startUtc = $this->timezoneService->parseUserLocalToUtc($startStr, $therapist);
-            $data['start_time'] = $startUtc->format('Y-m-d H:i:s');
-            $data['session_date'] = $startUtc->format('Y-m-d');
-        } else {
-            // No time supplied — convert the date itself by anchoring to start of day.
-            $startUtc = $this->timezoneService->parseUserLocalToUtc($sessionDateLocal.' 00:00:00', $therapist);
-            $data['session_date'] = $startUtc->format('Y-m-d');
-        }
-
-        if (is_string($endLocal) && $endLocal !== '') {
-            $endStr = str_contains($endLocal, ' ')
-                ? $endLocal
-                : $sessionDateLocal.' '.$endLocal;
-            $endUtc = $this->timezoneService->parseUserLocalToUtc($endStr, $therapist);
-            $data['end_time'] = $endUtc->format('Y-m-d H:i:s');
-        }
-
-        return $data;
-    }
-
-    /**
      * @param  array<string, mixed>  $filters
      * @return Collection<int, SessionLog>
      */
@@ -178,7 +131,7 @@ final class SessionLogService
             // Convert user-local session_date/start_time/end_time to UTC last,
             // so billing/contract lookups above used the local date (correct
             // for "the day the work was done") while storage uses UTC.
-            $data = $this->convertLocalDateTimesToUtc($data, $therapist);
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $therapist);
 
             $sessionLog = $this->repository->create($data);
 
@@ -251,7 +204,7 @@ final class SessionLogService
             // Convert user-local session_date/start_time/end_time to UTC last,
             // so billing/contract lookups above used the local date (correct
             // for "the day the work was done") while storage uses UTC.
-            $data = $this->convertLocalDateTimesToUtc($data, $therapist);
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $therapist);
 
             return $this->repository->create($data);
         });
@@ -354,7 +307,7 @@ final class SessionLogService
             // so billing/contract lookups above used the local date (correct
             // for "the day the work was done") while storage uses UTC.
             $rowOwner = $sessionLog->therapist ?? $therapist;
-            $data = $this->convertLocalDateTimesToUtc($data, $rowOwner);
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $rowOwner);
 
             return $this->repository->update($sessionLog, $data);
         });

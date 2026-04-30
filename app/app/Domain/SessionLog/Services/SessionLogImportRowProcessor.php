@@ -237,7 +237,7 @@ final class SessionLogImportRowProcessor
 
         // CSV rows are in the importing therapist's local TZ. Convert to UTC
         // for storage (per CLAUDE.md: all session_log timestamps stored UTC).
-        $logData = $this->convertLogLocalToUtc($logData, $therapist);
+        $logData = $this->timezoneService->convertSessionLocalToUtc($logData, $therapist);
 
         $sessionLog = $this->sessionLogRepository->create($logData);
 
@@ -251,45 +251,6 @@ final class SessionLogImportRowProcessor
             'session_log_id' => $sessionLog->id,
             'processed_at' => now(),
         ]);
-    }
-
-    /**
-     * Convert user-local session_date/start_time/end_time on a log payload
-     * to UTC, using the therapist's TZ. Mirrors
-     * SessionLogService::convertLocalDateTimesToUtc — duplicated here to
-     * keep the processor independent of the service constructor.
-     *
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    private function convertLogLocalToUtc(array $data, User $therapist): array
-    {
-        $sessionDateLocal = $data['session_date'] ?? null;
-        $startLocal = $data['start_time'] ?? null;
-        $endLocal = $data['end_time'] ?? null;
-
-        if (! is_string($sessionDateLocal) || $sessionDateLocal === '') {
-            return $data;
-        }
-
-        if (is_string($startLocal) && $startLocal !== '') {
-            $startStr = str_contains($startLocal, ' ')
-                ? $startLocal
-                : $sessionDateLocal.' '.$startLocal;
-            $startUtc = $this->timezoneService->parseUserLocalToUtc($startStr, $therapist);
-            $data['start_time'] = $startUtc->format('Y-m-d H:i:s');
-            $data['session_date'] = $startUtc->format('Y-m-d');
-        }
-
-        if (is_string($endLocal) && $endLocal !== '') {
-            $endStr = str_contains($endLocal, ' ')
-                ? $endLocal
-                : $sessionDateLocal.' '.$endLocal;
-            $endUtc = $this->timezoneService->parseUserLocalToUtc($endStr, $therapist);
-            $data['end_time'] = $endUtc->format('Y-m-d H:i:s');
-        }
-
-        return $data;
     }
 
     public function lookupSchool(string $name): ?School

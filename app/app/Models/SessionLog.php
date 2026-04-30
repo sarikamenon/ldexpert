@@ -290,6 +290,12 @@ class SessionLog extends Model
 
     public function endUtc(): CarbonImmutable
     {
+        // We compose end from session_date + end_time's time-of-day only —
+        // the date portion of the end_time column is intentionally ignored.
+        // session_date is the canonical "this is the day the session started
+        // in UTC" anchor, so writers don't need to keep end_time's date in
+        // sync with cross-midnight sessions; the rollover below handles it.
+        //
         // end_time may be numerically less than start_time when the session
         // crosses midnight in UTC. Roll the end date forward only when end is
         // strictly before start; equal times mean a zero-duration row and
@@ -325,12 +331,24 @@ class SessionLog extends Model
      * session log's owner is its therapist — admin viewing another therapist's
      * session log still sees the therapist's local time. Falls back through
      * therapist profile → users.timezone → UTC.
+     *
+     * Lazy-loads `therapist` and `therapist.therapistProfile` if they aren't
+     * already on the model. A truly missing therapist (orphaned row) logs a
+     * warning before falling back to UTC, so silent UTC rendering surfaces in
+     * logs instead of showing wrong times to users.
      */
     public function displayTimezone(): string
     {
+        $this->loadMissing(['therapist.therapistProfile']);
+
         $therapist = $this->therapist;
 
         if ($therapist === null) {
+            \Illuminate\Support\Facades\Log::warning('SessionLog::displayTimezone falling back to UTC; therapist relation is null', [
+                'session_log_id' => $this->id,
+                'therapist_id' => $this->therapist_id,
+            ]);
+
             return 'UTC';
         }
 

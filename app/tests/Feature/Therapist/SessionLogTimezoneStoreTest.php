@@ -14,7 +14,6 @@ use App\Models\SchoolContractService;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
-use App\Models\StudentProfile;
 use App\Models\TherapistContract;
 use App\Models\TherapistContractService;
 use App\Models\TherapistProfile;
@@ -65,7 +64,9 @@ final class SessionLogTimezoneStoreTest extends TestCase
         $this->assertSame('2026-04-30 17:00:00', $log->end_time->format('Y-m-d H:i:s'));
 
         // Display via the model helper round-trips back to therapist-local 9am.
-        $localStart = $log->localStart($therapist->therapistProfile->timezone);
+        $profile = $therapist->therapistProfile;
+        $this->assertNotNull($profile);
+        $localStart = $log->localStart($profile->timezone);
         $this->assertSame('2026-04-30 09:00:00', $localStart->format('Y-m-d H:i:s'));
     }
 
@@ -116,7 +117,10 @@ final class SessionLogTimezoneStoreTest extends TestCase
             'timezone' => $tz,
         ]);
 
-        return $therapist->fresh(['therapistProfile']);
+        $fresh = $therapist->fresh(['therapistProfile']);
+        $this->assertNotNull($fresh);
+
+        return $fresh;
     }
 
     /**
@@ -126,10 +130,10 @@ final class SessionLogTimezoneStoreTest extends TestCase
     {
         $school = School::factory()->create();
         $student = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $student->id,
-            'school_id' => $school->id,
-        ]);
+        // User::factory()->student() already creates a StudentProfile via
+        // afterCreating(); update its school_id rather than creating a second
+        // profile (which would be ignored by the studentProfile relation).
+        $student->studentProfile()->update(['school_id' => $school->id]);
         // Standalone session logs (no schedule) require an indirect service.
         $service = Service::factory()->create([
             'is_direct_service' => false,
