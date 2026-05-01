@@ -42,4 +42,13 @@ final class SchoolScope extends BaseModelScope
 
         return self::applyStatus($builder, $builder->getModel(), 'status', $status->value);
     }
+
+    /**
+     * @param  Builder<School>  $builder
+     * @return Builder<School>
+     */
+    public static function orderedByDisplayName(Builder $builder): Builder
+    {
+        return $builder->orderByRaw('COALESCE(display_name, full_name) asc');
+    }
 }

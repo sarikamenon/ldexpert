@@ -68,12 +68,13 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     min-height: 1.25rem;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 .calendar-event-more {
     font-size: 0.7rem;
     color: #6b7280;
+    cursor: pointer;
 }
 
 .calendar-event-holiday {

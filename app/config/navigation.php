@@ -328,7 +328,7 @@ return [
             [
                 'label' => 'Students',
                 'route' => 'therapist.students.index',
-                'active' => ['therapist.students.*', 'therapist.qglob-requests.*'],
+                'active' => ['therapist.students.*', 'therapist.qglob-requests.*', 'therapist.school-calendar.*'],
                 'children' => [
                     [
                         'label' => 'Student List',
@@ -339,6 +339,11 @@ return [
                         'label' => 'QGlob Requests',
                         'route' => 'therapist.qglob-requests.index',
                         'active' => 'therapist.qglob-requests.*',
+                    ],
+                    [
+                        'label' => 'School Calendar',
+                        'route' => 'therapist.school-calendar.index',
+                        'active' => 'therapist.school-calendar.*',
                     ],
                 ],
             ],

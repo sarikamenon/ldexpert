@@ -124,3 +124,22 @@
         </x-ui::card>
     </div>
 </div>
+
+<x-modal name="schoolCalendarEventDetailsModal" max-width="2xl">
+    <div class="flex flex-col max-h-[calc(100vh-4rem)]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+            <div>
+                <h3 class="text-lg font-semibold text-foreground">Calendar Event Details</h3>
+                <p class="text-xs text-foreground/60" id="schoolCalendarEventDetailsDate"></p>
+            </div>
+            <button type="button" x-on:click="$dispatch('close-modal', 'schoolCalendarEventDetailsModal')"
+                class="text-foreground/60 hover:text-foreground transition-colors" aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="schoolCalendarEventDetailsContent" class="flex-1 overflow-y-auto px-6 py-4 space-y-4"></div>
+    </div>
+</x-modal>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Therapist\Finance\PayStubController;
 use App\Http\Controllers\Therapist\QGlobRequestController;
 use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
+use App\Http\Controllers\Therapist\SchoolCalendarController;
 use App\Http\Controllers\Therapist\SessionLogController;
 use App\Http\Controllers\Therapist\SessionLogDocumentController;
 use App\Http\Controllers\Therapist\SSAController;
@@ -41,6 +42,12 @@ Route::middleware('role:therapist')
         Route::prefix('schedule/calendar')->name('schedule-calendar.')->group(function () {
             Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
             Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
+        });
+
+        // School Calendar (read-only)
+        Route::prefix('school-calendar')->name('school-calendar.')->group(function () {
+            Route::get('/', [SchoolCalendarController::class, 'index'])->name('index');
+            Route::get('{school}/events', [SchoolCalendarController::class, 'events'])->name('events');
         });
 
         // SSA routes

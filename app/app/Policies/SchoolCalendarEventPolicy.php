@@ -12,12 +12,12 @@ class SchoolCalendarEventPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $this->isAdmin($user);
+        return $this->isAdmin($user) || $user->role === Role::THERAPIST;
     }
 
     public function view(User $user, SchoolCalendarEvent $event): bool
     {
-        return $this->isAdmin($user);
+        return $this->isAdmin($user) || $user->role === Role::THERAPIST;
     }
 
     public function create(User $user): bool

@@ -1,4 +1,4 @@
-import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
+import { errorAlert } from '../common/sweetalert';
 
 (function ($) {
     'use strict';
@@ -8,18 +8,13 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
         const $eventList = $('#calendarEventsList');
         const $dateLabel = $('#calendarEventDateLabel');
         const $todayViewBtn = $('.calendar-today-btn');
-        const $form = $('#schoolCalendarEventForm');
-        const $resetBtn = $('#calendarEventReset');
-        const $cancelBtn = $('#calendarEventCancel');
-        const $submitBtn = $('#calendarEventSubmit');
+        const $schoolSelect = $('#school_id');
 
-        if (! $calendarEl.length || ! $eventList.length) {
+        if (! $calendarEl.length || ! $schoolSelect.length) {
             return;
         }
 
-        const listUrl = $eventList.data('list-url');
-        const updateUrlTemplate = $eventList.data('update-url-template');
-        const deleteUrlTemplate = $eventList.data('delete-url-template');
+        const eventsUrlTemplate = $schoolSelect.data('events-url-template');
 
         const selectedDateStr = $calendarEl.data('selected-date');
         let selectedDate = selectedDateStr
@@ -28,9 +23,15 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
         let currentMonth = selectedDate.getMonth();
         let currentYear = selectedDate.getFullYear();
         let cachedEvents = [];
+        let currentSchoolId = $schoolSelect.val();
 
         renderCalendar(currentYear, currentMonth, selectedDate);
         loadEventsForMonth(currentYear, currentMonth, selectedDate);
+
+        $schoolSelect.on('change', function () {
+            currentSchoolId = $(this).val();
+            loadEventsForMonth(currentYear, currentMonth, selectedDate);
+        });
 
         $todayViewBtn.on('click', () => {
             const today = new Date();
@@ -39,70 +40,6 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             currentYear = today.getFullYear();
             renderCalendar(currentYear, currentMonth, selectedDate);
             loadEventsForMonth(currentYear, currentMonth, selectedDate);
-        });
-
-        $resetBtn.on('click', () => resetForm());
-        $cancelBtn.on('click', () => resetForm());
-
-        $form.on('submit', function (e) {
-            e.preventDefault();
-            clearErrors();
-
-            const payload = {
-                title: $('#event_title').val(),
-                event_type: $('#event_type').val(),
-                start_date: $('#event_start_date').val(),
-                end_date: $('#event_end_date').val(),
-                notes: $('#event_notes').val(),
-            };
-
-            const eventId = $('#calendar_event_id').val();
-            const url = eventId
-                ? updateUrlTemplate.replace('EVENT_ID', eventId)
-                : $form.data('store-url');
-            const method = eventId ? 'PUT' : 'POST';
-
-            $.ajax({
-                url,
-                method,
-                data: payload,
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                success(response) {
-                    const event = response.event;
-                    if (eventId) {
-                        cachedEvents = cachedEvents.map((item) => (item.id === event.id ? event : item));
-                        successToast('Calendar event updated.');
-                    } else {
-                        cachedEvents.push(event);
-                        successToast('Calendar event added.');
-                    }
-
-                    renderCalendar(currentYear, currentMonth, selectedDate);
-                    renderEventsForDate(selectedDate);
-                    resetForm();
-                },
-                error(xhr) {
-                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
-                        showErrors(xhr.responseJSON.errors);
-                        return;
-                    }
-                    errorAlert('Unable to save the calendar event.');
-                },
-            });
-        });
-
-        $(document).on('click', '.js-calendar-event-edit', function () {
-            const eventId = $(this).data('event-id');
-            const event = cachedEvents.find((item) => item.id === eventId);
-            if (! event) {
-                return;
-            }
-            window.dispatchEvent(new CustomEvent('close-modal', { detail: 'schoolCalendarEventDetailsModal' }));
-            setFormForEdit(event);
         });
 
         $(document).on('click', '.calendar-event-bar, .calendar-event-more', function (e) {
@@ -139,28 +76,12 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                     : `${escapeHtml(event.start_date)} – ${escapeHtml(event.end_date)}`;
                 return `
                     <div class="border border-border rounded-lg p-4">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                    <span class="text-sm font-semibold text-foreground">${escapeHtml(event.title)}</span>
-                                    <span class="text-xs px-2 py-0.5 rounded-full ${badgeClass}">${escapeHtml(event.event_type_label || '')}</span>
-                                </div>
-                                <div class="text-xs text-foreground/60">${range}</div>
-                                ${event.notes ? `<p class="text-sm text-foreground/70 mt-2 whitespace-pre-wrap">${escapeHtml(event.notes)}</p>` : ''}
-                            </div>
-                            <div class="flex items-center gap-2 shrink-0">
-                                <button type="button"
-                                    class="js-calendar-event-edit inline-flex items-center px-3 py-1.5 border border-border rounded-lg text-xs font-medium hover:bg-background/subtle"
-                                    data-event-id="${event.id}">
-                                    Edit
-                                </button>
-                                <button type="button"
-                                    class="js-calendar-event-delete inline-flex items-center px-3 py-1.5 border border-danger/30 rounded-lg text-xs font-medium text-danger hover:bg-danger/10"
-                                    data-event-id="${event.id}">
-                                    Delete
-                                </button>
-                            </div>
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="text-sm font-semibold text-foreground">${escapeHtml(event.title)}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full ${badgeClass}">${escapeHtml(event.event_type_label || '')}</span>
                         </div>
+                        <div class="text-xs text-foreground/60">${range}</div>
+                        ${event.notes ? `<p class="text-sm text-foreground/70 mt-2 whitespace-pre-wrap">${escapeHtml(event.notes)}</p>` : ''}
                     </div>
                 `;
             }).join('');
@@ -169,48 +90,19 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             window.dispatchEvent(new CustomEvent('open-modal', { detail: 'schoolCalendarEventDetailsModal' }));
         }
 
-        $(document).on('click', '.js-calendar-event-delete', async function () {
-            const eventId = $(this).data('event-id');
-            const event = cachedEvents.find((item) => item.id === eventId);
-            if (! event) {
-                return;
-            }
-
-            const result = await confirmDialog({
-                title: 'Delete calendar event?',
-                text: 'This event will be removed from the school/family calendar.',
-                confirmButtonText: 'Delete',
-            });
-
-            if (! result.isConfirmed) {
-                return;
-            }
-
-            $.ajax({
-                url: deleteUrlTemplate.replace('EVENT_ID', eventId),
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                },
-                success() {
-                    cachedEvents = cachedEvents.filter((item) => item.id !== eventId);
-                    window.dispatchEvent(new CustomEvent('close-modal', { detail: 'schoolCalendarEventDetailsModal' }));
-                    renderCalendar(currentYear, currentMonth, selectedDate);
-                    renderEventsForDate(selectedDate);
-                    successToast('Calendar event deleted.');
-                },
-                error() {
-                    errorAlert('Unable to delete the calendar event.');
-                },
-            });
-        });
-
         function loadEventsForMonth(year, month, dateToRender) {
+            if (! currentSchoolId || ! eventsUrlTemplate) {
+                cachedEvents = [];
+                renderCalendar(year, month, dateToRender);
+                renderEventsForDate(dateToRender);
+                return;
+            }
+
             const range = getMonthRange(year, month);
+            const url = eventsUrlTemplate.replace('SCHOOL_ID', currentSchoolId);
+
             $.ajax({
-                url: listUrl,
+                url,
                 method: 'GET',
                 data: {
                     start: formatDate(range.start),
@@ -291,9 +183,6 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                 currentYear = date.getFullYear();
                 renderCalendar(currentYear, currentMonth, selectedDate);
                 renderEventsForDate(date);
-                const url = new URL(window.location);
-                url.searchParams.set('date', formatDate(date));
-                window.history.pushState({}, '', url);
             });
 
             $calendarEl.find('.calendar-nav-btn').on('click', function () {
@@ -305,13 +194,11 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                     } else {
                         currentMonth -= 1;
                     }
+                } else if (currentMonth === 11) {
+                    currentMonth = 0;
+                    currentYear += 1;
                 } else {
-                    if (currentMonth === 11) {
-                        currentMonth = 0;
-                        currentYear += 1;
-                    } else {
-                        currentMonth += 1;
-                    }
+                    currentMonth += 1;
                 }
                 loadEventsForMonth(currentYear, currentMonth, selectedDate);
             });
@@ -321,19 +208,15 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             const firstOfMonth = new Date(year, month, 1);
             const lastOfMonth = new Date(year, month + 1, 0);
 
-            // Start on the Sunday of the week that contains the first of the month
             const startDate = new Date(firstOfMonth);
             startDate.setDate(firstOfMonth.getDate() - firstOfMonth.getDay());
 
-            // End on the Saturday of the week that contains the last of the month
             const endDate = new Date(lastOfMonth);
             endDate.setDate(lastOfMonth.getDate() + (6 - lastOfMonth.getDay()));
 
             const weeks = [];
-            let current = new Date(startDate);
+            const current = new Date(startDate);
 
-            // Build weeks until we've covered through the endDate.
-            // This will naturally produce 4, 5, or 6 weeks depending on the month layout.
             while (current <= endDate) {
                 const weekDates = [];
                 for (let day = 0; day < 7; day += 1) {
@@ -449,29 +332,15 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                     ? 'bg-danger/10 text-danger'
                     : 'bg-primary/10 text-primary';
                 html += `
-                    <div class="border border-border rounded-lg p-4 flex items-start justify-between">
-                        <div>
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="text-sm font-semibold text-foreground">${event.title}</span>
-                                <span class="text-xs px-2 py-0.5 rounded-full ${badgeClass}">${event.event_type_label || ''}</span>
-                            </div>
-                            <div class="text-xs text-foreground/60">
-                                ${event.start_date} - ${event.end_date}
-                            </div>
-                            ${event.notes ? `<p class="text-sm text-foreground/70 mt-2">${event.notes}</p>` : ''}
+                    <div class="border border-border rounded-lg p-4">
+                        <div class="flex items-center gap-2 mb-1 flex-wrap">
+                            <span class="text-sm font-semibold text-foreground">${escapeHtml(event.title)}</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full ${badgeClass}">${escapeHtml(event.event_type_label || '')}</span>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <button type="button"
-                                class="js-calendar-event-edit inline-flex items-center px-2 py-1 border border-border rounded-lg text-xs hover:bg-background/subtle"
-                                data-event-id="${event.id}">
-                                Edit
-                            </button>
-                            <button type="button"
-                                class="js-calendar-event-delete inline-flex items-center px-2 py-1 border border-border rounded-lg text-xs text-danger hover:bg-danger/10"
-                                data-event-id="${event.id}">
-                                Delete
-                            </button>
+                        <div class="text-xs text-foreground/60">
+                            ${escapeHtml(event.start_date)} - ${escapeHtml(event.end_date)}
                         </div>
+                        ${event.notes ? `<p class="text-sm text-foreground/70 mt-2 whitespace-pre-wrap">${escapeHtml(event.notes)}</p>` : ''}
                     </div>
                 `;
             });
@@ -488,42 +357,6 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                 start: new Date(year, month, 1),
                 end: new Date(year, month + 1, 0),
             };
-        }
-
-        function setFormForEdit(event) {
-            $('#calendar_event_id').val(event.id);
-            $('#event_title').val(event.title);
-            $('#event_type').val(event.event_type);
-            $('#event_start_date').val(event.start_date);
-            $('#event_end_date').val(event.end_date);
-            $('#event_notes').val(event.notes || '');
-            $cancelBtn.removeClass('hidden');
-            $submitBtn.text('Update Event');
-        }
-
-        function resetForm() {
-            clearErrors();
-            $('#calendar_event_id').val('');
-            $('#event_title').val('');
-            $('#event_type').val('');
-            $('#event_start_date').val('');
-            $('#event_end_date').val('');
-            $('#event_notes').val('');
-            $cancelBtn.addClass('hidden');
-            $submitBtn.text('Save Event');
-        }
-
-        function clearErrors() {
-            $form.find('[data-error-for]').addClass('hidden').text('');
-        }
-
-        function showErrors(errors) {
-            Object.entries(errors).forEach(([field, messages]) => {
-                const $error = $form.find(`[data-error-for="${field}"]`);
-                if ($error.length) {
-                    $error.removeClass('hidden').text(messages[0]);
-                }
-            });
         }
 
         function formatDate(date) {
