@@ -172,12 +172,17 @@ final class SchoolController extends Controller
         ]);
     }
 
-    public function show(Request $request, School $school): View
+    public function show(Request $request, School $school): View|RedirectResponse
     {
         $this->authorize('view', $school);
 
         $school->load('manager');
         $activeTab = $request->query('tab', 'dashboard');
+
+        // Account tab is only available for private-student schools.
+        if ($activeTab === 'account' && ! $school->is_private_student) {
+            return redirect()->route('admin.schools.show', ['school' => $school, 'tab' => 'dashboard']);
+        }
 
         $viewData = [
             'school' => $school,
@@ -245,8 +250,9 @@ final class SchoolController extends Controller
                 : CarbonImmutable::today();
         } elseif ($activeTab === 'account') {
             $accountService = app(SchoolAccountViewService::class);
-            $viewData['accountBalance'] = $accountService->getCurrentBalance($school);
+            $viewData['accountSummary'] = $accountService->getSummary($school);
             $viewData['datatableUrl'] = route('admin.schools.account.data', ['school' => $school]);
+            $viewData['scheduleDetailsUrl'] = url('/admin/schedule/calendar');
             $viewData['schoolId'] = $school->id;
         }
 
@@ -256,6 +262,10 @@ final class SchoolController extends Controller
     public function accountData(SchoolAccountDataRequest $request, School $school): JsonResponse
     {
         $this->authorize('view', $school);
+
+        if (! $school->is_private_student) {
+            abort(403, 'Account view is only available for private-student schools.');
+        }
 
         $params = DataTablesRequest::fromRequest($request, []);
 

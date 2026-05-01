@@ -34,8 +34,10 @@
             ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'ssas'])],
             ['key' => 'calendar', 'label' => 'Calendar', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'calendar'])],
             ['key' => 'billing', 'label' => 'Billing', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'billing'])],
-            ['key' => 'account', 'label' => 'Account', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'account'])],
         ];
+        if ($school->is_private_student) {
+            $tabs[] = ['key' => 'account', 'label' => 'Account', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'account'])];
+        }
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
 
@@ -118,7 +120,8 @@
     @elseif (($activeTab ?? 'dashboard') === 'account')
         @include('admin.schools._account_tab', [
             'datatableUrl' => $datatableUrl,
-            'accountBalance' => $accountBalance,
+            'accountSummary' => $accountSummary,
+            'scheduleDetailsUrl' => $scheduleDetailsUrl,
         ])
     @endif
 

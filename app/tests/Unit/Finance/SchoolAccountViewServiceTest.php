@@ -6,6 +6,7 @@ namespace Tests\Unit\Finance;
 
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Finance\Services\SchoolAccountViewService;
+use App\Enums\SessionLogStatus;
 use App\Enums\TherapistBillStatus;
 use App\Enums\TransactionType;
 use App\Models\School;
@@ -34,71 +35,77 @@ class SchoolAccountViewServiceTest extends TestCase
         $this->admin = User::factory()->admin()->create();
     }
 
-    public function test_includes_session_logs_for_paid_bills_only(): void
+    public function test_includes_approved_billable_session_logs_regardless_of_bill_status(): void
     {
         $school = School::factory()->create();
         $therapist = User::factory()->therapist()->create();
 
-        $paidBill = TherapistBill::factory()->create([
+        // Approved + unbilled.
+        SessionLog::factory()->create([
+            'school_id' => $school->id,
             'therapist_id' => $therapist->id,
-            'status' => TherapistBillStatus::PAID->value,
-            'paid_at' => now(),
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
+            'therapist_bill_id' => null,
+            'school_invoice_amount' => 100.00,
         ]);
 
-        $unpaidBill = TherapistBill::factory()->create([
+        // Approved + on a sent (unpaid) bill.
+        $sentBill = TherapistBill::factory()->create([
             'therapist_id' => $therapist->id,
             'status' => TherapistBillStatus::SENT->value,
         ]);
-
         SessionLog::factory()->create([
             'school_id' => $school->id,
             'therapist_id' => $therapist->id,
-            'therapist_bill_id' => $paidBill->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
+            'therapist_bill_id' => $sentBill->id,
             'school_invoice_amount' => 150.00,
         ]);
 
+        // Draft (not approved) — must be excluded.
         SessionLog::factory()->create([
             'school_id' => $school->id,
             'therapist_id' => $therapist->id,
-            'therapist_bill_id' => $unpaidBill->id,
+            'status' => SessionLogStatus::DRAFT->value,
+            'is_billable_school' => true,
             'school_invoice_amount' => 200.00,
         ]);
 
+        // Approved but non-billable to school — must be excluded.
         SessionLog::factory()->create([
             'school_id' => $school->id,
             'therapist_id' => $therapist->id,
-            'therapist_bill_id' => null,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => false,
             'school_invoice_amount' => 300.00,
         ]);
 
-        $rows = $this->service->getTransactions($school);
+        $charges = $this->service->getTransactions($school)->where('type', 'charge');
 
-        $charges = $rows->where('type', 'charge');
-        $this->assertCount(1, $charges);
-        $this->assertEqualsWithDelta(150.00, (float) $charges->first()['debit'], 0.001);
+        $this->assertCount(2, $charges);
+        $this->assertEqualsWithDelta(250.00, $charges->sum('debit'), 0.001);
     }
 
-    public function test_multi_school_bill_attributes_only_this_school_sessions(): void
+    public function test_multi_school_session_logs_are_attributed_per_school(): void
     {
         $schoolA = School::factory()->create();
         $schoolB = School::factory()->create();
         $therapist = User::factory()->therapist()->create();
 
-        $bill = TherapistBill::factory()->create([
-            'therapist_id' => $therapist->id,
-            'status' => TherapistBillStatus::PAID->value,
-        ]);
-
         SessionLog::factory()->create([
             'school_id' => $schoolA->id,
             'therapist_id' => $therapist->id,
-            'therapist_bill_id' => $bill->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
             'school_invoice_amount' => 100.00,
         ]);
         SessionLog::factory()->create([
             'school_id' => $schoolB->id,
             'therapist_id' => $therapist->id,
-            'therapist_bill_id' => $bill->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
             'school_invoice_amount' => 250.00,
         ]);
 
@@ -116,14 +123,11 @@ class SchoolAccountViewServiceTest extends TestCase
         $school = School::factory()->create();
         $therapist = User::factory()->therapist()->create();
 
-        $bill = TherapistBill::factory()->create([
-            'therapist_id' => $therapist->id,
-            'status' => TherapistBillStatus::PAID->value,
-        ]);
         SessionLog::factory()->create([
             'school_id' => $school->id,
             'therapist_id' => $therapist->id,
-            'therapist_bill_id' => $bill->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
             'school_invoice_amount' => 200.00,
         ]);
 
@@ -205,5 +209,50 @@ class SchoolAccountViewServiceTest extends TestCase
 
         $this->assertCount(0, $rows);
         $this->assertSame(0.0, $this->service->getCurrentBalance($school));
+    }
+
+    public function test_get_summary_aggregates_all_time_totals(): void
+    {
+        $school = School::factory()->create();
+        $therapist = User::factory()->therapist()->create();
+
+        SessionLog::factory()->create([
+            'school_id' => $school->id,
+            'therapist_id' => $therapist->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
+            'school_invoice_amount' => 100.00,
+        ]);
+        SessionLog::factory()->create([
+            'school_id' => $school->id,
+            'therapist_id' => $therapist->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
+            'school_invoice_amount' => 75.00,
+        ]);
+
+        $this->ledger->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::PAYMENT_RECEIVED,
+            amount: 50.00,
+            recordedAt: now()->subDay(),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+        $this->ledger->createCreditNoteForSchool($school->id, 20.00, null, $this->admin->id, now()->subHours(2));
+        $this->ledger->createRefundForSchool($school->id, 10.00, null, $this->admin->id, now());
+
+        $summary = $this->service->getSummary($school);
+
+        $this->assertEqualsWithDelta(175.00, $summary['total_charges'], 0.001);
+        $this->assertEqualsWithDelta(50.00, $summary['total_payments'], 0.001);
+        $this->assertEqualsWithDelta(20.00, $summary['total_credit_notes'], 0.001);
+        $this->assertEqualsWithDelta(10.00, $summary['total_refunds'], 0.001);
+        // Net: +175 (charges) -50 (payment) -20 (credit) +10 (refund) = 115.
+        $this->assertEqualsWithDelta(115.00, $summary['net_balance'], 0.001);
+        $this->assertSame(5, $summary['transaction_count']);
     }
 }

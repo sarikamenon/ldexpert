@@ -12,7 +12,7 @@ final class SchoolAccountRowTransformer
 {
     /**
      * @param  array<string, mixed>  $row
-     * @return array<int, string> 7 cell HTML strings (Date, Student, Description, Debit, Credit, Balance, Reference)
+     * @return array<int, string> 6 cell HTML strings: Date, Student, Description, Debit, Credit, Balance
      */
     public static function transform(array $row): array
     {
@@ -23,7 +23,6 @@ final class SchoolAccountRowTransformer
             self::debitCell($row),
             self::creditCell($row),
             self::balanceCell($row),
-            self::referenceCell($row),
         ];
     }
 
@@ -37,7 +36,7 @@ final class SchoolAccountRowTransformer
             return '<span class="text-foreground/30">—</span>';
         }
 
-        return '<div class="whitespace-nowrap">'.e($date->format('M d, Y')).'</div>';
+        return '<div class="whitespace-nowrap text-foreground">'.e($date->format('M d, Y')).'</div>';
     }
 
     /**
@@ -46,38 +45,87 @@ final class SchoolAccountRowTransformer
     private static function studentCell(array $row): string
     {
         $name = $row['student_name'] ?? null;
+        $id = $row['student_id'] ?? null;
+
         if (! is_string($name) || $name === '') {
             return '<span class="text-foreground/30">—</span>';
+        }
+
+        if (is_int($id) && $id > 0) {
+            $url = route('admin.students.show', ['student' => $id]);
+
+            return '<a href="'.e($url).'" class="text-primary hover:underline">'.e($name).'</a>';
         }
 
         return '<span class="text-foreground">'.e($name).'</span>';
     }
 
     /**
+     * Two-line description with a leading badge for every row.
+     * Charge rows whose session has a schedule_id are wrapped in a button
+     * that triggers the schedule details modal (handled in JS).
+     *
      * @param  array<string, mixed>  $row
      */
     private static function descriptionCell(array $row): string
     {
         $type = is_string($row['type'] ?? null) ? $row['type'] : '';
-        $description = is_string($row['description'] ?? null) ? $row['description'] : '';
+        $primary = is_string($row['description_primary'] ?? null) ? $row['description_primary'] : '';
+        $secondary = is_string($row['description_secondary'] ?? null) ? $row['description_secondary'] : null;
+        $typeLabel = is_string($row['type_label'] ?? null) ? $row['type_label'] : ucfirst($type);
 
-        $badge = '';
+        // Append reference link inline on the secondary line for adjustments.
         if ($type !== 'charge') {
-            $badgeClass = match ($type) {
-                'payment_received', 'credit_note' => 'bg-success/10 text-success border border-success/20',
-                'refund' => 'bg-danger/10 text-danger border border-danger/20',
-                default => 'bg-secondary/10 text-secondary border border-secondary/20',
-            };
-            $label = is_string($row['type_label'] ?? null) ? $row['type_label'] : $type;
-            $badge = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium whitespace-nowrap mr-2 '
-                .$badgeClass.'">'.e($label).'</span>';
+            $referenceText = self::renderReferenceText($row);
+            if ($referenceText !== null) {
+                $secondary = $secondary !== null && $secondary !== ''
+                    ? $secondary.' · '.$referenceText
+                    : $referenceText;
+            }
         }
 
-        $body = $description !== ''
-            ? '<span class="text-foreground/80">'.e($description).'</span>'
-            : '<span class="text-foreground/30">—</span>';
+        $badge = self::renderBadge($type, $typeLabel);
 
-        return $badge.$body;
+        $secondaryHtml = '';
+        if ($secondary !== null && $secondary !== '') {
+            // We already escape any user-controlled bits when composing $secondary;
+            // reference link is HTML, so do not e() the whole string.
+            $secondaryHtml = '<div class="mt-0.5 text-xs text-foreground/60">'.$secondary.'</div>';
+        }
+
+        $primaryHtml = '<div class="text-sm text-foreground">'.e($primary !== '' ? $primary : $typeLabel).'</div>';
+
+        // Fixed-width badge column keeps the description text aligned across rows
+        // regardless of badge label width (e.g. "Charge" vs "Payment Received").
+        $body = '<div class="w-32 shrink-0">'.$badge.'</div>'
+            .'<div class="flex-1 min-w-0">'.$primaryHtml.$secondaryHtml.'</div>';
+
+        $scheduleId = $row['schedule_id'] ?? null;
+        $isCharge = $type === 'charge';
+
+        $wrapper = '<div class="flex items-start gap-2">'.$body.'</div>';
+
+        if ($isCharge && is_int($scheduleId) && $scheduleId > 0) {
+            return '<button type="button" data-schedule-id="'.(int) $scheduleId.'" '
+                .'class="block w-full text-left hover:bg-background/subtle rounded-base -mx-1 px-1 py-0.5 transition-colors">'
+                .$wrapper.'</button>';
+        }
+
+        return $wrapper;
+    }
+
+    private static function renderBadge(string $type, string $label): string
+    {
+        $classes = match ($type) {
+            'charge' => 'bg-primary/10 text-primary border border-primary/20',
+            'payment_received' => 'bg-success/10 text-success border border-success/20',
+            'credit_note' => 'bg-success/10 text-success border border-success/20',
+            'refund' => 'bg-danger/10 text-danger border border-danger/20',
+            default => 'bg-secondary/10 text-secondary border border-secondary/20',
+        };
+
+        return '<span class="shrink-0 inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium whitespace-nowrap '
+            .$classes.'">'.e($label).'</span>';
     }
 
     /**
@@ -90,7 +138,8 @@ final class SchoolAccountRowTransformer
             return '<span class="text-foreground/30">—</span>';
         }
 
-        return '<span class="font-semibold text-danger-600">$'.number_format(abs((float) $amount), 2).'</span>';
+        return '<span class="font-semibold text-danger whitespace-nowrap">$'
+            .number_format(abs((float) $amount), 2).'</span>';
     }
 
     /**
@@ -103,7 +152,8 @@ final class SchoolAccountRowTransformer
             return '<span class="text-foreground/30">—</span>';
         }
 
-        return '<span class="font-semibold text-success-600">$'.number_format(abs((float) $amount), 2).'</span>';
+        return '<span class="font-semibold text-success whitespace-nowrap">$'
+            .number_format(abs((float) $amount), 2).'</span>';
     }
 
     /**
@@ -112,42 +162,55 @@ final class SchoolAccountRowTransformer
     private static function balanceCell(array $row): string
     {
         $balance = (float) ($row['balance_after'] ?? 0.0);
-        $class = $balance > 0 ? 'text-danger-600' : 'text-success-600';
-        $suffix = $balance > 0 ? ' DR' : ($balance < 0 ? ' CR' : '');
+        $color = $balance > 0 ? 'text-danger' : ($balance < 0 ? 'text-success' : 'text-foreground');
+        $suffix = $balance > 0 ? 'DR' : ($balance < 0 ? 'CR' : '');
 
-        return '<span class="font-semibold '.$class.'">$'.number_format(abs($balance), 2).e($suffix).'</span>';
+        $amount = '<span class="font-semibold '.$color.'">$'.number_format(abs($balance), 2).'</span>';
+        $suffixHtml = $suffix !== ''
+            ? ' <span class="text-xs font-medium text-foreground/60">'.$suffix.'</span>'
+            : '';
+
+        return '<span class="whitespace-nowrap">'.$amount.$suffixHtml.'</span>';
     }
 
     /**
+     * Build a reference text fragment (HTML — already escaped) for adjustment
+     * rows. Used on the secondary line of the description column. Returns null
+     * when no reference is available.
+     *
      * @param  array<string, mixed>  $row
      */
-    private static function referenceCell(array $row): string
+    private static function renderReferenceText(array $row): ?string
     {
         $reference = $row['reference'] ?? null;
         $referenceType = $row['reference_type'] ?? null;
         $referenceId = $row['reference_id'] ?? null;
 
         if ($reference === null) {
-            return '<span class="text-foreground/30">—</span>';
+            return null;
         }
 
         if ($reference instanceof Invoice && $referenceType === Invoice::class) {
-            return '<a href="'.e(route('admin.invoices.show', ['invoice' => $reference->id])).'" class="text-primary hover:underline">Invoice #'
-                .e($reference->invoice_number ?? (string) $reference->id).'</a>';
+            $url = route('admin.invoices.show', ['invoice' => $reference->id]);
+            $label = 'Invoice #'.($reference->invoice_number ?? (string) $reference->id);
+
+            return '<a href="'.e($url).'" class="text-primary hover:underline">'.e($label).'</a>';
         }
 
         if ($reference instanceof InvoicePayment && $referenceType === InvoicePayment::class) {
             $invoiceId = $reference->invoice?->id;
+            $label = 'Payment #'.$reference->id;
             if ($invoiceId !== null) {
-                return '<a href="'.e(route('admin.invoices.show', ['invoice' => $invoiceId])).'" class="text-primary hover:underline">Payment #'
-                    .e((string) $reference->id).'</a>';
+                $url = route('admin.invoices.show', ['invoice' => $invoiceId]);
+
+                return '<a href="'.e($url).'" class="text-primary hover:underline">'.e($label).'</a>';
             }
 
-            return 'Payment #'.e((string) ($referenceId ?? $reference->id));
+            return e($label);
         }
 
         $basename = is_string($referenceType) ? class_basename($referenceType) : '';
 
-        return e($basename).' #'.e((string) ($referenceId ?? ''));
+        return e($basename.' #'.($referenceId ?? ''));
     }
 }
