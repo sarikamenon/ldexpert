@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Services;
 
+use App\Domain\Time\UserTimezoneService;
 use App\Enums\SessionLogStatus;
 use App\Enums\TransactionType;
 use App\Models\LedgerEntry;
 use App\Models\School;
 use App\Models\SessionLog;
 use Carbon\CarbonImmutable;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -22,18 +25,38 @@ use Illuminate\Support\Collection;
  * The running balance computed here will not equal LedgerEntry.balance_after
  * on the canonical ledger because the debit-side rows are different. This is
  * documented on the page footnote.
+ *
+ * Window strategy: rows are loaded for a bounded date range (default 30 days).
+ * The opening balance — the running total of every signed_amount before the
+ * window — is fetched as two cheap SUM queries, then the in-window rows walk
+ * forward from that opening balance. The numbers reconcile with a full-history
+ * walk because addition is associative.
  */
 class SchoolAccountViewService
 {
+    public const DEFAULT_WINDOW_DAYS = 30;
+
+    public function __construct(
+        private readonly UserTimezoneService $timezones,
+    ) {}
+
     /**
-     * Build the merged transaction list for a school's account view.
+     * Build the merged transaction list for a school's account view, bounded
+     * by an inclusive date range expressed in the school's local timezone.
      *
      * @return Collection<int, array<string, mixed>>
      */
-    public function getTransactions(School $school): Collection
-    {
-        $charges = $this->loadCharges($school);
-        $adjustments = $this->loadAdjustments($school);
+    public function getTransactions(
+        School $school,
+        CarbonInterface $from,
+        CarbonInterface $to,
+    ): Collection {
+        [$fromUtc, $toUtc] = $this->resolveWindowUtc($school, $from, $to);
+
+        $openingBalance = $this->openingBalance($school, $fromUtc);
+
+        $charges = $this->loadCharges($school, $fromUtc, $toUtc);
+        $adjustments = $this->loadAdjustments($school, $fromUtc, $toUtc);
 
         /** @var Collection<int, array<string, mixed>> $merged */
         $merged = $charges->concat($adjustments)->values();
@@ -45,7 +68,7 @@ class SchoolAccountViewService
             ])
             ->values();
 
-        $balance = 0.0;
+        $balance = $openingBalance;
         $withBalance = $sortedAsc->map(function (array $row) use (&$balance): array {
             $balance += (float) $row['signed_amount'];
             $row['balance_after'] = $balance;
@@ -64,20 +87,23 @@ class SchoolAccountViewService
         return $result;
     }
 
-    public function getCurrentBalance(School $school): float
+    /**
+     * Default 30-day window ending today, computed in the school's timezone.
+     *
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
+     */
+    public function defaultWindow(School $school): array
     {
-        // Sum signed amounts directly — independent of row order, so DESC
-        // tie-breakers on equal sort_keys can't desync the displayed balance
-        // from the true running total.
-        $charges = $this->loadCharges($school)->sum('signed_amount');
-        $adjustments = $this->loadAdjustments($school)->sum('signed_amount');
+        $tz = $school->timezone ?: 'UTC';
+        $today = CarbonImmutable::today($tz);
+        $from = $today->subDays(self::DEFAULT_WINDOW_DAYS - 1);
 
-        return (float) ($charges + $adjustments);
+        return [$from, $today];
     }
 
     /**
-     * All-time totals for the summary strip. Computed from the same merged
-     * collection so the numbers always reconcile with what the table shows.
+     * All-time totals for the summary strip. Independent of getTransactions()
+     * so rendering the summary never forces the windowed merge.
      *
      * @return array{
      *     total_charges: float,
@@ -90,27 +116,26 @@ class SchoolAccountViewService
      */
     public function getSummary(School $school): array
     {
-        $rows = $this->getTransactions($school);
+        $totalCharges = (float) $this->baseChargeQuery($school)->sum('school_invoice_amount');
+        $chargeCount = $this->baseChargeQuery($school)->count();
 
-        $totalCharges = 0.0;
-        $totalPayments = 0.0;
-        $totalCreditNotes = 0.0;
-        $totalRefunds = 0.0;
-        $netBalance = 0.0;
+        $ledgerTotals = $this->baseAdjustmentQuery($school)
+            ->selectRaw('transaction_type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count')
+            ->groupBy('transaction_type')
+            ->get()
+            ->keyBy('transaction_type');
 
-        foreach ($rows as $row) {
-            $type = (string) ($row['type'] ?? '');
-            $amount = (float) ($row['debit'] ?? $row['credit'] ?? 0.0);
-            $netBalance += (float) ($row['signed_amount'] ?? 0.0);
+        $totalPayments = (float) ($ledgerTotals[TransactionType::PAYMENT_RECEIVED->value]->total ?? 0.0);
+        $totalCreditNotes = (float) ($ledgerTotals[TransactionType::CREDIT_NOTE->value]->total ?? 0.0);
+        $totalRefunds = (float) ($ledgerTotals[TransactionType::REFUND->value]->total ?? 0.0);
+        $adjustmentCount = (int) $ledgerTotals->sum('count');
 
-            match ($type) {
-                'charge' => $totalCharges += $amount,
-                TransactionType::PAYMENT_RECEIVED->value => $totalPayments += $amount,
-                TransactionType::CREDIT_NOTE->value => $totalCreditNotes += $amount,
-                TransactionType::REFUND->value => $totalRefunds += $amount,
-                default => null,
-            };
-        }
+        // Sign convention lives in TransactionType::balanceDelta(); mirror it
+        // here so the net never drifts from the per-row signed_amount math.
+        $netBalance = $totalCharges
+            + ($totalPayments * TransactionType::PAYMENT_RECEIVED->balanceDelta())
+            + ($totalCreditNotes * TransactionType::CREDIT_NOTE->balanceDelta())
+            + ($totalRefunds * TransactionType::REFUND->balanceDelta());
 
         return [
             'total_charges' => $totalCharges,
@@ -118,59 +143,148 @@ class SchoolAccountViewService
             'total_credit_notes' => $totalCreditNotes,
             'total_refunds' => $totalRefunds,
             'net_balance' => $netBalance,
-            'transaction_count' => $rows->count(),
+            'transaction_count' => $chargeCount + $adjustmentCount,
         ];
     }
 
     /**
-     * @return Collection<int, array<string, mixed>>
+     * Convert the user-supplied local date range into the UTC half-open
+     * interval used for SQL filtering. `to` is inclusive of the whole local
+     * day, so we extend it to the end of the day in the school's timezone
+     * before converting.
+     *
+     * @return array{0: CarbonImmutable, 1: CarbonImmutable}
      */
-    private function loadCharges(School $school): Collection
+    private function resolveWindowUtc(
+        School $school,
+        CarbonInterface $from,
+        CarbonInterface $to,
+    ): array {
+        $tz = $school->timezone ?: null;
+
+        [$fromUtc] = $this->timezones->userDayUtcRange($from, null, $tz);
+        [, $toUtc] = $this->timezones->userDayUtcRange($to, null, $tz);
+
+        return [
+            CarbonImmutable::instance($fromUtc),
+            CarbonImmutable::instance($toUtc),
+        ];
+    }
+
+    /**
+     * Sum signed_amount for every row dated strictly before $fromUtc. Captures
+     * all-prior history in one number so the windowed walk reproduces the
+     * correct running balance without loading historical rows.
+     */
+    private function openingBalance(School $school, CarbonImmutable $fromUtc): float
+    {
+        $chargesBefore = (float) $this->baseChargeQuery($school)
+            ->where('start_time', '<', $fromUtc)
+            ->sum('school_invoice_amount');
+
+        $adjustmentsBefore = $this->baseAdjustmentQuery($school)
+            ->where('recorded_at', '<', $fromUtc)
+            ->selectRaw('transaction_type, COALESCE(SUM(amount), 0) AS total')
+            ->groupBy('transaction_type')
+            ->get()
+            ->keyBy('transaction_type');
+
+        $signedAdjustments = 0.0;
+        foreach ([
+            TransactionType::PAYMENT_RECEIVED,
+            TransactionType::CREDIT_NOTE,
+            TransactionType::REFUND,
+        ] as $type) {
+            $sum = (float) ($adjustmentsBefore[$type->value]->total ?? 0.0);
+            $signedAdjustments += $sum * $type->balanceDelta();
+        }
+
+        return $chargesBefore + $signedAdjustments;
+    }
+
+    /**
+     * Shared filter for every "charge" query (window rows, opening balance,
+     * summary). Keeping it in one place guarantees the opening balance and
+     * the windowed rows agree on what counts as a charge.
+     *
+     * @return Builder<SessionLog>
+     */
+    private function baseChargeQuery(School $school): Builder
     {
         return SessionLog::query()
             ->where('school_id', $school->id)
             ->where('status', SessionLogStatus::APPROVED->value)
-            ->where('is_billable_school', true)
-            ->with(['student', 'therapist', 'service'])
-            ->get()
-            ->map(fn (SessionLog $log): array => $this->mapSessionLog($log));
+            ->where('is_billable_school', true);
+    }
+
+    /**
+     * Shared filter for every "adjustment" query.
+     *
+     * @return Builder<LedgerEntry>
+     */
+    private function baseAdjustmentQuery(School $school): Builder
+    {
+        return LedgerEntry::query()
+            ->forAccount(School::class, $school->id)
+            ->whereIn('transaction_type', [
+                TransactionType::PAYMENT_RECEIVED->value,
+                TransactionType::CREDIT_NOTE->value,
+                TransactionType::REFUND->value,
+            ]);
     }
 
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    private function loadAdjustments(School $school): Collection
-    {
-        $types = [
-            TransactionType::PAYMENT_RECEIVED->value,
-            TransactionType::CREDIT_NOTE->value,
-            TransactionType::REFUND->value,
-        ];
+    private function loadCharges(
+        School $school,
+        CarbonImmutable $fromUtc,
+        CarbonImmutable $toUtc,
+    ): Collection {
+        $tz = $school->timezone ?: 'UTC';
 
-        return LedgerEntry::query()
-            ->forAccount(School::class, $school->id)
-            ->whereIn('transaction_type', $types)
+        return $this->baseChargeQuery($school)
+            ->whereBetween('start_time', [$fromUtc, $toUtc])
+            ->with(['student', 'therapist', 'service'])
+            ->get()
+            ->map(fn (SessionLog $log): array => $this->mapSessionLog($log, $tz));
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function loadAdjustments(
+        School $school,
+        CarbonImmutable $fromUtc,
+        CarbonImmutable $toUtc,
+    ): Collection {
+        $tz = $school->timezone ?: 'UTC';
+
+        return $this->baseAdjustmentQuery($school)
+            ->whereBetween('recorded_at', [$fromUtc, $toUtc])
             ->with(['reference', 'recordedBy'])
             ->get()
-            ->map(fn (LedgerEntry $entry): array => $this->mapLedgerEntry($entry));
+            ->map(fn (LedgerEntry $entry): array => $this->mapLedgerEntry($entry, $tz));
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function mapSessionLog(SessionLog $log): array
+    private function mapSessionLog(SessionLog $log, string $tz): array
     {
         $amount = (float) $log->school_invoice_amount;
 
-        // TODO(timezone): start_time is stored in UTC and is currently formatted
-        // as UTC for the description's secondary line. Once the school-timezone
-        // display rule is settled, convert via UserTimezoneService::toUserTimezone()
-        // using the school's timezone. See CLAUDE.md "whose timezone for display".
-        $startTime = $log->start_time->format('g:i A');
+        // Display the calendar date and wall-clock time both derived from
+        // start_time converted to the school's timezone, so they always agree.
+        // Deriving the date from session_date instead would shift the whole
+        // day when TZ-converted (a session at 6 AM NYC has session_date in UTC
+        // = same day, but session_date midnight UTC → NYC = previous day).
+        $startInSchoolTz = $log->start_time->copy()->setTimezone($tz);
+        $startTime = $startInSchoolTz->format('g:i A');
         $duration = (int) $log->duration_minutes;
 
         return [
-            'date' => CarbonImmutable::parse($log->session_date->format('Y-m-d')),
+            'date' => CarbonImmutable::instance($startInSchoolTz),
             'sort_key' => $this->buildSessionSortKey($log),
             'type' => 'charge',
             'type_label' => 'Charge',
@@ -198,16 +312,23 @@ class SchoolAccountViewService
     /**
      * @return array<string, mixed>
      */
-    private function mapLedgerEntry(LedgerEntry $entry): array
+    private function mapLedgerEntry(LedgerEntry $entry, string $tz): array
     {
         $type = $entry->transaction_type;
         $amount = (float) $entry->amount;
         $isDebit = $type === TransactionType::REFUND;
         $notes = $entry->notes;
 
+        // recorded_at is stored in UTC; convert to the school's timezone so the
+        // displayed calendar date matches what users in the school's frame of
+        // reference experienced.
+        $recordedInSchoolTz = CarbonImmutable::instance($entry->recorded_at)->setTimezone($tz);
+
         return [
-            'date' => CarbonImmutable::parse($entry->recorded_at->format('Y-m-d H:i:s')),
-            'sort_key' => $entry->recorded_at->format('Y-m-d H:i:s'),
+            'date' => $recordedInSchoolTz,
+            // Sort key uses the UTC instant so charges and adjustments share a
+            // common timeline. Display TZ doesn't affect ordering.
+            'sort_key' => $entry->recorded_at->copy()->setTimezone('UTC')->format('Y-m-d H:i:s'),
             'type' => $type->value,
             'type_label' => $type->label(),
             'student_id' => null,
@@ -233,10 +354,9 @@ class SchoolAccountViewService
 
     private function buildSessionSortKey(SessionLog $log): string
     {
-        $date = $log->session_date->format('Y-m-d');
-        $time = $log->start_time->format('H:i:s');
-
-        return $date.' '.$time;
+        // Sort key uses UTC start_time so charges and adjustments share a
+        // common timeline regardless of which TZ each is displayed in.
+        return $log->start_time->format('Y-m-d H:i:s');
     }
 
     private function buildSessionPrimaryLine(SessionLog $log): string

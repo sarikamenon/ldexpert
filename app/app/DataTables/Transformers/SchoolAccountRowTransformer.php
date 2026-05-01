@@ -6,6 +6,7 @@ namespace App\DataTables\Transformers;
 
 use App\Models\Invoice;
 use App\Models\InvoicePayment;
+use App\Support\Currency;
 use Carbon\CarbonInterface;
 
 final class SchoolAccountRowTransformer
@@ -31,10 +32,8 @@ final class SchoolAccountRowTransformer
      */
     private static function dateCell(array $row): string
     {
-        $date = $row['date'] ?? null;
-        if (! $date instanceof CarbonInterface) {
-            return '<span class="text-foreground/30">—</span>';
-        }
+        $date = $row['date'];
+        assert($date instanceof CarbonInterface);
 
         return '<div class="whitespace-nowrap text-foreground">'.e($date->format('M d, Y')).'</div>';
     }
@@ -71,29 +70,30 @@ final class SchoolAccountRowTransformer
     {
         $type = is_string($row['type'] ?? null) ? $row['type'] : '';
         $primary = is_string($row['description_primary'] ?? null) ? $row['description_primary'] : '';
-        $secondary = is_string($row['description_secondary'] ?? null) ? $row['description_secondary'] : null;
+        $secondaryText = is_string($row['description_secondary'] ?? null) ? $row['description_secondary'] : null;
         $typeLabel = is_string($row['type_label'] ?? null) ? $row['type_label'] : ucfirst($type);
 
-        // Append reference link inline on the secondary line for adjustments.
+        // Build the secondary line as escaped text fragments + an optional
+        // pre-escaped reference link, so user-controlled text is always escaped
+        // regardless of how upstream callers populate description_secondary.
+        $secondaryFragments = [];
+        if ($secondaryText !== null && $secondaryText !== '') {
+            $secondaryFragments[] = e($secondaryText);
+        }
         if ($type !== 'charge') {
-            $referenceText = self::renderReferenceText($row);
-            if ($referenceText !== null) {
-                $secondary = $secondary !== null && $secondary !== ''
-                    ? $secondary.' · '.$referenceText
-                    : $referenceText;
+            $referenceHtml = self::renderReferenceText($row);
+            if ($referenceHtml !== null) {
+                $secondaryFragments[] = $referenceHtml;
             }
         }
 
         $badge = self::renderBadge($type, $typeLabel);
 
-        $secondaryHtml = '';
-        if ($secondary !== null && $secondary !== '') {
-            // We already escape any user-controlled bits when composing $secondary;
-            // reference link is HTML, so do not e() the whole string.
-            $secondaryHtml = '<div class="mt-0.5 text-xs text-foreground/60">'.$secondary.'</div>';
-        }
+        $secondaryHtml = $secondaryFragments !== []
+            ? '<div class="mt-0.5 text-xs text-foreground/60">'.implode(' · ', $secondaryFragments).'</div>'
+            : '';
 
-        $primaryHtml = '<div class="text-sm text-foreground">'.e($primary !== '' ? $primary : $typeLabel).'</div>';
+        $primaryHtml = '<div class="text-sm text-foreground">'.e($primary).'</div>';
 
         // Fixed-width badge column keeps the description text aligned across rows
         // regardless of badge label width (e.g. "Charge" vs "Payment Received").
@@ -138,8 +138,8 @@ final class SchoolAccountRowTransformer
             return '<span class="text-foreground/30">—</span>';
         }
 
-        return '<span class="font-semibold text-danger whitespace-nowrap">$'
-            .number_format(abs((float) $amount), 2).'</span>';
+        return '<span class="font-semibold text-danger whitespace-nowrap">'
+            .e(Currency::formatAbs((float) $amount)).'</span>';
     }
 
     /**
@@ -152,8 +152,8 @@ final class SchoolAccountRowTransformer
             return '<span class="text-foreground/30">—</span>';
         }
 
-        return '<span class="font-semibold text-success whitespace-nowrap">$'
-            .number_format(abs((float) $amount), 2).'</span>';
+        return '<span class="font-semibold text-success whitespace-nowrap">'
+            .e(Currency::formatAbs((float) $amount)).'</span>';
     }
 
     /**
@@ -165,7 +165,7 @@ final class SchoolAccountRowTransformer
         $color = $balance > 0 ? 'text-danger' : ($balance < 0 ? 'text-success' : 'text-foreground');
         $suffix = $balance > 0 ? 'DR' : ($balance < 0 ? 'CR' : '');
 
-        $amount = '<span class="font-semibold '.$color.'">$'.number_format(abs($balance), 2).'</span>';
+        $amount = '<span class="font-semibold '.$color.'">'.e(Currency::formatAbs($balance)).'</span>';
         $suffixHtml = $suffix !== ''
             ? ' <span class="text-xs font-medium text-foreground/60">'.$suffix.'</span>'
             : '';

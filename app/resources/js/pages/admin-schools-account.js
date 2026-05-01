@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     void initAccountTable(table);
     bindScheduleModal(table);
+    bindFilters(table);
 });
 
 async function initAccountTable(table) {
@@ -29,6 +30,12 @@ async function initAccountTable(table) {
         language: {
             emptyTable: 'No account activity yet.',
             zeroRecords: 'No matching records found.',
+        },
+        getExtraData(d) {
+            const fromInput = document.getElementById('filter_date_from');
+            const toInput = document.getElementById('filter_date_to');
+            d.filter_date_from = fromInput ? fromInput.value : '';
+            d.filter_date_to = toInput ? toInput.value : '';
         },
     });
 }
@@ -53,4 +60,42 @@ function bindScheduleModal(table) {
         event.preventDefault();
         openScheduleDetailsModal(scheduleId, detailsUrl, {});
     });
+}
+
+function bindFilters(table) {
+    const form = document.getElementById('schoolAccountFilters');
+    if (!form) {
+        return;
+    }
+
+    const reload = () => {
+        const dt = window.jQuery && window.jQuery.fn.DataTable
+            ? window.jQuery('#schoolAccountTable').DataTable()
+            : null;
+        if (dt) {
+            dt.ajax.reload();
+        }
+    };
+
+    // Apply button: explicit submit, no auto-reload on change so the user
+    // controls when the query runs.
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        reload();
+    });
+
+    const resetBtn = document.getElementById('schoolAccountResetFilters');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            const fromInput = document.getElementById('filter_date_from');
+            const toInput = document.getElementById('filter_date_to');
+            if (fromInput) {
+                fromInput.value = table.getAttribute('data-default-from') || '';
+            }
+            if (toInput) {
+                toInput.value = table.getAttribute('data-default-to') || '';
+            }
+            reload();
+        });
+    }
 }

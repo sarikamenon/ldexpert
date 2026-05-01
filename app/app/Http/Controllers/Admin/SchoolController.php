@@ -75,17 +75,15 @@ final class SchoolController extends Controller
     {
         $this->authorize('viewAny', School::class);
 
-        $filtersPayload = array_merge(
+        $filters = SchoolFilterDTO::fromArray(array_merge(
             $request->validated(),
             ['show_deactivated' => $request->boolean('show_deactivated')]
-        );
-        $filters = SchoolFilterDTO::fromArray($filtersPayload);
-        $perPage = $request->integer('per_page', 25);
+        ));
 
         return view('admin.schools.index', [
             'schools' => collect(),
             'metrics' => $this->schoolService->summaryMetrics(),
-            'filters' => $filtersPayload,
+            'filters' => $filters,
             'datatableUrl' => route('admin.schools.data'),
         ] + $this->referenceData());
     }
@@ -250,7 +248,10 @@ final class SchoolController extends Controller
                 : CarbonImmutable::today();
         } elseif ($activeTab === 'account') {
             $accountService = app(SchoolAccountViewService::class);
+            [$defaultFrom, $defaultTo] = $accountService->defaultWindow($school);
             $viewData['accountSummary'] = $accountService->getSummary($school);
+            $viewData['accountDefaultFrom'] = $defaultFrom->format('Y-m-d');
+            $viewData['accountDefaultTo'] = $defaultTo->format('Y-m-d');
             $viewData['datatableUrl'] = route('admin.schools.account.data', ['school' => $school]);
             $viewData['scheduleDetailsUrl'] = url('/admin/schedule/calendar');
             $viewData['schoolId'] = $school->id;
@@ -268,9 +269,21 @@ final class SchoolController extends Controller
         }
 
         $params = DataTablesRequest::fromRequest($request, []);
+        $accountService = app(SchoolAccountViewService::class);
+
+        [$defaultFrom, $defaultTo] = $accountService->defaultWindow($school);
+        // Parse the date inputs in the school's timezone so "May 1" means
+        // "May 1 in the school's frame of reference," not May 1 UTC.
+        $tz = $school->timezone ?: 'UTC';
+        $from = $request->filled('filter_date_from')
+            ? CarbonImmutable::parse((string) $request->input('filter_date_from'), $tz)
+            : $defaultFrom;
+        $to = $request->filled('filter_date_to')
+            ? CarbonImmutable::parse((string) $request->input('filter_date_to'), $tz)
+            : $defaultTo;
 
         try {
-            $rows = app(SchoolAccountViewService::class)->getTransactions($school);
+            $rows = $accountService->getTransactions($school, $from, $to);
         } catch (\Throwable $e) {
             Log::error('Failed to build school account view', [
                 'school_id' => $school->id,

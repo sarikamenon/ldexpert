@@ -20,6 +20,8 @@ final class SchoolAccountDataRequest extends FormRequest
             'draw' => ['nullable', 'integer'],
             'start' => ['nullable', 'integer', 'min:0'],
             'length' => ['nullable', 'integer'],
+            'filter_date_from' => ['nullable', 'date'],
+            'filter_date_to' => ['nullable', 'date', 'after_or_equal:filter_date_from'],
         ];
     }
 }

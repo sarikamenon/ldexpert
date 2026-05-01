@@ -13,7 +13,9 @@ use App\Models\School;
 use App\Models\SessionLog;
 use App\Models\TherapistBill;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Tests\TestCase;
 
 class SchoolAccountViewServiceTest extends TestCase
@@ -33,6 +35,21 @@ class SchoolAccountViewServiceTest extends TestCase
         $this->service = app(SchoolAccountViewService::class);
         $this->ledger = app(LedgerService::class);
         $this->admin = User::factory()->admin()->create();
+    }
+
+    /**
+     * Wide enough window that any factory-created session_log or ledger entry
+     * lands inside it, so existing test scenarios don't have to think about
+     * the windowing contract.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function loadAll(School $school): Collection
+    {
+        $from = CarbonImmutable::now()->subYears(10);
+        $to = CarbonImmutable::now()->addYears(1);
+
+        return $this->service->getTransactions($school, $from, $to);
     }
 
     public function test_includes_approved_billable_session_logs_regardless_of_bill_status(): void
@@ -82,7 +99,7 @@ class SchoolAccountViewServiceTest extends TestCase
             'school_invoice_amount' => 300.00,
         ]);
 
-        $charges = $this->service->getTransactions($school)->where('type', 'charge');
+        $charges = $this->loadAll($school)->where('type', 'charge');
 
         $this->assertCount(2, $charges);
         $this->assertEqualsWithDelta(250.00, $charges->sum('debit'), 0.001);
@@ -109,8 +126,8 @@ class SchoolAccountViewServiceTest extends TestCase
             'school_invoice_amount' => 250.00,
         ]);
 
-        $rowsA = $this->service->getTransactions($schoolA)->where('type', 'charge');
-        $rowsB = $this->service->getTransactions($schoolB)->where('type', 'charge');
+        $rowsA = $this->loadAll($schoolA)->where('type', 'charge');
+        $rowsB = $this->loadAll($schoolB)->where('type', 'charge');
 
         $this->assertCount(1, $rowsA);
         $this->assertEqualsWithDelta(100.00, (float) $rowsA->first()['debit'], 0.001);
@@ -157,7 +174,7 @@ class SchoolAccountViewServiceTest extends TestCase
         $this->ledger->createCreditNoteForSchool($school->id, 30.00, null, $this->admin->id, now()->subDay());
         $this->ledger->createRefundForSchool($school->id, 10.00, null, $this->admin->id, now());
 
-        $rows = $this->service->getTransactions($school);
+        $rows = $this->loadAll($school);
 
         // Should not include INVOICE_GENERATED rows.
         $this->assertCount(0, $rows->where('type', TransactionType::INVOICE_GENERATED->value));
@@ -168,7 +185,7 @@ class SchoolAccountViewServiceTest extends TestCase
         $this->assertCount(1, $rows->where('type', TransactionType::REFUND->value));
 
         // Running balance: charge +200, payment -50, credit_note -30, refund +10 = 130.
-        $this->assertEqualsWithDelta(130.00, $this->service->getCurrentBalance($school), 0.001);
+        $this->assertEqualsWithDelta(130.00, $this->service->getSummary($school)['net_balance'], 0.001);
     }
 
     public function test_refund_is_a_debit_and_payment_is_a_credit(): void
@@ -188,7 +205,7 @@ class SchoolAccountViewServiceTest extends TestCase
         );
         $this->ledger->createRefundForSchool($school->id, 25.00, null, $this->admin->id, now());
 
-        $rows = $this->service->getTransactions($school);
+        $rows = $this->loadAll($school);
 
         $payment = $rows->firstWhere('type', TransactionType::PAYMENT_RECEIVED->value);
         $refund = $rows->firstWhere('type', TransactionType::REFUND->value);
@@ -205,10 +222,10 @@ class SchoolAccountViewServiceTest extends TestCase
     {
         $school = School::factory()->create();
 
-        $rows = $this->service->getTransactions($school);
+        $rows = $this->loadAll($school);
 
         $this->assertCount(0, $rows);
-        $this->assertSame(0.0, $this->service->getCurrentBalance($school));
+        $this->assertSame(0.0, $this->service->getSummary($school)['net_balance']);
     }
 
     public function test_get_summary_aggregates_all_time_totals(): void
@@ -254,5 +271,54 @@ class SchoolAccountViewServiceTest extends TestCase
         // Net: +175 (charges) -50 (payment) -20 (credit) +10 (refund) = 115.
         $this->assertEqualsWithDelta(115.00, $summary['net_balance'], 0.001);
         $this->assertSame(5, $summary['transaction_count']);
+    }
+
+    public function test_window_excludes_rows_outside_range_but_includes_them_in_opening_balance(): void
+    {
+        $school = School::factory()->create();
+        $therapist = User::factory()->therapist()->create();
+
+        // Old charge — outside window, should fold into opening balance.
+        SessionLog::factory()->create([
+            'school_id' => $school->id,
+            'therapist_id' => $therapist->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
+            'school_invoice_amount' => 200.00,
+            'session_date' => CarbonImmutable::now()->subDays(60)->format('Y-m-d'),
+            'start_time' => CarbonImmutable::now()->subDays(60),
+        ]);
+
+        // Recent charge — inside window.
+        SessionLog::factory()->create([
+            'school_id' => $school->id,
+            'therapist_id' => $therapist->id,
+            'status' => SessionLogStatus::APPROVED->value,
+            'is_billable_school' => true,
+            'school_invoice_amount' => 50.00,
+            'session_date' => CarbonImmutable::now()->subDays(5)->format('Y-m-d'),
+            'start_time' => CarbonImmutable::now()->subDays(5),
+        ]);
+
+        $from = CarbonImmutable::now()->subDays(30);
+        $to = CarbonImmutable::now();
+
+        $rows = $this->service->getTransactions($school, $from, $to);
+
+        // Only the recent charge appears in the table.
+        $this->assertCount(1, $rows);
+        $first = $rows->first();
+        $this->assertNotNull($first);
+        // balance_after reflects the older charge baked into the opening balance.
+        $this->assertEqualsWithDelta(250.00, (float) $first['balance_after'], 0.001);
+    }
+
+    public function test_default_window_is_30_days_in_school_timezone(): void
+    {
+        $school = School::factory()->create(['timezone' => 'America/Los_Angeles']);
+
+        [$from, $to] = $this->service->defaultWindow($school);
+
+        $this->assertSame(SchoolAccountViewService::DEFAULT_WINDOW_DAYS - 1, (int) $from->diffInDays($to));
     }
 }

@@ -61,13 +61,33 @@
 
     {{-- Transactions table --}}
     <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-sm font-semibold text-foreground">Transactions</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <h3 class="text-sm font-semibold text-foreground">Transactions</h3>
+
+            <form id="schoolAccountFilters" class="flex flex-wrap items-center gap-2">
+                <div class="w-40 shrink-0">
+                    <x-ui::input id="filter_date_from" type="date" name="filter_date_from"
+                        aria-label="From date" value="{{ $accountDefaultFrom }}" />
+                </div>
+                <span class="text-xs text-foreground/60 shrink-0">to</span>
+                <div class="w-40 shrink-0">
+                    <x-ui::input id="filter_date_to" type="date" name="filter_date_to"
+                        aria-label="To date" value="{{ $accountDefaultTo }}" />
+                </div>
+                <x-ui::button type="submit" class="shrink-0">Apply filters</x-ui::button>
+                <x-ui::button type="button" variant="secondary" id="schoolAccountResetFilters" class="shrink-0">
+                    Reset
+                </x-ui::button>
+            </form>
+        </div>
 
         <div class="overflow-x-auto">
             <table id="schoolAccountTable"
                 class="w-full border-collapse school-account-table display"
                 data-datatable-url="{{ $datatableUrl }}"
-                data-schedule-details-url="{{ $scheduleDetailsUrl }}">
+                data-schedule-details-url="{{ $scheduleDetailsUrl }}"
+                data-default-from="{{ $accountDefaultFrom }}"
+                data-default-to="{{ $accountDefaultTo }}">
                 <thead class="bg-background/subtle">
                     <tr>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground">Date</th>
