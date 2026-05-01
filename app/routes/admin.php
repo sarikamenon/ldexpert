@@ -48,6 +48,7 @@ Route::middleware('role:admin')
         Route::get('schools/export', [SchoolController::class, 'export'])->name('schools.export');
         Route::post('schools/data', [SchoolController::class, 'data'])->name('schools.data');
         Route::patch('schools/{school}/status', [SchoolController::class, 'updateStatus'])->name('schools.status');
+        Route::post('schools/{school}/account/data', [SchoolController::class, 'accountData'])->name('schools.account.data');
         Route::resource('schools', SchoolController::class)->except(['destroy']);
         Route::get('schools/{school}/calendar-events', [SchoolCalendarEventController::class, 'index'])
             ->name('schools.calendar-events.index');

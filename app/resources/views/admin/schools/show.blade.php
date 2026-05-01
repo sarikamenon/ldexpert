@@ -1,7 +1,7 @@
 <x-admin.layouts.app>
     <x-slot name="styles">
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-        @if (in_array($activeTab ?? 'dashboard', ['students', 'therapists', 'ssas', 'contracts']))
+        @if (in_array($activeTab ?? 'dashboard', ['students', 'therapists', 'ssas', 'contracts', 'account']))
             @vite(['resources/css/common/datatables.css'])
         @endif
         @if (($activeTab ?? 'dashboard') === 'calendar')
@@ -34,6 +34,7 @@
             ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'ssas'])],
             ['key' => 'calendar', 'label' => 'Calendar', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'calendar'])],
             ['key' => 'billing', 'label' => 'Billing', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'billing'])],
+            ['key' => 'account', 'label' => 'Account', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'account'])],
         ];
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -114,6 +115,11 @@
             'entityType' => 'school',
             'entityId' => $school->id,
         ])
+    @elseif (($activeTab ?? 'dashboard') === 'account')
+        @include('admin.schools._account_tab', [
+            'datatableUrl' => $datatableUrl,
+            'accountBalance' => $accountBalance,
+        ])
     @endif
 
     <x-slot name="scripts">
@@ -130,6 +136,8 @@
             @vite(['resources/js/pages/admin-school-calendar-events.js'])
         @elseif (($activeTab ?? 'dashboard') === 'billing')
             @vite(['resources/js/pages/admin-entity-billing.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'account')
+            @vite(['resources/js/pages/admin-schools-account.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

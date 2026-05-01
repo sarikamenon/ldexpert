@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\DataTables\Transformers\SchoolAccountRowTransformer;
 use App\DataTables\Transformers\SchoolRowTransformer;
+use App\Domain\Finance\Services\SchoolAccountViewService;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
@@ -26,6 +28,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\School\ChangeSchoolStatusRequest;
 use App\Http\Requests\Admin\School\ExportSchoolsRequest;
 use App\Http\Requests\Admin\School\IndexSchoolRequest;
+use App\Http\Requests\Admin\School\SchoolAccountDataRequest;
 use App\Http\Requests\Admin\School\SchoolDataRequest;
 use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
@@ -39,6 +42,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SchoolController extends Controller
@@ -239,9 +243,49 @@ final class SchoolController extends Controller
             $viewData['selectedDate'] = $request->query('date')
                 ? CarbonImmutable::parse((string) $request->query('date'))
                 : CarbonImmutable::today();
+        } elseif ($activeTab === 'account') {
+            $accountService = app(SchoolAccountViewService::class);
+            $viewData['accountBalance'] = $accountService->getCurrentBalance($school);
+            $viewData['datatableUrl'] = route('admin.schools.account.data', ['school' => $school]);
+            $viewData['schoolId'] = $school->id;
         }
 
         return view('admin.schools.show', $viewData);
+    }
+
+    public function accountData(SchoolAccountDataRequest $request, School $school): JsonResponse
+    {
+        $this->authorize('view', $school);
+
+        $params = DataTablesRequest::fromRequest($request, []);
+
+        try {
+            $rows = app(SchoolAccountViewService::class)->getTransactions($school);
+        } catch (\Throwable $e) {
+            Log::error('Failed to build school account view', [
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'draw' => $params->draw,
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Could not load account transactions.',
+            ], 500);
+        }
+
+        $total = $rows->count();
+        $page = $rows->slice($params->start, $params->length)->values();
+
+        return $this->dataTablesResponse(
+            $params,
+            $total,
+            $total,
+            $page,
+            [SchoolAccountRowTransformer::class, 'transform'],
+        );
     }
 
     public function export(ExportSchoolsRequest $request): StreamedResponse
