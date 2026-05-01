@@ -195,4 +195,13 @@ class School extends Model
     {
         return SchoolScope::inactive($query, $query->getModel());
     }
+
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
+    public function scopeOrderedByDisplayName(Builder $query): Builder
+    {
+        return SchoolScope::orderedByDisplayName($query);
+    }
 }

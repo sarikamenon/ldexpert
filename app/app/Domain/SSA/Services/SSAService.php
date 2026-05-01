@@ -14,7 +14,9 @@ use App\DTOs\UpdateSSADTO;
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
 use App\Exceptions\ContractOverlapException;
+use App\Models\School;
 use App\Models\ServiceSupportAgreement;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -197,6 +199,49 @@ final class SSAService
             ->unique('id')
             ->sortBy('name')
             ->values();
+    }
+
+    /**
+     * Schools that have at least one active SSA assigned to this therapist,
+     * ordered by display name (falling back to full name).
+     *
+     * @return Collection<int, School>
+     */
+    public function getSchoolsForTherapist(int $therapistId): Collection
+    {
+        $studentIds = $this->getActiveSSAsForTherapist($therapistId)
+            ->pluck('student_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($studentIds)) {
+            return collect();
+        }
+
+        $schoolIds = StudentProfile::query()
+            ->forUserIds($studentIds)
+            ->withSchool()
+            ->pluck('school_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($schoolIds)) {
+            return collect();
+        }
+
+        return School::query()
+            ->whereIn('id', $schoolIds)
+            ->orderedByDisplayName()
+            ->get();
+    }
+
+    public function therapistHasAccessToSchool(int $therapistId, int $schoolId): bool
+    {
+        return $this->getSchoolsForTherapist($therapistId)
+            ->contains(static fn (School $school): bool => $school->id === $schoolId);
     }
 
     public function findSSAForSchedule(int $ssaId, int $therapistId): ?ServiceSupportAgreement
