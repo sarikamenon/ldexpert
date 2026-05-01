@@ -108,44 +108,52 @@ class SchoolAccountViewService
      * so rendering the summary never forces the windowed merge.
      *
      * @return array{
+     *     total_invoiced: float,
+     *     total_paid: float,
      *     total_charges: float,
-     *     total_payments: float,
      *     total_credit_notes: float,
      *     total_refunds: float,
      *     net_balance: float,
-     *     transaction_count: int,
      * }
      */
     public function getSummary(School $school): array
     {
         $totalCharges = (float) $this->baseChargeQuery($school)->sum('school_invoice_amount');
-        $chargeCount = $this->baseChargeQuery($school)->count();
 
-        $ledgerTotals = $this->baseAdjustmentQuery($school)
-            ->selectRaw('transaction_type, COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count')
+        $ledgerTotals = LedgerEntry::query()
+            ->forAccount(School::class, $school->id)
+            ->whereIn('transaction_type', [
+                TransactionType::INVOICE_GENERATED->value,
+                TransactionType::PAYMENT_RECEIVED->value,
+                TransactionType::CREDIT_NOTE->value,
+                TransactionType::REFUND->value,
+            ])
+            ->selectRaw('transaction_type, COALESCE(SUM(amount), 0) AS total')
             ->groupBy('transaction_type')
             ->get()
             ->keyBy('transaction_type');
 
-        $totalPayments = (float) ($ledgerTotals[TransactionType::PAYMENT_RECEIVED->value]->total ?? 0.0);
+        $totalInvoiced = (float) ($ledgerTotals[TransactionType::INVOICE_GENERATED->value]->total ?? 0.0);
+        $totalPaid = (float) ($ledgerTotals[TransactionType::PAYMENT_RECEIVED->value]->total ?? 0.0);
         $totalCreditNotes = (float) ($ledgerTotals[TransactionType::CREDIT_NOTE->value]->total ?? 0.0);
         $totalRefunds = (float) ($ledgerTotals[TransactionType::REFUND->value]->total ?? 0.0);
-        $adjustmentCount = (int) $ledgerTotals->sum('count');
 
-        // Sign convention lives in TransactionType::balanceDelta(); mirror it
-        // here so the net never drifts from the per-row signed_amount math.
+        // Net balance still uses session-log charges (not invoiced), matching
+        // the running balance in the transaction table. Sign convention lives
+        // in TransactionType::balanceDelta() so the net never drifts from the
+        // per-row signed_amount math.
         $netBalance = $totalCharges
-            + ($totalPayments * TransactionType::PAYMENT_RECEIVED->balanceDelta())
+            + ($totalPaid * TransactionType::PAYMENT_RECEIVED->balanceDelta())
             + ($totalCreditNotes * TransactionType::CREDIT_NOTE->balanceDelta())
             + ($totalRefunds * TransactionType::REFUND->balanceDelta());
 
         return [
+            'total_invoiced' => $totalInvoiced,
+            'total_paid' => $totalPaid,
             'total_charges' => $totalCharges,
-            'total_payments' => $totalPayments,
             'total_credit_notes' => $totalCreditNotes,
             'total_refunds' => $totalRefunds,
             'net_balance' => $netBalance,
-            'transaction_count' => $chargeCount + $adjustmentCount,
         ];
     }
 

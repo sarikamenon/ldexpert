@@ -6,14 +6,19 @@
     $balanceSuffix = $netBalance > 0 ? 'DR' : ($netBalance < 0 ? 'CR' : '');
     $summaryItems = [
         [
-            'label' => 'Charges',
-            'value' => Currency::format((float) $accountSummary['total_charges']),
+            'label' => 'Total Invoiced',
+            'value' => Currency::format((float) $accountSummary['total_invoiced']),
             'value_class' => 'text-danger',
         ],
         [
-            'label' => 'Payments',
-            'value' => Currency::format((float) $accountSummary['total_payments']),
+            'label' => 'Total Paid',
+            'value' => Currency::format((float) $accountSummary['total_paid']),
             'value_class' => 'text-success',
+        ],
+        [
+            'label' => 'Session Charges',
+            'value' => Currency::format((float) $accountSummary['total_charges']),
+            'value_class' => 'text-danger',
         ],
         [
             'label' => 'Credit Notes',
@@ -25,31 +30,13 @@
             'value' => Currency::format((float) $accountSummary['total_refunds']),
             'value_class' => 'text-danger',
         ],
-        [
-            'label' => 'Transactions',
-            'value' => (string) $accountSummary['transaction_count'],
-            'value_class' => 'text-foreground',
-        ],
     ];
 @endphp
 
 <div class="space-y-4">
-    {{-- Single inline summary strip: balance + all-time totals --}}
+    {{-- Single inline summary strip: all-time totals + current balance --}}
     <x-ui::card class="px-6 py-4">
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div>
-                <div class="flex items-center gap-1">
-                    <p class="text-xs font-medium text-foreground/70">Current Balance</p>
-                    <x-ui::tooltip-icon
-                        content="Computed from approved billable lessons plus payments, credit notes, and refunds. Will not match the canonical ledger balance." />
-                </div>
-                <p class="mt-1 text-lg font-semibold {{ $balanceColor }} whitespace-nowrap">
-                    {{ Currency::formatAbs($netBalance) }}
-                    @if ($balanceSuffix !== '')
-                        <span class="text-xs font-medium text-foreground/60">{{ $balanceSuffix }}</span>
-                    @endif
-                </p>
-            </div>
             @foreach ($summaryItems as $item)
                 <div>
                     <p class="text-xs text-foreground/60">{{ $item['label'] }}</p>
@@ -58,6 +45,19 @@
                     </p>
                 </div>
             @endforeach
+            <div>
+                <div class="flex items-center gap-1">
+                    <p class="text-xs font-medium text-foreground/70">Current Balance</p>
+                    <x-ui::tooltip-icon
+                        content="Computed from approved billable lessons plus payments, credit notes, and refunds. Will not match the canonical ledger balance when invoices cover sessions that aren't yet approved." />
+                </div>
+                <p class="mt-1 text-lg font-semibold {{ $balanceColor }} whitespace-nowrap">
+                    {{ Currency::formatAbs($netBalance) }}
+                    @if ($balanceSuffix !== '')
+                        <span class="text-xs font-medium text-foreground/60">{{ $balanceSuffix }}</span>
+                    @endif
+                </p>
+            </div>
         </div>
     </x-ui::card>
 

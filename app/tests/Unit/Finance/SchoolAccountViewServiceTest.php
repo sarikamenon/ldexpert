@@ -265,12 +265,33 @@ class SchoolAccountViewServiceTest extends TestCase
         $summary = $this->service->getSummary($school);
 
         $this->assertEqualsWithDelta(175.00, $summary['total_charges'], 0.001);
-        $this->assertEqualsWithDelta(50.00, $summary['total_payments'], 0.001);
+        $this->assertEqualsWithDelta(50.00, $summary['total_paid'], 0.001);
         $this->assertEqualsWithDelta(20.00, $summary['total_credit_notes'], 0.001);
         $this->assertEqualsWithDelta(10.00, $summary['total_refunds'], 0.001);
+        $this->assertEqualsWithDelta(0.00, $summary['total_invoiced'], 0.001);
         // Net: +175 (charges) -50 (payment) -20 (credit) +10 (refund) = 115.
         $this->assertEqualsWithDelta(115.00, $summary['net_balance'], 0.001);
-        $this->assertSame(5, $summary['transaction_count']);
+    }
+
+    public function test_get_summary_includes_total_invoiced_from_invoice_generated_entries(): void
+    {
+        $school = School::factory()->create();
+
+        $this->ledger->createEntry(
+            ledgerableType: School::class,
+            ledgerableId: $school->id,
+            type: TransactionType::INVOICE_GENERATED,
+            amount: 600.00,
+            recordedAt: now()->subDays(2),
+            referenceType: null,
+            referenceId: null,
+            notes: null,
+            recordedById: $this->admin->id,
+        );
+
+        $summary = $this->service->getSummary($school);
+
+        $this->assertEqualsWithDelta(600.00, $summary['total_invoiced'], 0.001);
     }
 
     public function test_window_excludes_rows_outside_range_but_includes_them_in_opening_balance(): void
