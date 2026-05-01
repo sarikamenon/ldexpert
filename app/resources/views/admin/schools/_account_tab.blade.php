@@ -31,41 +31,37 @@
     ];
 @endphp
 
-<div class="space-y-6">
-    {{-- Balance card + summary strip --}}
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        <x-ui::card class="p-6 lg:col-span-1">
-            <p class="text-xs font-medium text-foreground/70">Current Balance</p>
-            <p class="mt-1 text-2xl font-semibold {{ $balanceColor }} whitespace-nowrap">
-                ${{ number_format(abs($netBalance), 2) }}
-                @if ($balanceSuffix !== '')
-                    <span class="text-sm font-medium text-foreground/60">{{ $balanceSuffix }}</span>
-                @endif
-            </p>
-            <p class="mt-2 text-xs text-foreground/60">
-                Computed from approved billable lessons plus payments, credit notes, and refunds.
-                Will not match the canonical ledger balance.
-            </p>
-        </x-ui::card>
-
-        <x-ui::card class="p-6 lg:col-span-3">
-            <p class="text-xs font-medium text-foreground/70 mb-3">All-time totals</p>
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-                @foreach ($summaryItems as $item)
-                    <div>
-                        <p class="text-xs text-foreground/60">{{ $item['label'] }}</p>
-                        <p class="mt-1 text-lg font-semibold {{ $item['value_class'] }} whitespace-nowrap">
-                            {{ $item['value'] }}
-                        </p>
-                    </div>
-                @endforeach
+<div class="space-y-4">
+    {{-- Single inline summary strip: balance + all-time totals --}}
+    <x-ui::card class="px-6 py-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div>
+                <div class="flex items-center gap-1">
+                    <p class="text-xs font-medium text-foreground/70">Current Balance</p>
+                    <x-ui::tooltip-icon
+                        content="Computed from approved billable lessons plus payments, credit notes, and refunds. Will not match the canonical ledger balance." />
+                </div>
+                <p class="mt-1 text-lg font-semibold {{ $balanceColor }} whitespace-nowrap">
+                    ${{ number_format(abs($netBalance), 2) }}
+                    @if ($balanceSuffix !== '')
+                        <span class="text-xs font-medium text-foreground/60">{{ $balanceSuffix }}</span>
+                    @endif
+                </p>
             </div>
-        </x-ui::card>
-    </div>
+            @foreach ($summaryItems as $item)
+                <div>
+                    <p class="text-xs text-foreground/60">{{ $item['label'] }}</p>
+                    <p class="mt-1 text-lg font-semibold {{ $item['value_class'] }} whitespace-nowrap">
+                        {{ $item['value'] }}
+                    </p>
+                </div>
+            @endforeach
+        </div>
+    </x-ui::card>
 
-    {{-- Activity table --}}
+    {{-- Transactions table --}}
     <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-sm font-semibold text-foreground">Account Activity</h3>
+        <h3 class="text-sm font-semibold text-foreground">Transactions</h3>
 
         <div class="overflow-x-auto">
             <table id="schoolAccountTable"
