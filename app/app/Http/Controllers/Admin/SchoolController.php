@@ -69,6 +69,7 @@ final class SchoolController extends Controller
         private readonly SSAService $ssaService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly PositionCatalogService $positionCatalogService,
+        private readonly SchoolAccountViewService $schoolAccountViewService,
     ) {}
 
     public function index(IndexSchoolRequest $request): View
@@ -247,9 +248,8 @@ final class SchoolController extends Controller
                 ? CarbonImmutable::parse((string) $request->query('date'))
                 : CarbonImmutable::today();
         } elseif ($activeTab === 'account') {
-            $accountService = app(SchoolAccountViewService::class);
-            [$defaultFrom, $defaultTo] = $accountService->defaultWindow($school);
-            $viewData['accountSummary'] = $accountService->getSummary($school);
+            [$defaultFrom, $defaultTo] = $this->schoolAccountViewService->defaultWindow($school);
+            $viewData['accountSummary'] = $this->schoolAccountViewService->getSummary($school);
             $viewData['accountDefaultFrom'] = $defaultFrom->format('Y-m-d');
             $viewData['accountDefaultTo'] = $defaultTo->format('Y-m-d');
             $viewData['datatableUrl'] = route('admin.schools.account.data', ['school' => $school]);
@@ -269,9 +269,8 @@ final class SchoolController extends Controller
         }
 
         $params = DataTablesRequest::fromRequest($request, []);
-        $accountService = app(SchoolAccountViewService::class);
 
-        [$defaultFrom, $defaultTo] = $accountService->defaultWindow($school);
+        [$defaultFrom, $defaultTo] = $this->schoolAccountViewService->defaultWindow($school);
         // Parse the date inputs in the school's timezone so "May 1" means
         // "May 1 in the school's frame of reference," not May 1 UTC.
         $tz = $school->timezone ?: 'UTC';
@@ -283,7 +282,7 @@ final class SchoolController extends Controller
             : $defaultTo;
 
         try {
-            $rows = $accountService->getTransactions($school, $from, $to);
+            $rows = $this->schoolAccountViewService->getTransactions($school, $from, $to);
         } catch (\Throwable $e) {
             Log::error('Failed to build school account view', [
                 'school_id' => $school->id,

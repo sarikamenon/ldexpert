@@ -1,31 +1,33 @@
 @php
-    $netBalance = (float) ($accountSummary['net_balance'] ?? 0.0);
+    use App\Support\Currency;
+
+    $netBalance = (float) $accountSummary['net_balance'];
     $balanceColor = $netBalance > 0 ? 'text-danger' : ($netBalance < 0 ? 'text-success' : 'text-foreground');
     $balanceSuffix = $netBalance > 0 ? 'DR' : ($netBalance < 0 ? 'CR' : '');
     $summaryItems = [
         [
             'label' => 'Charges',
-            'value' => '$' . number_format((float) ($accountSummary['total_charges'] ?? 0), 2),
+            'value' => Currency::format((float) $accountSummary['total_charges']),
             'value_class' => 'text-danger',
         ],
         [
             'label' => 'Payments',
-            'value' => '$' . number_format((float) ($accountSummary['total_payments'] ?? 0), 2),
+            'value' => Currency::format((float) $accountSummary['total_payments']),
             'value_class' => 'text-success',
         ],
         [
             'label' => 'Credit Notes',
-            'value' => '$' . number_format((float) ($accountSummary['total_credit_notes'] ?? 0), 2),
+            'value' => Currency::format((float) $accountSummary['total_credit_notes']),
             'value_class' => 'text-success',
         ],
         [
             'label' => 'Refunds',
-            'value' => '$' . number_format((float) ($accountSummary['total_refunds'] ?? 0), 2),
+            'value' => Currency::format((float) $accountSummary['total_refunds']),
             'value_class' => 'text-danger',
         ],
         [
             'label' => 'Transactions',
-            'value' => (string) ($accountSummary['transaction_count'] ?? 0),
+            'value' => (string) $accountSummary['transaction_count'],
             'value_class' => 'text-foreground',
         ],
     ];
@@ -42,7 +44,7 @@
                         content="Computed from approved billable lessons plus payments, credit notes, and refunds. Will not match the canonical ledger balance." />
                 </div>
                 <p class="mt-1 text-lg font-semibold {{ $balanceColor }} whitespace-nowrap">
-                    ${{ number_format(abs($netBalance), 2) }}
+                    {{ Currency::formatAbs($netBalance) }}
                     @if ($balanceSuffix !== '')
                         <span class="text-xs font-medium text-foreground/60">{{ $balanceSuffix }}</span>
                     @endif

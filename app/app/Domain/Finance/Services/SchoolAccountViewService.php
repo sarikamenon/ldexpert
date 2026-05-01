@@ -64,6 +64,7 @@ class SchoolAccountViewService
         $sortedAsc = $merged
             ->sortBy([
                 ['sort_key', 'asc'],
+                ['source_type', 'asc'],
                 ['source_id', 'asc'],
             ])
             ->values();
@@ -80,6 +81,7 @@ class SchoolAccountViewService
         $result = $withBalance
             ->sortBy([
                 ['sort_key', 'desc'],
+                ['source_type', 'desc'],
                 ['source_id', 'desc'],
             ])
             ->values();
@@ -148,10 +150,9 @@ class SchoolAccountViewService
     }
 
     /**
-     * Convert the user-supplied local date range into the UTC half-open
-     * interval used for SQL filtering. `to` is inclusive of the whole local
-     * day, so we extend it to the end of the day in the school's timezone
-     * before converting.
+     * Convert the user-supplied local date range into the UTC interval used
+     * for SQL filtering. Uses the start-of-day for `from` and end-of-day for
+     * `to`, both resolved in the school's timezone via UserTimezoneService.
      *
      * @return array{0: CarbonImmutable, 1: CarbonImmutable}
      */
@@ -213,7 +214,7 @@ class SchoolAccountViewService
     {
         return SessionLog::query()
             ->where('school_id', $school->id)
-            ->where('status', SessionLogStatus::APPROVED->value)
+            ->withStatuses([SessionLogStatus::APPROVED])
             ->where('is_billable_school', true);
     }
 
@@ -247,7 +248,7 @@ class SchoolAccountViewService
             ->whereBetween('start_time', [$fromUtc, $toUtc])
             ->with(['student', 'therapist', 'service'])
             ->get()
-            ->map(fn (SessionLog $log): array => $this->mapSessionLog($log, $tz));
+            ->map(fn (SessionLog $log): array => SchoolAccountRowMapper::mapSessionLog($log, $tz));
     }
 
     /**
@@ -264,116 +265,6 @@ class SchoolAccountViewService
             ->whereBetween('recorded_at', [$fromUtc, $toUtc])
             ->with(['reference', 'recordedBy'])
             ->get()
-            ->map(fn (LedgerEntry $entry): array => $this->mapLedgerEntry($entry, $tz));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mapSessionLog(SessionLog $log, string $tz): array
-    {
-        $amount = (float) $log->school_invoice_amount;
-
-        // Display the calendar date and wall-clock time both derived from
-        // start_time converted to the school's timezone, so they always agree.
-        // Deriving the date from session_date instead would shift the whole
-        // day when TZ-converted (a session at 6 AM NYC has session_date in UTC
-        // = same day, but session_date midnight UTC → NYC = previous day).
-        $startInSchoolTz = $log->start_time->copy()->setTimezone($tz);
-        $startTime = $startInSchoolTz->format('g:i A');
-        $duration = (int) $log->duration_minutes;
-
-        return [
-            'date' => CarbonImmutable::instance($startInSchoolTz),
-            'sort_key' => $this->buildSessionSortKey($log),
-            'type' => 'charge',
-            'type_label' => 'Charge',
-            'student_id' => $log->student_id,
-            'student_name' => $log->student?->name,
-            'service_name' => $log->service?->name,
-            'therapist_name' => $log->therapist?->name,
-            'session_time' => $startTime,
-            'session_duration_minutes' => $duration,
-            'schedule_id' => $log->schedule_id,
-            'description_primary' => $this->buildSessionPrimaryLine($log),
-            'description_secondary' => $startTime.' · '.$duration.' min',
-            'debit' => $amount,
-            'credit' => null,
-            'reference' => null,
-            'reference_type' => null,
-            'reference_id' => null,
-            'notes' => null,
-            'recorded_by' => null,
-            'signed_amount' => $amount,
-            'source_id' => 'session:'.$log->id,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function mapLedgerEntry(LedgerEntry $entry, string $tz): array
-    {
-        $type = $entry->transaction_type;
-        $amount = (float) $entry->amount;
-        $isDebit = $type === TransactionType::REFUND;
-        $notes = $entry->notes;
-
-        // recorded_at is stored in UTC; convert to the school's timezone so the
-        // displayed calendar date matches what users in the school's frame of
-        // reference experienced.
-        $recordedInSchoolTz = CarbonImmutable::instance($entry->recorded_at)->setTimezone($tz);
-
-        return [
-            'date' => $recordedInSchoolTz,
-            // Sort key uses the UTC instant so charges and adjustments share a
-            // common timeline. Display TZ doesn't affect ordering.
-            'sort_key' => $entry->recorded_at->copy()->setTimezone('UTC')->format('Y-m-d H:i:s'),
-            'type' => $type->value,
-            'type_label' => $type->label(),
-            'student_id' => null,
-            'student_name' => null,
-            'service_name' => null,
-            'therapist_name' => null,
-            'session_time' => null,
-            'session_duration_minutes' => null,
-            'schedule_id' => null,
-            'description_primary' => $notes !== null && $notes !== '' ? $notes : $type->label(),
-            'description_secondary' => null,
-            'debit' => $isDebit ? $amount : null,
-            'credit' => $isDebit ? null : $amount,
-            'reference' => $entry->reference,
-            'reference_type' => $entry->reference_type,
-            'reference_id' => $entry->reference_id,
-            'notes' => $notes,
-            'recorded_by' => $entry->recordedBy?->name,
-            'signed_amount' => $amount * $type->balanceDelta(),
-            'source_id' => 'ledger:'.$entry->id,
-        ];
-    }
-
-    private function buildSessionSortKey(SessionLog $log): string
-    {
-        // Sort key uses UTC start_time so charges and adjustments share a
-        // common timeline regardless of which TZ each is displayed in.
-        return $log->start_time->format('Y-m-d H:i:s');
-    }
-
-    private function buildSessionPrimaryLine(SessionLog $log): string
-    {
-        $service = $log->service?->name;
-        $therapist = $log->therapist?->name;
-
-        if ($service !== null && $service !== '' && $therapist !== null) {
-            return $service.' · '.$therapist;
-        }
-        if ($service !== null && $service !== '') {
-            return $service;
-        }
-        if ($therapist !== null) {
-            return $therapist;
-        }
-
-        return 'Session';
+            ->map(fn (LedgerEntry $entry): array => SchoolAccountRowMapper::mapLedgerEntry($entry, $tz));
     }
 }

@@ -99,6 +99,46 @@ it('forbids access to the account data endpoint for a non-private school', funct
         ->assertForbidden();
 });
 
+it('honors filter_date_from and filter_date_to when querying account data', function () {
+    $admin = User::factory()->admin()->create();
+    $school = School::factory()->create(['is_private_student' => true, 'timezone' => 'America/New_York']);
+    $therapist = User::factory()->therapist()->create();
+
+    // Old session — outside the requested window.
+    SessionLog::factory()->create([
+        'school_id' => $school->id,
+        'therapist_id' => $therapist->id,
+        'status' => SessionLogStatus::APPROVED->value,
+        'is_billable_school' => true,
+        'school_invoice_amount' => 100.00,
+        'session_date' => now()->subDays(45)->format('Y-m-d'),
+        'start_time' => now()->subDays(45),
+    ]);
+
+    // Recent session — inside the requested window.
+    SessionLog::factory()->create([
+        'school_id' => $school->id,
+        'therapist_id' => $therapist->id,
+        'status' => SessionLogStatus::APPROVED->value,
+        'is_billable_school' => true,
+        'school_invoice_amount' => 75.00,
+        'session_date' => now()->subDays(3)->format('Y-m-d'),
+        'start_time' => now()->subDays(3),
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.schools.account.data', ['school' => $school]), [
+            'draw' => 1,
+            'start' => 0,
+            'length' => 25,
+            'filter_date_from' => now()->subDays(7)->format('Y-m-d'),
+            'filter_date_to' => now()->format('Y-m-d'),
+        ]);
+
+    $response->assertOk();
+    expect($response->json('recordsTotal'))->toBe(1);
+});
+
 it('forbids non-admin from posting to the account data endpoint', function () {
     $therapist = User::factory()->therapist()->create();
     $school = School::factory()->create(['is_private_student' => true]);
