@@ -262,10 +262,18 @@ final class StudentController extends Controller
                 ->all();
 
             $totalOutcomeHours = (float) array_sum(array_column($outcomes, 'hours'));
+            $totalThoMinutes = (int) $ssasForMetrics->sum('tho_minutes');
+            $servedMinutes = (int) $ssasForMetrics->sum('served_minutes');
+            $totalThoHours = round($totalThoMinutes / 60, 2);
+            $servedHours = round($servedMinutes / 60, 2);
 
             $viewData['chartData'] = [
                 'outcomes' => $outcomes,
                 'total_hours' => round($totalOutcomeHours, 2),
+                'total_tho_hours' => $totalThoHours,
+                'served_hours' => $servedHours,
+                'remaining_hours' => round(max(0, $totalThoHours - $servedHours), 2),
+                'progress' => $totalThoMinutes > 0 ? round(($servedMinutes / $totalThoMinutes) * 100, 1) : 0,
             ];
 
             $viewData['metrics'] = [

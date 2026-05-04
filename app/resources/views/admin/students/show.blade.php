@@ -56,9 +56,26 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-ui::card class="p-6 lg:col-span-1">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-foreground">Session Outcomes</h3>
-                    <span class="text-sm text-foreground/70">{{ number_format($chartData['total_hours'] ?? 0, 2) }} hrs</span>
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
+                        <p class="text-xs text-foreground/60 mt-0.5">Served hours by session outcome</p>
+                    </div>
+                    <span class="text-sm text-foreground/70">{{ $chartData['progress'] ?? 0 }}%</span>
+                </div>
+                <div class="flex items-stretch gap-2 mb-4">
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Total THO</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['total_tho_hours'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Served</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['served_hours'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Remaining</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['remaining_hours'] ?? 0, 2) }}</p>
+                    </div>
                 </div>
                 @if (!empty($chartData['outcomes']))
                     <div class="relative" style="height: 260px;">

@@ -34,6 +34,9 @@ use Illuminate\Support\Facades\DB;
 final class EloquentSessionLogRepository implements SessionLogRepositoryInterface
 {
     /**
+     * Approved session log THO minutes grouped by outcome for a student.
+     * Aligns with SSA.served_minutes (only counts hours that are billed against THO).
+     *
      * @return array<string, int>
      */
     public function getOutcomeMinutesForStudent(int $studentId): array
@@ -41,19 +44,17 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         /** @var Collection<int, SessionLog> $logs */
         $logs = SessionLog::query()
             ->where('student_id', $studentId)
-            ->withStatuses([SessionLogStatus::SUBMITTED, SessionLogStatus::APPROVED])
+            ->withStatuses([SessionLogStatus::APPROVED])
             ->whereNotNull('outcome')
-            ->get(['outcome', 'tho_minutes', 'duration_minutes']);
+            ->where('tho_minutes', '>', 0)
+            ->get(['outcome', 'tho_minutes']);
 
         $totals = [];
         foreach ($logs as $log) {
             if ($log->outcome === null) {
                 continue;
             }
-            $minutes = $log->tho_minutes > 0
-                ? (int) $log->tho_minutes
-                : (int) $log->duration_minutes;
-            $totals[$log->outcome->value] = ($totals[$log->outcome->value] ?? 0) + $minutes;
+            $totals[$log->outcome->value] = ($totals[$log->outcome->value] ?? 0) + (int) $log->tho_minutes;
         }
 
         return $totals;
