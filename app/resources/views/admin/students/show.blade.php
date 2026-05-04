@@ -56,24 +56,49 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-ui::card class="p-6 lg:col-span-1">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
+                        <p class="text-xs text-foreground/60 mt-0.5">THO hours by session outcome</p>
+                    </div>
                     <span class="text-sm text-foreground/70">{{ $chartData['progress'] ?? 0 }}%</span>
                 </div>
-                <div class="relative" style="height: 260px;">
-                    <canvas id="studentProgressChart" data-served="{{ $chartData['served'] ?? 0 }}"
-                        data-tho="{{ ($chartData['served'] ?? 0) + ($chartData['remaining'] ?? 0) }}"></canvas>
-                </div>
-                <div class="mt-4 space-y-2">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Served Hours</span>
-                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0, 2) }}</span>
+                <div class="flex items-stretch gap-2 mb-4">
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Total THO</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['total_tho_hours'] ?? 0, 2) }}</p>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Remaining Hours</span>
-                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0, 2) }}</span>
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Served</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['served_hours'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Remaining</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['remaining_hours'] ?? 0, 2) }}</p>
                     </div>
                 </div>
+                @if (!empty($chartData['outcomes']))
+                    <div class="relative" style="height: 260px;">
+                        <canvas id="studentProgressChart"
+                            data-outcomes='@json($chartData['outcomes'])'></canvas>
+                    </div>
+                    <div class="mt-4 space-y-2">
+                        @foreach ($chartData['outcomes'] as $outcome)
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-foreground/70">
+                                    <span class="js-outcome-swatch inline-block h-2.5 w-2.5 rounded-full bg-foreground/20"
+                                        data-color-key="{{ $outcome['color_key'] }}"></span>
+                                    {{ $outcome['label'] }}
+                                </span>
+                                <span class="font-semibold">{{ number_format($outcome['hours'], 2) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="flex items-center justify-center text-sm text-foreground/60" style="height: 260px;">
+                        No session logs yet.
+                    </div>
+                @endif
             </x-ui::card>
 
             <x-ui::card class="p-6 space-y-3 lg:col-span-2">

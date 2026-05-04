@@ -18,6 +18,7 @@ use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Student\Services\StudentImportListService;
 use App\Domain\Student\Services\StudentImportService;
 use App\Domain\Student\Services\StudentService;
+use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\ChangeStudentStatusDTO;
@@ -28,6 +29,7 @@ use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
+use App\Enums\SessionOutcome;
 use App\Enums\SSAStatus;
 use App\Enums\StudentImportType;
 use App\Enums\UserStatus;
@@ -70,6 +72,7 @@ final class StudentController extends Controller
         private readonly StudentDocumentService $documentService,
         private readonly PositionCatalogService $positionCatalogService,
         private readonly StudentImportListService $importListService,
+        private readonly SessionLogRepositoryInterface $sessionLogRepository,
     ) {}
 
     /** Column index => allowed order column for student imports list. */
@@ -235,16 +238,35 @@ final class StudentController extends Controller
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
             $ssasForMetrics = $this->ssaService->getSSAsForStudentMetrics($student->id);
 
-            $totalTho = (int) $ssasForMetrics->sum('tho_minutes');
-            $served = (int) $ssasForMetrics->sum('served_minutes');
+            $outcomeMinutes = $this->sessionLogRepository->getOutcomeMinutesForStudent($student->id);
+            $outcomes = collect(SessionOutcome::cases())
+                ->map(static function (SessionOutcome $outcome) use ($outcomeMinutes): array {
+                    $minutes = (int) ($outcomeMinutes[$outcome->value] ?? 0);
 
-            $totalThoHours = round($totalTho / 60, 2);
-            $servedHours = round($served / 60, 2);
+                    return [
+                        'value' => $outcome->value,
+                        'label' => $outcome->label(),
+                        'hours' => round($minutes / 60, 2),
+                        'color_key' => $outcome->chartColorKey(),
+                    ];
+                })
+                ->filter(static fn (array $row): bool => $row['hours'] > 0)
+                ->values()
+                ->all();
+
+            $totalOutcomeHours = (float) array_sum(array_column($outcomes, 'hours'));
+            $totalThoMinutes = (int) $ssasForMetrics->sum('tho_minutes');
+            $servedMinutes = (int) $ssasForMetrics->sum('served_minutes');
+            $totalThoHours = round($totalThoMinutes / 60, 2);
+            $servedHours = round($servedMinutes / 60, 2);
 
             $viewData['chartData'] = [
-                'served' => $servedHours,
-                'remaining' => round(max(0, $totalThoHours - $servedHours), 2),
-                'progress' => $totalTho > 0 ? round(($served / $totalTho) * 100, 1) : 0,
+                'outcomes' => $outcomes,
+                'total_hours' => round($totalOutcomeHours, 2),
+                'total_tho_hours' => $totalThoHours,
+                'served_hours' => $servedHours,
+                'remaining_hours' => round(max(0, $totalThoHours - $servedHours), 2),
+                'progress' => $totalThoMinutes > 0 ? round(($servedMinutes / $totalThoMinutes) * 100, 1) : 0,
             ];
 
             $viewData['metrics'] = [

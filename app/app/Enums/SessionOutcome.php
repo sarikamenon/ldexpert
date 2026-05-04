@@ -80,4 +80,19 @@ enum SessionOutcome: string
             self::NON_BILLABLE_CANCELLATION_PROVIDER => false,
         };
     }
+
+    /**
+     * Semantic chart color key. Resolved to a hex by `novaChartColors`
+     * in `resources/js/common/chart-colors.js` — keeps palette centralized.
+     */
+    public function chartColorKey(): string
+    {
+        return match ($this) {
+            self::SERVICES_ADMINISTERED => 'secondary',
+            self::NO_SHOW => 'warning',
+            self::BILLABLE_CANCELLATION => 'primary',
+            self::NON_BILLABLE_CANCELLATION_CLIENT => 'muted',
+            self::NON_BILLABLE_CANCELLATION_PROVIDER => 'mutedLight',
+        };
+    }
 }

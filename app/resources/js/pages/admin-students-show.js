@@ -1,4 +1,5 @@
 import { setupStatusChanges } from '../common/status-change';
+import { resolveChartColor } from '../common/chart-colors';
 
 function initStudentProgressChart() {
     const canvas = document.getElementById('studentProgressChart');
@@ -6,17 +7,24 @@ function initStudentProgressChart() {
         return;
     }
 
-    const served = parseFloat(canvas.dataset.served || '0');
-    const tho = parseFloat(canvas.dataset.tho || '0');
-    const remaining = Math.round(Math.max(0, tho - served) * 100) / 100;
+    let outcomes = [];
+    try {
+        outcomes = JSON.parse(canvas.dataset.outcomes || '[]');
+    } catch {
+        outcomes = [];
+    }
+
+    if (!outcomes.length) {
+        return;
+    }
 
     new Chart(canvas, {
         type: 'doughnut',
         data: {
-            labels: ['Served Hours', 'Remaining Hours'],
+            labels: outcomes.map((o) => o.label),
             datasets: [{
-                data: [served, remaining],
-                backgroundColor: ['#14b8a6', '#e5e7eb'],
+                data: outcomes.map((o) => o.hours),
+                backgroundColor: outcomes.map((o) => resolveChartColor(o.color_key)),
                 borderWidth: 2,
                 borderColor: '#ffffff',
             }],
@@ -25,15 +33,7 @@ function initStudentProgressChart() {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 10,
-                        font: {
-                            size: 12,
-                        },
-                    },
-                },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function (context) {
@@ -50,7 +50,18 @@ function initStudentProgressChart() {
     });
 }
 
+function paintOutcomeSwatches() {
+    document.querySelectorAll('.js-outcome-swatch').forEach((el) => {
+        const key = el.dataset.colorKey;
+        if (!key) {
+            return;
+        }
+        el.style.backgroundColor = resolveChartColor(key);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    paintOutcomeSwatches();
     initStudentProgressChart();
     setupStatusChanges('student', '.change-status-btn', { idAttribute: 'student-id' });
 });

@@ -34,6 +34,24 @@ use Illuminate\Support\Facades\DB;
 final class EloquentSessionLogRepository implements SessionLogRepositoryInterface
 {
     /**
+     * Approved session log THO minutes grouped by outcome for a student.
+     *
+     * @return array<string, int>
+     */
+    public function getOutcomeMinutesForStudent(int $studentId): array
+    {
+        return SessionLog::query()
+            ->forStudentId($studentId)
+            ->withStatuses([SessionLogStatus::APPROVED])
+            ->withTrackedThoMinutes()
+            ->get(['outcome', 'tho_minutes'])
+            ->reject(static fn (SessionLog $log): bool => $log->outcome === null)
+            ->groupBy(static fn (SessionLog $log): string => $log->outcome->value) // @phpstan-ignore property.nonObject
+            ->map(static fn ($group): int => (int) $group->sum('tho_minutes'))
+            ->all();
+    }
+
+    /**
      * @return array{minutes: int, sessions: int}
      */
     public function getSubmittedSummaryForWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): array

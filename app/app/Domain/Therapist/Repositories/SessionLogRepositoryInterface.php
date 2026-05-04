@@ -81,4 +81,11 @@ interface SessionLogRepositoryInterface
      * @return array{minutes: int, sessions: int}
      */
     public function getSubmittedSummaryForWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): array;
+
+    /**
+     * Submitted/approved session log minutes grouped by outcome for a student.
+     *
+     * @return array<string, int> outcome value => total minutes
+     */
+    public function getOutcomeMinutesForStudent(int $studentId): array;
 }
