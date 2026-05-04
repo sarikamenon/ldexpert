@@ -46,7 +46,7 @@ $(function () {
             $idNumberHelp.text('Optional for private students/families. Auto-generated if left blank.');
         } else {
             $idNumberLabel.text('Student ID *');
-            $idNumberHelp.text('Required. Unique student identifier from the school.');
+            $idNumberHelp.text('Required. Unique student identifier from the school or family.');
         }
     }
 

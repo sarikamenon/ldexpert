@@ -11,6 +11,8 @@ use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateScheduleDTO;
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\OverlapCheckDTO;
+use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
@@ -124,7 +126,8 @@ final class ScheduleService
                 throw new \InvalidArgumentException('Therapist does not have access to one or more selected students.');
             }
 
-            if (! $this->repository->validateStudentsShareService($therapist, $dto->studentIds, $dto->serviceId)) {
+            $service = $this->serviceRepository->findOrFail($dto->serviceId);
+            if ($service->is_direct_service && ! $this->repository->validateStudentsShareService($therapist, $dto->studentIds, $dto->serviceId)) {
                 throw new \InvalidArgumentException('Selected students do not share this service via an active SSA.');
             }
 
@@ -133,16 +136,22 @@ final class ScheduleService
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($dto->durationMinutes);
 
-            // Fetch students and service before overlap checks (tests expect these to be called)
+            // Fetch students before overlap checks (tests expect these to be called)
             $students = $this->userRepository->findByIds($dto->studentIds);
-            $service = $this->serviceRepository->findOrFail($dto->serviceId);
+
+            $overlapCheck = new OverlapCheckDTO(
+                $utcStart->toDateString(),
+                $utcStart->toTimeString(),
+                $utcEnd->toTimeString(),
+            );
+            $noExclusions = OverlapExclusionsDTO::none();
 
             // Validate Therapist Overlap
-            $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, true);
+            $this->validateOverlap($therapist, $overlapCheck, $noExclusions);
 
             // Validate Student Overlap
             foreach ($students as $student) {
-                $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), null, false);
+                $this->validateOverlap($student, $overlapCheck, $noExclusions);
             }
             $isGroup = $dto->isGroup || $service->is_group_service || count($dto->studentIds) > 1;
 
@@ -278,24 +287,33 @@ final class ScheduleService
             $utcStart = $this->timezoneService->parseUserLocalToUtc($localStartStr, $therapist);
             $utcEnd = $utcStart->copy()->addMinutes($durationMinutes);
 
-            // Validate Therapist Overlap (exclude current schedule)
-            $this->validateOverlap($therapist, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId, true);
+            $incomingRecurrenceType = $dto->recurrenceType ?? $schedule->recurrence_type ?? RecurrenceType::NONE;
+            $incomingEndDate = $dto->recurrenceEndDate ?? $schedule->recurrence_end_date?->format('Y-m-d');
 
-            // Validate Student Overlap (need to know which students are involved)
-            // Use existing student_id for single, or if group?
-            // UpdateScheduleDTO doesn't have studentIds, it updates a single schedule.
-            // If it's a group schedule, updates might affect others if we propagated changes, but here we update ONE schedule unless logic differs.
-            // However, `updateSchedule` in this service seems to update one schedule record.
-            // If it's a group, typically we update all in the batch?
-            // The existing code:
-            /*
-            $updated = $this->repository->update($schedule, $data);
-            // Regenerate occurrences for recurring schedules...
-            */
-            // If it updates one schedule, we check overlap for that schedule's student.
+            $recurrenceChanged = $dto->recurrenceType !== null
+                && $dto->recurrenceType !== $schedule->recurrence_type;
+            $endDateChanged = $dto->recurrenceEndDate !== null
+                && $dto->recurrenceEndDate !== $schedule->recurrence_end_date?->format('Y-m-d');
+            $occurrenceDatesChanged = $dto->occurrenceDates !== null;
+            $recurrenceSettingsChanged = $recurrenceChanged || $endDateChanged || $occurrenceDatesChanged;
+
+            // Validate overlap (exclude current schedule and its entire batch so
+            // siblings in the same recurring series don't false-positive against the new time).
+            $overlapCheck = new OverlapCheckDTO(
+                $utcStart->toDateString(),
+                $utcStart->toTimeString(),
+                $utcEnd->toTimeString(),
+            );
+            $exclusions = new OverlapExclusionsDTO(
+                scheduleId: $scheduleId,
+                batchNumber: $schedule->recurring_batch_number,
+            );
+
+            $this->validateOverlap($therapist, $overlapCheck, $exclusions);
+
             $student = $this->userRepository->findById($schedule->student_id);
             if ($student) {
-                $this->validateOverlap($student, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $scheduleId, false);
+                $this->validateOverlap($student, $overlapCheck, $exclusions);
             }
 
             // Update data with UTC values
@@ -303,53 +321,62 @@ final class ScheduleService
             $data['start_time'] = $utcStart->toTimeString();
             $data['end_time'] = $utcEnd->toTimeString();
 
-            // If recurrence type or end date changed, regenerate occurrences
-            $recurrenceTypeChanged = array_key_exists('recurrence_type', $data)
-                && $schedule->recurrence_type?->value !== $data['recurrence_type'];
-            $recurrenceEndChanged = array_key_exists('recurrence_end_date', $data)
-                && $schedule->recurrence_end_date?->format('Y-m-d') !== $data['recurrence_end_date'];
+            // When recurrence settings change, delete all unbilled future occurrences from
+            // this schedule's date forward (preserving past/billed sessions in the series).
+            if ($recurrenceSettingsChanged && $schedule->recurring_batch_number) {
+                $this->repository->getUnbilledFutureRecurringOccurrencesByBatch(
+                    $schedule->recurring_batch_number,
+                    $schedule->schedule_date->format('Y-m-d'),
+                )->each(function (Schedule $occurrence) use ($schedule): void {
+                    if ($occurrence->id !== $schedule->id) {
+                        $this->repository->delete($occurrence);
+                    }
+                });
+            }
 
-            if ($recurrenceTypeChanged || $recurrenceEndChanged) {
-                // Remove existing occurrences (but keep current schedule as parent)
-                if ($schedule->recurring_batch_number) {
-                    $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                        ->each(function (Schedule $occurrence) use ($schedule): void {
-                            if ($occurrence->id !== $schedule->id) {
-                                $this->repository->delete($occurrence);
-                            }
-                        });
-                }
-
-                if (! isset($data['recurrence_type'])) {
-                    $data['recurrence_type'] = RecurrenceType::NONE->value;
-                }
-
-                if ($data['recurrence_type'] !== RecurrenceType::NONE->value) {
-                    $data['recurring_batch_number'] = $this->repository->generateBatchNumber('recurring');
-                } else {
-                    $data['recurring_batch_number'] = null;
-                    $data['recurrence_end_date'] = null;
-                }
+            // Switching to NONE removes recurring fields and clears parent linkage.
+            if ($incomingRecurrenceType === RecurrenceType::NONE) {
+                $data['recurrence_type'] = RecurrenceType::NONE->value;
+                $data['recurrence_end_date'] = null;
+                $data['recurring_batch_number'] = null;
+                $data['parent_schedule_id'] = null;
+            } elseif ($recurrenceSettingsChanged) {
+                // New recurrence settings: this schedule becomes the new series anchor.
+                $data['recurrence_type'] = $incomingRecurrenceType->value;
+                $data['recurrence_end_date'] = $incomingEndDate;
+                $data['recurring_batch_number'] = $this->repository->generateBatchNumber('recurring');
+                $data['parent_schedule_id'] = null;
             }
 
             $updated = $this->repository->update($schedule, $data);
 
-            // Regenerate occurrences for recurring schedules
-            if ($updated->isRecurring()) {
+            // Regenerate future occurrences when recurrence settings changed.
+            if ($recurrenceSettingsChanged && $updated->isRecurring()) {
                 $studentIds = [$updated->student_id];
                 if ($updated->isGroup()) {
-                    $groupSchedules = $this->repository
+                    $groupStudentIds = $this->repository
                         ->getGroupSchedulesByBatch($updated->group_batch_number ?? '')
                         ->pluck('student_id')
                         ->unique()
                         ->all();
 
-                    if ($groupSchedules !== []) {
-                        $studentIds = $groupSchedules;
+                    if ($groupStudentIds !== []) {
+                        $studentIds = $groupStudentIds;
                     }
                 }
 
-                $this->generateRecurringOccurrences($updated, $studentIds, $updated->isGroup());
+                if ($dto->occurrenceDates !== null && count($dto->occurrenceDates) > 0) {
+                    $this->createOccurrencesFromDates(
+                        $updated,
+                        $dto->occurrenceDates,
+                        $updated->schedule_date->format('Y-m-d'),
+                        $studentIds,
+                        $updated->isGroup(),
+                        $therapist,
+                    );
+                } else {
+                    $this->generateRecurringOccurrences($updated, $studentIds, $updated->isGroup());
+                }
             }
 
             // Update billing status if provided
@@ -376,13 +403,31 @@ final class ScheduleService
                 throw new CannotDeleteBilledScheduleException;
             }
 
-            // If this is the parent of a recurring series, delete all in the batch
-            if (! $schedule->isOccurrence() && $schedule->isRecurring() && $schedule->recurring_batch_number) {
-                $this->repository->getRecurringOccurrencesByBatch($schedule->recurring_batch_number)
-                    ->each(fn (Schedule $occurrence) => $this->repository->delete($occurrence));
+            $this->repository->delete($schedule);
+        });
+    }
+
+    public function deleteFutureRecurringSchedules(User $therapist, int $scheduleId): int
+    {
+        return DB::transaction(function () use ($therapist, $scheduleId): int {
+            $schedule = $this->repository->findForTherapist($therapist, $scheduleId);
+
+            if (! $schedule || ! $schedule->recurring_batch_number) {
+                return 0;
             }
 
-            $this->repository->delete($schedule);
+            $futureSchedules = $this->repository->getUnbilledFutureRecurringOccurrencesByBatch(
+                $schedule->recurring_batch_number,
+                $schedule->schedule_date->format('Y-m-d'),
+            );
+
+            if ($futureSchedules->isEmpty()) {
+                return 0;
+            }
+
+            $futureSchedules->each(fn (Schedule $s) => $this->repository->delete($s));
+
+            return $futureSchedules->count();
         });
     }
 
@@ -405,7 +450,10 @@ final class ScheduleService
      */
     public function generateRecurringOccurrences(Schedule $parentSchedule, array $studentIds, bool $isGroup): Collection
     {
-        if (! $parentSchedule->recurrence_type || $parentSchedule->recurrence_type === RecurrenceType::NONE || ! $parentSchedule->recurrence_end_date) {
+        if (! $parentSchedule->recurrence_type
+            || $parentSchedule->recurrence_type === RecurrenceType::NONE
+            || $parentSchedule->recurrence_type === RecurrenceType::CUSTOM_WEEKLY
+            || ! $parentSchedule->recurrence_end_date) {
             return collect([]);
         }
 
@@ -417,25 +465,19 @@ final class ScheduleService
 
         $occurrences = collect();
 
-        // Parent stores UTC. Convert to Local for calculation.
-        // Assuming end date is end of the recurrence period (date only)
+        // Parent stores UTC. Convert to therapist-local for calculation so
+        // recurrence walks happen in the user's wall-clock time.
         $endDate = $parentSchedule->recurrence_end_date;
 
-        $scheduleDate = $parentSchedule->schedule_date->format('Y-m-d');
-        $startTime = $parentSchedule->start_time->format('H:i:s');
-        $endTime = $parentSchedule->end_time->format('H:i:s');
+        $localStart = $this->timezoneService->toUserTimezone($parentSchedule->startUtc(), $therapist);
+        $localEnd = $this->timezoneService->toUserTimezone($parentSchedule->endUtc(), $therapist);
 
-        $utcStart = Carbon::parse($scheduleDate.' '.$startTime);
-        $utcEnd = Carbon::parse($scheduleDate.' '.$endTime);
-        if ($utcEnd->lt($utcStart)) {
-            $utcEnd->addDay();
-        }
-
-        $localStart = $this->timezoneService->toUserTimezone($utcStart, $therapist);
-        $localEnd = $this->timezoneService->toUserTimezone($utcEnd, $therapist);
-
-        $currentStart = $localStart->copy();
-        $currentEnd = $localEnd->copy();
+        // Use mutable Carbon for the recurrence walk loop below — the loop
+        // calls nextRecurrenceDate() which mutates via addWeek/addDays etc.
+        // Wall-clock values are what matter; later we re-parse them as
+        // therapist-local strings via parseUserLocalToUtc().
+        $currentStart = Carbon::parse($localStart->toDateTimeString());
+        $currentEnd = Carbon::parse($localEnd->toDateTimeString());
 
         // First occurrence is the parent; start generating from next interval
         $currentStart = $this->nextRecurrenceDate($currentStart, $recurrenceType);
@@ -446,10 +488,16 @@ final class ScheduleService
             $occurrenceUtcStart = $this->timezoneService->parseUserLocalToUtc($currentStart->toDateTimeString(), $therapist);
             $occurrenceUtcEnd = $this->timezoneService->parseUserLocalToUtc($currentEnd->toDateTimeString(), $therapist);
 
-            // Check Overlap
-            $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, true);
+            $overlapCheck = new OverlapCheckDTO(
+                $occurrenceUtcStart->toDateString(),
+                $occurrenceUtcStart->toTimeString(),
+                $occurrenceUtcEnd->toTimeString(),
+            );
+            $noExclusions = OverlapExclusionsDTO::none();
+
+            $this->validateOverlap($therapist, $overlapCheck, $noExclusions);
             foreach ($students as $student) {
-                $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, false);
+                $this->validateOverlap($student, $overlapCheck, $noExclusions);
             }
 
             $groupBatchNumber = $isGroup
@@ -501,20 +549,15 @@ final class ScheduleService
         $students = $this->userRepository->findByIds($studentIds);
         $occurrences = collect();
 
-        // Get time from parent schedule (stored as UTC)
-        $startTime = $parentSchedule->start_time->format('H:i');
-        $endTime = $parentSchedule->end_time->format('H:i');
-
-        // Format schedule date to ensure it's just a date string
-        $parentScheduleDateStr = $parentSchedule->schedule_date->format('Y-m-d');
-
-        // Parse parent schedule date/time to get duration
-        $parentUtcStart = Carbon::parse($parentScheduleDateStr.' '.$startTime);
-        $parentUtcEnd = Carbon::parse($parentScheduleDateStr.' '.$endTime);
-        if ($parentUtcEnd->lt($parentUtcStart)) {
-            $parentUtcEnd->addDay();
-        }
+        // Parent stores UTC. Convert to therapist-local so we can combine with
+        // user-local occurrence dates and reconvert to UTC per occurrence.
+        $parentUtcStart = $parentSchedule->startUtc();
+        $parentUtcEnd = $parentSchedule->endUtc();
         $durationMinutes = (int) $parentUtcStart->diffInMinutes($parentUtcEnd);
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $parentLocalStart = $parentUtcStart->setTimezone($tz);
+        $localStartTime = $parentLocalStart->format('H:i');
 
         // Filter out dates that match the parent schedule date (already created as parent schedule)
         $occurrenceDates = array_filter($occurrenceDates, function ($dateStr) use ($parentScheduleDate) {
@@ -528,17 +571,9 @@ final class ScheduleService
                 $cleanOccurrenceDate = explode(' ', $occurrenceDateStr)[0];
             }
 
-            // Ensure start time is in H:i format
-            $cleanStartTime = $startTime;
-            if (str_contains($startTime, ':')) {
-                $parts = explode(':', $startTime);
-                $cleanStartTime = $parts[0].':'.$parts[1]; // Take only H:i
-            }
-
-            // Parse local date string and combine with start time
-            $localDateTimeStr = $cleanOccurrenceDate.' '.$cleanStartTime;
-
-            // Convert to UTC for storage/validation
+            // Combine the user-local occurrence date with the user-local start
+            // time, then convert to UTC for storage.
+            $localDateTimeStr = $cleanOccurrenceDate.' '.$localStartTime;
             $occurrenceUtcStart = $this->timezoneService->parseUserLocalToUtc($localDateTimeStr, $therapist);
             $occurrenceUtcEnd = $occurrenceUtcStart->copy()->addMinutes($durationMinutes);
 
@@ -548,10 +583,16 @@ final class ScheduleService
                 throw new \InvalidArgumentException(sprintf('Occurrence date %s falls on a weekend and cannot be scheduled.', $cleanOccurrenceDate));
             }
 
-            // Check Overlap
-            $this->validateOverlap($therapist, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, true);
+            $overlapCheck = new OverlapCheckDTO(
+                $occurrenceUtcStart->toDateString(),
+                $occurrenceUtcStart->toTimeString(),
+                $occurrenceUtcEnd->toTimeString(),
+            );
+            $noExclusions = OverlapExclusionsDTO::none();
+
+            $this->validateOverlap($therapist, $overlapCheck, $noExclusions);
             foreach ($students as $student) {
-                $this->validateOverlap($student, $occurrenceUtcStart->toDateString(), $occurrenceUtcStart->toTimeString(), $occurrenceUtcEnd->toTimeString(), null, false);
+                $this->validateOverlap($student, $overlapCheck, $noExclusions);
             }
 
             $groupBatchNumber = $isGroup
@@ -605,7 +646,7 @@ final class ScheduleService
             RecurrenceType::WEEKLY => $date->copy()->addWeek(),
             RecurrenceType::BI_WEEKLY => $date->copy()->addWeeks(2),
             RecurrenceType::MONTHLY => $date->copy()->addMonth(),
-            RecurrenceType::NONE => $date->copy(),
+            RecurrenceType::NONE, RecurrenceType::CUSTOM_WEEKLY => $date->copy(),
         };
     }
 
@@ -652,14 +693,16 @@ final class ScheduleService
         });
     }
 
-    private function validateOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null, bool $isTherapist = false): void
+    private function validateOverlap(User $user, OverlapCheckDTO $check, OverlapExclusionsDTO $exclusions): void
     {
-        if ($this->repository->hasOverlap($user, $date, $startTime, $endTime, $excludeScheduleId)) {
-            $message = $isTherapist
-                ? 'You already have another schedule at this time. Please choose a different time.'
-                : 'The student already has another schedule at this time. Please choose a different time.';
-
-            throw new ScheduleOverlapException($message);
+        if (! $this->repository->hasOverlap($user, $check, $exclusions)) {
+            return;
         }
+
+        $message = $user->isTherapist()
+            ? 'You already have another schedule at this time. Please choose a different time.'
+            : 'The student already has another schedule at this time. Please choose a different time.';
+
+        throw new ScheduleOverlapException($message);
     }
 }

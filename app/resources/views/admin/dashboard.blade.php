@@ -20,11 +20,11 @@
         NOVA Admin Dashboard
         
         LIVE DATA:
-        - Schools Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
+        - Schools/Families Overview: Total, Active, Inactive, New This Month (clickable - links to schools index)
         - Therapist Capacity: Total, Active, Inactive, New This Month (clickable - links to therapists index)
         - Student Population: Total, Active, Inactive, New This Month (clickable - links to students index)
         - Service Delivery: Active SSAs, Pending, Completed (clickable - links to SSAs index)
-        - Recent Activity: Latest schools, therapists, students, and SSAs added
+        - Recent Activity: Latest schools/families, therapists, students, and SSAs added
         - Upcoming Events: Real SSA expiration dates and contract expirations
         - Charts: Real SSA status distribution, therapist positions, utilization trends
         - Operational Metrics: Real calculated metrics from database
@@ -42,11 +42,11 @@
 
     {{-- Section 1: Key Performance Indicators --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {{-- Schools Overview --}}
+        {{-- Schools/Families Overview --}}
         <a href="{{ route('admin.schools.index') }}" class="block hover:scale-[1.02] transition-transform">
             <x-ui::card class="p-6 h-full hover:shadow-lg transition-shadow">
                 <div class="flex items-center justify-between mb-2">
-                    <p class="text-sm text-foreground/70">Schools Overview</p>
+                    <p class="text-sm text-foreground/70">Schools/Families Overview</p>
                 </div>
                 <div class="flex items-start justify-between mb-4">
                     <div>
@@ -238,12 +238,12 @@
         </x-ui::card>
     </div>
 
-    {{-- Section 4: Upcoming Events --}}
-    <div class="mb-6">
+    {{-- Section 4: Expiring Events --}}
+    <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Upcoming Events & Deadlines</h3>
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring School/Family Contracts</h3>
             <div class="space-y-3">
-                @foreach ($upcomingEvents as $event)
+                @forelse ($upcomingSchoolContracts as $event)
                     <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
                         <div class="flex-shrink-0">
                             <div
@@ -253,15 +253,70 @@
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-medium text-foreground">{{ $event['title'] }}</p>
-                            <p class="text-xs text-foreground/70 mt-1">{{ $event['entity'] }}</p>
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span
+                                        class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span
+                                            class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
                             <p class="text-xs text-foreground/60 mt-1">
                                 Due: {{ $event['due_date']->format('M d, Y') }}
                                 ({{ $event['due_date_local']->diffForHumans() }})
                             </p>
                         </div>
                     </div>
-                @endforeach
+                @empty
+                    <p class="text-sm text-foreground/60">No school/family contracts expiring in the next 30 days.</p>
+                @endforelse
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring SSAs</h3>
+            <div class="space-y-3">
+                @forelse ($upcomingSSAs as $event)
+                    <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
+                        <div class="flex-shrink-0">
+                            <div
+                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
+                                <span
+                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
+                            <p class="text-xs text-foreground/60 mt-1">
+                                Due: {{ $event['due_date']->format('M d, Y') }}
+                                ({{ $event['due_date_local']->diffForHumans() }})
+                            </p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-foreground/60">No SSAs expiring in the next 30 days.</p>
+                @endforelse
             </div>
         </x-ui::card>
     </div>
@@ -289,6 +344,12 @@
                             @elseif($action['icon'] === 'user')
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            @elseif($action['icon'] === 'invoice')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            @elseif($action['icon'] === 'billing')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                             @elseif($action['icon'] === 'chart')
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

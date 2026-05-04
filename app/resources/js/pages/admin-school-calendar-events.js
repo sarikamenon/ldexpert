@@ -101,8 +101,73 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             if (! event) {
                 return;
             }
+            window.dispatchEvent(new CustomEvent('close-modal', { detail: 'schoolCalendarEventDetailsModal' }));
             setFormForEdit(event);
         });
+
+        $(document).on('click', '.calendar-event-bar, .calendar-event-more', function (e) {
+            e.stopPropagation();
+            const $cell = $(this).closest('.calendar-day');
+            const dateStr = $cell.data('date');
+            if (! dateStr) {
+                return;
+            }
+            const events = getEventsForDate(dateStr);
+            if (! events.length) {
+                return;
+            }
+            openEventDetailsModal(dateStr, events);
+        });
+
+        function openEventDetailsModal(dateStr, events) {
+            const date = new Date(`${dateStr}T00:00:00`);
+            const displayDate = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+            $('#schoolCalendarEventDetailsDate').text(displayDate);
+
+            const sorted = events.slice().sort((a, b) => {
+                if (a.is_holiday && ! b.is_holiday) return -1;
+                if (! a.is_holiday && b.is_holiday) return 1;
+                return a.title.localeCompare(b.title);
+            });
+
+            const html = sorted.map((event) => {
+                const badgeClass = event.is_holiday
+                    ? 'bg-danger/10 text-danger'
+                    : 'bg-primary/10 text-primary';
+                const range = event.start_date === event.end_date
+                    ? escapeHtml(event.start_date)
+                    : `${escapeHtml(event.start_date)} – ${escapeHtml(event.end_date)}`;
+                return `
+                    <div class="border border-border rounded-lg p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-1 flex-wrap">
+                                    <span class="text-sm font-semibold text-foreground">${escapeHtml(event.title)}</span>
+                                    <span class="text-xs px-2 py-0.5 rounded-full ${badgeClass}">${escapeHtml(event.event_type_label || '')}</span>
+                                </div>
+                                <div class="text-xs text-foreground/60">${range}</div>
+                                ${event.notes ? `<p class="text-sm text-foreground/70 mt-2 whitespace-pre-wrap">${escapeHtml(event.notes)}</p>` : ''}
+                            </div>
+                            <div class="flex items-center gap-2 shrink-0">
+                                <button type="button"
+                                    class="js-calendar-event-edit inline-flex items-center px-3 py-1.5 border border-border rounded-lg text-xs font-medium hover:bg-background/subtle"
+                                    data-event-id="${event.id}">
+                                    Edit
+                                </button>
+                                <button type="button"
+                                    class="js-calendar-event-delete inline-flex items-center px-3 py-1.5 border border-danger/30 rounded-lg text-xs font-medium text-danger hover:bg-danger/10"
+                                    data-event-id="${event.id}">
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            $('#schoolCalendarEventDetailsContent').html(html);
+            window.dispatchEvent(new CustomEvent('open-modal', { detail: 'schoolCalendarEventDetailsModal' }));
+        }
 
         $(document).on('click', '.js-calendar-event-delete', async function () {
             const eventId = $(this).data('event-id');
@@ -113,7 +178,7 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
 
             const result = await confirmDialog({
                 title: 'Delete calendar event?',
-                text: 'This event will be removed from the school calendar.',
+                text: 'This event will be removed from the school/family calendar.',
                 confirmButtonText: 'Delete',
             });
 
@@ -131,6 +196,7 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                 },
                 success() {
                     cachedEvents = cachedEvents.filter((item) => item.id !== eventId);
+                    window.dispatchEvent(new CustomEvent('close-modal', { detail: 'schoolCalendarEventDetailsModal' }));
                     renderCalendar(currentYear, currentMonth, selectedDate);
                     renderEventsForDate(selectedDate);
                     successToast('Calendar event deleted.');
@@ -211,7 +277,10 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
 
             renderEventBarsInCells();
 
-            $calendarEl.find('.calendar-day').on('click', function () {
+            $calendarEl.find('.calendar-day').on('click', function (e) {
+                if ($(e.target).closest('.calendar-event-bar, .calendar-event-more').length) {
+                    return;
+                }
                 const dateStr = $(this).data('date');
                 if (! dateStr) {
                     return;

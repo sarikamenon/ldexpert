@@ -23,6 +23,7 @@ use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 final class InvoiceService
@@ -39,7 +40,7 @@ final class InvoiceService
         return DB::transaction(function () use ($dto): Invoice {
             $school = $this->schoolRepository->find($dto->schoolId);
             if (! $school) {
-                throw new \InvalidArgumentException('School not found.');
+                throw new \InvalidArgumentException('School/family not found.');
             }
 
             $invoiceNumber = ! empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
@@ -193,7 +194,16 @@ final class InvoiceService
             }
 
             // Send email with PDF attachment and payment link
-            Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
+            try {
+                Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
+            } catch (\Throwable $e) {
+                Log::error('InvoiceService: failed to send invoice email', [
+                    'invoice_id' => $invoice->id,
+                    'email' => $recipientEmail,
+                    'error' => $e->getMessage(),
+                ]);
+                throw $e;
+            }
 
             // Log initial email send
             InvoiceEmailLog::create([
@@ -230,7 +240,16 @@ final class InvoiceService
             $paymentUrl = $invoice->getPaymentUrl();
         }
 
-        Mail::to($dto->email)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
+        try {
+            Mail::to($dto->email)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
+        } catch (\Throwable $e) {
+            Log::error('InvoiceService: failed to resend invoice email', [
+                'invoice_id' => $invoice->id,
+                'email' => $dto->email,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
 
         InvoiceEmailLog::create([
             'invoice_id' => $invoice->id,

@@ -167,25 +167,6 @@ final class SSAImportService
                 return;
             }
 
-            // Lookup additional services
-            $additionalServiceIds = [];
-            if (! empty($mappedData['additional_service_names'])) {
-                $serviceNames = array_map('trim', explode(',', $mappedData['additional_service_names']));
-                foreach ($serviceNames as $serviceName) {
-                    $service = $this->lookupService(trim($serviceName), $import->type);
-                    if (! $service) {
-                        $importRow->update([
-                            'status' => SSAImportRowStatus::VALIDATION_ERROR,
-                            'error_message' => "Additional service '{$serviceName}' not found.",
-                            'processed_at' => now(),
-                        ]);
-
-                        return;
-                    }
-                    $additionalServiceIds[] = $service->id;
-                }
-            }
-
             // Lookup therapist (optional)
             $therapistId = null;
             if (! empty($mappedData['assigned_therapist_email'])) {
@@ -229,7 +210,7 @@ final class SSAImportService
             }
 
             // Validate row data
-            $validationErrors = $this->validateRowData($mappedData, $primaryService, $additionalServiceIds);
+            $validationErrors = $this->validateRowData($mappedData, $primaryService);
 
             if (! empty($validationErrors)) {
                 $importRow->update([
@@ -248,7 +229,6 @@ final class SSAImportService
                     $mappedData,
                     $student,
                     $primaryService,
-                    $additionalServiceIds,
                     $therapistId,
                     $thoMinutes,
                 );
@@ -272,7 +252,6 @@ final class SSAImportService
             $createData = [
                 'student_id' => $student->id,
                 'primary_service_id' => $primaryService->id,
-                'additional_service_ids' => $additionalServiceIds,
                 'start_date' => $mappedData['start_date'],
                 'end_date' => $mappedData['end_date'],
                 'minutes_per_session' => (int) $mappedData['minutes_per_session'],
@@ -535,10 +514,9 @@ final class SSAImportService
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  array<int, int>  $additionalServiceIds
      * @return array<int, string>
      */
-    public function validateRowData(array $data, Service $primaryService, array $additionalServiceIds): array
+    public function validateRowData(array $data, Service $primaryService): array
     {
         $errors = [];
 
@@ -580,27 +558,11 @@ final class SSAImportService
             }
         }
 
-        // Validate additional services are indirect
-        if (! empty($additionalServiceIds)) {
-            $additionalServices = Service::whereIn('id', $additionalServiceIds)
-                ->where('status', ServiceStatus::ACTIVE)
-                ->get();
-
-            if ($additionalServices->count() !== count($additionalServiceIds)) {
-                $errors[] = 'One or more additional services not found or inactive.';
-            } else {
-                foreach ($additionalServices as $service) {
-                    if ($service->is_direct_service) {
-                        $errors[] = "Additional service '{$service->name}' must be an indirect service.";
-                    }
-                }
-            }
-        }
-
         return $errors;
     }
 
     /**
+     * @param  array<string, mixed>  $data
      * @return array<int, string>
      */
     private function validateDateRange(array $data): array
@@ -783,7 +745,7 @@ final class SSAImportService
 
         $existingNotes = (string) ($mappedData['adjustment_notes'] ?? '');
         $mappedData['adjustment_notes'] = $existingNotes !== ''
-            ? $existingNotes . ' | ' . $autoNote
+            ? $existingNotes.' | '.$autoNote
             : $autoNote;
     }
 }

@@ -40,6 +40,7 @@ class School extends Model
         'invoice_email',
         'school_type',
         'is_private_student',
+        'is_auto_extend',
         'non_billable_scheduling',
         'external_emr_name',
         'status',
@@ -50,6 +51,7 @@ class School extends Model
     {
         return [
             'is_private_student' => 'boolean',
+            'is_auto_extend' => 'boolean',
             'non_billable_scheduling' => 'boolean',
             'status' => SchoolStatus::class,
         ];
@@ -134,10 +136,22 @@ class School extends Model
         return $this->hasMany(SchoolCalendarEvent::class);
     }
 
+    /** @return HasMany<SchoolContract, $this> */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(SchoolContract::class);
+    }
+
     /** @return HasMany<Invoice, $this> */
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class, 'school_id');
+    }
+
+    /** @return MorphMany<BillingSchedule, $this> */
+    public function billingSchedules(): MorphMany
+    {
+        return $this->morphMany(BillingSchedule::class, 'schedulable');
     }
 
     /** @return MorphMany<\App\Models\LedgerEntry, $this> */
@@ -180,5 +194,14 @@ class School extends Model
     public function scopeInactive(Builder $query): Builder
     {
         return SchoolScope::inactive($query, $query->getModel());
+    }
+
+    /**
+     * @param  Builder<School>  $query
+     * @return Builder<School>
+     */
+    public function scopeOrderedByDisplayName(Builder $query): Builder
+    {
+        return SchoolScope::orderedByDisplayName($query);
     }
 }

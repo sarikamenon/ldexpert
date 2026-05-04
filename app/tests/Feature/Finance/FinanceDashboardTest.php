@@ -91,14 +91,16 @@ class FinanceDashboardTest extends TestCase
         // Revenue collected should include old payments.
         $response->assertSee('$65.00', false);
 
-        // Paid to therapists (all-time) card should reflect old payments.
-        $response->assertSee('Paid to Therapists (all-time)', false);
-        $response->assertSee('$30.00', false);
+        // 'Paid to Therapists' card and 'Recent Payments Made' block are gone —
+        // therapist payouts now flow through the expense module.
+        $response->assertDontSee('Paid to Therapists', false);
+        $response->assertDontSee('Recent Payments Made', false);
 
-        // Total expenses should include therapist payments + other expenses.
-        $response->assertSee('$45.00', false);
+        // Total expenses reflects only rows in the expenses table (no double-counting
+        // of therapist payments, which are seeded via factory without the auto-expense).
+        $response->assertSee('$15.00', false);
 
-        // Net income should be revenue collected minus therapist payments minus other expenses.
-        $response->assertSee('$20.00', false);
+        // Net income = revenue collected - total expenses = 65 - 15 = 50.
+        $response->assertSee('$50.00', false);
     }
 }

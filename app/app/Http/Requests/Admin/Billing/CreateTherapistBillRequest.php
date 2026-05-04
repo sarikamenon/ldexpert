@@ -29,7 +29,7 @@ final class CreateTherapistBillRequest extends FormRequest
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<string, array<int, mixed>|string>
      */
     public function rules(): array
     {
@@ -40,8 +40,8 @@ final class CreateTherapistBillRequest extends FormRequest
             'billing_period_start' => ['required', 'date'],
             'billing_period_end' => ['required', 'date', 'after_or_equal:billing_period_start'],
             'due_date' => ['nullable', 'date', 'after_or_equal:bill_date'],
-            'session_log_ids' => ['required', 'array', 'min:1'],
-            'session_log_ids.*' => ['required', 'integer', Rule::exists('session_logs', 'id')],
+            'session_log_ids' => ['nullable', 'array'],
+            'session_log_ids.*' => ['integer', Rule::exists('session_logs', 'id')],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }

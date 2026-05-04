@@ -27,7 +27,7 @@ final class ContractServiceRateDTO
             rateType: $data['rate_type'] instanceof RateType
                 ? $data['rate_type']
                 : RateType::from($data['rate_type']),
-            noShowRate: isset($data['no_show_rate']) && $data['no_show_rate'] !== null && $data['no_show_rate'] !== ''
+            noShowRate: filled($data['no_show_rate'] ?? null)
                 ? self::normalizeRate($data['no_show_rate'])
                 : null,
             noShowRateType: $noShowRateType === null || $noShowRateType === ''

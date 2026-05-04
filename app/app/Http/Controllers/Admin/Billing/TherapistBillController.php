@@ -8,12 +8,13 @@ use App\DataTables\Transformers\TherapistBillRowTransformer;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
 use App\Domain\Billing\Services\TherapistBillPdfService;
 use App\Domain\Billing\Services\TherapistBillService;
-use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Therapist\Services\TherapistService;
+use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateTherapistBillDTO;
 use App\DTOs\SendTherapistBillDTO;
 use App\DTOs\TherapistBillFilterDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\Billing\AttachTherapistBillSessionsRequest;
 use App\Http\Requests\Admin\Billing\CreateTherapistBillRequest;
 use App\Http\Requests\Admin\Billing\SendTherapistBillRequest;
 use App\Http\Requests\Admin\Billing\TherapistBillDataRequest;
@@ -48,7 +49,6 @@ final class TherapistBillController extends Controller
         private readonly TherapistBillPdfService $pdfService,
         private readonly TherapistBillRepositoryInterface $billRepository,
         private readonly TherapistService $therapistService,
-        private readonly ServiceCatalogService $serviceCatalogService,
     ) {}
 
     public function index(TherapistBillIndexRequest $request): View
@@ -93,57 +93,14 @@ final class TherapistBillController extends Controller
     {
         $this->authorize('create', TherapistBill::class);
 
-        // Default to last 30 days
-        $selectedTherapistId = $request->input('therapist_id');
-        $filters = [
-            'date_from' => $request->input('date_from', now()->subDays(30)->format('Y-m-d')),
-            'date_to' => $request->input('date_to', now()->format('Y-m-d')),
-            'therapist_id' => $selectedTherapistId,
-            'student_id' => $request->input('student_id'),
-            'service_id' => $request->input('service_id'),
-            'school_id' => $request->input('school_id'),
-            'search' => $request->input('search'),
-        ];
-
-        $sessionLogs = $this->billRepository->getAvailableSessionLogsForBillingCreation($filters);
-
-        // Get therapists that have available session logs
-        $therapistFilterForDropdown = [
-            'date_from' => $filters['date_from'],
-            'date_to' => $filters['date_to'],
-        ];
-        $availableTherapistIds = $this->billRepository->getAvailableTherapistIdsForBillingCreation($therapistFilterForDropdown);
-
-        // Get filter options based on selected therapist
-        $students = collect();
-        $services = collect();
-
-        if ($selectedTherapistId) {
-            // Get students from session logs (already loaded with relationships)
-            $students = $sessionLogs->pluck('student')->unique('id')->filter()->values();
-
-            // Get unique services from session logs for this therapist
-            $serviceIds = $sessionLogs->pluck('service_id')->unique();
-            if ($serviceIds->isNotEmpty()) {
-                $services = $this->serviceCatalogService->listActiveForSelect()
-                    ->whereIn('id', $serviceIds->toArray());
-            }
-        }
-
-        // Generate bill number for display
         $billNumber = $this->billRepository->generateBillNumber();
 
-        // Get therapists that have available session logs (filtered by date range only)
-        $therapists = $this->therapistService->listActiveTherapists()
-            ->whereIn('id', $availableTherapistIds->toArray());
-
         return view('admin.billing.therapist-bills.create', [
-            'sessionLogs' => $sessionLogs,
-            'therapists' => $therapists,
-            'students' => $students,
-            'services' => $services,
-            'filters' => $filters,
+            'therapists' => $this->therapistService->listActiveTherapists(),
             'billNumber' => $billNumber,
+            'selectedTherapistId' => $request->input('therapist_id'),
+            'defaultDateFrom' => $request->input('date_from', now()->subDays(30)->format('Y-m-d')),
+            'defaultDateTo' => $request->input('date_to', now()->format('Y-m-d')),
         ]);
     }
 
@@ -158,9 +115,77 @@ final class TherapistBillController extends Controller
             $user = $request->user();
             $bill = $this->billService->generateBill($user, $dto);
 
+            if ($bill->sessionLogs->isEmpty()) {
+                return redirect()
+                    ->route('admin.billing.therapist-bills.attach-sessions', $bill)
+                    ->with('success', 'Draft bill created. Add or remove sessions below.');
+            }
+
             return redirect()
                 ->route('admin.billing.therapist-bills.show', $bill)
                 ->with('success', 'Bill created successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()])
+                ->withInput();
+        }
+    }
+
+    public function attachSessions(Request $request, TherapistBill $bill): View
+    {
+        $this->authorize('update', $bill);
+
+        if (! $bill->isDraft()) {
+            abort(404);
+        }
+
+        $bill->loadMissing(['therapist']);
+
+        $filters = [
+            'therapist_id' => $bill->therapist_id,
+            'date_from' => $request->input('date_from', $bill->billing_period_start?->format('Y-m-d')),
+            'date_to' => $request->input('date_to', $bill->billing_period_end?->format('Y-m-d')),
+            'school_id' => $request->input('school_id'),
+            'student_id' => $request->input('student_id'),
+            'service_id' => $request->input('service_id'),
+        ];
+
+        $attachedSessionLogs = $bill->sessionLogs()
+            ->with(['student', 'service', 'therapist', 'school'])
+            ->orderBy('session_date', 'desc')
+            ->get();
+
+        $availableSessionLogs = $this->billRepository->getAvailableSessionLogsForBillingCreation($filters);
+
+        $attachedIds = $attachedSessionLogs->pluck('id')->all();
+        $sessionLogs = $attachedSessionLogs->concat($availableSessionLogs)->unique('id');
+
+        $schools = $sessionLogs->pluck('school')->filter()->unique('id')->values();
+        $students = $sessionLogs->pluck('student')->filter()->unique('id')->values();
+        $services = $sessionLogs->pluck('service')->filter()->unique('id')->values();
+
+        return view('admin.billing.therapist-bills.attach-sessions', [
+            'bill' => $bill,
+            'sessionLogs' => $sessionLogs,
+            'attachedIds' => $attachedIds,
+            'filters' => $filters,
+            'schools' => $schools,
+            'students' => $students,
+            'services' => $services,
+        ]);
+    }
+
+    public function storeAttachedSessions(AttachTherapistBillSessionsRequest $request, TherapistBill $bill): RedirectResponse
+    {
+        $dto = AttachSessionsDTO::fromArray($request->validated());
+
+        try {
+            $this->billService->attachSessionsToDraft($bill, $dto);
+
+            return redirect()
+                ->route('admin.billing.therapist-bills.show', $bill)
+                ->with('success', 'Bill sessions updated successfully.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()
@@ -204,6 +229,27 @@ final class TherapistBillController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to send bill email. Please try again later.']);
+        }
+    }
+
+    public function destroy(TherapistBill $bill): RedirectResponse
+    {
+        $this->authorize('delete', $bill);
+
+        try {
+            $this->billService->deleteBill($bill);
+
+            return redirect()
+                ->route('admin.billing.therapist-bills.index')
+                ->with('success', 'Bill deleted successfully.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->with('error', $e->getMessage());
         }
     }
 

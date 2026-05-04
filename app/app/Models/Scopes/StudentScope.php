@@ -56,4 +56,23 @@ final class StudentScope extends BaseModelScope
             $query->where('status', UserStatus::INACTIVE); // @phpstan-ignore argument.type
         });
     }
+
+    /**
+     * @param  Builder<StudentProfile>  $builder
+     * @param  array<int, int>  $userIds
+     * @return Builder<StudentProfile>
+     */
+    public static function forUserIds(Builder $builder, array $userIds): Builder
+    {
+        return $builder->whereIn('user_id', $userIds);
+    }
+
+    /**
+     * @param  Builder<StudentProfile>  $builder
+     * @return Builder<StudentProfile>
+     */
+    public static function withSchool(Builder $builder): Builder
+    {
+        return $builder->whereNotNull('school_id');
+    }
 }

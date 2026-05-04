@@ -73,13 +73,6 @@
                                 value="{{ $filters['date_to'] ?? '' }}" class="w-40" />
                         </div>
                     </x-slot:filters>
-
-                    <x-slot:actions>
-                        <a href="{{ route('therapist.session-logs.select-ssa') }}"
-                            class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
-                            + Add Session Log
-                        </a>
-                    </x-slot:actions>
                 </x-ui::filter-toolbar>
 
                 <div class="overflow-x-auto">
@@ -89,7 +82,7 @@
                         <thead class="bg-background/subtle">
                             <tr>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Date & Time</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School/Family</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Service</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Entry</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist Amount</th>

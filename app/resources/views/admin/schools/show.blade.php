@@ -10,9 +10,9 @@
     </x-slot>
 
     {{-- Header Card --}}
-    <x-ui::show-header :title="$school->display_name" :subtitle="'School ID #' . $school->id"
+    <x-ui::show-header :title="$school->display_name" :subtitle="'School/Family ID #' . $school->id"
         :back-url="route('admin.schools.index')" back-label="Back to list"
-        :edit-url="route('admin.schools.edit', $school)" edit-label="Edit School">
+        :edit-url="route('admin.schools.edit', $school)" edit-label="Edit School/Family">
         <x-slot name="badge">
             <x-ui::badge :variant="$school->status?->value === 'active' ? 'success' : 'danger'">
                 {{ ucfirst($school->status?->value ?? 'inactive') }}
@@ -33,6 +33,7 @@
             ['key' => 'contracts', 'label' => 'Contracts', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'contracts'])],
             ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'ssas'])],
             ['key' => 'calendar', 'label' => 'Calendar', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'calendar'])],
+            ['key' => 'billing', 'label' => 'Billing', 'href' => route('admin.schools.show', ['school' => $school, 'tab' => 'billing'])],
         ];
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -108,6 +109,11 @@
             'school' => $school,
             'selectedDate' => $selectedDate ?? now(),
         ])
+    @elseif (($activeTab ?? 'dashboard') === 'billing')
+        @include('admin.billing._entity-billing-tab', [
+            'entityType' => 'school',
+            'entityId' => $school->id,
+        ])
     @endif
 
     <x-slot name="scripts">
@@ -122,6 +128,8 @@
             @vite(['resources/js/pages/admin-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'calendar')
             @vite(['resources/js/pages/admin-school-calendar-events.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'billing')
+            @vite(['resources/js/pages/admin-entity-billing.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

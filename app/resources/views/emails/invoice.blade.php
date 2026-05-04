@@ -17,8 +17,13 @@
         </tr>
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
+                @php
+                    $defaultSalutation = ($invoice->school?->is_private_student ?? false)
+                        ? 'Family contact'
+                        : 'School administrator';
+                @endphp
                 <p style="margin:0 0 12px;">
-                    Dear {{ $invoice->school_contact_first_name ?? 'School Administrator' }},
+                    Dear {{ $invoice->school_contact_first_name ?? $defaultSalutation }},
                 </p>
 
                 <p style="margin:0 0 16px;">

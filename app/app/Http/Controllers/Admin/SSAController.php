@@ -172,7 +172,6 @@ final class SSAController extends Controller
             'student',
             'student.studentProfile.school',
             'primaryService',
-            'additionalServices',
             'assignedTherapist',
             'assignedTherapist.therapistProfile',
         ]);
@@ -207,7 +206,7 @@ final class SSAController extends Controller
     {
         $this->authorize('update', $ssa);
 
-        $ssa->load(['primaryService', 'additionalServices']);
+        $ssa->load(['primaryService']);
 
         return view('admin.ssas.edit', [
             'ssa' => $ssa,
@@ -373,6 +372,17 @@ final class SSAController extends Controller
             ? $this->userService->listActiveTherapistsForServices($serviceIds)
             : $this->userService->listActiveTherapistsForSelect();
 
+        // When editing, always include the currently assigned therapist even if
+        // they don't match the service filter (e.g. position not linked to service).
+        $includeTherapistId = (int) $request->query('include_therapist_id', 0);
+        if ($includeTherapistId > 0 && $therapists->doesntContain('id', $includeTherapistId)) {
+            /** @var User|null $assigned */
+            $assigned = User::find($includeTherapistId);
+            if ($assigned) {
+                $therapists = $therapists->prepend($assigned);
+            }
+        }
+
         return response()->json(
             $therapists->map(fn (User $user) => ['id' => $user->id, 'name' => $user->name])->values()
         );
@@ -510,13 +520,33 @@ final class SSAController extends Controller
         ]);
     }
 
+    public function downloadImported(Request $request, SSAImport $import): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('viewAny', ServiceSupportAgreement::class);
+
+        try {
+            return \Illuminate\Support\Facades\Storage::download(
+                $import->file_path,
+                $import->file_name,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('SSA import file download failed', [
+                'import_id' => $import->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'The original import file could not be found.');
+        }
+    }
+
     /** @return array<string, mixed> */
     private function formData(): array
     {
         return [
             'students' => $this->userService->listActiveStudentsForSelect(),
             'services' => $this->serviceCatalogService->listActiveWithFrequencyFlag(),
-            'indirectServices' => $this->serviceCatalogService->listIndirectServices(),
             'therapists' => $this->userService->listActiveTherapistsForSelect(),
             'frequencies' => ServiceFrequency::cases(),
         ];

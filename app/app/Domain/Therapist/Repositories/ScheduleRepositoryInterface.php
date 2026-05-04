@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Therapist\Repositories;
 
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\OverlapCheckDTO;
+use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Models\Schedule;
@@ -57,6 +59,9 @@ interface ScheduleRepositoryInterface
     public function getRecurringOccurrencesByBatch(string $recurringBatchNumber): Collection;
 
     /** @return Collection<int, Schedule> */
+    public function getUnbilledFutureRecurringOccurrencesByBatch(string $recurringBatchNumber, string $fromDate): Collection;
+
+    /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection;
 
     /**
@@ -80,7 +85,7 @@ interface ScheduleRepositoryInterface
     /** @param array<int, int> $scheduleIds */
     public function bulkUpdateBillingStatus(array $scheduleIds, BillingStatus $status): int;
 
-    public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool;
+    public function hasOverlap(User $user, OverlapCheckDTO $check, OverlapExclusionsDTO $exclusions): bool;
 
     /**
      * @return Collection<int, Schedule>

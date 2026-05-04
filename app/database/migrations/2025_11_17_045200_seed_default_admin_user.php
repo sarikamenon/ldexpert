@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (app()->environment('production', 'staging')) {
+            return;
+        }
+
         Artisan::call('db:seed', [
             '--class' => AdminUserSeeder::class,
             '--force' => true,

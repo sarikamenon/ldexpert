@@ -58,8 +58,8 @@ final class LedgerAccountRowTransformer
         $paidCell = '<span class="font-semibold text-info-600">$'.number_format((float) $totalPaid, 2).'</span>';
 
         $balance = $account->current_balance ?? 0;
-        $balanceCell = '<span class="font-semibold '.($balance >= 0 ? 'text-success-600' : 'text-danger-600').'">'
-            .'$'.number_format(abs((float) $balance), 2).($balance < 0 ? ' DR' : ' CR').'</span>';
+        $balanceCell = '<span class="font-semibold '.($balance > 0 ? 'text-danger-600' : 'text-success-600').'">'
+            .'$'.number_format(abs((float) $balance), 2).($balance > 0 ? ' DR' : ' CR').'</span>';
 
         $txCount = $account->transaction_count ?? 0;
         $transactionsCell = '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-secondary/10 text-secondary-700">'

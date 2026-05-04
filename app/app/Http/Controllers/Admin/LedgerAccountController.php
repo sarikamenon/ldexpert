@@ -21,6 +21,7 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class LedgerAccountController extends Controller
@@ -40,7 +41,7 @@ class LedgerAccountController extends Controller
     ];
 
     private const LEDGER_ENTRIES_ORDER_WHITELIST = [
-        0 => 'ledger_entries.created_at',
+        0 => 'ledger_entries.recorded_at',
         6 => 'ledger_entries.notes',
     ];
 
@@ -143,7 +144,7 @@ class LedgerAccountController extends Controller
             }
 
             fputcsv($handle, [
-                $accountType === 'schools' ? 'School' : 'Therapist',
+                $accountType === 'schools' ? 'School/Family' : 'Therapist',
                 'Email',
                 'Phone',
                 $accountType === 'schools' ? 'Total Invoiced' : 'Total Billed',
@@ -155,7 +156,7 @@ class LedgerAccountController extends Controller
 
             foreach ($accounts as $account) {
                 $name = $account instanceof School
-                    ? ($account->display_name ?? $account->full_name ?? ('School #'.$account->id))
+                    ? ($account->display_name ?? $account->full_name ?? ('School/Family #'.$account->id))
                     : $account->name;
 
                 fputcsv($handle, [
@@ -180,8 +181,8 @@ class LedgerAccountController extends Controller
     {
         if ($type === 'school') {
             $account = School::findOrFail($id);
-            $accountName = $account->display_name ?? $account->full_name ?? ('School #'.$account->id);
-            $accountType = 'School';
+            $accountName = $account->display_name ?? $account->full_name ?? ('School/Family #'.$account->id);
+            $accountType = 'School/Family';
         } else {
             $account = User::where('role', Role::THERAPIST)->findOrFail($id);
             $accountName = $account->name;
@@ -202,5 +203,44 @@ class LedgerAccountController extends Controller
             'datatableFilterType' => $type,
             'datatableFilterId' => $id,
         ]);
+    }
+
+    public function statsData(Request $request, string $type, int $id): JsonResponse
+    {
+        if ($type === 'school') {
+            $account = School::findOrFail($id);
+        } elseif ($type === 'therapist') {
+            $account = User::where('role', Role::THERAPIST)->findOrFail($id);
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unsupported account type.',
+            ], 422);
+        }
+
+        try {
+            $stats = $this->ledgerAccountService->calculateAccountStats($account, $type);
+
+            $html = view('admin.ledger.accounts._stats', [
+                'stats' => $stats,
+                'type' => $type,
+            ])->render();
+
+            return response()->json([
+                'success' => true,
+                'html' => $html,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to load ledger account stats', [
+                'error' => $e->getMessage(),
+                'type' => $type,
+                'account_id' => $id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not refresh stats.',
+            ], 500);
+        }
     }
 }

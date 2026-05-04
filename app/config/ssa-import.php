@@ -26,7 +26,6 @@ return [
             'optional_columns' => [
                 'student_id_number',
                 'school_name',
-                'additional_service_names',
                 'frequency',
                 'sessions_per_frequency',
                 'assigned_therapist_email',
@@ -39,7 +38,6 @@ return [
                 'student_id_number' => 'student_id_number',
                 'school_name' => 'school_name',
                 'primary_service_name' => 'primary_service_name',
-                'additional_service_names' => 'additional_service_names',
                 'start_date' => 'start_date',
                 'end_date' => 'end_date',
                 'minutes_per_session' => 'minutes_per_session',

@@ -8,6 +8,9 @@ You are an expert in Laravel, PHP, and related web development technologies.
 
 - Write concise, technical responses with accurate PHP examples.
 - Follow Laravel best practices and conventions.
+- **Prefer Eloquent scopes** over inline `where` conditions in repository queries. If a query condition is reusable or represents a domain concept, extract it into a scope on the model (via `BaseModelScope`). Only use raw `where` clauses when a scope would be a one-off with no reuse potential.
+- **Return early** wherever possible. Avoid deep nesting; flip conditions and return/throw early to keep the happy path at the top level.
+- **Use vanilla JS for new frontend code** instead of jQuery. When modifying existing jQuery code in the same file, migrate touched sections to vanilla JS incrementally.
 - Use object-oriented programming with a focus on SOLID principles.
 - Prefer iteration and modularization over duplication.
 - Use descriptive variable and method names.
@@ -21,13 +24,29 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - **Always use Form Request classes** for validation. Controllers MUST type-hint Request objects from `app/Http/Requests/**`.
 - **Controllers must delegate to Services**; Services use Repositories.
 - **Prefer Eloquent**; raw queries only with justification.
+- **Prefer `whereHas` over `whereExists` with subqueries** when filtering by related model conditions. `whereHas` uses Eloquent relationships, respects soft deletes, and reads as business logic rather than SQL. Only fall back to `whereExists`/`DB::raw` when the relationship does not exist and adding it would be disproportionate, or when performance profiling justifies it. If a `whereHas` is needed and the inverse relationship is missing from the model, add it first.
+- **Prefer collection methods** (`map`, `filter`, `reject`, `flatMap`, etc.) over `foreach` loops when transforming or filtering Eloquent results. Loops are acceptable only for side-effectful operations (e.g., creating DB records inside the loop).
 - **Always use `use` statements** for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
 - **Always add policies** for new models/features. Use `$this->authorize()` in controllers.
 - **Keep files small and focused**: Hard cap of 300 lines per file. If approaching 300, extract to smaller classes, view components, or dedicated services. No exceptions without a comment justifying and a follow-up task to split.
 - **Use soft deletes by default** on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
 - **No public registration routes**; users created via command or privileged UI.
 - **Roles system**: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
+- **Ledger writes** (`ledger_entries`): every insert MUST go through `App\Domain\Finance\Services\LedgerService` (`createEntry`, the four credit-note/refund creators, or the source-document creators). Never call `LedgerEntry::create()` directly outside the service. Every entry MUST have `recorded_at` set from a real source-document date — never let it default. Backdated, edited, or deleted entries MUST run through `LedgerService::recomputeChainFrom()` to maintain the `balance_after` invariant. Only `credit_note` and `refund` types are editable/deletable from the ledger UI; all other types must be edited via their source-document page (Invoices, Bills, Payments, Expenses). Sign convention lives in `TransactionType::balanceDelta()` — never hardcode `+/-`. Run `php artisan ledger:verify` to audit drift. See [LEDGER_SYSTEM.md](app/docs/LEDGER_SYSTEM.md) for the full reference.
 - **Follow PSR-12**; run `make qa` before commits.
+
+## Dates & Timezones (MANDATORY)
+
+- **Store all timestamps and date-times in UTC.** No exceptions for new code or new columns. Schedules, session logs, and any future event/instant data go in as UTC.
+- **Convert to the user-relevant timezone on read**, never store user-local. The conversion service is `App\Domain\Time\UserTimezoneService` (`parseUserLocalToUtc()` for writes, `toUserTimezone()` for reads, `resolveTimezone()` to look up a user's effective TZ).
+- **Whose timezone for display:** schedule owner = the schedule's therapist. Session log owner = the session log's therapist. Invoice = the invoice's school. Per-row, not per-viewer — so admin viewing a therapist's schedule sees the therapist's local time (consistent across viewers).
+- **Pre-format dates in controllers/services, not in Blade.** Blade should only print strings. Controllers attach pre-formatted strings (e.g. `$log->sent_at_formatted`) to view-models or transient model properties (annotate with `@property string|null` for PHPStan).
+- **`users.timezone` must mirror the profile's timezone.** Therapist DTOs write to both `users.timezone` and `therapist_profiles.timezone`; student DTOs write to both `users.timezone` and `student_profiles.timezone`. `UserTimezoneService::resolveTimezone()` falls back to the profile if the user row is empty/UTC.
+- **Pure calendar dates (not instants)** — e.g. `recurrence_end_date`, `ssa.start_date`, contract effective dates — are stored as the user typed them (no UTC conversion). These represent "the date in the operating timezone," not a specific moment in time. When in doubt, ask before adding a new date column.
+- **DTOs must include `timezone`** in `toUserArray()` for any user create/update flow that exposes a timezone field, so `users.timezone` stays in sync with the profile.
+- **Never assume the database date matches the user's local date.** A late-evening session in PT will store as the next-day UTC date. Date-range queries (`whereBetween('schedule_date', ...)`) must convert the user's local range to a UTC range using `UserTimezoneService::userDayUtcRange()` before querying.
+- **MySQL `CONVERT_TZ` is NOT available** in all environments (staging lacks the named-zone tables). Do timezone conversions in PHP/Carbon, never in SQL.
+- **Migrations that re-interpret existing data** (e.g. backfilling from local-as-UTC to true UTC) must snapshot original values to a backup table for reversibility. See `2026_04_30_000001_backfill_schedules_utc_from_therapist_timezone.php` for the canonical pattern.
 
 ## PHP/Laravel
 
@@ -40,6 +59,9 @@ You are an expert in Laravel, PHP, and related web development technologies.
   - Use Laravel's exception handling and logging features.
   - Create custom exceptions when necessary.
   - Use try-catch blocks for expected exceptions.
+  - **Every HTTP request handler (controller action) that calls a service or external operation MUST wrap the call in try-catch.** Catch specific exceptions first (`\InvalidArgumentException`, domain exceptions), then catch `\Throwable` as a fallback to return a user-friendly error response instead of a 500. Log unexpected errors with `Log::error()` before responding.
+  - **Side-effect operations (email, notifications, file writes) triggered during an HTTP request MUST be wrapped in try-catch and must not propagate exceptions that would fail the primary action.** Log failures with `Log::error()` and swallow. Exception: if sending is the primary intent (e.g. "Send Invoice" button), log and re-throw so the controller can surface a friendly error.
+  - Never let a mailer, notification, or third-party call produce a 500 for the user when the core business action has already succeeded.
 - Use Laravel's validation features for form and request validation.
 - Implement middleware for request filtering and modification.
 - Utilize Laravel's Eloquent ORM for database interactions.
@@ -87,7 +109,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Use Tailwind CSS for styling following utility-first approach.
 - Organize JavaScript files by feature/page in `resources/js/pages/`.
 - Use shared utilities in `resources/js/common/`.
-- **Use jQuery for DOM/AJAX interactivity**; avoid vanilla JS for features.
+- **Use vanilla JS for new DOM/AJAX interactivity**. Migrate touched jQuery sections incrementally when modifying existing files.
 - **Keep CSS and JS in separate files**. Use Tailwind for styles.
 
 ## User Interactions & Confirmations
@@ -199,66 +221,18 @@ try {
 
 ## Design System & UI/UX Standards (MANDATORY)
 
-### Design Principles (MANDATORY)
+See `app/docs/DESIGN_SYSTEM.md` for the full design system reference (colors, typography, spacing, component patterns). See `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues.
 
-- **Modern & Clean**: Prioritize whitespace, clear typography, and minimal visual clutter. Avoid busy layouts typical of legacy software.
-- **User-Centric**: Design for task completion, not data display. Hide complexity; reveal progressively.
-- **Consistency**: Establish and reuse UI patterns across all pages. Document any new patterns before implementing.
-
-### Visual Foundation (MANDATORY)
-
-- **Color System**: Use ONLY colors defined in `tailwind.config.js`. NEVER introduce ad-hoc colors (e.g., `bg-[#ff0000]`, `bg-red-50`, `text-red-600`).
-  - Use design system colors: `bg-primary`, `bg-secondary`, `bg-success`, `bg-warning`, `bg-danger`
-  - Use `text-danger` instead of `text-red-600` for error states
-- **Typography**: Follow established scale consistently:
-  - H1: `text-2xl font-semibold text-foreground`
-  - H2: `text-lg font-semibold text-foreground`
-  - H3: `text-sm font-medium text-foreground/70`
-  - Body: `text-sm text-foreground`
-  - Labels: `text-xs font-medium text-foreground/70`
-- **Spacing**: Use standard scale (2, 4, 6, 8) only. Card padding: `p-6`. Section spacing: `mb-6`.
-
-### Component Behavior (MANDATORY)
-
-- **Interactive States**: ALL interactive elements MUST have complete state patterns:
-  - Default: Base styling
-  - Hover: `hover:bg-{variant}/90`
-  - Focus: `focus:outline-none focus:ring-2 focus:ring-ring`
-  - Focus-Visible: `focus-visible:ring-2 focus-visible:ring-ring` (for keyboard navigation)
-  - Active: `active:bg-{variant}/80`
-  - Disabled: `disabled:opacity-50 disabled:pointer-events-none`
-- **Feedback**: Every user action requires immediate visual response
-- **Loading States**: Use SweetAlert2 loading OR button spinners OR skeleton loaders
-- **Empty States**: Use `x-ui::empty-state` component with `py-12` spacing
-- **Errors**: Show contextually near source with `text-danger` color
-
-### User Experience Patterns (MANDATORY)
-
-- **Progressive Disclosure**: Hide complexity behind clear affordances. Use collapsible sections for long forms.
-- **Destructive Actions**: Require explicit confirmation with clear consequence explanation.
-- **Error Recovery**: Provide clear paths to resolve errors; avoid dead ends.
-- **Responsiveness**: Design must work on mobile, tablet, and desktop viewports.
-
-### Accessibility Requirements (MANDATORY)
-
-- Keyboard navigation must work for all interactive elements
-- Color cannot be the only indicator of state or meaning
-- Text must have sufficient contrast against backgrounds
-- Use semantic HTML and appropriate ARIA labels
-- Form fields MUST have help text: Label → Help Text → Input → Error Messages
-- Help text styling: `class="mt-1 text-xs text-foreground/60"`
-- Add `aria-describedby` linking to help text IDs
-
-### Design Quality Gates (MANDATORY)
-
-Before considering UI complete, verify:
-- [ ] Follows established color palette and typography scale
-- [ ] Has clear visual hierarchy with one primary action per view
-- [ ] Includes all states: default, loading, empty, error, success
-- [ ] Related content is properly grouped and visually separated
-- [ ] Works on mobile, tablet, and desktop viewports
-- [ ] Passes keyboard-only navigation test
-- [ ] Matches established patterns from reference pages
+**Key rules enforced here:**
+- **Colors**: ONLY use design system tokens (`bg-primary`, `text-danger`, etc.). NEVER hardcode hex or Tailwind palette colors.
+- **Typography**: H1=`text-2xl font-semibold text-foreground`, H2=`text-lg`, H3=`text-sm font-medium text-foreground/70`, Body=`text-sm`, Labels=`text-xs font-medium text-foreground/70`
+- **Spacing**: Standard scale (2, 4, 6, 8). Card padding: `p-6`. Section spacing: `mb-6`.
+- **Interactive states**: All elements MUST have hover, focus, focus-visible, active, disabled states.
+- **Accessibility**: Keyboard navigation, sufficient contrast, semantic HTML, ARIA labels.
+- **Responsiveness**: Must work on mobile, tablet, desktop.
+- **Empty states**: Use `x-ui::empty-state` component.
+- **Destructive actions**: Require explicit confirmation via SweetAlert2.
+- Document new UI patterns in `app/docs/DESIGN_SYSTEM.md` BEFORE implementing.
 
 ## UI Standards
 
@@ -273,61 +247,17 @@ Before considering UI complete, verify:
 
 ## Form Help Text Standards (MANDATORY)
 
-- **All form inputs MUST have help text** to guide users
-- **Help text MUST be placed BEFORE the input field** (between label and input)
-- Use consistent styling: `class="mt-1 text-xs text-foreground/60"`
-- Standard structure: Label → Help Text → Input → Error Messages
-
-### Required Pattern (MANDATORY):
-
-```blade
-<div>
- <x-input-label for="field_name" value="Field Label *" />
- <p class="mt-1 text-xs text-foreground/60" id="field_name_help">
- Clear, concise help text explaining what this field is for and any requirements.
- </p>
- <x-text-input
- id="field_name"
- name="field_name"
- class="mt-1 block w-full"
- aria-describedby="field_name_help"
- />
- <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
-</div>
-```
-
-### Guidelines (MANDATORY):
-
-- Help text should explain the purpose of the field, format requirements, or constraints
-- Use `aria-describedby` on inputs linking to help text ID for accessibility
-- Keep help text concise (1-2 sentences maximum)
-- For optional fields, mention they're optional in the help text if not obvious
-- For date/time fields, specify timezone context if relevant
-- For numeric fields, specify units, ranges, or increments (e.g., "Duration in minutes (minimum 5, increments of 5)")
-- Never place help text after the input field
-- **VIOLATION**: Any form field without help text is a design standards violation
-
-### Implementation Rules (MANDATORY)
-
-- **ALWAYS** use design system components (`x-ui::*`)
-- **NEVER** use hardcoded colors or arbitrary values
-- **ALWAYS** add help text to form inputs
-- **ALWAYS** include all required interactive states
-- **ALWAYS** test responsive behavior
-- **ALWAYS** verify accessibility requirements
-- **ALWAYS** follow the design quality checklist
-
-### Pattern Documentation Requirement (MANDATORY)
-
-- **MANDATORY**: Document any new UI patterns in `app/docs/DESIGN_SYSTEM.md` BEFORE implementing
-- **MANDATORY**: Update design system documentation when adding new components
-- **MANDATORY**: Reference `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues
+- **All form inputs MUST have help text** placed BEFORE the input (Label → Help Text → Input → Error)
+- Help text styling: `class="mt-1 text-xs text-foreground/60"` with `aria-describedby` linking
+- Pattern: `<x-input-label>` → `<p id="..._help">` → `<x-text-input aria-describedby="..._help">` → `<x-input-error>`
+- Keep help text concise (1-2 sentences). Specify units/ranges for numeric fields, timezone for dates.
+- **ALWAYS** use design system components (`x-ui::*`), never hardcoded colors or arbitrary values.
 
 ## Project-Enforced Conventions
 
 - **Always run commands via Docker**:
-  - Use `docker compose exec -T app bash -lc 'cd app && <command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly.
-  - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'cd app && php artisan migrate'`).
+  - Use `docker compose exec -T app bash -lc '<command>'` or Makefile targets (e.g., `make migrate`, `make qa`). Never run host PHP/Node directly. The container's WORKDIR is already `/var/www/html/app` — do NOT prepend `cd app &&`; the nested `app/` does not exist inside the container and the command will fail with "Could not open input file: artisan".
+  - Run migrations via Docker (e.g., `docker compose exec -T app bash -lc 'php artisan migrate'`).
 - **After any frontend asset changes** (`resources/js`, `resources/css`, etc.), run `make assets-build` before QA or deployment so the Vite manifest stays updated.
 - **When introducing a new page-specific JS/CSS entry**, immediately register it in `vite.config.js` and rerun `make assets-build` so Vite's manifest includes the chunk before opening the corresponding Blade view.
 - **Local-only documentation**: Implementation plans, feature analysis, test failure analysis, implementation summaries, and similar "done but not implemented" or temporary analysis documents must be stored in the **`_local_docs/`** folder at the repository root. This folder is in `.gitignore` and must not be committed or pushed. When creating or saving such artifacts, always place them in `_local_docs/` to keep the repo clean and data structured.
@@ -340,160 +270,16 @@ Before considering UI complete, verify:
 
 ## PHPStan Level 8 Compliance (MANDATORY)
 
-This project enforces PHPStan Level 8 with Larastan (`checkModelProperties: true`). All new and modified PHP code MUST pass with zero errors. The rules below prevent the most common violations.
+This project enforces PHPStan Level 8 with Larastan (`checkModelProperties: true`). All new and modified PHP code MUST pass with zero errors.
 
-### General
-
-- Every PHP file MUST start with `declare(strict_types=1);`.
-- Every method MUST have a native return type. If the return type involves generics (Collection, Builder, Paginator, arrays), also add a `@return` PHPDoc tag.
-- Every method parameter MUST be typed (native type + PHPDoc for generics).
-- Never use bare `array` as a type — always specify value types: `array<string, mixed>`, `array<int, string>`, `array{key: type, ...}`, etc.
-
-### Model Relations
-
-Every Eloquent relation method MUST include full generic annotations:
-
-```php
-/** @return HasOne<TherapistProfile, $this> */
-public function therapistProfile(): HasOne { ... }
-
-/** @return BelongsTo<User, $this> */
-public function student(): BelongsTo { ... }
-
-/** @return HasMany<SessionLog, $this> */
-public function sessionLogs(): HasMany { ... }
-
-// BelongsToMany with custom pivot:
-/** @return BelongsToMany<Service, $this, SSAService, 'pivot'> */
-public function services(): BelongsToMany { ... }
-
-// BelongsToMany with default pivot (no ->using()):
-/** @return BelongsToMany<User, $this> */
-public function students(): BelongsToMany { ... }
-
-// MorphMany:
-/** @return MorphMany<Document, $this> */
-public function documents(): MorphMany { ... }
-```
-
-### HasFactory Trait
-
-Every model using `HasFactory` MUST have a `@use` annotation:
-
-```php
-// With a dedicated factory:
-/** @use HasFactory<\Database\Factories\UserFactory> */
-use HasFactory;
-
-// Without a dedicated factory:
-/** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
-use HasFactory;
-```
-
-### Eloquent Nullability Rules
-
-- **BelongsTo relations** return `Model|null`. When accessing properties through a BelongsTo, use nullsafe: `$sessionLog->student?->name`.
-- **Cast enum properties** are always the enum type (never null, never string) when the column is NOT nullable. Do NOT use `?->` on them: `$model->status->value` (correct), NOT `$model->status?->value`.
-- **Nullable Carbon columns** (`end_date`, etc.) may be null. Use nullsafe: `$ssa->end_date?->format('Y-m-d') ?? ''`.
-- **Non-nullable Carbon columns** (`start_date`, `created_at`) are always Carbon. Do NOT use `?->`: `$ssa->start_date->format('Y-m-d')`.
-
-### Collections, Builders, and Paginators
-
-Always specify generics on Collection, Builder, and Paginator types:
-
-```php
-/** @return Collection<int, SessionLog> */
-/** @return Builder<User> */
-/** @return LengthAwarePaginator<int, SessionLog> */
-/** @param Collection<int, ServiceSupportAgreement> $ssas */
-```
-
-**Important**: `LengthAwarePaginator` from `Illuminate\Contracts\Pagination` is NOT iterable. Use `->items()` to get the array for `foreach`:
-
-```php
-foreach ($paginator->items() as $item) { ... }
-```
-
-### FormRequest Methods
-
-```php
-// rules() — MUST have this exact annotation:
-/** @return array<string, array<int, mixed>|string> */
-public function rules(): array { ... }
-
-// messages() — MUST have this annotation:
-/** @return array<string, string> */
-public function messages(): array { ... }
-
-// withValidator() — MUST type the parameter:
-public function withValidator(\Illuminate\Validation\Validator $validator): void { ... }
-
-// baseRules() in abstract FormRequests:
-/** @return array<string, array<int, mixed>|string> */
-protected function baseRules(): array { ... }
-```
-
-### Model Scopes
-
-Scope methods MUST type both parameter and return:
-
-```php
-/**
- * @param Builder<User> $query
- * @return Builder<User>
- */
-public function scopeActive(Builder $query): Builder
-{
-    return $query->where('is_active', true);
-}
-```
-
-### Repository & Service Methods
-
-- Interface and implementation MUST have matching `@param` and `@return` PHPDoc.
-- Never return bare `array` — always specify shape or value types:
-
-```php
-/** @param array<string, mixed> $data */
-public function create(array $data): Model;
-
-/** @return array{total: int, active: int, inactive: int} */
-public function metrics(): array;
-
-/** @return array<string, mixed> */
-public function formPayload(): array;
-```
-
-### DTO Methods
-
-```php
-/** @param array<string, mixed> $data */
-public static function fromArray(array $data): self { ... }
-
-/** @return array<string, mixed> */
-public function toArray(): array { ... }
-```
-
-### Common Pitfalls and Fixes
-
-| Pitfall | Wrong | Correct |
-|---------|-------|---------|
-| `file_get_contents()` returns `string\|false` | `$content = file_get_contents($path);` | `$content = (string) file_get_contents($path);` |
-| `fgetcsv()` returns nullable values | `array_map('trim', $row)` | `array_map(static fn ($v): string => trim((string) $v), $row)` |
-| `Model::find()` returns `Model\|null` | `$user = User::find($id);` | `/** @var User $user */ $user = User::findOrFail($id);` |
-| `Model::findOrFail()` union type | `$m = Model::findOrFail($id);` | `/** @var User $m */ $m = User::findOrFail($id);` |
-| Pivot attribute access | `$model->pivot->amount` | `$model->getRelation('pivot')->amount` |
-| Dynamic/computed attribute | `$model->computed_attr` | `$model->getAttribute('computed_attr')` |
-| `Model::delete()` returns `bool\|null` | `return $model->delete();` | `return (bool) $model->delete();` |
-| `groupBy()` key type | `Collection<int, ...>` | `Collection<int\|string, ...>` |
-| Enum `instanceof` on cast prop | `$user->role instanceof Role` | Always true — just use `$user->role === Role::ADMIN` |
-
-### Builder::where() Column Strings
-
-Larastan validates column names in `Builder::where('column', ...)` calls against model properties. When using `@template TModel of Model` on generic query methods, Larastan resolves columns against the base `Model` class (which has no columns). This is a known Larastan limitation. Suppress with:
-
-```php
-$query->where('column_name', $value); // @phpstan-ignore argument.type
-```
-
-Only use this ignore for Builder column string errors, never for other argument.type issues.
+**Key rules** (see `app/docs/PHPSTAN_RULES.md` for full reference with code examples):
+- Every PHP file: `declare(strict_types=1);`
+- Every method: native return type + `@return` PHPDoc for generics
+- Every parameter: typed (native + PHPDoc for generics)
+- Never bare `array` — always specify: `array<string, mixed>`, `array{key: type}`, etc.
+- Model relations: full generic annotations (`/** @return HasMany<SessionLog, $this> */`)
+- HasFactory: `@use` annotation required
+- BelongsTo: always nullsafe (`$model->relation?->property`)
+- Cast enums: never nullsafe on non-nullable (`$model->status->value`)
+- Collections/Builders/Paginators: always specify generics
+- Builder column strings with `@template`: suppress with `// @phpstan-ignore argument.type`

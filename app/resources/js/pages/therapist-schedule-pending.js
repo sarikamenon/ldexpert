@@ -1,4 +1,5 @@
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
+import { BILLING_STATUS_TRANSITION_OPTIONS } from '../common/billing-status';
 
 (function ($) {
     'use strict';
@@ -29,11 +30,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                 showCancelButton: true,
                 cancelButtonText: 'Cancel',
                 input: 'select',
-                inputOptions: {
-                    'billed': 'Billed',
-                    'not_billable': 'Not Billable',
-                    'waived': 'Waived',
-                },
+                inputOptions: BILLING_STATUS_TRANSITION_OPTIONS,
                 inputPlaceholder: 'Select billing status',
                 inputValidator: (value) => {
                     if (!value) {

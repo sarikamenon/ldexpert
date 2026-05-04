@@ -40,7 +40,7 @@
             </div>
 
             <div>
-                <p class="text-sm text-foreground/70">School</p>
+                <p class="text-sm text-foreground/70">School/Family</p>
                 @if ($ssa->student->studentProfile?->school)
                     <a href="{{ request()->routeIs('admin.*') ? route('admin.schools.show', $ssa->student->studentProfile->school) : '#' }}"
                         class="text-base font-medium {{ request()->routeIs('admin.*') ? 'text-primary hover:underline' : 'text-foreground' }}">
@@ -63,20 +63,6 @@
                 <p class="text-base font-medium text-foreground">
                     {{ $ssa->primaryService->name ?? '—' }}
                 </p>
-            </div>
-
-            {{-- Additional Services --}}
-            <div>
-                <p class="text-sm text-foreground/70">Additional Services</p>
-                <div class="space-y-1">
-                    @if ($ssa->additionalServices->isNotEmpty())
-                        @foreach ($ssa->additionalServices as $service)
-                            <div class="text-base font-medium text-foreground">{{ $service->name }}</div>
-                        @endforeach
-                    @else
-                        <div class="text-base font-medium text-foreground/50">No Additional Services</div>
-                    @endif
-                </div>
             </div>
 
             <div class="pt-2">

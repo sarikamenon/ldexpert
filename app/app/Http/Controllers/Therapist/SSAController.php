@@ -89,7 +89,6 @@ final class SSAController extends Controller
             'student',
             'student.studentProfile.school',
             'primaryService',
-            'additionalServices',
             'assignedTherapist',
             'assignedTherapist.therapistProfile',
         ]);

@@ -137,8 +137,14 @@ class ExpenseController extends Controller
     /**
      * Show the form for editing the specified expense.
      */
-    public function edit(Expense $expense): View
+    public function edit(Expense $expense): View|RedirectResponse
     {
+        if ($expense->source_type !== null) {
+            return redirect()
+                ->route('admin.expenses.show', $expense)
+                ->with('error', 'This expense is managed by another module and cannot be edited.');
+        }
+
         $this->authorize('update', $expense);
 
         return view('admin.expenses.edit', [

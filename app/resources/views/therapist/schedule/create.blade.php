@@ -13,7 +13,7 @@
                         Create a single schedule for a student with an active SSA.
                     </p>
                 </div>
-                <a href="{{ route('therapist.schedule.calendar') }}">
+                <a href="{{ route('therapist.schedule-calendar.index') }}">
                     <x-ui::button>
                         Back to Calendar
                     </x-ui::button>
@@ -30,6 +30,7 @@
                 'studentServiceMappings' => $studentServiceMappings,
                 'isEdit' => false,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
+                'isPrivateStudent' => $isPrivateStudent ?? false,
             ])
         </div>
     </div>
@@ -50,8 +51,9 @@
             {!! json_encode([
                 'selected_students' => $preselectedStudent ? [$preselectedStudent->id] : [],
                 'selected_service' => old('service_id', $preselectedService?->id),
+                'is_private_student' => $isPrivateStudent ?? false,
             ]) !!}
         </script>
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
+        @vite(['resources/css/therapist-schedule.css', 'resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-create.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
     </x-slot>
 </x-app-layout>

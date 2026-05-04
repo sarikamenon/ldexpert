@@ -1,9 +1,9 @@
 <x-admin.layouts.app>
-    <x-page-title title="School Contract #{{ $contract->id }}" />
+    <x-page-title title="School/Family Contract #{{ $contract->id }}" />
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <x-ui::card class="p-6 space-y-2">
-            <p class="text-sm text-foreground/70">School</p>
+            <p class="text-sm text-foreground/70">School/Family</p>
             <p class="text-lg font-semibold">{{ $contract->school?->display_name ?? '—' }}</p>
         </x-ui::card>
 

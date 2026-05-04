@@ -44,6 +44,24 @@ final class ScheduleScope extends BaseModelScope
 
     /**
      * @param  Builder<Schedule>  $builder
+     * @param  array<int, ScheduleStatus|string>  $statuses
+     * @return Builder<Schedule>
+     */
+    public static function withStatuses(Builder $builder, Model $model, array $statuses): Builder
+    {
+        return $builder->whereIn(
+            self::qualify($model, 'status'),
+            array_map(
+                static fn (ScheduleStatus|string $status): string => $status instanceof ScheduleStatus
+                    ? $status->value
+                    : $status,
+                $statuses
+            )
+        );
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
      * @return Builder<Schedule>
      */
     public static function pendingBilling(Builder $builder, Model $model): Builder
@@ -73,9 +91,18 @@ final class ScheduleScope extends BaseModelScope
      * @param  Builder<Schedule>  $builder
      * @return Builder<Schedule>
      */
-    public static function waived(Builder $builder, Model $model): Builder
+    public static function unbilled(Builder $builder, Model $model): Builder
     {
-        return $builder->where(self::qualify($model, 'billing_status'), BillingStatus::WAIVED->value);
+        return $builder->where(self::qualify($model, 'billing_status'), BillingStatus::PENDING->value);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function scheduleDateFrom(Builder $builder, Model $model, string $fromDate): Builder
+    {
+        return $builder->where(self::qualify($model, 'schedule_date'), '>=', $fromDate);
     }
 
     /**
@@ -131,6 +158,15 @@ final class ScheduleScope extends BaseModelScope
     public static function forSSA(Builder $builder, Model $model, ServiceSupportAgreement $ssa): Builder
     {
         return $builder->where(self::qualify($model, 'ssa_id'), $ssa->id);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function betweenScheduleDates(Builder $builder, Model $model, string $startDate, string $endDate): Builder
+    {
+        return $builder->whereBetween(self::qualify($model, 'schedule_date'), [$startDate, $endDate]);
     }
 
     /**

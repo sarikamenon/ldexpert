@@ -66,15 +66,6 @@ it('prevents non-admin from accessing therapist bills', function () {
 it('allows admin to view therapist bill create page', function () {
     $admin = billingAdminUser();
     $therapist = User::factory()->therapist()->create();
-    $student = User::factory()->student()->create();
-    $school = School::factory()->create();
-    $service = Service::factory()->create();
-    $ssa = ServiceSupportAgreement::factory()->create([
-        'student_id' => $student->id,
-        'assigned_therapist_id' => $therapist->id,
-    ]);
-
-    createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
 
     $response = $this->actingAs($admin)
         ->get(route('admin.billing.therapist-bills.create'));
@@ -82,10 +73,11 @@ it('allows admin to view therapist bill create page', function () {
     $response->assertOk()
         ->assertSee('Create Therapist Bill')
         ->assertViewIs('admin.billing.therapist-bills.create')
-        ->assertViewHas('sessionLogs');
+        ->assertViewHas('therapists')
+        ->assertViewHas('billNumber');
 });
 
-it('creates a therapist bill from selected session logs', function () {
+it('creates draft with no sessions and redirects to attach-sessions', function () {
     Mail::fake();
 
     $admin = billingAdminUser();
@@ -98,29 +90,116 @@ it('creates a therapist bill from selected session logs', function () {
         'assigned_therapist_id' => $therapist->id,
     ]);
 
-    $sessionLog1 = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
-    $sessionLog2 = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
-
     $response = $this->actingAs($admin)
         ->post(route('admin.billing.therapist-bills.store'), [
             'therapist_id' => $therapist->id,
             'bill_date' => now()->format('Y-m-d'),
             'billing_period_start' => now()->subDays(30)->format('Y-m-d'),
             'billing_period_end' => now()->format('Y-m-d'),
-            'session_log_ids' => [$sessionLog1->id, $sessionLog2->id],
+            'session_log_ids' => [],
         ]);
 
     $response->assertRedirect();
+    expect(str_contains($response->headers->get('Location'), 'attach-sessions'))->toBeTrue();
+
+    $bill = TherapistBill::where('therapist_id', $therapist->id)->latest()->first();
+    expect($bill)->not->toBeNull();
+    expect($bill->status)->toBe(TherapistBillStatus::DRAFT);
+    expect((float) $bill->subtotal)->toBe(0.0);
+    expect((float) $bill->total_due)->toBe(0.0);
+    expect($bill->sessionLogs->count())->toBe(0);
+});
+
+it('attach-sessions page shows for draft and updates sessions', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create();
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log1 = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
+    $log2 = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+        'billing_period_start' => now()->subDays(30),
+        'billing_period_end' => now(),
+        'bill_date' => now(),
+        'due_date' => now()->addDays(30),
+        'subtotal' => 0,
+        'adjustments_total' => 0,
+        'total_due' => 0,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.billing.therapist-bills.attach-sessions.store', $bill), [
+            'session_log_ids' => [$log1->id, $log2->id],
+        ]);
+
+    $response->assertRedirect(route('admin.billing.therapist-bills.show', $bill));
     $response->assertSessionHas('success');
 
-    $this->assertDatabaseHas('therapist_bills', [
+    $bill->refresh();
+    expect($bill->sessionLogs->count())->toBe(2);
+    expect((float) $bill->subtotal)->toBe(200.0);
+    expect($log1->fresh()->therapist_bill_id)->toBe($bill->id)
+        ->and($log2->fresh()->therapist_bill_id)->toBe($bill->id);
+});
+
+it('attach-sessions allows removing sessions', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create();
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log1 = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
+    $log2 = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
+
+    $bill = TherapistBill::factory()->create([
         'therapist_id' => $therapist->id,
         'status' => TherapistBillStatus::DRAFT->value,
     ]);
 
-    $bill = TherapistBill::where('therapist_id', $therapist->id)->first();
-    expect($bill->sessionLogs)->toHaveCount(2);
-    expect((float) $bill->subtotal)->toBe(200.00);
+    $log1->update(['therapist_bill_id' => $bill->id]);
+    $log2->update(['therapist_bill_id' => $bill->id]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.billing.therapist-bills.attach-sessions.store', $bill), [
+            'session_log_ids' => [$log1->id],
+        ]);
+
+    $response->assertRedirect(route('admin.billing.therapist-bills.show', $bill));
+
+    $bill->refresh();
+    expect($bill->sessionLogs->count())->toBe(1)
+        ->and((float) $bill->subtotal)->toBe(100.0);
+
+    expect($log2->fresh()->therapist_bill_id)->toBeNull();
+});
+
+it('attach-sessions rejects non-draft therapist bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::SENT->value,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.billing.therapist-bills.attach-sessions', $bill));
+
+    $response->assertForbidden();
 });
 
 it('allows admin to view therapist bill details', function () {
@@ -163,4 +242,126 @@ it('allows admin to send therapist bill', function () {
     $bill->refresh();
     expect($bill->status)->toBe(TherapistBillStatus::SENT);
     expect($bill->sent_at)->not->toBeNull();
+});
+
+it('prevents admin from sending zero amount therapist bill', function () {
+    Mail::fake();
+
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+        'total_due' => 0,
+        'therapist_email' => 'therapist@example.com',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.billing.therapist-bills.send', $bill), [
+            'email' => null,
+            'message' => null,
+        ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors(['error' => 'Zero amount bills cannot be sent.']);
+    Mail::assertNothingSent();
+
+    $bill->refresh();
+    expect($bill->status)->toBe(TherapistBillStatus::DRAFT)
+        ->and($bill->sent_at)->toBeNull();
+});
+
+it('allows admin to delete a draft bill and unlinks sessions', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create();
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+    ]);
+
+    $session = createApprovedSessionLogForBilling($therapist, $student, $school, $service, $ssa);
+    $session->update(['therapist_bill_id' => $bill->id]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertRedirect(route('admin.billing.therapist-bills.index'));
+    $response->assertSessionHas('success');
+
+    expect(TherapistBill::find($bill->id))->toBeNull();
+    expect(TherapistBill::withTrashed()->find($bill->id))->not->toBeNull();
+    expect($session->fresh()->therapist_bill_id)->toBeNull();
+});
+
+it('prevents admin from deleting a sent non-zero bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::SENT->value,
+        'total_due' => 125.00,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertForbidden();
+    expect(TherapistBill::find($bill->id))->not->toBeNull();
+});
+
+it('allows admin to delete a sent zero amount bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::SENT->value,
+        'total_due' => 0,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertRedirect(route('admin.billing.therapist-bills.index'));
+    expect(TherapistBill::withTrashed()->find($bill->id)->deleted_at)->not->toBeNull();
+});
+
+it('prevents admin from deleting a paid bill', function () {
+    $admin = billingAdminUser();
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::PAID->value,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertForbidden();
+    expect(TherapistBill::find($bill->id))->not->toBeNull();
+});
+
+it('prevents therapist from deleting a bill', function () {
+    $therapist = User::factory()->therapist()->create();
+
+    $bill = TherapistBill::factory()->create([
+        'therapist_id' => $therapist->id,
+        'status' => TherapistBillStatus::DRAFT->value,
+    ]);
+
+    $response = $this->actingAs($therapist)
+        ->delete(route('admin.billing.therapist-bills.destroy', $bill));
+
+    $response->assertForbidden();
+    expect(TherapistBill::find($bill->id))->not->toBeNull();
 });

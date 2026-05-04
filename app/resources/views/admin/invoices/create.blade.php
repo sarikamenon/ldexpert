@@ -33,10 +33,10 @@
             <h2 class="text-lg font-semibold text-foreground">Invoice Details</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                    <x-input-label for="school_id" value="School *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="school_id_help">School to invoice. Session logs can be added in the next step.</p>
-                    <x-ui::select id="school_id" name="school_id" class="mt-1" required searchable placeholder="Select School" aria-describedby="school_id_help">
-                        <option value="">Select School</option>
+                    <x-input-label for="school_id" value="School/Family *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="school_id_help">School or family to invoice. Session logs can be added in the next step.</p>
+                    <x-ui::select id="school_id" name="school_id" class="mt-1" required searchable placeholder="Select School/Family" aria-describedby="school_id_help">
+                        <option value="">Select School/Family</option>
                         @foreach ($schools ?? [] as $school)
                             <option value="{{ $school->id }}" @selected(old('school_id') == $school->id)>
                                 {{ $school->display_name }}

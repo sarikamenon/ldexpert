@@ -44,6 +44,31 @@ final class UpdateScheduleDTOTest extends TestCase
         $this->assertSame(BillingStatus::BILLED, $dto->billingStatus);
     }
 
+    public function test_from_array_parses_occurrence_dates(): void
+    {
+        $data = [
+            'schedule_date' => '2025-06-01',
+            'start_time' => '09:00',
+            'recurrence_type' => 'custom_weekly',
+            'recurrence_end_date' => '2025-06-30',
+            'occurrence_dates' => ['2025-06-02', '2025-06-09', '2025-06-16'],
+        ];
+
+        $dto = UpdateScheduleDTO::fromArray($data);
+
+        $this->assertSame(['2025-06-02', '2025-06-09', '2025-06-16'], $dto->occurrenceDates);
+    }
+
+    public function test_from_array_leaves_occurrence_dates_null_when_absent(): void
+    {
+        $dto = UpdateScheduleDTO::fromArray([
+            'schedule_date' => '2025-06-01',
+            'start_time' => '09:00',
+        ]);
+
+        $this->assertNull($dto->occurrenceDates);
+    }
+
     public function test_to_array_includes_only_non_null_values(): void
     {
         $dto = new UpdateScheduleDTO(

@@ -8,19 +8,19 @@
                 <div class="flex justify-between gap-4">
                     <dt class="text-foreground/60">Session Date</dt>
                     <dd class="text-foreground font-medium">
-                        {{ $sessionLog->session_date?->format('M d, Y') ?? '—' }}
+                        {{ $sessionLog->session_date_formatted ?? '—' }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-4">
                     <dt class="text-foreground/60">Start Time</dt>
                     <dd class="text-foreground font-medium">
-                        {{ $sessionLog->start_time?->format('g:i A') ?? '—' }}
+                        {{ $sessionLog->start_time_formatted ?? '—' }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-4">
                     <dt class="text-foreground/60">End Time</dt>
                     <dd class="text-foreground font-medium">
-                        {{ $sessionLog->end_time?->format('g:i A') ?? '—' }}
+                        {{ $sessionLog->end_time_formatted ?? '—' }}
                     </dd>
                 </div>
                 <div class="flex justify-between gap-4">
@@ -61,7 +61,7 @@
                 </div>
                 @if (auth()->check() && auth()->user()->role === \App\Enums\Role::ADMIN)
                     <div class="flex justify-between gap-4">
-                        <dt class="text-foreground/60">School Amount</dt>
+                        <dt class="text-foreground/60">School/Family Amount</dt>
                         <dd class="text-foreground font-medium">
                             {{ $sessionLog->school_invoice_amount ?? '—' }}
                         </dd>

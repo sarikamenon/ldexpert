@@ -13,7 +13,7 @@
                         Update schedule date, time, location, and notes.
                     </p>
                 </div>
-                <a href="{{ route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) }}"
+                <a href="{{ route('therapist.schedule-calendar.index') }}"
                     class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
                     Back to Calendar
                 </a>
@@ -29,11 +29,16 @@
                 'studentServiceMappings' => collect(),
                 'isEdit' => true,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
+                'isPrivateStudent' => $isPrivateStudent,
+                'scheduleLocalDate' => $scheduleLocalDate,
+                'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
+                'scheduleLocalStartTime' => $scheduleLocalStartTime,
+                'scheduleLocalEndTime' => $scheduleLocalEndTime,
             ])
         </div>
     </div>
 
     <x-slot name="scripts">
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-time.js'])
+        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
     </x-slot>
 </x-app-layout>

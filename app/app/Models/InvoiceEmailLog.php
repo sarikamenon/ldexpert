@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property InvoiceEmailType $type
  * @property Carbon $sent_at
+ * @property string|null $sent_at_formatted Set transiently by controllers — pre-formatted in viewer/owner timezone for display.
  */
 class InvoiceEmailLog extends Model
 {

@@ -36,6 +36,8 @@ abstract class SchoolContractFormRequest extends FormRequest
             'services.*.rate_type' => ['required', Rule::in(RateType::values())],
             'services.*.no_show_rate' => ['nullable', 'required_with:services.*.no_show_rate_type', 'numeric', 'min:0'],
             'services.*.no_show_rate_type' => ['nullable', 'required_with:services.*.no_show_rate', Rule::in(RateType::values())],
+            'document' => ['nullable', 'file', 'max:10240', 'mimes:pdf,doc,docx,jpg,jpeg,png'],
+            'remove_document' => ['nullable', 'boolean'],
         ];
     }
 

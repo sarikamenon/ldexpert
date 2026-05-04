@@ -17,6 +17,7 @@ use App\Http\Support\DataTablesResponse;
 use App\Models\SessionLogImport;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -158,5 +159,26 @@ final class SessionLogImportController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    public function downloadImported(Request $request, SessionLogImport $import): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('viewAny', SessionLogImport::class);
+
+        try {
+            return \Illuminate\Support\Facades\Storage::download(
+                $import->file_path,
+                $import->file_name,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Session log import file download failed', [
+                'import_id' => $import->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'The original import file could not be found.');
+        }
     }
 }

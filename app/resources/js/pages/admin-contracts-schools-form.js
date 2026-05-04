@@ -1,6 +1,11 @@
 import { errorAlert } from '../common/sweetalert';
 
 document.addEventListener('DOMContentLoaded', () => {
+    initServiceRows();
+    initDocumentUpload();
+});
+
+function initServiceRows() {
     const tableBody = document.querySelector('#contractServicesTable tbody');
     const addButton = document.getElementById('addServiceRow');
     const template = document.getElementById('serviceRowTemplate');
@@ -47,5 +52,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         removeButton.closest('tr').remove();
     });
-});
+}
 
+function initDocumentUpload() {
+    const existingDocName = document.getElementById('existing-document-name');
+    const removeExistingBtn = document.getElementById('remove-existing-document');
+    const removeDocInput = document.getElementById('remove_document_input');
+    const documentInput = document.getElementById('document_input');
+    const removeSelectedBtn = document.getElementById('remove-selected-document');
+
+    if (removeExistingBtn && existingDocName && removeDocInput) {
+        removeExistingBtn.addEventListener('click', () => {
+            existingDocName.classList.add('hidden');
+            removeDocInput.value = '1';
+        });
+    }
+
+    if (documentInput && removeSelectedBtn) {
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+
+        documentInput.addEventListener('change', () => {
+            const hasFile = documentInput.files && documentInput.files.length > 0;
+
+            if (hasFile) {
+                const file = documentInput.files[0];
+
+                if (file.size > maxSize) {
+                    errorAlert('File size must not exceed 10MB.');
+                    documentInput.value = '';
+                    removeSelectedBtn.classList.add('hidden');
+                    return;
+                }
+
+                if (!allowedTypes.includes(file.type)) {
+                    errorAlert('Invalid file type. Accepted formats: PDF, DOC, DOCX, JPG, PNG.');
+                    documentInput.value = '';
+                    removeSelectedBtn.classList.add('hidden');
+                    return;
+                }
+            }
+
+            removeSelectedBtn.classList.toggle('hidden', !hasFile);
+            if (hasFile && existingDocName) {
+                existingDocName.classList.add('hidden');
+            }
+        });
+
+        removeSelectedBtn.addEventListener('click', () => {
+            documentInput.value = '';
+            removeSelectedBtn.classList.add('hidden');
+        });
+    }
+}

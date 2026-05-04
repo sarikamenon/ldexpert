@@ -68,7 +68,7 @@ it('creates a school', function () {
     $this->actingAs($admin)
         ->post(route('admin.schools.store'), $payload)
         ->assertRedirect(route('admin.schools.index'))
-        ->assertSessionHas('status', 'School added successfully.');
+        ->assertSessionHas('status', 'School/family added successfully.');
 
     $this->assertDatabaseHas('schools', [
         'display_name' => 'North Ridge',
@@ -86,7 +86,7 @@ it('updates a school', function () {
     $this->actingAs($admin)
         ->patch(route('admin.schools.update', $school), $payload)
         ->assertRedirect(route('admin.schools.index'))
-        ->assertSessionHas('status', 'School information updated successfully.');
+        ->assertSessionHas('status', 'School/family information updated successfully.');
 
     $this->assertDatabaseHas('schools', [
         'id' => $school->id,
@@ -106,7 +106,7 @@ it('changes school status with reason', function () {
         ->assertOk()
         ->assertJson([
             'success' => true,
-            'message' => 'School deactivated successfully.',
+            'message' => 'School/family deactivated successfully.',
         ]);
 
     $this->assertDatabaseHas('schools', [
@@ -256,6 +256,63 @@ it('prevents non-admin from viewing school show page', function () {
     $this->actingAs($therapist)
         ->get(route('admin.schools.show', $school))
         ->assertForbidden();
+});
+
+it('saves is_auto_extend when creating a school', function () {
+    $admin = schoolAdminUser();
+    $payload = array_merge(validSchoolPayload($admin->id), [
+        'is_private_student' => true,
+        'is_auto_extend' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.schools.store'), $payload)
+        ->assertRedirect(route('admin.schools.index'));
+
+    $this->assertDatabaseHas('schools', [
+        'display_name' => $payload['display_name'],
+        'is_auto_extend' => true,
+    ]);
+});
+
+it('saves is_auto_extend when updating a school', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create(['is_private_student' => true, 'is_auto_extend' => false]);
+
+    $payload = array_merge(validSchoolPayload($admin->id), [
+        'display_name' => $school->display_name,
+        'is_private_student' => true,
+        'is_auto_extend' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.schools.update', $school), $payload)
+        ->assertRedirect(route('admin.schools.index'));
+
+    $this->assertDatabaseHas('schools', [
+        'id' => $school->id,
+        'is_auto_extend' => true,
+    ]);
+});
+
+it('stores is_auto_extend as false when unchecked', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create(['is_private_student' => true, 'is_auto_extend' => true]);
+
+    $payload = array_merge(validSchoolPayload($admin->id), [
+        'display_name' => $school->display_name,
+        'is_private_student' => false,
+        'is_auto_extend' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.schools.update', $school), $payload)
+        ->assertRedirect(route('admin.schools.index'));
+
+    $this->assertDatabaseHas('schools', [
+        'id' => $school->id,
+        'is_auto_extend' => false,
+    ]);
 });
 
 it('loads dashboard metrics correctly for school show page', function () {

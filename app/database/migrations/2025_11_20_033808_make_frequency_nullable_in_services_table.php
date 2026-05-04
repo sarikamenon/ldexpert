@@ -17,8 +17,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Keep nullable — reverting to NOT NULL would fail if null values exist
         Schema::table('services', function (Blueprint $table): void {
-            $table->string('frequency', 32)->default('adhoc')->change();
+            $table->string('frequency', 32)->nullable()->default('adhoc')->change();
         });
     }
 };

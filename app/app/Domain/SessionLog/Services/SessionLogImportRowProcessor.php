@@ -8,14 +8,15 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\CreateSessionLogDTO;
 use App\Enums\Role;
 use App\Enums\SchoolStatus;
+use App\Enums\ServiceStatus;
 use App\Enums\SessionLogImportRowStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
-use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\School;
@@ -34,6 +35,7 @@ final class SessionLogImportRowProcessor
         private readonly UserRepositoryInterface $userRepository,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
         private readonly SessionLogRateService $rateService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -55,7 +57,7 @@ final class SessionLogImportRowProcessor
         } catch (\Exception $e) {
             $importRow->update([
                 'status' => SessionLogImportRowStatus::VALIDATION_ERROR,
-                'error_message' => 'Failed to process row: ' . $e->getMessage(),
+                'error_message' => 'Failed to process row: '.$e->getMessage(),
                 'processed_at' => now(),
             ]);
         }
@@ -77,13 +79,22 @@ final class SessionLogImportRowProcessor
         $referenceId = trim($mappedData['reference_id'] ?? '');
         if ($referenceId === '') {
             $this->markSkipped($importRow, 'Empty reference ID (Entry_KEYID).');
+
             return;
         }
 
-        $errorFlag = strtoupper(trim($mappedData['error_flag'] ?? ''));
-        $errorDetails = strtolower(trim($mappedData['error_details'] ?? ''));
+        $rawErrorFlag = trim($mappedData['error_flag'] ?? '');
+        $rawErrorDetails = trim($mappedData['error_details'] ?? '');
+        $errorFlag = strtoupper($rawErrorFlag);
+        $errorDetails = strtolower($rawErrorDetails);
         if ($errorFlag !== 'N' && $errorDetails !== 'no therapist selected') {
-            $this->markSkipped($importRow, 'Row flagged with error by source system.');
+            $flagDisplay = $rawErrorFlag === '' ? 'empty' : "\"{$rawErrorFlag}\"";
+            $detailsDisplay = $rawErrorDetails === '' ? 'empty' : "\"{$rawErrorDetails}\"";
+            $this->markSkipped(
+                $importRow,
+                "Row flagged with error by source system (Error={$flagDisplay}, Error Details={$detailsDisplay}); expected Error column to be \"N\"."
+            );
+
             return;
         }
 
@@ -95,6 +106,7 @@ final class SessionLogImportRowProcessor
                 'error_message' => "Duplicate reference ID: {$referenceId}",
                 'processed_at' => now(),
             ]);
+
             return;
         }
         $currentBatch[$referenceId] = true;
@@ -103,25 +115,29 @@ final class SessionLogImportRowProcessor
         // Lookups
         $school = $this->lookupSchool($mappedData['school_name'] ?? '');
         if (! $school) {
-            $this->markError($importRow, "School not found by external EMR name: '{$mappedData['school_name']}'.");
+            $this->markError($importRow, "School/family not found by external EMR name: '{$mappedData['school_name']}'.");
+
             return;
         }
 
         $student = $this->lookupStudent($mappedData['student_id_number'] ?? '', $school->id);
         if (! $student) {
-            $this->markError($importRow, "Student not found with ID '{$mappedData['student_id_number']}' at school '{$school->name}'.");
+            $this->markError($importRow, "Student not found with ID '{$mappedData['student_id_number']}' at school/family '{$school->name}'.");
+
             return;
         }
 
         $therapist = $this->lookupTherapist($mappedData['therapist_email'] ?? '');
         if (! $therapist) {
             $this->markError($importRow, "Therapist not found or inactive: '{$mappedData['therapist_email']}'.");
+
             return;
         }
 
         $service = $this->lookupService($mappedData['primary_service_name'] ?? '');
         if (! $service) {
             $this->markError($importRow, "Service not found: '{$mappedData['primary_service_name']}'.");
+
             return;
         }
 
@@ -129,16 +145,19 @@ final class SessionLogImportRowProcessor
         $sessionDate = $this->parseDate($mappedData['session_date'] ?? '');
         if (! $sessionDate) {
             $this->markError($importRow, "Invalid date format: '{$mappedData['session_date']}'.");
+
             return;
         }
         if (Carbon::parse($sessionDate)->isFuture()) {
             $this->markError($importRow, 'Session date cannot be in the future.');
+
             return;
         }
 
         $outcome = $this->mapOutcome($mappedData['type1'] ?? '');
         if (! $outcome) {
             $this->markError($importRow, "Unknown outcome Type1: '{$mappedData['type1']}'.");
+
             return;
         }
 
@@ -146,6 +165,7 @@ final class SessionLogImportRowProcessor
         $durationMinutes = (int) round($hours * 60);
         if ($durationMinutes <= 0) {
             $this->markError($importRow, 'Duration must be greater than zero.');
+
             return;
         }
 
@@ -153,6 +173,7 @@ final class SessionLogImportRowProcessor
         $endTime = $this->parseTime($mappedData['end_time'] ?? '');
         if (! $startTime || ! $endTime) {
             $this->markError($importRow, 'Invalid start or end time format.');
+
             return;
         }
 
@@ -160,6 +181,7 @@ final class SessionLogImportRowProcessor
         $ssa = $this->lookupSSA($student->id, $service->id, $sessionDate, $therapist->id);
         if (! $ssa) {
             $this->markError($importRow, 'No matching SSA found for student + service + date + therapist.');
+
             return;
         }
 
@@ -169,7 +191,8 @@ final class SessionLogImportRowProcessor
                 $therapist->id, $school->id, $service->id, $sessionDate, $durationMinutes, $outcome
             );
         } catch (\Exception $e) {
-            $this->markError($importRow, 'Billing error: ' . $e->getMessage());
+            $this->markError($importRow, 'Billing error: '.$e->getMessage());
+
             return;
         }
 
@@ -219,6 +242,10 @@ final class SessionLogImportRowProcessor
         $logData['delivery_mode'] = 'virtual';
         $logData['is_group'] = $isGroup;
 
+        // CSV rows are in the importing therapist's local TZ. Convert to UTC
+        // for storage (per CLAUDE.md: all session_log timestamps stored UTC).
+        $logData = $this->timezoneService->convertSessionLocalToUtc($logData, $therapist);
+
         $sessionLog = $this->sessionLogRepository->create($logData);
 
         // Increment SSA served_minutes
@@ -242,6 +269,7 @@ final class SessionLogImportRowProcessor
         if ($school && $school->status === SchoolStatus::ACTIVE) {
             return $school;
         }
+
         return null;
     }
 
@@ -254,6 +282,7 @@ final class SessionLogImportRowProcessor
         if ($profile && $profile->user && $profile->user->status === UserStatus::ACTIVE) {
             return $profile->user;
         }
+
         return null;
     }
 
@@ -266,6 +295,7 @@ final class SessionLogImportRowProcessor
         if ($user && $user->role === Role::THERAPIST && $user->status === UserStatus::ACTIVE) {
             return $user;
         }
+
         return null;
     }
 
@@ -274,21 +304,22 @@ final class SessionLogImportRowProcessor
         if ($name === '') {
             return null;
         }
+
         return Service::query()
-            ->where('name', $name) // @phpstan-ignore argument.type
-            ->where('status', ServiceStatus::ACTIVE) // @phpstan-ignore argument.type
+            ->where('name', $name)
+            ->where('status', ServiceStatus::ACTIVE)
             ->first();
     }
 
     public function lookupSSA(int $studentId, int $serviceId, string $sessionDate, int $therapistId): ?ServiceSupportAgreement
     {
         return ServiceSupportAgreement::query()
-            ->where('student_id', $studentId) // @phpstan-ignore argument.type
-            ->where('primary_service_id', $serviceId) // @phpstan-ignore argument.type
-            ->where('assigned_therapist_id', $therapistId) // @phpstan-ignore argument.type
-            ->where('start_date', '<=', $sessionDate) // @phpstan-ignore argument.type
-            ->where('end_date', '>=', $sessionDate) // @phpstan-ignore argument.type
-            ->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING]) // @phpstan-ignore argument.type
+            ->where('student_id', $studentId)
+            ->where('primary_service_id', $serviceId)
+            ->where('assigned_therapist_id', $therapistId)
+            ->where('start_date', '<=', $sessionDate)
+            ->where('end_date', '>=', $sessionDate)
+            ->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING])
             ->orderByRaw("FIELD(status, 'active', 'pending')")
             ->orderByDesc('start_date')
             ->first();
@@ -310,8 +341,9 @@ final class SessionLogImportRowProcessor
     {
         $parts = array_filter([trim($narrative), trim($goalsProgress)]);
         if (count($parts) === 2) {
-            return $parts[0] . "\n\n--- Goals Progress ---\n" . $parts[1];
+            return $parts[0]."\n\n--- Goals Progress ---\n".$parts[1];
         }
+
         return implode('', $parts);
     }
 

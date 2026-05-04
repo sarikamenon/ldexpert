@@ -27,6 +27,7 @@ use App\Models\TherapistContract;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class TherapistContractController extends Controller
 {
@@ -97,7 +98,7 @@ final class TherapistContractController extends Controller
     {
         $this->authorize('create', TherapistContract::class);
 
-        $dto = CreateTherapistContractDTO::fromArray($request->validated());
+        $dto = CreateTherapistContractDTO::fromArray($request->validated() + ['document' => $request->file('document')]);
 
         try {
             $this->service->create($dto);
@@ -134,7 +135,7 @@ final class TherapistContractController extends Controller
     {
         $this->authorize('update', $therapistContract);
 
-        $dto = UpdateTherapistContractDTO::fromArray($request->validated(), $therapistContract->status);
+        $dto = UpdateTherapistContractDTO::fromArray($request->validated() + ['document' => $request->file('document')], $therapistContract->status);
 
         try {
             $this->service->update($therapistContract, $dto);
@@ -173,6 +174,13 @@ final class TherapistContractController extends Controller
             'message' => $message,
             'status' => $contract->status->value,
         ]);
+    }
+
+    public function downloadDocument(TherapistContract $therapistContract): StreamedResponse
+    {
+        $this->authorize('view', $therapistContract);
+
+        return $this->service->downloadDocument($therapistContract);
     }
 
     /** @return array<string, mixed> */

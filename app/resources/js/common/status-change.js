@@ -6,7 +6,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
 const entityConfigs = {
     school: {
         routePrefix: '/admin/schools',
-        entityName: 'School',
+        entityName: 'School/Family',
         useFormSubmission: false,
         statusLabels: {
             active: 'Activate',
@@ -191,7 +191,7 @@ export function setupStatusChanges(entityType, selector = '.change-status-btn', 
                 },
                 body: JSON.stringify({
                     status,
-                    reason: result.value || null,
+                    reason: (typeof result.value === 'string' && result.value) ? result.value : null,
                 }),
             });
 

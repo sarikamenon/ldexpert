@@ -28,6 +28,7 @@ class PasswordController extends Controller
         $user = $request->user();
         $user->update([
             'password' => Hash::make($request->validated('password')),
+            'password_change_prompted_at' => now(),
         ]);
 
         return redirect()->route('password.edit')->with('status', 'password-updated');

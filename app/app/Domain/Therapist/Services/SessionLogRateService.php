@@ -172,7 +172,7 @@ class SessionLogRateService
             if ($schoolRate['no_show_rate_type'] === null || $schoolRate['no_show_rate'] === null) {
                 throw ValidationException::withMessages([
                     'outcome' => [
-                        'The selected outcome requires a no-show rate. Please add the school no-show rate for this service in the school contract (Admin → Contracts → School Contracts).',
+                        'The selected outcome requires a no-show rate. Please add the school/family no-show rate for this service in the school/family contract (Admin → Contracts → School Contracts).',
                     ],
                 ]);
             }
@@ -195,7 +195,7 @@ class SessionLogRateService
         if ($outcome->isBillableForSchool() && ($schoolRateType === null || $schoolRateAmount === null)) {
             throw ValidationException::withMessages([
                 'service_id' => [
-                    'The school rate for this service is not set. Please configure the service rate in the school contract (Admin → Contracts → School Contracts).',
+                    'The school/family rate for this service is not set. Please configure the service rate in the school/family contract (Admin → Contracts → School Contracts).',
                 ],
             ]);
         }

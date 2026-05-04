@@ -22,6 +22,19 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            @if (! $ssa->assignedTherapist)
+                <button type="button"
+                    class="assign-therapist-btn inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    data-ssa-id="{{ $ssa->id }}"
+                    data-ssa-name="{{ $ssa->student->name }}"
+                    data-ssa-status="{{ $ssa->status->label() }}"
+                    data-service-name="{{ $ssa->primaryService->name }}"
+                    data-service-ids="{{ json_encode([$ssa->primary_service_id]) }}">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                    Assign Therapist
+                </button>
+            @endif
+
             @if ($ssa->status === \App\Enums\SSAStatus::ACTIVE)
                 <x-ui::button class="change-status-btn" data-ssa-id="{{ $ssa->id }}" data-status="completed">
                     Mark as Complete
@@ -31,13 +44,7 @@
                     Deactivate
                 </x-ui::button>
             @elseif ($ssa->status === \App\Enums\SSAStatus::PENDING)
-                <span class="text-sm text-foreground/70">
-                    @if (!$ssa->assignedTherapist)
-                        Assign a therapist to activate
-                    @else
-                        Will activate when therapist is assigned
-                    @endif
-                </span>
+                <span class="text-sm text-foreground/70">Will activate when therapist is assigned</span>
             @elseif ($ssa->status === \App\Enums\SSAStatus::DEACTIVATED)
                 @if ($ssa->canBeActivated())
                     <x-ui::button variant="success" class="change-status-btn" data-ssa-id="{{ $ssa->id }}"
@@ -45,9 +52,7 @@
                         Activate
                     </x-ui::button>
                 @else
-                    <span class="text-sm text-foreground/70">
-                        Assign a therapist to reactivate this SSA
-                    </span>
+                    <span class="text-sm text-foreground/70">Assign a therapist to reactivate this SSA</span>
                 @endif
             @endif
         </x-slot>
@@ -151,13 +156,24 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-semibold text-foreground">Assignment History</h3>
                 @if ($ssa->assignedTherapist)
-                    <x-ui::button variant="danger" id="unassignTherapistBtn" data-ssa-id="{{ $ssa->id }}">
+                    <x-ui::button variant="danger"
+                        class="unassign-therapist-btn"
+                        data-ssa-id="{{ $ssa->id }}"
+                        data-ssa-name="{{ $ssa->student->name }}"
+                        data-service-name="{{ $ssa->primaryService->name }}"
+                        data-therapist-name="{{ $ssa->assignedTherapist->name }}">
                         Unassign Therapist
                     </x-ui::button>
                 @else
-                    <x-ui::button id="assignTherapistBtn" data-ssa-id="{{ $ssa->id }}">
+                    <button type="button"
+                        class="assign-therapist-btn inline-flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-success-foreground hover:bg-success/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        data-ssa-id="{{ $ssa->id }}"
+                        data-ssa-name="{{ $ssa->student->name }}"
+                        data-ssa-status="{{ $ssa->status->label() }}"
+                        data-service-name="{{ $ssa->primaryService->name }}"
+                        data-service-ids="{{ json_encode([$ssa->primary_service_id]) }}">
                         Assign Therapist
-                    </x-ui::button>
+                    </button>
                 @endif
             </div>
 
@@ -166,10 +182,7 @@
                 @json(route('admin.ssas.therapists-for-service'))
             </script>
             <script type="application/json" id="ssa-service-ids">
-                @json(array_merge(
-                    [$ssa->primary_service_id],
-                    $ssa->additionalServices->pluck('id')->all()
-                ))
+                @json([$ssa->primary_service_id])
             </script>
 
             @if ($assignmentHistory->count() > 0)
@@ -227,6 +240,13 @@
         <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
             :datatable-url="$datatableUrl ?? null" :ssa-id="$ssaId ?? null" context="detail" />
     @endif
+
+    <script type="application/json" id="therapists-for-service-url">
+        @json(route('admin.ssas.therapists-for-service'))
+    </script>
+
+    <x-ui::ssa-assign-modal />
+    <x-ui::ssa-unassign-modal />
 
     <x-slot name="scripts">
         @vite(['resources/js/pages/admin-ssas-show.js'])

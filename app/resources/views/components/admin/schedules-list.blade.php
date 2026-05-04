@@ -89,7 +89,7 @@
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Therapist</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">SSA</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Service</th>
-                    <th class="px-3 py-2 text-left font-semibold text-foreground/70">School</th>
+                    <th class="px-3 py-2 text-left font-semibold text-foreground/70">School/Family</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Status</th>
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Billing</th>
                 </tr>
@@ -98,13 +98,15 @@
                 @if(isset($datatableUrl))
                 @else
                 @forelse ($schedules as $schedule)
+                    @php
+                        $rowTz = $schedule->displayTimezone();
+                        $rowLocalStart = $schedule->localStart($rowTz);
+                        $rowLocalEnd = $schedule->localEnd($rowTz);
+                    @endphp
                     <tr>
-                        <td class="px-3 py-2">{{ optional($schedule->schedule_date)->format('Y-m-d') }}</td>
+                        <td class="px-3 py-2">{{ $rowLocalStart->format('Y-m-d') }}</td>
                         <td class="px-3 py-2">
-                            {{ optional($schedule->start_time)->format('H:i') }}
-                            @if ($schedule->end_time)
-                                - {{ $schedule->end_time->format('H:i') }}
-                            @endif
+                            {{ $rowLocalStart->format('H:i') }} - {{ $rowLocalEnd->format('H:i') }}
                         </td>
                         <td class="px-3 py-2">
                             @if ($schedule->therapist)

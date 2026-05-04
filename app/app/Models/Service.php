@@ -8,6 +8,7 @@ use App\Enums\ServiceStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Service extends Model
@@ -38,6 +39,18 @@ final class Service extends Model
         'max_duration_minutes' => 'integer',
         'status' => ServiceStatus::class,
     ];
+
+    /** @return HasMany<TherapistContractService, $this> */
+    public function therapistContractServices(): HasMany
+    {
+        return $this->hasMany(TherapistContractService::class);
+    }
+
+    /** @return HasMany<SchoolContractService, $this> */
+    public function schoolContractServices(): HasMany
+    {
+        return $this->hasMany(SchoolContractService::class);
+    }
 
     /**
      * @param  Builder<Service>  $query

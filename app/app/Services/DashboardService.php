@@ -58,7 +58,7 @@ class DashboardService
         if ($schoolsWithoutManagers > 0) {
             $alerts[] = [
                 'type' => 'danger',
-                'message' => "{$schoolsWithoutManagers} ".($schoolsWithoutManagers === 1 ? 'School' : 'Schools').' without assigned managers',
+                'message' => "{$schoolsWithoutManagers} ".($schoolsWithoutManagers === 1 ? 'School/Family' : 'Schools/Families').' without assigned managers',
                 'link' => route('admin.schools.index'),
                 'icon' => 'alert',
             ];
@@ -136,14 +136,51 @@ class DashboardService
         ];
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /** @return array<string, array<int, array<string, mixed>>> */
     public function getUpcomingEvents(): array
+    {
+        return [
+            'schools' => $this->getExpiringSchoolContractEvents(),
+            'ssas' => $this->getExpiringSSAEvents(),
+        ];
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getExpiringSchoolContractEvents(int $limit = 4): array
     {
         /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
         $events = [];
 
-        $expiringSSAs = $this->repository->getExpiringSSAs(30, 4);
+        $expiringContracts = $this->repository->getExpiringSchoolContracts(30, $limit);
+
+        foreach ($expiringContracts as $contract) {
+            $school = $contract->school;
+            $daysUntilExpiry = now()->diffInDays($contract->end_date);
+            $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
+
+            $events[] = [
+                'title' => 'Contract Expiring',
+                'entity' => $school !== null ? $school->display_name : 'School/Family',
+                'due_date' => $contract->end_date,
+                'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
+                'priority' => $priority,
+                'is_private_student' => (bool) ($school?->is_private_student),
+                'is_auto_extend' => (bool) ($school?->is_auto_extend),
+            ];
+        }
+
+        return $events;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getExpiringSSAEvents(int $limit = 4): array
+    {
+        /** @var \App\Models\User $currentUser */
+        $currentUser = Auth::user();
+        $events = [];
+
+        $expiringSSAs = $this->repository->getExpiringSSAs(30, $limit);
 
         foreach ($expiringSSAs as $ssa) {
             $daysUntilExpiry = now()->diffInDays($ssa->end_date);
@@ -153,6 +190,7 @@ class DashboardService
                 ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
                 : 'Student';
             $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
+            $school = $ssa->student?->studentProfile?->school;
 
             $events[] = [
                 'title' => 'SSA Expiring',
@@ -160,29 +198,12 @@ class DashboardService
                 'due_date' => $ssa->end_date,
                 'due_date_local' => $ssa->end_date ? $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser) : null,
                 'priority' => $priority,
+                'is_private_student' => (bool) ($school?->is_private_student),
+                'is_auto_extend' => (bool) ($school?->is_auto_extend),
             ];
         }
 
-        if (count($events) < 4) {
-            $expiringContracts = $this->repository->getExpiringSchoolContracts(30, 4 - count($events));
-
-            foreach ($expiringContracts as $contract) {
-                $daysUntilExpiry = now()->diffInDays($contract->end_date);
-                $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
-
-                $events[] = [
-                    'title' => 'Contract Expiring',
-                    'entity' => "School Contract - {$contract->school?->display_name}",
-                    'due_date' => $contract->end_date,
-                    'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
-                    'priority' => $priority,
-                ];
-            }
-        }
-
-        usort($events, fn ($a, $b) => $a['due_date'] <=> $b['due_date']);
-
-        return array_slice($events, 0, 4);
+        return $events;
     }
 
     /** @return array<int, array<string, mixed>> */
@@ -201,9 +222,9 @@ class DashboardService
 
         return [
             [
-                'label' => 'School-Therapist Ratio',
+                'label' => 'School/Family–Therapist Ratio',
                 'value' => $activeTherapists > 0 ? number_format($activeSchools / $activeTherapists, 1).':1' : 'N/A',
-                'help' => 'Active schools divided by active therapists, shown as a ratio.',
+                'help' => 'Active schools/families divided by active therapists, shown as a ratio.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
@@ -224,7 +245,7 @@ class DashboardService
             [
                 'label' => 'Active Contracts',
                 'value' => "{$contractActivationRate}%",
-                'help' => 'Percent of school and therapist contracts currently active.',
+                'help' => 'Percent of school/family and therapist contracts currently active.',
                 'trend' => '0',
                 'trend_direction' => 'neutral',
             ],
@@ -243,8 +264,8 @@ class DashboardService
                 'color' => 'primary',
             ],
             [
-                'title' => 'Add School',
-                'description' => 'Onboard new school',
+                'title' => 'Add School/Family',
+                'description' => 'Onboard new school or family',
                 'route' => 'admin.schools.create',
                 'icon' => 'school',
                 'color' => 'primary',
@@ -264,11 +285,18 @@ class DashboardService
                 'color' => 'primary',
             ],
             [
-                'title' => 'View Analytics',
-                'description' => 'Detailed insights',
-                'route' => 'admin.analytics.index',
-                'icon' => 'chart',
-                'color' => 'secondary',
+                'title' => 'Create Invoice',
+                'description' => 'Bill a school/family or client',
+                'route' => 'admin.invoices.create',
+                'icon' => 'invoice',
+                'color' => 'primary',
+            ],
+            [
+                'title' => 'Create Billing',
+                'description' => 'New therapist bill',
+                'route' => 'admin.billing.therapist-bills.create',
+                'icon' => 'billing',
+                'color' => 'primary',
             ],
         ];
     }

@@ -6,6 +6,7 @@ use App\Domain\Finance\Services\InvoicePaymentService;
 use App\Domain\Payment\Contracts\PaymentGatewayInterface;
 use App\Domain\Payment\Services\OnlinePaymentService;
 use App\Domain\Payment\Services\PaymentGatewayManager;
+use App\DTOs\CreatePaymentSessionDTO;
 use App\DTOs\PaymentResultDTO;
 use App\DTOs\PaymentSessionDTO;
 use App\Enums\InvoiceStatus;
@@ -56,6 +57,13 @@ test('createCheckoutSession creates transaction and returns session', function (
 
     $this->gateway->shouldReceive('createPaymentSession')
         ->once()
+        ->with(
+            Mockery::type(Invoice::class),
+            Mockery::on(function (CreatePaymentSessionDTO $dto): bool {
+                return str_contains($dto->successUrl, 'session_id={CHECKOUT_SESSION_ID}')
+                    && ! str_contains($dto->successUrl, '%7B');
+            })
+        )
         ->andReturn($sessionDTO);
 
     $result = $this->service->createCheckoutSession($this->invoice, 'billing@school.com');

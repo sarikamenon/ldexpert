@@ -64,7 +64,7 @@
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Date</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Student</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Service</th>
-                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School</th>
+                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">School/Family</th>
                         <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Duration</th>
                         <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Rate</th>
                         <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
@@ -122,14 +122,28 @@
 {{-- Record Payment Modal --}}
 @if (!$bill->isDraft())
     <div x-data="{ open: false }" x-on:open-record-payment-modal.window="open = true" x-show="open"
-        class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-black opacity-50" x-on:click="open = false"></div>
+        class="fixed inset-0 z-[100] overflow-y-auto" style="display: none;" role="dialog" aria-modal="true"
+        aria-labelledby="record-payment-modal-title-bill">
+        <div class="fixed inset-0 bg-foreground/50" x-on:click="open = false" aria-hidden="true"></div>
 
-            <div class="relative bg-card rounded-lg shadow-xl max-w-md w-full p-6">
-                <h3 class="text-lg font-semibold text-foreground mb-4">Record Payment</h3>
+        <div class="relative z-10 flex min-h-full items-center justify-center px-4 py-8 sm:py-10">
+            <div
+                class="flex w-full max-w-md flex-col overflow-hidden rounded-lg border border-border bg-background shadow-xl outline-none focus:outline-none">
+                <div class="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+                    <h3 id="record-payment-modal-title-bill" class="text-lg font-semibold text-foreground">Record Payment
+                    </h3>
+                    <button type="button"
+                        class="shrink-0 rounded-md p-2 text-foreground/70 transition-colors hover:bg-background/subtle hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+                        x-on:click="open = false" aria-label="Close dialog">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                            stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
-                <form method="POST" action="{{ route('admin.billing.therapist-bills.payments.store', $bill) }}">
+                <form method="POST" action="{{ route('admin.billing.therapist-bills.payments.store', $bill) }}"
+                    class="flex flex-col px-6 pt-4 pb-8">
                     @csrf
                     <input type="hidden" name="therapist_bill_id" value="{{ $bill->id }}">
 
@@ -191,13 +205,13 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-3 mt-6">
+                    <div class="mt-6 flex gap-3 border-t border-border pt-6">
                         <button type="button" x-on:click="open = false"
-                            class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-background/subtle">
+                            class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-background/subtle focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
                             Cancel
                         </button>
                         <button type="submit"
-                            class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                            class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
                             Record Payment
                         </button>
                     </div>

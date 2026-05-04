@@ -4,6 +4,17 @@
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 lg:px-8 space-y-8">
+            @php
+                $submittedMinutes = (int) ($submittedMinutesThisWeek ?? 0);
+                $submittedHours = intdiv($submittedMinutes, 60);
+                $submittedMinutesRemainder = $submittedMinutes % 60;
+                $submittedMinutesLabel = match (true) {
+                    $submittedHours > 0 && $submittedMinutesRemainder > 0 => "{$submittedHours}h {$submittedMinutesRemainder}m",
+                    $submittedHours > 0 => "{$submittedHours}h",
+                    default => "{$submittedMinutes}m",
+                };
+            @endphp
+
             <!-- Metrics -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="block">
@@ -28,21 +39,43 @@
                         </span>
                     </x-slot>
                 </x-dashboard::metric>
-                <x-dashboard::metric :title="'This Month'" :value="'$8,920'">
-                    <x-slot name="badge">+12% vs last month</x-slot>
+                <x-dashboard::metric :title="'Session Time Submitted This Week'" :value="$submittedMinutesLabel">
+                    <x-slot name="badge">
+                        <span class="text-xs text-foreground/60">
+                            {{ $submittedSessionsThisWeek ?? 0 }} submitted
+                        </span>
+                    </x-slot>
                 </x-dashboard::metric>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <!-- Schedule -->
-                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule.calendar', ['date' => now()->format('Y-m-d')])">
-                    @forelse($todaySchedules ?? [] as $schedule)
-                        <x-schedule.schedule-list-item :schedule="$schedule" class="mb-3" />
+                @php
+                    $todayScheduleList = collect($todaySchedules ?? []);
+                    $todayScheduleCount = (int) ($lessonsToday ?? $todayScheduleList->count());
+                    $visibleTodayScheduleLimit = 6;
+                    $remainingTodayScheduleCount = max(0, $todayScheduleCount - $visibleTodayScheduleLimit);
+                    $todayScheduleCountLabel = $todayScheduleCount . ' ' . Str::plural('schedule', $todayScheduleCount) . ' today';
+                @endphp
+                <x-dashboard::schedule title="Today's Schedule" :view-all-url="route('therapist.schedule-calendar.index')"
+                    view-all-label="View full calendar" :count-label="$todayScheduleCountLabel">
+                    @forelse($todayScheduleList as $schedule)
+                        <x-schedule.schedule-list-item :schedule="$schedule" compact :class="$loop->iteration > $visibleTodayScheduleLimit ? 'dashboard-schedule-extra hidden' : ''" />
                     @empty
                         <div class="text-sm text-foreground/60">
                             No schedules for today.
                         </div>
                     @endforelse
+
+                    @if ($remainingTodayScheduleCount > 0)
+                        <button type="button"
+                            class="dashboard-schedule-toggle mt-3 inline-flex w-full items-center justify-center rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-background/subtle active:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                            data-expanded="false"
+                            data-show-label="Show {{ $remainingTodayScheduleCount }} more {{ Str::plural('schedule', $remainingTodayScheduleCount) }}"
+                            data-hide-label="Show less">
+                            Show {{ $remainingTodayScheduleCount }} more {{ Str::plural('schedule', $remainingTodayScheduleCount) }}
+                        </button>
+                    @endif
                 </x-dashboard::schedule>
 
                 <!-- Sessions to rectify -->
@@ -84,7 +117,7 @@
                 <!-- Pending Schedules -->
                 <x-ui::card>
                     <div class="p-5 border-b border-border flex items-center justify-between">
-                        <h3 class="text-lg font-medium text-foreground">Pending Schedules</h3>
+                        <h3 class="text-lg font-medium text-foreground">Past Sessions Queue</h3>
                         <a href="{{ route('therapist.schedule.pending') }}" class="text-sm text-accent hover:underline">View all</a>
                     </div>
                     <div class="p-5 space-y-4">

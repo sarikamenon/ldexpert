@@ -61,6 +61,7 @@ final class UpdateStudentDTO
             'name' => trim($this->firstName.' '.($this->middleName ? $this->middleName.' ' : '').$this->lastName),
             'username' => $this->username,
             'email' => $this->email,
+            'timezone' => $this->timezone,
         ];
     }
 

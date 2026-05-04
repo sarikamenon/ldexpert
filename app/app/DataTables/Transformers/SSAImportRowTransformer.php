@@ -32,8 +32,10 @@ final class SSAImportRowTransformer
         $createdCell = $import->created_at ? $import->created_at->format('M d, Y H:i') : '—';
 
         $showUrl = route('admin.ssas.imports.show', $import);
+        $downloadUrl = route('admin.ssas.imports.download', $import);
         $actionsCell = ActionButtons::wrap(
             ActionButtons::view($showUrl, 'View Import'),
+            ActionButtons::download($downloadUrl, 'Download CSV'),
         );
 
         return [

@@ -7,6 +7,7 @@ namespace App\Domain\Therapist\Services;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
@@ -20,6 +21,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 
@@ -30,6 +32,7 @@ final class SessionLogService
         private readonly SessionLogRateService $rateService,
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly ServiceRepositoryInterface $serviceRepository,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -83,7 +86,7 @@ final class SessionLogService
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
             $thoMinutes = $ssa->minutes_per_session ?? $dto->thoMinutes;
-            $schoolId = $schedule->school_id ?? $ssa->student->studentProfile->school_id ?? null;
+            $schoolId = $ssa->student->studentProfile->school_id ?? $schedule->school_id ?? null;
             $this->assertSchoolIdPresent($schoolId);
 
             $this->assertScheduleNotBilled($schedule);
@@ -124,6 +127,11 @@ final class SessionLogService
                 $data['school_rate_amount'] = $billing['school']['rate_amount'];
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
             }
+
+            // Convert user-local session_date/start_time/end_time to UTC last,
+            // so billing/contract lookups above used the local date (correct
+            // for "the day the work was done") while storage uses UTC.
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $therapist);
 
             $sessionLog = $this->repository->create($data);
 
@@ -193,6 +201,11 @@ final class SessionLogService
                 $data['school_invoice_amount'] = $billing['school']['invoice_amount'];
             }
 
+            // Convert user-local session_date/start_time/end_time to UTC last,
+            // so billing/contract lookups above used the local date (correct
+            // for "the day the work was done") while storage uses UTC.
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $therapist);
+
             return $this->repository->create($data);
         });
     }
@@ -208,6 +221,10 @@ final class SessionLogService
 
             if (! $isAdmin && ! $sessionLog->canEdit()) {
                 throw new \InvalidArgumentException('Session log cannot be edited in its current status.');
+            }
+
+            if ($isAdmin && $sessionLog->isAttachedToInvoiceOrTherapistBill()) {
+                throw new \InvalidArgumentException(SessionLog::RATE_OVERRIDE_BLOCKED_MESSAGE);
             }
 
             if ($isAdmin && $sessionLog->isApproved()) {
@@ -286,6 +303,12 @@ final class SessionLogService
                 }
             }
 
+            // Convert user-local session_date/start_time/end_time to UTC last,
+            // so billing/contract lookups above used the local date (correct
+            // for "the day the work was done") while storage uses UTC.
+            $rowOwner = $sessionLog->therapist ?? $therapist;
+            $data = $this->timezoneService->convertSessionLocalToUtc($data, $rowOwner);
+
             return $this->repository->update($sessionLog, $data);
         });
     }
@@ -320,7 +343,15 @@ final class SessionLogService
 
         $sessionLog->loadMissing(['therapist', 'student', 'service']);
         if ($sessionLog->therapist?->email) {
-            Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+            try {
+                Mail::to($sessionLog->therapist->email)->queue(new SessionLogSentBackMail($sessionLog));
+            } catch (\Throwable $e) {
+                Log::error('SessionLogService: failed to queue sent-back email', [
+                    'session_log_id' => $sessionLog->id,
+                    'email' => $sessionLog->therapist->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $sessionLog;
@@ -394,7 +425,7 @@ final class SessionLogService
         if (! $billing['school']['contract_id']) {
             throw ValidationException::withMessages([
                 'session_date' => [
-                    'No active school contract was found for this date. Please add or activate a school contract that covers the session date (Admin → Contracts → School Contracts).',
+                    'No active school/family contract was found for this date. Please add or activate a school/family contract that covers the session date (Admin → Contracts → School Contracts).',
                 ],
             ]);
         }
@@ -402,7 +433,7 @@ final class SessionLogService
         if (! $billing['school']['rate_type'] || $billing['school']['rate_amount'] === null) {
             throw ValidationException::withMessages([
                 'service_id' => [
-                    'The school rate for this service is not set. Please configure the service rate in the school contract (Admin → Contracts → School Contracts).',
+                    'The school/family rate for this service is not set. Please configure the service rate in the school/family contract (Admin → Contracts → School Contracts).',
                 ],
             ]);
         }
@@ -425,7 +456,7 @@ final class SessionLogService
     private function assertSchoolIdPresent(?int $schoolId): void
     {
         if (! $schoolId) {
-            throw new \InvalidArgumentException('A school must be associated before creating a session log.');
+            throw new \InvalidArgumentException('A school/family must be associated before creating a session log.');
         }
     }
 

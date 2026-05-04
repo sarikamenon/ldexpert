@@ -15,11 +15,14 @@ final class TherapistSessionLogRowTransformer
      */
     public static function transform(SessionLog $log): array
     {
-        $sessionDate = $log->session_date;
-        $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at) : null;
+        $tz = $log->displayTimezone();
+        $localStart = $log->localStart($tz);
+        $localEnd = $log->localEnd($tz);
+        $sessionDate = $localStart;
+        $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
-        $startTime = $log->start_time->format('g:i A');
-        $endTime = $log->end_time->format('g:i A');
+        $startTime = $localStart->format('g:i A');
+        $endTime = $localEnd->format('g:i A');
         $timeRange = "{$startTime} - {$endTime}";
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 

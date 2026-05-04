@@ -26,20 +26,27 @@ class SchoolCreatedNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
+        $isFamily = $this->school->is_private_student;
+        $noun = $isFamily ? 'family' : 'school';
+        $nounTitle = $isFamily ? 'Family' : 'School';
+
         return (new MailMessage)
-            ->subject('New School Created')
-            ->line("A new school '{$this->school->display_name}' has been created.")
-            ->action('View School', route('admin.schools.edit', $this->school))
+            ->subject("New {$nounTitle} Created")
+            ->line("A new {$noun} '{$this->school->display_name}' has been created.")
+            ->action("View {$nounTitle}", route('admin.schools.edit', $this->school))
             ->line('Thank you for using our application!');
     }
 
     /** @return array<string, mixed> */
     public function toArray(object $notifiable): array
     {
+        $isFamily = $this->school->is_private_student;
+        $noun = $isFamily ? 'family' : 'school';
+
         return [
             'school_id' => $this->school->id,
             'school_name' => $this->school->display_name,
-            'message' => "New school '{$this->school->display_name}' has been created.",
+            'message' => "New {$noun} '{$this->school->display_name}' has been created.",
             'action_url' => route('admin.schools.edit', $this->school),
         ];
     }

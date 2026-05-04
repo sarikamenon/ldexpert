@@ -1,5 +1,6 @@
 import { initSelectBoxes } from '../common/select-box';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
+import { getBillingLabel } from '../common/billing-status';
 
 (function ($) {
     'use strict';
@@ -48,7 +49,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                             <div><div class="text-foreground/70 mb-1">Time</div><div class="text-foreground font-medium">${schedule.start_time_formatted || schedule.start_time || '-'} - ${schedule.end_time_formatted || schedule.end_time || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">Duration</div><div class="text-foreground font-medium">${schedule.duration_formatted || (schedule.duration_minutes != null ? schedule.duration_minutes + 'm' : '-')}</div></div>
                             <div><div class="text-foreground/70 mb-1">Service</div><div class="text-foreground font-medium" title="${schedule.service?.name || '-'}">${schedule.service?.name || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Billing Status</div><div class="text-foreground font-medium">${schedule.billing_status ? schedule.billing_status.replace('_', ' ').toUpperCase() : '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">Billing Status</div><div class="text-foreground font-medium">${getBillingLabel(schedule.billing_status)}</div></div>
                             ${schedule.location_details ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Meeting Details</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.location_details}</div></div>` : ''}
                             ${schedule.notes ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Notes</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.notes}</div></div>` : ''}
                         </div>
@@ -62,7 +63,7 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
                             <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium" title="${schedule.student?.name || '-'}">${schedule.student?.name || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">ID Number</div><div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium" title="${schedule.student?.email || '-'}">${schedule.student?.email || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">School</div><div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div></div>
+                            <div><div class="text-foreground/70 mb-1">School/Family</div><div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div></div>
                             <div><div class="text-foreground/70 mb-1">Timezone</div><div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div></div>
                         </div>
                     </div>
@@ -125,8 +126,25 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             });
         }
 
+        function bindDashboardScheduleToggle() {
+            document.querySelectorAll('.dashboard-schedule-toggle').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const isExpanded = button.dataset.expanded === 'true';
+                    const scheduleList = button.closest('.p-5') || document;
+
+                    scheduleList.querySelectorAll('.dashboard-schedule-extra').forEach((row) => {
+                        row.classList.toggle('hidden', isExpanded);
+                    });
+
+                    button.dataset.expanded = isExpanded ? 'false' : 'true';
+                    button.textContent = isExpanded ? button.dataset.showLabel : button.dataset.hideLabel;
+                });
+            });
+        }
+
         // Bind schedule card actions (view, edit, delete) so they work on dashboard and calendar
         bindScheduleCardActions();
+        bindDashboardScheduleToggle();
 
         if (! $calendarEl.length) {
             return;
@@ -497,17 +515,17 @@ import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from
             if (! dayEvents.length) {
                 $schoolEventList.html(`
                     <div class="mb-4">
-                        <h3 class="text-sm font-semibold text-foreground">School Events</h3>
+                        <h3 class="text-sm font-semibold text-foreground">School/Family Events</h3>
                         <p class="text-xs text-foreground/60">For ${dateLabel}</p>
                     </div>
-                    <p class="text-sm text-foreground/60">No school events on this date.</p>
+                    <p class="text-sm text-foreground/60">No school/family events on this date.</p>
                 `);
                 return;
             }
 
             let html = `
                 <div class="mb-4">
-                    <h3 class="text-sm font-semibold text-foreground">School Events</h3>
+                    <h3 class="text-sm font-semibold text-foreground">School/Family Events</h3>
                     <p class="text-xs text-foreground/60">For ${dateLabel}</p>
                 </div>
                 <div class="space-y-3">

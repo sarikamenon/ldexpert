@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Therapist;
 
 use App\Enums\BillingStatus;
+use App\Enums\RecurrenceType;
 use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
@@ -20,19 +21,6 @@ final class ScheduleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_therapist_can_view_schedule_calendar(): void
-    {
-        $therapist = User::factory()->create([
-            'role' => Role::THERAPIST,
-        ]);
-
-        $response = $this->actingAs($therapist)
-            ->get(route('therapist.schedule.calendar'));
-
-        $response->assertStatus(200);
-        $response->assertViewIs('therapist.schedule.calendar');
-    }
-
     public function test_non_therapist_cannot_view_schedule_calendar(): void
     {
         $admin = User::factory()->create([
@@ -40,7 +28,7 @@ final class ScheduleTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)
-            ->get(route('therapist.schedule.calendar'));
+            ->get(route('therapist.schedule-calendar.index'));
 
         $response->assertForbidden();
     }
@@ -251,7 +239,7 @@ final class ScheduleTest extends TestCase
         $response = $this->actingAs($therapist)
             ->post(route('therapist.schedule.store'), $payload);
 
-        $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+        $response->assertRedirect(route('therapist.schedule-calendar.index'));
 
         $this->assertDatabaseHas('schedules', [
             'therapist_id' => $therapist->id,
@@ -474,7 +462,7 @@ final class ScheduleTest extends TestCase
         $response = $this->actingAs($therapist)
             ->put(route('therapist.schedule.update', $schedule->id), $payload);
 
-        $response->assertRedirect(route('therapist.schedule.calendar', ['date' => $payload['schedule_date']]));
+        $response->assertRedirect(route('therapist.schedule-calendar.index'));
         $response->assertSessionHas('status', 'Schedule updated successfully.');
 
         $this->assertDatabaseHas('schedules', [
@@ -487,6 +475,52 @@ final class ScheduleTest extends TestCase
         $updatedSchedule = Schedule::find($schedule->id);
         $this->assertEquals($payload['schedule_date'], $updatedSchedule->schedule_date->format('Y-m-d'));
         $this->assertEquals($payload['start_time'], $updatedSchedule->start_time->format('H:i'));
+    }
+
+    public function test_editing_recurring_parent_does_not_false_positive_on_own_children(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        $batchNumber = 'REC-TEST-'.time();
+
+        $parent = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchNumber,
+            'parent_schedule_id' => null,
+            'schedule_date' => now()->addDays(1)->format('Y-m-d'),
+            'start_time' => '09:00',
+            'end_time' => '09:30',
+            'recurrence_end_date' => now()->addDays(15)->format('Y-m-d'),
+        ]);
+
+        // Simulate a child occurrence at same time one week later
+        Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchNumber,
+            'parent_schedule_id' => $parent->id,
+            'schedule_date' => now()->addDays(8)->format('Y-m-d'),
+            'start_time' => '09:00',
+            'end_time' => '09:30',
+        ]);
+
+        $payload = [
+            'schedule_date' => now()->addDays(1)->format('Y-m-d'),
+            'start_time' => '09:00',
+            'duration_minutes' => 30,
+            'notes' => 'Updated notes',
+            'recurrence_type' => RecurrenceType::WEEKLY->value,
+            'recurrence_end_date' => now()->addDays(15)->format('Y-m-d'),
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->put(route('therapist.schedule.update', $parent->id), $payload);
+
+        $response->assertRedirect(route('therapist.schedule-calendar.index'));
+        $response->assertSessionHas('status', 'Schedule updated successfully.');
     }
 
     public function test_therapist_can_delete_schedule(): void
@@ -528,5 +562,82 @@ final class ScheduleTest extends TestCase
         ]);
         $schedule->refresh();
         $this->assertNull($schedule->deleted_at);
+    }
+
+    public function test_therapist_can_delete_future_recurring_schedules(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $batchId = 'REC-TEST-001';
+
+        $pastSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => now()->subWeek(),
+        ]);
+
+        $currentSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => now(),
+        ]);
+
+        $futureSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => now()->addWeek(),
+        ]);
+
+        $response = $this->actingAs($therapist)
+            ->deleteJson(route('therapist.schedule.destroy-future-recurring', $currentSchedule->id));
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+        $this->assertEquals(2, $response->json('deleted_count'));
+
+        // Past schedule should NOT be deleted
+        $this->assertDatabaseHas('schedules', ['id' => $pastSchedule->id]);
+        $pastSchedule->refresh();
+        $this->assertNull($pastSchedule->deleted_at);
+
+        // Current and future should be soft deleted
+        $this->assertSoftDeleted('schedules', ['id' => $currentSchedule->id]);
+        $this->assertSoftDeleted('schedules', ['id' => $futureSchedule->id]);
+    }
+
+    public function test_delete_future_recurring_skips_billed_schedules(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $batchId = 'REC-TEST-002';
+
+        $currentSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'schedule_date' => now(),
+        ]);
+
+        $billedFutureSchedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'recurrence_type' => RecurrenceType::WEEKLY,
+            'recurring_batch_number' => $batchId,
+            'billing_status' => BillingStatus::BILLED,
+            'schedule_date' => now()->addWeek(),
+        ]);
+
+        $response = $this->actingAs($therapist)
+            ->deleteJson(route('therapist.schedule.destroy-future-recurring', $currentSchedule->id));
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        // Current (unbilled) should be deleted
+        $this->assertSoftDeleted('schedules', ['id' => $currentSchedule->id]);
+
+        // Billed future should NOT be deleted
+        $billedFutureSchedule->refresh();
+        $this->assertNull($billedFutureSchedule->deleted_at);
     }
 }

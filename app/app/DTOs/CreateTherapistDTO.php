@@ -14,6 +14,7 @@ final class CreateTherapistDTO
         public readonly string $personalEmail,
         public readonly string $phone,
         public readonly ?string $ldEmail,
+        public readonly ?string $llcName,
         public readonly ?string $address,
         public readonly ?string $comments,
         public readonly int $positionId,
@@ -38,6 +39,7 @@ final class CreateTherapistDTO
             personalEmail: $data['personal_email'],
             phone: $data['phone'],
             ldEmail: $data['ld_email'] ?? null,
+            llcName: $data['llc_name'] ?? null,
             address: $data['address'] ?? null,
             comments: $data['comments'] ?? null,
             positionId: (int) $data['position_id'],
@@ -62,6 +64,7 @@ final class CreateTherapistDTO
             'password' => $this->password,
             'role' => 'therapist',
             'status' => 'active',
+            'timezone' => $this->timezone,
         ];
     }
 
@@ -77,6 +80,7 @@ final class CreateTherapistDTO
             'personal_email' => $this->personalEmail,
             'phone' => $this->phone,
             'ld_email' => $this->ldEmail,
+            'llc_name' => $this->llcName,
             'address' => $this->address,
             'comments' => $this->comments,
             'position_id' => $this->positionId,

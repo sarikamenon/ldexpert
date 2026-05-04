@@ -28,6 +28,10 @@ final class ActionButtons
 
     private const ICON_SUBMIT = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>';
 
+    private const ICON_HISTORY = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+
+    private const ICON_ASSIGN = '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>';
+
     // ── Base CSS classes ───────────────────────────────────────
 
     private const BTN_BASE = 'inline-flex items-center justify-center w-8 h-8 rounded transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -75,6 +79,26 @@ final class ActionButtons
     public static function edit(string $url, string $label = 'Edit', array $attrs = []): string
     {
         return self::link($url, self::ICON_EDIT, self::VARIANT_SECONDARY, $label, $attrs);
+    }
+
+    /**
+     * Run history button (link).
+     *
+     * @param  array<string, string|int|null>  $attrs
+     */
+    public static function history(string $url, string $label = 'Run History', array $attrs = []): string
+    {
+        return self::link($url, self::ICON_HISTORY, self::VARIANT_PRIMARY, $label, $attrs);
+    }
+
+    /**
+     * Assign therapist button (generic button element).
+     *
+     * @param  array<string, string|int|null>  $attrs
+     */
+    public static function assign(string $label = 'Assign Therapist', array $attrs = []): string
+    {
+        return self::button(self::ICON_ASSIGN, self::VARIANT_SUCCESS, $label, $attrs);
     }
 
     /**
@@ -238,10 +262,11 @@ final class ActionButtons
     ): string {
         $token = e(csrf_token());
         $formClass = self::extractAttr($attrs, 'form-class', 'inline');
+        $formAttrs = self::extractFormAttrs($attrs);
         $classes = self::buildClasses($variant, $attrs);
         $extra = self::renderAttrs($attrs);
 
-        $html = '<form method="POST" action="'.e($actionUrl).'" class="'.$formClass.'">';
+        $html = '<form method="POST" action="'.e($actionUrl).'" class="'.$formClass.'"'.$formAttrs.'>';
         $html .= '<input type="hidden" name="_token" value="'.$token.'">';
         if ($method !== 'POST') {
             $html .= '<input type="hidden" name="_method" value="'.e($method).'">';
@@ -283,6 +308,24 @@ final class ActionButtons
         }
 
         return $default;
+    }
+
+    /**
+     * Extract data-confirm-* keys from attrs and render them as HTML attributes for the form tag.
+     *
+     * @param  array<string, string|int|null>  $attrs
+     */
+    private static function extractFormAttrs(array &$attrs): string
+    {
+        $html = '';
+        foreach (array_keys($attrs) as $key) {
+            if (str_starts_with((string) $key, 'data-confirm-')) {
+                $html .= ' '.e($key).'="'.e((string) $attrs[$key]).'"';
+                unset($attrs[$key]);
+            }
+        }
+
+        return $html;
     }
 
     /**

@@ -14,7 +14,6 @@ use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Database\Seeders\Concerns\SeedsSchoolYear;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Collection;
 
 final class SSASeeder extends Seeder
 {
@@ -32,7 +31,6 @@ final class SSASeeder extends Seeder
             ->get();
 
         $services = Service::where('status', ServiceStatus::ACTIVE)->get();
-        $indirectServices = $services->where('is_direct_service', false);
 
         if ($students->isEmpty() || $services->isEmpty()) {
             $this->command->warn('No active students or services found. Skipping SSA seeding.');
@@ -126,26 +124,9 @@ final class SSASeeder extends Seeder
                 ]);
             }
 
-            $servicePayload = [
+            $ssa->services()->sync([
                 $service->id => ['is_primary' => true],
-            ];
-
-            if ($indirectServices->isNotEmpty() && rand(1, 100) <= 40) {
-                $selection = $indirectServices->random(rand(1, min(3, $indirectServices->count())));
-                $selectedIds = $selection instanceof Collection
-                    ? $selection->pluck('id')->all()
-                    : [$selection->id];
-
-                foreach ($selectedIds as $serviceId) {
-                    if ($serviceId === $service->id) {
-                        continue;
-                    }
-
-                    $servicePayload[$serviceId] = ['is_primary' => false];
-                }
-            }
-
-            $ssa->services()->sync($servicePayload);
+            ]);
         }
 
         $this->command->info('SSA seeder completed. Created '.$studentsToSeed->count().' SSAs.');

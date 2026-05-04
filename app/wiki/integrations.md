@@ -1,40 +1,57 @@
 # Platform Integrations
 
-This page documents the third-party services currently wired into the codebase so new developers can configure environments quickly and understand runtime dependencies.
+Last Updated: 26 Mar 2026
+
+This page documents the third-party services and internal integrations wired into the codebase.
 
 ## Sentry (Error Monitoring)
 
 -   Package: `sentry/sentry-laravel`, configured in `config/sentry.php` and Monolog channel `sentry`.
--   Key env vars: `SENTRY_LARAVEL_DSN` (or `SENTRY_DSN`), `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`, `SENTRY_TRACES_SAMPLE_RATE` (default 0.1), `SENTRY_PROFILES_SAMPLE_RATE` (default 0.0), `SENTRY_SEND_DEFAULT_PII` (default false).
--   Ignored exceptions: auth/authorization failures, validation errors, missing models, 404/405/429 to avoid noise.
--   Usage: enabled automatically via Laravel auto-discovery; use `Log::channel('sentry')` for explicit logging if needed.
+-   Key env vars: `SENTRY_LARAVEL_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_RELEASE`, `SENTRY_TRACES_SAMPLE_RATE` (default 0.1), `SENTRY_PROFILES_SAMPLE_RATE`, `SENTRY_SEND_DEFAULT_PII`.
+-   Ignored exceptions: auth/authorization failures, validation errors, missing models, 404/405/429.
+-   Middleware: `SentryContext` sets user scope (id, email, username) on every authenticated request.
 
 ## Email Delivery
 
--   Default mailer: `log` (writes emails to storage logs in non-prod).
--   Supported transports (configurable via env): SMTP (`MAIL_*` + optional `MAIL_URL`/`MAIL_SCHEME`), SES, Postmark, Resend, Sendmail, Failover, Roundrobin.
+-   Default mailer: `log` (writes to storage logs in non-prod).
+-   Supported transports: SMTP, SES, Postmark, Resend, Sendmail, Failover, Roundrobin.
 -   Global From: `MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`.
--   Mailables in use:
-    -   `WelcomeTherapistMail` and `WelcomeStudentMail` (plain welcome + credentials).
-    -   `ScheduleReminderMail` (48h/2h reminders; queued).
-    -   `ScheduleNotificationMail` (create/update notifications; queued).
--   Queueing: reminders and notifications are enqueued via `Mail::queue()`/`Mail::to(...)->queue(...)`, so a queue worker must be running.
+-   **All Mailables (12 total):**
+    -   `WelcomeTherapistMail` — welcome email with credentials to new therapists.
+    -   `WelcomeStudentMail` — welcome email with credentials to new students.
+    -   `ScheduleReminderMail` — 48h/2h reminders to therapists and student contacts (queued).
+    -   `ScheduleNotificationMail` — create/update notifications to therapists and student contacts (queued).
+    -   `StudentImportCompletedMail` — import completion notification to admin.
+    -   `SSAImportCompletedMail` — SSA import completion notification to admin.
+    -   `SessionLogSentBackMail` — notification to therapist when session log is sent back.
+    -   `LeadFollowUpReminderMail` — daily follow-up reminder to lead creator (queued).
+    -   `InvoiceMail` — invoice delivery to school with PDF attachment.
+    -   `InvoiceReminderMail` — upcoming due date reminder to school.
+    -   `InvoiceOverdueMail` — overdue invoice notification to school.
+    -   `TherapistBillMail` — therapist bill delivery with PDF attachment.
+-   Queueing: schedule reminders, schedule notifications, and lead follow-up reminders are queued via `Mail::queue()`.
+
+## Stripe Payment Gateway
+
+-   Package: Stripe PHP SDK.
+-   Env vars: `STRIPE_KEY`, `STRIPE_SECRET`, `STRIPE_WEBHOOK_SECRET`.
+-   Usage: online invoice payments via payment links. Schools receive a payment URL with their invoice email.
+-   Models: `PaymentGatewayTransaction` (tracks checkout sessions), `PaymentGatewayLog` (logs outgoing/incoming requests).
+-   Routes: `/payment/{token}` (public, unauthenticated).
 
 ## Logging & Alerts
 
--   Default channel: `stack`, controlled by `LOG_STACK` (comma-separated channels). Typical local: `single`; production can include `sentry` and/or `slack`.
--   Slack: optional webhook via `LOG_SLACK_WEBHOOK_URL` with emoji/username overrides.
--   Papertrail: optional via `PAPERTRAIL_URL`/`PAPERTRAIL_PORT` and `LOG_PAPERTRAIL_HANDLER`.
--   Log level: `LOG_LEVEL` (default `debug`); Sentry handler defaults to `critical`.
+-   Default channel: `stack`, controlled by `LOG_STACK`. Typical local: `single`; production includes `sentry`.
+-   Slack: optional webhook via `LOG_SLACK_WEBHOOK_URL`.
+-   Papertrail: optional via `PAPERTRAIL_URL`/`PAPERTRAIL_PORT`.
 
 ## Queues & Async Work
 
--   Default queue connection: `database` (see `config/queue.php`). Jobs stored in `jobs` table; failed jobs in `failed_jobs`.
--   Other supported drivers (env-driven): `sqs`, `redis`, `beanstalkd`, `sync`, `failover`.
--   Dev helper: `composer dev` runs `php artisan queue:listen --tries=1` alongside the app.
+-   Default queue connection: `database`. Jobs in `jobs` table; failed jobs in `failed_jobs`.
+-   Other supported drivers: `sqs`, `redis`, `beanstalkd`, `sync`, `failover`.
 
 ## Front-end Libraries
 
--   Installed via `package.json`: Tailwind, Alpine, Axios, Select2, SweetAlert2, Vite.
--   CDN usage: Chart.js is loaded from JSDelivr in admin analytics/therapist views.
--   UX conventions: SweetAlert2 is the standard for confirmations/toasts; Select2 is used for rich selects; Tailwind for styling.
+-   Installed via npm: Tailwind, Alpine.js, Axios, jQuery, Select2, SweetAlert2, Vite.
+-   CDN: Chart.js 4.4.0 (admin dashboards and analytics).
+-   UX conventions: SweetAlert2 for confirmations/toasts; Select2 for rich selects; DataTables for server-side tables.

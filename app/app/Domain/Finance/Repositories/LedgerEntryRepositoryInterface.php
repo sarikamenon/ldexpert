@@ -26,6 +26,10 @@ interface LedgerEntryRepositoryInterface
      *     outstanding: float,
      *     invoice_count: int,
      *     payment_count: int,
+     *     total_credit_notes: float,
+     *     credit_note_count: int,
+     *     total_refunds: float,
+     *     refund_count: int,
      *     current_balance: float,
      *     transaction_count: int
      * }
@@ -39,6 +43,10 @@ interface LedgerEntryRepositoryInterface
      *     outstanding: float,
      *     bill_count: int,
      *     payment_count: int,
+     *     total_credit_notes: float,
+     *     credit_note_count: int,
+     *     total_refunds: float,
+     *     refund_count: int,
      *     current_balance: float,
      *     transaction_count: int
      * }

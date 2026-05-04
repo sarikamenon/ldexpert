@@ -6,6 +6,8 @@ namespace App\Domain\Therapist\Services;
 
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
@@ -23,6 +25,8 @@ class DashboardService
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly UserRepositoryInterface $userRepository,
         private readonly ScheduleRepositoryInterface $scheduleRepository,
+        private readonly SessionLogRepositoryInterface $sessionLogRepository,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -41,17 +45,22 @@ class DashboardService
         $today = now()->toDateString();
         $todayFilters = new ScheduleFilterDTO(date: $today);
         $todaySchedules = $this->scheduleService->getSchedules($therapist, $todayFilters);
-        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules)->take(3);
+        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules);
         $lessonsToday = $todaySchedules->count();
 
         $startOfWeek = now()->startOfWeek();
         $endOfWeek = now()->endOfWeek();
         $lessonsThisWeek = $this->scheduleRepository->countLessonsThisWeek($therapist, $startOfWeek, $endOfWeek);
+        $submittedSummary = $this->sessionLogRepository->getSubmittedSummaryForWeek(
+            $therapist,
+            $startOfWeek,
+            $endOfWeek
+        );
         $pendingScheduleCount = $this->scheduleService->getPendingCount($therapist);
 
         $sentBackSessionLogs = SessionLog::query()
-            ->where('therapist_id', $therapist->id)
-            ->where('status', SessionLogStatus::SENT_BACK)
+            ->forTherapist($therapist)
+            ->withStatuses([SessionLogStatus::SENT_BACK])
             ->orderByDesc('sent_back_at')
             ->limit(10)
             ->with(['student', 'service', 'comments'])
@@ -80,6 +89,8 @@ class DashboardService
             'todaySchedules' => $formattedTodaySchedules,
             'lessonsToday' => $lessonsToday,
             'lessonsThisWeek' => $lessonsThisWeek,
+            'submittedMinutesThisWeek' => $submittedSummary['minutes'],
+            'submittedSessionsThisWeek' => $submittedSummary['sessions'],
             'pendingScheduleCount' => $pendingScheduleCount,
             'sentBackSessionLogs' => $sentBackSessionLogs,
             'pendingSchedulesList' => $pendingSchedulesList,
@@ -95,15 +106,17 @@ class DashboardService
         /** @var Collection<int, array<string, mixed>> */
         return $schedules->map(function (Schedule $schedule): array {
             $studentProfile = $schedule->student?->studentProfile;
-            $eventStart = $schedule->schedule_date->copy()->setTimeFrom($schedule->start_time);
-            $hasEventStarted = now()->gte($eventStart);
+            $tz = $this->timezoneService->resolveTimezone($schedule->therapist);
+            $localStart = $schedule->localStart($tz);
+            $localEnd = $schedule->localEnd($tz);
+            $hasEventStarted = now()->gte($schedule->startUtc());
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
 
             return [
                 'id' => $schedule->id,
-                'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
-                'start_time' => $schedule->start_time->format('H:i'),
-                'end_time' => $schedule->end_time->format('H:i'),
+                'schedule_date' => $localStart->format('Y-m-d'),
+                'start_time' => $localStart->format('H:i'),
+                'end_time' => $localEnd->format('H:i'),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id

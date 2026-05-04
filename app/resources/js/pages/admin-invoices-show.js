@@ -11,9 +11,12 @@ document.addEventListener('DOMContentLoaded', function () {
         sendForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
+            const isFamily = sendForm.getAttribute('data-is-private-family') === '1';
+            const recipientEntity = isFamily ? 'family' : 'school';
+
             const result = await confirmDialog({
                 title: 'Send Invoice?',
-                text: 'This will send the invoice to the school via email. Are you sure you want to continue?',
+                text: `This will send the invoice to the ${recipientEntity} via email. Are you sure you want to continue?`,
                 icon: 'question',
                 confirmButtonText: 'Yes, send invoice',
                 cancelButtonText: 'Cancel',

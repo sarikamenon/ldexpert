@@ -24,6 +24,8 @@ final class UpdateScheduleDTO
         public readonly ?string $notes,
         public readonly ?BillingStatus $billingStatus,
         public readonly ?int $durationMinutes = null,
+        /** @var array<int, string>|null */
+        public readonly ?array $occurrenceDates = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -51,6 +53,11 @@ final class UpdateScheduleDTO
             );
         }
 
+        $occurrenceDates = null;
+        if (isset($data['occurrence_dates']) && is_array($data['occurrence_dates']) && count($data['occurrence_dates']) > 0) {
+            $occurrenceDates = $data['occurrence_dates'];
+        }
+
         return new self(
             ssaId: isset($data['ssa_id']) && $data['ssa_id'] !== ''
                 ? (int) $data['ssa_id']
@@ -75,6 +82,7 @@ final class UpdateScheduleDTO
             durationMinutes: isset($data['duration_minutes']) && $data['duration_minutes'] !== ''
                 ? (int) $data['duration_minutes']
                 : null,
+            occurrenceDates: $occurrenceDates,
         );
     }
 

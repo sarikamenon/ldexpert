@@ -174,16 +174,6 @@
                                     @endif
                                     <span
                                         class="text-sm text-foreground/70">{{ $ssa->primaryService->name ?? '—' }}</span>
-                                    @if ($ssa->additionalServices->isNotEmpty())
-                                        <div class="mt-1 flex flex-wrap gap-1">
-                                            @foreach ($ssa->additionalServices as $service)
-                                                <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-xs font-medium text-foreground/70">
-                                                    {{ $service->name }}
-                                                </span>
-                                            @endforeach
-                                        </div>
-                                    @endif
                                     @if ($ssa->student?->studentProfile?->school)
                                         @if ($context === 'therapist')
                                             <span class="text-xs text-foreground/60 mt-1">
@@ -204,16 +194,6 @@
                                         class="text-primary hover:underline">
                                         {{ $ssa->assignedTherapist->name }}
                                     </a>
-                                @elseif ($context !== 'therapist')
-                                    <x-ui::button type="button" class="assign-therapist-btn" size="sm"
-                                        data-ssa-id="{{ $ssa->id }}"
-                                        data-service-ids="{{ json_encode(array_merge(
-                                            [$ssa->primary_service_id],
-                                            $ssa->additionalServices->pluck('id')->all()
-                                        )) }}"
-                                        title="Assign Therapist">
-                                        Assign
-                                    </x-ui::button>
                                 @else
                                     <span class="text-sm text-foreground/60">Unassigned</span>
                                 @endif
@@ -266,7 +246,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1">
                                     @if ($context === 'therapist')
                                         <a href="{{ route('therapist.ssas.show', $ssa) }}"
                                             class="inline-flex items-center justify-center w-9 h-9 bg-secondary text-white rounded hover:bg-secondary/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -304,6 +284,19 @@
                                                 </path>
                                             </svg>
                                         </a>
+                                        @if (! $ssa->assignedTherapist)
+                                            <button type="button"
+                                                class="assign-therapist-btn inline-flex items-center justify-center w-9 h-9 rounded bg-success text-success-foreground hover:bg-success/90 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                                title="Assign Therapist"
+                                                aria-label="Assign Therapist to SSA {{ $ssa->id }}"
+                                                data-ssa-id="{{ $ssa->id }}"
+                                                data-ssa-name="{{ $ssa->student?->name ?? 'SSA #'.$ssa->id }}"
+                                                data-ssa-status="{{ $ssa->status->label() }}"
+                                                data-service-name="{{ $ssa->primaryService?->name ?? '—' }}"
+                                                data-service-ids="{{ json_encode([$ssa->primary_service_id]) }}">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                                            </button>
+                                        @endif
                                     @endif
                                 </div>
                             </td>
@@ -325,3 +318,6 @@
 <script type="application/json" id="therapists-for-service-url">
     @json(route('admin.ssas.therapists-for-service'))
 </script>
+
+<x-ui::ssa-assign-modal />
+<x-ui::ssa-unassign-modal />

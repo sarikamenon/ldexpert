@@ -32,6 +32,13 @@
         <x-ui::alert variant="danger" class="mb-4">{{ session('error') }}</x-ui::alert>
     @endif
 
+    @if ($expense->source_type)
+        <x-ui::alert variant="info" class="mb-4">
+            This expense was auto-created from another record and is managed there.
+            It cannot be edited or deleted directly.
+        </x-ui::alert>
+    @endif
+
     <x-ui::card class="p-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>

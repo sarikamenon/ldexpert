@@ -18,8 +18,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-
 
 final class StudentService
 {
@@ -47,14 +47,21 @@ final class StudentService
         );
 
         // Send welcome email to student's user email
-        Mail::to($dto->email)->send(
-            new WelcomeStudentMail(
-                name: $dto->firstName.' '.$dto->lastName,
-                username: $dto->username,
-                email: $dto->email,
-                plainPassword: $dto->password
-            )
-        );
+        try {
+            Mail::to($dto->email)->send(
+                new WelcomeStudentMail(
+                    name: $dto->firstName.' '.$dto->lastName,
+                    username: $dto->username,
+                    email: $dto->email,
+                    plainPassword: $dto->password
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::error('StudentService: failed to send welcome email', [
+                'email' => $dto->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return $profile;
     }

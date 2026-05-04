@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Domain\Billing\Services\BillingEntryWindowService;
+use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateSessionLogDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\SessionLogCommentType;
@@ -54,6 +56,8 @@ final class SessionLogController extends Controller
         private readonly SSAService $ssaService,
         private readonly StudentDocumentService $documentService,
         private readonly BillingEntryWindowService $billingEntryWindowService,
+        private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -72,11 +76,14 @@ final class SessionLogController extends Controller
 
     public function entryWindow(EntryWindowRequest $request): JsonResponse
     {
-        $sessionDate = Carbon::parse((string) $request->validated('session_date'));
-        $result = $this->billingEntryWindowService->checkWindow($sessionDate);
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $sessionDate = Carbon::parse((string) $request->validated('session_date'), $tz);
+        $result = $this->billingEntryWindowService->checkWindow($sessionDate, null, $tz);
 
         return response()->json(array_merge($result->toArray(), [
-            'cutoff_display' => Carbon::parse($result->cutoff)->format('l, M j, Y'),
+            'cutoff_display' => Carbon::parse($result->cutoff, $tz)->format('l, M j, Y'),
         ]));
     }
 
@@ -176,28 +183,58 @@ final class SessionLogController extends Controller
             ->unique('id')
             ->values();
 
-        // Build SSA -> services mapping for front-end
-        $ssaServiceMappings = $ssas->map(function ($ssa) {
+        // Build SSA -> services mapping for front-end.
+        // For standalone session logs, show indirect services from the school+therapist contracts.
+        $isStandalone = $schedule === null;
+
+        $therapistProfileId = $therapist->therapistProfile?->id;
+        $ssaServiceMappings = $ssas->map(function ($ssa) use ($isStandalone, $therapistProfileId) {
+            if ($isStandalone) {
+                $schoolId = $ssa->student?->studentProfile?->school_id;
+                $availableServices = ($schoolId && $therapistProfileId)
+                    ? $this->serviceCatalogService->listCommonIndirectServices($therapistProfileId, $schoolId)
+                    : collect();
+            } else {
+                $availableServices = $ssa->services;
+            }
+
             return [
                 'ssa_id' => $ssa->id,
-                'primary_service_id' => $ssa->primary_service_id,
-                'services' => $ssa->services->map(function ($service) {
-                    return [
-                        'id' => $service->id,
-                        'name' => $service->name,
-                    ];
-                })->values()->all(),
+                'primary_service_id' => $isStandalone ? null : $ssa->primary_service_id,
+                'services' => $availableServices->map(static fn ($s) => [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                ])->values()->all(),
             ];
         })->values();
 
         $services = collect();
         if ($selectedSsa) {
-            $services = $selectedSsa->services->map(function ($service) {
-                return (object) [
-                    'id' => $service->id,
-                    'name' => $service->name,
-                ];
-            });
+            if ($isStandalone) {
+                $schoolId = $selectedSsa->student?->studentProfile?->school_id;
+                $availableServices = ($schoolId && $therapistProfileId)
+                    ? $this->serviceCatalogService->listCommonIndirectServices($therapistProfileId, $schoolId)
+                    : collect();
+            } else {
+                $availableServices = $selectedSsa->services;
+            }
+
+            $services = $availableServices->map(static fn ($s) => (object) [
+                'id' => $s->id,
+                'name' => $s->name,
+            ]);
+        }
+
+        $scheduleLocalDate = null;
+        $scheduleLocalStartTime = null;
+        $scheduleLocalEndTime = null;
+        if ($schedule !== null) {
+            $tz = $this->timezoneService->resolveTimezone($therapist);
+            $localStart = $schedule->localStart($tz);
+            $localEnd = $schedule->localEnd($tz);
+            $scheduleLocalDate = $localStart->format('Y-m-d');
+            $scheduleLocalStartTime = $localStart->format('H:i');
+            $scheduleLocalEndTime = $localEnd->format('H:i');
         }
 
         return view('therapist.session-logs.create', [
@@ -208,6 +245,9 @@ final class SessionLogController extends Controller
             'ssaServiceMappings' => $ssaServiceMappings,
             'selectedSsa' => $selectedSsa,
             'sessionOutcomes' => SessionOutcome::cases(),
+            'scheduleLocalDate' => $scheduleLocalDate,
+            'scheduleLocalStartTime' => $scheduleLocalStartTime,
+            'scheduleLocalEndTime' => $scheduleLocalEndTime,
         ]);
     }
 
@@ -249,7 +289,12 @@ final class SessionLogController extends Controller
     {
         $this->authorize('view', $sessionLog);
 
-        $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapistContract', 'schoolContract', 'comments.author']);
+        $sessionLog->load(['student', 'student.studentProfile', 'ssa', 'service', 'school', 'schedule', 'therapist', 'therapist.therapistProfile', 'therapistContract', 'schoolContract', 'comments.author']);
+
+        $tz = $sessionLog->displayTimezone();
+        $sessionLog->session_date_formatted = $sessionLog->localDate($tz)->format('M d, Y');
+        $sessionLog->start_time_formatted = $sessionLog->localStart($tz)->format('g:i A');
+        $sessionLog->end_time_formatted = $sessionLog->localEnd($tz)->format('g:i A');
 
         $documents = $this->documentService->listBySessionLog($sessionLog->id);
 
@@ -270,8 +315,17 @@ final class SessionLogController extends Controller
             'ssa.services',
             'service',
             'school',
+            'therapist',
+            'therapist.therapistProfile',
             'comments.author',
         ]);
+
+        $tz = $sessionLog->displayTimezone();
+        $localStart = $sessionLog->localStart($tz);
+        $localEnd = $sessionLog->localEnd($tz);
+        $sessionLog->session_date_input = $localStart->format('Y-m-d');
+        $sessionLog->start_time_input = $localStart->format('H:i');
+        $sessionLog->end_time_input = $localEnd->format('H:i');
 
         return view('therapist.session-logs.edit', [
             'sessionLog' => $sessionLog,

@@ -10,7 +10,10 @@ use App\DTOs\ExpenseFilterDTO;
 use App\DTOs\UpdateExpenseDTO;
 use App\Models\Expense;
 use App\Models\LedgerEntry;
+use App\Models\TherapistBillPayment;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +25,12 @@ class ExpenseService
     public function listForDataTables(ExpenseFilterDTO $filters, DataTablesParamsDTO $params): array
     {
         $baseQuery = Expense::query()->with(['category', 'createdBy']);
+        // @phpstan-ignore argument.type
+        $baseQuery->with(['source' => function (MorphTo $morphTo): void {
+            $morphTo->morphWith([
+                TherapistBillPayment::class => ['therapistBill.therapist'],
+            ]);
+        }]);
 
         if ($filters->categoryId !== null) {
             $baseQuery->where('expense_category_id', $filters->categoryId);
@@ -109,6 +118,23 @@ class ExpenseService
     }
 
     /**
+     * Create an expense linked to a source model (e.g. a therapist bill payment).
+     * The source polymorphic link makes the expense non-editable via the admin UI.
+     */
+    public function createExpenseFromSource(CreateExpenseDTO $dto, Model $source): Expense
+    {
+        return DB::transaction(function () use ($dto, $source) {
+            $data = $dto->toArray();
+            $data['source_type'] = $source::class;
+            $data['source_id'] = $source->getKey();
+
+            $expense = Expense::create($data);
+
+            return $expense->load('category', 'createdBy');
+        });
+    }
+
+    /**
      * Update an existing expense.
      */
     public function updateExpense(Expense $expense, UpdateExpenseDTO $dto): Expense
@@ -131,9 +157,7 @@ class ExpenseService
             $expense->delete();
 
             // Delete associated ledger entries if any
-            LedgerEntry::where('reference_type', Expense::class)
-                ->where('reference_id', $expense->id)
-                ->delete();
+            LedgerEntry::forReference($expense)->delete();
 
             return true;
         });

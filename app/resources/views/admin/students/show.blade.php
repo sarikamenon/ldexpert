@@ -37,6 +37,7 @@
             ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'session_logs'])],
             ['key' => 'comments', 'label' => 'Comments', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'comments'])],
             ['key' => 'documents', 'label' => 'Documents', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'documents'])],
+            ['key' => 'email_history', 'label' => 'Email History', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'email_history'])],
         ];
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -76,10 +77,10 @@
             </x-ui::card>
 
             <x-ui::card class="p-6 space-y-3 lg:col-span-2">
-                <h3 class="text-lg font-semibold text-foreground">School & Guardian</h3>
+                <h3 class="text-lg font-semibold text-foreground">School/Family & Guardian</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <p class="text-sm text-foreground/70">School</p>
+                        <p class="text-sm text-foreground/70">School/Family</p>
                         @if ($student->studentProfile?->school)
                             <a href="{{ route('admin.schools.show', $student->studentProfile->school) }}"
                                 class="text-lg font-semibold text-primary hover:underline">
@@ -129,6 +130,8 @@
         <x-student.comments-section :student="$student" :comments="$comments" context="admin" />
     @elseif (($activeTab ?? 'dashboard') === 'documents' && isset($documents))
         <x-student.documents-section :student="$student" :documents="$documents" context="admin" />
+    @elseif (($activeTab ?? 'dashboard') === 'email_history' && isset($emailLogs))
+        <x-student.email-history-section :student="$student" :email-logs="$emailLogs" />
     @endif
 
     <x-slot name="scripts">

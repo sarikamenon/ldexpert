@@ -6,6 +6,7 @@ namespace App\Domain\School\Services;
 
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
 use App\DTOs\CreateSchoolCalendarEventDTO;
+use App\DTOs\SchoolCalendarEventResponseDTO;
 use App\DTOs\UpdateSchoolCalendarEventDTO;
 use App\Enums\SchoolCalendarEventType;
 use App\Models\SchoolCalendarEvent;
@@ -22,6 +23,14 @@ final class SchoolCalendarService
     public function listBySchoolAndRange(int $schoolId, CarbonInterface $start, CarbonInterface $end): Collection
     {
         return $this->repository->listBySchoolAndRange($schoolId, $start, $end);
+    }
+
+    /** @return Collection<int, SchoolCalendarEventResponseDTO> */
+    public function listBySchoolAndRangeAsDTO(int $schoolId, CarbonInterface $start, CarbonInterface $end): Collection
+    {
+        return $this->listBySchoolAndRange($schoolId, $start, $end)
+            ->map(static fn (SchoolCalendarEvent $event): SchoolCalendarEventResponseDTO => SchoolCalendarEventResponseDTO::fromModel($event))
+            ->values();
     }
 
     /**

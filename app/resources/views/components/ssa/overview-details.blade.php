@@ -37,7 +37,7 @@
                 </dd>
             </div>
             <div>
-                <dt class="text-sm font-medium text-foreground/70">School</dt>
+                <dt class="text-sm font-medium text-foreground/70">School/Family</dt>
                 <dd class="mt-1 text-sm text-foreground">
                     @if ($context === 'admin' && $ssa->student?->studentProfile?->school)
                         <a href="{{ route('admin.schools.show', $ssa->student->studentProfile->school) }}"
@@ -74,20 +74,6 @@
             <div>
                 <dt class="text-sm font-medium text-foreground/70">Primary Service</dt>
                 <dd class="mt-1 text-sm text-foreground">{{ $ssa->primaryService->name ?? '—' }}</dd>
-            </div>
-            <div>
-                <dt class="text-sm font-medium text-foreground/70">Additional Services</dt>
-                <dd class="mt-1 text-sm text-foreground">
-                    @if ($ssa->additionalServices->isEmpty())
-                        None
-                    @else
-                        <div class="flex flex-wrap gap-2">
-                            @foreach ($ssa->additionalServices as $service)
-                                <x-ui::badge variant="secondary">{{ $service->name }}</x-ui::badge>
-                            @endforeach
-                        </div>
-                    @endif
-                </dd>
             </div>
         </dl>
     </x-ui::card>

@@ -27,7 +27,7 @@ final class ScheduleCalendarController extends Controller
 
         $therapists = $this->therapistService->listActiveTherapists();
 
-        return view('admin.schedule-calendar.index', [
+        return view('admin.schedule.calendar.index', [
             'therapists' => $therapists,
         ]);
     }
@@ -39,7 +39,7 @@ final class ScheduleCalendarController extends Controller
         $validated = $request->validated();
 
         $filters = ScheduleFilterDTO::fromRequest([
-            'therapist_id' => $validated['therapist_id'] ?? null,
+            'therapist_ids' => $validated['therapist_ids'] ?? null,
             'student_id' => $validated['student_id'] ?? null,
             'school_id' => $validated['school_id'] ?? null,
             'status' => $validated['status'] ?? null,
@@ -70,6 +70,7 @@ final class ScheduleCalendarController extends Controller
                 'ssa',
                 'ssa.primaryService',
                 'school',
+                'emailLogs.sentBy',
             ])
             ->findOrFail($id);
 
@@ -88,22 +89,25 @@ final class ScheduleCalendarController extends Controller
         $studentProfile = $schedule->student?->studentProfile;
         $ssa = $schedule->ssa;
         $durationMinutes = $schedule->durationMinutes();
+        $tz = $schedule->displayTimezone();
+        $localStart = $schedule->localStart($tz);
+        $localEnd = $schedule->localEnd($tz);
 
         return [
             'id' => $schedule->id,
-            'schedule_date' => $schedule->schedule_date->format('Y-m-d'),
-            'schedule_date_formatted' => $schedule->schedule_date->format('M d, Y'),
-            'start_time' => $schedule->start_time->format('H:i'),
-            'start_time_formatted' => $schedule->start_time->format('g:i A'),
-            'end_time' => $schedule->end_time->format('H:i'),
-            'end_time_formatted' => $schedule->end_time->format('g:i A'),
+            'schedule_date' => $localStart->format('Y-m-d'),
+            'schedule_date_formatted' => $localStart->format('M d, Y'),
+            'start_time' => $localStart->format('H:i'),
+            'start_time_formatted' => $localStart->format('g:i A'),
+            'end_time' => $localEnd->format('H:i'),
+            'end_time_formatted' => $localEnd->format('g:i A'),
             'duration_minutes' => $durationMinutes,
             'duration_formatted' => $this->formatDuration($durationMinutes),
             'status' => $schedule->status->value,
             'billing_status' => $schedule->billing_status->value,
             'notes' => $schedule->notes,
             'location_details' => $schedule->location_details,
-            'is_past' => $schedule->schedule_date->lt(now()->startOfDay()),
+            'is_past' => $localStart->lt(now($tz)->startOfDay()),
             'therapist' => [
                 'id' => $schedule->therapist?->id,
                 'name' => $schedule->therapist?->name,
@@ -145,6 +149,13 @@ final class ScheduleCalendarController extends Controller
                 'email' => $studentProfile->parent_guardian_email ?? '-',
                 'phone' => $studentProfile->parent_guardian_phone ?? '-',
             ],
+            'email_logs' => $schedule->emailLogs->sortByDesc('sent_at')->map(fn ($log) => [
+                'sent_at' => $log->sent_at->copy()->setTimezone($tz)->format('M d, Y g:i A'),
+                'type_label' => $log->type->label(),
+                'type_value' => $log->type->value,
+                'recipient_email' => $log->recipient_email,
+                'sent_by' => $log->sentBy !== null ? $log->sentBy->name : 'System',
+            ])->values()->toArray(),
         ];
     }
 

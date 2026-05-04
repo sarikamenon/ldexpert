@@ -35,7 +35,6 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'student',
                 'student.studentProfile.school',
                 'primaryService',
-                'additionalServices',
                 'assignedTherapist',
             ])
             ->orderBy('created_at', 'desc')
@@ -53,7 +52,6 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'student',
                 'student.studentProfile.school',
                 'primaryService',
-                'additionalServices',
                 'assignedTherapist',
             ]);
 
@@ -96,7 +94,6 @@ final class EloquentSSARepository implements SSARepositoryInterface
             'student',
             'student.studentProfile.school',
             'primaryService',
-            'additionalServices',
             'assignedTherapist',
             'assignmentHistory.therapist',
             'assignmentHistory.assignedBy',
@@ -127,7 +124,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
 
             $ssa = ServiceSupportAgreement::create($data);
 
-            $this->syncSsaServices($ssa, $dto->additionalServiceIds);
+            $this->syncSsaServices($ssa);
 
             // If therapist is assigned during creation, log it
             if ($dto->assignedTherapistId !== null) {
@@ -141,7 +138,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
             }
 
             /** @var ServiceSupportAgreement $freshSsa */
-            $freshSsa = $ssa->fresh(['services', 'additionalServices']);
+            $freshSsa = $ssa->fresh(['services']);
 
             return $freshSsa;
         });
@@ -159,10 +156,10 @@ final class EloquentSSARepository implements SSARepositoryInterface
             }
             $ssa->update($data);
 
-            $this->syncSsaServices($ssa, $dto->additionalServiceIds);
+            $this->syncSsaServices($ssa);
 
             /** @var ServiceSupportAgreement $freshSsa */
-            $freshSsa = $ssa->fresh(['services', 'additionalServices']);
+            $freshSsa = $ssa->fresh(['services']);
 
             return $freshSsa;
         });
@@ -450,38 +447,11 @@ final class EloquentSSARepository implements SSARepositoryInterface
         return $query;
     }
 
-    /**
-     * @param  array<int>|null  $additionalServiceIds
-     */
-    private function syncSsaServices(ServiceSupportAgreement $ssa, ?array $additionalServiceIds = null): void
+    private function syncSsaServices(ServiceSupportAgreement $ssa): void
     {
-        $primaryServiceId = $ssa->primary_service_id;
-
-        $additionalIds = $additionalServiceIds;
-
-        if ($additionalIds === null) {
-            $additionalIds = $ssa->services()
-                ->wherePivot('is_primary', false)
-                ->pluck('services.id')
-                ->all();
-        }
-
-        $additionalIds = array_values(array_unique(
-            array_filter(
-                array_map('intval', $additionalIds),
-                static fn (int $serviceId): bool => $serviceId !== (int) $primaryServiceId
-            )
-        ));
-
-        $payload = [
-            (int) $primaryServiceId => ['is_primary' => true],
-        ];
-
-        foreach ($additionalIds as $serviceId) {
-            $payload[$serviceId] = ['is_primary' => false];
-        }
-
-        $ssa->services()->sync($payload);
+        $ssa->services()->sync([
+            (int) $ssa->primary_service_id => ['is_primary' => true],
+        ]);
     }
 
     /** @return Collection<int, ServiceSupportAgreement> */

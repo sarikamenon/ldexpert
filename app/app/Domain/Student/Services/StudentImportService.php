@@ -119,7 +119,7 @@ final class StudentImportService
             if (! $schoolName) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
-                    'error_message' => 'School name is required.',
+                    'error_message' => 'School/family name is required.',
                     'processed_at' => now(),
                 ]);
 
@@ -130,7 +130,7 @@ final class StudentImportService
             if (! $school) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
-                    'error_message' => "School with name '{$schoolName}' not found.",
+                    'error_message' => "School/family with name '{$schoolName}' not found.",
                     'processed_at' => now(),
                 ]);
 
@@ -472,6 +472,11 @@ final class StudentImportService
         }
     }
 
+    /**
+     * @param  array<string, mixed>  $mappedData
+     * @param  array<string, mixed>  $template
+     * @return array<string, mixed>
+     */
     private function applyTemplateTransformations(array $mappedData, array $template, School $school): array
     {
         // 1. Apply transformations (combine, split)
@@ -547,7 +552,7 @@ final class StudentImportService
 
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D/', '', $phone);
+        $digits = (string) preg_replace('/\D/', '', $phone);
 
         if (strlen($digits) === 10) {
             return substr($digits, 0, 3).'-'.substr($digits, 3, 3).'-'.substr($digits, 6, 4);

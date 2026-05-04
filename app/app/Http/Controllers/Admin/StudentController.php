@@ -43,6 +43,7 @@ use App\Http\Requests\Admin\Student\StudentScheduleDataRequest;
 use App\Http\Requests\Admin\Student\UpdateStudentRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
+use App\Models\ScheduleEmailLog;
 use App\Models\StudentImport;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -289,6 +290,25 @@ final class StudentController extends Controller
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {
             $viewData['documents'] = $this->documentService->listByStudent($student->id);
+        } elseif ($activeTab === 'email_history') {
+            $studentFallbackTz = $student->studentProfile->timezone
+                ?? $student->timezone
+                ?? 'UTC';
+
+            $viewData['emailLogs'] = ScheduleEmailLog::query()
+                ->whereHas('schedule', function (\Illuminate\Database\Eloquent\Builder $q) use ($student): void {
+                    // @phpstan-ignore argument.type
+                    $q->where('student_id', $student->id);
+                })
+                ->with(['sentBy', 'schedule', 'schedule.therapist', 'schedule.therapist.therapistProfile', 'schedule.service'])
+                ->orderByDesc('sent_at')
+                ->get()
+                ->each(function (ScheduleEmailLog $log) use ($studentFallbackTz): void {
+                    $rowTz = $log->schedule?->displayTimezone() ?? $studentFallbackTz;
+
+                    $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($rowTz)->format('M d, Y h:i A');
+                    $log->schedule_local_date = $log->schedule?->localStart($rowTz)->format('M d, Y');
+                });
         }
 
         return view('admin.students.show', $viewData);
@@ -341,7 +361,7 @@ final class StudentController extends Controller
                 'Name',
                 'Username',
                 'Email',
-                'School',
+                'School/Family',
                 'Grade Level',
                 'Date of Birth',
                 'Status',
@@ -512,6 +532,27 @@ final class StudentController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    public function downloadImported(Request $request, StudentImport $import): StreamedResponse|RedirectResponse
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        try {
+            return \Illuminate\Support\Facades\Storage::download(
+                $import->file_path,
+                $import->file_name,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Student import file download failed', [
+                'import_id' => $import->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->with('error', 'The original import file could not be found.');
+        }
     }
 
     /** @return array<string, mixed> */

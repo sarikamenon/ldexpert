@@ -38,6 +38,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'role',
         'status',
+        'timezone',
+        'password_change_prompted_at',
     ];
 
     /**
@@ -60,6 +62,7 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_change_prompted_at' => 'datetime',
             'role' => Role::class,
             'status' => UserStatus::class,
         ];
@@ -72,6 +75,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getEmailForPasswordReset(): string
     {
         return $this->username;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === Role::ADMIN;
+    }
+
+    public function isTherapist(): bool
+    {
+        return $this->role === Role::THERAPIST;
     }
 
     /**

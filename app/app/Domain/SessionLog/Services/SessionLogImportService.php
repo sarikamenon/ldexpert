@@ -54,6 +54,7 @@ final class SessionLogImportService
                 'error_message' => implode(' ', $structureErrors),
                 'completed_at' => now(),
             ]);
+
             return;
         }
 
@@ -62,7 +63,7 @@ final class SessionLogImportService
         // Pre-load already-processed reference_ids for duplicate detection
         /** @var array<string, bool> $alreadyProcessed */
         $alreadyProcessed = SessionLogImportRow::query()
-            ->where('status', SessionLogImportRowStatus::DONE) // @phpstan-ignore argument.type
+            ->where('status', SessionLogImportRowStatus::DONE)
             ->whereNotNull('reference_id')
             ->pluck('reference_id')
             ->filter()
@@ -75,8 +76,8 @@ final class SessionLogImportService
         foreach ($rows as $rowNumber => $rowData) {
             $mappedData = $this->mapColumns($rowData, $template);
 
-            $importRow = SessionLogImportRow::where('session_log_import_id', $import->id) // @phpstan-ignore argument.type
-                ->where('row_number', $rowNumber + 1) // @phpstan-ignore argument.type
+            $importRow = SessionLogImportRow::where('session_log_import_id', $import->id)
+                ->where('row_number', $rowNumber + 1)
                 ->first();
 
             if (! $importRow) {
@@ -154,7 +155,7 @@ final class SessionLogImportService
         }
 
         if (! empty($missingColumns)) {
-            $errors[] = 'Missing required columns: ' . implode(', ', $missingColumns);
+            $errors[] = 'Missing required columns: '.implode(', ', $missingColumns);
         }
 
         return $errors;
@@ -182,6 +183,7 @@ final class SessionLogImportService
         $headers = fgetcsv($tempFile);
         if ($headers === false) {
             fclose($tempFile);
+
             return [];
         }
 
@@ -227,9 +229,9 @@ final class SessionLogImportService
     {
         $year = now()->format('Y');
         $month = now()->format('m');
-        $filename = now()->format('Ymd_His') . '_' . Str::random(8) . '_' . $file->getClientOriginalName();
+        $filename = now()->format('Ymd_His').'_'.Str::random(8).'_'.$file->getClientOriginalName();
 
-        $path = config('session-log-import.storage.path_prefix', 'session-log-imports') . "/{$year}/{$month}/{$filename}";
+        $path = config('session-log-import.storage.path_prefix', 'session-log-imports')."/{$year}/{$month}/{$filename}";
 
         $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 

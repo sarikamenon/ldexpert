@@ -4,7 +4,7 @@
     'searchable' => 'auto',
     'searchThreshold' => 10,
     'multiple' => false,
-    'allowClear' => false,
+    'allowClear' => null,
     'tags' => false,
     'disabled' => false,
     'dropdownParent' => null,
@@ -29,7 +29,7 @@
     @if ($multiple) multiple @endif @disabled($disabled) data-select-box data-width="{{ $selectWidth }}" @if($inline) data-inline="true" @endif
     data-searchable="{{ $searchable === 'auto' ? 'auto' : ($searchable ? 'true' : 'false') }}"
     data-search-threshold="{{ $searchThreshold }}"
-    data-allow-clear="{{ $allowClear ? 'true' : 'false' }}"
+    @if ($allowClear !== null) data-allow-clear="{{ $allowClear ? 'true' : 'false' }}" @endif
     data-tags="{{ $tags ? 'true' : 'false' }}"
     @if ($placeholder) data-placeholder="{{ $placeholder }}" @endif
     @if ($dropdownParent) data-dropdown-parent="{{ $dropdownParent }}" @endif

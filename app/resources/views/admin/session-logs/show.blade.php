@@ -9,7 +9,7 @@
                     </h1>
                     <p class="text-sm text-foreground/60 mt-1">
                         {{ $sessionLog->service?->name ?? 'No service' }}
-                        · {{ $sessionLog->session_date?->format('M d, Y') ?? 'No date' }}
+                        · {{ $sessionLog->session_date_formatted ?? 'No date' }}
                     </p>
                 </div>
 
@@ -32,11 +32,21 @@
                         </x-ui::button>
                     </a>
 
-                    <a href="{{ route('admin.session-logs.edit', $sessionLog) }}">
-                        <x-ui::button>
+                    @if ($sessionLog->isAttachedToInvoiceOrTherapistBill())
+                        <span
+                            class="inline-flex rounded-base focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            title="{{ \App\Models\SessionLog::RATE_OVERRIDE_BLOCKED_MESSAGE }}"
+                            tabindex="0"
+                        >
+                            <x-ui::button type="button" disabled>
+                                Override Rates
+                            </x-ui::button>
+                        </span>
+                    @else
+                        <x-ui::button href="{{ route('admin.session-logs.edit', $sessionLog) }}">
                             Override Rates
                         </x-ui::button>
-                    </a>
+                    @endif
 
                     @if ($sessionLog->status?->canApprove())
                         <form action="{{ route('admin.session-logs.approve', $sessionLog) }}" method="POST">

@@ -52,7 +52,7 @@
                 <span class="value">{{ $invoice->due_date?->format('M d, Y') }}</span>
             </div>
             <div class="row">
-                <span class="label">School</span>
+                <span class="label">School/Family</span>
                 <span class="value">{{ $invoice->school_display_name }}</span>
             </div>
 

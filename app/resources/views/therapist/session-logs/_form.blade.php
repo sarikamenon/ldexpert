@@ -38,7 +38,7 @@
                     value="{{ old('student_id', $sessionLog->student_id ?? ($schedule->student_id ?? ($selectedSsa->student_id ?? ''))) }}" />
                 <x-ui::input type="text" id="session-log-student-name" readonly :disabled="true"
                     value="{{ $sessionLog->student->name ?? ($schedule->student?->name ?? ($selectedSsa->student?->name ?? '')) }}"
-                    class="mt-1 bg-gray-100" />
+                    class="mt-1 bg-muted" />
             </div>
 
             <div>
@@ -46,7 +46,7 @@
                 <p class="mt-1 text-xs text-foreground/60">Service Support Agreement for this session</p>
                 <input type="hidden" name="ssa_id"
                     value="{{ old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) }}" />
-                <x-ui::select id="session-log-ssa" name="ssa_id" disabled class="mt-1 bg-gray-100">
+                <x-ui::select id="session-log-ssa" name="ssa_id" disabled class="mt-1 bg-muted">
                     <option value="">Select SSA</option>
                     @foreach ($ssas ?? [] as $ssa)
                         <option value="{{ $ssa->id }}" @selected(old('ssa_id', $sessionLog->ssa_id ?? ($schedule->ssa_id ?? ($selectedSsa->id ?? ''))) == $ssa->id)
@@ -71,14 +71,14 @@
                         value="{{ old('service_id', $sessionLog->service_id ?? ($schedule->service_id ?? '')) }}" />
                     <x-ui::input type="text" readonly :disabled="true"
                         value="{{ $schedule->service?->name ?? ($services->firstWhere('id', $schedule->service_id)->name ?? '') }}"
-                        class="mt-1 bg-gray-100" />
+                        class="mt-1 bg-muted" />
                 @else
                     {{-- Standalone: service selectable based on SSA --}}
                     <x-ui::select name="service_id" id="session-log-service" class="mt-1" required>
                         @if (isset($sessionLog) || isset($selectedSsa))
                             <option value="">Select service</option>
                             @foreach ($services ?? [] as $service)
-                                <option value="{{ $service->id }}" @selected(old('service_id', $sessionLog->service_id ?? ($selectedSsa->primary_service_id ?? '')) == $service->id)>
+                                <option value="{{ $service->id }}" @selected(old('service_id', $sessionLog->service_id ?? '') == $service->id)>
                                     {{ $service->name }}
                                 </option>
                             @endforeach
@@ -92,12 +92,19 @@
 
             <div>
                 <x-input-label for="session-log-date" value="Session Date *" />
-                <p class="mt-1 text-xs text-foreground/60">Date when the session occurred</p>
-                <input type="hidden" name="session_date"
-                    value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}" />
-                <x-ui::input type="date" id="session-log-date" class="mt-1 block w-full bg-gray-100"
-                    value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date?->format('Y-m-d') : (isset($schedule) ? $schedule->schedule_date?->format('Y-m-d') : now()->format('Y-m-d'))) }}"
-                    readonly :disabled="true" />
+                @if (isset($schedule))
+                    <p class="mt-1 text-xs text-foreground/60">Date when the session occurred (from schedule)</p>
+                    <input type="hidden" name="session_date"
+                        value="{{ old('session_date', $scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) }}" />
+                    <x-ui::input type="date" id="session-log-date" class="mt-1 block w-full bg-muted"
+                        value="{{ old('session_date', $scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) }}"
+                        readonly :disabled="true" />
+                @else
+                    <p class="mt-1 text-xs text-foreground/60">Date when the session occurred. Must be a past date.</p>
+                    <x-ui::input type="date" name="session_date" id="session-log-date" class="mt-1 block w-full"
+                        value="{{ old('session_date', isset($sessionLog) ? $sessionLog->session_date_input : now()->format('Y-m-d')) }}"
+                        max="{{ now()->format('Y-m-d') }}" required />
+                @endif
                 <x-input-error :messages="$errors->get('session_date')" class="mt-2" />
             </div>
         </div>
@@ -108,7 +115,7 @@
                 <label class="block text-sm font-medium text-gray-700">Start Time *</label>
                 <p class="mt-1 text-xs text-foreground/60">Time when the session started</p>
                 <x-ui::input type="time" name="start_time" id="session-log-start-time"
-                    value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time?->format('H:i') : (isset($schedule) ? $schedule->start_time?->format('H:i') : '')) }}"
+                    value="{{ old('start_time', isset($sessionLog) ? $sessionLog->start_time_input : (isset($scheduleLocalStartTime) ? $scheduleLocalStartTime : '')) }}"
                     class="mt-1" required />
                 <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
             </div>
@@ -130,8 +137,8 @@
                 <label class="block text-sm font-medium text-gray-700">End Time</label>
                 <p class="mt-1 text-xs text-foreground/60">Calculated based on start time and duration</p>
                 <x-ui::input type="time" name="end_time" id="session-log-end-time" readonly :disabled="true"
-                    value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time?->format('H:i') : (isset($schedule) ? $schedule->end_time?->format('H:i') : '')) }}"
-                    class="mt-1 bg-gray-100" required />
+                    value="{{ old('end_time', isset($sessionLog) ? $sessionLog->end_time_input : (isset($scheduleLocalEndTime) ? $scheduleLocalEndTime : '')) }}"
+                    class="mt-1 bg-muted" required />
                 <x-input-error :messages="$errors->get('end_time')" class="mt-2" />
             </div>
         </div>
@@ -143,7 +150,7 @@
                 <div>
                     <label class="block text-sm font-medium text-foreground">Notes *</label>
                     <p class="mt-1 text-xs text-foreground/60" id="session-notes-help">
-                        Session notes must be at least 50 characters. Describe what occurred during the session.
+                        Session notes must be at least 20 characters. Describe what occurred during the session.
                     </p>
                     <textarea name="notes" rows="4"
                         class="mt-1 block w-full border-border focus:border-primary focus:ring-primary rounded-md shadow-sm"
@@ -156,7 +163,7 @@
                     <x-ui::select name="outcome" class="mt-1" placeholder="Select outcome">
                         <option value="">Select outcome</option>
                         @foreach ($sessionOutcomes ?? [] as $outcome)
-                            <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'service_delivered') === $outcome->value)>
+                            <option value="{{ $outcome->value }}" @selected(old('outcome', $sessionLog->outcome?->value ?? 'services_administered') === $outcome->value)>
                                 {{ $outcome->label() }}
                             </option>
                         @endforeach

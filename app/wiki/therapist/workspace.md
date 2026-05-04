@@ -19,7 +19,7 @@ Give therapists a unified workspace to manage caseloads, schedules, documentatio
     -   Data model (`schedules`): `therapist_id`, `student_id`, `ssa_id`, `service_id`, `school_id`, `schedule_date`, `start_time`, `end_time`, `recurrence_type` + `recurrence_end_date`, `is_group`, `recurring_batch_number`, `group_batch_number`, `status`, `billing_status`, `notes`, `location_details`, soft deletes.
     -   Supports single and recurring schedules; recurrence/group batches tracked by batch numbers; `parent_schedule_id` links occurrences.
     -   **Recurring Schedules**: Therapists can create recurring schedules (daily, weekly, bi-weekly, monthly) with end date. System generates individual schedule occurrences linked via `parent_schedule_id` and `recurring_batch_number`. Changes to parent schedule can propagate to future occurrences (with confirmation). See Recurring Schedule section below.
-    -   Billing status transitions managed per schedule or in bulk; statuses include pending, billed, waived, not billable (per enums).
+    -   Billing status transitions managed per schedule or in bulk; statuses include pending, billed, and not billable (per enums).
     -   Deletes handled via controller destroy; schedules respect SSA/service/therapist availability rules in `ScheduleService`.
 -   **Student Comments** (implemented):
     -   Therapists can add comments on student records visible to all admins and assigned therapists.

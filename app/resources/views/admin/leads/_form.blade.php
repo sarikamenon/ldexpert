@@ -72,16 +72,16 @@
         </div>
     </x-ui::card>
 
-    {{-- Section B: School & Academic Info --}}
+    {{-- Section B: School/Family & Academic Info --}}
     <x-ui::card class="p-6 space-y-4">
-        <h3 class="text-lg font-semibold text-foreground">School & Academic Information</h3>
+        <h3 class="text-lg font-semibold text-foreground">School/Family & Academic Information</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <x-input-label for="school_id" value="School" />
-                <p class="mt-1 text-xs text-foreground/60" id="school_help">School of interest (optional at lead stage)</p>
-                <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School" aria-describedby="school_help">
-                    <option value="">Select School</option>
+                <x-input-label for="school_id" value="School/Family" />
+                <p class="mt-1 text-xs text-foreground/60" id="school_help">School or family of interest (optional at lead stage)</p>
+                <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School/Family" aria-describedby="school_help">
+                    <option value="">Select School/Family</option>
                     @foreach ($schools as $school)
                         <option value="{{ $school->id }}" @selected((string) old('school_id', $lead->school_id ?? '') === (string) $school->id)>
                             {{ $school->display_name }}

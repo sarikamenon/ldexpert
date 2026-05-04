@@ -36,6 +36,7 @@ final class TherapistBillPaymentRowTransformer
                 'Delete Payment',
                 'Delete therapist bill payment?',
                 'This will remove all allocations and the related ledger entry. This action cannot be undone.',
+                ['form-class' => 'inline js-therapist-bill-payment-delete-form'],
             ),
         );
 

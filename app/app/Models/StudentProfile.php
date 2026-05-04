@@ -99,4 +99,23 @@ class StudentProfile extends Model
     {
         return StudentScope::inactive($query, $this);
     }
+
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @param  array<int, int>  $userIds
+     * @return Builder<StudentProfile>
+     */
+    public function scopeForUserIds(Builder $query, array $userIds): Builder
+    {
+        return StudentScope::forUserIds($query, $userIds);
+    }
+
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
+    public function scopeWithSchool(Builder $query): Builder
+    {
+        return StudentScope::withSchool($query);
+    }
 }

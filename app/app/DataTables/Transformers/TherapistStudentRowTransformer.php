@@ -12,7 +12,7 @@ use Carbon\CarbonInterface;
 final class TherapistStudentRowTransformer
 {
     /**
-     * @return array<int, string> 8 cell HTML strings in column order (ID, Name, Email, School, Grade, DOB, Status, Actions)
+     * @return array<int, string> 9 cell HTML strings in column order (ID, Name, Username, Email, School, Grade, DOB, Status, Actions)
      */
     public static function transform(User $student): array
     {
@@ -33,6 +33,7 @@ final class TherapistStudentRowTransformer
         return [
             '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90" title="View Student" aria-label="View student '.e($student->name).'">'.(int) $student->id.'</a>',
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($student->name).'</a>',
+            e($student->username),
             e($student->email),
             $schoolCell,
             e($profile ? $profile->grade_level ?? '—' : '—'),

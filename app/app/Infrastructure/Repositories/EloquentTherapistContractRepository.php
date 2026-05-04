@@ -61,25 +61,27 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
         ];
     }
 
-    public function create(CreateTherapistContractDTO $dto): TherapistContract
+    /** @param array<string, mixed> $documentData */
+    public function create(CreateTherapistContractDTO $dto, array $documentData = []): TherapistContract
     {
-        return TherapistContract::create([
+        return TherapistContract::create(array_merge([
             'therapist_id' => $dto->therapistId,
             'start_date' => $dto->startDate,
             'end_date' => $dto->endDate,
             'notes' => $dto->notes,
             'status' => $dto->status->value,
-        ]);
+        ], $documentData));
     }
 
-    public function update(TherapistContract $contract, UpdateTherapistContractDTO $dto): TherapistContract
+    /** @param array<string, mixed> $documentData */
+    public function update(TherapistContract $contract, UpdateTherapistContractDTO $dto, array $documentData = []): TherapistContract
     {
-        $contract->update([
+        $contract->update(array_merge([
             'start_date' => $dto->startDate,
             'end_date' => $dto->endDate,
             'notes' => $dto->notes,
             'status' => $dto->status->value,
-        ]);
+        ], $documentData));
 
         return $contract->refresh();
     }

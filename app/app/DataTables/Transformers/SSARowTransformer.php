@@ -16,7 +16,6 @@ final class SSARowTransformer
     public static function transform(ServiceSupportAgreement $ssa): array
     {
         $adminShowUrl = route('admin.ssas.show', $ssa);
-        $therapistShowUrl = route('therapist.ssas.show', $ssa);
 
         $idCell = '<a href="'.e($adminShowUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90 transition-colors" title="View SSA Details">'
             .(int) $ssa->id.'</a>';
@@ -28,15 +27,6 @@ final class SSARowTransformer
 
         $primaryService = $ssa->primaryService->name ?? '—';
 
-        $additionalServices = '';
-        if ($ssa->additionalServices->isNotEmpty()) {
-            $badges = $ssa->additionalServices->map(
-                fn ($service): string => '<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-background/subtle text-xs font-medium text-foreground/70">'
-                    .e($service->name).'</span>'
-            )->implode('');
-            $additionalServices = '<div class="mt-1 flex flex-wrap gap-1">'.$badges.'</div>';
-        }
-
         $schoolCell = '';
         if ($ssa->student?->studentProfile?->school) {
             $school = $ssa->student->studentProfile->school;
@@ -47,17 +37,12 @@ final class SSARowTransformer
         $studentServiceCell = '<div class="flex flex-col">'
             .$studentPart
             .'<span class="text-sm text-foreground/70">'.e($primaryService).'</span>'
-            .$additionalServices
             .$schoolCell
             .'</div>';
 
-        $therapistCell = '';
-        if ($ssa->assignedTherapist) {
-            $therapistCell = '<a href="'.e(route('admin.therapists.show', $ssa->assignedTherapist)).'" class="text-primary hover:underline">'
-                .e($ssa->assignedTherapist->name).'</a>';
-        } else {
-            $therapistCell = '<span class="text-sm text-foreground/60">Unassigned</span>';
-        }
+        $therapistCell = $ssa->assignedTherapist
+            ? '<a href="'.e(route('admin.therapists.show', $ssa->assignedTherapist)).'" class="text-primary hover:underline">'.e($ssa->assignedTherapist->name).'</a>'
+            : '<span class="text-sm text-foreground/60">Unassigned</span>';
 
         $dateRangeCell = '<div class="flex flex-col space-y-1">'
             .'<span class="text-sm text-foreground">'.e($ssa->start_date->format('M d, Y')).'</span>'
@@ -98,8 +83,22 @@ final class SSARowTransformer
             }
         .'">'.e($ssa->status->label()).'</span></div></div>';
 
+        $assignBtn = '';
+        if (! $ssa->assignedTherapist) {
+            $serviceIds = e((string) json_encode([$ssa->primary_service_id]));
+            $assignBtn = ActionButtons::assign('Assign Therapist', [
+                'class' => 'assign-therapist-btn',
+                'data-ssa-id' => (int) $ssa->id,
+                'data-ssa-name' => $ssa->student->name ?? 'SSA #'.(int) $ssa->id,
+                'data-ssa-status' => $ssa->status->label(),
+                'data-service-name' => $ssa->primaryService->name ?? '—',
+                'data-service-ids' => $serviceIds,
+            ]);
+        }
+
         $actionsCell = ActionButtons::wrap(
             ActionButtons::view($adminShowUrl, 'View SSA'),
+            $assignBtn,
         );
 
         return [

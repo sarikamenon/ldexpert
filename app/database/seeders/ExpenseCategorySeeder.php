@@ -33,5 +33,14 @@ class ExpenseCategorySeeder extends Seeder
                 ]
             );
         }
+
+        ExpenseCategory::updateOrCreate(
+            ['id' => 10],
+            [
+                'name' => 'Therapist Payouts',
+                'slug' => 'therapist-payouts',
+                'is_active' => true,
+            ]
+        );
     }
 }

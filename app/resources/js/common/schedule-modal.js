@@ -1,4 +1,5 @@
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from './sweetalert';
+import { getBillingBadge } from './billing-status';
 
 /**
  * Load and display schedule details in the modal.
@@ -90,14 +91,7 @@ function buildStatusBadge(status) {
 }
 
 function buildBillingBadge(billingStatus) {
-    const map = {
-        billed: { label: 'Billed', cls: 'bg-success/10 text-success' },
-        pending: { label: 'Pending', cls: 'bg-warning/10 text-warning' },
-        not_billable: { label: 'Not Billable', cls: 'bg-foreground/10 text-foreground/70' },
-        waived: { label: 'Waived', cls: 'bg-purple-100 text-purple-700' },
-    };
-    const b = map[billingStatus] || { label: billingStatus || '-', cls: 'bg-foreground/10 text-foreground/70' };
-    return `<span class="text-xs font-medium px-2 py-0.5 rounded-full ${b.cls}">${b.label}</span>`;
+    return getBillingBadge(billingStatus);
 }
 
 function buildDetailsHtml(schedule) {
@@ -144,7 +138,7 @@ function buildDetailsHtml(schedule) {
                 <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium">${schedule.student?.name || '-'}</div></div>
                 <div><div class="text-foreground/70 mb-1">ID Number</div><div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div></div>
                 <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium">${schedule.student?.email || '-'}</div></div>
-                <div><div class="text-foreground/70 mb-1">School</div><div class="text-foreground font-medium">${schedule.school?.name || '-'}</div></div>
+                <div><div class="text-foreground/70 mb-1">School/Family</div><div class="text-foreground font-medium">${schedule.school?.name || '-'}</div></div>
                 <div><div class="text-foreground/70 mb-1">Timezone</div><div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div></div>
             </div>
         </div>
@@ -158,6 +152,43 @@ function buildDetailsHtml(schedule) {
         </div>
     `;
     html += '</div>';
+
+    if (schedule.email_logs && schedule.email_logs.length > 0) {
+        html += `
+            <div class="mt-4">
+                <h4 class="text-sm font-semibold text-foreground mb-3">Email History</h4>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-border">
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Date/Time</th>
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Type</th>
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Recipient</th>
+                                <th class="text-left py-2 px-3 text-xs font-medium text-foreground/70">Sent By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${schedule.email_logs.map(log => `
+                                <tr class="border-b border-border last:border-0">
+                                    <td class="py-2 px-3">${log.sent_at}</td>
+                                    <td class="py-2 px-3">
+                                        <span class="text-xs font-medium px-2 py-0.5 rounded-full ${
+                                            ['notification_created', 'notification_updated'].includes(log.type_value)
+                                                ? 'bg-primary/10 text-primary'
+                                                : 'bg-foreground/10 text-foreground/70'
+                                        }">${log.type_label}</span>
+                                    </td>
+                                    <td class="py-2 px-3">${log.recipient_email}</td>
+                                    <td class="py-2 px-3">${log.sent_by}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+
     return html;
 }
 
@@ -186,6 +217,14 @@ function renderFooter(schedule, actionUrls) {
         buttons += `<button type="button" class="schedule-delete-btn inline-flex items-center px-4 py-2 border border-danger/30 text-danger rounded-lg hover:bg-danger/10 text-sm font-medium transition-colors" data-schedule-id="${schedule.id}">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
             Delete
+        </button>`;
+    }
+
+    // Delete Future Schedules button: visible when recurring AND not billed AND has actions
+    if (!isBilled && hasAnyAction && schedule.is_recurring) {
+        buttons += `<button type="button" class="schedule-delete-future-btn inline-flex items-center px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 text-sm font-medium transition-colors" data-schedule-id="${schedule.id}">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Delete Future Schedules
         </button>`;
     }
 
@@ -225,8 +264,11 @@ function renderFooter(schedule, actionUrls) {
  * @param {Function} onSuccess - Callback after successful deletion
  */
 export function bindDeleteHandler(deleteUrl, onSuccess) {
-    $(document).on('click', '.schedule-delete-btn', async function () {
-        const scheduleId = $(this).data('schedule-id');
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.schedule-delete-btn');
+        if (!btn) return;
+
+        const scheduleId = btn.dataset.scheduleId;
         if (!scheduleId) return;
 
         const result = await confirmDialog({
@@ -259,6 +301,55 @@ export function bindDeleteHandler(deleteUrl, onSuccess) {
             if (typeof onSuccess === 'function') onSuccess();
         } catch (error) {
             errorAlert(error.message || 'An error occurred while deleting the schedule');
+        }
+    });
+}
+
+/**
+ * Bind the delete-future handler for recurring schedule deletion.
+ *
+ * @param {string} deleteUrl - Base URL for DELETE request (e.g., '/therapist/schedule')
+ * @param {Function} onSuccess - Callback after successful deletion
+ */
+export function bindDeleteFutureHandler(deleteUrl, onSuccess) {
+    document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.schedule-delete-future-btn');
+        if (!btn) return;
+
+        const scheduleId = btn.dataset.scheduleId;
+        if (!scheduleId) return;
+
+        const result = await confirmDialog({
+            title: 'Delete Future Recurring Schedules?',
+            text: 'This will permanently delete this schedule and all future recurring schedules in this series. Past schedules will not be affected. This action cannot be undone.',
+            icon: 'warning',
+            confirmButtonText: 'Yes, delete future schedules',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+        });
+
+        if (!result.isConfirmed) return;
+
+        showLoading('Deleting future schedules...');
+        try {
+            const response = await fetch(`${deleteUrl}/${scheduleId}/future-recurring`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            closeAlert();
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.message || 'Failed to delete future schedules');
+            }
+            const data = await response.json();
+            successToast(`${data.deleted_count} future schedule(s) deleted successfully.`);
+            window.dispatchEvent(new CustomEvent('close-modal', { detail: 'scheduleDetailsModal' }));
+            if (typeof onSuccess === 'function') onSuccess();
+        } catch (error) {
+            errorAlert(error.message || 'An error occurred while deleting future schedules');
         }
     });
 }

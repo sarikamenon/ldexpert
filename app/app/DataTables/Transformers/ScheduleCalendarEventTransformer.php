@@ -17,15 +17,18 @@ final class ScheduleCalendarEventTransformer
      */
     public static function transform(Schedule $schedule): array
     {
-        $isPast = $schedule->schedule_date->lt(now()->startOfDay());
+        $tz = $schedule->displayTimezone();
+        $localStart = $schedule->localStart($tz);
+        $localEnd = $schedule->localEnd($tz);
+        $isPast = $localStart->lt(now($tz)->startOfDay());
         $isBilled = $schedule->billing_status === BillingStatus::BILLED;
         $color = self::eventColor($schedule);
 
         return [
             'id' => $schedule->id,
             'title' => self::buildTitle($schedule),
-            'start' => $schedule->schedule_date->format('Y-m-d').'T'.$schedule->start_time->format('H:i:s'),
-            'end' => $schedule->schedule_date->format('Y-m-d').'T'.$schedule->end_time->format('H:i:s'),
+            'start' => $localStart->format('Y-m-d\TH:i:s'),
+            'end' => $localEnd->format('Y-m-d\TH:i:s'),
             'backgroundColor' => $color,
             'borderColor' => $color,
             'textColor' => '#ffffff',
@@ -60,27 +63,18 @@ final class ScheduleCalendarEventTransformer
     }
 
     /**
-     * Color by status + billing combination for clear visual distinction.
+     * Colour by status + billing. Cancelled overrides everything; otherwise
+     * the billing status owns the colour logic via BillingStatus::calendarColor().
      *
-     * Scheduled: blue shades | Completed: green/teal shades | Cancelled: gray
-     * Billing adjusts the shade within each status group.
+     * Hex value required: FullCalendar's JS API accepts only CSS colour strings,
+     * not Tailwind utility classes. #9ca3af = foreground/30 (cancelled/muted).
      */
     private static function eventColor(Schedule $schedule): string
     {
-        return match ($schedule->status) {
-            ScheduleStatus::CANCELLED => '#9ca3af',
-            ScheduleStatus::COMPLETED => match ($schedule->billing_status) {
-                BillingStatus::BILLED => '#059669',
-                BillingStatus::PENDING => '#d97706',
-                BillingStatus::NOT_BILLABLE => '#6b7280',
-                BillingStatus::WAIVED => '#8b5cf6',
-            },
-            ScheduleStatus::SCHEDULED => match ($schedule->billing_status) {
-                BillingStatus::BILLED => '#10b981',
-                BillingStatus::PENDING => '#5563b8',
-                BillingStatus::NOT_BILLABLE => '#94a3b8',
-                BillingStatus::WAIVED => '#a78bfa',
-            },
-        };
+        if ($schedule->status === ScheduleStatus::CANCELLED) {
+            return '#9ca3af'; // foreground/30 — muted cancelled state
+        }
+
+        return $schedule->billing_status->calendarColor($schedule->status);
     }
 }

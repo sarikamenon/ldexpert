@@ -9,7 +9,7 @@
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h2 class="text-lg font-semibold text-foreground">Add Calendar Event</h2>
-                    <p class="text-sm text-foreground/60">Create school-wide closures or informational events.</p>
+                    <p class="text-sm text-foreground/60">Create school/family-wide closures or informational events.</p>
                 </div>
             </div>
 
@@ -46,7 +46,7 @@
                     <div>
                         <x-input-label for="event_start_date" value="Start Date *" />
                         <p class="mt-1 text-xs text-foreground/60" id="event_start_date_help">
-                            First day the event applies (school local date).
+                            First day the event applies (local date for this school or family).
                         </p>
                         <x-ui::input id="event_start_date" name="start_date" type="date"
                             class="mt-1 block w-full" aria-describedby="event_start_date_help" required />
@@ -93,7 +93,7 @@
             <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h2 class="text-lg font-semibold text-foreground">Calendar</h2>
-                    <p class="text-sm text-foreground/60">Monthly view of school events.</p>
+                    <p class="text-sm text-foreground/60">Monthly view of school/family events.</p>
                 </div>
                 <button type="button"
                     class="calendar-today-btn px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium">
@@ -124,3 +124,22 @@
         </x-ui::card>
     </div>
 </div>
+
+<x-modal name="schoolCalendarEventDetailsModal" max-width="2xl">
+    <div class="flex flex-col max-h-[calc(100vh-4rem)]">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
+            <div>
+                <h3 class="text-lg font-semibold text-foreground">Calendar Event Details</h3>
+                <p class="text-xs text-foreground/60" id="schoolCalendarEventDetailsDate"></p>
+            </div>
+            <button type="button" x-on:click="$dispatch('close-modal', 'schoolCalendarEventDetailsModal')"
+                class="text-foreground/60 hover:text-foreground transition-colors" aria-label="Close">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div id="schoolCalendarEventDetailsContent" class="flex-1 overflow-y-auto px-6 py-4 space-y-4"></div>
+    </div>
+</x-modal>

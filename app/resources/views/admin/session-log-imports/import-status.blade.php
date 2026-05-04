@@ -7,7 +7,7 @@
                 <h2 class="text-xl font-semibold">Import #{{ $import->id }}</h2>
                 <p class="text-sm text-foreground/60 mt-1">
                     Type: <span class="font-medium">{{ $import->type->value }}</span> |
-                    File: <span class="font-medium">{{ $import->file_name }}</span> |
+                    File: <a href="{{ route('admin.session-logs.imports.download', $import) }}" class="font-medium text-primary hover:underline">{{ $import->file_name }}</a> |
                     Created: <span class="font-medium">{{ $import->created_at->format('M d, Y H:i') }}</span>
                 </p>
             </div>
@@ -120,6 +120,10 @@
                                 class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
                                 Processed At
                             </th>
+                            <th
+                                class="px-4 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                                CSV Data
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="rowsTableBody" class="bg-white divide-y divide-border">
@@ -153,14 +157,24 @@
                                 </td>
                                 <td class="px-4 py-3 text-sm text-foreground/70">
                                     @if ($row->error_message)
-                                        <span
-                                            class="text-red-700">{{ \Illuminate\Support\Str::limit($row->error_message, 100) }}</span>
+                                        <span class="text-red-700" title="{{ $row->error_message }}">{{ $row->error_message }}</span>
                                     @else
                                         <span class="text-foreground/40">—</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-foreground/60">
                                     {{ $row->processed_at ? $row->processed_at->format('M d, Y H:i:s') : '—' }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap">
+                                    @if ($row->raw_data)
+                                        <button type="button"
+                                            class="view-row-data px-2 py-1 text-xs border border-border rounded-md hover:bg-foreground/5 text-foreground/70"
+                                            data-raw="{{ json_encode($row->raw_data) }}">
+                                            View Data
+                                        </button>
+                                    @else
+                                        <span class="text-foreground/40">—</span>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
@@ -180,6 +194,33 @@
             </a>
         </div>
     </x-ui::card>
+
+    {{-- Row CSV Data Modal --}}
+    <div id="rowDataModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+                <h3 class="text-lg font-semibold">Row CSV Data</h3>
+                <button id="closeRowModal" type="button"
+                    class="text-foreground/50 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-auto max-h-[60vh]">
+                <table id="rowDataTable" class="min-w-full divide-y divide-border text-sm">
+                    <thead class="bg-foreground/5">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Field</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rowDataBody" class="divide-y divide-border"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
     <x-slot name="scripts">
         @vite(['resources/js/pages/admin-session-log-import-status.js'])

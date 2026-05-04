@@ -83,6 +83,47 @@ export function errorAlert(message, title = 'Error!') {
 }
 
 /**
+ * Show a warning dialog with action buttons.
+ * @param {Object} options
+ * @returns {Promise}
+ */
+export function actionAlert({
+    title = 'Action required',
+    text = '',
+    icon = 'warning',
+    confirmButtonText = 'Continue',
+    confirmButtonColor = undefined,
+    denyButtonText = '',
+    cancelButtonText = 'Close',
+    denyButtonColor = undefined,
+    cancelButtonColor = undefined,
+    showDenyButton = false,
+    showCancelButton = true,
+    reverseButtons = true,
+} = {}) {
+    return Swal.fire({
+        title,
+        text,
+        icon,
+        showDenyButton,
+        showCancelButton,
+        confirmButtonText,
+        confirmButtonColor,
+        denyButtonText,
+        cancelButtonText,
+        denyButtonColor,
+        cancelButtonColor,
+        reverseButtons,
+        customClass: {
+            popup: 'rounded-lg',
+            confirmButton: 'rounded-lg px-4 py-2',
+            denyButton: 'rounded-lg px-4 py-2',
+            cancelButton: 'rounded-lg px-4 py-2',
+        },
+    });
+}
+
+/**
  * Show a loading indicator
  */
 export function showLoading(title = 'Please wait...') {

@@ -6,6 +6,7 @@ namespace App\Http\Requests\Therapist;
 
 use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\School\Services\SchoolCalendarService;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Enums\SessionOutcome;
@@ -100,7 +101,7 @@ final class StoreSessionLogRequest extends FormRequest
                 'max:'.config('session_minutes.max'),
             ],
             'outcome' => ['required', 'string', Rule::in(SessionOutcome::values())],
-            'notes' => ['required', 'string', 'min:50', 'max:5000'],
+            'notes' => ['required', 'string', 'min:20', 'max:5000'],
             'is_billable_therapist' => ['nullable', 'boolean'],
             'is_billable_school' => ['nullable', 'boolean'],
             // Therapists cannot override rates; this is reserved for admins.
@@ -193,6 +194,28 @@ final class StoreSessionLogRequest extends FormRequest
                 }
             }
 
+            // For standalone (non-scheduled) session logs:
+            // - service must be an indirect service
+            // - session date must be a past date
+            $serviceId = $this->input('service_id');
+            $sessionDate = $this->input('session_date');
+            if (! $scheduleId) {
+                if ($serviceId) {
+                    /** @var Service|null $svc */
+                    $svc = Service::find((int) $serviceId);
+                    if ($svc && $svc->is_direct_service) {
+                        $validator->errors()->add('service_id', 'Only indirect services can be selected for non-scheduled session logs.');
+                    }
+                }
+
+                if ($sessionDate) {
+                    $parsedDate = Carbon::parse((string) $sessionDate);
+                    if ($parsedDate->isFuture()) {
+                        $validator->errors()->add('session_date', 'Session date cannot be a future date for non-scheduled session logs.');
+                    }
+                }
+            }
+
             // Validate session date is not a holiday
             $calendarService = app(SchoolCalendarService::class);
             $studentRepository = app(StudentRepositoryInterface::class);
@@ -232,11 +255,16 @@ final class StoreSessionLogRequest extends FormRequest
                 });
             }
 
-            // Validate billing entry window (hard block for therapists)
+            // Validate billing entry window (hard block for therapists).
+            // Use the therapist's TZ so the weekly cutoff aligns with where
+            // the work was done (per CLAUDE.md UTC rules).
             $sessionDate = $this->input('session_date');
             if ($sessionDate) {
+                /** @var \App\Models\User|null $therapistUser */
+                $therapistUser = $this->user();
+                $tz = app(UserTimezoneService::class)->resolveTimezone($therapistUser);
                 $windowService = app(BillingEntryWindowService::class);
-                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate));
+                $windowResult = $windowService->checkWindow(Carbon::parse((string) $sessionDate, $tz), null, $tz);
                 if (! $windowResult->isWithinWindow) {
                     $validator->errors()->add(
                         'session_date',

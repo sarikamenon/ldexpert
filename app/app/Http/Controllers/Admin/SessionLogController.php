@@ -108,7 +108,12 @@ final class SessionLogController extends Controller
 
     public function show(SessionLog $sessionLog): View
     {
-        $sessionLog->load(['student', 'ssa', 'service', 'school', 'therapistContract', 'schoolContract', 'therapist', 'comments.author']);
+        $sessionLog->load(['student', 'ssa', 'service', 'school', 'therapistContract', 'schoolContract', 'therapist', 'therapist.therapistProfile', 'comments.author']);
+
+        $tz = $sessionLog->displayTimezone();
+        $sessionLog->session_date_formatted = $sessionLog->localDate($tz)->format('M d, Y');
+        $sessionLog->start_time_formatted = $sessionLog->localStart($tz)->format('g:i A');
+        $sessionLog->end_time_formatted = $sessionLog->localEnd($tz)->format('g:i A');
 
         $documents = $this->documentService->listBySessionLog($sessionLog->id);
 
@@ -124,6 +129,7 @@ final class SessionLogController extends Controller
 
         return view('admin.session-logs.edit', [
             'sessionLog' => $sessionLog,
+            'rateOverrideLocked' => $sessionLog->isAttachedToInvoiceOrTherapistBill(),
         ]);
     }
 

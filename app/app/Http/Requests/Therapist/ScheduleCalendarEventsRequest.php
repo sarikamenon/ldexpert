@@ -19,7 +19,8 @@ final class ScheduleCalendarEventsRequest extends FormRequest
         return [
             'start' => ['required', 'date'],
             'end' => ['required', 'date', 'after_or_equal:start'],
-            'student_id' => ['nullable', 'integer', 'exists:users,id'],
+            'student_ids' => ['nullable', 'array'],
+            'student_ids.*' => ['integer', 'exists:users,id'],
             'school_id' => ['nullable', 'integer', 'exists:schools,id'],
             'status' => ['nullable', 'string'],
             'billing_status' => ['nullable', 'string'],

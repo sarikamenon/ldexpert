@@ -19,7 +19,8 @@ async function initServicesTable() {
             getExtraData(d) {
                 if (!form) return;
                 d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
-                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                const statusVal = form.querySelector('[name="status"]')?.value ?? 'active';
+                d.filter_status = statusVal === 'all' ? '' : statusVal;
                 d.filter_is_frequency_service = form.querySelector('[name="is_frequency_service"]')?.value ?? '';
                 d.filter_is_direct_service = form.querySelector('[name="is_direct_service"]')?.value ?? '';
                 d.filter_is_billable = form.querySelector('[name="is_billable"]')?.value ?? '';

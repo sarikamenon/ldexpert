@@ -64,12 +64,15 @@ List tables in this project use **server-side processing**: paging, search, orde
 | SSA imports | `admin.ssas.imports.data` | `SSAController::importHistoryData()` | `SSAImportRowTransformer` |
 | Session logs (admin) | `admin.session-logs.data` | `SessionLogController::data()` | `SessionLogRowTransformer` |
 | Session logs (therapist) | `therapist.session-logs.data` | `SessionLogController::data()` (Therapist) | `TherapistSessionLogRowTransformer` |
+| QGlob requests (admin) | `admin.qglob-requests.data` | `Admin\QGlobRequestController::data()` | `QGlobRequestRowTransformer::transformForAdmin()` |
+| QGlob requests (therapist) | `therapist.qglob-requests.data` | `Therapist\QGlobRequestController::data()` | `QGlobRequestRowTransformer::transformForTherapist()` |
 | SSAs (therapist) | `therapist.ssas.data` | `SSAController::data()` (Therapist) | `TherapistSSARowTransformer` |
 | Students (therapist) | `therapist.students.data` | `StudentController::data()` (Therapist) | `TherapistStudentRowTransformer` |
 | Ledger accounts | `admin.ledger.accounts.data` | `LedgerAccountController::data()` | `LedgerAccountRowTransformer` |
 | Ledger account transactions | `admin.ledger.accounts.transactions.data` | `LedgerAccountController::transactionsData()` | `LedgerEntryRowTransformer` |
 | Pay Stub report | `admin.finance.pay-stub-report.data` | `PayStubReportController::data()` | `PayStubReportRowTransformer` |
 | Student schedules (admin student detail) | `admin.students.schedules.data` | `StudentController::scheduleData()` | `ScheduleRowTransformer` |
+| Billing schedule run history | `admin.billing.schedules.history.data` | `BillingScheduleController::runHistoryData()` | `BillingScheduleRunRowTransformer` |
 
 ## Reference implementation: Admin Students list
 

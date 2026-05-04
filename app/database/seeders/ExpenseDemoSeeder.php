@@ -90,6 +90,7 @@ class ExpenseDemoSeeder extends Seeder
             'transaction_type' => TransactionType::EXPENSE,
             'amount' => (float) $expense->amount,
             'balance_after' => $newBalance,
+            'recorded_at' => $expense->expense_date->copy()->startOfDay(),
             'reference_type' => Expense::class,
             'reference_id' => $expense->id,
             'notes' => 'Expense recorded: '.$expense->reference,

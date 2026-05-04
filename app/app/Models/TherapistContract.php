@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ContractStatus;
+use App\Models\Concerns\HasContractDocument;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TherapistContract extends Model
 {
+    use HasContractDocument;
+
     /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<static>> */
     use HasFactory;
 
@@ -36,5 +40,23 @@ class TherapistContract extends Model
     public function services(): HasMany
     {
         return $this->hasMany(TherapistContractService::class);
+    }
+
+    /**
+     * @param  Builder<TherapistContract>  $query
+     * @return Builder<TherapistContract>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('status', ContractStatus::ACTIVE);
+    }
+
+    /**
+     * @param  Builder<TherapistContract>  $query
+     * @return Builder<TherapistContract>
+     */
+    public function scopeForTherapist(Builder $query, int $therapistId): Builder
+    {
+        return $query->where('therapist_id', $therapistId);
     }
 }

@@ -31,14 +31,33 @@
             </a>
 
             @if ($bill->isDraft())
+                <a href="{{ route('admin.billing.therapist-bills.attach-sessions', $bill) }}">
+                    <x-ui::button variant="secondary">
+                        Add or remove sessions
+                    </x-ui::button>
+                </a>
+
                 <form method="POST" action="{{ route('admin.billing.therapist-bills.send', $bill) }}"
-                    class="inline" id="sendBillForm">
+                    class="inline" id="sendBillForm"
+                    data-total-due="{{ number_format((float) $bill->total_due, 2, '.', '') }}"
+                    data-attach-sessions-url="{{ route('admin.billing.therapist-bills.attach-sessions', $bill) }}">
                     @csrf
                     <x-ui::button type="submit" variant="success">
                         Send Bill
                     </x-ui::button>
                 </form>
             @endif
+
+            @can('delete', $bill)
+                <form method="POST" action="{{ route('admin.billing.therapist-bills.destroy', $bill) }}"
+                    class="inline" id="deleteBillForm">
+                    @csrf
+                    @method('DELETE')
+                    <x-ui::button type="submit" variant="danger" id="deleteBillBtn">
+                        Delete Bill
+                    </x-ui::button>
+                </form>
+            @endcan
         </x-slot>
     </x-ui::show-header>
 

@@ -47,6 +47,7 @@
 
             @if ($invoice->isDraft())
                 <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
+                    data-is-private-family="{{ ($invoice->school?->is_private_student ?? false) ? '1' : '0' }}"
                     x-data="{ loading: false }" x-on:submit="loading = true">
                     @csrf
                     <x-ui::button type="submit" variant="success" x-bind:disabled="loading">
@@ -133,7 +134,137 @@
     <x-ui::card class="p-6">
         <h2 class="text-lg font-semibold text-foreground mb-4">Line Items</h2>
 
-        @if ($invoice->sessionLogs->count() > 0)
+        @if ($invoice->isAdvanceMode())
+            @if ($adjustmentLines->isNotEmpty() || $advanceLines->isNotEmpty() || $standardLines->isNotEmpty())
+                @if ($adjustmentLines->isNotEmpty())
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-foreground/70 mb-2">Adjustments from Previous Period</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Description</th>
+                                        <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($adjustmentLines as $line)
+                                        <tr class="border-b border-border hover:bg-background/subtle">
+                                            <td class="py-3 px-4 text-sm">{{ $line->description }}</td>
+                                            <td class="py-3 px-4 text-sm text-right font-medium {{ (float) $line->total < 0 ? 'text-danger' : '' }}">
+                                                {{ (float) $line->total < 0 ? '-' : '' }}${{ number_format(abs((float) $line->total), 2) }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr class="border-t-2 border-border">
+                                        <td class="py-3 px-4 text-right text-sm font-medium text-foreground/70">Adjustment Subtotal:</td>
+                                        <td class="py-3 px-4 text-right text-sm font-medium {{ $adjustmentSubtotal < 0 ? 'text-danger' : '' }}">
+                                            {{ $adjustmentSubtotal < 0 ? '-' : '' }}${{ number_format(abs($adjustmentSubtotal), 2) }}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                @if ($advanceLines->isNotEmpty())
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-foreground/70 mb-2">
+                            Advance Charges for Upcoming Period
+                            ({{ $advanceLines->first()->billing_period_start->format('M d') }} –
+                            {{ $advanceLines->first()->billing_period_end->format('M d, Y') }})
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Description</th>
+                                        <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Rate</th>
+                                        <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($advanceLines as $line)
+                                        <tr class="border-b border-border hover:bg-background/subtle">
+                                            <td class="py-3 px-4 text-sm">{{ $line->description }}</td>
+                                            <td class="py-3 px-4 text-sm text-right">${{ number_format((float) $line->unit_price, 2) }}</td>
+                                            <td class="py-3 px-4 text-sm text-right font-medium">${{ number_format((float) $line->total, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot>
+                                    <tr class="border-t-2 border-border">
+                                        <td colspan="2" class="py-3 px-4 text-right text-sm font-medium text-foreground/70">Advance Subtotal:</td>
+                                        <td class="py-3 px-4 text-right text-sm font-medium">${{ number_format($advanceSubtotal, 2) }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                @if ($standardLines->isNotEmpty())
+                    <div class="mb-6">
+                        <h3 class="text-sm font-medium text-foreground/70 mb-2">Session Charges</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full border-collapse">
+                                <thead>
+                                    <tr class="border-b border-border">
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-foreground/70">Description</th>
+                                        <th class="text-right py-3 px-4 text-sm font-medium text-foreground/70">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($standardLines as $line)
+                                        <tr class="border-b border-border hover:bg-background/subtle">
+                                            <td class="py-3 px-4 text-sm">{{ $line->description }}</td>
+                                            <td class="py-3 px-4 text-sm text-right font-medium">${{ number_format((float) $line->total, 2) }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                <div class="mt-6 pt-6 border-t-2 border-border">
+                    <div class="ml-auto max-w-sm space-y-2">
+                        @if ($adjustmentLines->isNotEmpty())
+                            <div class="flex justify-between text-sm">
+                                <span class="text-foreground/70">Adjustments:</span>
+                                <span class="font-medium {{ $adjustmentSubtotal < 0 ? 'text-danger' : '' }}">
+                                    {{ $adjustmentSubtotal < 0 ? '-' : '' }}${{ number_format(abs($adjustmentSubtotal), 2) }}
+                                </span>
+                            </div>
+                        @endif
+                        @if ($advanceLines->isNotEmpty())
+                            <div class="flex justify-between text-sm">
+                                <span class="text-foreground/70">Advance Charges:</span>
+                                <span class="font-medium">${{ number_format($advanceSubtotal, 2) }}</span>
+                            </div>
+                        @endif
+                        <div class="flex justify-between pt-2 border-t border-border text-lg font-semibold">
+                            <span>Total Due:</span>
+                            <span>${{ number_format((float) $invoice->total, 2) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                @if ((float) $invoice->carry_forward_balance > 0)
+                    <div class="mt-4 p-3 rounded-md bg-warning/10 border border-warning/30 text-sm text-foreground/80">
+                        <strong>Credit Balance:</strong>
+                        ${{ number_format((float) $invoice->carry_forward_balance, 2) }}
+                        will be applied to the next invoice.
+                    </div>
+                @endif
+            @else
+                <x-ui::empty-state title="No line items found."
+                    description="This advance invoice does not yet have any line items." />
+            @endif
+        @elseif ($invoice->sessionLogs->count() > 0)
             <div class="overflow-x-auto">
                 <table class="w-full border-collapse">
                     <thead>
@@ -202,15 +333,28 @@
     {{-- Resend Email Modal --}}
     @if ($invoice->isSent() && !$invoice->isPaid())
         <div x-data="{ open: false }" x-on:open-resend-email-modal.window="open = true" x-show="open"
-            class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-            <div class="flex items-center justify-center min-h-screen px-4">
-                <div class="fixed inset-0 bg-black opacity-50" x-on:click="open = false"></div>
+            class="fixed inset-0 z-[100] overflow-y-auto" style="display: none;" role="dialog" aria-modal="true"
+            aria-labelledby="resend-email-modal-title">
+            <div class="fixed inset-0 bg-foreground/50" x-on:click="open = false" aria-hidden="true"></div>
 
-                <div class="relative bg-card rounded-lg shadow-xl max-w-md w-full p-6">
-                    <h3 class="text-lg font-semibold text-foreground mb-4">Resend Invoice Email</h3>
+            <div class="relative z-10 flex min-h-full items-center justify-center px-4 py-8 sm:py-10">
+                <div
+                    class="flex w-full max-w-md flex-col overflow-hidden rounded-lg border border-border bg-background shadow-xl outline-none focus:outline-none">
+                    <div class="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
+                        <h3 id="resend-email-modal-title" class="text-lg font-semibold text-foreground">Resend Invoice
+                            Email</h3>
+                        <button type="button"
+                            class="shrink-0 rounded-md p-2 text-foreground/70 transition-colors hover:bg-background/subtle hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+                            x-on:click="open = false" aria-label="Close dialog">
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
 
                     <form method="POST" action="{{ route('admin.invoices.resend-email', $invoice) }}"
-                        id="resend-email-form">
+                        id="resend-email-form" class="flex flex-col px-6 pt-4 pb-8">
                         @csrf
 
                         <div class="space-y-4">
@@ -239,13 +383,13 @@
                             </div>
                         </div>
 
-                        <div class="flex gap-3 mt-6">
+                        <div class="mt-6 flex gap-3 border-t border-border pt-6">
                             <button type="button" x-on:click="open = false"
-                                class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-background/subtle">
+                                class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-background/subtle focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
                                 Cancel
                             </button>
                             <button type="submit"
-                                class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90">
+                                class="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:bg-primary/80 focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
                                 Resend Email
                             </button>
                         </div>

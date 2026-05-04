@@ -12,10 +12,6 @@ final class CreateSSADTO
     public function __construct(
         public readonly int $studentId,
         public readonly int $primaryServiceId,
-        /**
-         * @var array<int>
-         */
-        public readonly array $additionalServiceIds,
         public readonly string $startDate,
         public readonly string $endDate,
         public readonly int $minutesPerSession,
@@ -39,20 +35,9 @@ final class CreateSSADTO
                 : ServiceFrequency::from($data['frequency']);
         }
 
-        /** @var array<int, mixed> $additionalIds */
-        $additionalIds = $data['additional_service_ids'] ?? [];
-        $additionalServiceIds = collect($additionalIds)
-            ->filter(static fn ($value) => $value !== null && $value !== '' && is_numeric($value))
-            ->map(static fn ($value) => (int) $value)
-            ->filter(static fn (int $value) => $value > 0)
-            ->unique()
-            ->values()
-            ->all();
-
         return new self(
             studentId: (int) $data['student_id'],
             primaryServiceId: (int) $data['primary_service_id'],
-            additionalServiceIds: $additionalServiceIds,
             startDate: $data['start_date'],
             endDate: $data['end_date'],
             minutesPerSession: (int) $data['minutes_per_session'],
@@ -81,7 +66,6 @@ final class CreateSSADTO
         return [
             'student_id' => $this->studentId,
             'primary_service_id' => $this->primaryServiceId,
-            'additional_service_ids' => $this->additionalServiceIds,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
             'minutes_per_session' => $this->minutesPerSession,

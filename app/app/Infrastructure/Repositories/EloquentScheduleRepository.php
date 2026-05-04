@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\OverlapCheckDTO;
+use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
@@ -22,6 +25,10 @@ use Illuminate\Support\Str;
 
 final class EloquentScheduleRepository implements ScheduleRepositoryInterface
 {
+    public function __construct(
+        private readonly UserTimezoneService $timezoneService,
+    ) {}
+
     /** @return Collection<int, Schedule> */
     public function getSchedulesForTherapist(User $therapist, ScheduleFilterDTO $filters): Collection
     {
@@ -29,8 +36,19 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->with(['student', 'student.studentProfile', 'service', 'ssa', 'school']);
 
+        // PERF NOTE: TIMESTAMP(schedule_date, start_time) is computed per-row
+        // and not indexable, so the BETWEEN filter and the ORDER BY below both
+        // force a filesort. Acceptable while per-therapist daily lists stay
+        // small; if this grows, add a stored generated column
+        // `start_at_utc TIMESTAMP GENERATED ALWAYS AS (TIMESTAMP(schedule_date,
+        // start_time)) STORED` and an index on it, then switch to whereBetween
+        // / orderBy on that column.
         if ($filters->date) {
-            $query->whereDate('schedule_date', $filters->date);
+            [$startUtc, $endUtc] = $this->timezoneService->userDayUtcRange($filters->date, $therapist);
+            $query->whereRaw(
+                'TIMESTAMP(schedule_date, start_time) BETWEEN ? AND ?',
+                [$startUtc->format('Y-m-d H:i:s'), $endUtc->format('Y-m-d H:i:s')],
+            );
         }
 
         if ($filters->schoolId) {
@@ -41,9 +59,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             $query->where('student_id', $filters->studentId);
         }
 
-        return $query->orderBy('schedule_date')
-            ->orderBy('start_time')
-            ->get();
+        return $query->orderByRaw('TIMESTAMP(schedule_date, start_time)')->get();
     }
 
     public function getPendingCount(User $therapist): int
@@ -52,7 +68,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
-            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->count();
     }
 
@@ -63,7 +79,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
-            ->whereIn('status', [ScheduleStatus::SCHEDULED->value, ScheduleStatus::COMPLETED->value])
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->with(['student', 'service', 'ssa', 'school']);
 
         if ($filters) {
@@ -234,6 +250,18 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     }
 
     /** @return Collection<int, Schedule> */
+    public function getUnbilledFutureRecurringOccurrencesByBatch(string $recurringBatchNumber, string $fromDate): Collection
+    {
+        return Schedule::query()
+            ->byRecurringBatch($recurringBatchNumber)
+            ->scheduleDateFrom($fromDate)
+            ->unbilled()
+            ->orderBy('schedule_date')
+            ->orderBy('start_time')
+            ->get();
+    }
+
+    /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection
     {
         return Schedule::query()
@@ -376,14 +404,14 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->update(['billing_status' => $status]);
     }
 
-    public function hasOverlap(User $user, string $date, string $startTime, string $endTime, ?int $excludeScheduleId = null): bool
+    public function hasOverlap(User $user, OverlapCheckDTO $check, OverlapExclusionsDTO $exclusions): bool
     {
         $query = Schedule::query()
-            ->where('schedule_date', $date)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where(function ($query) use ($startTime, $endTime) {
-                    $query->where('start_time', '<', $endTime)
-                        ->where('end_time', '>', $startTime);
+            ->where('schedule_date', $check->date)
+            ->where(function ($q) use ($check) {
+                $q->where(function ($query) use ($check) {
+                    $query->where('start_time', '<', $check->endTime)
+                        ->where('end_time', '>', $check->startTime);
                 });
             })
             ->where('status', '!=', ScheduleStatus::CANCELLED->value);
@@ -394,8 +422,15 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
                 ->orWhere('student_id', $user->id);
         });
 
-        if ($excludeScheduleId) {
-            $query->where('id', '!=', $excludeScheduleId);
+        if ($exclusions->scheduleId !== null) {
+            $query->where('id', '!=', $exclusions->scheduleId);
+        }
+
+        if ($exclusions->batchNumber !== null) {
+            $query->where(function ($q) use ($exclusions) {
+                $q->whereNull('recurring_batch_number')
+                    ->orWhere('recurring_batch_number', '!=', $exclusions->batchNumber);
+            });
         }
 
         return $query->exists();
@@ -456,7 +491,9 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             $query->where('ssa_id', $filters->ssaId);
         }
 
-        if ($filters->therapistId) {
+        if ($filters->therapistIds !== null) {
+            $query->whereIn('therapist_id', $filters->therapistIds);
+        } elseif ($filters->therapistId) {
             $query->where('therapist_id', $filters->therapistId);
         }
 
@@ -475,11 +512,8 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         return Schedule::query()
             ->forTherapist($therapist)
-            ->whereBetween('schedule_date', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
-            ->whereIn('status', [
-                ScheduleStatus::SCHEDULED->value,
-                ScheduleStatus::COMPLETED->value,
-            ])
+            ->betweenScheduleDates($startOfWeek->toDateString(), $endOfWeek->toDateString())
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->count();
     }
 
@@ -489,11 +523,15 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
         $query = Schedule::query()
             ->with(['therapist', 'student', 'service', 'school']);
 
-        if ($filters->therapistId) {
+        if ($filters->therapistIds !== null) {
+            $query->whereIn('therapist_id', $filters->therapistIds);
+        } elseif ($filters->therapistId) {
             $query->where('therapist_id', $filters->therapistId);
         }
 
-        if ($filters->studentId) {
+        if ($filters->studentIds !== null) {
+            $query->whereIn('student_id', $filters->studentIds);
+        } elseif ($filters->studentId) {
             $query->where('student_id', $filters->studentId);
         }
 

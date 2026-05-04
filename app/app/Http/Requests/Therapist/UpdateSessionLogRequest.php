@@ -73,7 +73,7 @@ final class UpdateSessionLogRequest extends FormRequest
             'start_time' => ['sometimes', 'date_format:Y-m-d H:i:s'],
             'end_time' => ['sometimes', 'date_format:Y-m-d H:i:s', 'after:start_time'],
             'outcome' => ['sometimes', 'string', Rule::in(SessionOutcome::values())],
-            'notes' => ['sometimes', 'string', 'min:50', 'max:5000'],
+            'notes' => ['sometimes', 'string', 'min:20', 'max:5000'],
             'is_billable_therapist' => ['sometimes', 'boolean'],
             'is_billable_school' => ['sometimes', 'boolean'],
             'is_rate_override' => ['sometimes', 'boolean'],
@@ -118,9 +118,12 @@ final class UpdateSessionLogRequest extends FormRequest
                 $validator->errors()->add('status', 'Session log cannot be edited in its current status.');
             }
 
-            // Validate billing entry window (hard block for therapists)
+            // Validate billing entry window (hard block for therapists).
+            // Use the session log's therapist TZ so the weekly cutoff aligns
+            // with where the work was done (per CLAUDE.md UTC rules).
             $windowService = app(BillingEntryWindowService::class);
-            $windowResult = $windowService->checkWindow($sessionLog->session_date);
+            $tz = $sessionLog->displayTimezone();
+            $windowResult = $windowService->checkWindow($sessionLog->session_date, null, $tz);
             if (! $windowResult->isWithinWindow) {
                 $validator->errors()->add(
                     'session_date',

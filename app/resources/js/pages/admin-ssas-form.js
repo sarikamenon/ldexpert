@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentServiceData = currentServiceDataEl ? JSON.parse(currentServiceDataEl.textContent) : null;
 
     const primaryServiceId = document.getElementById('primary_service_id');
-    const additionalServiceIds = document.getElementById('additional_service_ids');
     const assignedTherapistId = document.getElementById('assigned_therapist_id');
     const minutesPerSession = document.getElementById('minutes_per_session');
     const frequency = document.getElementById('frequency');
@@ -42,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Therapist filtering by service
     const therapistsForServiceUrlEl = document.getElementById('therapists-for-service-url');
     const therapistsForServiceUrl = therapistsForServiceUrlEl ? JSON.parse(therapistsForServiceUrlEl.textContent) : null;
+    const currentAssignedTherapistIdEl = document.getElementById('current-assigned-therapist-id');
+    const currentAssignedTherapistId = currentAssignedTherapistIdEl ? JSON.parse(currentAssignedTherapistIdEl.textContent) : null;
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
     // Field containers for conditional display
@@ -250,17 +251,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let calculatedTho = numberOfFrequencies * sessionsValue * minutesValue;
+        let calculatedThoMinutes = numberOfFrequencies * sessionsValue * minutesValue;
 
         if (adjustedMinutes?.value) {
             const adjusted = parseInt(adjustedMinutes.value, 10);
             if (!Number.isNaN(adjusted)) {
-                calculatedTho += adjusted;
+                calculatedThoMinutes += adjusted;
             }
         }
 
-        if (thoMinutes && calculatedTho > 0) {
-            thoMinutes.value = String(calculatedTho);
+        if (thoMinutes && calculatedThoMinutes > 0) {
+            const calculatedThoHours = (calculatedThoMinutes / 60).toFixed(2);
+            thoMinutes.value = String(calculatedThoHours);
         }
     }
 
@@ -387,22 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Collect all selected service IDs (primary + additional)
-    function getAllSelectedServiceIds() {
-        const ids = [];
-        if (primaryServiceId?.value) {
-            ids.push(primaryServiceId.value);
-        }
-        if (additionalServiceIds) {
-            const selected = $(additionalServiceIds).val();
-            if (Array.isArray(selected)) {
-                ids.push(...selected);
-            }
-        }
-        return ids.filter((id) => id && id !== '');
-    }
-
-    // Fetch and update therapist dropdown based on all selected services
+    // Fetch and update therapist dropdown based on selected primary service
     async function fetchTherapistsForServices() {
         if (!assignedTherapistId || !therapistsForServiceUrl) {
             return;
@@ -410,12 +397,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const $therapist = $(assignedTherapistId);
         const selectedValue = $therapist.val();
-        const serviceIds = getAllSelectedServiceIds();
+        const serviceIds = primaryServiceId?.value ? [primaryServiceId.value] : [];
 
         try {
             const params = new URLSearchParams();
             serviceIds.forEach((id) => params.append('service_ids[]', id));
-            const url = serviceIds.length
+            if (currentAssignedTherapistId) {
+                params.append('include_therapist_id', currentAssignedTherapistId);
+            }
+            const url = params.toString()
                 ? `${therapistsForServiceUrl}?${params.toString()}`
                 : therapistsForServiceUrl;
 
@@ -467,13 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (additionalServiceIds) {
-        $(additionalServiceIds).on('change', () => {
-            fetchTherapistsForServices();
-        });
-    }
-
-
     [minutesPerSession, sessionsPerFrequency].forEach((field) => {
         bindInputListeners(field, () => {
             refreshSchedulingState();
@@ -501,8 +484,8 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleFrequencyFields();
     refreshSchedulingState();
 
-    // Filter therapists on initial load if any service is already selected
-    if (getAllSelectedServiceIds().length > 0) {
+    // Filter therapists on initial load if a service is already selected
+    if (primaryServiceId?.value) {
         fetchTherapistsForServices();
     }
 

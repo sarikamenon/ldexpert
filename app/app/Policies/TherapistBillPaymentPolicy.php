@@ -16,7 +16,7 @@ class TherapistBillPaymentPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->role === Role::ADMIN;
+        return $user->isAdmin() || $user->isTherapist();
     }
 
     /**

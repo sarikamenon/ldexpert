@@ -16,11 +16,13 @@ use App\Models\SchoolContract;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SchoolContractService
 {
     public function __construct(
         private readonly SchoolContractRepositoryInterface $repository,
+        private readonly ContractDocumentService $documentService,
     ) {}
 
     /** @return LengthAwarePaginator<int, SchoolContract> */
@@ -48,7 +50,8 @@ final class SchoolContractService
         $this->guardAgainstOverlap($dto->schoolId, $dto->startDate->toDateString(), $dto->endDate->toDateString());
 
         return DB::transaction(function () use ($dto) {
-            $contract = $this->repository->create($dto);
+            $documentData = $dto->document ? $this->documentService->store($dto->document) : [];
+            $contract = $this->repository->create($dto, $documentData);
             $this->repository->syncServices($contract, $dto->services);
 
             return $contract->load(['school', 'services.service']);
@@ -67,7 +70,12 @@ final class SchoolContractService
         }
 
         return DB::transaction(function () use ($contract, $dto) {
-            $updated = $this->repository->update($contract, $dto);
+            $documentData = $this->documentService->resolveForUpdate(
+                $contract->document_path,
+                $dto->document,
+                $dto->removeDocument,
+            );
+            $updated = $this->repository->update($contract, $dto, $documentData);
             $this->repository->syncServices($updated, $dto->services);
 
             return $updated->load(['school', 'services.service']);
@@ -88,10 +96,19 @@ final class SchoolContractService
         return $this->repository->changeStatus($contract, $dto->status);
     }
 
+    public function downloadDocument(SchoolContract $contract): StreamedResponse
+    {
+        if (empty($contract->document_path) || ! $this->documentService->exists($contract->document_path)) {
+            abort(404, 'Document not found');
+        }
+
+        return $this->documentService->download($contract->document_path, $contract->document_name ?? 'document');
+    }
+
     private function guardAgainstOverlap(int $schoolId, string $startDate, string $endDate, ?int $ignoreId = null): void
     {
         if ($this->repository->hasOverlap($schoolId, $startDate, $endDate, $ignoreId)) {
-            throw new ContractOverlapException('An active contract already exists for this school in the selected period.');
+            throw new ContractOverlapException('An active contract already exists for this school/family in the selected period.');
         }
     }
 }

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PaymentMethod;
+use App\Models\Scopes\TherapistBillPaymentScope;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,7 +38,7 @@ class TherapistBillPayment extends Model
     protected function casts(): array
     {
         return [
-            'paid_at' => 'date',
+            'paid_at' => 'datetime',
             'amount' => 'decimal:2',
             'method' => PaymentMethod::class,
             'created_at' => 'datetime',
@@ -85,5 +87,23 @@ class TherapistBillPayment extends Model
     public function therapistBill(): BelongsTo
     {
         return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
+    }
+
+    /**
+     * @param  Builder<TherapistBillPayment>  $query
+     * @return Builder<TherapistBillPayment>
+     */
+    public function scopeForTherapist(Builder $query, int $therapistId): Builder
+    {
+        return TherapistBillPaymentScope::forTherapist($query, $therapistId);
+    }
+
+    /**
+     * @param  Builder<TherapistBillPayment>  $query
+     * @return Builder<TherapistBillPayment>
+     */
+    public function scopeForYear(Builder $query, int $year): Builder
+    {
+        return TherapistBillPaymentScope::forYear($query, $year);
     }
 }

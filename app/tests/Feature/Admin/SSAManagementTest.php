@@ -10,8 +10,6 @@ use App\Enums\UserStatus;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 // uses(TestCase::class, RefreshDatabase::class);
@@ -61,7 +59,6 @@ function ssaPayload(array $overrides = []): array
     return array_merge([
         'student_id' => $student->id,
         'primary_service_id' => $service->id,
-        'additional_service_ids' => [],
         'start_date' => now()->addDays(1)->format('Y-m-d'),
         'end_date' => now()->addDays(365)->format('Y-m-d'),
         // Use a non-5-multiple value to ensure SSA accepts arbitrary minute values
@@ -157,7 +154,7 @@ test('normalizes one time frequency fields when creating an SSA', function () {
         'frequency' => ServiceFrequency::ONE_TIME->value,
         'sessions_per_frequency' => 1,
         'calculated_minutes' => 45,
-        'tho_minutes' => 45,
+        'tho_minutes' => 2700,
     ]);
 });
 
@@ -199,44 +196,7 @@ test('allows updating an SSA to one time with the same start and end date', func
         ->and($ssa->end_date->format('Y-m-d'))->toBe('2026-02-15')
         ->and($ssa->sessions_per_frequency)->toBe(1)
         ->and($ssa->calculated_minutes)->toBe(50)
-        ->and($ssa->tho_minutes)->toBe(50);
-});
-
-test('stores indirect additional services for SSA', function () {
-    $admin = ssaAdmin();
-    $indirectA = ssaIndirectService();
-    $indirectB = ssaIndirectService();
-    $payload = ssaPayload([
-        'additional_service_ids' => [$indirectA->id, $indirectB->id],
-    ]);
-
-    $this->actingAs($admin)
-        ->post(route('admin.ssas.store'), $payload)
-        ->assertRedirect(route('admin.ssas.index'));
-
-    $ssa = ServiceSupportAgreement::with('additionalServices')->first();
-    expect($ssa)->not->toBeNull();
-    expect($ssa->additionalServices->pluck('id')->sort()->values()->all())
-        ->toEqual(collect([$indirectA->id, $indirectB->id])->sort()->values()->all());
-
-    $primaryServiceId = DB::table('ssa_services')
-        ->where('ssa_id', $ssa->id)
-        ->where('is_primary', true)
-        ->value('service_id');
-
-    expect($primaryServiceId)->toBe($payload['primary_service_id']);
-
-    $storedIndirects = DB::table('ssa_services')
-        ->where('ssa_id', $ssa->id)
-        ->where('is_primary', false)
-        ->pluck('service_id')
-        ->sort()
-        ->values()
-        ->all();
-
-    expect($storedIndirects)->toEqual(
-        collect([$indirectA->id, $indirectB->id])->sort()->values()->all()
-    );
+        ->and($ssa->tho_minutes)->toBe(3000);
 });
 
 test('allows admin to create SSA with therapist', function () {
@@ -433,4 +393,103 @@ test('prevents non-admin from viewing SSA show page', function () {
     $this->actingAs($therapist)
         ->get(route('admin.ssas.show', $ssa))
         ->assertForbidden();
+});
+
+test('show page renders assign therapist button in header when SSA has no therapist', function () {
+    $admin = ssaAdmin();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.show', $ssa))
+        ->assertOk()
+        ->assertSee('assign-therapist-btn', false)
+        ->assertSee('Assign Therapist');
+});
+
+test('show page does not render assign therapist button when therapist is already assigned', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.show', $ssa))
+        ->assertOk()
+        ->assertDontSee('assign-therapist-btn', false);
+});
+
+test('prevents non-admin from assigning therapist to SSA', function () {
+    $therapist = ssaTherapist();
+    $anotherTherapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($therapist)
+        ->post(route('admin.ssas.assign-therapist', $ssa), [
+            'therapist_id' => $anotherTherapist->id,
+        ])
+        ->assertForbidden();
+});
+
+test('prevents non-admin from unassigning therapist from SSA', function () {
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($therapist)
+        ->post(route('admin.ssas.unassign-therapist', $ssa), [
+            'reason' => 'Test',
+        ])
+        ->assertForbidden();
+});
+
+test('assigning therapist to pending SSA auto-activates it', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.assign-therapist', $ssa), [
+            'therapist_id' => $therapist->id,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+});
+
+test('unassigning therapist reverts SSA to pending status', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.unassign-therapist', $ssa), [])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
 });

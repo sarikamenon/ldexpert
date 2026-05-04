@@ -32,6 +32,7 @@
             ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'ssas'])],
             ['key' => 'students', 'label' => 'Students', 'href' => route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'students'])],
             ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'session_logs'])],
+            ['key' => 'billing', 'label' => 'Billing', 'href' => route('admin.therapists.show', ['therapist' => $therapist, 'tab' => 'billing'])],
         ];
     @endphp
     <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -119,6 +120,11 @@
     @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
         <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
             :datatable-url="$datatableUrl ?? null" :therapist-id="$therapistId ?? null" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'billing')
+        @include('admin.billing._entity-billing-tab', [
+            'entityType' => 'therapist',
+            'entityId' => $therapist->id,
+        ])
     @endif
 
     <x-slot name="scripts">
@@ -131,6 +137,8 @@
             @vite(['resources/js/pages/admin-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'session_logs')
             @vite(['resources/js/pages/admin-session-logs-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'billing')
+            @vite(['resources/js/pages/admin-entity-billing.js'])
         @endif
     </x-slot>
 </x-admin.layouts.app>

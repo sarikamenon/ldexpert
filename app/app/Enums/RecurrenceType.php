@@ -11,6 +11,7 @@ enum RecurrenceType: string
     case WEEKLY = 'weekly';
     case BI_WEEKLY = 'bi_weekly';
     case MONTHLY = 'monthly';
+    case CUSTOM_WEEKLY = 'custom_weekly';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum RecurrenceType: string
             self::WEEKLY => 'Weekly',
             self::BI_WEEKLY => 'Bi-weekly',
             self::MONTHLY => 'Monthly',
+            self::CUSTOM_WEEKLY => 'Custom Weekly (Select Days)',
         };
     }
 

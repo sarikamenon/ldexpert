@@ -20,6 +20,7 @@ final class UpdateSchoolDTO
         public readonly ?string $invoiceEmail,
         public readonly string $schoolType,
         public readonly bool $isPrivateStudent,
+        public readonly bool $isAutoExtend,
         public readonly bool $nonBillableScheduling,
         public readonly ?string $externalEmrName,
     ) {}
@@ -41,6 +42,7 @@ final class UpdateSchoolDTO
             invoiceEmail: $data['invoice_email'] ?? null,
             schoolType: $data['school_type'],
             isPrivateStudent: (bool) ($data['is_private_student'] ?? false),
+            isAutoExtend: (bool) ($data['is_auto_extend'] ?? false),
             nonBillableScheduling: (bool) ($data['non_billable_scheduling'] ?? false),
             externalEmrName: $data['external_emr_name'] ?? null,
         );
@@ -63,6 +65,7 @@ final class UpdateSchoolDTO
             'invoice_email' => $this->invoiceEmail,
             'school_type' => $this->schoolType,
             'is_private_student' => $this->isPrivateStudent,
+            'is_auto_extend' => $this->isAutoExtend,
             'non_billable_scheduling' => $this->nonBillableScheduling,
             'external_emr_name' => $this->externalEmrName,
         ];

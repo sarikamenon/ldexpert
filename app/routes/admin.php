@@ -13,8 +13,10 @@ use App\Http\Controllers\Admin\InvoicePaymentsListController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\LeadNoteController;
 use App\Http\Controllers\Admin\LedgerAccountController;
+use App\Http\Controllers\Admin\LedgerAdjustmentController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\QGlobRequestController;
 use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
 use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
 use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
@@ -68,6 +70,7 @@ Route::middleware('role:admin')
         Route::post('students/imports/data', [StudentController::class, 'importHistoryData'])->name('students.imports.data');
         Route::get('students/imports/{import}', [StudentController::class, 'showImportStatus'])->name('students.imports.show');
         Route::get('students/imports/{import}/status', [StudentController::class, 'showImportStatus'])->name('students.imports.status');
+        Route::get('students/imports/{import}/download', [StudentController::class, 'downloadImported'])->name('students.imports.download');
         Route::get('students/import/template', [StudentController::class, 'downloadTemplate'])->name('students.import.template');
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
@@ -113,6 +116,7 @@ Route::middleware('role:admin')
         Route::post('ssas/imports/data', [SSAController::class, 'importHistoryData'])->name('ssas.imports.data');
         Route::get('ssas/imports/{import}', [SSAController::class, 'showImportStatus'])->name('ssas.imports.show');
         Route::get('ssas/imports/{import}/status', [SSAController::class, 'showImportStatus'])->name('ssas.imports.status');
+        Route::get('ssas/imports/{import}/download', [SSAController::class, 'downloadImported'])->name('ssas.imports.download');
         Route::get('ssas/import/template', [SSAController::class, 'downloadTemplate'])->name('ssas.import.template');
         Route::post('ssas/data', [SSAController::class, 'data'])->name('ssas.data');
         Route::patch('ssas/{ssa}/status', [SSAController::class, 'updateStatus'])->name('ssas.status');
@@ -126,6 +130,8 @@ Route::middleware('role:admin')
                 Route::post('schools/data', [SchoolContractController::class, 'data'])->name('schools.data');
                 Route::patch('schools/{schoolContract}/status', [SchoolContractController::class, 'updateStatus'])
                     ->name('schools.status');
+                Route::get('schools/{schoolContract}/download-document', [SchoolContractController::class, 'downloadDocument'])
+                    ->name('schools.download-document');
                 Route::resource('schools', SchoolContractController::class)
                     ->parameters(['schools' => 'schoolContract'])
                     ->except(['destroy']);
@@ -133,6 +139,8 @@ Route::middleware('role:admin')
                 Route::post('therapists/data', [TherapistContractController::class, 'data'])->name('therapists.data');
                 Route::patch('therapists/{therapistContract}/status', [TherapistContractController::class, 'updateStatus'])
                     ->name('therapists.status');
+                Route::get('therapists/{therapistContract}/download-document', [TherapistContractController::class, 'downloadDocument'])
+                    ->name('therapists.download-document');
                 Route::resource('therapists', TherapistContractController::class)
                     ->parameters(['therapists' => 'therapistContract'])
                     ->except(['destroy']);
@@ -151,10 +159,17 @@ Route::middleware('role:admin')
         Route::delete('notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 
         // Schedule Calendar
-        Route::prefix('schedule-calendar')->name('schedule-calendar.')->group(function () {
+        Route::prefix('schedule/calendar')->name('schedule-calendar.')->group(function () {
             Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
             Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
             Route::get('{id}', [ScheduleCalendarController::class, 'show'])->name('show');
+        });
+
+        Route::prefix('qglob-requests')->name('qglob-requests.')->group(function () {
+            Route::get('/', [QGlobRequestController::class, 'index'])->name('index');
+            Route::post('data', [QGlobRequestController::class, 'data'])->name('data');
+            Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
+            Route::post('{qglob_request}/respond', [QGlobRequestController::class, 'respond'])->name('respond');
         });
 
         // Session Logs
@@ -165,6 +180,7 @@ Route::middleware('role:admin')
             Route::post('imports/data', [SessionLogImportController::class, 'importHistoryData'])->name('imports.data');
             Route::get('imports/{import}', [SessionLogImportController::class, 'showImportStatus'])->name('imports.show');
             Route::get('imports/{import}/status', [SessionLogImportController::class, 'showImportStatus'])->name('imports.status');
+            Route::get('imports/{import}/download', [SessionLogImportController::class, 'downloadImported'])->name('imports.download');
             Route::get('import/template', [SessionLogImportController::class, 'downloadTemplate'])->name('import.template');
 
             Route::get('/', [SessionLogController::class, 'index'])->name('index');
@@ -195,6 +211,11 @@ Route::middleware('role:admin')
         Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
         Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
+        Route::get('ledger/accounts/{type}/{id}/stats', [LedgerAccountController::class, 'statsData'])->name('ledger.accounts.stats');
+        Route::post('ledger/accounts/{type}/{id}/adjustment', [LedgerAdjustmentController::class, 'store'])->name('ledger.accounts.adjustment.store');
+        Route::get('ledger/adjustments/{entry}', [LedgerAdjustmentController::class, 'show'])->name('ledger.adjustment.show');
+        Route::put('ledger/adjustments/{entry}', [LedgerAdjustmentController::class, 'update'])->name('ledger.adjustment.update');
+        Route::delete('ledger/adjustments/{entry}', [LedgerAdjustmentController::class, 'destroy'])->name('ledger.adjustment.destroy');
 
         // Invoices
         Route::post('invoices/data', [InvoiceController::class, 'data'])->name('invoices.data');
@@ -223,6 +244,9 @@ Route::middleware('role:admin')
             Route::get('{bill}', [TherapistBillController::class, 'show'])->name('show');
             Route::get('{bill}/download', [TherapistBillController::class, 'download'])->name('download');
             Route::post('{bill}/send', [TherapistBillController::class, 'send'])->name('send');
+            Route::get('{bill}/attach-sessions', [TherapistBillController::class, 'attachSessions'])->name('attach-sessions');
+            Route::post('{bill}/attach-sessions', [TherapistBillController::class, 'storeAttachedSessions'])->name('attach-sessions.store');
+            Route::delete('{bill}', [TherapistBillController::class, 'destroy'])->name('destroy');
         });
 
         // Therapist Bill Payments
@@ -233,6 +257,33 @@ Route::middleware('role:admin')
         Route::delete('payments/therapist-bills/{payment}', [TherapistBillPaymentsListController::class, 'destroy'])->name('payments.therapist-bills.destroy');
         Route::post('billing/therapist-bills/{therapist_bill}/payments', [TherapistBillPaymentController::class, 'store'])->name('billing.therapist-bills.payments.store');
         Route::delete('billing/therapist-bills/{therapist_bill}/payments/{payment}', [TherapistBillPaymentController::class, 'destroy'])->name('billing.therapist-bills.payments.destroy');
+
+        // Entity Billing Configuration
+        Route::prefix('billing/entity-config')->name('billing.entity-config.')->group(function () {
+            Route::get('{entity_type}/{entity_id}', [App\Http\Controllers\Admin\EntityBillingController::class, 'show'])->name('show');
+            Route::post('/', [App\Http\Controllers\Admin\EntityBillingController::class, 'storeOrUpdate'])->name('store');
+            Route::delete('{entity_type}/{entity_id}', [App\Http\Controllers\Admin\EntityBillingController::class, 'destroy'])->name('destroy');
+        });
+
+        // Billing Settings
+        Route::prefix('billing/settings')->name('billing.settings.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Admin\BillingSettingsController::class, 'edit'])->name('edit');
+            Route::put('/', [App\Http\Controllers\Admin\BillingSettingsController::class, 'update'])->name('update');
+        });
+
+        // Billing Schedules
+        Route::prefix('billing/schedules')->name('billing.schedules.')->group(function () {
+            Route::post('data', [App\Http\Controllers\Admin\BillingScheduleController::class, 'data'])->name('data');
+            Route::get('/', [App\Http\Controllers\Admin\BillingScheduleController::class, 'index'])->name('index');
+            Route::get('create', [App\Http\Controllers\Admin\BillingScheduleController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Admin\BillingScheduleController::class, 'store'])->name('store');
+            Route::get('{schedule}/edit', [App\Http\Controllers\Admin\BillingScheduleController::class, 'edit'])->name('edit');
+            Route::put('{schedule}', [App\Http\Controllers\Admin\BillingScheduleController::class, 'update'])->name('update');
+            Route::patch('{schedule}/toggle', [App\Http\Controllers\Admin\BillingScheduleController::class, 'toggleActive'])->name('toggle');
+            Route::post('{schedule}/run', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runNow'])->name('run');
+            Route::post('{schedule}/history/data', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runHistoryData'])->name('history.data');
+            Route::get('{schedule}/history', [App\Http\Controllers\Admin\BillingScheduleController::class, 'runHistory'])->name('history');
+        });
 
         // Expenses
         Route::post('expenses/data', [ExpenseController::class, 'data'])->name('expenses.data');

@@ -3,7 +3,7 @@
         @vite(['resources/css/common/datatables.css'])
     </x-slot>
 
-    <x-ui::page-header title="Invoice Payments" subtitle="Review payments received from schools">
+    <x-ui::page-header title="Invoice Payments" subtitle="Review payments received from schools or families">
     </x-ui::page-header>
 
     @if (session('success'))
@@ -91,10 +91,10 @@
                 <div>
                     <x-input-label for="search" value="Search" />
                     <p class="mt-1 text-xs text-foreground/60" id="search_help">
-                        Search by reference number or school name to quickly locate a specific payment.
+                        Search by reference number or school/family name to quickly locate a specific payment.
                     </p>
                     <input type="text" id="search" name="search" value="{{ request('search') }}"
-                        placeholder="Reference or School" aria-describedby="search_help"
+                        placeholder="Reference or school/family" aria-describedby="search_help"
                         class="mt-1 w-full px-3 py-2 border border-border rounded-md text-sm focus:ring-2 focus:ring-primary focus:outline-none">
                 </div>
             </div>

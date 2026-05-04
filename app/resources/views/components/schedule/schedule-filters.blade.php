@@ -13,9 +13,9 @@
     <form method="{{ $formMethod }}" action="{{ $formAction ?? request()->url() }}" id="scheduleFiltersForm"
         class="space-y-4">
         <div>
-            <label class="block text-sm font-medium text-foreground/70 mb-2">SELECT SCHOOLS</label>
-            <x-ui::select name="school_id" searchable allow-clear placeholder="Select Schools" data-select-box>
-                <option value="">All Schools</option>
+            <label class="block text-sm font-medium text-foreground/70 mb-2">SELECT SCHOOLS/FAMILIES</label>
+            <x-ui::select name="school_id" searchable allow-clear placeholder="Select Schools/Families" data-select-box>
+                <option value="">All Schools/Families</option>
                 @foreach ($schools as $school)
                     <option value="{{ $school->id }}" @selected($selectedSchoolId == $school->id)>
                         {{ $school->display_name ?? $school->full_name }}

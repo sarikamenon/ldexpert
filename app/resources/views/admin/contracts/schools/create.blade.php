@@ -1,5 +1,5 @@
 <x-admin.layouts.app>
-    <x-page-title title="Create School Contract" />
+    <x-page-title title="Create School/Family Contract" />
 
     @if ($errors->any())
         <x-ui::alert variant="danger" class="mb-4">

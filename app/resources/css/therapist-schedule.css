@@ -68,12 +68,13 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     min-height: 1.25rem;
-    pointer-events: none;
+    cursor: pointer;
 }
 
 .calendar-event-more {
     font-size: 0.7rem;
     color: #6b7280;
+    cursor: pointer;
 }
 
 .calendar-event-holiday {
@@ -212,6 +213,15 @@
 .calendar-day-holiday:not(.selected) {
     background-color: #fef2f2;
     border: 1px solid #fecaca;
+}
+
+/* Custom weekly day-of-week pill selector */
+.weekly-day-label.is-selected {
+    @apply bg-primary border-primary text-primary-foreground;
+}
+
+.weekly-day-label.is-selected:hover {
+    @apply bg-primary/90 border-primary/90;
 }
 
 /* Day names header */

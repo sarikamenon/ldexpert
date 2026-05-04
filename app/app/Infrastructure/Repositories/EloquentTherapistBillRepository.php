@@ -91,9 +91,11 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
         }
         $recordsFiltered = (clone $baseQuery)->count('therapist_bills.id');
 
-        $orderColumn = $params->orderColumn ?? 'created_at';
-        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
-        $baseQuery->orderBy($orderColumn, $orderDir);
+        if ($params->orderColumn !== null) {
+            $baseQuery->orderBy($params->orderColumn, $params->orderDir === 'desc' ? 'desc' : 'asc');
+        } else {
+            $baseQuery->orderBy('created_at', 'desc');
+        }
 
         /** @var Collection<int, TherapistBill> $rows */
         $rows = (clone $baseQuery)
@@ -132,6 +134,56 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             ->update(['therapist_bill_id' => $bill->id]);
     }
 
+    public function unlinkAllSessionsForTherapistBill(TherapistBill $bill): void
+    {
+        SessionLog::query()->forTherapistBill($bill->id)
+            ->update(['therapist_bill_id' => null]);
+    }
+
+    public function delete(TherapistBill $bill): void
+    {
+        SessionLog::query()->forTherapistBill($bill->id)
+            ->update(['therapist_bill_id' => null]);
+
+        $bill->paymentAllocations()->delete();
+        $bill->ledgerEntries()->delete();
+        $bill->delete();
+    }
+
+    /**
+     * @param  array<int>  $sessionLogIds
+     * @return Collection<int, SessionLog>
+     */
+    public function getSessionLogsForTherapistBillUpdate(TherapistBill $bill, array $sessionLogIds): Collection
+    {
+        if (empty($sessionLogIds)) {
+            return collect();
+        }
+
+        return SessionLog::query()
+            ->whereIn('id', $sessionLogIds)
+            ->where('therapist_id', $bill->therapist_id)
+            ->where('status', SessionLogStatus::APPROVED->value)
+            ->where('is_billable_therapist', true)
+            ->where(function ($q) use ($bill): void {
+                $q->whereNull('therapist_bill_id')
+                    ->orWhere('therapist_bill_id', $bill->id);
+            })
+            ->with(['student', 'service', 'therapist', 'school'])
+            ->get();
+    }
+
+    public function updateTotals(TherapistBill $bill, float $subtotal, float $adjustmentsTotal, float $totalDue): TherapistBill
+    {
+        $bill->update([
+            'subtotal' => $subtotal,
+            'adjustments_total' => $adjustmentsTotal,
+            'total_due' => $totalDue,
+        ]);
+
+        return $bill->refresh();
+    }
+
     public function markAsSent(TherapistBill $bill, int $sentById): TherapistBill
     {
         $bill->update([
@@ -146,7 +198,8 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
     public function generateBillNumber(): string
     {
         $date = now()->format('Ymd');
-        $lastBill = TherapistBill::whereDate('created_at', now()->toDateString())
+        $lastBill = TherapistBill::withTrashed()
+            ->whereDate('created_at', now()->toDateString())
             ->orderBy('id', 'desc')
             ->first();
 
@@ -171,6 +224,8 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             ->whereNull('therapist_bill_id')
             ->with(['student', 'service', 'therapist', 'school']);
 
+        // KNOWN GAP — UTC `session_date` filter, not therapist-local. See
+        // `_local_docs/session-logs-utc-migration-plan.md` ("Known gaps").
         if (isset($filters['date_from']) && isset($filters['date_to'])) {
             $query->whereBetween('session_date', [$filters['date_from'], $filters['date_to']]);
         }
@@ -216,6 +271,8 @@ final class EloquentTherapistBillRepository implements TherapistBillRepositoryIn
             ->where('is_billable_therapist', true)
             ->whereNull('therapist_bill_id');
 
+        // KNOWN GAP — UTC `session_date` filter, not therapist-local. See
+        // `_local_docs/session-logs-utc-migration-plan.md` ("Known gaps").
         if (isset($filters['date_from']) && isset($filters['date_to'])) {
             $query->whereBetween('session_date', [$filters['date_from'], $filters['date_to']]);
         }

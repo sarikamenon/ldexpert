@@ -7,6 +7,7 @@ import { errorAlert } from '../common/sweetalert';
         const startTimeInput = document.getElementById('start_time');
         const durationSelect = document.getElementById('duration_minutes');
         const endTimeDisplay = document.getElementById('end_time_display');
+        const endTimeNextDay = document.getElementById('end_time_next_day');
         const form = document.getElementById('scheduleCreateForm') || document.getElementById('scheduleEditForm');
 
         if (!startTimeInput || !durationSelect || !endTimeDisplay) {
@@ -28,11 +29,18 @@ import { errorAlert } from '../common/sweetalert';
             if (!computed) {
                 endTimeDisplay.value = '';
                 endTimeDisplay.dataset.nextDay = '0';
+                if (endTimeNextDay) {
+                    endTimeNextDay.classList.add('hidden');
+                }
                 return;
             }
 
-            endTimeDisplay.value = computed.label;
+            // Use HH:mm so native <input type="time"> matches start field (same 12h/24h as browser).
+            endTimeDisplay.value = computed.hhmm;
             endTimeDisplay.dataset.nextDay = computed.crossesDay ? '1' : '0';
+            if (endTimeNextDay) {
+                endTimeNextDay.classList.toggle('hidden', !computed.crossesDay);
+            }
         };
 
         startTimeInput.addEventListener('change', updateEndTime);
@@ -72,7 +80,9 @@ import { errorAlert } from '../common/sweetalert';
             return null;
         }
 
-        const [hours, minutes] = startTime.split(':').map(Number);
+        const parts = startTime.split(':').map(Number);
+        const hours = parts[0];
+        const minutes = parts[1] ?? 0;
         if (Number.isNaN(hours) || Number.isNaN(minutes)) {
             return null;
         }
@@ -85,12 +95,10 @@ import { errorAlert } from '../common/sweetalert';
 
         const endHours = String(end.getHours()).padStart(2, '0');
         const endMinutes = String(end.getMinutes()).padStart(2, '0');
-        const time = `${endHours}:${endMinutes}`;
-        const label = crossesDay ? `${time} (next day)` : time;
+        const hhmm = `${endHours}:${endMinutes}`;
 
         return {
-            time,
-            label,
+            hhmm,
             crossesDay,
         };
     }

@@ -13,7 +13,7 @@
                     {{ $type === 'created' ? 'New Schedule Added' : 'Schedule Updated' }}
                 </h1>
                 <p style="margin:8px 0 0; color:#475569;">
-                    A schedule has been {{ $type }} for <strong>{{ $schedule->schedule_date->format('l, F j, Y') }}</strong>.
+                    A schedule has been {{ $type }} for <strong>{{ $scheduleDateLong }}</strong>.
                 </p>
             </td>
         </tr>
@@ -21,11 +21,11 @@
             <td style="padding:16px 24px; color:#0b1220;">
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
-                        <td style="padding-bottom:8px; color:#64748b; font-size:14px;">Time</td>
+                        <td style="padding-bottom:8px; color:#64748b; font-size:14px;">Time ({{ $scheduleTimezone }})</td>
                     </tr>
                     <tr>
                         <td style="padding-bottom:16px; font-size:16px;">
-                            {{ $schedule->start_time->format('g:i A') }} - {{ $schedule->end_time->format('g:i A') }}
+                            {{ $scheduleStartTime }} - {{ $scheduleEndTime }}
                         </td>
                     </tr>
                     <tr>

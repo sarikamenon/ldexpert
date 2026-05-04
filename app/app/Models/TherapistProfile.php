@@ -29,6 +29,7 @@ class TherapistProfile extends Model
         'personal_email',
         'phone',
         'ld_email',
+        'llc_name',
         'address',
         'comments',
         'position_id',

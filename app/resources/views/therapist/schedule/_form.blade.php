@@ -7,6 +7,7 @@
     'preselectedStudent' => null,
     'studentServiceMappings' => collect(),
     'isEdit' => false,
+    'isPrivateStudent' => false,
 ])
 
 @php
@@ -64,7 +65,7 @@
                             </span>
                         </div>
                         <div>
-                            <span class="text-foreground/70 block mb-1">School:</span>
+                            <span class="text-foreground/70 block mb-1">School/Family:</span>
                             <span class="font-medium text-foreground">
                                 {{ $currentSsa->student?->studentProfile?->school?->display_name ?? 'N/A' }}
                             </span>
@@ -83,18 +84,6 @@
                             <span class="text-foreground/70 block mb-1">Primary Service:</span>
                             <span
                                 class="font-medium text-foreground">{{ $currentSsa->primaryService->name ?? 'N/A' }}</span>
-                        </div>
-                        <div>
-                            <span class="text-foreground/70 block mb-1">Additional Services:</span>
-                            @if ($currentSsa->additionalServices->isNotEmpty())
-                                <span class="font-medium text-foreground">
-                                    @foreach ($currentSsa->additionalServices as $service)
-                                        {{ $loop->first ? '' : ', ' }}{{ $service->name }}
-                                    @endforeach
-                                </span>
-                            @else
-                                <span class="font-medium text-foreground/60">None</span>
-                            @endif
                         </div>
                         <div>
                             <span class="text-foreground/70 block mb-1">End Date:</span>
@@ -137,7 +126,7 @@
                         <input type="hidden" name="ssa_id" value="{{ $currentSsa->id }}">
                         <input type="hidden" name="student_ids[]" value="{{ $preselectedStudent->id }}">
                         <p class="text-xs text-foreground/60 mt-1">
-                            Services available for this SSA (primary and additional).
+                            Services available for this SSA.
                         </p>
                     @endif
                     <x-input-error :messages="$errors->get('service_id')" class="mt-2" />
@@ -165,11 +154,12 @@
                 <x-input-label for="schedule_date" value="Schedule Date *" />
                 @if ($isEdit)
                     <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
-                        value="{{ old('schedule_date', $schedule->schedule_date?->format('Y-m-d')) }}" required />
+                        value="{{ old('schedule_date', $scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) }}"
+                        min="{{ now()->format('Y-m-d') }}" required />
                 @else
                     <x-ui::input id="schedule_date" name="schedule_date" type="date" class="mt-1 block w-full"
                         value="{{ old('schedule_date', $selectedDate?->format('Y-m-d')) }}"
-                        min="{{ now()->format('Y-m-d') }}" required />
+                        required />
                 @endif
                 <x-input-error :messages="$errors->get('schedule_date')" class="mt-2" />
             </div>
@@ -178,15 +168,20 @@
                 <div>
                     <x-input-label for="start_time" value="Start Time *" />
                     <x-ui::input id="start_time" name="start_time" type="time" class="mt-1 block w-full"
-                        value="{{ old('start_time', $isEdit ? $schedule->start_time?->format('H:i') : '09:00') }}"
+                        value="{{ old('start_time', $isEdit ? ($scheduleLocalStartTime ?? $schedule->start_time?->format('H:i')) : '09:00') }}"
                         required />
                     <x-input-error :messages="$errors->get('start_time')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="end_time_display" value="End Time (auto-calculated)" />
-                    <x-ui::input id="end_time_display" type="text"
-                        class="mt-1 block w-full bg-background/subtle cursor-not-allowed opacity-75" value=""
-                        disabled readonly />
+                    
+                    <div class="mt-1 flex flex-wrap items-center gap-2">
+                        <x-ui::input id="end_time_display" type="time"
+                            class="block w-full min-w-0 flex-1 bg-background/subtle cursor-not-allowed opacity-75"
+                            value="" disabled readonly tabindex="-1" aria-describedby="end_time_display_help" />
+                        <span id="end_time_next_day" class="hidden shrink-0 text-sm text-foreground/70"
+                            aria-live="polite">(next day)</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -198,59 +193,130 @@
         @endif
     </x-ui::card>
 
-    {{-- Section 2: Recurrence Options (only for create) --}}
-    @if (!$isEdit)
-        <x-ui::card class="p-6 space-y-6">
-            <div>
-                <h2 class="text-lg font-semibold text-foreground">Recurrence Options</h2>
-                <p class="text-sm text-foreground/60">
+    {{-- Section 2: Recurrence Options --}}
+    @php
+        $currentRecurrenceType = $isEdit
+            ? old('recurrence_type', $schedule->recurrence_type?->value ?? 'none')
+            : old('recurrence_type', 'none');
+        $currentRecurrenceEndDate = $isEdit
+            ? old('recurrence_end_date', $schedule->recurrence_end_date?->format('Y-m-d') ?? '')
+            : old('recurrence_end_date', '');
+        $originalRecurrenceType = $isEdit ? ($schedule->recurrence_type?->value ?? 'none') : null;
+        $originalRecurrenceEndDate = $isEdit ? ($schedule->recurrence_end_date?->format('Y-m-d') ?? '') : null;
+        $isExistingRecurring = $isEdit && $schedule->isRecurring();
+    @endphp
+
+    <x-ui::card class="p-6 space-y-6" id="recurrence_card">
+        <div>
+            <h2 class="text-lg font-semibold text-foreground">Recurrence Options</h2>
+            <p class="text-sm text-foreground/60">
+                @if ($isEdit)
+                    Update how often this schedule repeats. Changes will regenerate all future sessions from this date.
+                @else
                     Create a recurring schedule that repeats at regular intervals.
-                </p>
-            </div>
+                @endif
+            </p>
+        </div>
 
-            <div class="space-y-4">
-                <div>
-                    <x-input-label for="recurrence_type" value="Recurrence Type *" />
-                    <select id="recurrence_type" name="recurrence_type" data-select-box class="mt-1 block w-full"
-                        required>
+        {{-- Inline warning banner (edit mode only, shown by JS when recurrence fields change) --}}
+        @if ($isEdit)
+            <div id="recurrence_change_warning" class="hidden rounded-lg border border-warning/40 bg-warning/10 px-4 py-3 text-sm text-foreground"
+                role="alert"
+                data-original-recurrence-type="{{ $originalRecurrenceType }}"
+                data-original-recurrence-end-date="{{ $originalRecurrenceEndDate }}"
+                data-schedule-date="{{ $scheduleLocalDateFormatted ?? $schedule->schedule_date?->format('M d, Y') }}">
+                <div class="flex items-start gap-2">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    <p>
+                        <span class="font-medium">Recurrence changed.</span>
+                        Saving will delete and regenerate all unbilled future sessions from
+                        <span class="font-medium">{{ $scheduleLocalDateFormatted ?? $schedule->schedule_date?->format('M d, Y') }}</span> onward.
+                        Past and billed sessions will not be affected.
+                    </p>
+                </div>
+            </div>
+        @endif
+
+        <div class="space-y-4">
+            <div>
+                <x-input-label for="recurrence_type" value="Recurrence Type *" />
+                <select id="recurrence_type" name="recurrence_type" data-select-box class="mt-1 block w-full"
+                    @if (!$isEdit) required @endif>
+                    @if (!$isEdit)
                         <option value="">Select recurrence type</option>
-                        @foreach (\App\Enums\RecurrenceType::cases() as $recurrenceType)
-                            <option value="{{ $recurrenceType->value }}" @selected(old('recurrence_type', 'none') === $recurrenceType->value)>
-                                {{ $recurrenceType->label() }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <p class="text-xs text-foreground/60 mt-1">
-                        Select how often this schedule should repeat. Choose "None" for a single occurrence.
-                    </p>
-                    <x-input-error :messages="$errors->get('recurrence_type')" class="mt-2" />
-                </div>
-
-                <div id="recurrence_end_date_container" class="hidden">
-                    <x-input-label for="recurrence_end_date" value="Recurrence End Date *" />
-                    <x-ui::input id="recurrence_end_date" name="recurrence_end_date" type="date"
-                        class="mt-1 block w-full" value="{{ old('recurrence_end_date', '') }}"
-                        min="{{ old('schedule_date', $selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d')) }}" />
-                    <p class="text-xs text-foreground/60 mt-1">
-                        The last occurrence will be created on or before this date. Must be after the schedule start
-                        date.
-                    </p>
-                    <x-input-error :messages="$errors->get('recurrence_end_date')" class="mt-2" />
-                </div>
-
-                <div id="occurrence_dates_container" class="hidden mt-4">
-                    <x-input-label value="Occurrence Dates *" />
-                    <p class="text-xs text-foreground/60 mt-1 mb-3">
-                        Review the occurrence dates below. You can modify any date or remove unwanted
-                        occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
-                        Dates falling on weekends are highlighted in yellow.
-                    </p>
-                    <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
-                    <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
-                </div>
+                    @endif
+                    @foreach (\App\Enums\RecurrenceType::cases() as $recurrenceType)
+                        @if ($recurrenceType === \App\Enums\RecurrenceType::CUSTOM_WEEKLY && ! $isPrivateStudent)
+                            @continue
+                        @endif
+                        <option value="{{ $recurrenceType->value }}" @selected($currentRecurrenceType === $recurrenceType->value)>
+                            {{ $recurrenceType->label() }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-foreground/60 mt-1">
+                    Select how often this schedule should repeat. Choose "None" for a single occurrence.
+                    @if ($isPrivateStudent)
+                        For multiple days per week, choose "Custom Weekly (Select Days)".
+                    @endif
+                </p>
+                <x-input-error :messages="$errors->get('recurrence_type')" class="mt-2" />
             </div>
-        </x-ui::card>
-    @endif
+
+            {{-- Day-of-week selector (custom weekly only, private students) --}}
+            @if ($isPrivateStudent)
+                <div id="weekly_days_container" class="hidden">
+                    <x-input-label value="Days of the Week *" />
+                    <p class="text-xs text-foreground/60 mt-1 mb-3" id="weekly_days_help">
+                        Select which days each week the student will be tutored (e.g. Mon, Tue, Thu). Occurrences will be generated for every selected day between the start and end date.
+                    </p>
+                    <div class="flex flex-wrap gap-2" aria-describedby="weekly_days_help">
+                        @php
+                            $oldDays = old('weekly_days', []);
+                        @endphp
+                        @foreach (\App\Enums\WeekDay::cases() as $day)
+                            <label class="weekly-day-label flex items-center gap-1.5 cursor-pointer rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-primary/10 hover:border-primary/50 select-none"
+                                title="{{ $day->label() }}">
+                                <input type="checkbox" name="weekly_days[]" value="{{ $day->value }}"
+                                    class="sr-only weekly-day-checkbox"
+                                    @checked(in_array($day->value, (array) $oldDays)) />
+                                <svg class="weekly-day-check w-0 h-3.5 opacity-0 transition-all overflow-hidden shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                </svg>
+                                <span>{{ $day->shortLabel() }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <x-input-error :messages="$errors->get('weekly_days')" class="mt-2" />
+                </div>
+            @endif
+
+            <div id="recurrence_end_date_container" class="{{ $currentRecurrenceType && $currentRecurrenceType !== 'none' ? '' : 'hidden' }}">
+                <x-input-label for="recurrence_end_date" value="Recurrence End Date *" />
+                <x-ui::input id="recurrence_end_date" name="recurrence_end_date" type="date"
+                    class="mt-1 block w-full"
+                    value="{{ $currentRecurrenceEndDate }}"
+                    min="{{ old('schedule_date', $isEdit ? ($scheduleLocalDate ?? $schedule->schedule_date?->format('Y-m-d')) : ($selectedDate?->format('Y-m-d') ?? now()->format('Y-m-d'))) }}" />
+                <p class="text-xs text-foreground/60 mt-1">
+                    The last occurrence will be created on or before this date. Must be after the schedule start date.
+                </p>
+                <x-input-error :messages="$errors->get('recurrence_end_date')" class="mt-2" />
+            </div>
+
+            <div id="occurrence_dates_container" class="hidden mt-4">
+                <x-input-label value="Occurrence Dates *" />
+                <p class="text-xs text-foreground/60 mt-1 mb-3">
+                    Review the occurrence dates below. You can modify any date or remove unwanted
+                    occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
+                    Dates falling on weekends are highlighted in yellow.
+                </p>
+                <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
+                <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
+            </div>
+        </div>
+    </x-ui::card>
 
     {{-- Section 3: Location & Meeting Details --}}
     <x-ui::card class="p-6 space-y-6">
@@ -289,7 +355,7 @@
 
     <div class="flex justify-end gap-3">
         <a
-            href="{{ $isEdit ? route('therapist.schedule.calendar', ['date' => $schedule->schedule_date?->format('Y-m-d')]) : route('therapist.schedule.calendar') }}">
+            href="{{ route('therapist.schedule-calendar.index') }}">
             <x-ui::button variant="secondary">
                 Cancel
             </x-ui::button>

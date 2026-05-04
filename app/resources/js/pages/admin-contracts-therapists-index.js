@@ -29,7 +29,8 @@ async function initTherapistContractsTable() {
             columnDefs,
             getExtraData(d) {
                 if (!form) return;
-                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                const statusVal = form.querySelector('[name="status"]')?.value ?? 'active';
+                d.filter_status = statusVal === 'all' ? '' : statusVal;
                 d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
                 d.filter_therapist_id = form.querySelector('[name="therapist_id"]')?.value ?? '';
                 const formData = new FormData(form);

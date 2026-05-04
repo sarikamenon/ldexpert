@@ -21,8 +21,10 @@ $RECYCLE.BIN/
 # IDE
 .idea/
 .vscode/
+.mcp.json
 .fleet/
 .zed/
+.cursor/rules/
 *.swp
 *.swo
 *~
