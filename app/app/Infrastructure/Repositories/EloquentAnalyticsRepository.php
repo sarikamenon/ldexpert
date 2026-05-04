@@ -129,16 +129,19 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
     /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array
     {
+        $positionExpression = "COALESCE(positions.name, 'Unassigned')";
+
         $therapists = DB::table('therapist_profiles')
-            ->join('positions', 'therapist_profiles.position_id', '=', 'positions.id')
-            ->select('positions.name as position', DB::raw('count(*) as count'))
+            ->leftJoin('positions', 'therapist_profiles.position_id', '=', 'positions.id')
+            ->select(DB::raw($positionExpression.' as position'), DB::raw('count(*) as count'))
             ->whereNull('therapist_profiles.deleted_at')
-            ->groupBy('positions.name')
+            ->groupBy(DB::raw($positionExpression))
+            ->orderBy('position')
             ->get();
 
         return [
-            'labels' => $therapists->pluck('position')->toArray(),
-            'data' => $therapists->pluck('count')->toArray(),
+            'labels' => $therapists->pluck('position')->map(static fn ($label): string => (string) $label)->values()->all(),
+            'data' => $therapists->pluck('count')->map(static fn ($count): int => (int) $count)->values()->all(),
         ];
     }
 

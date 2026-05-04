@@ -21,6 +21,9 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentDashboardRepository implements DashboardRepositoryInterface
 {
+    /** @var array<int, string> */
+    private const THERAPIST_POSITION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
     public function getSchoolCount(): int
     {
         return School::count();
@@ -185,25 +188,27 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array
     {
+        $positionExpression = "COALESCE(positions.name, 'Unassigned')";
+
         $therapistsByPosition = DB::table('therapist_profiles')
-            ->join('positions', 'therapist_profiles.position_id', '=', 'positions.id')
-            ->select('positions.name as position', DB::raw('count(*) as count'))
+            ->leftJoin('positions', 'therapist_profiles.position_id', '=', 'positions.id')
+            ->select(DB::raw($positionExpression.' as position'), DB::raw('count(*) as count'))
             ->whereNull('therapist_profiles.deleted_at')
-            ->groupBy('positions.name')
+            ->groupBy(DB::raw($positionExpression))
+            ->orderBy('position')
             ->get();
 
-        if ($therapistsByPosition->isEmpty()) {
-            return [
-                'labels' => ['SLP', 'OT', 'PT', 'LCSW'],
-                'data' => [45, 32, 28, 15],
-                'colors' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-            ];
+        $labels = $therapistsByPosition->pluck('position')->map(static fn ($label): string => (string) $label)->values()->all();
+        $data = $therapistsByPosition->pluck('count')->map(static fn ($count): int => (int) $count)->values()->all();
+        $colors = [];
+        foreach (array_keys($labels) as $index) {
+            $colors[] = self::THERAPIST_POSITION_CHART_COLORS[$index % count(self::THERAPIST_POSITION_CHART_COLORS)];
         }
 
         return [
-            'labels' => $therapistsByPosition->pluck('position')->toArray(),
-            'data' => $therapistsByPosition->pluck('count')->toArray(),
-            'colors' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            'labels' => $labels,
+            'data' => $data,
+            'colors' => $colors,
         ];
     }
 
