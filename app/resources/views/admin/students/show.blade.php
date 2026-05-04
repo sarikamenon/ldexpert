@@ -57,23 +57,30 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-ui::card class="p-6 lg:col-span-1">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
-                    <span class="text-sm text-foreground/70">{{ $chartData['progress'] ?? 0 }}%</span>
+                    <h3 class="text-lg font-semibold text-foreground">Session Outcomes</h3>
+                    <span class="text-sm text-foreground/70">{{ number_format($chartData['total_hours'] ?? 0, 2) }} hrs</span>
                 </div>
-                <div class="relative" style="height: 260px;">
-                    <canvas id="studentProgressChart" data-served="{{ $chartData['served'] ?? 0 }}"
-                        data-tho="{{ ($chartData['served'] ?? 0) + ($chartData['remaining'] ?? 0) }}"></canvas>
-                </div>
-                <div class="mt-4 space-y-2">
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Served Hours</span>
-                        <span class="font-semibold">{{ number_format($chartData['served'] ?? 0, 2) }}</span>
+                @if (!empty($chartData['outcomes']))
+                    <div class="relative" style="height: 260px;">
+                        <canvas id="studentProgressChart"
+                            data-outcomes='@json($chartData['outcomes'])'></canvas>
                     </div>
-                    <div class="flex items-center justify-between text-sm">
-                        <span class="text-foreground/70">Remaining Hours</span>
-                        <span class="font-semibold">{{ number_format($chartData['remaining'] ?? 0, 2) }}</span>
+                    <div class="mt-4 space-y-2">
+                        @foreach ($chartData['outcomes'] as $outcome)
+                            <div class="flex items-center justify-between text-sm">
+                                <span class="flex items-center gap-2 text-foreground/70">
+                                    <span class="inline-block h-2.5 w-2.5 rounded-full" style="background-color: {{ $outcome['color'] }}"></span>
+                                    {{ $outcome['label'] }}
+                                </span>
+                                <span class="font-semibold">{{ number_format($outcome['hours'], 2) }}</span>
+                            </div>
+                        @endforeach
                     </div>
-                </div>
+                @else
+                    <div class="flex items-center justify-center text-sm text-foreground/60" style="height: 260px;">
+                        No session logs yet.
+                    </div>
+                @endif
             </x-ui::card>
 
             <x-ui::card class="p-6 space-y-3 lg:col-span-2">

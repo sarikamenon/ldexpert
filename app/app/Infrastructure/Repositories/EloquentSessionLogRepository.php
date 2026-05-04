@@ -34,6 +34,32 @@ use Illuminate\Support\Facades\DB;
 final class EloquentSessionLogRepository implements SessionLogRepositoryInterface
 {
     /**
+     * @return array<string, int>
+     */
+    public function getOutcomeMinutesForStudent(int $studentId): array
+    {
+        /** @var Collection<int, SessionLog> $logs */
+        $logs = SessionLog::query()
+            ->where('student_id', $studentId)
+            ->withStatuses([SessionLogStatus::SUBMITTED, SessionLogStatus::APPROVED])
+            ->whereNotNull('outcome')
+            ->get(['outcome', 'tho_minutes', 'duration_minutes']);
+
+        $totals = [];
+        foreach ($logs as $log) {
+            if ($log->outcome === null) {
+                continue;
+            }
+            $minutes = $log->tho_minutes > 0
+                ? (int) $log->tho_minutes
+                : (int) $log->duration_minutes;
+            $totals[$log->outcome->value] = ($totals[$log->outcome->value] ?? 0) + $minutes;
+        }
+
+        return $totals;
+    }
+
+    /**
      * @return array{minutes: int, sessions: int}
      */
     public function getSubmittedSummaryForWeek(User $therapist, Carbon $startOfWeek, Carbon $endOfWeek): array
