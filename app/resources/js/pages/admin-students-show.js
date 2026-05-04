@@ -1,4 +1,5 @@
 import { setupStatusChanges } from '../common/status-change';
+import { resolveChartColor } from '../common/chart-colors';
 
 function initStudentProgressChart() {
     const canvas = document.getElementById('studentProgressChart');
@@ -9,7 +10,7 @@ function initStudentProgressChart() {
     let outcomes = [];
     try {
         outcomes = JSON.parse(canvas.dataset.outcomes || '[]');
-    } catch (e) {
+    } catch {
         outcomes = [];
     }
 
@@ -23,7 +24,7 @@ function initStudentProgressChart() {
             labels: outcomes.map((o) => o.label),
             datasets: [{
                 data: outcomes.map((o) => o.hours),
-                backgroundColor: outcomes.map((o) => o.color),
+                backgroundColor: outcomes.map((o) => resolveChartColor(o.color_key)),
                 borderWidth: 2,
                 borderColor: '#ffffff',
             }],
@@ -49,7 +50,18 @@ function initStudentProgressChart() {
     });
 }
 
+function paintOutcomeSwatches() {
+    document.querySelectorAll('.js-outcome-swatch').forEach((el) => {
+        const key = el.dataset.colorKey;
+        if (!key) {
+            return;
+        }
+        el.style.backgroundColor = resolveChartColor(key);
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    paintOutcomeSwatches();
     initStudentProgressChart();
     setupStatusChanges('student', '.change-status-btn', { idAttribute: 'student-id' });
 });

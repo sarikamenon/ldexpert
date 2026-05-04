@@ -62,7 +62,19 @@ export const novaChartColors = {
     successBg: 'rgba(34, 197, 94, 0.1)',
     warningBg: 'rgba(245, 158, 11, 0.1)',
     dangerBg: 'rgba(239, 68, 68, 0.1)',
+
+    // Neutral slate tones for non-billable / inactive series
+    muted: '#94a3b8',       // Slate-400
+    mutedLight: '#cbd5e1',  // Slate-300
 };
+
+/**
+ * Resolve a semantic chart color key (e.g. from a PHP enum's chartColorKey())
+ * to a concrete hex. Falls back to primary if the key is unknown.
+ */
+export function resolveChartColor(key) {
+    return novaChartColors[key] ?? novaChartColors.primary;
+}
 
 /**
  * Get chart colors for a specific number of datasets

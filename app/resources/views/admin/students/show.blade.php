@@ -59,7 +59,7 @@
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
-                        <p class="text-xs text-foreground/60 mt-0.5">Served hours by session outcome</p>
+                        <p class="text-xs text-foreground/60 mt-0.5">THO hours by session outcome</p>
                     </div>
                     <span class="text-sm text-foreground/70">{{ $chartData['progress'] ?? 0 }}%</span>
                 </div>
@@ -86,7 +86,8 @@
                         @foreach ($chartData['outcomes'] as $outcome)
                             <div class="flex items-center justify-between text-sm">
                                 <span class="flex items-center gap-2 text-foreground/70">
-                                    <span class="inline-block h-2.5 w-2.5 rounded-full" style="background-color: {{ $outcome['color'] }}"></span>
+                                    <span class="js-outcome-swatch inline-block h-2.5 w-2.5 rounded-full bg-foreground/20"
+                                        data-color-key="{{ $outcome['color_key'] }}"></span>
                                     {{ $outcome['label'] }}
                                 </span>
                                 <span class="font-semibold">{{ number_format($outcome['hours'], 2) }}</span>

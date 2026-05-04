@@ -35,29 +35,20 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
 {
     /**
      * Approved session log THO minutes grouped by outcome for a student.
-     * Aligns with SSA.served_minutes (only counts hours that are billed against THO).
      *
      * @return array<string, int>
      */
     public function getOutcomeMinutesForStudent(int $studentId): array
     {
-        /** @var Collection<int, SessionLog> $logs */
-        $logs = SessionLog::query()
-            ->where('student_id', $studentId)
+        return SessionLog::query()
+            ->forStudentId($studentId)
             ->withStatuses([SessionLogStatus::APPROVED])
-            ->whereNotNull('outcome')
-            ->where('tho_minutes', '>', 0)
-            ->get(['outcome', 'tho_minutes']);
-
-        $totals = [];
-        foreach ($logs as $log) {
-            if ($log->outcome === null) {
-                continue;
-            }
-            $totals[$log->outcome->value] = ($totals[$log->outcome->value] ?? 0) + (int) $log->tho_minutes;
-        }
-
-        return $totals;
+            ->withTrackedThoMinutes()
+            ->get(['outcome', 'tho_minutes'])
+            ->reject(static fn (SessionLog $log): bool => $log->outcome === null)
+            ->groupBy(static fn (SessionLog $log): string => $log->outcome->value) // @phpstan-ignore property.nonObject
+            ->map(static fn ($group): int => (int) $group->sum('tho_minutes'))
+            ->all();
     }
 
     /**

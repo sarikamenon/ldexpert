@@ -89,4 +89,26 @@ final class SessionLogScope extends BaseModelScope
     {
         return $builder->whereNull(self::qualify($model, 'therapist_bill_id'));
     }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function forStudentId(Builder $builder, Model $model, int $studentId): Builder
+    {
+        return $builder->where(self::qualify($model, 'student_id'), $studentId);
+    }
+
+    /**
+     * Logs that have a non-null outcome and contributed positive THO minutes.
+     *
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function withTrackedThoMinutes(Builder $builder, Model $model): Builder
+    {
+        return $builder
+            ->whereNotNull(self::qualify($model, 'outcome'))
+            ->where(self::qualify($model, 'tho_minutes'), '>', 0);
+    }
 }

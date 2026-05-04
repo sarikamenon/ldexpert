@@ -74,4 +74,22 @@ trait HasSessionLogScopes
     {
         return SessionLogScope::withoutTherapistBill($query, $this);
     }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForStudentId(Builder $query, int $studentId): Builder
+    {
+        return SessionLogScope::forStudentId($query, $this, $studentId);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeWithTrackedThoMinutes(Builder $query): Builder
+    {
+        return SessionLogScope::withTrackedThoMinutes($query, $this);
+    }
 }

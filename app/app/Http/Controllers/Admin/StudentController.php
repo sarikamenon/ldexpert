@@ -239,22 +239,15 @@ final class StudentController extends Controller
             $ssasForMetrics = $this->ssaService->getSSAsForStudentMetrics($student->id);
 
             $outcomeMinutes = $this->sessionLogRepository->getOutcomeMinutesForStudent($student->id);
-            $outcomeColors = [
-                SessionOutcome::SERVICES_ADMINISTERED->value => '#14b8a6',
-                SessionOutcome::NO_SHOW->value => '#f59e0b',
-                SessionOutcome::BILLABLE_CANCELLATION->value => '#6366f1',
-                SessionOutcome::NON_BILLABLE_CANCELLATION_CLIENT->value => '#94a3b8',
-                SessionOutcome::NON_BILLABLE_CANCELLATION_PROVIDER->value => '#cbd5e1',
-            ];
             $outcomes = collect(SessionOutcome::cases())
-                ->map(static function (SessionOutcome $outcome) use ($outcomeMinutes, $outcomeColors): array {
+                ->map(static function (SessionOutcome $outcome) use ($outcomeMinutes): array {
                     $minutes = (int) ($outcomeMinutes[$outcome->value] ?? 0);
 
                     return [
                         'value' => $outcome->value,
                         'label' => $outcome->label(),
                         'hours' => round($minutes / 60, 2),
-                        'color' => $outcomeColors[$outcome->value],
+                        'color_key' => $outcome->chartColorKey(),
                     ];
                 })
                 ->filter(static fn (array $row): bool => $row['hours'] > 0)
