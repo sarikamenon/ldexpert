@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Analytics\Services\TherapistPositionChartService;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Enums\ContractStatus;
 use App\Enums\Role;
@@ -21,6 +22,11 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentDashboardRepository implements DashboardRepositoryInterface
 {
+    /** @var array<int, string> */
+    private const THERAPIST_POSITION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+    public function __construct(private readonly TherapistPositionChartService $therapistPositionChartService) {}
+
     public function getSchoolCount(): int
     {
         return School::count();
@@ -185,25 +191,17 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array
     {
-        $therapistsByPosition = DB::table('therapist_profiles')
-            ->join('positions', 'therapist_profiles.position_id', '=', 'positions.id')
-            ->select('positions.name as position', DB::raw('count(*) as count'))
-            ->whereNull('therapist_profiles.deleted_at')
-            ->groupBy('positions.name')
-            ->get();
-
-        if ($therapistsByPosition->isEmpty()) {
-            return [
-                'labels' => ['SLP', 'OT', 'PT', 'LCSW'],
-                'data' => [45, 32, 28, 15],
-                'colors' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'],
-            ];
-        }
+        $result = $this->therapistPositionChartService->getCounts();
+        $palette = self::THERAPIST_POSITION_CHART_COLORS;
+        $colors = collect($result['labels'])
+            ->keys()
+            ->map(static fn (int $index): string => $palette[$index % count($palette)])
+            ->all();
 
         return [
-            'labels' => $therapistsByPosition->pluck('position')->toArray(),
-            'data' => $therapistsByPosition->pluck('count')->toArray(),
-            'colors' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+            'labels' => $result['labels'],
+            'data' => $result['data'],
+            'colors' => $colors,
         ];
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Analytics\Repositories\AnalyticsRepositoryInterface;
+use App\Domain\Analytics\Services\TherapistPositionChartService;
 use App\Enums\SchoolStatus;
 use App\Enums\UserStatus;
 use App\Models\School;
@@ -16,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
 {
+    public function __construct(private readonly TherapistPositionChartService $therapistPositionChartService) {}
+
     public function getSchoolCount(): int
     {
         return School::count();
@@ -129,17 +132,7 @@ final class EloquentAnalyticsRepository implements AnalyticsRepositoryInterface
     /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array
     {
-        $therapists = DB::table('therapist_profiles')
-            ->join('positions', 'therapist_profiles.position_id', '=', 'positions.id')
-            ->select('positions.name as position', DB::raw('count(*) as count'))
-            ->whereNull('therapist_profiles.deleted_at')
-            ->groupBy('positions.name')
-            ->get();
-
-        return [
-            'labels' => $therapists->pluck('position')->toArray(),
-            'data' => $therapists->pluck('count')->toArray(),
-        ];
+        return $this->therapistPositionChartService->getCounts();
     }
 
     /** @return array<string, array<int, mixed>> */
