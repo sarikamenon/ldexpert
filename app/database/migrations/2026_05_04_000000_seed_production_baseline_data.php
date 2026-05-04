@@ -1,32 +1,27 @@
 <?php
 
-use App\Models\User;
-use Database\Seeders\AdminUserSeeder;
+declare(strict_types=1);
+
+use Database\Seeders\ProductionSeeder;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Artisan;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        if (app()->environment('production', 'staging')) {
+        if (app()->environment('testing')) {
             return;
         }
 
         Artisan::call('db:seed', [
-            '--class' => AdminUserSeeder::class,
+            '--class' => ProductionSeeder::class,
             '--force' => true,
         ]);
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        User::where('email', 'admin@example.com')->delete();
+        // No automatic rollback for baseline production data.
     }
 };

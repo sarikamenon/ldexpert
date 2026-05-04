@@ -28,7 +28,11 @@ class AdminUserSeeder extends Seeder
             ],
             [
                 'email' => 'info@ldexpert.org',
-                'name' => 'Chelsea DiMarzio',
+                'name' => 'Stephanie',
+            ],
+            [
+                'email' => 'relatedservices@ldexpert.org',
+                'name' => 'Chelsea',
             ],
         ];
 
