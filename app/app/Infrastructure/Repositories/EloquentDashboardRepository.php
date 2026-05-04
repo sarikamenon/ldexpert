@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Analytics\Services\TherapistPositionChartService;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Enums\ContractStatus;
 use App\Enums\Role;
@@ -23,6 +24,8 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
 {
     /** @var array<int, string> */
     private const THERAPIST_POSITION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+    public function __construct(private readonly TherapistPositionChartService $therapistPositionChartService) {}
 
     public function getSchoolCount(): int
     {
@@ -188,26 +191,16 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     /** @return array<string, array<int, mixed>> */
     public function getTherapistsByPosition(): array
     {
-        $positionExpression = "COALESCE(positions.name, 'Unassigned')";
-
-        $therapistsByPosition = DB::table('therapist_profiles')
-            ->leftJoin('positions', 'therapist_profiles.position_id', '=', 'positions.id')
-            ->select(DB::raw($positionExpression.' as position'), DB::raw('count(*) as count'))
-            ->whereNull('therapist_profiles.deleted_at')
-            ->groupBy(DB::raw($positionExpression))
-            ->orderBy('position')
-            ->get();
-
-        $labels = $therapistsByPosition->pluck('position')->map(static fn ($label): string => (string) $label)->values()->all();
-        $data = $therapistsByPosition->pluck('count')->map(static fn ($count): int => (int) $count)->values()->all();
-        $colors = [];
-        foreach (array_keys($labels) as $index) {
-            $colors[] = self::THERAPIST_POSITION_CHART_COLORS[$index % count(self::THERAPIST_POSITION_CHART_COLORS)];
-        }
+        $result = $this->therapistPositionChartService->getCounts();
+        $palette = self::THERAPIST_POSITION_CHART_COLORS;
+        $colors = collect($result['labels'])
+            ->keys()
+            ->map(static fn (int $index): string => $palette[$index % count($palette)])
+            ->all();
 
         return [
-            'labels' => $labels,
-            'data' => $data,
+            'labels' => $result['labels'],
+            'data' => $result['data'],
             'colors' => $colors,
         ];
     }
