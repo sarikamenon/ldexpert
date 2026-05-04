@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Audit\Services\AuditRecorder;
 use App\Domain\Contract\Repositories\TherapistContractRepositoryInterface;
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateTherapistContractDTO;
@@ -19,6 +20,8 @@ use Illuminate\Support\Collection;
 
 final class EloquentTherapistContractRepository implements TherapistContractRepositoryInterface
 {
+    public function __construct(private readonly AuditRecorder $auditRecorder) {}
+
     public function paginate(TherapistContractFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery(), $filters)
@@ -88,6 +91,8 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
 
     public function syncServices(TherapistContract $contract, array $services): void
     {
+        $oldSnapshot = $contract->serviceRatesSnapshot();
+
         $contract->services()->delete();
         $contract->services()->createMany(
             array_map(
@@ -100,6 +105,19 @@ final class EloquentTherapistContractRepository implements TherapistContractRepo
                 ],
                 $services,
             )
+        );
+
+        $newSnapshot = $contract->refresh()->serviceRatesSnapshot();
+
+        if ($oldSnapshot === $newSnapshot) {
+            return;
+        }
+
+        $this->auditRecorder->record(
+            auditable: $contract,
+            event: 'services_synced',
+            oldValues: ['services' => $oldSnapshot],
+            newValues: ['services' => $newSnapshot],
         );
     }
 

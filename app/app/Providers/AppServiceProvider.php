@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Domain\Analytics\Repositories\AnalyticsRepositoryInterface;
+use App\Domain\Audit\Services\AuditBatchContext;
 use App\Domain\Billing\Repositories\BillingScheduleRepositoryInterface;
 use App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface;
 use App\Domain\Billing\Repositories\TherapistBillRepositoryInterface;
@@ -128,6 +129,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(UserTimezoneService::class, static function (): UserTimezoneService {
             return new UserTimezoneService(config('app.timezone', 'UTC'));
         });
+
+        $this->app->singleton(AuditBatchContext::class);
     }
 
     public function boot(Router $router): void

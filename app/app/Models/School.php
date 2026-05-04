@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Constants\UsStates;
 use App\Enums\SchoolStatus;
+use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\SchoolScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class School extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\SchoolFactory> */
     use HasFactory;
 
