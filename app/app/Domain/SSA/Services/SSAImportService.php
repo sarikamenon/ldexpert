@@ -616,7 +616,7 @@ final class SSAImportService
         return match (strtolower(trim($label))) {
             'week' => ServiceFrequency::WEEKLY->value,
             'month' => ServiceFrequency::MONTHLY->value,
-            'year' => ServiceFrequency::QUARTERLY->value,
+            'year' => ServiceFrequency::ONE_TIME->value,
             default => $label,
         };
     }
