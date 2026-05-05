@@ -395,8 +395,8 @@ final class StudentManagementTest extends TestCase
         $this->assertEquals(1, $metrics['active_ssas']);
 
         $chartData = $response->viewData('chartData');
-        $this->assertArrayHasKey('served', $chartData);
-        $this->assertArrayHasKey('remaining', $chartData);
+        $this->assertArrayHasKey('served_hours', $chartData);
+        $this->assertArrayHasKey('remaining_hours', $chartData);
         $this->assertArrayHasKey('progress', $chartData);
     }
 
