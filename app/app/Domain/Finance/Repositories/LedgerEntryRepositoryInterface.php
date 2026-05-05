@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Finance\Repositories;
 
+use App\DTOs\AllTransactionsFilterDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\Models\LedgerEntry;
 use Illuminate\Support\Collection;
@@ -52,4 +53,9 @@ interface LedgerEntryRepositoryInterface
      * }
      */
     public function getTherapistStats(int $therapistId): array;
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, LedgerEntry>}
+     */
+    public function listAllForDataTables(AllTransactionsFilterDTO $filters, DataTablesParamsDTO $params): array;
 }

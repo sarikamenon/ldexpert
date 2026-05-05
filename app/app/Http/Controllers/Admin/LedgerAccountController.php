@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\DataTables\Transformers\LedgerAccountRowTransformer;
 use App\DataTables\Transformers\LedgerEntryRowTransformer;
+use App\DataTables\Transformers\TransactionRowTransformer;
 use App\Domain\Finance\Services\LedgerAccountService;
+use App\DTOs\AllTransactionsFilterDTO;
 use App\DTOs\LedgerAccountsFilterDTO;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
@@ -14,6 +16,7 @@ use App\Http\Requests\Admin\Ledger\LedgerAccountsDataRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsExportRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsIndexRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountTransactionsDataRequest;
+use App\Http\Requests\Admin\Ledger\LedgerAllTransactionsDataRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\School;
@@ -45,6 +48,11 @@ class LedgerAccountController extends Controller
         6 => 'ledger_entries.notes',
     ];
 
+    private const ALL_TRANSACTIONS_ORDER_WHITELIST = [
+        0 => 'ledger_entries.recorded_at',
+        6 => 'ledger_entries.notes',
+    ];
+
     public function __construct(
         private readonly LedgerAccountService $ledgerAccountService,
     ) {}
@@ -54,26 +62,35 @@ class LedgerAccountController extends Controller
         $filters = LedgerAccountsFilterDTO::fromArray($request->validated());
         $accountType = $filters->type;
 
-        if ($accountType === 'schools') {
-            $accounts = $this->ledgerAccountService->listSchoolAccounts($filters);
-        } else {
-            $accounts = $this->ledgerAccountService->listTherapistAccounts($filters);
+        $summary = [];
+        if ($accountType !== 'all-transactions') {
+            if ($accountType === 'schools') {
+                $accounts = $this->ledgerAccountService->listSchoolAccounts($filters);
+            } else {
+                $accounts = $this->ledgerAccountService->listTherapistAccounts($filters);
+            }
+
+            $summary = [
+                'total_accounts' => $accounts->count(),
+                'total_invoiced_or_billed' => $accountType === 'schools'
+                    ? $accounts->sum('total_invoiced')
+                    : $accounts->sum('total_billed'),
+                'total_paid' => $accounts->sum('total_paid'),
+                'total_outstanding' => $accounts->sum('outstanding'),
+            ];
         }
 
-        $summary = [
-            'total_accounts' => $accounts->count(),
-            'total_invoiced_or_billed' => $accountType === 'schools'
-                ? $accounts->sum('total_invoiced')
-                : $accounts->sum('total_billed'),
-            'total_paid' => $accounts->sum('total_paid'),
-            'total_outstanding' => $accounts->sum('outstanding'),
-        ];
+        $schools = School::orderBy('display_name')->get(['id', 'full_name', 'display_name']);
+        $therapists = User::where('role', Role::THERAPIST)->orderBy('name')->get(['id', 'name']);
 
         return view('admin.ledger.accounts.index', [
             'accounts' => collect(),
             'accountType' => $accountType,
             'summary' => $summary,
             'datatableUrl' => route('admin.ledger.accounts.data'),
+            'allTransactionsDatatableUrl' => route('admin.ledger.accounts.all-transactions.data'),
+            'schools' => $schools,
+            'therapists' => $therapists,
         ]);
     }
 
@@ -241,6 +258,28 @@ class LedgerAccountController extends Controller
                 'success' => false,
                 'message' => 'Could not refresh stats.',
             ], 500);
+        }
+    }
+
+    public function allTransactionsData(LedgerAllTransactionsDataRequest $request): JsonResponse
+    {
+        $filters = AllTransactionsFilterDTO::fromArray($request->validated());
+        $params = DataTablesRequest::fromRequest($request, self::ALL_TRANSACTIONS_ORDER_WHITELIST);
+
+        try {
+            $result = $this->ledgerAccountService->listAllEntriesForDataTables($filters, $params);
+
+            return $this->dataTablesResponse(
+                $params,
+                $result['recordsTotal'],
+                $result['recordsFiltered'],
+                $result['rows'],
+                static fn ($entry) => TransactionRowTransformer::transform($entry),
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to load all transactions data', ['error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Could not load transactions.'], 500);
         }
     }
 }

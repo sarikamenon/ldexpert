@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\DTOs\AllTransactionsFilterDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\Enums\InvoiceStatus;
 use App\Enums\TherapistBillStatus;
@@ -188,6 +189,79 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
             'refund_count' => $totals[TransactionType::REFUND->value]['count'],
             'current_balance' => $currentBalance,
             'transaction_count' => array_sum(array_column($totals, 'count')),
+        ];
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, LedgerEntry>}
+     */
+    public function listAllForDataTables(AllTransactionsFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = LedgerEntry::query()
+            ->with(['recordedBy', 'ledgerable'])
+            ->with(['reference' => function (Relation $relation): void {
+                if ($relation instanceof MorphTo) {
+                    $relation->morphWith([
+                        InvoicePayment::class => ['invoice'],
+                        TherapistBillPayment::class => ['therapistBill'],
+                    ]);
+                }
+            }]);
+
+        // Restrict to the relevant transaction types. When a direction is selected,
+        // filter to that direction's types only. Otherwise show all cash types (exclude accruals).
+        $allowedTypes = $filters->direction !== null
+            ? array_filter(TransactionType::cases(), static fn (TransactionType $t): bool => $t->cashDirection() === $filters->direction)
+            : array_filter(TransactionType::cases(), static fn (TransactionType $t): bool => $t->cashDirection() !== null);
+
+        $baseQuery->whereIn('transaction_type', array_map(
+            static fn (TransactionType $t): string => $t->value,
+            $allowedTypes,
+        ));
+
+        if ($filters->dateFrom !== null) {
+            $baseQuery->whereDate('recorded_at', '>=', $filters->dateFrom);
+        }
+
+        if ($filters->dateTo !== null) {
+            $baseQuery->whereDate('recorded_at', '<=', $filters->dateTo);
+        }
+
+        if ($filters->schoolId !== null) {
+            $baseQuery->where('ledgerable_type', School::class)
+                ->where('ledgerable_id', $filters->schoolId);
+        }
+
+        if ($filters->therapistId !== null) {
+            $baseQuery->where('ledgerable_type', User::class)
+                ->where('ledgerable_id', $filters->therapistId);
+        }
+
+        $recordsTotal = (clone $baseQuery)->count();
+
+        if ($params->searchValue) {
+            $sv = $params->searchValue;
+            $baseQuery->where(function (Builder $q) use ($sv): void {
+                $q->where('notes', 'like', "%{$sv}%");
+            });
+        }
+
+        $recordsFiltered = (clone $baseQuery)->count();
+
+        $orderColumn = $params->orderColumn ?? 'ledger_entries.recorded_at';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir)
+            ->orderBy('ledger_entries.id', $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
         ];
     }
 

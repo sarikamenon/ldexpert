@@ -13,13 +13,20 @@ class LedgerAccountsIndexRequest extends FormRequest
         return $this->user() !== null;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (! $this->has('type')) {
+            $this->merge(['type' => 'schools']);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'type' => ['required', 'string', 'in:schools,therapists'],
+            'type' => ['required', 'string', 'in:schools,therapists,all-transactions'],
             'search' => ['nullable', 'string', 'max:255'],
         ];
     }
