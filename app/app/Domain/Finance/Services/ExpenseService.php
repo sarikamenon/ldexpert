@@ -173,6 +173,8 @@ class ExpenseService
             $financiallyChanged = (float) $dto->amount !== $oldAmount || $dto->expenseDate !== $oldDateStr;
 
             if ($financiallyChanged) {
+                $oldRecordedAt = $entry->recorded_at;
+
                 $entry->amount = (string) $dto->amount;
                 $entry->recorded_at = LedgerService::resolveDateOnlyRecordedAt($dto->expenseDate);
                 $entry->notes = $dto->description;
@@ -180,7 +182,7 @@ class ExpenseService
 
                 /** @var class-string $ledgerableType */
                 $ledgerableType = $entry->ledgerable_type;
-                $this->ledger->recomputeChainFrom($ledgerableType, (int) $entry->ledgerable_id);
+                $this->ledger->recomputeChainFrom($ledgerableType, (int) $entry->ledgerable_id, $oldRecordedAt);
             } else {
                 $entry->notes = $dto->description;
                 $entry->save();
