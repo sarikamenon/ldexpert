@@ -8,9 +8,11 @@ use App\DTOs\CreateExpenseDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ExpenseFilterDTO;
 use App\DTOs\UpdateExpenseDTO;
+use App\Enums\TransactionType;
 use App\Models\Expense;
 use App\Models\LedgerEntry;
 use App\Models\TherapistBillPayment;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -19,6 +21,10 @@ use Illuminate\Support\Facades\DB;
 
 class ExpenseService
 {
+    public function __construct(
+        private readonly LedgerService $ledger,
+    ) {}
+
     /**
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, Expense>}
      */
@@ -101,17 +107,27 @@ class ExpenseService
     }
 
     /**
-     * Create a new expense.
+     * Create a new custom expense and write the corresponding ledger entry
+     * against the Business account (User#business_account_user_id).
      */
     public function createExpense(CreateExpenseDTO $dto): Expense
     {
-        return DB::transaction(function () use ($dto) {
-            // Create the expense record
+        return DB::transaction(function () use ($dto): Expense {
             $expense = Expense::create($dto->toArray());
 
-            // Create ledger entry (optional - expenses can be tracked separately)
-            // Uncomment if you want to track expenses in ledger
-            // $this->createLedgerEntry($expense);
+            $businessUser = $this->resolveBusinessUser();
+
+            $this->ledger->createEntry(
+                ledgerableType: User::class,
+                ledgerableId: $businessUser->id,
+                type: TransactionType::EXPENSE,
+                amount: (float) $expense->amount,
+                recordedAt: LedgerService::resolveDateOnlyRecordedAt($expense->expense_date),
+                referenceType: Expense::class,
+                referenceId: $expense->id,
+                notes: $expense->description,
+                recordedById: $dto->createdById,
+            );
 
             return $expense->load('category', 'createdBy');
         });
@@ -119,11 +135,12 @@ class ExpenseService
 
     /**
      * Create an expense linked to a source model (e.g. a therapist bill payment).
-     * The source polymorphic link makes the expense non-editable via the admin UI.
+     * These are already represented in the ledger as payment_made against the therapist;
+     * no additional ledger entry is created to avoid double-counting.
      */
     public function createExpenseFromSource(CreateExpenseDTO $dto, Model $source): Expense
     {
-        return DB::transaction(function () use ($dto, $source) {
+        return DB::transaction(function () use ($dto, $source): Expense {
             $data = $dto->toArray();
             $data['source_type'] = $source::class;
             $data['source_id'] = $source->getKey();
@@ -135,41 +152,77 @@ class ExpenseService
     }
 
     /**
-     * Update an existing expense.
+     * Update an existing custom expense.
+     * When amount or date changes the ledger entry is updated and the Business
+     * account chain is recomputed. Non-financial changes only sync the notes.
      */
     public function updateExpense(Expense $expense, UpdateExpenseDTO $dto): Expense
     {
-        return DB::transaction(function () use ($expense, $dto) {
-            // Update the expense record
+        return DB::transaction(function () use ($expense, $dto): Expense {
+            $oldAmount = (float) $expense->amount;
+            $oldDateStr = $expense->getRawOriginal('expense_date');
+
             $expense->update($dto->toArray());
+
+            $entry = LedgerEntry::forReference($expense)->first();
+
+            if ($entry === null) {
+                return $expense->load('category', 'createdBy');
+            }
+
+            $financiallyChanged = (float) $dto->amount !== $oldAmount || $dto->expenseDate !== $oldDateStr;
+
+            if ($financiallyChanged) {
+                $oldRecordedAt = $entry->recorded_at;
+
+                $entry->amount = (string) $dto->amount;
+                $entry->recorded_at = LedgerService::resolveDateOnlyRecordedAt($dto->expenseDate);
+                $entry->notes = $dto->description;
+                $entry->save();
+
+                /** @var class-string $ledgerableType */
+                $ledgerableType = $entry->ledgerable_type;
+                $this->ledger->recomputeChainFrom($ledgerableType, (int) $entry->ledgerable_id, $oldRecordedAt);
+            } else {
+                $entry->notes = $dto->description;
+                $entry->save();
+            }
 
             return $expense->load('category', 'createdBy');
         });
     }
 
     /**
-     * Delete an expense.
+     * Soft-delete a custom expense, remove its ledger entry, and recompute
+     * the Business account chain from the deleted entry's recorded_at.
      */
     public function deleteExpense(Expense $expense): bool
     {
-        return DB::transaction(function () use ($expense) {
-            // Soft delete the expense
+        return DB::transaction(function () use ($expense): bool {
+            $entry = LedgerEntry::forReference($expense)->first();
+
             $expense->delete();
 
-            // Delete associated ledger entries if any
-            LedgerEntry::forReference($expense)->delete();
+            if ($entry !== null) {
+                /** @var class-string $ledgerableType */
+                $ledgerableType = $entry->ledgerable_type;
+                $ledgerableId = (int) $entry->ledgerable_id;
+                $recordedAt = $entry->recorded_at;
+
+                $entry->delete();
+
+                $this->ledger->recomputeChainFrom($ledgerableType, $ledgerableId, $recordedAt);
+            }
 
             return true;
         });
     }
 
-    /**
-     * Create a ledger entry for the expense (optional).
-     */
-    protected function createLedgerEntry(Expense $expense): void
+    private function resolveBusinessUser(): User
     {
-        // This would require determining which ledger (entity) to charge the expense to
-        // For now, expenses are tracked separately without ledger entries
-        // This can be implemented later if needed
+        $id = (int) config('finance.business_account_user_id', 1);
+
+        /** @var User */
+        return User::withTrashed()->findOrFail($id);
     }
 }
