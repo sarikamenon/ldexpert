@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();
             $table->timestamp('created_at')->useCurrent();
+            $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
 
             $table->index(['auditable_type', 'auditable_id', 'created_at'], 'audits_auditable_idx');
             $table->index(['created_by', 'created_at']);

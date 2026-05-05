@@ -79,6 +79,7 @@ class ExpenseCategoryController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
+        $validated['is_active'] = $request->boolean('is_active');
 
         ExpenseCategory::create($validated);
 
@@ -101,9 +102,11 @@ class ExpenseCategoryController extends Controller
 
         $validated['slug'] = Str::slug($validated['name']);
 
-        if ($expenseCategory->isProtected()) {
-            $validated['is_active'] = true;
-        }
+        // Unchecked checkboxes are not submitted at all, so coerce a missing
+        // is_active to false. Protected categories override to always-active.
+        $validated['is_active'] = $expenseCategory->isProtected()
+            ? true
+            : $request->boolean('is_active');
 
         $expenseCategory->update($validated);
 

@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Models\Concerns\HasAudits;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -23,8 +24,15 @@ use Illuminate\Notifications\Notifiable;
  */
 class User extends Authenticatable implements MustVerifyEmail
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
+
+    /** @var array<int, string> */
+    protected array $auditIgnoreFields = [
+        'password_change_prompted_at',
+    ];
 
     /**
      * The attributes that are mass assignable.

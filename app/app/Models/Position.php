@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PositionStatus;
+use App\Models\Concerns\HasAudits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Position extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\PositionFactory> */
     use HasFactory;
 
@@ -35,6 +38,21 @@ final class Position extends Model
     public function services(): BelongsToMany
     {
         return $this->belongsToMany(Service::class);
+    }
+
+    /**
+     * Stable snapshot of service IDs for audit diffs.
+     * Sorted ascending so the diff is insensitive to insertion order.
+     *
+     * @return array<int, int>
+     */
+    public function serviceIdsSnapshot(): array
+    {
+        /** @var array<int, int> $ids */
+        $ids = $this->services()->pluck('services.id')->all();
+        sort($ids);
+
+        return $ids;
     }
 
     /**

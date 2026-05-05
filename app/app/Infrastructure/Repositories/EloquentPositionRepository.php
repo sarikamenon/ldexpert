@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Audit\Services\AuditRecorder;
 use App\Domain\Position\Repositories\PositionRepositoryInterface;
 use App\DTOs\ChangePositionStatusDTO;
 use App\DTOs\CreatePositionDTO;
@@ -18,6 +19,8 @@ use Illuminate\Support\Collection;
 
 final class EloquentPositionRepository implements PositionRepositoryInterface
 {
+    public function __construct(private readonly AuditRecorder $auditRecorder) {}
+
     /** @return LengthAwarePaginator<int, Position> */
     public function paginate(PositionFilterDTO $filters): LengthAwarePaginator
     {
@@ -71,6 +74,7 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
 
         if (! empty($dto->serviceIds)) {
             $position->services()->attach($dto->serviceIds);
+            $this->recordServicesSyncedAudit($position, oldIds: []);
         }
 
         return $position->load('services');
@@ -81,13 +85,38 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
         $position->update($dto->toArray());
 
         if (! empty($dto->serviceIds)) {
+            $oldIds = $position->serviceIdsSnapshot();
             $position->services()->sync($dto->serviceIds);
+            $this->recordServicesSyncedAudit($position, oldIds: $oldIds);
         }
 
         /** @var Position $freshPosition */
         $freshPosition = $position->fresh('services');
 
         return $freshPosition;
+    }
+
+    /**
+     * Emit a `services_synced` audit on the parent Position when the
+     * pivot set actually changed. Pivot writes bypass model events,
+     * so we capture before/after and delegate to AuditRecorder.
+     *
+     * @param  array<int, int>  $oldIds
+     */
+    private function recordServicesSyncedAudit(Position $position, array $oldIds): void
+    {
+        $newIds = $position->refresh()->serviceIdsSnapshot();
+
+        if ($oldIds === $newIds) {
+            return;
+        }
+
+        $this->auditRecorder->record(
+            auditable: $position,
+            event: 'services_synced',
+            oldValues: ['service_ids' => $oldIds],
+            newValues: ['service_ids' => $newIds],
+        );
     }
 
     public function changeStatus(Position $position, ChangePositionStatusDTO $dto): Position

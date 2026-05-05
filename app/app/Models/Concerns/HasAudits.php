@@ -64,6 +64,7 @@ trait HasAudits
      */
     protected function resolveAuditFields(): array
     {
+        // @phpstan-ignore function.alreadyNarrowedType, function.alreadyNarrowedType
         if (property_exists($this, 'auditFields') && is_array($this->auditFields)) {
             /** @var array<int, string> $fields */
             $fields = $this->auditFields;
@@ -82,6 +83,7 @@ trait HasAudits
     {
         $ignore = self::$globalAuditIgnoreFields;
 
+        // @phpstan-ignore function.alreadyNarrowedType, function.alreadyNarrowedType
         if (property_exists($this, 'auditIgnoreFields') && is_array($this->auditIgnoreFields)) {
             /** @var array<int, string> $extra */
             $extra = $this->auditIgnoreFields;
@@ -133,7 +135,7 @@ trait HasAudits
         if ($event === 'deleted') {
             $oldValues = [];
             foreach ($fields as $field) {
-                $oldValues[$field] = $this->normalizeAuditValue($this->getOriginal($field));
+                $oldValues[$field] = $this->normalizeAuditValue($this->getOriginal($field), $field);
             }
 
             return [$oldValues, null];
@@ -143,8 +145,8 @@ trait HasAudits
         $newValues = [];
 
         foreach ($fields as $field) {
-            $old = $this->normalizeAuditValue($this->getOriginal($field));
-            $new = $this->normalizeAuditValue($this->getAttribute($field));
+            $old = $this->normalizeAuditValue($this->getOriginal($field), $field);
+            $new = $this->normalizeAuditValue($this->getAttribute($field), $field);
 
             if ($this->auditValuesEqual($old, $new)) {
                 continue;
@@ -178,7 +180,7 @@ trait HasAudits
         return [$oldValues, $newValues];
     }
 
-    protected function normalizeAuditValue(mixed $value): mixed
+    protected function normalizeAuditValue(mixed $value, ?string $field = null): mixed
     {
         if ($value instanceof \BackedEnum) {
             return $value->value;
@@ -189,10 +191,31 @@ trait HasAudits
         }
 
         if ($value instanceof \DateTimeInterface) {
-            return $value->format(\DateTimeInterface::ATOM);
+            // Pure calendar dates (cast: 'date') store as YYYY-MM-DD without
+            // an artificial UTC instant suffix. Datetime-cast columns keep
+            // full ISO-8601 so timezone information is preserved.
+            return $this->isDateOnlyCast($field)
+                ? $value->format('Y-m-d')
+                : $value->format(\DateTimeInterface::ATOM);
         }
 
         return $value;
+    }
+
+    private function isDateOnlyCast(?string $field): bool
+    {
+        if ($field === null) {
+            return false;
+        }
+
+        $casts = $this->getCasts();
+        $cast = $casts[$field] ?? null;
+
+        if (! is_string($cast)) {
+            return false;
+        }
+
+        return $cast === 'date' || $cast === 'immutable_date' || str_starts_with($cast, 'date:');
     }
 
     protected function resolveAuditUserId(): ?int

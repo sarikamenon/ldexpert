@@ -22,11 +22,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
  */
 class Audit extends Model
 {
-    public const UPDATED_AT = null;
-
     protected $table = 'audits';
 
     protected $guarded = [];
@@ -38,6 +37,7 @@ class Audit extends Model
             'old_values' => 'array',
             'new_values' => 'array',
             'created_at' => 'datetime',
+            'updated_at' => 'datetime',
         ];
     }
 

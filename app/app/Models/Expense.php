@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\ExpenseScope;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +20,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Expense extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\ExpenseFactory> */
     use HasFactory, SoftDeletes;
 

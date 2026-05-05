@@ -34,6 +34,16 @@ The `App\Models\Concerns\HasAudits` trait is the opt-in: any model that uses it 
 | `ServiceSupportAgreement` | All fillable fields. Pivot service changes recorded as `services_synced` on the parent SSA. |
 | `LedgerEntry` | All fields, **including `balance_after`**. Chain recomputes will produce audits — accepted as the cost of complete ledger history. |
 | `School` | All fillable fields (contact info, address, status, manager, timezone, etc.). |
+| `User` | All fillable fields. `password_change_prompted_at` per-model ignored as low-value churn. `password` and `remember_token` globally ignored. |
+| `StudentProfile` | All columns including `id_number` and `date_of_birth`. No PII redaction (decision logged in plan). |
+| `TherapistProfile` | All columns including `dob` and `hourly_rate`. No PII redaction. |
+| `ParentProfile` | All columns. |
+| `AdminProfile` | All columns. |
+| `Service` | All columns. |
+| `Position` | All columns. Pivot service-list changes recorded as `services_synced` on the parent Position. |
+| `Setting` | All columns. The `value` column is audited as-is — if you store sensitive values, use the `is_encrypted` flag and add per-model `sanitizeAuditValues()` to redact. |
+| `Expense` | All columns. |
+| `ExpenseCategory` | All columns. |
 
 ## 4. How to opt a model in
 
@@ -183,6 +193,7 @@ public function syncServices(SchoolContract $contract, array $services): void
 
 - `SSA` services pivot — [`EloquentSSARepository::syncSsaServices()`](../app/Infrastructure/Repositories/EloquentSSARepository.php). Simpler form: only the `service_ids` set matters, no rate snapshot needed.
 - `TherapistContract` services — same shape as `SchoolContract`.
+- `Position` services pivot — [`EloquentPositionRepository::create()` + `update()`](../app/Infrastructure/Repositories/EloquentPositionRepository.php), with the snapshot helper [`Position::serviceIdsSnapshot()`](../app/Models/Position.php). Uses `attach()` on create and `sync()` on update; both now emit a `services_synced` audit on the parent Position when the set changes.
 
 ## 6. Always-stripped (global) fields
 
@@ -192,6 +203,20 @@ Baked into the trait, applied to every auditable model regardless of overrides:
 - `password`, `remember_token`, `api_token`, `two_factor_secret`, `two_factor_recovery_codes`
 
 Add per-model ignores via `$auditIgnoreFields`; add per-model transforms via `sanitizeAuditValues()` (§4).
+
+## 6.1 Value normalization
+
+Before old/new values are stored in the audit row, the trait normalizes them so equality checks are robust and the JSON is human-readable:
+
+| Type | Stored as |
+|---|---|
+| `\BackedEnum` | `->value` |
+| `\UnitEnum` | `->name` |
+| `date`-cast columns (`'date'`, `'immutable_date'`, `'date:...'`) | `Y-m-d` (e.g. `"2026-05-04"`) — no time, no timezone suffix |
+| `datetime`-cast columns and other `DateTimeInterface` | ISO-8601 (e.g. `"2026-05-04T13:30:00+00:00"`) |
+| Arrays / objects | JSON-encoded for equality, then stored as native JSON |
+
+**Why `Y-m-d` for pure dates:** per the project's date conventions, calendar dates (e.g. `expense_date`, `start_date`, `end_date`) are not instants — they have no meaningful timezone. Storing them as `2026-05-04T00:00:00+00:00` advertises a UTC instant that isn't true. The trait detects `date`-cast columns by reading `getCasts()` and emits `Y-m-d` instead.
 
 ## 7. Custom-event audits via `AuditRecorder`
 
@@ -268,7 +293,8 @@ CREATE TABLE audits (
     url             VARCHAR(2048) NULL,
     ip_address      VARCHAR(45) NULL,
     user_agent      TEXT NULL,
-    created_at      TIMESTAMP                     -- no updated_at; append-only
+    created_at      TIMESTAMP,
+    updated_at      TIMESTAMP                     -- present for schema completeness; rows are not edited in practice
 );
 ```
 
