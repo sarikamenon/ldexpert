@@ -23,17 +23,17 @@ final class SchoolAccountRowMapper
     {
         $amount = (float) $log->school_invoice_amount;
 
-        // Display the calendar date and wall-clock time both derived from
-        // start_time converted to the school's timezone, so they always agree.
-        // Deriving the date from session_date instead would shift the whole
-        // day when TZ-converted (a session at 6 AM NYC has session_date in UTC
-        // = same day, but session_date midnight UTC → NYC = previous day).
-        $startInSchoolTz = $log->start_time->copy()->setTimezone($tz);
-        $startTime = $startInSchoolTz->format('g:i A');
+        // Per project rules, session log times are displayed in the therapist's
+        // timezone (not the school's). $tz (school TZ) is kept for ledger-entry
+        // rows; session charges use the therapist's TZ so times match the
+        // session log detail page.
+        $therapistTz = $log->displayTimezone();
+        $startInTherapistTz = $log->localStart($therapistTz);
+        $startTime = $startInTherapistTz->format('g:i A');
         $duration = (int) $log->duration_minutes;
 
         return [
-            'date' => CarbonImmutable::instance($startInSchoolTz),
+            'date' => CarbonImmutable::instance($startInTherapistTz),
             // Sort key uses UTC start_time so charges and adjustments share a
             // common timeline regardless of which TZ each is displayed in.
             'sort_key' => $log->start_time->format('Y-m-d H:i:s'),

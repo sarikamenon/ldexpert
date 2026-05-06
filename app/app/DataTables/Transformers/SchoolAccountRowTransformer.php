@@ -80,9 +80,11 @@ final class SchoolAccountRowTransformer
         if ($secondaryText !== null && $secondaryText !== '') {
             $secondaryFragments[] = e($secondaryText);
         }
-        $referenceHtml = $type === 'charge'
-            ? self::renderSessionLogLink($row)
-            : self::renderReferenceText($row);
+        $referenceHtml = match ($type) {
+            'charge' => self::renderSessionLogLink($row),
+            'payment_received' => self::renderPaymentReferenceLink($row),
+            default => null,
+        };
         if ($referenceHtml !== null) {
             $secondaryFragments[] = $referenceHtml;
         }
@@ -115,7 +117,7 @@ final class SchoolAccountRowTransformer
 
         $url = route('admin.session-logs.show', ['sessionLog' => $sourceId]);
 
-        return '<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">View session log</a>';
+        return '<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Session Log #'.e((string) $sourceId).'</a>';
     }
 
     private static function renderBadge(string $type, string $label): string
@@ -178,17 +180,14 @@ final class SchoolAccountRowTransformer
     }
 
     /**
-     * Build a reference text fragment (HTML — already escaped) for adjustment
-     * rows. Used on the secondary line of the description column. Returns null
-     * when no reference is available.
+     * Build the reference link fragment for payment rows.
      *
      * @param  array<string, mixed>  $row
      */
-    private static function renderReferenceText(array $row): ?string
+    private static function renderPaymentReferenceLink(array $row): ?string
     {
         $reference = $row['reference'] ?? null;
         $referenceType = $row['reference_type'] ?? null;
-        $referenceId = $row['reference_id'] ?? null;
 
         if ($reference === null) {
             return null;
@@ -204,18 +203,18 @@ final class SchoolAccountRowTransformer
         }
 
         if ($reference instanceof InvoicePayment && $referenceType === InvoicePayment::class) {
-            $invoiceId = $reference->invoice?->id;
-            if ($invoiceId !== null) {
+            $invoice = $reference->invoice;
+            $invoiceId = $invoice?->id;
+            if ($invoiceId !== null && $invoice !== null) {
                 $url = route('admin.invoices.show', ['invoice' => $invoiceId]);
+                $label = 'Invoice #'.($invoice->invoice_number ?? (string) $invoiceId);
 
-                return '<a href="'.e($url).'"'.$target.' class="text-primary hover:underline">View invoice</a>';
+                return '<a href="'.e($url).'"'.$target.' class="text-primary hover:underline">'.e($label).'</a>';
             }
 
             return null;
         }
 
-        $basename = is_string($referenceType) ? class_basename($referenceType) : '';
-
-        return e($basename.' #'.($referenceId ?? ''));
+        return null;
     }
 }
