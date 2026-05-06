@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\DataTables\Transformers\LedgerAccountRowTransformer;
 use App\DataTables\Transformers\LedgerEntryRowTransformer;
+use App\DataTables\Transformers\TransactionRowTransformer;
 use App\Domain\Finance\Services\LedgerAccountService;
+use App\DTOs\AllTransactionsFilterDTO;
 use App\DTOs\LedgerAccountsFilterDTO;
 use App\Enums\Role;
 use App\Http\Controllers\Controller;
@@ -14,6 +16,8 @@ use App\Http\Requests\Admin\Ledger\LedgerAccountsDataRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsExportRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsIndexRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountTransactionsDataRequest;
+use App\Http\Requests\Admin\Ledger\LedgerAllTransactionsDataRequest;
+use App\Http\Requests\Admin\Ledger\LedgerAllTransactionsExportRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\School;
@@ -45,6 +49,11 @@ class LedgerAccountController extends Controller
         6 => 'ledger_entries.notes',
     ];
 
+    private const ALL_TRANSACTIONS_ORDER_WHITELIST = [
+        0 => 'ledger_entries.recorded_at',
+        6 => 'ledger_entries.notes',
+    ];
+
     public function __construct(
         private readonly LedgerAccountService $ledgerAccountService,
     ) {}
@@ -54,26 +63,42 @@ class LedgerAccountController extends Controller
         $filters = LedgerAccountsFilterDTO::fromArray($request->validated());
         $accountType = $filters->type;
 
-        if ($accountType === 'schools') {
-            $accounts = $this->ledgerAccountService->listSchoolAccounts($filters);
-        } else {
-            $accounts = $this->ledgerAccountService->listTherapistAccounts($filters);
+        $summary = [];
+        if ($accountType !== 'all-transactions') {
+            try {
+                if ($accountType === 'schools') {
+                    $accounts = $this->ledgerAccountService->listSchoolAccounts($filters);
+                } else {
+                    $accounts = $this->ledgerAccountService->listTherapistAccounts($filters);
+                }
+
+                $summary = [
+                    'total_accounts' => $accounts->count(),
+                    'total_invoiced_or_billed' => $accountType === 'schools'
+                        ? $accounts->sum('total_invoiced')
+                        : $accounts->sum('total_billed'),
+                    'total_paid' => $accounts->sum('total_paid'),
+                    'total_outstanding' => $accounts->sum('outstanding'),
+                ];
+            } catch (\Throwable $e) {
+                Log::error('Failed to load ledger account summary', [
+                    'error' => $e->getMessage(),
+                    'type' => $accountType,
+                ]);
+            }
         }
 
-        $summary = [
-            'total_accounts' => $accounts->count(),
-            'total_invoiced_or_billed' => $accountType === 'schools'
-                ? $accounts->sum('total_invoiced')
-                : $accounts->sum('total_billed'),
-            'total_paid' => $accounts->sum('total_paid'),
-            'total_outstanding' => $accounts->sum('outstanding'),
-        ];
+        $schools = School::orderBy('display_name')->get(['id', 'full_name', 'display_name']);
+        $therapists = User::byRole(Role::THERAPIST)->orderBy('name')->get(['id', 'name']);
 
         return view('admin.ledger.accounts.index', [
             'accounts' => collect(),
             'accountType' => $accountType,
             'summary' => $summary,
             'datatableUrl' => route('admin.ledger.accounts.data'),
+            'allTransactionsDatatableUrl' => route('admin.ledger.accounts.all-transactions.data'),
+            'schools' => $schools,
+            'therapists' => $therapists,
         ]);
     }
 
@@ -184,7 +209,7 @@ class LedgerAccountController extends Controller
             $accountName = $account->display_name ?? $account->full_name ?? ('School/Family #'.$account->id);
             $accountType = 'School/Family';
         } else {
-            $account = User::where('role', Role::THERAPIST)->findOrFail($id);
+            $account = User::byRole(Role::THERAPIST)->findOrFail($id);
             $accountName = $account->name;
             $accountType = 'Therapist';
         }
@@ -210,7 +235,7 @@ class LedgerAccountController extends Controller
         if ($type === 'school') {
             $account = School::findOrFail($id);
         } elseif ($type === 'therapist') {
-            $account = User::where('role', Role::THERAPIST)->findOrFail($id);
+            $account = User::byRole(Role::THERAPIST)->findOrFail($id);
         } else {
             return response()->json([
                 'success' => false,
@@ -242,5 +267,78 @@ class LedgerAccountController extends Controller
                 'message' => 'Could not refresh stats.',
             ], 500);
         }
+    }
+
+    public function allTransactionsData(LedgerAllTransactionsDataRequest $request): JsonResponse
+    {
+        $filters = AllTransactionsFilterDTO::fromArray($request->validated());
+        $params = DataTablesRequest::fromRequest($request, self::ALL_TRANSACTIONS_ORDER_WHITELIST);
+
+        try {
+            $result = $this->ledgerAccountService->listAllEntriesForDataTables($filters, $params);
+
+            return $this->dataTablesResponse(
+                $params,
+                $result['recordsTotal'],
+                $result['recordsFiltered'],
+                $result['rows'],
+                static fn ($entry) => TransactionRowTransformer::transform($entry),
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to load all transactions data', ['error' => $e->getMessage()]);
+
+            return response()->json(['error' => 'Could not load transactions.'], 500);
+        }
+    }
+
+    public function allTransactionsExport(LedgerAllTransactionsExportRequest $request): StreamedResponse
+    {
+        $filters = AllTransactionsFilterDTO::fromArray($request->validated());
+        $limit = \App\Domain\Finance\Services\LedgerAccountService::EXPORT_ROW_LIMIT;
+
+        $entries = $this->ledgerAccountService->listAllEntriesForExport($filters);
+        $filename = sprintf('all-transactions-%s.csv', now()->format('Ymd_His'));
+
+        if ($entries->count() >= $limit) {
+            abort(422, "Export limited to {$limit} rows. Please narrow your filters.");
+        }
+
+        return response()->streamDownload(function () use ($entries): void {
+            $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Unable to open output stream.');
+            }
+
+            fputcsv($handle, [
+                'Date',
+                'Type',
+                'Account',
+                'Account Type',
+                'Debit',
+                'Credit',
+                'Notes',
+            ]);
+
+            foreach ($entries as $entry) {
+                $accountName = \App\Domain\Finance\Support\LedgerAccountPresenter::displayName($entry);
+                $accountType = \App\Domain\Finance\Support\LedgerAccountPresenter::accountType($entry);
+                $isDebit = in_array($entry->transaction_type->value, ['invoice_generated', 'bill_generated', 'refund', 'payment_made', 'expense'], true);
+                $amount = number_format(abs((float) $entry->amount), 2, '.', '');
+
+                fputcsv($handle, [
+                    $entry->recorded_at->format('Y-m-d'),
+                    $entry->transaction_type->label(),
+                    $accountName,
+                    $accountType,
+                    $isDebit ? $amount : '',
+                    $isDebit ? '' : $amount,
+                    $entry->notes ?? '',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

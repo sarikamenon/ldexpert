@@ -17,9 +17,24 @@
                 class="ml-1 px-4 py-2 text-sm font-medium rounded-md {{ $accountType === 'therapists' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-background' }}">
                 Therapist Accounts (AP)
             </a>
+            <a href="{{ route('admin.ledger.accounts.index', ['type' => 'all-transactions']) }}"
+                class="ml-1 px-4 py-2 text-sm font-medium rounded-md {{ $accountType === 'all-transactions' ? 'bg-primary text-primary-foreground' : 'text-foreground hover:bg-background' }}">
+                All Transactions
+            </a>
         </div>
     </x-ui::card>
 
+    @if ($accountType === 'all-transactions')
+        {{-- All Transactions Tab --}}
+        <x-ui::card class="p-6 space-y-4 overflow-hidden">
+            <h2 class="text-sm font-semibold text-foreground">All Transactions</h2>
+            @include('admin.ledger.accounts._all_transactions_table', [
+                'allTransactionsDatatableUrl' => $allTransactionsDatatableUrl,
+                'schools' => $schools,
+                'therapists' => $therapists,
+            ])
+        </x-ui::card>
+    @else
     {{-- Summary --}}
     @if (!empty($summary))
     <x-ui::card class="p-6 mb-6">
@@ -185,6 +200,7 @@
                 description="No accounts match your current filters. Try adjusting your search criteria." />
         @endif
     </x-ui::card>
+    @endif {{-- end all-transactions else --}}
 
     <x-slot name="scripts">
         @vite(['resources/js/pages/admin-ledger-accounts-index.js'])

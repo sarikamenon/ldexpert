@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\DTOs\AllTransactionsFilterDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\Enums\InvoiceStatus;
 use App\Enums\TherapistBillStatus;
@@ -189,6 +190,93 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
             'current_balance' => $currentBalance,
             'transaction_count' => array_sum(array_column($totals, 'count')),
         ];
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, LedgerEntry>}
+     */
+    public function listAllForDataTables(AllTransactionsFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        $baseQuery = LedgerEntry::query()
+            ->with(['recordedBy', 'ledgerable'])
+            ->with(['reference' => function (Relation $relation): void {
+                if ($relation instanceof MorphTo) {
+                    $relation->morphWith([
+                        InvoicePayment::class => ['invoice'],
+                        TherapistBillPayment::class => ['therapistBill'],
+                    ]);
+                }
+            }])
+            ->ofTypes($this->allowedTransactionTypeValues($filters))
+            ->inDateRange($filters->dateFrom, $filters->dateTo)
+            ->forLedgerable(School::class, $filters->schoolId)
+            ->forLedgerable(User::class, $filters->therapistId);
+
+        $recordsTotal = (clone $baseQuery)->count();
+
+        $baseQuery->searchNotes($params->searchValue);
+
+        $recordsFiltered = (clone $baseQuery)->count();
+
+        $orderColumn = $params->orderColumn ?? 'ledger_entries.recorded_at';
+        $orderDir = $params->orderDir === 'desc' ? 'desc' : 'asc';
+        $baseQuery->orderBy($orderColumn, $orderDir)
+            ->orderBy('ledger_entries.id', $orderDir);
+
+        $rows = (clone $baseQuery)
+            ->skip($params->start)
+            ->take($params->length)
+            ->get();
+
+        return [
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'rows' => $rows,
+        ];
+    }
+
+    /** @return Collection<int, LedgerEntry> */
+    public function listAllForExport(AllTransactionsFilterDTO $filters, int $limit): Collection
+    {
+        return LedgerEntry::query()
+            ->with(['recordedBy', 'ledgerable'])
+            ->with(['reference' => function (Relation $relation): void {
+                if ($relation instanceof MorphTo) {
+                    $relation->morphWith([
+                        InvoicePayment::class => ['invoice'],
+                        TherapistBillPayment::class => ['therapistBill'],
+                    ]);
+                }
+            }])
+            ->ofTypes($this->allowedTransactionTypeValues($filters))
+            ->inDateRange($filters->dateFrom, $filters->dateTo)
+            ->forLedgerable(School::class, $filters->schoolId)
+            ->forLedgerable(User::class, $filters->therapistId)
+            ->orderBy('ledger_entries.recorded_at', 'asc')
+            ->orderBy('ledger_entries.id', 'asc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Resolve the transaction type string values to include based on the cash
+     * direction filter. When a direction is set, only that direction's types are
+     * returned; otherwise all types that have a cash direction are included
+     * (accrual-only types are excluded).
+     *
+     * @return list<string>
+     */
+    private function allowedTransactionTypeValues(AllTransactionsFilterDTO $filters): array
+    {
+        return array_values(array_map(
+            static fn (TransactionType $t): string => $t->value,
+            array_filter(
+                TransactionType::cases(),
+                static fn (TransactionType $t): bool => $filters->direction !== null
+                    ? $t->cashDirection() === $filters->direction
+                    : $t->cashDirection() !== null,
+            ),
+        ));
     }
 
     /**
