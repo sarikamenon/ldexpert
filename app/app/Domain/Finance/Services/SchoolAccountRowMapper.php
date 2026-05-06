@@ -40,7 +40,7 @@ final class SchoolAccountRowMapper
             'source_type' => 'session',
             'source_id' => (int) $log->id,
             'type' => 'charge',
-            'type_label' => 'Charge',
+            'type_label' => 'Session Charge',
             'student_id' => $log->student_id,
             'student_name' => $log->student?->name,
             'service_name' => $log->service?->name,

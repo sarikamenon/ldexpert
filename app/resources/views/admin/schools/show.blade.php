@@ -121,7 +121,6 @@
         @include('admin.schools._account_tab', [
             'datatableUrl' => $datatableUrl,
             'accountSummary' => $accountSummary,
-            'scheduleDetailsUrl' => $scheduleDetailsUrl,
         ])
     @endif
 

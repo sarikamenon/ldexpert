@@ -87,8 +87,7 @@
             <table id="schoolAccountTable"
                 class="w-full border-collapse school-account-table display"
                 data-datatable-url="{{ $datatableUrl }}"
-                data-schedule-details-url="{{ $scheduleDetailsUrl }}"
-                data-default-from="{{ $accountDefaultFrom }}"
+data-default-from="{{ $accountDefaultFrom }}"
                 data-default-to="{{ $accountDefaultTo }}">
                 <thead class="bg-background/subtle">
                     <tr>
@@ -105,6 +104,4 @@
         </div>
     </x-ui::card>
 
-    {{-- Schedule details modal (reused from calendar) --}}
-    <x-schedule.schedule-details-modal />
 </div>

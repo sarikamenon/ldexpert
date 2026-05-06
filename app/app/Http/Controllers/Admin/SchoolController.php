@@ -253,7 +253,6 @@ final class SchoolController extends Controller
             $viewData['accountDefaultFrom'] = $defaultFrom->format('Y-m-d');
             $viewData['accountDefaultTo'] = $defaultTo->format('Y-m-d');
             $viewData['datatableUrl'] = route('admin.schools.account.data', ['school' => $school]);
-            $viewData['scheduleDetailsUrl'] = url('/admin/schedule/calendar');
             $viewData['schoolId'] = $school->id;
         }
 

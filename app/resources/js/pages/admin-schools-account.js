@@ -1,5 +1,4 @@
 import { initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
-import { openScheduleDetailsModal } from '../common/schedule-modal';
 
 document.addEventListener('DOMContentLoaded', () => {
     const table = document.getElementById('schoolAccountTable');
@@ -8,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     void initAccountTable(table);
-    bindScheduleModal(table);
     bindFilters(table);
 });
 
@@ -40,28 +38,6 @@ async function initAccountTable(table) {
     });
 }
 
-function bindScheduleModal(table) {
-    const detailsUrl = table.getAttribute('data-schedule-details-url');
-    if (!detailsUrl) {
-        return;
-    }
-
-    table.addEventListener('click', (event) => {
-        const button = event.target.closest('button[data-schedule-id]');
-        if (!button) {
-            return;
-        }
-
-        const scheduleId = button.getAttribute('data-schedule-id');
-        if (!scheduleId) {
-            return;
-        }
-
-        event.preventDefault();
-        openScheduleDetailsModal(scheduleId, detailsUrl, {});
-    });
-}
-
 function bindFilters(table) {
     const form = document.getElementById('schoolAccountFilters');
     if (!form) {
@@ -77,8 +53,6 @@ function bindFilters(table) {
         }
     };
 
-    // Apply button: explicit submit, no auto-reload on change so the user
-    // controls when the query runs.
     form.addEventListener('submit', (event) => {
         event.preventDefault();
         reload();

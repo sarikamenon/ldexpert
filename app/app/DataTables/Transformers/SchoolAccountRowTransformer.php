@@ -80,11 +80,11 @@ final class SchoolAccountRowTransformer
         if ($secondaryText !== null && $secondaryText !== '') {
             $secondaryFragments[] = e($secondaryText);
         }
-        if ($type !== 'charge') {
-            $referenceHtml = self::renderReferenceText($row);
-            if ($referenceHtml !== null) {
-                $secondaryFragments[] = $referenceHtml;
-            }
+        $referenceHtml = $type === 'charge'
+            ? self::renderSessionLogLink($row)
+            : self::renderReferenceText($row);
+        if ($referenceHtml !== null) {
+            $secondaryFragments[] = $referenceHtml;
         }
 
         $badge = self::renderBadge($type, $typeLabel);
@@ -100,18 +100,22 @@ final class SchoolAccountRowTransformer
         $body = '<div class="w-32 shrink-0">'.$badge.'</div>'
             .'<div class="flex-1 min-w-0">'.$primaryHtml.$secondaryHtml.'</div>';
 
-        $scheduleId = $row['schedule_id'] ?? null;
-        $isCharge = $type === 'charge';
+        return '<div class="flex items-start gap-2">'.$body.'</div>';
+    }
 
-        $wrapper = '<div class="flex items-start gap-2">'.$body.'</div>';
-
-        if ($isCharge && is_int($scheduleId) && $scheduleId > 0) {
-            return '<button type="button" data-schedule-id="'.(int) $scheduleId.'" '
-                .'class="block w-full text-left hover:bg-background/subtle rounded-base -mx-1 px-1 py-0.5 transition-colors">'
-                .$wrapper.'</button>';
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private static function renderSessionLogLink(array $row): ?string
+    {
+        $sourceId = $row['source_id'] ?? null;
+        if (! is_int($sourceId) || $sourceId <= 0) {
+            return null;
         }
 
-        return $wrapper;
+        $url = route('admin.session-logs.show', ['sessionLog' => $sourceId]);
+
+        return '<a href="'.e($url).'" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">View session log</a>';
     }
 
     private static function renderBadge(string $type, string $label): string
@@ -190,23 +194,24 @@ final class SchoolAccountRowTransformer
             return null;
         }
 
+        $target = ' target="_blank" rel="noopener noreferrer"';
+
         if ($reference instanceof Invoice && $referenceType === Invoice::class) {
             $url = route('admin.invoices.show', ['invoice' => $reference->id]);
             $label = 'Invoice #'.($reference->invoice_number ?? (string) $reference->id);
 
-            return '<a href="'.e($url).'" class="text-primary hover:underline">'.e($label).'</a>';
+            return '<a href="'.e($url).'"'.$target.' class="text-primary hover:underline">'.e($label).'</a>';
         }
 
         if ($reference instanceof InvoicePayment && $referenceType === InvoicePayment::class) {
             $invoiceId = $reference->invoice?->id;
-            $label = 'Payment #'.$reference->id;
             if ($invoiceId !== null) {
                 $url = route('admin.invoices.show', ['invoice' => $invoiceId]);
 
-                return '<a href="'.e($url).'" class="text-primary hover:underline">'.e($label).'</a>';
+                return '<a href="'.e($url).'"'.$target.' class="text-primary hover:underline">View invoice</a>';
             }
 
-            return e($label);
+            return null;
         }
 
         $basename = is_string($referenceType) ? class_basename($referenceType) : '';
