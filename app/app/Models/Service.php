@@ -26,7 +26,6 @@ final class Service extends Model
 
     public const DEFAULT_DELIVERY_MODE = 'virtual';
 
-
     protected $guarded = [];
 
     protected $casts = [
@@ -85,5 +84,4 @@ final class Service extends Model
 
         return $this->send_email;
     }
-
 }
