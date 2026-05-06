@@ -92,6 +92,7 @@ final class ScheduleController extends Controller
                 'service_id' => $service->id,
                 'service_name' => $service->name,
                 'is_primary' => (bool) $pivot?->is_primary,
+                'is_direct_service' => $service->is_direct_service,
             ];
         })->values();
 
@@ -107,6 +108,7 @@ final class ScheduleController extends Controller
                     'service_id' => $s->id,
                     'service_name' => $s->name,
                     'is_primary' => false,
+                    'is_direct_service' => $s->is_direct_service,
                 ]);
             $serviceOptions = $serviceOptions->merge($indirectOptions)->values();
         }

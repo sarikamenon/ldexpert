@@ -1,5 +1,7 @@
 @php
     $isEdit = isset($service);
+    $selectedColor = old('color', $service->color ?? null);
+    $isDirectChecked = old('is_direct_service', $service->is_direct_service ?? true);
 @endphp
 
 <form method="POST" action="{{ $isEdit ? route('admin.services.update', $service) : route('admin.services.store') }}"
@@ -37,6 +39,44 @@
                 <x-input-error :messages="$errors->get('description')" class="mt-2" />
             </div>
         </div>
+
+        {{-- Color Picker --}}
+        <div class="mt-4">
+            <x-input-label for="color_hex_input" value="Service Color" />
+            <p class="mt-1 text-xs text-foreground/60" id="color_help">
+                Pick a color to visually identify this service on schedules and calendars.
+            </p>
+
+            {{-- The actual value submitted --}}
+            <input type="hidden" id="color" name="color" value="{{ $selectedColor ?? '' }}">
+
+            <div class="mt-2 flex items-center gap-3">
+                {{-- Color swatch button — clicking opens the native picker --}}
+                <button type="button" id="color_swatch_btn"
+                    aria-label="Open color picker"
+                    class="relative w-9 h-9 rounded-lg border-2 border-gray-300 shadow-sm flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 transition-colors"
+                    style="background-color: {{ $selectedColor ?: '#e5e7eb' }};">
+                    <input type="color" id="color_picker"
+                        aria-describedby="color_help"
+                        tabindex="-1"
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        value="{{ $selectedColor ?: '#3B82F6' }}">
+                </button>
+
+                {{-- Live preview chip --}}
+                <span id="color_preview_chip"
+                    class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border {{ $selectedColor ? 'border-transparent text-white' : 'border-gray-300 text-gray-400 bg-gray-50' }}"
+                    style="{{ $selectedColor ? 'background-color:' . $selectedColor . ';' : '' }}">
+                    <span id="color_preview_label">{{ $selectedColor ?: 'No color' }}</span>
+                </span>
+
+                <button type="button" id="color_clear"
+                    class="text-xs text-foreground/50 hover:text-danger transition-colors {{ $selectedColor ? '' : 'hidden' }}">
+                    ✕ Clear
+                </button>
+            </div>
+            <x-input-error :messages="$errors->get('color')" class="mt-2" />
+        </div>
     </x-ui::card>
 
     <input type="hidden" name="is_group_service" value="0">
@@ -71,7 +111,7 @@
                     <input type="hidden" name="is_direct_service" value="0">
                     <input id="is_direct_service" name="is_direct_service" type="checkbox" value="1"
                         class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        @checked(old('is_direct_service', $service->is_direct_service ?? true))>
+                        @checked($isDirectChecked)>
                     <label for="is_direct_service" class="text-sm font-medium text-foreground/80 cursor-pointer">
                         Mark as direct
                     </label>
@@ -82,7 +122,7 @@
             <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
                 <x-input-label value="Include in THO hours?" />
                 <p class="mt-1 text-xs text-foreground/60 mb-3">Approved session hours for this service will count
-                    toward the student’s SSA THO hours (based on session outcome).</p>
+                    toward the student's SSA THO hours (based on session outcome).</p>
                 <div class="flex items-center gap-2">
                     <input type="hidden" name="include_in_tho" value="0">
                     <input id="include_in_tho" name="include_in_tho" type="checkbox" value="1"
@@ -94,6 +134,26 @@
                 </div>
                 <x-input-error :messages="$errors->get('include_in_tho')" class="mt-2" />
             </div>
+        </div>
+
+        {{-- Send Email toggle — only visible for indirect services --}}
+        <div id="send-email-section"
+            class="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50 {{ $isDirectChecked ? 'hidden' : '' }}">
+            <x-input-label value="Send Email Notification?" />
+            <p class="mt-1 text-xs text-foreground/60 mb-3" id="send_email_help">
+                When enabled, an email notification is sent when a session log for this indirect service is submitted.
+            </p>
+            <input type="hidden" name="send_email" value="0">
+            <div class="flex items-center gap-2">
+                <input id="send_email" name="send_email" type="checkbox" value="1"
+                    aria-describedby="send_email_help"
+                    class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    @checked(old('send_email', $service->send_email ?? true))>
+                <label for="send_email" class="text-sm font-medium text-foreground/80 cursor-pointer">
+                    Send email on creation of schedule
+                </label>
+            </div>
+            <x-input-error :messages="$errors->get('send_email')" class="mt-2" />
         </div>
     </x-ui::card>
 
@@ -151,3 +211,54 @@
         </x-ui::button>
     </div>
 </form>
+
+<script>
+(function () {
+    const colorPicker = document.getElementById('color_picker');
+    const colorHidden = document.getElementById('color');
+    const colorSwatch = document.getElementById('color_swatch_btn');
+    const colorChip   = document.getElementById('color_preview_chip');
+    const colorLabel  = document.getElementById('color_preview_label');
+    const colorClear  = document.getElementById('color_clear');
+
+    function applyColor(hex) {
+        colorHidden.value = hex;
+        colorPicker.value = hex;
+        colorSwatch.style.backgroundColor = hex;
+        colorChip.style.backgroundColor   = hex;
+        colorChip.style.borderColor       = 'transparent';
+        colorChip.classList.remove('border-gray-300', 'text-gray-400', 'bg-gray-50');
+        colorChip.classList.add('text-white');
+        colorLabel.textContent = hex;
+        colorClear.classList.remove('hidden');
+    }
+
+    function clearColor() {
+        colorHidden.value = '';
+        colorPicker.value = '#3B82F6';
+        colorSwatch.style.backgroundColor = '#e5e7eb';
+        colorChip.style.backgroundColor   = '';
+        colorChip.style.borderColor       = '';
+        colorChip.classList.add('border-gray-300', 'text-gray-400', 'bg-gray-50');
+        colorChip.classList.remove('text-white');
+        colorLabel.textContent = 'No color';
+        colorClear.classList.add('hidden');
+    }
+
+    colorPicker.addEventListener('input', function () {
+        applyColor(colorPicker.value);
+    });
+
+    colorClear.addEventListener('click', clearColor);
+
+    // Send email section — show only when is_direct_service is unchecked
+    const directCheckbox  = document.getElementById('is_direct_service');
+    const sendEmailSection = document.getElementById('send-email-section');
+
+    function toggleSendEmail() {
+        sendEmailSection.classList.toggle('hidden', directCheckbox.checked);
+    }
+
+    directCheckbox.addEventListener('change', toggleSendEmail);
+})();
+</script>

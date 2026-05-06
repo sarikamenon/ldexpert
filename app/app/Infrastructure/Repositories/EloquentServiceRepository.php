@@ -181,7 +181,7 @@ final class EloquentServiceRepository implements ServiceRepositoryInterface
             ->where('status', ServiceStatus::ACTIVE)
             ->where('is_direct_service', false)
             ->whereIn('id', $commonServiceIds)
-            ->select(['id', 'name'])
+            ->select(['id', 'name', 'is_direct_service'])
             ->orderBy('name')
             ->get();
     }

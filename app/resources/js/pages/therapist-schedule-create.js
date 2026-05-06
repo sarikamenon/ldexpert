@@ -50,7 +50,8 @@ import { errorAlert } from '../common/sweetalert';
             return carry;
         }, {});
 
-        const servicesById = serviceOptions.reduce((carry, service) => {
+        const allServices = [...serviceOptions, ...(ssaServices ?? [])];
+        const servicesById = allServices.reduce((carry, service) => {
             const id = Number(service.service_id ?? service.id);
             carry[id] = service;
             return carry;
@@ -114,6 +115,28 @@ import { errorAlert } from '../common/sweetalert';
             });
         }
 
+        const recurrenceCard = document.getElementById('recurrence_card');
+
+        function toggleRecurrenceCard() {
+            const selectedId = Number(serviceSelect.value);
+            const service = servicesById[selectedId];
+            const isIndirect = service && service.is_direct_service === false;
+            if (recurrenceCard) {
+                recurrenceCard.classList.toggle('hidden', isIndirect);
+            }
+        }
+
+        // select2 triggers a jQuery change event after committing the value;
+        // bind via jQuery once it is available on window (loaded async by select-box.js)
+        const bindSelect2Change = () => {
+            if (window.jQuery) {
+                window.jQuery(serviceSelect).on('change', toggleRecurrenceCard);
+            } else {
+                setTimeout(bindSelect2Change, 50);
+            }
+        };
+        bindSelect2Change();
+
         function updateServiceOptions() {
             // If SSA services are available, render them directly
             if (ssaServices && Array.isArray(ssaServices) && ssaServices.length > 0) {
@@ -145,14 +168,9 @@ import { errorAlert } from '../common/sweetalert';
         }
 
         // Initialize service options
-        if (ssaServices && Array.isArray(ssaServices) && ssaServices.length > 0) {
-            // SSA mode: services are already available
-            serviceSelect.dataset.initialValue = state.selected_service || '';
-            updateServiceOptions();
-        } else {
-            serviceSelect.dataset.initialValue = state.selected_service || '';
-            updateServiceOptions();
-        }
+        serviceSelect.dataset.initialValue = state.selected_service || '';
+        updateServiceOptions();
+        toggleRecurrenceCard();
     });
 })();
 

@@ -26,6 +26,7 @@ final class Service extends Model
 
     public const DEFAULT_DELIVERY_MODE = 'virtual';
 
+
     protected $guarded = [];
 
     protected $casts = [
@@ -34,7 +35,9 @@ final class Service extends Model
         'is_frequency_service' => 'boolean',
         'include_in_tho' => 'boolean',
         'is_billable' => 'boolean',
+        'send_email' => 'boolean',
         'delivery_mode' => 'string',
+        'color' => 'string',
         'min_duration_minutes' => 'integer',
         'max_duration_minutes' => 'integer',
         'status' => ServiceStatus::class,
@@ -73,4 +76,14 @@ final class Service extends Model
     {
         return self::DEFAULT_DELIVERY_MODE;
     }
+
+    public function allowsScheduleEmail(): bool
+    {
+        if ($this->is_direct_service) {
+            return true;
+        }
+
+        return $this->send_email;
+    }
+
 }
