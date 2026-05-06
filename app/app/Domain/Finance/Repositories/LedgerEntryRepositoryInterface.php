@@ -58,4 +58,7 @@ interface LedgerEntryRepositoryInterface
      * @return array{recordsTotal: int, recordsFiltered: int, rows: Collection<int, LedgerEntry>}
      */
     public function listAllForDataTables(AllTransactionsFilterDTO $filters, DataTablesParamsDTO $params): array;
+
+    /** @return Collection<int, LedgerEntry> */
+    public function listAllForExport(AllTransactionsFilterDTO $filters, int $limit): Collection;
 }

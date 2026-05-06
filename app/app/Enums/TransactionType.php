@@ -43,14 +43,15 @@ enum TransactionType: string
 
     /**
      * Cash direction for this transaction type.
-     * Returns null for accrual types (invoice_generated, bill_generated, credit_note, refund)
-     * which represent balance changes without actual cash movement.
+     * Returns null for accrual types (invoice_generated, bill_generated)
+     * that represent balance changes without actual cash or adjustment movement.
+     * credit_note reduces what's owed (income-like); refund increases it (expense-like).
      */
     public function cashDirection(): ?CashDirection
     {
         return match ($this) {
-            self::PAYMENT_RECEIVED => CashDirection::INCOME,
-            self::PAYMENT_MADE, self::EXPENSE => CashDirection::EXPENSE,
+            self::PAYMENT_RECEIVED, self::CREDIT_NOTE => CashDirection::INCOME,
+            self::PAYMENT_MADE, self::EXPENSE, self::REFUND => CashDirection::EXPENSE,
             default => null,
         };
     }

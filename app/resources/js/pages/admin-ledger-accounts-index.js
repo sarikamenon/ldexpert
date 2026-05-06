@@ -26,6 +26,35 @@ async function initLedgerAccountsTable() {
     }
 }
 
+function initAllTransactionsExport() {
+    const table = document.getElementById('allTransactionsTable');
+    const exportBtn = document.getElementById('atExportBtn');
+    if (!table || !exportBtn) return;
+
+    const exportBaseUrl = exportBtn.getAttribute('href') || '';
+    const defaultDateFrom = table.getAttribute('data-default-date-from') || '';
+    const defaultDateTo   = table.getAttribute('data-default-date-to') || '';
+
+    function updateExportHref() {
+        const params = new URLSearchParams();
+        const dateFrom    = document.getElementById('atFilterDateFrom')?.value || defaultDateFrom;
+        const dateTo      = document.getElementById('atFilterDateTo')?.value || defaultDateTo;
+        const direction   = document.getElementById('atFilterDirection')?.value || '';
+        const schoolId    = document.getElementById('atFilterSchool')?.value || '';
+        const therapistId = document.getElementById('atFilterTherapist')?.value || '';
+        if (dateFrom)    params.set('filter_date_from', dateFrom);
+        if (dateTo)      params.set('filter_date_to', dateTo);
+        if (direction)   params.set('filter_direction', direction);
+        if (schoolId)    params.set('filter_school_id', schoolId);
+        if (therapistId) params.set('filter_therapist_id', therapistId);
+        exportBtn.href = exportBaseUrl + (params.toString() ? '?' + params.toString() : '');
+    }
+
+    updateExportHref();
+
+    exportBtn.addEventListener('click', updateExportHref);
+}
+
 async function initAllTransactionsTable() {
     const table = document.getElementById('allTransactionsTable');
     if (!table) return;
@@ -33,11 +62,11 @@ async function initAllTransactionsTable() {
     const dataUrl = table.getAttribute('data-datatable-url');
     if (!dataUrl) return;
 
+    const defaultDateFrom = table.getAttribute('data-default-date-from') || '';
+    const defaultDateTo   = table.getAttribute('data-default-date-to') || '';
+
     try {
         await loadDataTablesLibrary();
-
-        const defaultDateFrom = table.getAttribute('data-default-date-from') || '';
-        const defaultDateTo   = table.getAttribute('data-default-date-to') || '';
 
         const dtInstance = await initServerSideDataTable('#allTransactionsTable', dataUrl, {
             order: [[0, 'desc']],
@@ -84,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (document.getElementById('allTransactionsTable')) {
+        initAllTransactionsExport();
         initAllTransactionsTable();
     }
 });

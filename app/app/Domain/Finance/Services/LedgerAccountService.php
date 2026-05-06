@@ -237,6 +237,14 @@ final class LedgerAccountService
         return $this->ledgerEntries->listAllForDataTables($filters, $params);
     }
 
+    public const EXPORT_ROW_LIMIT = 50000;
+
+    /** @return \Illuminate\Support\Collection<int, \App\Models\LedgerEntry> */
+    public function listAllEntriesForExport(AllTransactionsFilterDTO $filters): \Illuminate\Support\Collection
+    {
+        return $this->ledgerEntries->listAllForExport($filters, self::EXPORT_ROW_LIMIT);
+    }
+
     /** @return array<string, mixed> */
     public function calculateAccountStats(object $account, string $type): array
     {

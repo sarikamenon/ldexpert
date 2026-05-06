@@ -235,6 +235,29 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
         ];
     }
 
+    /** @return Collection<int, LedgerEntry> */
+    public function listAllForExport(AllTransactionsFilterDTO $filters, int $limit): Collection
+    {
+        return LedgerEntry::query()
+            ->with(['recordedBy', 'ledgerable'])
+            ->with(['reference' => function (Relation $relation): void {
+                if ($relation instanceof MorphTo) {
+                    $relation->morphWith([
+                        InvoicePayment::class => ['invoice'],
+                        TherapistBillPayment::class => ['therapistBill'],
+                    ]);
+                }
+            }])
+            ->ofTypes($this->allowedTransactionTypeValues($filters))
+            ->inDateRange($filters->dateFrom, $filters->dateTo)
+            ->forLedgerable(School::class, $filters->schoolId)
+            ->forLedgerable(User::class, $filters->therapistId)
+            ->orderBy('ledger_entries.recorded_at', 'asc')
+            ->orderBy('ledger_entries.id', 'asc')
+            ->limit($limit)
+            ->get();
+    }
+
     /**
      * Resolve the transaction type string values to include based on the cash
      * direction filter. When a direction is set, only that direction's types are

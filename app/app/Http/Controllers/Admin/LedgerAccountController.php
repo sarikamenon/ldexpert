@@ -17,6 +17,7 @@ use App\Http\Requests\Admin\Ledger\LedgerAccountsExportRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountsIndexRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAccountTransactionsDataRequest;
 use App\Http\Requests\Admin\Ledger\LedgerAllTransactionsDataRequest;
+use App\Http\Requests\Admin\Ledger\LedgerAllTransactionsExportRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\School;
@@ -288,5 +289,57 @@ class LedgerAccountController extends Controller
 
             return response()->json(['error' => 'Could not load transactions.'], 500);
         }
+    }
+
+    public function allTransactionsExport(LedgerAllTransactionsExportRequest $request): StreamedResponse
+    {
+        $filters = AllTransactionsFilterDTO::fromArray($request->validated());
+        $limit = \App\Domain\Finance\Services\LedgerAccountService::EXPORT_ROW_LIMIT;
+
+        $entries = $this->ledgerAccountService->listAllEntriesForExport($filters);
+        $filename = sprintf('all-transactions-%s.csv', now()->format('Ymd_His'));
+
+        if ($entries->count() >= $limit) {
+            abort(422, "Export limited to {$limit} rows. Please narrow your filters.");
+        }
+
+        return response()->streamDownload(function () use ($entries): void {
+            $handle = fopen('php://output', 'w');
+            if ($handle === false) {
+                throw new \RuntimeException('Unable to open output stream.');
+            }
+
+            fputcsv($handle, [
+                'Date',
+                'Direction',
+                'Type',
+                'Account',
+                'Account Type',
+                'Amount',
+                'Notes',
+                'Recorded By',
+            ]);
+
+            foreach ($entries as $entry) {
+                $direction = $entry->transaction_type->cashDirection()?->label() ?? 'Accrual';
+                $accountName = \App\Domain\Finance\Support\LedgerAccountPresenter::displayName($entry);
+                $accountType = \App\Domain\Finance\Support\LedgerAccountPresenter::accountType($entry);
+
+                fputcsv($handle, [
+                    $entry->recorded_at->format('Y-m-d'),
+                    $direction,
+                    $entry->transaction_type->label(),
+                    $accountName,
+                    $accountType,
+                    number_format(abs((float) $entry->amount), 2, '.', ''),
+                    $entry->notes ?? '',
+                    $entry->recordedBy->name ?? 'System',
+                ]);
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
     }
 }

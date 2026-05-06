@@ -50,6 +50,15 @@
         class="px-4 py-1.5 text-sm font-medium border border-border rounded-md text-foreground hover:bg-background/subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         Reset
     </button>
+
+    <a id="atExportBtn"
+        href="{{ route('admin.ledger.accounts.all-transactions.export') }}"
+        class="inline-flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium border border-border rounded-md text-foreground hover:bg-background/subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+        </svg>
+        Export CSV
+    </a>
 </div>
 
 {{-- Table --}}

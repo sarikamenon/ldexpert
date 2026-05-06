@@ -25,19 +25,19 @@ test('bill_generated is an accrual with null direction', function (): void {
     expect(TransactionType::BILL_GENERATED->cashDirection())->toBeNull();
 });
 
-test('credit_note is an accrual with null direction', function (): void {
-    expect(TransactionType::CREDIT_NOTE->cashDirection())->toBeNull();
+test('credit_note maps to income direction', function (): void {
+    expect(TransactionType::CREDIT_NOTE->cashDirection())->toBe(CashDirection::INCOME);
 });
 
-test('refund is an accrual with null direction', function (): void {
-    expect(TransactionType::REFUND->cashDirection())->toBeNull();
+test('refund maps to expense direction', function (): void {
+    expect(TransactionType::REFUND->cashDirection())->toBe(CashDirection::EXPENSE);
 });
 
-test('only payment_received payment_made and expense have a cash direction', function (): void {
-    $cashTypes = array_filter(
+test('only invoice_generated and bill_generated have null direction', function (): void {
+    $nullTypes = array_filter(
         TransactionType::cases(),
-        static fn (TransactionType $t): bool => $t->cashDirection() !== null,
+        static fn (TransactionType $t): bool => $t->cashDirection() === null,
     );
 
-    expect($cashTypes)->toHaveCount(3);
+    expect($nullTypes)->toHaveCount(2);
 });
