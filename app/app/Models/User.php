@@ -9,6 +9,7 @@ use App\Enums\UserStatus;
 use App\Observers\UserObserver;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -78,6 +79,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getEmailForPasswordReset(): string
     {
         return $this->username;
+    }
+
+    /** @param Builder<User> $query */
+    public function scopeByRole(Builder $query, Role $role): void
+    {
+        $query->where('role', $role);
     }
 
     public function isAdmin(): bool

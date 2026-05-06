@@ -206,45 +206,15 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
                         TherapistBillPayment::class => ['therapistBill'],
                     ]);
                 }
-            }]);
-
-        // Restrict to the relevant transaction types. When a direction is selected,
-        // filter to that direction's types only. Otherwise show all cash types (exclude accruals).
-        $allowedTypes = $filters->direction !== null
-            ? array_filter(TransactionType::cases(), static fn (TransactionType $t): bool => $t->cashDirection() === $filters->direction)
-            : array_filter(TransactionType::cases(), static fn (TransactionType $t): bool => $t->cashDirection() !== null);
-
-        $baseQuery->whereIn('transaction_type', array_map(
-            static fn (TransactionType $t): string => $t->value,
-            $allowedTypes,
-        ));
-
-        if ($filters->dateFrom !== null) {
-            $baseQuery->whereDate('recorded_at', '>=', $filters->dateFrom);
-        }
-
-        if ($filters->dateTo !== null) {
-            $baseQuery->whereDate('recorded_at', '<=', $filters->dateTo);
-        }
-
-        if ($filters->schoolId !== null) {
-            $baseQuery->where('ledgerable_type', School::class)
-                ->where('ledgerable_id', $filters->schoolId);
-        }
-
-        if ($filters->therapistId !== null) {
-            $baseQuery->where('ledgerable_type', User::class)
-                ->where('ledgerable_id', $filters->therapistId);
-        }
+            }])
+            ->ofTypes($this->allowedTransactionTypeValues($filters))
+            ->inDateRange($filters->dateFrom, $filters->dateTo)
+            ->forLedgerable(School::class, $filters->schoolId)
+            ->forLedgerable(User::class, $filters->therapistId);
 
         $recordsTotal = (clone $baseQuery)->count();
 
-        if ($params->searchValue) {
-            $sv = $params->searchValue;
-            $baseQuery->where(function (Builder $q) use ($sv): void {
-                $q->where('notes', 'like', "%{$sv}%");
-            });
-        }
+        $baseQuery->searchNotes($params->searchValue);
 
         $recordsFiltered = (clone $baseQuery)->count();
 
@@ -263,6 +233,27 @@ final class EloquentLedgerEntryRepository implements LedgerEntryRepositoryInterf
             'recordsFiltered' => $recordsFiltered,
             'rows' => $rows,
         ];
+    }
+
+    /**
+     * Resolve the transaction type string values to include based on the cash
+     * direction filter. When a direction is set, only that direction's types are
+     * returned; otherwise all types that have a cash direction are included
+     * (accrual-only types are excluded).
+     *
+     * @return list<string>
+     */
+    private function allowedTransactionTypeValues(AllTransactionsFilterDTO $filters): array
+    {
+        return array_values(array_map(
+            static fn (TransactionType $t): string => $t->value,
+            array_filter(
+                TransactionType::cases(),
+                static fn (TransactionType $t): bool => $filters->direction !== null
+                    ? $t->cashDirection() === $filters->direction
+                    : $t->cashDirection() !== null,
+            ),
+        ));
     }
 
     /**

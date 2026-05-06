@@ -64,24 +64,31 @@ class LedgerAccountController extends Controller
 
         $summary = [];
         if ($accountType !== 'all-transactions') {
-            if ($accountType === 'schools') {
-                $accounts = $this->ledgerAccountService->listSchoolAccounts($filters);
-            } else {
-                $accounts = $this->ledgerAccountService->listTherapistAccounts($filters);
-            }
+            try {
+                if ($accountType === 'schools') {
+                    $accounts = $this->ledgerAccountService->listSchoolAccounts($filters);
+                } else {
+                    $accounts = $this->ledgerAccountService->listTherapistAccounts($filters);
+                }
 
-            $summary = [
-                'total_accounts' => $accounts->count(),
-                'total_invoiced_or_billed' => $accountType === 'schools'
-                    ? $accounts->sum('total_invoiced')
-                    : $accounts->sum('total_billed'),
-                'total_paid' => $accounts->sum('total_paid'),
-                'total_outstanding' => $accounts->sum('outstanding'),
-            ];
+                $summary = [
+                    'total_accounts' => $accounts->count(),
+                    'total_invoiced_or_billed' => $accountType === 'schools'
+                        ? $accounts->sum('total_invoiced')
+                        : $accounts->sum('total_billed'),
+                    'total_paid' => $accounts->sum('total_paid'),
+                    'total_outstanding' => $accounts->sum('outstanding'),
+                ];
+            } catch (\Throwable $e) {
+                Log::error('Failed to load ledger account summary', [
+                    'error' => $e->getMessage(),
+                    'type' => $accountType,
+                ]);
+            }
         }
 
         $schools = School::orderBy('display_name')->get(['id', 'full_name', 'display_name']);
-        $therapists = User::where('role', Role::THERAPIST)->orderBy('name')->get(['id', 'name']);
+        $therapists = User::byRole(Role::THERAPIST)->orderBy('name')->get(['id', 'name']);
 
         return view('admin.ledger.accounts.index', [
             'accounts' => collect(),
@@ -201,7 +208,7 @@ class LedgerAccountController extends Controller
             $accountName = $account->display_name ?? $account->full_name ?? ('School/Family #'.$account->id);
             $accountType = 'School/Family';
         } else {
-            $account = User::where('role', Role::THERAPIST)->findOrFail($id);
+            $account = User::byRole(Role::THERAPIST)->findOrFail($id);
             $accountName = $account->name;
             $accountType = 'Therapist';
         }
@@ -227,7 +234,7 @@ class LedgerAccountController extends Controller
         if ($type === 'school') {
             $account = School::findOrFail($id);
         } elseif ($type === 'therapist') {
-            $account = User::where('role', Role::THERAPIST)->findOrFail($id);
+            $account = User::byRole(Role::THERAPIST)->findOrFail($id);
         } else {
             return response()->json([
                 'success' => false,
