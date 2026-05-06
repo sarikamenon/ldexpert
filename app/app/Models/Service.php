@@ -26,7 +26,21 @@ final class Service extends Model
 
     public const DEFAULT_DELIVERY_MODE = 'virtual';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'description',
+        'color',
+        'send_email',
+        'is_direct_service',
+        'is_group_service',
+        'is_frequency_service',
+        'include_in_tho',
+        'delivery_mode',
+        'is_billable',
+        'min_duration_minutes',
+        'max_duration_minutes',
+        'status',
+    ];
 
     protected $casts = [
         'is_direct_service' => 'boolean',
