@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature\Admin;
 
 use App\Domain\Finance\Services\LedgerService;
-use App\Enums\Role;
 use App\Enums\TransactionType;
 use App\Models\School;
 use App\Models\User;
@@ -568,7 +567,10 @@ final class AllTransactionsDataTest extends TestCase
 
         $lines = explode("\n", trim($response->streamedContent()));
         $this->assertCount(2, $lines); // header + 1 data row
-        $this->assertStringContainsString('Date', $lines[0]);
+        $this->assertStringContainsString('Debit', $lines[0]);
+        $this->assertStringContainsString('Credit', $lines[0]);
+        $this->assertStringNotContainsString('Reference', $lines[0]);
+        $this->assertStringNotContainsString('Recorded By', $lines[0]);
         $this->assertStringContainsString('export-test', $lines[1]);
     }
 

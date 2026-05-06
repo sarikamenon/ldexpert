@@ -311,29 +311,28 @@ class LedgerAccountController extends Controller
 
             fputcsv($handle, [
                 'Date',
-                'Direction',
                 'Type',
                 'Account',
                 'Account Type',
-                'Amount',
+                'Debit',
+                'Credit',
                 'Notes',
-                'Recorded By',
             ]);
 
             foreach ($entries as $entry) {
-                $direction = $entry->transaction_type->cashDirection()?->label() ?? 'Accrual';
                 $accountName = \App\Domain\Finance\Support\LedgerAccountPresenter::displayName($entry);
                 $accountType = \App\Domain\Finance\Support\LedgerAccountPresenter::accountType($entry);
+                $isDebit = in_array($entry->transaction_type->value, ['invoice_generated', 'bill_generated', 'refund', 'payment_made', 'expense'], true);
+                $amount = number_format(abs((float) $entry->amount), 2, '.', '');
 
                 fputcsv($handle, [
                     $entry->recorded_at->format('Y-m-d'),
-                    $direction,
                     $entry->transaction_type->label(),
                     $accountName,
                     $accountType,
-                    number_format(abs((float) $entry->amount), 2, '.', ''),
+                    $isDebit ? $amount : '',
+                    $isDebit ? '' : $amount,
                     $entry->notes ?? '',
-                    $entry->recordedBy->name ?? 'System',
                 ]);
             }
 
