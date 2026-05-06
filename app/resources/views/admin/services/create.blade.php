@@ -8,4 +8,8 @@
     @endif
 
     @include('admin.services._form')
+
+    <x-slot name="scripts">
+        @vite('resources/js/pages/admin-services-form.js')
+    </x-slot>
 </x-admin.layouts.app>

@@ -37,6 +37,7 @@ final class ScheduleCalendarEventTransformer
                 'therapist_name' => $schedule->therapist?->name,
                 'student_name' => $schedule->student?->name,
                 'service_name' => $schedule->service?->name,
+                'service_color' => $schedule->service?->color,
                 'school_name' => self::schoolName($schedule),
                 'status' => $schedule->status->value,
                 'billing_status' => $schedule->billing_status->value,
@@ -63,8 +64,7 @@ final class ScheduleCalendarEventTransformer
     }
 
     /**
-     * Colour by status + billing. Cancelled overrides everything; otherwise
-     * the billing status owns the colour logic via BillingStatus::calendarColor().
+     * Colour priority: cancelled → grey; service color (if set) → billing/status fallback.
      *
      * Hex value required: FullCalendar's JS API accepts only CSS colour strings,
      * not Tailwind utility classes. #9ca3af = foreground/30 (cancelled/muted).
@@ -73,6 +73,11 @@ final class ScheduleCalendarEventTransformer
     {
         if ($schedule->status === ScheduleStatus::CANCELLED) {
             return '#9ca3af'; // foreground/30 — muted cancelled state
+        }
+
+        $serviceColor = $schedule->service?->color;
+        if ($serviceColor !== null && $serviceColor !== '') {
+            return $serviceColor;
         }
 
         return $schedule->billing_status->calendarColor($schedule->status);

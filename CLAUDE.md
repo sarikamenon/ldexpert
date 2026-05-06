@@ -111,6 +111,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Use shared utilities in `resources/js/common/`.
 - **Use vanilla JS for new DOM/AJAX interactivity**. Migrate touched jQuery sections incrementally when modifying existing files.
 - **Keep CSS and JS in separate files**. Use Tailwind for styles.
+- **Never put `<script>` blocks inside Blade views or partials.** All page-specific JS must live in `resources/js/pages/<name>.js`, be registered in `vite.config.js`, and loaded via `<x-slot name="scripts">@vite(...)</x-slot>` in the parent view. This applies even for small, self-contained interactions — "it's only a few lines" is not an exception.
 
 ## User Interactions & Confirmations
 
@@ -199,10 +200,11 @@ try {
 ## Testing Standards
 
 - **Tests are mandatory for new logic**:
- - Unit tests for DTOs/Services/Repositories
- - Feature tests for routes/commands
+ - Unit tests for DTOs/Services/Repositories/**Model methods** (any public method added to a model needs a unit test)
+ - Feature tests for routes/commands — including validation rules (happy path + each failure case)
  - Dusk browser tests for any UI (views, forms, interactions)
  - **Do not merge features without corresponding tests**
+ - **Factories must reflect the model.** Any new column added to a model must also be added to its factory definition. Missing factory fields cause other tests to fail silently with wrong defaults.
 - Write unit tests for DTOs, repositories, and services
 - Write feature tests for HTTP workflows
 - Write Dusk tests for browser interactions
@@ -224,7 +226,7 @@ try {
 See `app/docs/DESIGN_SYSTEM.md` for the full design system reference (colors, typography, spacing, component patterns). See `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues.
 
 **Key rules enforced here:**
-- **Colors**: ONLY use design system tokens (`bg-primary`, `text-danger`, etc.). NEVER hardcode hex or Tailwind palette colors.
+- **Colors**: ONLY use design system tokens (`bg-primary`, `text-danger`, etc.). NEVER hardcode hex or Tailwind palette colors. The most common violations to watch for: `gray-*` (use `border-border`, `bg-muted`, `text-foreground/40`), `blue-*` (use `bg-primary`), and raw hex like `#e5e7eb` in `style=` attributes. These look "neutral" but violate the rule just like `red-500` would. When a dynamic user-supplied color (e.g. a color picker value) must go into a `style=` attribute, that is the only valid exception — and it must be escaped with `e()`.
 - **Typography**: H1=`text-2xl font-semibold text-foreground`, H2=`text-lg`, H3=`text-sm font-medium text-foreground/70`, Body=`text-sm`, Labels=`text-xs font-medium text-foreground/70`
 - **Spacing**: Standard scale (2, 4, 6, 8). Card padding: `p-6`. Section spacing: `mb-6`.
 - **Interactive states**: All elements MUST have hover, focus, focus-visible, active, disabled states.
@@ -268,6 +270,23 @@ See `app/docs/DESIGN_SYSTEM.md` for the full design system reference (colors, ty
 - **Every development task must include tests** and follow these rules by default, even if work will be refined later.
 - **Before implementing a feature**, add (or outline) the tests; before moving to next steps, run tests locally (Feature/Unit) and Dusk (headless) in Docker and fix failures.
 - **PHPStan Level 8 must pass with zero errors** before any commit. Run `docker compose exec -T app php vendor/bin/phpstan analyse --no-progress --memory-limit=512M` or `make qa`.
+
+### Pre-commit Self-Review Checklist (MANDATORY)
+
+Run through this before marking any task done or raising a PR. These are the rules most commonly violated in review:
+
+**PHP / Architecture**
+- [ ] Every new public model method has a unit test
+- [ ] Every new validation rule has a feature test (happy path + each failure case)
+- [ ] Factory updated for every new model column
+
+**Frontend / Blade**
+- [ ] No `<script>` blocks inside any `.blade.php` file — JS is in `resources/js/pages/`, registered in `vite.config.js`, loaded via `<x-slot name="scripts">`
+- [ ] No `gray-*`, `blue-*`, `red-*` or raw hex (`#xxxxxx`) in Blade or JS — only design tokens (`border-border`, `bg-muted`, `text-foreground/*`, `bg-primary`, etc.)
+- [ ] Every form input has help text; help text and label describe **the same thing** (re-read them together)
+
+**General**
+- [ ] `make qa` passes (Pint + PHPStan + Pest) with zero errors
 
 ## PHPStan Level 8 Compliance (MANDATORY)
 

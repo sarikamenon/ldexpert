@@ -89,6 +89,84 @@ it('updates a service', function () {
     ]);
 });
 
+it('creates a service with color and send_email', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = admin();
+    $payload = servicePayload();
+    $payload['color'] = '#FF5733';
+    $payload['send_email'] = true;
+
+    $this->actingAs($admin)
+        ->post(route('admin.services.store'), $payload)
+        ->assertRedirect(route('admin.services.index'));
+
+    $this->assertDatabaseHas('services', [
+        'name' => 'Speech Therapy',
+        'color' => '#FF5733',
+        'send_email' => true,
+    ]);
+});
+
+it('rejects an invalid color format', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = admin();
+    $payload = servicePayload();
+    $payload['color'] = 'not-a-color';
+
+    $this->actingAs($admin)
+        ->post(route('admin.services.store'), $payload)
+        ->assertSessionHasErrors('color');
+});
+
+it('stores null color when color is omitted', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = admin();
+
+    $this->actingAs($admin)
+        ->post(route('admin.services.store'), servicePayload())
+        ->assertRedirect(route('admin.services.index'));
+
+    $this->assertDatabaseHas('services', [
+        'name' => 'Speech Therapy',
+        'color' => null,
+    ]);
+});
+
+it('defaults send_email to true for indirect service when field absent', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = admin();
+    $payload = servicePayload();
+    $payload['is_direct_service'] = false;
+    unset($payload['send_email']);
+
+    $this->actingAs($admin)
+        ->post(route('admin.services.store'), $payload)
+        ->assertRedirect(route('admin.services.index'));
+
+    $this->assertDatabaseHas('services', [
+        'name' => 'Speech Therapy',
+        'is_direct_service' => false,
+        'send_email' => true,
+    ]);
+});
+
+it('persists send_email false for indirect service', function () {
+    /** @var \Tests\TestCase $this */
+    $admin = admin();
+    $payload = servicePayload();
+    $payload['is_direct_service'] = false;
+    $payload['send_email'] = false;
+
+    $this->actingAs($admin)
+        ->post(route('admin.services.store'), $payload)
+        ->assertRedirect(route('admin.services.index'));
+
+    $this->assertDatabaseHas('services', [
+        'name' => 'Speech Therapy',
+        'send_email' => false,
+    ]);
+});
+
 it('changes service status via api', function () {
     /** @var \Tests\TestCase $this */
     $admin = admin();
