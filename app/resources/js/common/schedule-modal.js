@@ -11,7 +11,7 @@ import { getBillingLabel, BILLING_STATUSES } from './billing-status';
 export function openScheduleDetailsModal(scheduleId, detailsUrl, actionUrls = {}) {
     const $content = $('#scheduleDetailsContent');
     const $footer = $('#scheduleDetailsFooter');
-    const $headerInner = $('#scheduleDetailsHeaderInner');
+    const $headerActions = $('#scheduleDetailsHeaderActions');
 
     if ($content.length) {
         $content.html(
@@ -21,8 +21,8 @@ export function openScheduleDetailsModal(scheduleId, detailsUrl, actionUrls = {}
     if ($footer.length) {
         $footer.addClass('hidden').empty();
     }
-    if ($headerInner.length) {
-        $headerInner.html('<h3 class="text-lg font-semibold text-foreground">Schedule Details</h3>');
+    if ($headerActions.length) {
+        $headerActions.empty();
     }
 
     window.dispatchEvent(new CustomEvent('open-modal', { detail: 'scheduleDetailsModal' }));
@@ -50,62 +50,30 @@ export function openScheduleDetailsModal(scheduleId, detailsUrl, actionUrls = {}
 
 function renderScheduleDetails(schedule, actionUrls) {
     const $content = $('#scheduleDetailsContent');
-    const $headerInner = $('#scheduleDetailsHeaderInner');
+    const $headerActions = $('#scheduleDetailsHeaderActions');
     if (!$content.length) return;
 
-    if ($headerInner.length) {
-        $headerInner.html(buildHeader(schedule));
+    if ($headerActions.length) {
+        $headerActions.html([
+            buildSessionLogLink(schedule.session_log),
+            buildJoinSessionButton(schedule),
+        ].join(''));
     }
 
-    $content.html([
-        buildBody(schedule),
-        buildEmailHistory(schedule),
-    ].join(''));
-
-    renderFooter(schedule, actionUrls);
-}
-
-/* -------------------------------------------------------------------------- */
-/* Header (rendered into the modal's top bar)                                  */
-/* -------------------------------------------------------------------------- */
-
-function buildHeader(schedule) {
-    const studentName = schedule.student?.name || 'Unknown Student';
-    const serviceName = schedule.service?.name || '';
-    const dateLine = formatDateLine(schedule);
-
-    return `
-        <div class="flex items-center gap-4 min-w-0 w-full">
-            <div class="flex items-center gap-3 min-w-0 flex-1">
-                <div class="shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary" aria-hidden="true">
-                    ${calendarIcon('w-5 h-5')}
-                </div>
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2 flex-wrap min-w-0">
-                        <h2 class="text-lg font-semibold text-foreground leading-tight truncate">${escapeHtml(studentName)}</h2>
-                        ${statusBadgeWithDot(schedule.status)}
-                        ${billingBadgeWithDot(schedule.billing_status)}
-                        ${buildSessionLogLink(schedule.session_log)}
-                    </div>
-                    <p class="mt-0.5 text-sm text-foreground/60 truncate">
-                        ${serviceName ? escapeHtml(serviceName) : ''}${serviceName && dateLine ? ' · ' : ''}${dateLine}
-                    </p>
-                </div>
-            </div>
-            <div class="shrink-0">
-                ${buildJoinSessionButton(schedule)}
+    $content.html(`
+        <div class="flex flex-col lg:flex-row min-h-full">
+            <aside class="lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-border p-6 bg-muted/20">
+                ${buildLeftSidebar(schedule)}
+            </aside>
+            <div class="flex-1 min-w-0 p-6 space-y-6">
+                ${buildSessionStrip(schedule)}
+                ${schedule.ssa ? buildSsaCard(schedule.ssa) : ''}
+                ${buildEmailHistory(schedule)}
             </div>
         </div>
-    `;
-}
+    `);
 
-function formatDateLine(schedule) {
-    const date = schedule.schedule_date_formatted || '';
-    const start = schedule.start_time_formatted || '';
-    const end = schedule.end_time_formatted || '';
-    if (!date) return '';
-    if (start && end) return `${escapeHtml(date)}, ${escapeHtml(start)} – ${escapeHtml(end)}`;
-    return escapeHtml(date);
+    renderFooter(schedule, actionUrls);
 }
 
 function buildJoinSessionButton(schedule) {
@@ -187,173 +155,273 @@ function badgePill(label, dotCls, textCls, bgCls) {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Body: 2-column card grid                                                    */
+/* Left sidebar: student summary + therapist + parent/guardian                */
 /* -------------------------------------------------------------------------- */
 
-function buildBody(schedule) {
+function buildLeftSidebar(schedule) {
+    const student = schedule.student || {};
+    const school = schedule.school || {};
+    const therapist = schedule.therapist || {};
+    const parent = schedule.parent || {};
+
+    const idPart = student.id_number && student.id_number !== '-'
+        ? `ID #${escapeHtml(student.id_number)}`
+        : '';
+    const tzPart = student.timezone_label && student.timezone_label !== '-'
+        ? escapeHtml(student.timezone_label)
+        : '';
+    const studentMeta = [idPart, tzPart].filter(Boolean).join(' · ');
+
+    const schoolName = school.name && school.name !== '-' ? school.name : '';
+
+    const therapistItems = [
+        { label: 'Assigned', value: therapist.name || '-', icon: userIcon('w-4 h-4') },
+        { label: 'Timezone', value: schedule.timezone_label || schedule.timezone || '-', icon: clockIcon('w-4 h-4') },
+    ];
+
     return `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            ${cardSection({
-                title: 'Service & Scheduled Session',
-                iconBgCls: 'bg-primary/10 text-primary',
-                icon: briefcaseIcon('w-5 h-5'),
-                emphasized: true,
-                body: buildServiceFields(schedule),
-            })}
+        <div class="space-y-5">
+            <div class="flex items-center gap-2 flex-wrap">
+                ${statusBadgeWithDot(schedule.status)}
+                ${billingBadgeWithDot(schedule.billing_status)}
+            </div>
 
-            ${cardSection({
-                title: 'Student Details',
-                iconBgCls: 'bg-primary/10 text-primary',
-                icon: userIcon('w-5 h-5'),
-                body: buildStudentFields(schedule),
-            })}
+            <div>
+                <h2 class="text-xl font-semibold text-foreground leading-tight break-words">${escapeHtml(student.name || 'Unknown Student')}</h2>
+                ${studentMeta ? `<p class="mt-1 text-xs text-foreground/60">${studentMeta}</p>` : ''}
+            </div>
 
-            ${schedule.ssa ? cardSection({
-                title: 'SSA Details',
-                iconBgCls: 'bg-primary/10 text-primary',
-                icon: docIcon('w-5 h-5'),
-                body: buildSsaFields(schedule.ssa),
-            }) : ''}
+            ${schoolName ? buildSchoolChip(schoolName) : ''}
 
-            ${cardSection({
-                title: 'Parent Information',
-                iconBgCls: 'bg-success/10 text-success',
-                icon: peopleIcon('w-5 h-5'),
-                body: buildParentBody(schedule),
-            })}
+            <div class="border-t border-border"></div>
+
+            ${buildSidebarSection('Therapist', therapistItems)}
+
+            <div class="border-t border-border"></div>
+
+            ${buildParentSection(parent)}
         </div>
     `;
 }
 
-function cardSection({ title, icon, iconBgCls, body, emphasized = false }) {
-    const wrapCls = [
-        'rounded-xl border p-5',
-        emphasized ? 'bg-muted/40 border-border' : 'bg-background border-border',
-    ].join(' ');
-
+function buildSidebarSection(title, items) {
     return `
-        <section class="${wrapCls}">
-            <header class="flex items-center gap-3 mb-5">
-                <div class="shrink-0 w-9 h-9 rounded-lg ${iconBgCls} flex items-center justify-center" aria-hidden="true">
-                    ${icon}
-                </div>
-                <h3 class="text-xs font-bold uppercase tracking-wider text-foreground">${escapeHtml(title)}</h3>
-            </header>
-            ${body}
-        </section>
+        <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-foreground/60 mb-3">${escapeHtml(title)}</h3>
+            <div class="space-y-3">
+                ${items.map(buildSidebarRow).join('')}
+            </div>
+        </div>
     `;
 }
 
-function buildServiceFields(schedule) {
-    const therapistName = schedule.therapist?.name || '-';
-    return fieldGrid([
-        ['Service', schedule.service?.name || '-'],
-        ['Therapist', `<span class="text-primary">${escapeHtml(therapistName)}</span>`],
-        ['Date', schedule.schedule_date_formatted || '-'],
-        ['Time', `${escapeHtml(schedule.start_time_formatted || '')} - ${escapeHtml(schedule.end_time_formatted || '')}`.trim() || '-'],
-        ['Duration', schedule.duration_formatted || '-'],
-        ['Timezone', schedule.timezone_label || schedule.timezone || '-'],
-    ]);
+function buildSidebarRow(item) {
+    const safeValue = item.isHtml
+        ? (item.value || '-')
+        : escapeHtml(item.value || '-');
+    return `
+        <div class="flex items-start gap-3">
+            <div class="shrink-0 w-8 h-8 rounded-md bg-background border border-border flex items-center justify-center text-foreground/60" aria-hidden="true">
+                ${item.icon}
+            </div>
+            <div class="min-w-0 flex-1">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-foreground/50">${escapeHtml(item.label)}</p>
+                <p class="mt-0.5 text-sm font-semibold text-foreground break-words">${safeValue}</p>
+            </div>
+        </div>
+    `;
 }
 
-function buildStudentFields(schedule) {
-    const student = schedule.student || {};
-    const school = schedule.school || {};
-    return fieldGrid([
-        ['Student Name', student.name || '-'],
-        ['ID Number', student.id_number || '-'],
-        ['Email Address', emailLink(student.email)],
-        [null, null],
-        ['School / Family', school.name || '-'],
-        ['Timezone', student.timezone_label || student.timezone || '-'],
-    ]);
-}
-
-function buildParentBody(schedule) {
-    const parent = schedule.parent || {};
-    const initials = parentInitials(parent.name);
+function buildParentSection(parent) {
     const name = parent.name && parent.name !== '-' ? parent.name : 'Not provided';
     const email = parent.email && parent.email !== '-' ? parent.email : null;
     const phone = parent.phone && parent.phone !== '-' ? parent.phone : null;
 
+    const items = [
+        { label: 'Primary Contact', value: name, icon: peopleIcon('w-4 h-4') },
+    ];
+    if (email) {
+        items.push({ label: 'Email', value: emailLink(email), icon: mailIcon('w-4 h-4'), isHtml: true });
+    }
+    if (phone) {
+        items.push({ label: 'Phone', value: phone, icon: phoneIcon('w-4 h-4') });
+    }
+
+    return buildSidebarSection('Parent / Guardian', items);
+}
+
+function buildSchoolChip(name) {
     return `
-        <div class="flex items-start gap-3">
-            <div class="shrink-0 w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold" aria-hidden="true">
-                ${escapeHtml(initials)}
-            </div>
-            <div class="min-w-0 flex-1">
-                <p class="text-xs text-foreground/60">Primary Contact</p>
-                <p class="text-sm font-semibold text-foreground mt-0.5">${escapeHtml(name)}</p>
-                ${email ? `<p class="text-sm text-foreground/70 mt-2 break-all">${emailLink(email)}</p>` : ''}
-                <p class="text-sm text-foreground/70 mt-1">${phone ? escapeHtml(phone) : '-'}</p>
-            </div>
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-background border border-border text-xs font-medium text-foreground/80">
+            <span class="text-foreground/50" aria-hidden="true">${schoolIcon('w-3.5 h-3.5')}</span>
+            ${escapeHtml(name)}
+        </span>
+    `;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Session-time strip (right panel)                                            */
+/* -------------------------------------------------------------------------- */
+
+function buildSessionStrip(schedule) {
+    const dateParts = parseDateParts(schedule.schedule_date_formatted, schedule.schedule_date);
+    const start = schedule.start_time_formatted || '';
+    const end = schedule.end_time_formatted || '';
+    const timeRange = start && end ? `${escapeHtml(start)} – ${escapeHtml(end)}` : (escapeHtml(start || end) || '-');
+    const duration = schedule.duration_formatted || '';
+    const tzLabel = schedule.timezone_label || schedule.timezone || '';
+    const meta = [duration ? `${escapeHtml(duration)} duration` : '', tzLabel ? escapeHtml(tzLabel) : '']
+        .filter(Boolean)
+        .join(' · ');
+    const serviceName = schedule.service?.name || '';
+
+    const dateTile = `
+        <div class="shrink-0 w-16 rounded-lg border border-border bg-background overflow-hidden text-center">
+            <div class="bg-danger/10 text-[10px] font-bold uppercase tracking-wider text-danger py-0.5">${escapeHtml(dateParts.month)}</div>
+            <div class="text-2xl font-semibold text-foreground leading-tight pt-1">${escapeHtml(dateParts.day)}</div>
+            <div class="text-[10px] font-medium uppercase tracking-wider text-foreground/50 pb-1">${escapeHtml(dateParts.weekday)}</div>
         </div>
     `;
-}
 
-function buildSsaFields(ssa) {
-    const sessionDetails = formatSessionDetails(ssa);
-    const fields = fieldGrid([
-        ['Date Range', ssa.date_range_formatted || '-'],
-        ['Frequency', ssa.frequency ? capitalize(ssa.frequency.replace(/_/g, ' ')) : '-'],
-        ['Session Details', sessionDetails],
-    ]);
+    const servicePill = serviceName
+        ? `<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border text-sm font-medium text-foreground">
+                <span class="w-2 h-2 rounded-full bg-primary" aria-hidden="true"></span>
+                ${escapeHtml(serviceName)}
+            </span>`
+        : '';
 
     return `
-        ${fields}
-        ${buildHoursProgress(ssa)}
+        <section class="flex items-center gap-4 rounded-xl bg-muted/40 border border-border p-4">
+            ${dateTile}
+            <div class="min-w-0 flex-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-foreground/60">Session Time</p>
+                <p class="mt-1 text-lg font-semibold text-foreground leading-tight">${timeRange}</p>
+                ${meta ? `<p class="mt-1 text-xs text-foreground/60">${meta}</p>` : ''}
+            </div>
+            ${servicePill ? `<div class="shrink-0">${servicePill}</div>` : ''}
+        </section>
     `;
 }
 
-function formatSessionDetails(ssa) {
-    const minutes = ssa.minutes_per_session;
-    const sessions = ssa.sessions_per_frequency;
-    const freq = ssa.frequency;
-    if (!minutes || !sessions || !freq) {
-        return ssa.summary_line || '-';
+function parseDateParts(formatted, iso) {
+    // formatted looks like "May 07, 2026"; iso like "2026-05-07"
+    let month = '';
+    let day = '';
+    let weekday = '';
+
+    if (formatted) {
+        const m = String(formatted).match(/^([A-Za-z]+)\s+(\d{1,2})/);
+        if (m) {
+            month = m[1].toUpperCase();
+            day = m[2].padStart(2, '0');
+        }
     }
-    const freqLabel = { weekly: 'week', monthly: 'month', daily: 'day' }[freq] || freq;
-    const sessionWord = sessions === 1 ? 'session' : 'sessions';
-    return `${minutes} min · ${sessions} ${sessionWord} per ${freqLabel}`;
+    if (iso) {
+        const d = new Date(`${iso}T00:00:00`);
+        if (!Number.isNaN(d.getTime())) {
+            weekday = d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
+            if (!month) month = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            if (!day) day = String(d.getDate()).padStart(2, '0');
+        }
+    }
+    return { month, day, weekday };
 }
 
-function buildHoursProgress(ssa) {
+function buildSsaCard(ssa) {
+    const dateRange = ssa.date_range_formatted || '';
+    const freq = ssa.frequency ? capitalize(String(ssa.frequency).replace(/_/g, ' ')) : '-';
+    const freqSub = formatFrequencySub(ssa);
+    const minutes = ssa.minutes_per_session;
+    const perSession = minutes ? `${minutes} min` : '-';
+    const perSessionSub = minutes ? formatHourBlock(minutes) : '';
     const tho = Number(ssa.tho_hours) || 0;
     const served = Number(ssa.served_hours) || 0;
-
-    if (tho <= 0 || served <= 0) {
-        return `
-            <div class="mt-4 pt-4 border-t border-border">
-                <dt class="text-xs text-foreground/60">Hours Used</dt>
-                <dd class="mt-1 text-sm font-semibold text-foreground">${formatHours(served)} of ${formatHours(tho)}</dd>
-            </div>
-        `;
-    }
-
-    const pct = Math.min(100, Math.round((served / tho) * 100));
+    const authorized = tho > 0 ? `${formatHoursLong(tho)}` : '-';
+    const pct = tho > 0 ? Math.min(100, Math.round((served / tho) * 100)) : 0;
     const remaining = Math.max(0, tho - served);
     const barColor = pct >= 100 ? 'bg-success' : pct >= 80 ? 'bg-warning' : 'bg-primary';
 
+    const dateRangePill = dateRange
+        ? `<span class="inline-flex items-center px-3 py-1 rounded-full bg-muted text-xs font-medium text-foreground/70">${escapeHtml(dateRange)}</span>`
+        : '';
+
     return `
-        <div class="mt-4 pt-4 border-t border-border">
-            <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-xs text-foreground/60">Hours Used</dt>
-                <dd class="text-xs font-semibold text-foreground">
-                    ${formatHours(served)} <span class="text-foreground/50 font-normal">of ${formatHours(tho)} · ${pct}%</span>
-                </dd>
+        <section class="rounded-xl border border-border bg-background p-5">
+            <header class="flex items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="shrink-0 text-foreground/40" aria-hidden="true">${docIcon('w-4 h-4')}</span>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-foreground/70">SSA Details</h3>
+                </div>
+                ${dateRangePill}
+            </header>
+
+            <div class="grid grid-cols-4 rounded-lg border border-border overflow-hidden">
+                ${ssaMetricCell('Frequency', escapeHtml(freq), freqSub)}
+                ${ssaMetricCell('Per Session', escapeHtml(perSession), perSessionSub)}
+                ${ssaMetricCell('Authorized', escapeHtml(authorized), 'Total hours')}
+                ${ssaUsageCell(served, tho, pct, remaining, barColor)}
             </div>
-            <div class="mt-1.5 h-2 w-full rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
+        </section>
+    `;
+}
+
+function ssaMetricCell(label, value, sub) {
+    return `
+        <div class="p-4 border-r border-border last:border-r-0">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-foreground/50">${escapeHtml(label)}</p>
+            <p class="mt-1 text-lg font-semibold text-foreground leading-tight">${value}</p>
+            ${sub ? `<p class="mt-0.5 text-xs text-foreground/60">${escapeHtml(sub)}</p>` : ''}
+        </div>
+    `;
+}
+
+function ssaUsageCell(served, tho, pct, remaining, barColor) {
+    if (tho <= 0) {
+        return ssaMetricCell('Usage', '-', '');
+    }
+    return `
+        <div class="p-4 bg-primary/5">
+            <p class="text-[10px] font-bold uppercase tracking-wider text-foreground/50">Usage</p>
+            <p class="mt-1 text-lg font-semibold text-foreground leading-tight">
+                ${formatHoursShort(served)} <span class="text-foreground/40 font-normal text-sm">of ${formatHoursShort(tho)}</span>
+            </p>
+            <div class="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100">
                 <div class="h-full ${barColor} transition-all" style="width: ${pct}%"></div>
             </div>
             <div class="mt-1.5 flex items-center justify-between text-xs text-foreground/60">
-                <span>${formatHours(remaining)} remaining</span>
-                <span>Total ${formatHours(tho)}</span>
+                <span>${pct}% used</span>
+                <span>${formatHoursShort(remaining)} left</span>
             </div>
         </div>
     `;
 }
 
-function formatHours(value) {
+function formatFrequencySub(ssa) {
+    const sessions = ssa.sessions_per_frequency;
+    const freq = ssa.frequency;
+    if (!sessions || !freq) return '';
+    const freqLabel = { weekly: 'week', monthly: 'month', daily: 'day' }[freq] || freq;
+    const word = sessions === 1 ? 'Once' : `${sessions} times`;
+    return `${word} per ${freqLabel}`;
+}
+
+function formatHourBlock(minutes) {
+    const m = Number(minutes) || 0;
+    if (m <= 0) return '';
+    const hours = m / 60;
+    if (hours >= 1 && Number.isInteger(hours)) {
+        return hours === 1 ? '1 hour block' : `${hours} hour block`;
+    }
+    return `${m} min block`;
+}
+
+function formatHoursLong(value) {
+    const n = Number(value) || 0;
+    const display = n % 1 === 0 ? n : n.toFixed(1);
+    return n === 1 ? '1 hour' : `${display} hours`;
+}
+
+function formatHoursShort(value) {
     const n = Number(value) || 0;
     return `${n % 1 === 0 ? n : n.toFixed(1)}h`;
 }
@@ -382,7 +450,6 @@ function buildEmailHistory(schedule) {
     `).join('');
 
     return `
-        <div class="mt-8">
         <details class="rounded-xl border border-border bg-background overflow-hidden group" open>
             <summary class="cursor-pointer list-none flex items-center justify-between px-5 py-4 bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <span class="text-xs font-bold uppercase tracking-wider text-foreground">
@@ -404,7 +471,6 @@ function buildEmailHistory(schedule) {
                 </table>
             </div>
         </details>
-        </div>
     `;
 }
 
@@ -473,34 +539,9 @@ function renderFooter(schedule, actionUrls) {
 /* Small helpers                                                               */
 /* -------------------------------------------------------------------------- */
 
-function fieldGrid(fields) {
-    const cells = fields.map(([label, value]) => {
-        if (label === null) {
-            return `<div class="hidden md:block" aria-hidden="true"></div>`;
-        }
-        const safeValue = typeof value === 'string' && value.trimStart().startsWith('<')
-            ? value
-            : escapeHtml(value || '-');
-        return `
-            <div class="min-w-0">
-                <dt class="text-xs text-foreground/60">${escapeHtml(label)}</dt>
-                <dd class="mt-1 text-sm font-semibold text-foreground break-words">${safeValue}</dd>
-            </div>
-        `;
-    }).join('');
-
-    return `<dl class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">${cells}</dl>`;
-}
-
 function emailLink(email) {
     if (!email || email === '-') return '-';
     return `<a href="mailto:${escapeAttr(email)}" class="text-primary hover:underline break-all">${escapeHtml(email)}</a>`;
-}
-
-function parentInitials(name) {
-    if (!name || name === '-') return 'PP';
-    const parts = String(name).trim().split(/\s+/).slice(0, 2);
-    return parts.map(p => p.charAt(0).toUpperCase()).join('') || 'PP';
 }
 
 function capitalize(str) {
@@ -509,11 +550,17 @@ function capitalize(str) {
 }
 
 /* Icons */
-function calendarIcon(cls) {
-    return `<svg class="${cls} shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="11" x2="21" y2="11"/></svg>`;
+function clockIcon(cls) {
+    return `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
 }
-function briefcaseIcon(cls) {
-    return `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`;
+function mailIcon(cls) {
+    return `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`;
+}
+function phoneIcon(cls) {
+    return `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>`;
+}
+function schoolIcon(cls) {
+    return `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/><path d="M9 9h.01"/><path d="M9 12h.01"/><path d="M9 15h.01"/><path d="M9 18h.01"/></svg>`;
 }
 function userIcon(cls) {
     return `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
