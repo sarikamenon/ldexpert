@@ -29,12 +29,12 @@
         <x-ui::filter-toolbar formId="schoolFiltersForm">
             <x-slot:filters>
                 <x-ui::input type="text" name="search" class="w-64" placeholder="Search schools or families"
-                    value="{{ $filters['search'] ?? '' }}" />
+                    value="{{ $filters->search ?? '' }}" />
 
                 <x-ui::select name="status" :searchable="false" :inline="true" data-default-value="active">
                     <option value="all">All</option>
                     @foreach (\App\Enums\SchoolStatus::cases() as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? 'active') === $status->value)>
+                        <option value="{{ $status->value }}" @selected(($filters->status?->value ?? 'active') === $status->value)>
                             {{ ucfirst($status->value) }}
                         </option>
                     @endforeach
@@ -42,7 +42,7 @@
             </x-slot:filters>
 
             <x-slot:actions>
-                <a href="{{ route('admin.schools.export', $filters) }}"
+                <a href="{{ route('admin.schools.export', ['search' => $filters->search, 'status' => $filters->status?->value]) }}"
                     class="inline-flex items-center px-4 py-2 border border-border rounded-lg text-sm font-medium text-foreground hover:bg-background/subtle"
                     id="exportSchoolsButton">
                     Export

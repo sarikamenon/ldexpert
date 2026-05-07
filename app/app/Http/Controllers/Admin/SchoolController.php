@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Constants\UsStates;
 use App\Constants\UsTimezones;
+use App\DataTables\Transformers\SchoolAccountRowTransformer;
 use App\DataTables\Transformers\SchoolRowTransformer;
+use App\Domain\Finance\Services\SchoolAccountViewService;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Services\SchoolService;
 use App\Domain\Service\Services\ServiceCatalogService;
@@ -26,6 +28,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\School\ChangeSchoolStatusRequest;
 use App\Http\Requests\Admin\School\ExportSchoolsRequest;
 use App\Http\Requests\Admin\School\IndexSchoolRequest;
+use App\Http\Requests\Admin\School\SchoolAccountDataRequest;
 use App\Http\Requests\Admin\School\SchoolDataRequest;
 use App\Http\Requests\Admin\School\SchoolFormRequest;
 use App\Http\Requests\Admin\School\StoreSchoolRequest;
@@ -39,6 +42,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class SchoolController extends Controller
@@ -65,23 +69,22 @@ final class SchoolController extends Controller
         private readonly SSAService $ssaService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly PositionCatalogService $positionCatalogService,
+        private readonly SchoolAccountViewService $schoolAccountViewService,
     ) {}
 
     public function index(IndexSchoolRequest $request): View
     {
         $this->authorize('viewAny', School::class);
 
-        $filtersPayload = array_merge(
+        $filters = SchoolFilterDTO::fromArray(array_merge(
             $request->validated(),
             ['show_deactivated' => $request->boolean('show_deactivated')]
-        );
-        $filters = SchoolFilterDTO::fromArray($filtersPayload);
-        $perPage = $request->integer('per_page', 25);
+        ));
 
         return view('admin.schools.index', [
             'schools' => collect(),
             'metrics' => $this->schoolService->summaryMetrics(),
-            'filters' => $filtersPayload,
+            'filters' => $filters,
             'datatableUrl' => route('admin.schools.data'),
         ] + $this->referenceData());
     }
@@ -168,12 +171,17 @@ final class SchoolController extends Controller
         ]);
     }
 
-    public function show(Request $request, School $school): View
+    public function show(Request $request, School $school): View|RedirectResponse
     {
         $this->authorize('view', $school);
 
         $school->load('manager');
         $activeTab = $request->query('tab', 'dashboard');
+
+        // Account tab is only available for private-student schools.
+        if ($activeTab === 'account' && ! $school->is_private_student) {
+            return redirect()->route('admin.schools.show', ['school' => $school, 'tab' => 'dashboard']);
+        }
 
         $viewData = [
             'school' => $school,
@@ -239,9 +247,66 @@ final class SchoolController extends Controller
             $viewData['selectedDate'] = $request->query('date')
                 ? CarbonImmutable::parse((string) $request->query('date'))
                 : CarbonImmutable::today();
+        } elseif ($activeTab === 'account') {
+            [$defaultFrom, $defaultTo] = $this->schoolAccountViewService->defaultWindow($school);
+            $viewData['accountSummary'] = $this->schoolAccountViewService->getSummary($school);
+            $viewData['accountDefaultFrom'] = $defaultFrom->format('Y-m-d');
+            $viewData['accountDefaultTo'] = $defaultTo->format('Y-m-d');
+            $viewData['datatableUrl'] = route('admin.schools.account.data', ['school' => $school]);
+            $viewData['schoolId'] = $school->id;
         }
 
         return view('admin.schools.show', $viewData);
+    }
+
+    public function accountData(SchoolAccountDataRequest $request, School $school): JsonResponse
+    {
+        $this->authorize('view', $school);
+
+        if (! $school->is_private_student) {
+            abort(403, 'Account view is only available for private-student schools.');
+        }
+
+        $params = DataTablesRequest::fromRequest($request, []);
+
+        [$defaultFrom, $defaultTo] = $this->schoolAccountViewService->defaultWindow($school);
+        // Parse the date inputs in the school's timezone so "May 1" means
+        // "May 1 in the school's frame of reference," not May 1 UTC.
+        $tz = $school->timezone ?: 'UTC';
+        $from = $request->filled('filter_date_from')
+            ? CarbonImmutable::parse((string) $request->input('filter_date_from'), $tz)
+            : $defaultFrom;
+        $to = $request->filled('filter_date_to')
+            ? CarbonImmutable::parse((string) $request->input('filter_date_to'), $tz)
+            : $defaultTo;
+
+        try {
+            $rows = $this->schoolAccountViewService->getTransactions($school, $from, $to);
+        } catch (\Throwable $e) {
+            Log::error('Failed to build school account view', [
+                'school_id' => $school->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'draw' => $params->draw,
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'Could not load account transactions.',
+            ], 500);
+        }
+
+        $total = $rows->count();
+        $page = $rows->slice($params->start, $params->length)->values();
+
+        return $this->dataTablesResponse(
+            $params,
+            $total,
+            $total,
+            $page,
+            [SchoolAccountRowTransformer::class, 'transform'],
+        );
     }
 
     public function export(ExportSchoolsRequest $request): StreamedResponse
