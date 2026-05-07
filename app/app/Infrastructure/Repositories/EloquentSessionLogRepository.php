@@ -96,19 +96,19 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         }
 
         if (isset($filters['student_id'])) {
-            $query->where('student_id', $filters['student_id']);
+            $query->forStudentId((int) $filters['student_id']);
         }
 
         if (isset($filters['ssa_id'])) {
-            $query->where('ssa_id', $filters['ssa_id']);
+            $query->forSsaId((int) $filters['ssa_id']);
         }
 
         if (isset($filters['date_from'])) {
-            $query->whereDate('session_date', '>=', $filters['date_from']);
+            $query->sessionDateFrom((string) $filters['date_from']);
         }
 
         if (isset($filters['date_to'])) {
-            $query->whereDate('session_date', '<=', $filters['date_to']);
+            $query->sessionDateTo((string) $filters['date_to']);
         }
 
         return $query->orderBy('session_date', 'desc')
@@ -131,19 +131,19 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         }
 
         if (isset($filters['student_id'])) {
-            $query->where('student_id', $filters['student_id']);
+            $query->forStudentId((int) $filters['student_id']);
         }
 
         if (isset($filters['ssa_id'])) {
-            $query->where('ssa_id', $filters['ssa_id']);
+            $query->forSsaId((int) $filters['ssa_id']);
         }
 
         if (isset($filters['date_from'])) {
-            $query->whereDate('session_date', '>=', $filters['date_from']);
+            $query->sessionDateFrom((string) $filters['date_from']);
         }
 
         if (isset($filters['date_to'])) {
-            $query->whereDate('session_date', '<=', $filters['date_to']);
+            $query->sessionDateTo((string) $filters['date_to']);
         }
 
         return $query->orderBy('session_date', 'desc')
@@ -299,7 +299,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
     public function getSessionLogsForSchedule(int $scheduleId): Collection
     {
         return SessionLog::query()
-            ->where('schedule_id', $scheduleId)
+            ->forScheduleId($scheduleId)
             ->with(['student', 'ssa', 'service'])
             ->get();
     }
@@ -311,7 +311,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
     public function getSessionLogsByScheduleIds(array $scheduleIds, ?User $therapist = null): Collection
     {
         $query = SessionLog::query()
-            ->whereIn('schedule_id', $scheduleIds);
+            ->forScheduleIds($scheduleIds);
 
         if ($therapist !== null) {
             $query->forTherapist($therapist);
@@ -332,11 +332,11 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->latest('session_date');
 
         if (! empty($filters['school_id'])) {
-            $query->where('school_id', $filters['school_id']);
+            $query->forSchoolId((int) $filters['school_id']);
         }
 
         if (! empty($filters['student_id'])) {
-            $query->where('student_id', $filters['student_id']);
+            $query->forStudentId((int) $filters['student_id']);
         }
 
         if (! empty($filters['therapist_id'])) {
@@ -344,23 +344,23 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         }
 
         if (! empty($filters['service_id'])) {
-            $query->where('service_id', $filters['service_id']);
+            $query->forServiceId((int) $filters['service_id']);
         }
 
         if (! empty($filters['ssa_id'])) {
-            $query->where('ssa_id', $filters['ssa_id']);
+            $query->forSsaId((int) $filters['ssa_id']);
         }
 
         if (! empty($filters['status'])) {
-            $query->where('status', $filters['status']);
+            $query->withStatuses([$filters['status']]);
         }
 
         if (! empty($filters['date_from'])) {
-            $query->whereDate('session_date', '>=', $filters['date_from']);
+            $query->sessionDateFrom((string) $filters['date_from']);
         }
 
         if (! empty($filters['date_to'])) {
-            $query->whereDate('session_date', '<=', $filters['date_to']);
+            $query->sessionDateTo((string) $filters['date_to']);
         }
 
         return $query->paginate($perPage);
@@ -377,28 +377,28 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->latest('session_date');
 
         if (! empty($filters['school_id'])) {
-            $query->where('school_id', $filters['school_id']);
+            $query->forSchoolId((int) $filters['school_id']);
         }
         if (! empty($filters['student_id'])) {
-            $query->where('student_id', $filters['student_id']);
+            $query->forStudentId((int) $filters['student_id']);
         }
         if (! empty($filters['therapist_id'])) {
             $query->forTherapistId((int) $filters['therapist_id']);
         }
         if (! empty($filters['service_id'])) {
-            $query->where('service_id', $filters['service_id']);
+            $query->forServiceId((int) $filters['service_id']);
         }
         if (! empty($filters['ssa_id'])) {
-            $query->where('ssa_id', $filters['ssa_id']);
+            $query->forSsaId((int) $filters['ssa_id']);
         }
         if (! empty($filters['status'])) {
             $query->withStatuses([$filters['status']]);
         }
         if (! empty($filters['date_from'])) {
-            $query->whereDate('session_date', '>=', $filters['date_from']);
+            $query->sessionDateFrom((string) $filters['date_from']);
         }
         if (! empty($filters['date_to'])) {
-            $query->whereDate('session_date', '<=', $filters['date_to']);
+            $query->sessionDateTo((string) $filters['date_to']);
         }
 
         $recordsTotal = (clone $query)->count('session_logs.id');
@@ -444,19 +444,19 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             ->latest('session_date');
 
         if (! empty($filters['student_id'])) {
-            $query->where('student_id', $filters['student_id']);
+            $query->forStudentId((int) $filters['student_id']);
         }
         if (! empty($filters['service_id'])) {
-            $query->where('service_id', $filters['service_id']);
+            $query->forServiceId((int) $filters['service_id']);
         }
         if (! empty($filters['ssa_id'])) {
-            $query->where('ssa_id', $filters['ssa_id']);
+            $query->forSsaId((int) $filters['ssa_id']);
         }
         if (! empty($filters['date_from'])) {
-            $query->whereDate('session_date', '>=', $filters['date_from']);
+            $query->sessionDateFrom((string) $filters['date_from']);
         }
         if (! empty($filters['date_to'])) {
-            $query->whereDate('session_date', '<=', $filters['date_to']);
+            $query->sessionDateTo((string) $filters['date_to']);
         }
 
         $recordsTotal = (clone $query)->count('session_logs.id');
@@ -495,23 +495,23 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
     public function getOrphanLogsForCalendar(ScheduleFilterDTO $filters): Collection
     {
         $query = SessionLog::query()
-            ->whereNull('schedule_id')
+            ->withoutSchedule()
             ->with(['therapist', 'student', 'service', 'school']);
 
         if ($filters->therapistIds !== null && $filters->therapistIds !== []) {
-            $query->whereIn('therapist_id', $filters->therapistIds);
+            $query->forTherapistIds($filters->therapistIds);
         } elseif ($filters->therapistId !== null) {
             $query->forTherapistId($filters->therapistId);
         }
 
         if ($filters->studentIds !== null && $filters->studentIds !== []) {
-            $query->whereIn('student_id', $filters->studentIds);
+            $query->forStudentIds($filters->studentIds);
         } elseif ($filters->studentId !== null) {
-            $query->where('student_id', $filters->studentId);
+            $query->forStudentId($filters->studentId);
         }
 
         if ($filters->schoolId !== null) {
-            $query->where('school_id', $filters->schoolId);
+            $query->forSchoolId($filters->schoolId);
         }
 
         if ($filters->dateFrom !== null && $filters->dateTo !== null) {
