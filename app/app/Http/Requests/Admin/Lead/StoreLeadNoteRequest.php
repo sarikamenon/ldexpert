@@ -17,7 +17,15 @@ final class StoreLeadNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'note' => ['required', 'string'],
+            'note' => ['required', 'string', 'max:65535'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'note.max' => 'This note is too long to save. Try shortening it or split it across multiple notes.',
         ];
     }
 }

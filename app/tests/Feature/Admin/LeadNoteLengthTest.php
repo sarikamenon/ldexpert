@@ -13,7 +13,7 @@ final class LeadNoteLengthTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_admin_can_add_timeline_note_exceeding_two_thousand_characters(): void
+    public function test_admin_can_add_timeline_note_within_text_column_limit(): void
     {
         $admin = User::factory()->admin()->create();
         $lead = Lead::factory()->create(['created_by' => $admin->id]);
@@ -35,6 +35,24 @@ final class LeadNoteLengthTest extends TestCase
             'author_id' => $admin->id,
             'note' => $body,
         ]);
+    }
+
+    public function test_admin_cannot_add_timeline_note_longer_than_text_column(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $lead = Lead::factory()->create(['created_by' => $admin->id]);
+
+        $response = $this->actingAs($admin)
+            ->postJson(route('admin.leads.notes.store', $lead), [
+                'note' => str_repeat('a', 65536),
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['note']);
+
+        $message = $response->json('errors.note.0');
+        $this->assertIsString($message);
+        $this->assertStringNotContainsString('65535', $message);
     }
 
     public function test_admin_cannot_add_empty_timeline_note(): void
@@ -70,5 +88,21 @@ final class LeadNoteLengthTest extends TestCase
             'last_name' => 'Lead',
             'follow_up_notes' => $notes,
         ]);
+    }
+
+    public function test_admin_cannot_create_lead_with_follow_up_notes_longer_than_text_column(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $response = $this->actingAs($admin)
+            ->from(route('admin.leads.create'))
+            ->post(route('admin.leads.store'), [
+                'first_name' => 'Test',
+                'last_name' => 'Lead',
+                'follow_up_notes' => str_repeat('f', 65536),
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHasErrors('follow_up_notes');
     }
 }

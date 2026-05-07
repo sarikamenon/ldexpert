@@ -22,7 +22,15 @@ final class ChangeLeadStatusRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(LeadStatus::options())],
             'status_reason' => ['nullable', 'string', 'max:1000'],
             'follow_up_date' => ['nullable', 'date'],
-            'follow_up_notes' => ['nullable', 'string'],
+            'follow_up_notes' => ['nullable', 'string', 'max:65535'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'follow_up_notes.max' => 'Follow-up notes are too long to save. Try shortening the text.',
         ];
     }
 }
