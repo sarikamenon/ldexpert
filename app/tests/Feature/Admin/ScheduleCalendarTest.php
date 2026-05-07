@@ -237,3 +237,62 @@ it('returns 404 for non-existent schedule on show endpoint', function () {
 
     $response->assertNotFound();
 });
+
+it('show endpoint exposes the redesigned modal contract for admins', function () {
+    $admin = scheduleCalendarAdmin();
+    $therapist = User::factory()->therapist()->create();
+
+    /** @var Schedule $schedule */
+    $schedule = Schedule::factory()->create([
+        'therapist_id' => $therapist->id,
+        'schedule_date' => '2026-03-10',
+        'start_time' => '09:00',
+        'end_time' => '10:00',
+        'location_details' => 'Join here: https://zoom.us/j/123',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->getJson(route('admin.schedule-calendar.show', $schedule->id));
+
+    $response->assertOk();
+    // Fields the redesigned modal reads — these were missing on the admin
+    // path before the migration to ScheduleDetailsResource.
+    $response->assertJsonPath('schedule.meeting_link', 'https://zoom.us/j/123');
+    $response->assertJsonPath('schedule.meeting_provider', 'zoom');
+    $response->assertJsonPath('schedule.is_recurring', false);
+    $response->assertJsonPath('schedule.duration_formatted', '1h');
+    $response->assertJsonStructure([
+        'schedule' => [
+            'reference', 'updated_at_formatted', 'timezone_label',
+            'student' => ['timezone_label'],
+        ],
+    ]);
+});
+
+it('show endpoint routes session log url to admin namespace for admin viewer', function () {
+    $admin = scheduleCalendarAdmin();
+    $therapist = User::factory()->therapist()->create();
+
+    /** @var Schedule $schedule */
+    $schedule = Schedule::factory()->create([
+        'therapist_id' => $therapist->id,
+        'schedule_date' => '2026-03-10',
+        'start_time' => '09:00',
+        'end_time' => '10:00',
+    ]);
+
+    $sessionLog = \App\Models\SessionLog::factory()->create([
+        'schedule_id' => $schedule->id,
+        'therapist_id' => $therapist->id,
+        'student_id' => $schedule->student_id,
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->getJson(route('admin.schedule-calendar.show', $schedule->id));
+
+    $response->assertOk();
+    $response->assertJsonPath(
+        'schedule.session_log.url',
+        route('admin.session-logs.show', $sessionLog),
+    );
+});

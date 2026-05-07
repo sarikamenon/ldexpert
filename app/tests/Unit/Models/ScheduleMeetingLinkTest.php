@@ -49,3 +49,12 @@ it('returns null meeting provider when there is no link', function () {
 
     expect($schedule->meetingProvider())->toBeNull();
 });
+
+it('rejects non-http(s) URL schemes in location_details', function () {
+    foreach (['javascript:alert(1)', 'data:text/html,<script>1</script>', 'ftp://x.example/y'] as $bad) {
+        $schedule = new Schedule(['location_details' => $bad]);
+
+        expect($schedule->meetingLink())->toBeNull();
+        expect($schedule->meetingProvider())->toBeNull();
+    }
+});

@@ -80,7 +80,7 @@ function buildJoinSessionButton(schedule) {
     if (schedule.status === 'cancelled') return '';
 
     return `<a href="${escapeAttr(link)}" target="_blank" rel="noopener"
-        class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white shadow-sm hover:bg-success/90 hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white shadow-sm hover:bg-primary/90 hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         ${videoIcon('w-4 h-4')}
         Join Session
     </a>`;
@@ -326,7 +326,7 @@ function parseDateParts(formatted, iso) {
 function buildSsaCard(ssa) {
     const dateRange = ssa.date_range_formatted || '';
     const freq = ssa.frequency ? capitalize(String(ssa.frequency).replace(/_/g, ' ')) : '-';
-    const freqSub = formatFrequencySub(ssa);
+    const freqSub = ssa.summary_line || '';
     const minutes = ssa.minutes_per_session;
     const perSession = minutes ? `${minutes} min` : '-';
     const perSessionSub = minutes ? formatHourBlock(minutes) : '';
@@ -390,15 +390,6 @@ function ssaUsageCell(served, tho, pct, remaining, barColor) {
             </div>
         </div>
     `;
-}
-
-function formatFrequencySub(ssa) {
-    const sessions = ssa.sessions_per_frequency;
-    const freq = ssa.frequency;
-    if (!sessions || !freq) return '';
-    const freqLabel = { weekly: 'week', monthly: 'month', daily: 'day' }[freq] || freq;
-    const word = sessions === 1 ? 'Once' : `${sessions} times`;
-    return `${word} per ${freqLabel}`;
 }
 
 function formatHourBlock(minutes) {

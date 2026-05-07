@@ -565,6 +565,9 @@ final class ScheduleController extends Controller
         $tz = $this->timezoneService->resolveTimezone($schedule->therapist ?? $therapist);
 
         return ScheduleDetailsResource::make($schedule)
-            ->additional(['timezone' => $tz]);
+            ->additional([
+                'timezone' => $tz,
+                'session_log_route' => 'therapist.session-logs.show',
+            ]);
     }
 }

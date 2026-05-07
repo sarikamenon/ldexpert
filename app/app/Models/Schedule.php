@@ -386,11 +386,14 @@ class Schedule extends Model
             return null;
         }
 
-        if (preg_match('/https?:\/\/[^\s<>"\']+/i', $text, $matches) === 1) {
-            return rtrim($matches[0], '.,;:)');
+        if (preg_match('/https?:\/\/[^\s<>"\']+/i', $text, $matches) !== 1) {
+            return null;
         }
 
-        return null;
+        $url = rtrim($matches[0], '.,;:)');
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true) ? $url : null;
     }
 
     /**

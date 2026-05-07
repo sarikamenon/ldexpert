@@ -6,6 +6,7 @@ namespace App\Http\Resources\Schedule;
 
 use App\Constants\UsTimezones;
 use App\Models\Schedule;
+use App\Models\ScheduleEmailLog;
 use App\Models\ServiceSupportAgreement;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -17,6 +18,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  *
  * Required `additional` keys:
  *  - timezone: string  IANA timezone used to render local start/end times.
+ *  - session_log_route: string  Route name for session-log show
+ *    (e.g. "therapist.session-logs.show" or "admin.session-logs.show").
  *
  * @property Schedule $resource
  */
@@ -59,6 +62,8 @@ final class ScheduleDetailsResource extends JsonResource
             'meeting_link' => $schedule->meetingLink(),
             'meeting_provider' => $schedule->meetingProvider(),
             'is_past' => $localStart->lt(now($tz)->startOfDay()),
+            // True for the parent template AND for child occurrences, so the
+            // modal can offer "Delete future schedules" on any row of a series.
             'is_recurring' => $schedule->isRecurring() || $schedule->isOccurrence(),
             'service' => [
                 'id' => $schedule->service?->id,
@@ -90,7 +95,7 @@ final class ScheduleDetailsResource extends JsonResource
             ],
             'email_logs' => $schedule->emailLogs
                 ->sortByDesc('sent_at')
-                ->map(fn ($log) => [
+                ->map(fn (ScheduleEmailLog $log): array => [
                     'sent_at' => $log->sent_at->copy()->setTimezone($tz)->format('M d, Y g:i A'),
                     'type_label' => $log->type->label(),
                     'type_value' => $log->type->value,
@@ -103,7 +108,7 @@ final class ScheduleDetailsResource extends JsonResource
                 'id' => $schedule->sessionLog->id,
                 'status' => $schedule->sessionLog->status?->value,
                 'status_label' => $schedule->sessionLog->status?->label(),
-                'url' => route('therapist.session-logs.show', $schedule->sessionLog),
+                'url' => route($this->resolveSessionLogRoute(), $schedule->sessionLog),
             ] : null,
         ];
     }
@@ -152,6 +157,19 @@ final class ScheduleDetailsResource extends JsonResource
         }
 
         return $tz;
+    }
+
+    private function resolveSessionLogRoute(): string
+    {
+        $route = $this->additional['session_log_route'] ?? null;
+
+        if (! is_string($route) || $route === '') {
+            throw new \LogicException(
+                'ScheduleDetailsResource requires a session_log_route via ->additional([\'session_log_route\' => ...]).'
+            );
+        }
+
+        return $route;
     }
 
     private static function formatDuration(int $minutes): string
