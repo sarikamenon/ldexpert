@@ -84,6 +84,54 @@
     border-style: dashed;
 }
 
+/* Session log status icon — positioned bottom-right of the event block */
+.fc .fc-event-main {
+    position: relative;
+}
+.fc-session-log-icon {
+    position: absolute;
+    bottom: 4px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.95);
+    pointer-events: none;
+}
+/* State classes — all inherit white from .fc-session-log-icon; defined for targeting */
+.fc-log-missing,
+.fc-log-draft,
+.fc-log-sent-back,
+.fc-log-submitted,
+.fc-log-approved { color: rgba(255, 255, 255, 0.95); }
+.fc-log-cancelled { color: rgba(255, 255, 255, 0.6); }
+
+/* Orphan session logs (no associated schedule) — dashed border to distinguish */
+.fc-event-orphan-log {
+    border-style: dashed !important;
+    border-width: 1.5px !important;
+}
+
+/* Legend swatch matching the orphan-log event color (#6b7280 + dashed) */
+.legend-orphan-log-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background-color: #6b7280;
+    border: 1.5px dashed #374151;
+}
+
+/* In month/daygrid view the event is a single line — inline after title */
+.fc .fc-daygrid-event .fc-session-log-icon {
+    position: static;
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
 /* Time grid slots */
 .fc .fc-timegrid-slot {
     height: 2.5rem;

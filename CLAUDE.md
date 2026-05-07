@@ -200,6 +200,29 @@ try {
 - Register in `AppServiceProvider`
 - Use consistent method names: `viewAny()`, `view()`, `create()`, `update()`, etc.
 
+### API Resources (HTTP JSON responses)
+
+For controller endpoints that return a JSON object payload (single record or list), use Laravel's API Resources to shape the response. The controller delegates to a service for data and to a Resource for shape. Reference: https://laravel.com/docs/12.x/eloquent-resources.
+
+- **Single record** → `JsonResource` subclass under `app/Http/Resources/<Domain>/` (e.g., `app/Http/Resources/Schedule/ScheduleDetailsResource.php`).
+- **Multiple records / paginated** → `Resource::collection($items)` for the simple case; a `ResourceCollection` subclass when the envelope itself needs metadata (filters applied, summary totals, etc.).
+- Resources MAY contain **presentation-only** helpers (formatted strings, derived labels, conditional shapes) as private methods. Domain logic stays on models/services.
+- Pass per-request context via `->additional([...])` (e.g., timezone, viewer role) — never read globals inside `toArray()`.
+- Wrap a single resource by setting `public static $wrap = '<key>';` when the JS contract expects an envelope (e.g., `{ "schedule": { ... } }`).
+- When a resource grows past ~150 lines or its sub-shape is reused, extract the sub-shape into a nested resource (e.g., `ScheduleDetailsResource` → `SsaSummaryResource`).
+- Inline `response()->json([...])` payload-building is acceptable only for trivial acks (`{ ok: true }`, simple count responses). Anything object-shaped must use a Resource.
+
+#### When to use which response pattern
+
+| Output                                          | Pattern                                                |
+|-------------------------------------------------|--------------------------------------------------------|
+| JSON object response (single record)            | `JsonResource`                                         |
+| JSON list / paginated response                  | `Resource::collection()` / `ResourceCollection`        |
+| DataTables row HTML (positional array)          | `App\DataTables\Transformers\*RowTransformer`          |
+| Trivial ack (`{ ok: true }`, `{ count: N }`)    | Inline `response()->json()` is fine                    |
+
+DataTables intentionally stays on `RowTransformer`: rows are positional arrays of pre-rendered HTML strings, not named-key data, so a Resource would be off-label use. Do not migrate DataTables endpoints to Resources.
+
 ## Testing Standards
 
 - **Tests are mandatory for new logic**:
@@ -282,6 +305,7 @@ Run through this before marking any task done or raising a PR. These are the rul
 - [ ] Every new public model method has a unit test
 - [ ] Every new validation rule has a feature test (happy path + each failure case)
 - [ ] Factory updated for every new model column
+- [ ] Controller actions that return a JSON object/list use an API Resource (not inline `response()->json([...])`); DataTables endpoints stay on `RowTransformer`
 
 **Frontend / Blade**
 - [ ] No `<script>` blocks inside any `.blade.php` file — JS is in `resources/js/pages/`, registered in `vite.config.js`, loaded via `<x-slot name="scripts">`

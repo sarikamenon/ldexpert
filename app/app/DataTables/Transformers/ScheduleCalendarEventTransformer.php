@@ -7,6 +7,7 @@ namespace App\DataTables\Transformers;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Models\Schedule;
+use App\Models\SessionLog;
 
 final class ScheduleCalendarEventTransformer
 {
@@ -44,8 +45,63 @@ final class ScheduleCalendarEventTransformer
                 'is_past' => $isPast,
                 'is_billed' => $isBilled,
                 'is_group' => $schedule->is_group,
+                'has_session_log' => $schedule->sessionLog !== null,
+                'session_log_status' => $schedule->sessionLog?->status?->value,
+                'session_log_outcome' => $schedule->sessionLog?->outcome?->value,
             ],
         ];
+    }
+
+    /**
+     * Transform an orphan SessionLog (no schedule attached) into a calendar event.
+     *
+     * @return array<string, mixed>
+     */
+    public static function transformOrphanLog(SessionLog $log): array
+    {
+        $tz = $log->displayTimezone();
+        $localStart = $log->localStart($tz);
+        $localEnd = $log->localEnd($tz);
+        $color = self::orphanLogColor();
+
+        return [
+            'id' => 'log-'.$log->id,
+            'title' => self::buildOrphanLogTitle($log),
+            'start' => $localStart->format('Y-m-d\TH:i:s'),
+            'end' => $localEnd->format('Y-m-d\TH:i:s'),
+            'backgroundColor' => $color,
+            'borderColor' => $color,
+            'textColor' => '#ffffff',
+            'extendedProps' => [
+                'type' => 'session_log',
+                'session_log_id' => $log->id,
+                'session_log_status' => $log->status?->value,
+                'session_log_outcome' => $log->outcome?->value,
+                'has_session_log' => true,
+                'is_past' => true,
+                'therapist_name' => $log->therapist?->name,
+                'student_name' => $log->student?->name,
+                'service_name' => $log->service?->name,
+            ],
+        ];
+    }
+
+    private static function buildOrphanLogTitle(SessionLog $log): string
+    {
+        $student = $log->student->name ?? 'N/A';
+        $service = $log->service->name ?? '';
+
+        return $student.($service !== '' ? ' - '.$service : '');
+    }
+
+    /**
+     * Orphan logs (no schedule attached) use a fixed indigo so therapists can
+     * distinguish them at a glance from service-colored schedules. The dashed
+     * border + this color together signal "log only, no schedule."
+     */
+    private static function orphanLogColor(): string
+    {
+        return '#6b7280'; // gray-500 — reserved for orphan session logs
     }
 
     private static function schoolName(Schedule $schedule): ?string

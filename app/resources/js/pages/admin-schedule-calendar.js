@@ -17,8 +17,15 @@ import { initSelectBoxes } from '../common/select-box';
         const calendar = initFullCalendar(calendarEl, {
             eventsUrl: eventsUrl,
             initialView: 'timeGridWeek',
+            showSessionLogIndicators: true,
             onEventClick: function (event) {
-                const scheduleId = event.extendedProps.schedule_id;
+                const props = event.extendedProps;
+                if (props.type === 'session_log' && props.session_log_id) {
+                    window.open(`/admin/session-logs/${props.session_log_id}`, '_blank', 'noopener');
+                    return;
+                }
+
+                const scheduleId = props.schedule_id;
                 // Admin view is read-only — no action URLs
                 openScheduleDetailsModal(scheduleId, detailsUrl, {});
             },

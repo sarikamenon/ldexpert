@@ -1,6 +1,6 @@
 import { initSelectBoxes } from '../common/select-box';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
-import { getBillingLabel } from '../common/billing-status';
+import { openScheduleDetailsModal } from '../common/schedule-modal';
 
 (function ($) {
     'use strict';
@@ -23,63 +23,6 @@ import { getBillingLabel } from '../common/billing-status';
         const cancelSSASelection = document.getElementById('cancelSSASelection');
 
         function bindScheduleCardActions() {
-            function renderScheduleDetails(schedule) {
-                const $content = $('#scheduleDetailsContent');
-                if (! $content.length) return;
-                let html = '';
-                html += '<div class="grid grid-cols-2 gap-4 mb-4">';
-                if (schedule.ssa) {
-                    html += `
-                        <div class="bg-background/subtle rounded-lg p-4">
-                            <h4 class="text-sm font-semibold text-foreground mb-3">SSA Basic Details</h4>
-                            <div class="space-y-2.5 text-sm">
-                                <div><div class="text-foreground/70 mb-1">Service</div><div class="text-foreground font-medium" title="${schedule.ssa.service?.name || schedule.service?.name || '-'}">${schedule.ssa.service?.name || schedule.service?.name || '-'}</div></div>
-                                <div><div class="text-foreground/70 mb-1">Date Range</div><div class="text-foreground font-medium">${schedule.ssa.start_date_formatted || schedule.ssa.start_date || '-'}</div><div class="text-foreground font-medium">${schedule.ssa.end_date_formatted || schedule.ssa.end_date || '-'}</div></div>
-                                <div><div class="text-foreground/70 mb-1">Session Details</div><div class="text-foreground font-medium">Minutes: ${schedule.ssa.minutes_per_session || '-'} x ${schedule.ssa.sessions_per_frequency || '-'}</div><div class="text-foreground font-medium">Frequency: ${schedule.ssa.frequency ? schedule.ssa.frequency.replace('_', '-').replace(/\b\w/g, l => l.toUpperCase()) : '-'}</div></div>
-                                <div><div class="text-foreground/70 mb-1">Hours & Status</div><div class="text-foreground font-medium">THO: ${schedule.ssa.tho_hours != null ? Number(schedule.ssa.tho_hours).toFixed(2) : '0'}</div><div class="text-foreground font-medium">Served: ${schedule.ssa.served_hours != null ? Number(schedule.ssa.served_hours).toFixed(2) : '0'}</div><div class="text-foreground font-medium">Status: ${schedule.ssa.status ? schedule.ssa.status.toUpperCase() : '-'}</div></div>
-                            </div>
-                        </div>
-                    `;
-                }
-                html += `
-                    <div class="bg-background/subtle rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-foreground mb-3">Schedule Details</h4>
-                        <div class="space-y-2.5 text-sm">
-                            <div><div class="text-foreground/70 mb-1">Date</div><div class="text-foreground font-medium">${schedule.schedule_date_formatted || schedule.schedule_date || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Time</div><div class="text-foreground font-medium">${schedule.start_time_formatted || schedule.start_time || '-'} - ${schedule.end_time_formatted || schedule.end_time || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Duration</div><div class="text-foreground font-medium">${schedule.duration_formatted || (schedule.duration_minutes != null ? schedule.duration_minutes + 'm' : '-')}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Service</div><div class="text-foreground font-medium" title="${schedule.service?.name || '-'}">${schedule.service?.name || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Billing Status</div><div class="text-foreground font-medium">${getBillingLabel(schedule.billing_status)}</div></div>
-                            ${schedule.location_details ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Meeting Details</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.location_details}</div></div>` : ''}
-                            ${schedule.notes ? `<div class="pt-2.5"><div class="text-foreground/70 mb-1">Notes</div><div class="text-foreground leading-relaxed whitespace-pre-wrap">${schedule.notes}</div></div>` : ''}
-                        </div>
-                    </div>
-                `;
-                html += '</div><div class="grid grid-cols-2 gap-4">';
-                html += `
-                    <div class="bg-background/subtle rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-foreground mb-3">Student Details</h4>
-                        <div class="space-y-2.5 text-sm">
-                            <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium" title="${schedule.student?.name || '-'}">${schedule.student?.name || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">ID Number</div><div class="text-foreground font-medium">${schedule.student?.id_number || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium" title="${schedule.student?.email || '-'}">${schedule.student?.email || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">School/Family</div><div class="text-foreground font-medium" title="${schedule.school?.name || '-'}">${schedule.school?.name || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Timezone</div><div class="text-foreground font-medium">${schedule.student?.timezone || '-'}</div></div>
-                        </div>
-                    </div>
-                    <div class="bg-background/subtle rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-foreground mb-3">Parent Information</h4>
-                        <div class="space-y-2.5 text-sm">
-                            <div><div class="text-foreground/70 mb-1">Name</div><div class="text-foreground font-medium" title="${schedule.parent?.name || '-'}">${schedule.parent?.name || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Email</div><div class="text-foreground font-medium" title="${schedule.parent?.email || '-'}">${schedule.parent?.email || '-'}</div></div>
-                            <div><div class="text-foreground/70 mb-1">Phone</div><div class="text-foreground font-medium">${schedule.parent?.phone || '-'}</div></div>
-                        </div>
-                    </div>
-                `;
-                html += '</div>';
-                $content.html(html);
-            }
-
             $(document).on('click', '.schedule-edit-btn', function () {
                 const scheduleId = $(this).data('schedule-id');
                 if (scheduleId) window.location.href = `/therapist/schedule/${scheduleId}/edit`;
@@ -113,16 +56,7 @@ import { getBillingLabel } from '../common/billing-status';
             $(document).on('click', '.schedule-details-view-btn, .schedule-view-session-btn', function () {
                 const scheduleId = $(this).data('schedule-id');
                 if (!scheduleId) return;
-                const $content = $('#scheduleDetailsContent');
-                if ($content.length) $content.html('<div class="text-center py-12"><p class="text-foreground/70">Loading schedule details...</p></div>');
-                window.dispatchEvent(new CustomEvent('open-modal', { detail: 'scheduleDetailsModal' }));
-                $.ajax({ url: `/therapist/schedule/${scheduleId}`, method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
-                    success(response) { renderScheduleDetails(response.schedule); },
-                    error(xhr) {
-                        const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Failed to load schedule details.';
-                        if ($content.length) $content.html(`<div class="text-center py-12"><p class="text-danger">${msg}</p></div>`);
-                    }
-                });
+                openScheduleDetailsModal(scheduleId, '/therapist/schedule');
             });
         }
 
