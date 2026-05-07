@@ -54,10 +54,7 @@ function renderScheduleDetails(schedule, actionUrls) {
     if (!$content.length) return;
 
     if ($headerActions.length) {
-        $headerActions.html([
-            buildSessionLogLink(schedule.session_log),
-            buildJoinSessionButton(schedule),
-        ].join(''));
+        $headerActions.html(buildSessionLogLink(schedule.session_log));
     }
 
     $content.html(`
@@ -83,7 +80,7 @@ function buildJoinSessionButton(schedule) {
     if (schedule.status === 'cancelled') return '';
 
     return `<a href="${escapeAttr(link)}" target="_blank" rel="noopener"
-        class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-success text-white shadow-sm hover:bg-success/90 hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white shadow-sm hover:bg-success/90 hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         ${videoIcon('w-4 h-4')}
         Join Session
     </a>`;
@@ -164,9 +161,10 @@ function buildLeftSidebar(schedule) {
     const therapist = schedule.therapist || {};
     const parent = schedule.parent || {};
 
-    const idPart = student.id_number && student.id_number !== '-'
-        ? `ID #${escapeHtml(student.id_number)}`
+    const idRaw = student.id_number && student.id_number !== '-'
+        ? String(student.id_number).replace(/^#+/, '').trim()
         : '';
+    const idPart = idRaw ? `ID #${escapeHtml(idRaw)}` : '';
     const tzPart = student.timezone_label && student.timezone_label !== '-'
         ? escapeHtml(student.timezone_label)
         : '';
@@ -283,22 +281,20 @@ function buildSessionStrip(schedule) {
         </div>
     `;
 
-    const servicePill = serviceName
-        ? `<span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background border border-border text-sm font-medium text-foreground">
-                <span class="w-2 h-2 rounded-full bg-primary" aria-hidden="true"></span>
-                ${escapeHtml(serviceName)}
-            </span>`
-        : '';
+    const sectionLabel = serviceName
+        ? `<span class="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true"></span>${escapeHtml(serviceName)}`
+        : 'Session Time';
+    const joinButton = buildJoinSessionButton(schedule);
 
     return `
         <section class="flex items-center gap-4 rounded-xl bg-muted/40 border border-border p-4">
             ${dateTile}
             <div class="min-w-0 flex-1">
-                <p class="text-xs font-bold uppercase tracking-wider text-foreground/60">Session Time</p>
+                <p class="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-foreground/60">${sectionLabel}</p>
                 <p class="mt-1 text-lg font-semibold text-foreground leading-tight">${timeRange}</p>
                 ${meta ? `<p class="mt-1 text-xs text-foreground/60">${meta}</p>` : ''}
             </div>
-            ${servicePill ? `<div class="shrink-0">${servicePill}</div>` : ''}
+            ${joinButton ? `<div class="shrink-0">${joinButton}</div>` : ''}
         </section>
     `;
 }
