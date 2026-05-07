@@ -6,6 +6,7 @@ namespace App\Infrastructure\Repositories;
 
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\ScheduleFilterDTO;
 use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
@@ -486,5 +487,40 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             'recordsFiltered' => $recordsFiltered,
             'rows' => $rows,
         ];
+    }
+
+    /**
+     * @return Collection<int, SessionLog>
+     */
+    public function getOrphanLogsForCalendar(ScheduleFilterDTO $filters): Collection
+    {
+        $query = SessionLog::query()
+            ->whereNull('schedule_id')
+            ->with(['therapist', 'student', 'service', 'school']);
+
+        if ($filters->therapistIds !== null && $filters->therapistIds !== []) {
+            $query->whereIn('therapist_id', $filters->therapistIds);
+        } elseif ($filters->therapistId !== null) {
+            $query->forTherapistId($filters->therapistId);
+        }
+
+        if ($filters->studentIds !== null && $filters->studentIds !== []) {
+            $query->whereIn('student_id', $filters->studentIds);
+        } elseif ($filters->studentId !== null) {
+            $query->where('student_id', $filters->studentId);
+        }
+
+        if ($filters->schoolId !== null) {
+            $query->where('school_id', $filters->schoolId);
+        }
+
+        if ($filters->dateFrom !== null && $filters->dateTo !== null) {
+            $query->betweenSessionDates($filters->dateFrom, $filters->dateTo);
+        }
+
+        /** @var Collection<int, SessionLog> $logs */
+        $logs = $query->get();
+
+        return $logs;
     }
 }

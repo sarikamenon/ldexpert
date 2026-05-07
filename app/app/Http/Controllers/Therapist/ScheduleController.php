@@ -560,6 +560,7 @@ final class ScheduleController extends Controller
             'ssa.primaryService',
             'school',
             'emailLogs.sentBy',
+            'sessionLog',
         ]);
 
         $this->authorize('view', $schedule);
@@ -634,6 +635,12 @@ final class ScheduleController extends Controller
                     'recipient_email' => $log->recipient_email,
                     'sent_by' => $log->sentBy !== null ? $log->sentBy->name : 'System',
                 ])->values()->toArray(),
+                'session_log' => $schedule->sessionLog !== null ? [
+                    'id' => $schedule->sessionLog->id,
+                    'status' => $schedule->sessionLog->status?->value,
+                    'status_label' => $schedule->sessionLog->status?->label(),
+                    'url' => route('therapist.session-logs.show', $schedule->sessionLog),
+                ] : null,
             ],
         ]);
     }

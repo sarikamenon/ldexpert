@@ -9,6 +9,7 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateSessionLogDTO;
+use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateSessionLogDTO;
 use App\Enums\BillingStatus;
 use App\Enums\RateType;
@@ -42,6 +43,12 @@ final class SessionLogService
     public function getSessionLogs(User $therapist, array $filters = []): Collection
     {
         return $this->repository->getSessionLogsForTherapist($therapist, $filters);
+    }
+
+    /** @return Collection<int, SessionLog> */
+    public function getOrphanLogsForCalendar(ScheduleFilterDTO $filters): Collection
+    {
+        return $this->repository->getOrphanLogsForCalendar($filters);
     }
 
     public function findForTherapist(User $therapist, int $sessionLogId): ?SessionLog

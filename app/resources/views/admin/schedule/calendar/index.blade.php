@@ -45,6 +45,8 @@
             </div>
         </div>
 
+        <x-schedule.calendar-legend />
+
         {{-- Calendar --}}
         <div id="fullCalendar"
             data-events-url="{{ route('admin.schedule-calendar.events') }}"

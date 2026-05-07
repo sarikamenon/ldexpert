@@ -73,11 +73,35 @@ function renderHeader(schedule) {
 
     $header.find('h3').html(`
         <span>${title}</span>
-        <div class="schedule-header-badges flex items-center gap-2 mt-1">
+        <div class="schedule-header-badges flex items-center gap-2 mt-1 flex-wrap">
             ${buildStatusBadge(schedule.status)}
             ${buildBillingBadge(schedule.billing_status)}
+            ${buildSessionLogLink(schedule.session_log)}
         </div>
     `);
+}
+
+function buildSessionLogLink(sessionLog) {
+    if (!sessionLog || !sessionLog.url) return '';
+
+    const statusLabel = sessionLog.status_label || 'Session log';
+    const statusValue = sessionLog.status || '';
+    const colorMap = {
+        draft: 'bg-foreground/10 text-foreground/70',
+        sent_back: 'bg-danger/10 text-danger',
+        submitted: 'bg-primary/10 text-primary',
+        approved: 'bg-success/10 text-success',
+        cancelled: 'bg-foreground/10 text-foreground/50',
+    };
+    const cls = colorMap[statusValue] || 'bg-foreground/10 text-foreground/70';
+
+    return `<a href="${sessionLog.url}" target="_blank" rel="noopener"
+        class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cls} hover:opacity-80 transition-opacity">
+        View Session log: ${statusLabel}
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14 3h7v7m0-7L10 14m-3-7H5a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-2" />
+        </svg>
+    </a>`;
 }
 
 function buildStatusBadge(status) {

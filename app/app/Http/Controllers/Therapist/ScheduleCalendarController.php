@@ -7,10 +7,12 @@ namespace App\Http\Controllers\Therapist;
 use App\DataTables\Transformers\ScheduleCalendarEventTransformer;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Therapist\Services\ScheduleService;
+use App\Domain\Therapist\Services\SessionLogService;
 use App\DTOs\ScheduleFilterDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\ScheduleCalendarEventsRequest;
 use App\Models\Schedule;
+use App\Models\SessionLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,6 +23,7 @@ final class ScheduleCalendarController extends Controller
     public function __construct(
         private readonly ScheduleService $scheduleService,
         private readonly SSAService $ssaService,
+        private readonly SessionLogService $sessionLogService,
     ) {}
 
     public function index(Request $request): View
@@ -58,10 +61,21 @@ final class ScheduleCalendarController extends Controller
 
         $schedules = $this->scheduleService->getSchedulesForCalendar($filters);
 
-        $events = $schedules->map(
+        $scheduleEvents = $schedules->map(
             static fn (Schedule $s): array => ScheduleCalendarEventTransformer::transform($s)
-        )->values()->toArray();
+        );
 
-        return response()->json($events);
+        // Orphan session logs (no schedule attached) — only when neither
+        // status nor billing filter is applied (those are schedule-only fields).
+        $events = $scheduleEvents;
+        if (($validated['status'] ?? null) === null && ($validated['billing_status'] ?? null) === null) {
+            $orphanLogs = $this->sessionLogService->getOrphanLogsForCalendar($filters);
+            $orphanEvents = $orphanLogs->map(
+                static fn (SessionLog $log): array => ScheduleCalendarEventTransformer::transformOrphanLog($log)
+            );
+            $events = $scheduleEvents->concat($orphanEvents);
+        }
+
+        return response()->json($events->values()->toArray());
     }
 }

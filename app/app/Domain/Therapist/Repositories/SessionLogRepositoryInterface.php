@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Therapist\Repositories;
 
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\ScheduleFilterDTO;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
@@ -88,4 +89,12 @@ interface SessionLogRepositoryInterface
      * @return array<string, int> outcome value => total minutes
      */
     public function getOutcomeMinutesForStudent(int $studentId): array;
+
+    /**
+     * Session logs without an associated schedule, scoped for the calendar.
+     * Used to render orphan logs alongside schedules on the therapist calendar.
+     *
+     * @return Collection<int, SessionLog>
+     */
+    public function getOrphanLogsForCalendar(ScheduleFilterDTO $filters): Collection;
 }

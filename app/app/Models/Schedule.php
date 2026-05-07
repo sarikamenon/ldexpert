@@ -8,6 +8,7 @@ use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Models\Scopes\ScheduleScope;
+use App\Models\SessionLog;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 
@@ -132,6 +134,14 @@ class Schedule extends Model
     public function emailLogs(): HasMany
     {
         return $this->hasMany(ScheduleEmailLog::class, 'schedule_id');
+    }
+
+    /**
+     * @return HasOne<SessionLog, $this>
+     */
+    public function sessionLog(): HasOne
+    {
+        return $this->hasOne(SessionLog::class, 'schedule_id');
     }
 
     /**
