@@ -8,7 +8,6 @@ use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Models\Scopes\ScheduleScope;
-use App\Models\SessionLog;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -363,6 +362,52 @@ class Schedule extends Model
     public function localEnd(string $timezone): CarbonImmutable
     {
         return $this->endUtc()->setTimezone($timezone);
+    }
+
+    /**
+     * Resolve the meeting link for this schedule. Prefers a URL embedded in
+     * the schedule's own location_details; falls back to the therapist's
+     * default_meeting_location so therapists with a profile-level default
+     * don't need to retype it on every schedule.
+     */
+    public function meetingLink(): ?string
+    {
+        $fromSchedule = $this->extractUrl($this->location_details);
+        if ($fromSchedule !== null) {
+            return $fromSchedule;
+        }
+
+        return $this->extractUrl($this->therapist?->therapistProfile?->default_meeting_location);
+    }
+
+    private function extractUrl(?string $text): ?string
+    {
+        if ($text === null || trim($text) === '') {
+            return null;
+        }
+
+        if (preg_match('/https?:\/\/[^\s<>"\']+/i', $text, $matches) === 1) {
+            return rtrim($matches[0], '.,;:)');
+        }
+
+        return null;
+    }
+
+    /**
+     * Identify the meeting provider for the meeting link, or null when there
+     * is no link. Currently distinguishes Zoom from "other" (Meet, Teams, etc.)
+     * so the UI can label the join button accurately.
+     */
+    public function meetingProvider(): ?string
+    {
+        $link = $this->meetingLink();
+        if ($link === null) {
+            return null;
+        }
+
+        $host = strtolower((string) (parse_url($link, PHP_URL_HOST) ?? ''));
+
+        return str_contains($host, 'zoom.') ? 'zoom' : 'other';
     }
 
     /**

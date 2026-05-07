@@ -2,14 +2,17 @@
     'name' => 'scheduleDetailsModal',
 ])
 
-<x-modal :name="$name" max-width="5xl">
-    <div class="flex flex-col max-h-[calc(100vh-4rem)]">
-        {{-- Header (populated by JS) --}}
+<x-modal :name="$name" max-width="6xl">
+    <div class="flex flex-col max-h-[calc(100vh-4rem)] bg-background">
+        {{-- Header (populated by JS: icon tile + title + subtitle + status row + close button) --}}
         <div id="scheduleDetailsHeader"
-            class="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-            <h3 class="text-lg font-semibold text-foreground">Schedule Details</h3>
+            class="flex items-center justify-between gap-3 px-6 py-4 border-b border-border shrink-0">
+            <div id="scheduleDetailsHeaderInner" class="flex-1 min-w-0">
+                <h3 class="text-lg font-semibold text-foreground">Schedule Details</h3>
+            </div>
             <button type="button" x-on:click="$dispatch('close-modal', '{{ $name }}')"
-                class="text-foreground/60 hover:text-foreground transition-colors">
+                class="shrink-0 text-foreground/50 hover:text-foreground rounded-md p-1 -m-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Close">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M6 18L18 6M6 6l12 12" />
@@ -18,7 +21,7 @@
         </div>
 
         {{-- Content --}}
-        <div id="scheduleDetailsContent" class="flex-1 overflow-y-auto px-6 py-4">
+        <div id="scheduleDetailsContent" class="flex-1 overflow-y-auto px-6 py-6">
             <div class="text-center py-12">
                 <p class="text-foreground/70">Loading schedule details...</p>
             </div>
