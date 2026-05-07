@@ -191,7 +191,7 @@
             <div>
                 <x-input-label for="note" value="Add a Note" />
                 <p class="mt-1 text-xs text-foreground/60" id="note_help">Add a note or activity log entry for this lead</p>
-                <textarea id="note" name="note" rows="3" aria-describedby="note_help"
+                <textarea id="note" name="note" rows="8" aria-describedby="note_help"
                     class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm"
                     placeholder="Type your note here..." data-lead-id="{{ $lead->id }}"></textarea>
             </div>

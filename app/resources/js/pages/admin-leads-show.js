@@ -32,7 +32,7 @@ function setupNoteForm() {
 
             const data = await response.json();
 
-            if (data.success) {
+            if (response.ok && data.success) {
                 const notesList = document.getElementById('notesList');
                 const emptyMsg = notesList?.querySelector('p.text-center');
                 if (emptyMsg) emptyMsg.remove();
@@ -53,6 +53,8 @@ function setupNoteForm() {
 
                 noteInput.value = '';
                 await successToast(data.message);
+            } else if (response.status === 422 && data.errors?.note?.[0]) {
+                errorAlert(data.errors.note[0]);
             } else {
                 errorAlert(data.message || 'Failed to add note.');
             }

@@ -37,7 +37,7 @@ abstract class LeadFormRequest extends FormRequest
             'zip_code' => ['nullable', 'string', 'max:20'],
             'source' => ['nullable', Rule::in(LeadSource::options())],
             'follow_up_date' => ['nullable', 'date'],
-            'follow_up_notes' => ['nullable', 'string', 'max:1000'],
+            'follow_up_notes' => ['nullable', 'string', 'max:65535'],
         ];
     }
 
@@ -48,6 +48,7 @@ abstract class LeadFormRequest extends FormRequest
             'parent_guardian_phone.regex' => 'Phone number can only contain digits and dashes.',
             'date_of_birth.before' => 'Date of birth must be in the past.',
             'date_of_birth.after' => 'Date of birth must be after 1900-01-01.',
+            'follow_up_notes.max' => 'Follow-up notes are too long to save. Try shortening the text.',
         ];
     }
 }

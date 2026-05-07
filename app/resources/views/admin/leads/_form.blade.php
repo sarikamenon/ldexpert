@@ -212,8 +212,8 @@
 
         <div>
             <x-input-label for="follow_up_notes" value="Follow-up Notes" />
-            <p class="mt-1 text-xs text-foreground/60" id="followup_notes_help">Notes about what to follow up on (max 1000 characters)</p>
-            <textarea id="follow_up_notes" name="follow_up_notes" rows="3" aria-describedby="followup_notes_help"
+            <p class="mt-1 text-xs text-foreground/60" id="followup_notes_help">Notes about what to follow up on when you reach out again.</p>
+            <textarea id="follow_up_notes" name="follow_up_notes" rows="8" aria-describedby="followup_notes_help"
                 class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('follow_up_notes', $lead->follow_up_notes ?? '') }}</textarea>
             <x-input-error :messages="$errors->get('follow_up_notes')" class="mt-2" />
         </div>
