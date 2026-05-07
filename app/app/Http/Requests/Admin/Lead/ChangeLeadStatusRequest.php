@@ -22,7 +22,7 @@ final class ChangeLeadStatusRequest extends FormRequest
             'status' => ['required', 'string', Rule::in(LeadStatus::options())],
             'status_reason' => ['nullable', 'string', 'max:1000'],
             'follow_up_date' => ['nullable', 'date'],
-            'follow_up_notes' => ['nullable', 'string', 'max:1000'],
+            'follow_up_notes' => ['nullable', 'string'],
         ];
     }
 }

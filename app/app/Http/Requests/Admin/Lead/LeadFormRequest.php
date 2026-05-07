@@ -37,7 +37,7 @@ abstract class LeadFormRequest extends FormRequest
             'zip_code' => ['nullable', 'string', 'max:20'],
             'source' => ['nullable', Rule::in(LeadSource::options())],
             'follow_up_date' => ['nullable', 'date'],
-            'follow_up_notes' => ['nullable', 'string', 'max:1000'],
+            'follow_up_notes' => ['nullable', 'string'],
         ];
     }
 

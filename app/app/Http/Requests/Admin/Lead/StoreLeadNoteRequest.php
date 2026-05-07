@@ -17,7 +17,7 @@ final class StoreLeadNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'note' => ['required', 'string', 'max:2000'],
+            'note' => ['required', 'string'],
         ];
     }
 }
