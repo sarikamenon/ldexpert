@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSSARowTransformer;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAMinutesSummaryService;
 use App\Domain\SSA\Services\SSAService;
 use App\DTOs\SSAFilterDTO;
@@ -14,6 +15,7 @@ use App\Http\Requests\Therapist\TherapistSSADataRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\ServiceSupportAgreement;
+use App\Models\SSAGoal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -36,6 +38,7 @@ final class SSAController extends Controller
     public function __construct(
         private readonly SSAService $ssaService,
         private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
+        private readonly SSAGoalService $goalService,
     ) {}
 
     public function index(Request $request): View
@@ -114,6 +117,9 @@ final class SSAController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
             $viewData['datatableUrl'] = route('therapist.session-logs.data');
             $viewData['ssaId'] = $ssa->id;
+        } elseif ($activeTab === 'goals') {
+            $viewData['goals'] = $this->goalService->listForSsa($ssa->id);
+            $viewData['canEditGoals'] = $request->user()?->can('create', [SSAGoal::class, $ssa]) ?? false;
         }
 
         return view('therapist.ssas.show', $viewData);

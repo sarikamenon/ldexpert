@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Admin;
 use App\DataTables\Transformers\SSAImportRowTransformer;
 use App\DataTables\Transformers\SSARowTransformer;
 use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAImportListService;
 use App\Domain\SSA\Services\SSAImportService;
 use App\Domain\SSA\Services\SSAMinutesSummaryService;
@@ -35,6 +36,7 @@ use App\Http\Requests\Admin\SSA\UpdateSSARequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\ServiceSupportAgreement;
+use App\Models\SSAGoal;
 use App\Models\SSAImport;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -80,6 +82,7 @@ final class SSAController extends Controller
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SSAMinutesSummaryService $ssaMinutesSummaryService,
         private readonly SSAImportListService $importListService,
+        private readonly SSAGoalService $goalService,
     ) {}
 
     public function index(IndexSSARequest $request): View
@@ -193,6 +196,9 @@ final class SSAController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
             $viewData['datatableUrl'] = route('admin.session-logs.data');
             $viewData['ssaId'] = $ssa->id;
+        } elseif ($activeTab === 'goals') {
+            $viewData['goals'] = $this->goalService->listForSsa($ssa->id);
+            $viewData['canEditGoals'] = $request->user()?->can('create', [SSAGoal::class, $ssa]) ?? false;
         }
 
         if ($activeTab === 'dashboard') {

@@ -109,6 +109,12 @@ class ServiceSupportAgreement extends Model
         return $this->hasMany(SSAAssignmentHistory::class, 'ssa_id')->orderBy('created_at', 'desc');
     }
 
+    /** @return HasMany<SSAGoal, $this> */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(SSAGoal::class, 'ssa_id');
+    }
+
     /**
      * @param  Builder<ServiceSupportAgreement>  $query
      * @return Builder<ServiceSupportAgreement>
