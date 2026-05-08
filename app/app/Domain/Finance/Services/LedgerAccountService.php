@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Finance\Services;
 
 use App\Domain\Finance\Repositories\LedgerEntryRepositoryInterface;
+use App\DTOs\AllTransactionsFilterDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\LedgerAccountsFilterDTO;
 use App\Enums\Role;
@@ -226,6 +227,22 @@ final class LedgerAccountService
         $ledgerableType = $type === 'school' ? School::class : User::class;
 
         return $this->ledgerEntries->listForDataTables($ledgerableType, $id, $params);
+    }
+
+    /**
+     * @return array{recordsTotal: int, recordsFiltered: int, rows: \Illuminate\Support\Collection<int, \App\Models\LedgerEntry>}
+     */
+    public function listAllEntriesForDataTables(AllTransactionsFilterDTO $filters, DataTablesParamsDTO $params): array
+    {
+        return $this->ledgerEntries->listAllForDataTables($filters, $params);
+    }
+
+    public const EXPORT_ROW_LIMIT = 50000;
+
+    /** @return \Illuminate\Support\Collection<int, \App\Models\LedgerEntry> */
+    public function listAllEntriesForExport(AllTransactionsFilterDTO $filters): \Illuminate\Support\Collection
+    {
+        return $this->ledgerEntries->listAllForExport($filters, self::EXPORT_ROW_LIMIT);
     }
 
     /** @return array<string, mixed> */

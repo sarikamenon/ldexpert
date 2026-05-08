@@ -92,4 +92,97 @@ trait HasSessionLogScopes
     {
         return SessionLogScope::withTrackedThoMinutes($query, $this);
     }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForSsaId(Builder $query, int $ssaId): Builder
+    {
+        return SessionLogScope::forSsaId($query, $this, $ssaId);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForSchoolId(Builder $query, int $schoolId): Builder
+    {
+        return SessionLogScope::forSchoolId($query, $this, $schoolId);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForServiceId(Builder $query, int $serviceId): Builder
+    {
+        return SessionLogScope::forServiceId($query, $this, $serviceId);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForScheduleId(Builder $query, int $scheduleId): Builder
+    {
+        return SessionLogScope::forScheduleId($query, $this, $scheduleId);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @param  array<int, int>  $scheduleIds
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForScheduleIds(Builder $query, array $scheduleIds): Builder
+    {
+        return SessionLogScope::forScheduleIds($query, $this, $scheduleIds);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeWithoutSchedule(Builder $query): Builder
+    {
+        return SessionLogScope::withoutSchedule($query, $this);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeSessionDateFrom(Builder $query, string $date): Builder
+    {
+        return SessionLogScope::sessionDateFrom($query, $this, $date);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeSessionDateTo(Builder $query, string $date): Builder
+    {
+        return SessionLogScope::sessionDateTo($query, $this, $date);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @param  array<int, int>  $studentIds
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForStudentIds(Builder $query, array $studentIds): Builder
+    {
+        return SessionLogScope::forStudentIds($query, $this, $studentIds);
+    }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @param  array<int, int>  $therapistIds
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeForTherapistIds(Builder $query, array $therapistIds): Builder
+    {
+        return SessionLogScope::forTherapistIds($query, $this, $therapistIds);
+    }
 }

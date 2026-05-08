@@ -521,7 +521,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection
     {
         $query = Schedule::query()
-            ->with(['therapist', 'student', 'service', 'school']);
+            ->with(['therapist', 'student', 'service', 'school', 'sessionLog']);
 
         if ($filters->therapistIds !== null) {
             $query->whereIn('therapist_id', $filters->therapistIds);

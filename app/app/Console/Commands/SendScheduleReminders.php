@@ -84,6 +84,10 @@ class SendScheduleReminders extends Command
 
     private function sendRemindersForSchedule(Schedule $schedule, string $type): void
     {
+        if ($schedule->service && ! $schedule->service->allowsScheduleEmail()) {
+            return;
+        }
+
         $recipients = [];
 
         // Therapist

@@ -10,14 +10,23 @@
                     <h1 class="text-xl font-semibold text-foreground">Schedule Calendar</h1>
                     <p class="text-sm text-foreground/60">View your schedules in day, week, or month format.</p>
                 </div>
-                <button id="addScheduleButton" type="button" data-create-base="{{ route('therapist.schedule.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
-                    @if ($activeSSAs->count() === 0) disabled title="No active SSAs available" @endif>
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add New Schedule
-                </button>
+                <div class="flex items-center gap-2">
+                    <a href="{{ route('therapist.session-logs.select-ssa') }}" target="_blank" rel="noopener"
+                        class="inline-flex items-center px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary/5 text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Indirect Service
+                    </a>
+                    <button id="addScheduleButton" type="button" data-create-base="{{ route('therapist.schedule.create') }}"
+                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
+                        @if ($activeSSAs->count() === 0) disabled title="No active SSAs available" @endif>
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add New Schedule
+                    </button>
+                </div>
             </div>
 
             <x-ui::card class="p-6">
@@ -59,6 +68,8 @@
                         <x-ui::button type="button" variant="secondary" id="clearCalendarFilters">Clear</x-ui::button>
                     </div>
                 </div>
+
+                <x-schedule.calendar-legend />
 
                 {{-- Calendar --}}
                 <div id="fullCalendar"

@@ -282,7 +282,7 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
 
     public function getActiveTherapistsByUserStatusCount(): int
     {
-        return User::where('role', Role::THERAPIST)
+        return User::byRole(Role::THERAPIST)
             ->where('status', UserStatus::ACTIVE)
             ->count();
     }

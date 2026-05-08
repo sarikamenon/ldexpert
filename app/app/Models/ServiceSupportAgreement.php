@@ -246,6 +246,54 @@ class ServiceSupportAgreement extends Model
         return round($this->served_minutes / 60, 2);
     }
 
+    /**
+     * Compact summary like "30m × 2/wk" or "45m × 1/mo". Returns null when
+     * any of the inputs needed to build the line are missing.
+     */
+    public function summaryLine(): ?string
+    {
+        $minutes = $this->minutes_per_session;
+        $sessions = $this->sessions_per_frequency;
+        $frequency = $this->frequency;
+
+        if ($minutes === null || $sessions === null || $frequency === null) {
+            return null;
+        }
+
+        $unit = match ($frequency) {
+            ServiceFrequency::WEEKLY => 'wk',
+            ServiceFrequency::BI_WEEKLY => '2 wk',
+            ServiceFrequency::MONTHLY => 'mo',
+            ServiceFrequency::QUARTERLY => 'qtr',
+            ServiceFrequency::ONE_TIME => 'total',
+        };
+
+        return "{$minutes}m × {$sessions}/{$unit}";
+    }
+
+    /**
+     * THO vs served totals as one line, e.g. "THO 24h · Used 6h".
+     */
+    public function hoursLine(): string
+    {
+        return sprintf('THO %sh · Used %sh', $this->tho_hours, $this->served_hours);
+    }
+
+    /**
+     * Human-friendly date range, e.g. "Mar 1 → Jun 30, 2026" or
+     * "Mar 1, 2026 → ongoing" when no end_date is set.
+     */
+    public function dateRangeFormatted(): string
+    {
+        $start = $this->start_date->format('M d, Y');
+
+        if ($this->end_date === null) {
+            return $start.' → ongoing';
+        }
+
+        return $start.' → '.$this->end_date->format('M d, Y');
+    }
+
     public function calculateThoMinutes(): int
     {
         $startDate = Carbon::parse($this->start_date);

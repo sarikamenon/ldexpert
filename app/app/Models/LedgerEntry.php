@@ -116,4 +116,42 @@ class LedgerEntry extends Model
     {
         return LedgerEntryScope::chainOrder($query, $direction);
     }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @param  list<string>  $types
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeOfTypes(Builder $query, array $types): Builder
+    {
+        return LedgerEntryScope::ofTypes($query, $types);
+    }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeInDateRange(Builder $query, ?string $from, ?string $to): Builder
+    {
+        return LedgerEntryScope::inDateRange($query, $from, $to);
+    }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @param  class-string  $ledgerableType
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeForLedgerable(Builder $query, string $ledgerableType, ?int $ledgerableId): Builder
+    {
+        return LedgerEntryScope::forLedgerable($query, $ledgerableType, $ledgerableId);
+    }
+
+    /**
+     * @param  Builder<LedgerEntry>  $query
+     * @return Builder<LedgerEntry>
+     */
+    public function scopeSearchNotes(Builder $query, ?string $term): Builder
+    {
+        return LedgerEntryScope::searchNotes($query, $term);
+    }
 }

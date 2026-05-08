@@ -48,6 +48,7 @@ Route::middleware('role:admin')
         Route::get('schools/export', [SchoolController::class, 'export'])->name('schools.export');
         Route::post('schools/data', [SchoolController::class, 'data'])->name('schools.data');
         Route::patch('schools/{school}/status', [SchoolController::class, 'updateStatus'])->name('schools.status');
+        Route::post('schools/{school}/account/data', [SchoolController::class, 'accountData'])->name('schools.account.data');
         Route::resource('schools', SchoolController::class)->except(['destroy']);
         Route::get('schools/{school}/calendar-events', [SchoolCalendarEventController::class, 'index'])
             ->name('schools.calendar-events.index');
@@ -208,7 +209,9 @@ Route::middleware('role:admin')
         // Ledger Accounts
         Route::post('ledger/accounts/data', [LedgerAccountController::class, 'data'])->name('ledger.accounts.data');
         Route::post('ledger/accounts/transactions/data', [LedgerAccountController::class, 'transactionsData'])->name('ledger.accounts.transactions.data');
+        Route::post('ledger/accounts/all-transactions/data', [LedgerAccountController::class, 'allTransactionsData'])->name('ledger.accounts.all-transactions.data');
         Route::get('ledger/accounts/export', [LedgerAccountController::class, 'export'])->name('ledger.accounts.export');
+        Route::get('ledger/accounts/all-transactions/export', [LedgerAccountController::class, 'allTransactionsExport'])->name('ledger.accounts.all-transactions.export');
         Route::get('ledger/accounts', [LedgerAccountController::class, 'index'])->name('ledger.accounts.index');
         Route::get('ledger/accounts/{type}/{id}', [LedgerAccountController::class, 'show'])->name('ledger.accounts.show');
         Route::get('ledger/accounts/{type}/{id}/stats', [LedgerAccountController::class, 'statsData'])->name('ledger.accounts.stats');

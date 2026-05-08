@@ -100,6 +100,105 @@ final class SessionLogScope extends BaseModelScope
     }
 
     /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function forSsaId(Builder $builder, Model $model, int $ssaId): Builder
+    {
+        return $builder->where(self::qualify($model, 'ssa_id'), $ssaId);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function forSchoolId(Builder $builder, Model $model, int $schoolId): Builder
+    {
+        return $builder->where(self::qualify($model, 'school_id'), $schoolId);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function forServiceId(Builder $builder, Model $model, int $serviceId): Builder
+    {
+        return $builder->where(self::qualify($model, 'service_id'), $serviceId);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function forScheduleId(Builder $builder, Model $model, int $scheduleId): Builder
+    {
+        return $builder->where(self::qualify($model, 'schedule_id'), $scheduleId);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @param  array<int, int>  $scheduleIds
+     * @return Builder<SessionLog>
+     */
+    public static function forScheduleIds(Builder $builder, Model $model, array $scheduleIds): Builder
+    {
+        return $builder->whereIn(self::qualify($model, 'schedule_id'), $scheduleIds);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function withoutSchedule(Builder $builder, Model $model): Builder
+    {
+        return $builder->whereNull(self::qualify($model, 'schedule_id'));
+    }
+
+    /**
+     * KNOWN GAP — see `betweenSessionDates`. Compares against the UTC
+     * `session_date` column rather than the therapist's local date.
+     *
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function sessionDateFrom(Builder $builder, Model $model, string $date): Builder
+    {
+        return $builder->whereDate(self::qualify($model, 'session_date'), '>=', $date);
+    }
+
+    /**
+     * KNOWN GAP — see `betweenSessionDates`. Compares against the UTC
+     * `session_date` column rather than the therapist's local date.
+     *
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function sessionDateTo(Builder $builder, Model $model, string $date): Builder
+    {
+        return $builder->whereDate(self::qualify($model, 'session_date'), '<=', $date);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @param  array<int, int>  $studentIds
+     * @return Builder<SessionLog>
+     */
+    public static function forStudentIds(Builder $builder, Model $model, array $studentIds): Builder
+    {
+        return $builder->whereIn(self::qualify($model, 'student_id'), $studentIds);
+    }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @param  array<int, int>  $therapistIds
+     * @return Builder<SessionLog>
+     */
+    public static function forTherapistIds(Builder $builder, Model $model, array $therapistIds): Builder
+    {
+        return $builder->whereIn(self::qualify($model, 'therapist_id'), $therapistIds);
+    }
+
+    /**
      * Logs that have a non-null outcome and contributed positive THO minutes.
      *
      * @param  Builder<SessionLog>  $builder
