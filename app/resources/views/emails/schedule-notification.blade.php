@@ -64,9 +64,9 @@
                     @endif
                 </table>
 
-                <div style="margin:16px 0 4px; display:flex; gap:8px;">
+                <div style="margin:16px 0 4px;">
                     @if($schedule->meetingLink())
-                    <a href="{{ $schedule->meetingLink() }}" style="display:inline-block; background:#5563b8; color:#ffffff; text-decoration:none; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:600;">
+                    <a href="{{ $schedule->meetingLink() }}" style="display:inline-block; background:#5563b8; color:#ffffff; text-decoration:none; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:600; margin-right:8px;">
                         Join Session
                     </a>
                     @endif
