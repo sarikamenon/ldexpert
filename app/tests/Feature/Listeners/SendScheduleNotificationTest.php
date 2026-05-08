@@ -30,7 +30,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
 
-        Mail::assertSent(ScheduleNotificationMail::class, function ($mail) {
+        Mail::assertSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('parent@example.com');
         });
     }
@@ -43,7 +43,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         (new SendScheduleNotification())->handle(new ScheduleUpdated($schedule));
 
-        Mail::assertSent(ScheduleNotificationMail::class, function ($mail) {
+        Mail::assertSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('parent@example.com');
         });
     }
@@ -59,7 +59,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
 
-        Mail::assertNotSent(ScheduleNotificationMail::class, function ($mail) {
+        Mail::assertNotSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('therapist@example.com');
         });
     }
