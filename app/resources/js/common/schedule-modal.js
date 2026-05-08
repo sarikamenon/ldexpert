@@ -65,7 +65,7 @@ function renderScheduleDetails(schedule, actionUrls) {
     if (!$content.length) return;
 
     if ($headerActions.length) {
-        $headerActions.html(buildSessionLogLink(schedule.session_log));
+        $headerActions.empty();
     }
 
     $content.html(`
@@ -74,7 +74,7 @@ function renderScheduleDetails(schedule, actionUrls) {
                 ${buildLeftSidebar(schedule)}
             </aside>
             <div class="flex-1 min-w-0 p-6 space-y-6">
-                ${buildSessionStrip(schedule)}
+                ${buildSessionStrip(schedule, actionUrls)}
                 ${schedule.ssa ? buildSsaCard(schedule.ssa) : ''}
                 ${buildEmailHistory(schedule)}
             </div>
@@ -94,27 +94,6 @@ function buildJoinSessionButton(schedule) {
         class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white shadow-sm hover:bg-primary/90 hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         ${videoIcon('w-4 h-4')}
         Join Session
-    </a>`;
-}
-
-function buildSessionLogLink(sessionLog) {
-    if (!sessionLog || !sessionLog.url) return '';
-
-    const statusLabel = sessionLog.status_label || 'Session log';
-    const statusValue = sessionLog.status || '';
-    const colorMap = {
-        draft: { bg: 'bg-foreground/10', text: 'text-foreground/70' },
-        sent_back: { bg: 'bg-danger/10', text: 'text-danger' },
-        submitted: { bg: 'bg-primary/10', text: 'text-primary' },
-        approved: { bg: 'bg-success/10', text: 'text-success' },
-        cancelled: { bg: 'bg-foreground/10', text: 'text-foreground/50' },
-    };
-    const c = colorMap[statusValue] || { bg: 'bg-primary/10', text: 'text-primary' };
-
-    return `<a href="${sessionLog.url}" target="_blank" rel="noopener"
-        class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${c.bg} ${c.text} hover:opacity-80 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        View Session Log: ${escapeHtml(statusLabel)}
-        ${externalIcon('w-3 h-3')}
     </a>`;
 }
 
@@ -272,7 +251,51 @@ function buildSchoolChip(name) {
 /* Session-time strip (right panel)                                            */
 /* -------------------------------------------------------------------------- */
 
-function buildSessionStrip(schedule) {
+function sessionLogButtonColor(status) {
+    const map = {
+        draft: 'bg-foreground/70 text-white hover:bg-foreground/80',
+        sent_back: 'bg-danger text-white hover:bg-danger/90',
+        submitted: 'bg-primary text-white hover:bg-primary/90',
+        approved: 'bg-success text-white hover:bg-success/90',
+        cancelled: 'bg-foreground/40 text-white hover:bg-foreground/50',
+    };
+    return map[status] || 'bg-primary text-white hover:bg-primary/90';
+}
+
+function buildSessionActionButtons(schedule, actionUrls = {}) {
+    const buttons = [];
+    const isPast = Boolean(schedule.is_past ?? false);
+    const isBilled = schedule.billing_status === 'billed';
+    const isPendingBilling = schedule.billing_status === 'pending';
+    const isCancelled = schedule.status === 'cancelled';
+
+    const join = buildJoinSessionButton(schedule);
+    if (join) buttons.push(join);
+
+    if (isPast && isPendingBilling && !isCancelled && actionUrls.billUrl) {
+        buttons.push(`<a href="${escapeAttr(actionUrls.billUrl(schedule.id))}" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg bg-primary text-white shadow-sm hover:bg-primary/90 hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            ${docIcon('w-4 h-4')}
+            Bill Session
+        </a>`);
+    }
+
+    const sessionLogUrl = (actionUrls.sessionLogUrl && actionUrls.sessionLogUrl(schedule.id))
+        || schedule.session_log?.url
+        || '';
+    if (isPast && isBilled && sessionLogUrl) {
+        const colorCls = sessionLogButtonColor(schedule.session_log?.status);
+        buttons.push(`<a href="${escapeAttr(sessionLogUrl)}" target="_blank" rel="noopener"
+            class="inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg shadow-sm hover:shadow transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${colorCls}">
+            ${externalIcon('w-4 h-4')}
+            View Session Log
+        </a>`);
+    }
+
+    return buttons.join('');
+}
+
+function buildSessionStrip(schedule, actionUrls = {}) {
     const dateParts = parseDateParts(schedule.schedule_date_formatted, schedule.schedule_date);
     const start = schedule.start_time_formatted || '';
     const end = schedule.end_time_formatted || '';
@@ -295,7 +318,7 @@ function buildSessionStrip(schedule) {
     const sectionLabel = serviceName
         ? `<span class="w-1.5 h-1.5 rounded-full bg-primary" aria-hidden="true"></span>${escapeHtml(serviceName)}`
         : 'Session Time';
-    const joinButton = buildJoinSessionButton(schedule);
+    const actionButtons = buildSessionActionButtons(schedule, actionUrls);
 
     return `
         <section class="flex items-center gap-4 rounded-xl bg-muted/40 border border-border p-4">
@@ -305,7 +328,7 @@ function buildSessionStrip(schedule) {
                 <p class="mt-1 text-lg font-semibold text-foreground leading-tight">${timeRange}</p>
                 ${meta ? `<p class="mt-1 text-xs text-foreground/60">${meta}</p>` : ''}
             </div>
-            ${joinButton ? `<div class="shrink-0">${joinButton}</div>` : ''}
+            ${actionButtons ? `<div class="shrink-0 flex items-center gap-2 flex-wrap justify-end">${actionButtons}</div>` : ''}
         </section>
     `;
 }
@@ -480,9 +503,7 @@ function renderFooter(schedule, actionUrls) {
     const $footer = $('#scheduleDetailsFooter');
     if (!$footer.length) return;
 
-    const isPast = Boolean(schedule.is_past ?? false);
     const isBilled = schedule.billing_status === 'billed';
-    const isPendingBilling = schedule.billing_status === 'pending';
     const isCancelled = schedule.status === 'cancelled';
     const hasAnyAction = actionUrls.editUrl || actionUrls.billUrl || actionUrls.sessionLogUrl;
 
@@ -506,21 +527,6 @@ function renderFooter(schedule, actionUrls) {
         buttons.push(`<a href="${actionUrls.editUrl(schedule.id)}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Edit Schedule
         </a>`);
-    }
-
-    if (isPast && isPendingBilling && !isCancelled && actionUrls.billUrl) {
-        buttons.push(`<a href="${actionUrls.billUrl(schedule.id)}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            Bill Session
-        </a>`);
-    }
-
-    if (isPast && isBilled && actionUrls.sessionLogUrl) {
-        const url = actionUrls.sessionLogUrl(schedule.id);
-        if (url) {
-            buttons.push(`<a href="${url}" class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                View Session Log
-            </a>`);
-        }
     }
 
     if (!buttons.length) {
