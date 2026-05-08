@@ -25,11 +25,12 @@ class ScheduleNotificationMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $brandName = config('brand.name');
+        $date = $this->schedule->localStart($this->resolveRecipientTimezone())->format('M j, Y');
         $action = $this->type === 'created' ? 'New Schedule' : 'Schedule Update';
-        $date = $this->schedule->localStart($this->resolveRecipientTimezone())->format('M d, Y');
 
         return new Envelope(
-            subject: "NOVA - {$action}: {$date}",
+            subject: "{$brandName} - {$action}: {$date}",
         );
     }
 
@@ -39,13 +40,18 @@ class ScheduleNotificationMail extends Mailable
         $localStart = $this->schedule->localStart($tz);
         $localEnd = $this->schedule->localEnd($tz);
 
+        /** @var \App\Models\User|null $therapist */
+        $therapist = $this->schedule->therapist;
+
         return new Content(
             view: 'emails.schedule-notification',
             with: [
-                'scheduleDateLong' => $localStart->format('l, F j, Y'),
+                'scheduleDateLong'  => $localStart->format('l, F j, Y'),
                 'scheduleStartTime' => $localStart->format('g:i A'),
-                'scheduleEndTime' => $localEnd->format('g:i A'),
-                'scheduleTimezone' => UsTimezones::getTimezoneLabel($tz),
+                'scheduleEndTime'   => $localEnd->format('g:i A'),
+                'scheduleTimezone'  => UsTimezones::getTimezoneLabel($tz),
+                'therapistEmail'    => $therapist !== null ? ($therapist->email ?? '') : '',
+                'therapistPhone'    => $therapist !== null ? ($therapist->therapistProfile->phone ?? '') : '',
             ],
         );
     }
