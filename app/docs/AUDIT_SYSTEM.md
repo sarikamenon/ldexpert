@@ -338,13 +338,38 @@ Override per-batch via `AuditBatchContext::start(source: 'import')`.
 
 ### Seeders, factories
 
-Seed and factory data should NOT pollute the audit log. Wrap bulk seeding in `Model::withoutEvents()`:
+Seed and factory data should NOT pollute the audit log.
+
+**Canonical pattern — `WithoutModelEvents` on the seeder class.** This is what `ProductionSeeder` (and any seeder that creates audited models in bulk) uses. It silences all model events for the duration of the seeder run, so a single trait covers every nested seeder call.
+
+```php
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class ProductionSeeder extends Seeder
+{
+    use WithoutModelEvents;
+
+    public function run(): void
+    {
+        $this->call([
+            AdminUserSeeder::class,
+            ServiceSeeder::class,
+            // ...
+        ]);
+    }
+}
+```
+
+**Ad-hoc form — `Model::withoutEvents()`.** Use this for one-off blocks (tests, tinker, manual fixups) where adding a trait would be overkill:
 
 ```php
 SchoolContract::withoutEvents(function () {
     SchoolContract::factory()->count(50)->create();
 });
 ```
+
+Both are equivalent at the event-suppression layer; `WithoutModelEvents` is just the seeder-shaped wrapper.
 
 ### Backfills / data migrations that re-write audited rows
 

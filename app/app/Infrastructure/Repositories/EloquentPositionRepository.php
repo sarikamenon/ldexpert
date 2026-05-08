@@ -101,11 +101,16 @@ final class EloquentPositionRepository implements PositionRepositoryInterface
      * pivot set actually changed. Pivot writes bypass model events,
      * so we capture before/after and delegate to AuditRecorder.
      *
+     * Reads the post-sync set via a fresh query rather than `$position->refresh()`
+     * so the caller's in-memory model is not mutated.
+     *
      * @param  array<int, int>  $oldIds
      */
     private function recordServicesSyncedAudit(Position $position, array $oldIds): void
     {
-        $newIds = $position->refresh()->serviceIdsSnapshot();
+        /** @var Position $fresh */
+        $fresh = Position::query()->findOrFail($position->getKey());
+        $newIds = $fresh->serviceIdsSnapshot();
 
         if ($oldIds === $newIds) {
             return;
