@@ -280,6 +280,8 @@ function buildSessionActionButtons(schedule, actionUrls = {}) {
         </a>`);
     }
 
+    // Prefer the caller-supplied URL builder; fall back to the API-embedded url so the
+    // button appears even for consumers that don't pass actionUrls.sessionLogUrl.
     const sessionLogUrl = (actionUrls.sessionLogUrl && actionUrls.sessionLogUrl(schedule.id))
         || schedule.session_log?.url
         || '';
@@ -524,7 +526,7 @@ function renderFooter(schedule, actionUrls) {
     }
 
     if (!isBilled && !isCancelled && actionUrls.editUrl) {
-        buttons.push(`<a href="${actionUrls.editUrl(schedule.id)}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+        buttons.push(`<a href="${escapeAttr(actionUrls.editUrl(schedule.id))}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Edit Schedule
         </a>`);
     }

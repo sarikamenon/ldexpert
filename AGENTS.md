@@ -28,7 +28,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - **Prefer collection methods** (`map`, `filter`, `reject`, `flatMap`, etc.) over `foreach` loops when transforming or filtering Eloquent results. Loops are acceptable only for side-effectful operations (e.g., creating DB records inside the loop).
 - **Always use `use` statements** for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
 - **Always add policies** for new models/features. Use `$this->authorize()` in controllers.
-- **Keep files small and focused**: Hard cap of 300 lines per file. If approaching 300, extract to smaller classes, view components, or dedicated services. No exceptions without a comment justifying and a follow-up task to split.
+- **Keep files small and focused**: Hard cap of 300 lines per PHP file, 400 lines per JS file. If approaching the limit, extract to smaller classes, view components, dedicated services, or JS modules. No exceptions without a comment justifying and a follow-up task to split.
 - **Use soft deletes by default** on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
 - **No public registration routes**; users created via command or privileged UI.
 - **Roles system**: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
