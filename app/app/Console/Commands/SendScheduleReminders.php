@@ -88,45 +88,21 @@ class SendScheduleReminders extends Command
             return;
         }
 
-        $recipients = [];
-
-        // Therapist
-        if ($schedule->therapist && $schedule->therapist->email) {
-            // Use UserTimezoneService to resolve timezone with proper fallback:
-            // 1. Profile timezone (overrideTz)
-            // 2. User timezone
-            // 3. Default UTC
-            $profileTimezone = $schedule->therapist->therapistProfile?->timezone;
-            $timezone = $this->resolveUserTimezone($schedule->therapist, $profileTimezone);
-
-            $recipients[] = [
-                'email' => $schedule->therapist->email,
-                'name' => $schedule->therapist->name,
-                'timezone' => $timezone,
-            ];
+        // Only notify student schedule contact — therapists do not receive reminder emails
+        $profile = $schedule->student?->studentProfile;
+        if (! $profile?->schedule_email) {
+            return;
         }
 
-        // Student side: only schedule_email (no student user email or parent/guardian emails)
-        if ($schedule->student?->studentProfile?->schedule_email) {
-            $profile = $schedule->student->studentProfile;
-            $studentTimezone = $this->resolveUserTimezone(
-                $schedule->student,
-                $profile->timezone
-            );
-            $recipients[] = [
-                'email' => $profile->schedule_email,
-                'name' => $profile->parent_guardian_name ?? 'Schedule contact',
+        $studentTimezone = $this->resolveUserTimezone($schedule->student, $profile->timezone);
+
+        $uniqueRecipients = [
+            $profile->schedule_email => [
+                'email'    => $profile->schedule_email,
+                'name'     => $profile->parent_guardian_name ?? 'Schedule contact',
                 'timezone' => $studentTimezone,
-            ];
-        }
-
-        // Unique recipients by email to avoid duplicates
-        $uniqueRecipients = [];
-        foreach ($recipients as $recipient) {
-            if (! isset($uniqueRecipients[$recipient['email']])) {
-                $uniqueRecipients[$recipient['email']] = $recipient;
-            }
-        }
+            ],
+        ];
 
         $emailType = $type === '48h'
             ? ScheduleEmailType::REMINDER_48H

@@ -30,7 +30,11 @@
                     <p style="margin:0 0 4px; color:#0369a1;">Student: <strong>{{ $schedule->student->name }}</strong></p>
                     <p style="margin:0 0 4px; color:#0369a1;">Date: <strong>{{ $scheduleDate }}</strong></p>
                     <p style="margin:0 0 4px; color:#0369a1;">Time: <strong>{{ $startTime }} – {{ $endTime }} ({{ $timezone }})</strong></p>
-                    <p style="margin:0; color:#0369a1;">Location: <strong>{{ $schedule->location_details ?? 'No specific location details' }}</strong></p>
+                    @if(!$schedule->meetingLink() && $schedule->location_details)
+                    <p style="margin:0; color:#0369a1;">Location: <strong>{{ $schedule->location_details }}</strong></p>
+                    @elseif(!$schedule->meetingLink())
+                    <p style="margin:0; color:#0369a1;">Location: <strong>No specific location details</strong></p>
+                    @endif
                 </div>
 
                 @if ($schedule->notes)
@@ -39,24 +43,29 @@
                     </p>
                 @endif
 
-                <p style="margin:0 0 16px;">
-                    If you need to reschedule or have any questions, please contact the therapist directly at
-                    <a href="mailto:{{ $schedule->therapist->email }}" style="color:#5563b8;">{{ $schedule->therapist->email }}</a>
-                    or {{ $schedule->therapist->therapistProfile->phone ?? 'N/A' }}.
-                </p>
+                @if($schedule->meetingLink())
+                <div style="margin:20px 0;">
+                    <a href="{{ $schedule->meetingLink() }}" style="display:inline-block; background:#5563b8; color:#ffffff; text-decoration:none; padding:10px 20px; border-radius:6px; font-size:14px; font-weight:600;">
+                        Join Session
+                    </a>
+                </div>
+                @endif
 
-                <p style="margin:24px 0 0;">
-                    Warm regards,<br>
-                    {{ config('app.name') }}
-                </p>
+                <div style="margin:20px 0; padding:10px 14px; border-radius:6px; background:#fafafa; border:1px solid #e5e7eb; border-left:3px solid #f97316;">
+                    <p style="margin:0; font-size:12px; color:#6b7280; line-height:1.6;">
+                        This is an automated scheduling reminder. <span style="font-weight:600; color:#ea580c;">Please do not reply to this email.</span>
+                        If you need to reschedule or have any questions, please contact your therapist/tutor directly at
+                        <a href="mailto:{{ $schedule->therapist->email }}" style="color:#ea580c; text-decoration:none;">{{ $schedule->therapist->email }}</a>
+                        @if($schedule->therapist->therapistProfile->phone ?? null)
+                            or {{ $schedule->therapist->therapistProfile->phone }},
+                        @endif
+                        or email our leadership team at
+                        <a href="mailto:{{ config('brand.support_email') }}" style="color:#ea580c; text-decoration:none;">{{ config('brand.support_email') }}</a>.
+                    </p>
+                </div>
             </td>
         </tr>
-        <tr>
-            <td style="padding:24px 28px; color:#94a3b8; font-size:12px; text-align:center;">
-                &copy; {{ date('Y') }} NOVA - Neuroaffirming Operations & Virtual Administration.
-                You're receiving this email because you have an upcoming session scheduled.
-            </td>
-        </tr>
+        @include('emails.partials.footer')
     </table>
 </body>
 

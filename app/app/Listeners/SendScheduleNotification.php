@@ -40,12 +40,7 @@ class SendScheduleNotification implements ShouldQueue
             return;
         }
 
-        // Notify Therapist
-        if ($schedule->therapist && $schedule->therapist->email) {
-            $this->sendNotificationMail($schedule, $schedule->therapist->email, $mailType, $logType, isRecipientStudent: false);
-        }
-
-        // Student side: only schedule_email (no student user email or parent/guardian emails)
+        // Only notify student schedule contact — therapists do not receive schedule emails
         $studentEmail = $schedule->student?->studentProfile?->schedule_email;
         if (! $studentEmail) {
             return;
