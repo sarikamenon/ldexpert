@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\ServiceStatus;
+use App\Models\Concerns\HasAudits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Service extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\ServiceFactory> */
     use HasFactory;
 

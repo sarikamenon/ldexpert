@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
+use App\Models\Concerns\HasAudits;
 use App\Observers\UserObserver;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -27,8 +28,15 @@ use Illuminate\Notifications\Notifiable;
 #[ObservedBy(UserObserver::class)]
 class User extends Authenticatable implements MustVerifyEmail
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
+
+    /** @var array<int, string> */
+    protected array $auditIgnoreFields = [
+        'password_change_prompted_at',
+    ];
 
     /**
      * The attributes that are mass assignable.

@@ -24,7 +24,7 @@ final class EloquentSSARepositoryTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->repository = new EloquentSSARepository;
+        $this->repository = app(EloquentSSARepository::class);
     }
 
     public function test_find_with_relations_loads_specified_relations(): void

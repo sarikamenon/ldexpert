@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\EmployeeType;
 use App\Enums\TherapistTitle;
+use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\TherapistScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,6 +16,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TherapistProfile extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\TherapistProfileFactory> */
     use HasFactory;
 

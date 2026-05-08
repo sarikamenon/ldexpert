@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Audit\Services\AuditRecorder;
 use App\Domain\Contract\Repositories\SchoolContractRepositoryInterface;
 use App\DTOs\ContractServiceRateDTO;
 use App\DTOs\CreateSchoolContractDTO;
@@ -19,6 +20,8 @@ use Illuminate\Support\Collection;
 
 final class EloquentSchoolContractRepository implements SchoolContractRepositoryInterface
 {
+    public function __construct(private readonly AuditRecorder $auditRecorder) {}
+
     public function paginate(SchoolContractFilterDTO $filters, int $perPage = 25): LengthAwarePaginator
     {
         return $this->applyFilters($this->baseQuery(), $filters)
@@ -91,6 +94,8 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
 
     public function syncServices(SchoolContract $contract, array $services): void
     {
+        $oldSnapshot = $contract->serviceRatesSnapshot();
+
         $contract->services()->delete();
         $contract->services()->createMany(
             array_map(
@@ -103,6 +108,19 @@ final class EloquentSchoolContractRepository implements SchoolContractRepository
                 ],
                 $services,
             )
+        );
+
+        $newSnapshot = $contract->refresh()->serviceRatesSnapshot();
+
+        if ($oldSnapshot === $newSnapshot) {
+            return;
+        }
+
+        $this->auditRecorder->record(
+            auditable: $contract,
+            event: 'services_synced',
+            oldValues: ['services' => $oldSnapshot],
+            newValues: ['services' => $newSnapshot],
         );
     }
 

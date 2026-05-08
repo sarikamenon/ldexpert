@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\TransactionType;
+use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\LedgerEntryScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class LedgerEntry extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Illuminate\Database\Eloquent\Factories\Factory<LedgerEntry>> */
     use HasFactory, SoftDeletes;
 

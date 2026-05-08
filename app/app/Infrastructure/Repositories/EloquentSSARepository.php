@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Audit\Services\AuditRecorder;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\DTOs\ChangeSSAStatusDTO;
 use App\DTOs\CreateSSADTO;
@@ -27,6 +28,8 @@ use Illuminate\Support\Facades\DB;
 
 final class EloquentSSARepository implements SSARepositoryInterface
 {
+    public function __construct(private readonly AuditRecorder $auditRecorder) {}
+
     /** @return LengthAwarePaginator<int, ServiceSupportAgreement> */
     public function paginate(SSAFilterDTO $filters): LengthAwarePaginator
     {
@@ -449,9 +452,29 @@ final class EloquentSSARepository implements SSARepositoryInterface
 
     private function syncSsaServices(ServiceSupportAgreement $ssa): void
     {
+        /** @var array<int, int> $oldIds */
+        $oldIds = $ssa->services()->pluck('services.id')->all();
+
         $ssa->services()->sync([
             (int) $ssa->primary_service_id => ['is_primary' => true],
         ]);
+
+        /** @var array<int, int> $newIds */
+        $newIds = $ssa->services()->pluck('services.id')->all();
+
+        sort($oldIds);
+        sort($newIds);
+
+        if ($oldIds === $newIds) {
+            return;
+        }
+
+        $this->auditRecorder->record(
+            auditable: $ssa,
+            event: 'services_synced',
+            oldValues: ['service_ids' => $oldIds],
+            newValues: ['service_ids' => $newIds],
+        );
     }
 
     /** @return Collection<int, ServiceSupportAgreement> */

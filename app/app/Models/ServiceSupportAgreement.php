@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\Role;
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
+use App\Models\Concerns\HasAudits;
 use App\Models\Pivots\SSAService;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,6 +28,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ServiceSupportAgreement extends Model
 {
+    use HasAudits;
+
     /** @use HasFactory<\Database\Factories\ServiceSupportAgreementFactory> */
     use HasFactory;
 
