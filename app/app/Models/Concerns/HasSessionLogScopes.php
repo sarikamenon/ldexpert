@@ -185,4 +185,13 @@ trait HasSessionLogScopes
     {
         return SessionLogScope::forTherapistIds($query, $this, $therapistIds);
     }
+
+    /**
+     * @param  Builder<\App\Models\SessionLog>  $query
+     * @return Builder<\App\Models\SessionLog>
+     */
+    public function scopeExcludingId(Builder $query, int $sessionLogId): Builder
+    {
+        return SessionLogScope::excludingId($query, $this, $sessionLogId);
+    }
 }

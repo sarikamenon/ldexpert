@@ -28,6 +28,11 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - **Prefer collection methods** (`map`, `filter`, `reject`, `flatMap`, etc.) over `foreach` loops when transforming or filtering Eloquent results. Loops are acceptable only for side-effectful operations (e.g., creating DB records inside the loop).
 - **Always use `use` statements** for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
 - **Always add policies** for new models/features. Use `$this->authorize()` in controllers.
+- **Use Laravel 11+ auto-discovery — do NOT register manually.** Laravel auto-discovers the following based on naming conventions; explicit registration in `AppServiceProvider` (or anywhere else) is forbidden because it adds noise and rots when models move:
+  - **Policies** — `App\Policies\<Model>Policy` for `App\Models\<Model>` is auto-discovered. Never call `Gate::policy(...)` for a conventionally-named policy.
+  - **Observers** — `App\Observers\<Model>Observer` is auto-discovered when `#[ObservedBy(...)]` attribute is on the model. Use the attribute, not `Model::observe()`.
+  - **Event listeners** — listener classes with a typed `handle()` method in `app/Listeners/` are auto-discovered when registered via `#[AsEventListener]` or via the listener's typed handle parameter. Avoid `Event::listen()` calls.
+  - Manual registration is allowed only when the convention does not apply (e.g. policy for a non-Eloquent class, listener wired to a runtime-determined event). When you do register manually, leave a one-line comment explaining why the convention doesn't fit.
 - **Keep files small and focused**: Hard cap of 300 lines per PHP file, 400 lines per JS file. If approaching the limit, extract to smaller classes, view components, dedicated services, or JS modules. No exceptions without a comment justifying and a follow-up task to split.
 - **Use soft deletes by default** on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
 - **No public registration routes**; users created via command or privileged UI.
@@ -226,6 +231,7 @@ DataTables intentionally stays on `RowTransformer`: rows are positional arrays o
 
 ## Testing Standards
 
+- **All tests must be written in Pest syntax** — use top-level `it()` / `test()` functions, `expect()` assertions, and `uses()` for traits. Never write new tests as PHPUnit classes (`class FooTest extends TestCase { public function test_... }`). Existing PHPUnit-style tests should be migrated to Pest incrementally when touched. The runner is still PHPUnit under the hood so both work, but Pest is the project standard going forward.
 - **Tests are mandatory for new logic**:
  - Unit tests for DTOs/Services/Repositories/**Model methods** (any public method added to a model needs a unit test)
  - Feature tests for routes/commands — including validation rules (happy path + each failure case)

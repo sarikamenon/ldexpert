@@ -6,6 +6,7 @@ namespace App\Domain\Therapist\Repositories;
 
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
+use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
@@ -97,4 +98,11 @@ interface SessionLogRepositoryInterface
      * @return Collection<int, SessionLog>
      */
     public function getOrphanLogsForCalendar(ScheduleFilterDTO $filters): Collection;
+
+    /**
+     * @param  array<int, SessionLogStatus>  $statuses
+     */
+    public function existsForSsaWithStatuses(int $ssaId, array $statuses, ?int $excludeSessionLogId = null): bool;
+
+    public function mostRecentSubmittedOrApprovedForSsa(int $ssaId, ?int $excludeSessionLogId = null): ?SessionLog;
 }

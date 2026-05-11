@@ -26,6 +26,7 @@ export default defineConfig({
                 'resources/js/pages/admin-ssas-index.js',
                 'resources/js/pages/admin-ssas-form.js',
                 'resources/js/pages/admin-ssas-show.js',
+                'resources/js/pages/ssa-goals.js',
                 'resources/js/pages/admin-ssas-import.js',
                 'resources/js/pages/admin-ssas-import-status.js',
                 'resources/js/pages/admin-ssas-import-history.js',

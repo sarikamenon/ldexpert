@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\SessionLogController;
 use App\Http\Controllers\Admin\SessionLogImportController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SSAController;
+use App\Http\Controllers\Admin\SSAGoalController;
 use App\Http\Controllers\Admin\StudentCommentController;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\StudentDocumentController;
@@ -123,6 +124,14 @@ Route::middleware('role:admin')
         Route::patch('ssas/{ssa}/status', [SSAController::class, 'updateStatus'])->name('ssas.status');
         Route::post('ssas/{ssa}/assign-therapist', [SSAController::class, 'assignTherapist'])->name('ssas.assign-therapist');
         Route::post('ssas/{ssa}/unassign-therapist', [SSAController::class, 'unassignTherapist'])->name('ssas.unassign-therapist');
+        Route::prefix('ssas/{ssa}/goals')->name('ssas.goals.')->group(function () {
+            Route::get('create', [SSAGoalController::class, 'create'])->name('create');
+            Route::post('/', [SSAGoalController::class, 'store'])->name('store');
+            Route::get('{goal}/edit', [SSAGoalController::class, 'edit'])->name('edit');
+            Route::put('{goal}', [SSAGoalController::class, 'update'])->name('update');
+            Route::patch('{goal}/status', [SSAGoalController::class, 'changeStatus'])->name('change-status');
+        });
+
         Route::resource('ssas', SSAController::class)->except(['destroy']);
 
         Route::prefix('contracts')

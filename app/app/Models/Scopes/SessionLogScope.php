@@ -210,4 +210,13 @@ final class SessionLogScope extends BaseModelScope
             ->whereNotNull(self::qualify($model, 'outcome'))
             ->where(self::qualify($model, 'tho_minutes'), '>', 0);
     }
+
+    /**
+     * @param  Builder<SessionLog>  $builder
+     * @return Builder<SessionLog>
+     */
+    public static function excludingId(Builder $builder, Model $model, int $sessionLogId): Builder
+    {
+        return $builder->where(self::qualify($model, 'id'), '!=', $sessionLogId);
+    }
 }

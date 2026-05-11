@@ -10,6 +10,7 @@ use App\Http\Controllers\Therapist\SchoolCalendarController;
 use App\Http\Controllers\Therapist\SessionLogController;
 use App\Http\Controllers\Therapist\SessionLogDocumentController;
 use App\Http\Controllers\Therapist\SSAController;
+use App\Http\Controllers\Therapist\SSAGoalController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
 use App\Http\Controllers\Therapist\StudentDocumentController;
@@ -54,6 +55,14 @@ Route::middleware('role:therapist')
         Route::get('ssas', [SSAController::class, 'index'])->name('ssas.index');
         Route::post('ssas/data', [SSAController::class, 'data'])->name('ssas.data');
         Route::get('ssas/{ssa}', [SSAController::class, 'show'])->name('ssas.show');
+
+        Route::prefix('ssas/{ssa}/goals')->name('ssas.goals.')->group(function () {
+            Route::get('create', [SSAGoalController::class, 'create'])->name('create');
+            Route::post('/', [SSAGoalController::class, 'store'])->name('store');
+            Route::get('{goal}/edit', [SSAGoalController::class, 'edit'])->name('edit');
+            Route::put('{goal}', [SSAGoalController::class, 'update'])->name('update');
+            Route::patch('{goal}/status', [SSAGoalController::class, 'changeStatus'])->name('change-status');
+        });
 
         // Student routes
         Route::post('students/data', [StudentController::class, 'data'])->name('students.data');

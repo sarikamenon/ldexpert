@@ -8,8 +8,10 @@ use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentDocumentService;
+use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogService;
 use App\Domain\Time\UserTimezoneService;
 use App\DTOs\CreateSessionLogDTO;
@@ -27,6 +29,7 @@ use App\Http\Requests\Therapist\UpdateSessionLogRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
+use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\SessionLogComment;
 use Carbon\Carbon;
@@ -37,6 +40,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
+// Exceeds 300-line cap. Follow-up tracked in GitHub issue #197: split state-transition
+// actions (submit, cancel) into single-action controllers and extract buildSsaContext()
+// into a dedicated service.
 final class SessionLogController extends Controller
 {
     use DataTablesResponse;
@@ -58,6 +64,8 @@ final class SessionLogController extends Controller
         private readonly BillingEntryWindowService $billingEntryWindowService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly UserTimezoneService $timezoneService,
+        private readonly SSAGoalService $goalService,
+        private readonly SessionLogRepositoryInterface $sessionLogRepository,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -248,6 +256,7 @@ final class SessionLogController extends Controller
             'scheduleLocalDate' => $scheduleLocalDate,
             'scheduleLocalStartTime' => $scheduleLocalStartTime,
             'scheduleLocalEndTime' => $scheduleLocalEndTime,
+            'ssaContext' => $this->buildSsaContext($selectedSsa),
         ]);
     }
 
@@ -330,6 +339,7 @@ final class SessionLogController extends Controller
         return view('therapist.session-logs.edit', [
             'sessionLog' => $sessionLog,
             'sessionOutcomes' => SessionOutcome::cases(),
+            'ssaContext' => $this->buildSsaContext($sessionLog->ssa, $sessionLog->id),
         ]);
     }
 
@@ -438,5 +448,47 @@ final class SessionLogController extends Controller
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Build the read-only context shown above the session log form.
+     *
+     * Returns either the SSA's active goals (first session log on the SSA)
+     * or the most recent submitted/approved log's notes (subsequent logs).
+     *
+     * @return array{mode: string, goals?: \Illuminate\Database\Eloquent\Collection<int, \App\Models\SSAGoal>, previousLog?: SessionLog|null}|null
+     */
+    private function buildSsaContext(?ServiceSupportAgreement $ssa, ?int $excludeSessionLogId = null): ?array
+    {
+        if ($ssa === null) {
+            return null;
+        }
+
+        $hasPrior = $this->sessionLogRepository->existsForSsaWithStatuses(
+            $ssa->id,
+            [SessionLogStatus::SUBMITTED, SessionLogStatus::APPROVED],
+            $excludeSessionLogId,
+        );
+
+        if (! $hasPrior) {
+            return [
+                'mode' => 'goals',
+                'goals' => $this->goalService->listActiveForSsa($ssa->id),
+            ];
+        }
+
+        $previousLog = $this->sessionLogRepository->mostRecentSubmittedOrApprovedForSsa($ssa->id, $excludeSessionLogId);
+
+        if ($previousLog !== null) {
+            $tz = $previousLog->displayTimezone();
+            $previousLog->session_date_formatted = $previousLog->localDate($tz)->format('M d, Y');
+            $previousLog->start_time_formatted = $previousLog->localStart($tz)->format('g:i A');
+            $previousLog->end_time_formatted = $previousLog->localEnd($tz)->format('g:i A');
+        }
+
+        return [
+            'mode' => 'previous_notes',
+            'previousLog' => $previousLog,
+        ];
     }
 }

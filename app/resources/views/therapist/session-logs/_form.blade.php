@@ -143,6 +143,49 @@
             </div>
         </div>
 
+        @isset($ssaContext)
+            @if ($ssaContext['mode'] === 'goals')
+                <div class="space-y-3 mt-4 rounded-lg border border-border bg-muted/30 p-4">
+                    <div>
+                        <h4 class="text-sm font-medium text-foreground">Goals for this SSA</h4>
+                        <p class="mt-1 text-xs text-foreground/60">This is the first session log for this SSA. Review the active goals before logging the session.</p>
+                    </div>
+                    @forelse ($ssaContext['goals'] as $goal)
+                        <div class="rounded-md border border-border bg-white p-3">
+                            <p class="text-sm font-semibold text-foreground">#{{ $goal->number }}</p>
+                            <p class="mt-1 text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->objective }}</p>
+                            @if ($goal->progress)
+                                <p class="mt-2 text-xs text-foreground/60">
+                                    <span class="font-medium">Progress so far:</span> {{ $goal->progress }}
+                                </p>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="text-sm text-foreground/60">No active goals are recorded for this SSA. Add goals on the SSA's Goals tab.</p>
+                    @endforelse
+                </div>
+            @elseif ($ssaContext['mode'] === 'previous_notes' && ($ssaContext['previousLog'] ?? null))
+                <div class="space-y-2 mt-4 rounded-lg border border-border bg-muted/30 p-4">
+                    <h4 class="text-sm font-medium text-foreground">Previous Session Notes</h4>
+                    <p class="text-xs text-foreground/60">
+                        {{ $ssaContext['previousLog']->session_date_formatted }} · {{ $ssaContext['previousLog']->start_time_formatted }} – {{ $ssaContext['previousLog']->end_time_formatted }}
+                        <a href="{{ route('therapist.session-logs.show', $ssaContext['previousLog']) }}"
+                            target="_blank"
+                            rel="noopener"
+                            class="ml-2 font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded inline-flex items-center gap-1">
+                            View session
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-3 h-3" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                            </svg>
+                        </a>
+                    </p>
+                    <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $ssaContext['previousLog']->notes ?: 'No notes recorded on the previous session log.' }}</p>
+                </div>
+            @endif
+        @endisset
+
         <div class="space-y-4 mt-4">
             <h4 class="text-sm font-medium text-foreground/70">Notes & Outcome</h4>
 

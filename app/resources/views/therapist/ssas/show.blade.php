@@ -45,6 +45,7 @@
                     ['key' => 'details', 'label' => 'Details', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'details'])],
                     ['key' => 'assignment', 'label' => 'Assignment History', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'assignment'])],
                     ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'session_logs'])],
+                    ['key' => 'goals', 'label' => 'Goals', 'href' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'goals'])],
                 ];
             @endphp
             <x-ui::tabs :tabs="$tabs" :active-tab="$activeTab ?? 'dashboard'" />
@@ -193,6 +194,14 @@
     @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
         <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
             :datatable-url="$datatableUrl ?? null" :ssa-id="$ssaId ?? null" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'goals' && isset($goals))
+        <x-ssa.goals-list
+            :ssa="$ssa"
+            :goals="$goals"
+            :create-url="route('therapist.ssas.goals.create', $ssa)"
+            :edit-url-resolver="fn ($g) => route('therapist.ssas.goals.edit', ['ssa' => $ssa, 'goal' => $g])"
+            :status-url-resolver="fn ($g) => route('therapist.ssas.goals.change-status', ['ssa' => $ssa, 'goal' => $g])"
+            :can-edit="$canEditGoals ?? false" />
     @endif
 </div>
 </div>
@@ -202,6 +211,9 @@
         @vite(['resources/js/pages/therapist-session-logs-index.js'])
     @else
         @vite(['resources/js/pages/therapist-ssas-show.js'])
+    @endif
+    @if (($activeTab ?? 'dashboard') === 'goals')
+        @vite(['resources/js/pages/ssa-goals.js'])
     @endif
 </x-slot>
 </x-app-layout>

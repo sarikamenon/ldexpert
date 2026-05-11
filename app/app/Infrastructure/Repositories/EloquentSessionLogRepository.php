@@ -523,4 +523,27 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
 
         return $logs;
     }
+
+    /**
+     * @param  array<int, SessionLogStatus>  $statuses
+     */
+    public function existsForSsaWithStatuses(int $ssaId, array $statuses, ?int $excludeSessionLogId = null): bool
+    {
+        return SessionLog::query()
+            ->forSsaId($ssaId)
+            ->withStatuses($statuses)
+            ->when($excludeSessionLogId !== null, fn ($q) => $q->excludingId((int) $excludeSessionLogId))
+            ->exists();
+    }
+
+    public function mostRecentSubmittedOrApprovedForSsa(int $ssaId, ?int $excludeSessionLogId = null): ?SessionLog
+    {
+        return SessionLog::query()
+            ->forSsaId($ssaId)
+            ->withStatuses([SessionLogStatus::SUBMITTED, SessionLogStatus::APPROVED])
+            ->when($excludeSessionLogId !== null, fn ($q) => $q->excludingId((int) $excludeSessionLogId))
+            ->orderByDesc('session_date')
+            ->orderByDesc('id')
+            ->first();
+    }
 }
