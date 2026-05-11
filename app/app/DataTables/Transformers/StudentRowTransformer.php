@@ -38,10 +38,15 @@ final class StudentRowTransformer
             $toggleBtn,
         );
 
+        $parentUser = $profile?->parent;
+        $parentName = $parentUser
+            ? e($parentUser->name)
+            : e($profile !== null ? ($profile->parent_guardian_name ?? '—') : '—');
+
         return [
             '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90" title="View Student" aria-label="View student '.e($student->name).'">'.(int) $student->id.'</a>',
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($student->name).'</a>',
-            e($student->username),
+            $parentName,
             e($student->email),
             $schoolCell,
             e($profile->grade_level ?? '—'),
