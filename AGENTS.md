@@ -231,6 +231,7 @@ DataTables intentionally stays on `RowTransformer`: rows are positional arrays o
 
 ## Testing Standards
 
+- **All tests must be written in Pest syntax** — use top-level `it()` / `test()` functions, `expect()` assertions, and `uses()` for traits. Never write new tests as PHPUnit classes (`class FooTest extends TestCase { public function test_... }`). Existing PHPUnit-style tests should be migrated to Pest incrementally when touched. The runner is still PHPUnit under the hood so both work, but Pest is the project standard going forward.
 - **Tests are mandatory for new logic**:
  - Unit tests for DTOs/Services/Repositories/**Model methods** (any public method added to a model needs a unit test)
  - Feature tests for routes/commands — including validation rules (happy path + each failure case)
