@@ -87,7 +87,7 @@
                                 @endif
                                 <div class="flex items-center gap-4 text-xs text-foreground/60">
                                     <span>Uploaded by {{ $document->uploadedBy->name ?? '—' }}</span>
-                                    <span>{{ $document->created_at->format('M d, Y g:i A') }}</span>
+                                    <span>{{ $document->created_at->format(config('display.datetime')) }}</span>
                                     <span>{{ $document->formatted_file_size }}</span>
                                 </div>
                             </div>

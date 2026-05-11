@@ -64,7 +64,7 @@
                             @php
                                 $t = trim((string) $qglobRequest->getAttribute('requested_time'));
                             @endphp
-                            {{ $t !== '' ? \Carbon\Carbon::parse($qglobRequest->requested_date->format('Y-m-d').' '.$t)->format('g:i A') : '—' }}
+                            {{ $t !== '' ? \Carbon\Carbon::parse($qglobRequest->requested_date->format('Y-m-d').' '.$t)->format(config('display.time')) : '—' }}
                         </dd>
                     </div>
                     <div>
@@ -80,7 +80,7 @@
                     @if ($qglobRequest->responded_at)
                         <div>
                             <dt class="text-xs font-medium text-foreground/70">Responded</dt>
-                            <dd>{{ $qglobRequest->responded_at->format('M j, Y g:i A') }}
+                            <dd>{{ $qglobRequest->responded_at->format(config('display.datetime')) }}
                                 @if ($qglobRequest->respondedBy)
                                     · {{ $qglobRequest->respondedBy->name }}
                                 @endif

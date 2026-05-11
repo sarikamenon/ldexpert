@@ -29,7 +29,7 @@ final class SSAImportRowTransformer
         $statusCell = '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium '.$statusClasses.'">'.e(strtoupper($statusValue)).'</span>';
 
         $progressCell = (int) $import->processed_rows.' / '.(int) $import->total_rows;
-        $createdCell = $import->created_at ? $import->created_at->format('M d, Y H:i') : '—';
+        $createdCell = $import->created_at ? $import->created_at->format(config('display.datetime')) : '—';
 
         $showUrl = route('admin.ssas.imports.show', $import);
         $downloadUrl = route('admin.ssas.imports.download', $import);

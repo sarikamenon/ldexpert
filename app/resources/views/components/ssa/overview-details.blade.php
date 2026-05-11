@@ -157,13 +157,13 @@
                 <div>
                     <dt class="text-sm font-medium text-foreground/70">Created At</dt>
                     <dd class="mt-1 text-sm text-foreground">
-                        {{ app(\App\Domain\Time\UserTimezoneService::class)->toUserTimezone($ssa->created_at)->format('M d, Y g:i A') }}
+                        {{ app(\App\Domain\Time\UserTimezoneService::class)->toUserTimezone($ssa->created_at)->format(config('display.datetime')) }}
                     </dd>
                 </div>
                 <div>
                     <dt class="text-sm font-medium text-foreground/70">Last Updated</dt>
                     <dd class="mt-1 text-sm text-foreground">
-                        {{ app(\App\Domain\Time\UserTimezoneService::class)->toUserTimezone($ssa->updated_at)->format('M d, Y g:i A') }}
+                        {{ app(\App\Domain\Time\UserTimezoneService::class)->toUserTimezone($ssa->updated_at)->format(config('display.datetime')) }}
                     </dd>
                 </div>
             </dl>

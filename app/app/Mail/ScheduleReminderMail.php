@@ -66,8 +66,8 @@ class ScheduleReminderMail extends Mailable
             view: 'emails.schedule-reminder',
             with: [
                 'scheduleDate' => $startLocal->format('M d, Y'),
-                'startTime' => $startLocal->format('h:i A'),
-                'endTime' => $endLocal->format('h:i A'),
+                'startTime' => $startLocal->format(config('display.time')),
+                'endTime' => $endLocal->format(config('display.time')),
                 'recipientName' => $this->recipientName,
                 'timezone' => $this->timezone,
             ],

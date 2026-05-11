@@ -20,7 +20,7 @@ final class LedgerEntryRowTransformer
     public static function transform(LedgerEntry $entry): array
     {
         $dateCell = '<div class="whitespace-nowrap">'.$entry->recorded_at->format('M d, Y').'</div>'
-            .'<div class="text-xs text-foreground/60 whitespace-nowrap">'.$entry->recorded_at->format('h:i A').'</div>';
+            .'<div class="text-xs text-foreground/60 whitespace-nowrap">'.$entry->recorded_at->format(config('display.time')).'</div>';
 
         $variant = match ($entry->transaction_type->value) {
             'invoice_generated', 'bill_generated' => 'primary',

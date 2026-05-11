@@ -15,7 +15,7 @@ Steps:
    - `app/Policies/<ModelName>Policy.php` — policy with viewAny, view, create, update, delete
    - `app/DataTables/Transformers/<ModelName>RowTransformer.php` — DataTable row transformer
 3. Register the repository binding in AppServiceProvider
-4. Register the policy in AppServiceProvider
+4. Do NOT register the policy — Laravel auto-discovers conventionally-named policies (`App\Policies\<Model>Policy` for `App\Models\<Model>`)
 5. Add route stubs to the appropriate role route file
 6. All files must follow CLAUDE.md standards (strict types, PHPStan L8, generics, etc.)
 7. List all created files and remind to run `make qa`

@@ -243,7 +243,7 @@
                             {{ $isAdmin ? 'Admin' : 'Therapist' }}
                         </span>
                         <span class="text-xs text-foreground/60">
-                            {{ $comment->author?->name ?? ($isAdmin ? 'Admin' : 'Therapist') }} · {{ $comment->created_at?->format('M d, Y g:i A') }}
+                            {{ $comment->author?->name ?? ($isAdmin ? 'Admin' : 'Therapist') }} · {{ $comment->created_at?->format(config('display.datetime')) }}
                         </span>
                     </div>
                     <p class="text-sm text-foreground whitespace-pre-wrap">{{ $comment->comment }}</p>

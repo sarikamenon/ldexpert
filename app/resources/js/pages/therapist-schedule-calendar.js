@@ -540,8 +540,8 @@ import { openScheduleDetailsModal } from '../common/schedule-modal';
                         <div class="flex items-start justify-between">
                             <div class="flex-1">
                                 <div class="flex items-center gap-4 mb-2">
-                                    <span class="text-sm font-medium text-foreground">${schedule.start_time || ''}</span>
-                                    ${schedule.end_time ? `<span class="text-sm text-foreground/70">-</span><span class="text-sm font-medium text-foreground">${schedule.end_time}</span>` : ''}
+                                    <span class="text-sm font-medium text-foreground">${schedule.start_time_formatted || ''}</span>
+                                    ${schedule.end_time_formatted ? `<span class="text-sm text-foreground/70">-</span><span class="text-sm font-medium text-foreground">${schedule.end_time_formatted}</span>` : ''}
                                 </div>
                                 ${schedule.student ? `
                                     <div class="mb-1">

@@ -247,7 +247,7 @@
     @endforelse
 
     <div class="footer">
-        <p>Generated {{ now()->format('M d, Y \a\t h:i A') }}</p>
+        <p>Generated {{ now()->format('M d, Y \a\t '.config('display.time')) }}</p>
     </div>
 </body>
 

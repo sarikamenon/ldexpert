@@ -123,7 +123,7 @@
             @if ($invoice->sent_at)
                 <div>
                     <p class="text-sm text-foreground/70">Sent At</p>
-                    <p class="text-sm font-medium mt-1">{{ $invoice->sent_at->format('M d, Y h:i A') }}</p>
+                    <p class="text-sm font-medium mt-1">{{ $invoice->sent_at->format(config('display.datetime')) }}</p>
                 </div>
             @endif
         </div>

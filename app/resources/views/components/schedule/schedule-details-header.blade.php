@@ -9,9 +9,9 @@
     <div class="flex items-center gap-2">
         <h2 class="text-lg font-semibold text-foreground" id="selectedDateHeader">
             @if ($selectedDate)
-                {{ $selectedDate->format('d F, Y') }} - {{ now()->format('h:i A') }} ({{ $timezoneLabel }})
+                {{ $selectedDate->format('d F, Y') }} - {{ now()->format(config('display.time')) }} ({{ $timezoneLabel }})
             @else
-                {{ now()->format('d F, Y') }} - {{ now()->format('h:i A') }} ({{ $timezoneLabel }})
+                {{ now()->format('d F, Y') }} - {{ now()->format(config('display.time')) }} ({{ $timezoneLabel }})
             @endif
         </h2>
         @if ($showDropdown)
