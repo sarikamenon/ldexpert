@@ -71,7 +71,7 @@ final class QGlobRequestRowTransformer
         $timeRaw = trim((string) $request->getAttribute('requested_time'));
         $dateForParse = $request->requested_date->format('Y-m-d');
         $timeStr = $timeRaw !== ''
-            ? Carbon::parse($dateForParse.' '.$timeRaw)->format('g:i A')
+            ? Carbon::parse($dateForParse.' '.$timeRaw)->format(config('display.time'))
             : '—';
 
         return '<div class="flex flex-col space-y-1">'

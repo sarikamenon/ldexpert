@@ -90,8 +90,8 @@ class DashboardController extends Controller
             return [
                 'id' => $schedule->id,
                 'schedule_date' => $scheduleLocal->format('Y-m-d'),
-                'start_time' => $scheduleLocal->format('g:i A'),
-                'end_time' => $endLocal->format('g:i A'),
+                'start_time' => $scheduleLocal->format(config('display.time')),
+                'end_time' => $endLocal->format(config('display.time')),
                 'therapist_name' => $schedule->therapist->name ?? 'N/A',
                 'service_name' => $schedule->service->name ?? 'N/A',
                 'school' => $schedule->school?->display_name,

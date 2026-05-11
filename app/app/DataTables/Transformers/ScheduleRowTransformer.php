@@ -20,7 +20,7 @@ final class ScheduleRowTransformer
         $localEnd = $schedule->localEnd($tz);
 
         $dateCell = $localStart->format('Y-m-d');
-        $timeCell = $localStart->format('H:i').' - '.$localEnd->format('H:i');
+        $timeCell = $localStart->format(config('display.time')).' - '.$localEnd->format(config('display.time'));
 
         $therapistCell = $schedule->therapist
             ? '<a href="'.e(route('admin.therapists.show', $schedule->therapist)).'" class="text-primary hover:underline">'.e($schedule->therapist->name).'</a>'

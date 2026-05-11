@@ -206,7 +206,7 @@
                 <div class="border border-border rounded-base p-4">
                     <div class="flex items-center justify-between mb-2">
                         <span class="text-sm font-medium">{{ $note->author?->name ?? 'Unknown' }}</span>
-                        <span class="text-xs text-foreground/60">{{ $note->created_at?->format('M d, Y h:i A') }}</span>
+                        <span class="text-xs text-foreground/60">{{ $note->created_at?->format(config('display.datetime')) }}</span>
                     </div>
                     <p class="text-sm text-foreground">{{ $note->note }}</p>
                 </div>

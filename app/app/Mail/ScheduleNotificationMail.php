@@ -46,12 +46,12 @@ class ScheduleNotificationMail extends Mailable
         return new Content(
             view: 'emails.schedule-notification',
             with: [
-                'scheduleDateLong'  => $localStart->format('l, F j, Y'),
-                'scheduleStartTime' => $localStart->format('g:i A'),
-                'scheduleEndTime'   => $localEnd->format('g:i A'),
-                'scheduleTimezone'  => UsTimezones::getTimezoneLabel($tz),
-                'therapistEmail'    => $therapist !== null ? ($therapist->email ?? '') : '',
-                'therapistPhone'    => $therapist !== null ? ($therapist->therapistProfile->phone ?? '') : '',
+                'scheduleDateLong' => $localStart->format('l, F j, Y'),
+                'scheduleStartTime' => $localStart->format(config('display.time')),
+                'scheduleEndTime' => $localEnd->format(config('display.time')),
+                'scheduleTimezone' => UsTimezones::getTimezoneLabel($tz),
+                'therapistEmail' => $therapist !== null ? ($therapist->email ?? '') : '',
+                'therapistPhone' => $therapist !== null ? ($therapist->therapistProfile->phone ?? '') : '',
             ],
         );
     }

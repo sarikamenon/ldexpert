@@ -21,8 +21,8 @@ final class TherapistSessionLogRowTransformer
         $sessionDate = $localStart;
         $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
-        $startTime = $localStart->format('g:i A');
-        $endTime = $localEnd->format('g:i A');
+        $startTime = $localStart->format(config('display.time'));
+        $endTime = $localEnd->format(config('display.time'));
         $timeRange = "{$startTime} - {$endTime}";
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
@@ -34,22 +34,6 @@ final class TherapistSessionLogRowTransformer
         }
         $dateTimeCell .= '</div>';
 
-        $studentName = $log->student->name ?? null;
-        $schoolName = $log->school->display_name ?? null;
-        $studentSchoolCell = '<div class="flex flex-col">';
-        if ($studentName) {
-            $studentSchoolCell .= '<span class="font-medium text-foreground">'.e($studentName).'</span>';
-        }
-        if ($schoolName) {
-            $studentSchoolCell .= '<span class="text-xs text-foreground/60 mt-1">'.e($schoolName).'</span>';
-        }
-        if (! $studentName && ! $schoolName) {
-            $studentSchoolCell .= '<span class="text-gray-500">-</span>';
-        }
-        $studentSchoolCell .= '</div>';
-
-        $serviceCell = e($log->service->name ?? '—');
-
         $entryCreated = $createdAt ? $createdAt->format('M d, Y') : null;
         $entryDiff = DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt);
         $entryInfoCell = '<div class="flex flex-col space-y-1">';
@@ -60,10 +44,33 @@ final class TherapistSessionLogRowTransformer
             $entryInfoCell .= '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium bg-warning/10 text-warning border border-warning/20 w-fit">'.e($entryDiff).'</span>';
         }
         if (! $entryCreated && ! $entryDiff) {
-            $entryInfoCell .= '<span class="text-gray-500">-</span>';
+            $entryInfoCell .= '<span class="text-foreground/40">-</span>';
         }
         $entryInfoCell .= '</div>';
 
+        $studentName = $log->student->name ?? null;
+        $schoolName = $log->school->display_name ?? null;
+        $studentSchoolCell = '<div class="flex flex-col">';
+        if ($studentName) {
+            $studentSchoolCell .= '<span class="font-medium text-foreground">'.e($studentName).'</span>';
+        }
+        if ($schoolName) {
+            $studentSchoolCell .= '<span class="text-xs text-foreground/60 mt-1">'.e($schoolName).'</span>';
+        }
+        if (! $studentName && ! $schoolName) {
+            $studentSchoolCell .= '<span class="text-foreground/40">-</span>';
+        }
+        $studentSchoolCell .= '</div>';
+
+        $serviceName = $log->service->name ?? null;
+        $therapistServiceCell = '<div class="flex flex-col">';
+        $therapistServiceCell .= '<span class="font-medium text-foreground">'.e($log->therapist->name ?? '-').'</span>';
+        if ($serviceName) {
+            $therapistServiceCell .= '<span class="text-sm text-foreground/70 mt-0.5">'.e($serviceName).'</span>';
+        }
+        $therapistServiceCell .= '</div>';
+
+        $schoolAmountCell = self::formatCurrency($log->school_invoice_amount);
         $therapistAmountCell = self::formatCurrency($log->therapist_billable_amount);
 
         $statusLabel = self::getStatusLabel($log);
@@ -93,9 +100,10 @@ final class TherapistSessionLogRowTransformer
 
         return [
             $dateTimeCell,
-            $studentSchoolCell,
-            $serviceCell,
             $entryInfoCell,
+            $studentSchoolCell,
+            $therapistServiceCell,
+            $schoolAmountCell,
             $therapistAmountCell,
             $statusCell,
             $actionsCell,

@@ -126,7 +126,7 @@
                                     {{ $document->uploadedBy->name ?? '—' }}
                                 </td>
                                 <td class="py-3 px-4 text-sm text-foreground">
-                                    {{ $document->created_at->format('M d, Y g:i A') }}
+                                    {{ $document->created_at->format(config('display.datetime')) }}
                                 </td>
                                 <td class="py-3 px-4 text-sm text-foreground">
                                     {{ $document->formatted_file_size }}

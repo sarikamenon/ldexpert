@@ -112,8 +112,8 @@ final class SessionLogController extends Controller
 
         $tz = $sessionLog->displayTimezone();
         $sessionLog->session_date_formatted = $sessionLog->localDate($tz)->format('M d, Y');
-        $sessionLog->start_time_formatted = $sessionLog->localStart($tz)->format('g:i A');
-        $sessionLog->end_time_formatted = $sessionLog->localEnd($tz)->format('g:i A');
+        $sessionLog->start_time_formatted = $sessionLog->localStart($tz)->format(config('display.time'));
+        $sessionLog->end_time_formatted = $sessionLog->localEnd($tz)->format(config('display.time'));
 
         $documents = $this->documentService->listBySessionLog($sessionLog->id);
 

@@ -116,7 +116,9 @@ class DashboardService
                 'id' => $schedule->id,
                 'schedule_date' => $localStart->format('Y-m-d'),
                 'start_time' => $localStart->format('H:i'),
+                'start_time_formatted' => $localStart->format(config('display.time')),
                 'end_time' => $localEnd->format('H:i'),
+                'end_time_formatted' => $localEnd->format(config('display.time')),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id

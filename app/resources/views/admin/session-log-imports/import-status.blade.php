@@ -8,7 +8,7 @@
                 <p class="text-sm text-foreground/60 mt-1">
                     Type: <span class="font-medium">{{ $import->type->value }}</span> |
                     File: <a href="{{ route('admin.session-logs.imports.download', $import) }}" class="font-medium text-primary hover:underline">{{ $import->file_name }}</a> |
-                    Created: <span class="font-medium">{{ $import->created_at->format('M d, Y H:i') }}</span>
+                    Created: <span class="font-medium">{{ $import->created_at->format(config('display.datetime')) }}</span>
                 </p>
             </div>
             <div>
@@ -163,7 +163,7 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-foreground/60">
-                                    {{ $row->processed_at ? $row->processed_at->format('M d, Y H:i:s') : '—' }}
+                                    {{ $row->processed_at ? $row->processed_at->format(config('display.datetime_seconds')) : '—' }}
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap">
                                     @if ($row->raw_data)

@@ -28,7 +28,7 @@
                                             {{ ucfirst($comment->author->role->value) }}
                                         </x-ui::badge>
                                         <span class="text-foreground/50">
-                                            {{ $comment->created_at->format('M d, Y g:i A') }}
+                                            {{ $comment->created_at->format(config('display.datetime')) }}
                                         </span>
                                     </div>
                                     <p class="mt-2 whitespace-pre-wrap text-foreground">{{ $comment->comment }}</p>

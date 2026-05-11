@@ -106,7 +106,7 @@
                     <tr>
                         <td class="px-3 py-2">{{ $rowLocalStart->format('Y-m-d') }}</td>
                         <td class="px-3 py-2">
-                            {{ $rowLocalStart->format('H:i') }} - {{ $rowLocalEnd->format('H:i') }}
+                            {{ $rowLocalStart->format(config('display.time')) }} - {{ $rowLocalEnd->format(config('display.time')) }}
                         </td>
                         <td class="px-3 py-2">
                             @if ($schedule->therapist)

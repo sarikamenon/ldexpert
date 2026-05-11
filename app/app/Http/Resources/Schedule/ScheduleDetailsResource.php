@@ -44,13 +44,13 @@ final class ScheduleDetailsResource extends JsonResource
         return [
             'id' => $schedule->id,
             'reference' => '#'.str_pad((string) $schedule->id, 2, '0', STR_PAD_LEFT),
-            'updated_at_formatted' => $schedule->updated_at?->copy()->setTimezone($tz)->format('M d, Y \a\t g:i A'),
+            'updated_at_formatted' => $schedule->updated_at?->copy()->setTimezone($tz)->format('M d, Y \a\t '.config('display.time')),
             'schedule_date' => $localStart->format('Y-m-d'),
             'schedule_date_formatted' => $localStart->format('M d, Y'),
             'start_time' => $localStart->format('H:i'),
-            'start_time_formatted' => $localStart->format('g:i A'),
+            'start_time_formatted' => $localStart->format(config('display.time')),
             'end_time' => $localEnd->format('H:i'),
-            'end_time_formatted' => $localEnd->format('g:i A'),
+            'end_time_formatted' => $localEnd->format(config('display.time')),
             'duration_minutes' => $durationMinutes,
             'duration_formatted' => self::formatDuration($durationMinutes),
             'timezone' => $tz,
@@ -96,7 +96,7 @@ final class ScheduleDetailsResource extends JsonResource
             'email_logs' => $schedule->emailLogs
                 ->sortByDesc('sent_at')
                 ->map(fn (ScheduleEmailLog $log): array => [
-                    'sent_at' => $log->sent_at->copy()->setTimezone($tz)->format('M d, Y g:i A'),
+                    'sent_at' => $log->sent_at->copy()->setTimezone($tz)->format(config('display.datetime')),
                     'type_label' => $log->type->label(),
                     'type_value' => $log->type->value,
                     'recipient_email' => $log->recipient_email,

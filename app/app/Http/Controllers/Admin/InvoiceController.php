@@ -184,7 +184,7 @@ final class InvoiceController extends Controller
 
         $invoiceTz = $invoice->school !== null ? $invoice->school->timezone : 'UTC';
         $invoice->emailLogs->each(function ($log) use ($invoiceTz): void {
-            $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($invoiceTz)->format('M d, Y h:i A');
+            $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($invoiceTz)->format(config('display.datetime'));
         });
 
         return view('admin.invoices.show', [

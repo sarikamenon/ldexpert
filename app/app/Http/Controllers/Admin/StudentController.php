@@ -328,7 +328,7 @@ final class StudentController extends Controller
                 ->each(function (ScheduleEmailLog $log) use ($studentFallbackTz): void {
                     $rowTz = $log->schedule?->displayTimezone() ?? $studentFallbackTz;
 
-                    $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($rowTz)->format('M d, Y h:i A');
+                    $log->sent_at_formatted = $log->sent_at->copy()->setTimezone($rowTz)->format(config('display.datetime'));
                     $log->schedule_local_date = $log->schedule?->localStart($rowTz)->format('M d, Y');
                 });
         }

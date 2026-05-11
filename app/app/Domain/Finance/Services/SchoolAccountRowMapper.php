@@ -29,7 +29,7 @@ final class SchoolAccountRowMapper
         // session log detail page.
         $therapistTz = $log->displayTimezone();
         $startInTherapistTz = $log->localStart($therapistTz);
-        $startTime = $startInTherapistTz->format('g:i A');
+        $startTime = $startInTherapistTz->format(config('display.time'));
         $duration = (int) $log->duration_minutes;
 
         return [

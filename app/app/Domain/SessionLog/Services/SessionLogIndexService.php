@@ -175,8 +175,8 @@ final class SessionLogIndexService
                 $sessionDate = $localStart;
                 $createdAt = $log->created_at ? Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
-                $startTime = $localStart->format('g:i A');
-                $endTime = $localEnd->format('g:i A');
+                $startTime = $localStart->format(config('display.time'));
+                $endTime = $localEnd->format(config('display.time'));
                 $timeRange = "{$startTime} - {$endTime}";
                 $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 

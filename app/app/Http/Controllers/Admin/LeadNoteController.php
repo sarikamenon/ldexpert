@@ -32,7 +32,7 @@ final class LeadNoteController extends Controller
                 'id' => $note->id,
                 'note' => $note->note,
                 'author_name' => $note->author->name ?? 'Unknown',
-                'created_at' => $note->created_at?->format('M d, Y h:i A'),
+                'created_at' => $note->created_at?->format(config('display.datetime')),
             ],
         ]);
     }

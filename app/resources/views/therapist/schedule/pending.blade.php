@@ -123,8 +123,8 @@
                                     $pendingTz = $schedule->displayTimezone();
                                     $pendingLocalStart = $schedule->localStart($pendingTz);
                                     $pendingLocalEnd = $schedule->localEnd($pendingTz);
-                                    $startTime = $pendingLocalStart->format('g:i A');
-                                    $endTime = $pendingLocalEnd->format('g:i A');
+                                    $startTime = $pendingLocalStart->format(config('display.time'));
+                                    $endTime = $pendingLocalEnd->format(config('display.time'));
                                     $timeRange = "{$startTime} - {$endTime}";
                                 @endphp
                                 <tr data-schedule-id="{{ $schedule->id }}">
