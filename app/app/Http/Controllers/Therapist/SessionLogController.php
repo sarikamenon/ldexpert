@@ -40,12 +40,9 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
-/**
- * Exceeds the 300-line cap. Follow-up: split into single-action controllers
- * for state transitions (submit, cancel) and pull `data()` into a dedicated
- * data endpoint controller. The bulk lives in `create()` and would benefit
- * most from extracting the SSA-form-data assembly into a service.
- */
+// Exceeds 300-line cap. Follow-up tracked in GitHub issue #197: split state-transition
+// actions (submit, cancel) into single-action controllers and extract buildSsaContext()
+// into a dedicated service.
 final class SessionLogController extends Controller
 {
     use DataTablesResponse;

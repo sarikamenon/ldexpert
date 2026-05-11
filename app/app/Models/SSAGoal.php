@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property SSAGoalStatus $status
  * @property bool|null $can_transition_status Pre-computed in service for list views; not persisted.
  */
-class SSAGoal extends Model
+final class SSAGoal extends Model
 {
     /** @use HasFactory<\Database\Factories\SSAGoalFactory> */
     use HasAudits, HasFactory, SoftDeletes;
