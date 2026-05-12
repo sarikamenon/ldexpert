@@ -18,7 +18,8 @@ async function initStudentsTable() {
             getExtraData(d) {
                 if (!form) return;
                 d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
-                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                const statusVal = form.querySelector('[name="status"]')?.value ?? 'active';
+                d.filter_status = statusVal === 'all' ? '' : statusVal;
             },
         });
     } catch (error) {
