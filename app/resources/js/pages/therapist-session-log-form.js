@@ -137,6 +137,47 @@ $(function () {
         }
     }
 
+    // Copy goals to the notes textarea
+    const copyGoalsBtn = document.getElementById('copy-goals-btn');
+    if (copyGoalsBtn) {
+        copyGoalsBtn.addEventListener('click', () => {
+            const notesTextarea = document.querySelector('textarea[name="notes"]');
+            const label = copyGoalsBtn.querySelector('.copy-action-label');
+            if (notesTextarea) {
+                notesTextarea.value = copyGoalsBtn.dataset.goals || '';
+                notesTextarea.focus();
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = 'Copied!';
+                    setTimeout(() => {
+                        label.textContent = original;
+                    }, 2000);
+                }
+            }
+        });
+    }
+
+    // Copy previous notes to the notes textarea
+    const copyBtn = document.getElementById('copy-prev-notes-btn');
+    if (copyBtn) {
+        copyBtn.addEventListener('click', () => {
+            const notesText = document.getElementById('prev-session-notes-text');
+            const notesTextarea = document.querySelector('textarea[name="notes"]');
+            const label = copyBtn.querySelector('.copy-action-label');
+            if (notesText && notesTextarea) {
+                notesTextarea.value = notesText.textContent.trim();
+                notesTextarea.focus();
+                if (label) {
+                    const original = label.textContent;
+                    label.textContent = 'Copied!';
+                    setTimeout(() => {
+                        label.textContent = original;
+                    }, 2000);
+                }
+            }
+        });
+    }
+
     // Billing entry window check
     const sessionDate = $('input[name="session_date"]').val();
     if (sessionDate) {

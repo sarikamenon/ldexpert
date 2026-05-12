@@ -12,6 +12,7 @@ use App\DataTables\Transformers\StudentRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
@@ -30,6 +31,7 @@ use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Enums\SessionOutcome;
+use App\Enums\SSAGoalStatus;
 use App\Enums\SSAStatus;
 use App\Enums\StudentImportType;
 use App\Enums\UserStatus;
@@ -66,6 +68,7 @@ final class StudentController extends Controller
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
+        private readonly SSAGoalService $goalService,
         private readonly ScheduleService $scheduleService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly StudentCommentService $commentService,
@@ -237,6 +240,10 @@ final class StudentController extends Controller
         // Load dashboard data (always needed for metrics)
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
             $ssasForMetrics = $this->ssaService->getSSAsForStudentMetrics($student->id);
+            $goalsForMetrics = $this->goalService->listForStudent($student->id);
+            $activeGoalsBySsa = $goalsForMetrics
+                ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::ACTIVE)
+                ->groupBy('ssa_id');
 
             $outcomeMinutes = $this->sessionLogRepository->getOutcomeMinutesForStudent($student->id);
             $outcomes = collect(SessionOutcome::cases())
@@ -259,6 +266,10 @@ final class StudentController extends Controller
             $servedMinutes = (int) $ssasForMetrics->sum('served_minutes');
             $totalThoHours = round($totalThoMinutes / 60, 2);
             $servedHours = round($servedMinutes / 60, 2);
+            $totalGoals = $goalsForMetrics->count();
+            $masteredGoals = $goalsForMetrics
+                ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::MASTERED)
+                ->count();
 
             $viewData['chartData'] = [
                 'outcomes' => $outcomes,
@@ -274,6 +285,22 @@ final class StudentController extends Controller
                 'active_ssas' => $ssasForMetrics->where('status', SSAStatus::ACTIVE)->count(),
                 'completed_ssas' => $ssasForMetrics->where('status', SSAStatus::COMPLETED)->count(),
                 'pending_ssas' => $ssasForMetrics->where('status', SSAStatus::PENDING)->count(),
+            ];
+
+            $viewData['goalMetrics'] = [
+                'total_goals' => $totalGoals,
+                'active_goals' => $goalsForMetrics
+                    ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::ACTIVE)
+                    ->count(),
+                'mastered_goals' => $masteredGoals,
+                'discontinued_goals' => $goalsForMetrics
+                    ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::DISCONTINUED)
+                    ->count(),
+                'mastery_rate' => $totalGoals > 0 ? round(($masteredGoals / $totalGoals) * 100, 1) : 0,
+                'ssas_without_active_goals' => $ssasForMetrics
+                    ->pluck('id')
+                    ->filter(static fn (int $ssaId): bool => ! $activeGoalsBySsa->has($ssaId))
+                    ->count(),
             ];
         }
 
@@ -308,6 +335,8 @@ final class StudentController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
             $viewData['datatableUrl'] = route('admin.session-logs.data');
             $viewData['studentId'] = $student->id;
+        } elseif ($activeTab === 'goals') {
+            $viewData['goals'] = $this->goalService->listForStudent($student->id);
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {

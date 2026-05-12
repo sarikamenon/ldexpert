@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistStudentRowTransformer;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Student\Services\StudentService;
+use App\Enums\SSAGoalStatus;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Http\Controllers\Controller;
@@ -38,6 +40,7 @@ final class StudentController extends Controller
 
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly SSAGoalService $goalService,
         private readonly StudentService $studentService,
         private readonly StudentCommentService $commentService,
         private readonly StudentDocumentService $documentService,
@@ -95,9 +98,17 @@ final class StudentController extends Controller
         // Load dashboard data
         if ($activeTab === 'dashboard' || $activeTab === 'overview') {
             $ssasForMetrics = $this->ssaService->getSSAsForMetrics($student->id, $therapist->id);
+            $goalsForMetrics = $this->goalService->listForStudent($student->id);
+            $activeGoalsBySsa = $goalsForMetrics
+                ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::ACTIVE)
+                ->groupBy('ssa_id');
 
             $totalThoHours = round((float) $ssasForMetrics->sum('tho_minutes') / 60, 2);
             $servedHours = round((float) $ssasForMetrics->sum('served_minutes') / 60, 2);
+            $totalGoals = $goalsForMetrics->count();
+            $masteredGoals = $goalsForMetrics
+                ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::MASTERED)
+                ->count();
 
             $viewData['chartData'] = [
                 'served' => $servedHours,
@@ -110,6 +121,22 @@ final class StudentController extends Controller
                 'active_ssas' => $ssasForMetrics->where('status', SSAStatus::ACTIVE)->count(),
                 'completed_ssas' => $ssasForMetrics->where('status', SSAStatus::COMPLETED)->count(),
                 'pending_ssas' => $ssasForMetrics->where('status', SSAStatus::PENDING)->count(),
+            ];
+
+            $viewData['goalMetrics'] = [
+                'total_goals' => $totalGoals,
+                'active_goals' => $goalsForMetrics
+                    ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::ACTIVE)
+                    ->count(),
+                'mastered_goals' => $masteredGoals,
+                'discontinued_goals' => $goalsForMetrics
+                    ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::DISCONTINUED)
+                    ->count(),
+                'mastery_rate' => $totalGoals > 0 ? round(($masteredGoals / $totalGoals) * 100, 1) : 0,
+                'ssas_without_active_goals' => $ssasForMetrics
+                    ->pluck('id')
+                    ->filter(static fn (int $ssaId): bool => ! $activeGoalsBySsa->has($ssaId))
+                    ->count(),
             ];
         }
 
@@ -125,6 +152,8 @@ final class StudentController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
             $viewData['datatableUrl'] = route('therapist.session-logs.data');
             $viewData['studentId'] = $student->id;
+        } elseif ($activeTab === 'goals') {
+            $viewData['goals'] = $this->goalService->listForStudent($student->id);
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {

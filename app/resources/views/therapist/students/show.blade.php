@@ -42,6 +42,11 @@
                         'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'ssas']),
                     ],
                     [
+                        'key' => 'goals',
+                        'label' => 'Goals',
+                        'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'goals']),
+                    ],
+                    [
                         'key' => 'session_logs',
                         'label' => 'Session Logs',
                         'href' => route('therapist.students.show', ['student' => $student, 'tab' => 'session_logs']),
@@ -106,43 +111,51 @@
                         </div>
                     </x-ui::card>
 
-                    <x-ui::card class="p-6 space-y-3 lg:col-span-2">
-                        <h3 class="text-lg font-semibold text-foreground">School/Family & Guardian</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <p class="text-sm text-foreground/70">School/Family</p>
-                                @if ($student->studentProfile?->school)
-                                    <p class="text-lg font-semibold">
-                                        {{ $student->studentProfile->school->display_name }}
-                                    </p>
-                                    <p class="text-sm text-foreground/60">
-                                        {{ $student->studentProfile->school->state ?? '—' }}
-                                    </p>
-                                @else
-                                    <p class="text-lg font-semibold text-foreground/50">Not assigned</p>
-                                @endif
+                    <div class="space-y-4 lg:col-span-2">
+                        <x-ui::card class="p-5 space-y-2">
+                            <h3 class="text-base font-semibold text-foreground">School/Family & Guardian</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <p class="text-xs text-foreground/70">School/Family</p>
+                                    @if ($student->studentProfile?->school)
+                                        <p class="text-base font-semibold">
+                                            {{ $student->studentProfile->school->display_name }}
+                                        </p>
+                                        <p class="text-xs text-foreground/60">
+                                            {{ $student->studentProfile->school->state ?? '—' }}
+                                        </p>
+                                    @else
+                                        <p class="text-base font-semibold text-foreground/50">Not assigned</p>
+                                    @endif
+                                </div>
+                                <div>
+                                    <p class="text-xs text-foreground/70">Guardian</p>
+                                    @if ($student->studentProfile?->parent_guardian_name)
+                                        <p class="text-base font-semibold">
+                                            {{ $student->studentProfile->parent_guardian_name }}</p>
+                                        <p class="text-xs text-foreground/60">
+                                            {{ $student->studentProfile->parent_guardian_email ?? '—' }} ·
+                                            {{ $student->studentProfile->parent_guardian_phone ?? '—' }}
+                                        </p>
+                                    @else
+                                        <p class="text-base font-semibold text-foreground/50">Not provided</p>
+                                    @endif
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-sm text-foreground/70">Guardian</p>
-                                @if ($student->studentProfile?->parent_guardian_name)
-                                    <p class="text-lg font-semibold">
-                                        {{ $student->studentProfile->parent_guardian_name }}</p>
-                                    <p class="text-sm text-foreground/60">
-                                        {{ $student->studentProfile->parent_guardian_email ?? '—' }} ·
-                                        {{ $student->studentProfile->parent_guardian_phone ?? '—' }}
-                                    </p>
-                                @else
-                                    <p class="text-lg font-semibold text-foreground/50">Not provided</p>
-                                @endif
-                            </div>
-                        </div>
-                    </x-ui::card>
+                        </x-ui::card>
+
+                        <x-student.goals-snapshot
+                            :goal-metrics="$goalMetrics ?? []"
+                            :goals-tab-url="route('therapist.students.show', ['student' => $student, 'tab' => 'goals'])" />
+                    </div>
                 </div>
             @elseif (($activeTab ?? 'dashboard') === 'overview')
                 <x-student.overview-details :student="$student" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
                 <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="[]"
                     :therapists="[]" :services="[]" :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="therapist" />
+            @elseif (($activeTab ?? 'dashboard') === 'goals' && isset($goals))
+                @include('therapist.students._goals-tab', ['goals' => $goals, 'student' => $student])
             @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
                 <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
                     :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
@@ -161,6 +174,8 @@
             @vite(['resources/js/pages/therapist-ssas-index.js'])
         @elseif (($activeTab ?? 'dashboard') === 'session_logs')
             @vite(['resources/js/pages/therapist-session-logs-index.js'])
+        @elseif (($activeTab ?? 'dashboard') === 'goals')
+            @vite(['resources/js/pages/students-goals-tab.js'])
         @elseif (($activeTab ?? 'dashboard') === 'comments')
             @vite(['resources/js/pages/therapist-students-comments.js'])
         @elseif (($activeTab ?? 'dashboard') === 'documents')

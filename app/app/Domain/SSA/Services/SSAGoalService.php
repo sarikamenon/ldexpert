@@ -35,6 +35,13 @@ final class SSAGoalService
             ->each(fn (SSAGoal $goal) => $this->attachCanTransitionFlag($goal));
     }
 
+    /** @return Collection<int, SSAGoal> */
+    public function listForStudent(int $studentId): Collection
+    {
+        return $this->goals->listForStudent($studentId)
+            ->each(fn (SSAGoal $goal) => $this->attachCanTransitionFlag($goal));
+    }
+
     private function attachCanTransitionFlag(SSAGoal $goal): void
     {
         $goal->can_transition_status = $goal->status === SSAGoalStatus::ACTIVE;
@@ -63,5 +70,15 @@ final class SSAGoalService
     public function changeStatus(SSAGoal $goal, SSAGoalStatus $status): SSAGoal
     {
         return DB::transaction(fn (): SSAGoal => $this->goals->changeStatus($goal, $status));
+    }
+
+    /**
+     * Get goal metrics for a specific SSA. Mastery rate is mastered ÷ total goals.
+     *
+     * @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float}
+     */
+    public function getMetricsForSsa(int $ssaId): array
+    {
+        return $this->goals->getMetricsForSsa($ssaId);
     }
 }
