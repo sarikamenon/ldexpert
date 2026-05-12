@@ -145,21 +145,28 @@
 
         @isset($ssaContext)
             @if ($ssaContext['mode'] === 'goals')
-                <div class="space-y-3 mt-4 rounded-lg border border-border bg-muted/30 p-4">
-                    <div>
-                        <h4 class="text-sm font-medium text-foreground">Goals for this SSA</h4>
-                        <p class="mt-1 text-xs text-foreground/60">This is the first session log for this SSA. Review the active goals before logging the session.</p>
+                <div class="mt-4 rounded-lg border border-border bg-muted/30 p-4">
+                    <div class="flex items-center justify-between gap-3 mb-3">
+                        <div>
+                            <h4 class="text-sm font-medium text-foreground">Goals for this SSA</h4>
+                            <p class="mt-0.5 text-xs text-foreground/60">This is the first session log for this SSA. Review the active goals before logging the session.</p>
+                        </div>
+                        @if ($ssaContext['goals']->isNotEmpty())
+                            <button type="button" id="copy-goals-btn"
+                                class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors shrink-0"
+                                aria-label="Copy goals to Notes field"
+                                data-goals="{{ $ssaContext['goals']->map(fn($g) => $g->number . ' / ' . $g->objective)->implode("\n") }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
+                                </svg>
+                                Copy to Notes
+                            </button>
+                        @endif
                     </div>
                     @forelse ($ssaContext['goals'] as $goal)
-                        <div class="rounded-md border border-border bg-white p-3">
-                            <p class="text-sm font-semibold text-foreground">#{{ $goal->number }}</p>
-                            <p class="mt-1 text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->objective }}</p>
-                            @if ($goal->progress)
-                                <p class="mt-2 text-xs text-foreground/60">
-                                    <span class="font-medium">Progress so far:</span> {{ $goal->progress }}
-                                </p>
-                            @endif
-                        </div>
+                        <p class="text-sm text-foreground/80 py-1 {{ !$loop->last ? 'border-b border-border' : '' }}">
+                            <span class="font-medium text-foreground">{{ $goal->number }}</span> / {{ $goal->objective }}
+                        </p>
                     @empty
                         <p class="text-sm text-foreground/60">No active goals are recorded for this SSA. Add goals on the SSA's Goals tab.</p>
                     @endforelse
@@ -173,7 +180,7 @@
                                 class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
                                 aria-label="Copy previous notes to Notes field">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
                                 </svg>
                                 Copy to Notes
                             </button>

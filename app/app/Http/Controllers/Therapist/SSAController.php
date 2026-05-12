@@ -103,6 +103,7 @@ final class SSAController extends Controller
 
         if ($activeTab === 'dashboard') {
             $viewData['minutesSummary'] = $this->ssaMinutesSummaryService->getMinutesSummaryForSSA($ssa);
+            $viewData['goalMetrics'] = $this->goalService->getMetricsForSsa($ssa->id);
         }
 
         // Load assignment history if needed

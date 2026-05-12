@@ -73,4 +73,30 @@ final class EloquentSSAGoalRepository implements SSAGoalRepositoryInterface
             ->activeStatus()
             ->exists();
     }
+
+    /** @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float} */
+    public function getMetricsForSsa(int $ssaId): array
+    {
+        $goals = SSAGoal::query()
+            ->forSsa($ssaId)
+            ->get();
+
+        $total = $goals->count();
+        $active = $goals->where('status', SSAGoalStatus::ACTIVE)->count();
+        $mastered = $goals->where('status', SSAGoalStatus::MASTERED)->count();
+        $discontinued = $goals->where('status', SSAGoalStatus::DISCONTINUED)->count();
+
+        $completedGoals = $mastered + $discontinued;
+        $masteryRate = $completedGoals > 0
+            ? ($mastered / $completedGoals) * 100
+            : 0.0;
+
+        return [
+            'total_goals' => $total,
+            'active_goals' => $active,
+            'mastered_goals' => $mastered,
+            'discontinued_goals' => $discontinued,
+            'mastery_rate' => round($masteryRate, 1),
+        ];
+    }
 }

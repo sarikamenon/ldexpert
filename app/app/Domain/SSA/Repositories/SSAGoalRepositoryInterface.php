@@ -30,4 +30,11 @@ interface SSAGoalRepositoryInterface
     public function changeStatus(SSAGoal $goal, SSAGoalStatus $status): SSAGoal;
 
     public function existsActiveForSsa(int $ssaId): bool;
+
+    /**
+     * Get goal metrics for a specific SSA.
+     *
+     * @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float}
+     */
+    public function getMetricsForSsa(int $ssaId): array;
 }

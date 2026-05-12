@@ -147,7 +147,7 @@
             </x-ui::card>
 
             {{-- Quick Stats --}}
-            <x-ssa.dashboard-stats :ssa="$ssa" />
+            <x-ssa.dashboard-stats :ssa="$ssa" :goal-metrics="$goalMetrics ?? []" context="admin" />
         </div>
 
     @elseif (($activeTab ?? 'dashboard') === 'details')

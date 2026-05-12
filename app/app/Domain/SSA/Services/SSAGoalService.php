@@ -71,4 +71,14 @@ final class SSAGoalService
     {
         return DB::transaction(fn (): SSAGoal => $this->goals->changeStatus($goal, $status));
     }
+
+    /**
+     * Get goal metrics for a specific SSA.
+     *
+     * @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float}
+     */
+    public function getMetricsForSsa(int $ssaId): array
+    {
+        return $this->goals->getMetricsForSsa($ssaId);
+    }
 }

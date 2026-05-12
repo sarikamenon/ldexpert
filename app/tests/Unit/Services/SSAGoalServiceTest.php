@@ -225,3 +225,33 @@ it('changeStatus works for discontinued status', function () {
 
     expect($result)->toBe($changedGoal);
 });
+
+// ---------------------------------------------------------------------------
+// getMetricsForSsa
+// ---------------------------------------------------------------------------
+
+it('getMetricsForSsa delegates to repository', function () {
+    [$service, $goals] = makeGoalService();
+
+    $metrics = [
+        'total_goals' => 5,
+        'active_goals' => 2,
+        'mastered_goals' => 2,
+        'discontinued_goals' => 1,
+        'mastery_rate' => 66.7,
+    ];
+
+    $goals->shouldReceive('getMetricsForSsa')
+        ->once()
+        ->with(1)
+        ->andReturn($metrics);
+
+    $result = $service->getMetricsForSsa(1);
+
+    expect($result)->toBe($metrics)
+        ->and($result['total_goals'])->toBe(5)
+        ->and($result['active_goals'])->toBe(2)
+        ->and($result['mastered_goals'])->toBe(2)
+        ->and($result['discontinued_goals'])->toBe(1)
+        ->and($result['mastery_rate'])->toBe(66.7);
+});
