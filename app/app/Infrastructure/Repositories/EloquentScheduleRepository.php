@@ -68,6 +68,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
+            ->where('is_billable', true)
             ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->count();
     }
@@ -79,6 +80,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forTherapist($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
+            ->where('is_billable', true)
             ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
             ->with(['student', 'service', 'ssa', 'school']);
 

@@ -10,6 +10,7 @@ use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Models\School;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
@@ -87,6 +88,44 @@ final class SchedulePendingListTest extends TestCase
         $response->assertSee('Bill Your Session');
         $response->assertSee('Delete Schedule');
         $response->assertSee(route('therapist.session-logs.create.from-schedule', $schedule->id), false);
+    }
+
+    public function test_pending_schedule_page_excludes_non_billable_schedules(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        $school = School::factory()->create(['non_billable_scheduling' => true]);
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+
+        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'ssa_id' => $ssa->id,
+            'service_id' => $service->id,
+            'school_id' => $school->id,
+            'schedule_date' => now()->subDay()->toDateString(),
+            'status' => ScheduleStatus::SCHEDULED,
+            'billing_status' => BillingStatus::PENDING,
+            'is_billable' => false,
+        ]);
+
+        $response = $this->actingAs($therapist)
+            ->get(route('therapist.schedule.pending'));
+
+        $response->assertStatus(200);
+        $viewData = $response->viewData('pendingSchedules');
+        $this->assertCount(0, $viewData);
     }
 
     public function test_pending_schedule_page_shows_filter_form(): void

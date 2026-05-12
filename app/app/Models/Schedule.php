@@ -27,6 +27,7 @@ use Illuminate\Support\Collection;
  * @property ScheduleStatus $status
  * @property BillingStatus $billing_status
  * @property RecurrenceType|null $recurrence_type
+ * @property bool $is_billable
  */
 class Schedule extends Model
 {
@@ -50,6 +51,7 @@ class Schedule extends Model
         'group_batch_number',
         'status',
         'billing_status',
+        'is_billable',
         'notes',
         'location_details',
     ];
@@ -65,6 +67,7 @@ class Schedule extends Model
             'is_group' => 'boolean',
             'status' => ScheduleStatus::class,
             'billing_status' => BillingStatus::class,
+            'is_billable' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',

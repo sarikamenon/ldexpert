@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
@@ -32,13 +33,37 @@ use Illuminate\Support\Facades\DB;
 
 final class ScheduleService
 {
+    /** @var array<int, bool> Per-instance cache of school_id => is_billable. */
+    private array $schoolBillableCache = [];
+
     public function __construct(
         private readonly ScheduleRepositoryInterface $repository,
         private readonly UserTimezoneService $timezoneService,
         private readonly UserRepositoryInterface $userRepository,
         private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly StudentRepositoryInterface $studentRepository,
+        private readonly SchoolRepositoryInterface $schoolRepository,
     ) {}
+
+    /**
+     * Resolve whether schedules under the given school should be flagged as billable.
+     * Inverse of the school's non_billable_scheduling flag. Null school => billable.
+     */
+    private function isSchoolBillable(?int $schoolId): bool
+    {
+        if ($schoolId === null) {
+            return true;
+        }
+
+        if (! array_key_exists($schoolId, $this->schoolBillableCache)) {
+            $school = $this->schoolRepository->find($schoolId);
+            $this->schoolBillableCache[$schoolId] = $school === null
+                ? true
+                : ! $school->non_billable_scheduling;
+        }
+
+        return $this->schoolBillableCache[$schoolId];
+    }
 
     /** @return Collection<int, Schedule> */
     public function getSchedules(User $therapist, ScheduleFilterDTO $filters): Collection
@@ -204,6 +229,7 @@ final class ScheduleService
                         'group_batch_number' => $groupBatchNumber,
                         'status' => ScheduleStatus::SCHEDULED,
                         'billing_status' => BillingStatus::PENDING,
+                        'is_billable' => $this->isSchoolBillable($schoolId),
                         'notes' => $dto->notes,
                         'location_details' => $dto->locationDetails,
                     ];
@@ -234,6 +260,7 @@ final class ScheduleService
                     'group_batch_number' => $isGroup ? $this->repository->generateBatchNumber('group') : null,
                     'status' => ScheduleStatus::SCHEDULED,
                     'billing_status' => BillingStatus::PENDING,
+                    'is_billable' => $this->isSchoolBillable($firstSchoolId),
                     'notes' => $dto->notes,
                     'location_details' => $dto->locationDetails,
                 ]);
@@ -320,6 +347,12 @@ final class ScheduleService
             $data['schedule_date'] = $utcStart->toDateString();
             $data['start_time'] = $utcStart->toTimeString();
             $data['end_time'] = $utcEnd->toTimeString();
+
+            $effectiveSchoolId = array_key_exists('school_id', $data)
+                ? $data['school_id']
+                : $schedule->school_id;
+            $effectiveSchoolId = $effectiveSchoolId !== null ? (int) $effectiveSchoolId : null;
+            $data['is_billable'] = $this->isSchoolBillable($effectiveSchoolId);
 
             // When recurrence settings change, delete all unbilled future occurrences from
             // this schedule's date forward (preserving past/billed sessions in the series).
@@ -524,6 +557,7 @@ final class ScheduleService
                     'group_batch_number' => $groupBatchNumber,
                     'status' => ScheduleStatus::SCHEDULED,
                     'billing_status' => BillingStatus::PENDING,
+                    'is_billable' => $this->isSchoolBillable($schoolId),
                     'notes' => $parentSchedule->notes,
                     'location_details' => $parentSchedule->location_details,
                 ]));
@@ -619,6 +653,7 @@ final class ScheduleService
                     'group_batch_number' => $groupBatchNumber,
                     'status' => ScheduleStatus::SCHEDULED,
                     'billing_status' => BillingStatus::PENDING,
+                    'is_billable' => $this->isSchoolBillable($schoolId),
                     'notes' => $parentSchedule->notes,
                     'location_details' => $parentSchedule->location_details,
                 ]));

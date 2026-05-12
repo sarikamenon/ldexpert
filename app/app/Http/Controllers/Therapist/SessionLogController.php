@@ -170,6 +170,10 @@ final class SessionLogController extends Controller
             abort(403, 'You do not have access to this schedule.');
         }
 
+        if ($schedule !== null && ! $schedule->is_billable) {
+            abort(403, 'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.');
+        }
+
         // Get active SSAs assigned to the therapist
         $ssas = $this->ssaService
             ->getActiveSSAsForTherapist($therapist->id)

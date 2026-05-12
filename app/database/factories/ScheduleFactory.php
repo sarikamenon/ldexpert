@@ -38,6 +38,7 @@ class ScheduleFactory extends Factory
             'group_batch_number' => null,
             'status' => ScheduleStatus::SCHEDULED,
             'billing_status' => BillingStatus::PENDING,
+            'is_billable' => true,
             'notes' => $this->faker->sentence(),
             'location_details' => null,
         ];

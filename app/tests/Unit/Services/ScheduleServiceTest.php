@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
@@ -20,6 +21,7 @@ use App\Enums\ScheduleStatus;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
+use App\Models\School;
 use App\Models\Service;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -44,6 +46,22 @@ final class ScheduleServiceTest extends TestCase
 
     private MockInterface $studentRepository;
 
+    private MockInterface $schoolRepository;
+
+    private function stubSchoolLookupForBillableResolution(Schedule $schedule): void
+    {
+        if ($schedule->school_id === null) {
+            return;
+        }
+
+        $schoolId = (int) $schedule->school_id;
+        $school = School::query()->find($schoolId);
+        $this->schoolRepository->shouldReceive('find')
+            ->once()
+            ->with($schoolId)
+            ->andReturn($school);
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -53,6 +71,7 @@ final class ScheduleServiceTest extends TestCase
         $this->userRepository = Mockery::mock(UserRepositoryInterface::class);
         $this->serviceRepository = Mockery::mock(ServiceRepositoryInterface::class);
         $this->studentRepository = Mockery::mock(StudentRepositoryInterface::class);
+        $this->schoolRepository = Mockery::mock(SchoolRepositoryInterface::class);
     }
 
     public function test_create_single_non_recurring_schedule_creates_one_record(): void
@@ -116,7 +135,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new CreateScheduleDTO(
@@ -145,6 +165,156 @@ final class ScheduleServiceTest extends TestCase
         $this->assertSame($service->id, $schedule->service_id);
         $this->assertSame(ScheduleStatus::SCHEDULED, $schedule->status);
         $this->assertSame(BillingStatus::PENDING, $schedule->billing_status);
+    }
+
+    public function test_create_schedule_marks_non_billable_when_school_flag_is_enabled(): void
+    {
+        $therapist = User::factory()->create();
+        $studentUser = User::factory()->create();
+        StudentProfile::factory()->create(['user_id' => $studentUser->id]);
+        $service = Service::factory()->create(['is_group_service' => false]);
+        $school = School::factory()->create(['non_billable_scheduling' => true]);
+
+        $this->repository->shouldReceive('validateTherapistAccessToSSA')->andReturnTrue();
+        $this->repository->shouldReceive('validateTherapistAccessToStudents')->andReturnTrue();
+        $this->repository->shouldReceive('validateStudentsShareService')->andReturnTrue();
+        $this->repository->shouldReceive('hasOverlap')->andReturnFalse();
+
+        $this->timezoneService->shouldReceive('parseUserLocalToUtc')
+            ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
+
+        $this->userRepository->shouldReceive('findByIds')
+            ->andReturn(collect([$studentUser]));
+
+        $this->serviceRepository->shouldReceive('findOrFail')->andReturn($service);
+
+        $this->studentRepository->shouldReceive('getSchoolIdByUserId')
+            ->with($studentUser->id)
+            ->andReturn($school->id);
+
+        $this->schoolRepository->shouldReceive('find')
+            ->once()
+            ->with($school->id)
+            ->andReturn($school);
+
+        /** @var array<string, mixed> $capturedData */
+        $capturedData = [];
+        $this->repository->shouldReceive('create')
+            ->once()
+            ->andReturnUsing(function (array $data) use (&$capturedData) {
+                $capturedData = $data;
+                $schedule = new Schedule($data);
+                $schedule->id = 1;
+
+                return $schedule;
+            });
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository,
+            $this->schoolRepository,
+        );
+
+        $dto = new CreateScheduleDTO(
+            therapistId: $therapist->id,
+            ssaId: null,
+            serviceId: $service->id,
+            studentIds: [$studentUser->id],
+            scheduleDate: '2025-01-01',
+            startTime: '09:00',
+            endTime: '10:00',
+            recurrenceType: RecurrenceType::NONE,
+            recurrenceEndDate: null,
+            isGroup: false,
+            occurrenceCount: null,
+            occurrenceDates: null,
+            notes: null,
+            locationDetails: null,
+            durationMinutes: 60,
+        );
+
+        $serviceLayer->createSchedule($therapist, $dto);
+
+        $this->assertArrayHasKey('is_billable', $capturedData);
+        $this->assertFalse($capturedData['is_billable']);
+    }
+
+    public function test_create_schedule_marks_billable_when_school_flag_is_disabled(): void
+    {
+        $therapist = User::factory()->create();
+        $studentUser = User::factory()->create();
+        StudentProfile::factory()->create(['user_id' => $studentUser->id]);
+        $service = Service::factory()->create(['is_group_service' => false]);
+        $school = School::factory()->create(['non_billable_scheduling' => false]);
+
+        $this->repository->shouldReceive('validateTherapistAccessToSSA')->andReturnTrue();
+        $this->repository->shouldReceive('validateTherapistAccessToStudents')->andReturnTrue();
+        $this->repository->shouldReceive('validateStudentsShareService')->andReturnTrue();
+        $this->repository->shouldReceive('hasOverlap')->andReturnFalse();
+
+        $this->timezoneService->shouldReceive('parseUserLocalToUtc')
+            ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
+
+        $this->userRepository->shouldReceive('findByIds')
+            ->andReturn(collect([$studentUser]));
+
+        $this->serviceRepository->shouldReceive('findOrFail')->andReturn($service);
+
+        $this->studentRepository->shouldReceive('getSchoolIdByUserId')
+            ->with($studentUser->id)
+            ->andReturn($school->id);
+
+        $this->schoolRepository->shouldReceive('find')
+            ->once()
+            ->with($school->id)
+            ->andReturn($school);
+
+        /** @var array<string, mixed> $capturedData */
+        $capturedData = [];
+        $this->repository->shouldReceive('create')
+            ->once()
+            ->andReturnUsing(function (array $data) use (&$capturedData) {
+                $capturedData = $data;
+                $schedule = new Schedule($data);
+                $schedule->id = 1;
+
+                return $schedule;
+            });
+
+        $serviceLayer = new ScheduleService(
+            $this->repository,
+            $this->timezoneService,
+            $this->userRepository,
+            $this->serviceRepository,
+            $this->studentRepository,
+            $this->schoolRepository,
+        );
+
+        $dto = new CreateScheduleDTO(
+            therapistId: $therapist->id,
+            ssaId: null,
+            serviceId: $service->id,
+            studentIds: [$studentUser->id],
+            scheduleDate: '2025-01-01',
+            startTime: '09:00',
+            endTime: '10:00',
+            recurrenceType: RecurrenceType::NONE,
+            recurrenceEndDate: null,
+            isGroup: false,
+            occurrenceCount: null,
+            occurrenceDates: null,
+            notes: null,
+            locationDetails: null,
+            durationMinutes: 60,
+        );
+
+        $serviceLayer->createSchedule($therapist, $dto);
+
+        $this->assertArrayHasKey('is_billable', $capturedData);
+        $this->assertTrue($capturedData['is_billable']);
     }
 
     public function test_create_group_schedule_validates_shared_service(): void
@@ -215,7 +385,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new CreateScheduleDTO(
@@ -260,7 +431,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $batch = $serviceLayer->generateBatchNumber('recurring');
@@ -297,6 +469,8 @@ final class ScheduleServiceTest extends TestCase
             ->with($schedule->student_id)
             ->andReturn(User::find($schedule->student_id));
 
+        $this->stubSchoolLookupForBillableResolution($schedule);
+
         $this->repository->shouldReceive('update')
             ->once()
             ->andReturn($schedule);
@@ -306,7 +480,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new UpdateScheduleDTO(
@@ -367,6 +542,8 @@ final class ScheduleServiceTest extends TestCase
             ->with($schedule->student_id)
             ->andReturn(User::find($schedule->student_id));
 
+        $this->stubSchoolLookupForBillableResolution($schedule);
+
         // Recurrence type unchanged — no siblings deleted, no regeneration
         $this->repository->shouldNotReceive('getUnbilledFutureRecurringOccurrencesByBatch');
         $this->repository->shouldNotReceive('generateRecurringOccurrences');
@@ -380,7 +557,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new UpdateScheduleDTO(
@@ -456,6 +634,8 @@ final class ScheduleServiceTest extends TestCase
             ->once()
             ->andReturn(User::find($schedule->student_id));
 
+        $this->stubSchoolLookupForBillableResolution($schedule);
+
         // Future siblings must be deleted before regeneration
         $this->repository->shouldReceive('getUnbilledFutureRecurringOccurrencesByBatch')
             ->once()
@@ -502,7 +682,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new UpdateScheduleDTO(
@@ -577,6 +758,8 @@ final class ScheduleServiceTest extends TestCase
             ->once()
             ->andReturn(User::find($schedule->student_id));
 
+        $this->stubSchoolLookupForBillableResolution($schedule);
+
         $this->repository->shouldReceive('getUnbilledFutureRecurringOccurrencesByBatch')
             ->once()
             ->with($batchNumber, $schedule->schedule_date->format('Y-m-d'))
@@ -598,7 +781,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new UpdateScheduleDTO(
@@ -646,7 +830,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $serviceLayer->deleteSchedule($therapist, $schedule->id);
@@ -680,7 +865,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $serviceLayer->deleteSchedule($therapist, $parent->id);
@@ -707,7 +893,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $this->expectException(CannotDeleteBilledScheduleException::class);
@@ -773,7 +960,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $count = $serviceLayer->deleteFutureRecurringSchedules($therapist, $currentSchedule->id);
@@ -804,7 +992,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $count = $serviceLayer->deleteFutureRecurringSchedules($therapist, $schedule->id);
@@ -829,7 +1018,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $count = $serviceLayer->deleteFutureRecurringSchedules($therapist, 999);
@@ -879,7 +1069,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new CreateScheduleDTO(
@@ -950,7 +1141,8 @@ final class ScheduleServiceTest extends TestCase
             $this->timezoneService,
             $this->userRepository,
             $this->serviceRepository,
-            $this->studentRepository
+            $this->studentRepository,
+            $this->schoolRepository,
         );
 
         $dto = new CreateScheduleDTO(

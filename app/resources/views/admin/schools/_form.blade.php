@@ -193,18 +193,20 @@
                     <x-input-error :messages="$errors->get('is_auto_extend')" class="mt-2" />
                 </div>
 
-                <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <x-input-label value="Non-Billable Scheduling?" />
-                    <p class="mt-1 text-xs text-foreground/60 mb-3">Check if sessions at this school or family should not
-                        be included in billing calculations.</p>
+                <div class="p-4 border border-border rounded-lg bg-muted">
+                    <x-input-label value="Past session submission?" />
+                    <p id="non_billable_scheduling_help" class="mt-1 text-xs text-foreground/60 mb-3">
+                        Use when therapists should not submit post-session logs in Nova for this school/family.
+                    </p>
                     <div class="flex items-center gap-2">
                         <input type="hidden" name="non_billable_scheduling" value="0">
                         <input id="non_billable_scheduling" name="non_billable_scheduling" type="checkbox"
-                            value="1" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
+                            value="1" class="w-4 h-4 rounded border-border text-primary focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-describedby="non_billable_scheduling_help"
                             @checked(old('non_billable_scheduling', $school->non_billable_scheduling ?? false))>
                         <label for="non_billable_scheduling"
                             class="text-sm font-medium text-foreground/80 cursor-pointer">
-                            Exclude from billing
+                            Exclude from Past Sessions submission queue
                         </label>
                     </div>
                     <x-input-error :messages="$errors->get('non_billable_scheduling')" class="mt-2" />

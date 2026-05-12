@@ -43,7 +43,15 @@ final class ScheduleSeeder extends Seeder
             }
 
             $student = $ssa->student;
-            $schoolId = $student->studentProfile?->school_id;
+            if ($student === null || $ssa->end_date === null) {
+                continue;
+            }
+
+            /** @var \App\Models\User $student */
+            $profile = $student->studentProfile;
+            $schoolId = $profile?->school_id;
+            $school = $profile?->school;
+            $isBillable = $school === null ? true : ! $school->non_billable_scheduling;
 
             // Generate schedule dates based on SSA frequency and date range
             $scheduleDates = $this->generateScheduleDates(
@@ -96,6 +104,7 @@ final class ScheduleSeeder extends Seeder
                     'is_group' => false,
                     'status' => $scheduleStatus->value,
                     'billing_status' => $billingStatus->value,
+                    'is_billable' => $isBillable,
                 ]);
 
                 $totalSchedules++;
