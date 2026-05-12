@@ -32,6 +32,7 @@
             ['key' => 'dashboard', 'label' => 'Dashboard', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'dashboard'])],
             ['key' => 'overview', 'label' => 'Overview', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'overview'])],
             ['key' => 'ssas', 'label' => 'SSAs', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'ssas'])],
+            ['key' => 'goals', 'label' => 'Goals', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'goals'])],
             ['key' => 'therapists', 'label' => 'Therapists', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'therapists'])],
             ['key' => 'schedule', 'label' => 'Schedule', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'schedule'])],
             ['key' => 'session_logs', 'label' => 'Session Logs', 'href' => route('admin.students.show', ['student' => $student, 'tab' => 'session_logs'])],
@@ -141,6 +142,8 @@
     @elseif (($activeTab ?? 'dashboard') === 'ssas' && isset($ssas))
         <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="$students ?? []" :therapists="$therapists ?? []"
             :services="$services ?? []" :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
+    @elseif (($activeTab ?? 'dashboard') === 'goals' && isset($goals))
+        @include('therapist.students._goals-tab', ['goals' => $goals, 'student' => $student, 'ssaRoute' => 'admin.ssas.show'])
     @elseif (($activeTab ?? 'dashboard') === 'therapists' && isset($therapists))
         <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []"
             :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />

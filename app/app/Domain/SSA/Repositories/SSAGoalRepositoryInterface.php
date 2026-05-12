@@ -20,6 +20,9 @@ interface SSAGoalRepositoryInterface
     /** @return Collection<int, SSAGoal> */
     public function listActiveForSsa(int $ssaId): Collection;
 
+    /** @return Collection<int, SSAGoal> */
+    public function listForStudent(int $studentId): Collection;
+
     public function create(CreateSSAGoalDTO $dto): SSAGoal;
 
     public function update(SSAGoal $goal, UpdateSSAGoalDTO $dto): SSAGoal;

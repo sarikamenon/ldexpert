@@ -35,6 +35,13 @@ final class SSAGoalService
             ->each(fn (SSAGoal $goal) => $this->attachCanTransitionFlag($goal));
     }
 
+    /** @return Collection<int, SSAGoal> */
+    public function listForStudent(int $studentId): Collection
+    {
+        return $this->goals->listForStudent($studentId)
+            ->each(fn (SSAGoal $goal) => $this->attachCanTransitionFlag($goal));
+    }
+
     private function attachCanTransitionFlag(SSAGoal $goal): void
     {
         $goal->can_transition_status = $goal->status === SSAGoalStatus::ACTIVE;

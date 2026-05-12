@@ -37,6 +37,16 @@ final class EloquentSSAGoalRepository implements SSAGoalRepositoryInterface
             ->get();
     }
 
+    /** @return Collection<int, SSAGoal> */
+    public function listForStudent(int $studentId): Collection
+    {
+        return SSAGoal::query()
+            ->forStudent($studentId)
+            ->with('ssa.primaryService')
+            ->orderForList()
+            ->get();
+    }
+
     public function create(CreateSSAGoalDTO $dto): SSAGoal
     {
         return SSAGoal::create($dto->toArray());

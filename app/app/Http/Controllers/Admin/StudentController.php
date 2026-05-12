@@ -12,6 +12,7 @@ use App\DataTables\Transformers\StudentRowTransformer;
 use App\Domain\Position\Services\PositionCatalogService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
@@ -66,6 +67,7 @@ final class StudentController extends Controller
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
         private readonly SSAService $ssaService,
+        private readonly SSAGoalService $goalService,
         private readonly ScheduleService $scheduleService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly StudentCommentService $commentService,
@@ -308,6 +310,8 @@ final class StudentController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
             $viewData['datatableUrl'] = route('admin.session-logs.data');
             $viewData['studentId'] = $student->id;
+        } elseif ($activeTab === 'goals') {
+            $viewData['goals'] = $this->goalService->listForStudent($student->id);
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistStudentRowTransformer;
+use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
@@ -38,6 +39,7 @@ final class StudentController extends Controller
 
     public function __construct(
         private readonly SSAService $ssaService,
+        private readonly SSAGoalService $goalService,
         private readonly StudentService $studentService,
         private readonly StudentCommentService $commentService,
         private readonly StudentDocumentService $documentService,
@@ -125,6 +127,8 @@ final class StudentController extends Controller
             $viewData['sessionLogFilters'] = $request->query();
             $viewData['datatableUrl'] = route('therapist.session-logs.data');
             $viewData['studentId'] = $student->id;
+        } elseif ($activeTab === 'goals') {
+            $viewData['goals'] = $this->goalService->listForStudent($student->id);
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {

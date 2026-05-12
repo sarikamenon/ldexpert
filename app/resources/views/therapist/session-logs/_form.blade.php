@@ -166,7 +166,19 @@
                 </div>
             @elseif ($ssaContext['mode'] === 'previous_notes' && ($ssaContext['previousLog'] ?? null))
                 <div class="space-y-2 mt-4 rounded-lg border border-border bg-muted/30 p-4">
-                    <h4 class="text-sm font-medium text-foreground">Previous Session Notes</h4>
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="text-sm font-medium text-foreground">Previous Session Notes</h4>
+                        @if ($ssaContext['previousLog']->notes)
+                            <button type="button" id="copy-prev-notes-btn"
+                                class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+                                aria-label="Copy previous notes to Notes field">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0 0 13.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 0 1-.75.75H9a.75.75 0 0 1-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 0 1-2.25 2.25H6.75A2.25 2.25 0 0 1 4.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 0 1 1.927-.184" />
+                                </svg>
+                                Copy to Notes
+                            </button>
+                        @endif
+                    </div>
                     <p class="text-xs text-foreground/60">
                         {{ $ssaContext['previousLog']->session_date_formatted }} · {{ $ssaContext['previousLog']->start_time_formatted }} – {{ $ssaContext['previousLog']->end_time_formatted }}
                         <a href="{{ route('therapist.session-logs.show', $ssaContext['previousLog']) }}"
@@ -181,7 +193,7 @@
                             </svg>
                         </a>
                     </p>
-                    <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $ssaContext['previousLog']->notes ?: 'No notes recorded on the previous session log.' }}</p>
+                    <p id="prev-session-notes-text" class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $ssaContext['previousLog']->notes ?: 'No notes recorded on the previous session log.' }}</p>
                 </div>
             @endif
         @endisset
