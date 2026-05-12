@@ -38,7 +38,7 @@
                         data-filter="mastered"
                         class="goals-filter-pill inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-border bg-transparent text-foreground/70 hover:border-foreground/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         aria-pressed="false">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+                        <span class="w-2 h-2 rounded-full bg-success inline-block"></span>
                         {{ $masteredCount }} Mastered
                     </button>
                 @endif
@@ -76,11 +76,10 @@
                     $ssaActiveCount = $ssaGoals->filter(fn ($g) => $g->status === \App\Enums\SSAGoalStatus::ACTIVE)->count();
                     $ssaMasteredCount = $ssaGoals->filter(fn ($g) => $g->status === \App\Enums\SSAGoalStatus::MASTERED)->count();
                     $ssaDiscontinuedCount = $ssaGoals->filter(fn ($g) => $g->status === \App\Enums\SSAGoalStatus::DISCONTINUED)->count();
-                    $ssaSectionId = 'ssa-section-' . $ssaId;
                     $ssaBodyId = 'ssa-body-' . $ssaId;
                 @endphp
 
-                <div class="ssa-goal-section rounded-xl border border-border bg-white overflow-hidden"
+                <div class="ssa-goal-section rounded-xl border border-border bg-card overflow-hidden"
                      data-ssa-id="{{ $ssaId }}"
                      data-active="{{ $ssaActiveCount }}"
                      data-mastered="{{ $ssaMasteredCount }}"
@@ -111,7 +110,7 @@
                                 <span class="text-xs font-medium text-primary">{{ $ssaActiveCount }} Active</span>
                             @endif
                             @if ($ssaMasteredCount > 0)
-                                <span class="text-xs font-medium text-emerald-600">{{ $ssaMasteredCount }} Mastered</span>
+                                <span class="text-xs font-medium text-success">{{ $ssaMasteredCount }} Mastered</span>
                             @endif
                             @if ($ssaDiscontinuedCount > 0)
                                 <span class="text-xs font-medium text-foreground/40">{{ $ssaDiscontinuedCount }} Discontinued</span>
@@ -128,19 +127,19 @@
                             @php
                                 $isActive = $goal->status === \App\Enums\SSAGoalStatus::ACTIVE;
                                 $isMastered = $goal->status === \App\Enums\SSAGoalStatus::MASTERED;
-                                $isDiscontinued = $goal->status === \App\Enums\SSAGoalStatus::DISCONTINUED;
 
-                                $leftBorderColor = $isActive ? '#5563b8' : ($isMastered ? '#10b981' : '#e5e7eb');
+                                $leftBorderClass = $isActive
+                                    ? 'border-l-4 border-l-primary'
+                                    : ($isMastered ? 'border-l-4 border-l-success' : 'border-l-4 border-l-border');
                                 $badgeBg = $isActive
                                     ? 'bg-primary/10 text-primary'
-                                    : ($isMastered ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground/50');
-                                $dotColor = $isActive ? 'bg-primary' : ($isMastered ? 'bg-emerald-500' : 'bg-foreground/30');
+                                    : ($isMastered ? 'bg-success/15 text-success' : 'bg-muted text-foreground/50');
+                                $dotColor = $isActive ? 'bg-primary' : ($isMastered ? 'bg-success' : 'bg-foreground/30');
                                 $statusSlug = $isActive ? 'active' : ($isMastered ? 'mastered' : 'discontinued');
                                 $progressNotesId = 'progress-notes-' . $ssaId . '-' . $goal->id;
                             @endphp
 
-                            <div class="goal-item {{ $index > 0 ? 'border-t border-border' : '' }}"
-                                 style="border-left: 4px solid {{ $leftBorderColor }};"
+                            <div class="goal-item {{ $index > 0 ? 'border-t border-border' : '' }} {{ $leftBorderClass }}"
                                  data-status="{{ $statusSlug }}">
                                 <div class="px-5 pt-4 pb-1">
                                     <div class="flex items-center gap-2.5">

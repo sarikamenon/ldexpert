@@ -73,7 +73,7 @@ final class SSAGoalService
     }
 
     /**
-     * Get goal metrics for a specific SSA.
+     * Get goal metrics for a specific SSA. Mastery rate is mastered ÷ total goals.
      *
      * @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float}
      */

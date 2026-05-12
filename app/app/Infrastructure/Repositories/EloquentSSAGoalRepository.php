@@ -74,21 +74,42 @@ final class EloquentSSAGoalRepository implements SSAGoalRepositoryInterface
             ->exists();
     }
 
-    /** @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float} */
+    /**
+     * Mastery rate is mastered goals divided by total goals (same formula as student-level goal metrics).
+     *
+     * @return array{total_goals: int, active_goals: int, mastered_goals: int, discontinued_goals: int, mastery_rate: float}
+     */
     public function getMetricsForSsa(int $ssaId): array
     {
-        $goals = SSAGoal::query()
-            ->forSsa($ssaId)
-            ->get();
+        $query = SSAGoal::query()->forSsa($ssaId);
+        $statusColumn = $query->qualifyColumn('status');
 
-        $total = $goals->count();
-        $active = $goals->where('status', SSAGoalStatus::ACTIVE)->count();
-        $mastered = $goals->where('status', SSAGoalStatus::MASTERED)->count();
-        $discontinued = $goals->where('status', SSAGoalStatus::DISCONTINUED)->count();
+        /** @var object{total_goals: string|float|int|null, active_goals: string|float|int|null, mastered_goals: string|float|int|null, discontinued_goals: string|float|int|null}|null $row */
+        $row = $query
+            ->selectRaw('COUNT(*) as total_goals')
+            ->selectRaw("SUM(CASE WHEN {$statusColumn} = ? THEN 1 ELSE 0 END) as active_goals", [SSAGoalStatus::ACTIVE->value])
+            ->selectRaw("SUM(CASE WHEN {$statusColumn} = ? THEN 1 ELSE 0 END) as mastered_goals", [SSAGoalStatus::MASTERED->value])
+            ->selectRaw("SUM(CASE WHEN {$statusColumn} = ? THEN 1 ELSE 0 END) as discontinued_goals", [SSAGoalStatus::DISCONTINUED->value])
+            ->toBase()
+            ->first();
 
-        $completedGoals = $mastered + $discontinued;
-        $masteryRate = $completedGoals > 0
-            ? ($mastered / $completedGoals) * 100
+        if ($row === null) {
+            return [
+                'total_goals' => 0,
+                'active_goals' => 0,
+                'mastered_goals' => 0,
+                'discontinued_goals' => 0,
+                'mastery_rate' => 0.0,
+            ];
+        }
+
+        $total = (int) ($row->total_goals ?? 0);
+        $active = (int) ($row->active_goals ?? 0);
+        $mastered = (int) ($row->mastered_goals ?? 0);
+        $discontinued = (int) ($row->discontinued_goals ?? 0);
+
+        $masteryRate = $total > 0
+            ? round(($mastered / $total) * 100, 1)
             : 0.0;
 
         return [
@@ -96,7 +117,7 @@ final class EloquentSSAGoalRepository implements SSAGoalRepositoryInterface
             'active_goals' => $active,
             'mastered_goals' => $mastered,
             'discontinued_goals' => $discontinued,
-            'mastery_rate' => round($masteryRate, 1),
+            'mastery_rate' => $masteryRate,
         ];
     }
 }

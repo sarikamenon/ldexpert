@@ -100,6 +100,56 @@ it('listActiveForSsa delegates to repository and flags goals', function () {
 });
 
 // ---------------------------------------------------------------------------
+// listForStudent
+// ---------------------------------------------------------------------------
+
+it('listForStudent delegates to repository and flags active goals', function () {
+    [$service, $goals] = makeGoalService();
+
+    $goal = new SSAGoal(['status' => SSAGoalStatus::ACTIVE]);
+
+    $goals->shouldReceive('listForStudent')
+        ->once()
+        ->with(42)
+        ->andReturn(new Collection([$goal]));
+
+    $result = $service->listForStudent(42);
+
+    expect($result)->toHaveCount(1)
+        ->and($result->first()->can_transition_status)->toBeTrue();
+});
+
+it('listForStudent attaches can_transition_status=false to mastered goals', function () {
+    [$service, $goals] = makeGoalService();
+
+    $goal = new SSAGoal(['status' => SSAGoalStatus::MASTERED]);
+
+    $goals->shouldReceive('listForStudent')
+        ->once()
+        ->with(7)
+        ->andReturn(new Collection([$goal]));
+
+    $result = $service->listForStudent(7);
+
+    expect($result->first()->can_transition_status)->toBeFalse();
+});
+
+it('listForStudent attaches can_transition_status=false to discontinued goals', function () {
+    [$service, $goals] = makeGoalService();
+
+    $goal = new SSAGoal(['status' => SSAGoalStatus::DISCONTINUED]);
+
+    $goals->shouldReceive('listForStudent')
+        ->once()
+        ->with(8)
+        ->andReturn(new Collection([$goal]));
+
+    $result = $service->listForStudent(8);
+
+    expect($result->first()->can_transition_status)->toBeFalse();
+});
+
+// ---------------------------------------------------------------------------
 // create — happy path and guards
 // ---------------------------------------------------------------------------
 
@@ -238,7 +288,7 @@ it('getMetricsForSsa delegates to repository', function () {
         'active_goals' => 2,
         'mastered_goals' => 2,
         'discontinued_goals' => 1,
-        'mastery_rate' => 66.7,
+        'mastery_rate' => 40.0,
     ];
 
     $goals->shouldReceive('getMetricsForSsa')
@@ -253,5 +303,5 @@ it('getMetricsForSsa delegates to repository', function () {
         ->and($result['active_goals'])->toBe(2)
         ->and($result['mastered_goals'])->toBe(2)
         ->and($result['discontinued_goals'])->toBe(1)
-        ->and($result['mastery_rate'])->toBe(66.7);
+        ->and($result['mastery_rate'])->toBe(40.0);
 });
