@@ -56,7 +56,7 @@
         </div>
 
         <div class="space-y-4">
-            @foreach ($goals as $index => $goal)
+            @foreach ($goals as $goal)
                 @php
                     $editUrl = $editUrlResolver($goal);
                     $statusUrl = $statusUrlResolver($goal);
@@ -73,7 +73,7 @@
                     {{-- Goal header --}}
                     <div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
                         <div class="flex items-center gap-2.5">
-                            <span class="text-base font-bold text-foreground">Goal {{ $index + 1 }}</span>
+                            <span class="text-base font-bold text-foreground">Goal {{ $goal->number }}</span>
                             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $badgeBg }}">
                                 <span class="w-1.5 h-1.5 rounded-full {{ $dotColor }} inline-block"></span>
                                 {{ $goal->status->label() }}

@@ -7,7 +7,7 @@
     $ssaRoute = $ssaRoute ?? 'therapist.ssas.show';
 @endphp
 
-<div class="space-y-4">
+<x-ui::card class="p-6 space-y-4">
     {{-- Page header with filter pills --}}
     <div class="flex items-start justify-between gap-4">
         <div>
@@ -56,17 +56,15 @@
     </div>
 
     @if ($goals->isEmpty())
-        <x-ui::card class="p-6">
-            <x-ui::empty-state
-                title="No goals yet"
-                description="Goals will appear here once they are added to one of the student's SSAs.">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="w-12 h-12">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-                </svg>
-            </x-ui::empty-state>
-        </x-ui::card>
+        <x-ui::empty-state
+            title="No goals yet"
+            description="Goals will appear here once they are added to one of the student's SSAs.">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="w-12 h-12">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+            </svg>
+        </x-ui::empty-state>
     @else
         {{-- SSA sections --}}
         <div class="space-y-4" id="goals-ssa-list">
@@ -143,7 +141,7 @@
                                  data-status="{{ $statusSlug }}">
                                 <div class="px-5 pt-4 pb-1">
                                     <div class="flex items-center gap-2.5">
-                                        <span class="text-sm font-bold text-foreground">Goal {{ $index + 1 }}</span>
+                                        <span class="text-sm font-bold text-foreground">Goal {{ $goal->number }}</span>
                                         <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium {{ $badgeBg }}">
                                             <span class="w-1.5 h-1.5 rounded-full {{ $dotColor }} inline-block"></span>
                                             {{ $goal->status->label() }}
@@ -181,4 +179,4 @@
             @endforeach
         </div>
     @endif
-</div>
+</x-ui::card>
