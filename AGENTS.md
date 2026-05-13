@@ -19,24 +19,16 @@ You are an expert in Laravel, PHP, and related web development technologies.
 
 ## Architecture Standards
 
+> **See `app/docs/ARCHITECTURE.md`** for the full DDD layer contract, hard boundary rules with examples, and directory structure. The rules below are enforced in addition to that document.
+
 - **Monolith only**: No public API controllers. Use Blade pages with Form Requests and jQuery AJAX where asynchronous behavior is needed.
 - **Always use DTOs** for input transport between layers.
 - **Always use Form Request classes** for validation. Controllers MUST type-hint Request objects from `app/Http/Requests/**`.
-- **Controllers must delegate to Services**; Services use Repositories.
 - **Prefer Eloquent**; raw queries only with justification.
 - **Prefer `whereHas` over `whereExists` with subqueries** when filtering by related model conditions. `whereHas` uses Eloquent relationships, respects soft deletes, and reads as business logic rather than SQL. Only fall back to `whereExists`/`DB::raw` when the relationship does not exist and adding it would be disproportionate, or when performance profiling justifies it. If a `whereHas` is needed and the inverse relationship is missing from the model, add it first.
 - **Prefer collection methods** (`map`, `filter`, `reject`, `flatMap`, etc.) over `foreach` loops when transforming or filtering Eloquent results. Loops are acceptable only for side-effectful operations (e.g., creating DB records inside the loop).
 - **Always use `use` statements** for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
-- **Always add policies** for new models/features. Use `$this->authorize()` in controllers.
-- **Use Laravel 11+ auto-discovery — do NOT register manually.** Laravel auto-discovers the following based on naming conventions; explicit registration in `AppServiceProvider` (or anywhere else) is forbidden because it adds noise and rots when models move:
-  - **Policies** — `App\Policies\<Model>Policy` for `App\Models\<Model>` is auto-discovered. Never call `Gate::policy(...)` for a conventionally-named policy.
-  - **Observers** — `App\Observers\<Model>Observer` is auto-discovered when `#[ObservedBy(...)]` attribute is on the model. Use the attribute, not `Model::observe()`.
-  - **Event listeners** — listener classes with a typed `handle()` method in `app/Listeners/` are auto-discovered when registered via `#[AsEventListener]` or via the listener's typed handle parameter. Avoid `Event::listen()` calls.
-  - Manual registration is allowed only when the convention does not apply (e.g. policy for a non-Eloquent class, listener wired to a runtime-determined event). When you do register manually, leave a one-line comment explaining why the convention doesn't fit.
-- **Keep files small and focused**: Hard cap of 300 lines per PHP file, 400 lines per JS file. If approaching the limit, extract to smaller classes, view components, dedicated services, or JS modules. No exceptions without a comment justifying and a follow-up task to split.
-- **Use soft deletes by default** on Eloquent models and tables (add `deleted_at` with `$table->softDeletes()` and `use SoftDeletes` on the model). Only use hard deletes with explicit justification and tests.
 - **No public registration routes**; users created via command or privileged UI.
-- **Roles system**: `admin`, `therapist`, `student`, `parent`. Protect routes with `role` middleware.
 - **Ledger writes** (`ledger_entries`): every insert MUST go through `App\Domain\Finance\Services\LedgerService` (`createEntry`, the four credit-note/refund creators, or the source-document creators). Never call `LedgerEntry::create()` directly outside the service. Every entry MUST have `recorded_at` set from a real source-document date — never let it default. Backdated, edited, or deleted entries MUST run through `LedgerService::recomputeChainFrom()` to maintain the `balance_after` invariant. Only `credit_note` and `refund` types are editable/deletable from the ledger UI; all other types must be edited via their source-document page (Invoices, Bills, Payments, Expenses). Sign convention lives in `TransactionType::balanceDelta()` — never hardcode `+/-`. Run `php artisan ledger:verify` to audit drift. See `app/docs/LEDGER_SYSTEM.md` for the full reference.
 - **Audit log** (`audits`): change-tracking for opted-in models. Add `use App\Models\Concerns\HasAudits;` to a model and it produces audit rows on `updating` / `deleting`. **Pivot syncs, mass deletes, and `createMany` bypass model events** — for those, add a `*Snapshot()` method on the parent model and emit a custom event via `App\Domain\Audit\Services\AuditRecorder::record()` attached to the parent (see `EloquentSchoolContractRepository::syncServices()` for the canonical pattern). Never audit on child rows — IDs rotate and the timeline fragments. See `app/docs/AUDIT_SYSTEM.md` for the full reference.
 - **Follow PSR-12**; run `make qa` before commits.
@@ -86,7 +78,6 @@ You are an expert in Laravel, PHP, and related web development technologies.
 ## Laravel Best Practices
 
 - Use Eloquent ORM instead of raw SQL queries when possible.
-- Implement Repository pattern for data access layer.
 - Use Laravel's built-in authentication and authorization features.
 - Utilize Laravel's caching mechanisms for improved performance.
 - Implement job queues for long-running tasks.
@@ -100,13 +91,12 @@ You are an expert in Laravel, PHP, and related web development technologies.
 
 ## Key Conventions
 
-1. Follow Laravel's MVC architecture.
+1. Follow DDD layered architecture (see `app/docs/ARCHITECTURE.md`).
 2. Use Laravel's routing system for defining application endpoints.
 3. Implement proper request validation using Form Requests.
 4. Use Laravel's Blade templating engine for views.
 5. Implement proper database relationships using Eloquent.
 6. Use Laravel's built-in authentication scaffolding.
-7. Implement proper API resource transformations.
 8. Use Laravel's event and listener system for decoupled code.
 9. Implement proper database transactions for data integrity.
 10. Use Laravel's built-in scheduling features for recurring tasks.
@@ -175,60 +165,6 @@ try {
   - **Views**: Render the table with an empty `<tbody></tbody>` and set `data-datatable-url="{{ $datatableUrl }}"` when using server-side; pass `datatableUrl` from the controller (e.g. `route('admin.students.data')`).
 - Use **POST** for the data endpoint (CSRF); enforce a **column whitelist** for ordering. See `app/docs/DATATABLES_SERVER_SIDE.md` for the contract and list of migrated entities.
 
-## Code Organization Patterns
-
-### DTOs (Data Transfer Objects)
-
-- Create DTOs for data transport between layers
-- Implement `fromArray()` and `toArray()` methods
-- Place in `app/DTOs/` directory
-
-### Repository Pattern
-
-- Define interfaces in `app/Domain/[Entity]/Repositories/`
-- Implement in `app/Infrastructure/Repositories/`
-- Bind interfaces in `AppServiceProvider`
-
-### Service Layer
-
-- Create service classes in `app/Domain/[Entity]/Services/`
-- Encapsulate business logic
-- Use dependency injection for repositories
-
-### Scopes
-
-- Create separate scope classes extending `BaseModelScope`
-- Place in `app/Models/Scopes/`
-- Keep models clean by delegating scope logic
-
-### Policies
-
-- Create policy classes for authorization
-- Register in `AppServiceProvider`
-- Use consistent method names: `viewAny()`, `view()`, `create()`, `update()`, etc.
-
-### API Resources (HTTP JSON responses)
-
-For controller endpoints that return a JSON object payload (single record or list), use Laravel's API Resources to shape the response. The controller delegates to a service for data and to a Resource for shape. Reference: https://laravel.com/docs/12.x/eloquent-resources.
-
-- **Single record** → `JsonResource` subclass under `app/Http/Resources/<Domain>/` (e.g., `app/Http/Resources/Schedule/ScheduleDetailsResource.php`).
-- **Multiple records / paginated** → `Resource::collection($items)` for the simple case; a `ResourceCollection` subclass when the envelope itself needs metadata (filters applied, summary totals, etc.).
-- Resources MAY contain **presentation-only** helpers (formatted strings, derived labels, conditional shapes) as private methods. Domain logic stays on models/services.
-- Pass per-request context via `->additional([...])` (e.g., timezone, viewer role) — never read globals inside `toArray()`.
-- Wrap a single resource by setting `public static $wrap = '<key>';` when the JS contract expects an envelope (e.g., `{ "schedule": { ... } }`).
-- When a resource grows past ~150 lines or its sub-shape is reused, extract the sub-shape into a nested resource (e.g., `ScheduleDetailsResource` → `SsaSummaryResource`).
-- Inline `response()->json([...])` payload-building is acceptable only for trivial acks (`{ ok: true }`, simple count responses). Anything object-shaped must use a Resource.
-
-#### When to use which response pattern
-
-| Output                                          | Pattern                                                |
-|-------------------------------------------------|--------------------------------------------------------|
-| JSON object response (single record)            | `JsonResource`                                         |
-| JSON list / paginated response                  | `Resource::collection()` / `ResourceCollection`        |
-| DataTables row HTML (positional array)          | `App\DataTables\Transformers\*RowTransformer`          |
-| Trivial ack (`{ ok: true }`, `{ count: N }`)    | Inline `response()->json()` is fine                    |
-
-DataTables intentionally stays on `RowTransformer`: rows are positional arrays of pre-rendered HTML strings, not named-key data, so a Resource would be off-label use. Do not migrate DataTables endpoints to Resources.
 
 ## Testing Standards
 
