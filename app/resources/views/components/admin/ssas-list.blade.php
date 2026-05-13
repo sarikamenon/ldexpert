@@ -59,10 +59,10 @@
             <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
                 value="{{ $filters['search'] ?? '' }}" />
 
-            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true">
-                <option value="">All Statuses</option>
+            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true" data-default-value="active">
+                <option value="all">All Statuses</option>
                 @foreach ($statuses as $status)
-                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? null) === $status->value)>
+                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? 'active') === $status->value)>
                         {{ $status->label() }}
                     </option>
                 @endforeach
