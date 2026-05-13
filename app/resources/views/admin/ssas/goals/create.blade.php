@@ -11,6 +11,7 @@
         <x-ssa.goal-form
             :action="$formAction"
             :goal="$goal"
-            :cancel-url="$cancelUrl" />
+            :cancel-url="$cancelUrl"
+            :return-to="$returnTo ?? null" />
     </x-ui::card>
 </x-admin.layouts.app>

@@ -155,7 +155,12 @@
                 <x-admin.ssas-list :ssas="$ssas" :filters="$ssaFilters ?? []" :statuses="$statuses ?? []" :students="[]"
                     :therapists="[]" :services="[]" :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="therapist" />
             @elseif (($activeTab ?? 'dashboard') === 'goals' && isset($goals))
-                @include('therapist.students._goals-tab', ['goals' => $goals, 'student' => $student])
+                @include('therapist.students._goals-tab', [
+                    'goals' => $goals,
+                    'student' => $student,
+                    'studentSsasForGoalsTab' => $studentSsasForGoalsTab ?? collect(),
+                    'goalCreateReturnTo' => $goalCreateReturnTo ?? '',
+                ])
             @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
                 <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
                     :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />

@@ -12,10 +12,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SSAGoal\ChangeSSAGoalStatusRequest;
 use App\Http\Requests\SSAGoal\StoreSSAGoalRequest;
 use App\Http\Requests\SSAGoal\UpdateSSAGoalRequest;
+use App\Http\Support\SSAGoalReturnTo;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAGoal;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -25,15 +27,21 @@ final class SSAGoalController extends Controller
         private readonly SSAGoalService $goalService,
     ) {}
 
-    public function create(ServiceSupportAgreement $ssa): View
+    public function create(Request $request, ServiceSupportAgreement $ssa): View
     {
         $this->authorize('create', [SSAGoal::class, $ssa]);
+
+        $returnTo = SSAGoalReturnTo::tryFromQuery($request->query('return_to'));
+        $cancelUrl = $returnTo === SSAGoalReturnTo::StudentGoalsTab
+            ? route('therapist.students.show', ['student' => $ssa->student_id, 'tab' => 'goals'])
+            : route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'goals']);
 
         return view('therapist.ssas.goals.create', [
             'ssa' => $ssa,
             'goal' => null,
             'formAction' => route('therapist.ssas.goals.store', $ssa),
-            'cancelUrl' => route('therapist.ssas.show', ['ssa' => $ssa, 'tab' => 'goals']),
+            'cancelUrl' => $cancelUrl,
+            'returnTo' => $returnTo,
         ]);
     }
 
@@ -53,6 +61,15 @@ final class SSAGoalController extends Controller
             Log::error('Failed to create SSA goal', ['ssa_id' => $ssa->id, 'error' => $e->getMessage()]);
 
             return redirect()->back()->withInput()->withErrors(['goal' => 'Could not create the goal. Please try again.']);
+        }
+
+        /** @var SSAGoalReturnTo|null $returnTo */
+        $returnTo = $request->enum('return_to', SSAGoalReturnTo::class);
+
+        if ($returnTo === SSAGoalReturnTo::StudentGoalsTab) {
+            return redirect()
+                ->route('therapist.students.show', ['student' => $ssa->student_id, 'tab' => 'goals'])
+                ->with('success', 'Goal added successfully.');
         }
 
         return redirect()

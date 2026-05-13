@@ -8,10 +8,15 @@ use App\Domain\SSA\Services\SSAGoalService;
 use App\DTOs\CreateSSAGoalDTO;
 use App\DTOs\UpdateSSAGoalDTO;
 use App\Enums\SSAGoalStatus;
+use App\Http\Support\SSAGoalReturnTo;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAGoal;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
+
+uses(RefreshDatabase::class);
 
 // ---------------------------------------------------------------------------
 // Setup
@@ -156,7 +161,7 @@ it('listForStudent attaches can_transition_status=false to discontinued goals', 
 it('create delegates to repository when ssa and student match', function () {
     [$service, $goals, $ssas] = makeGoalService();
 
-    $ssa = new ServiceSupportAgreement();
+    $ssa = new ServiceSupportAgreement;
     $ssa->id = 1;
     $ssa->student_id = 10;
 
@@ -168,7 +173,7 @@ it('create delegates to repository when ssa and student match', function () {
         'progress' => null,
     ]);
 
-    $createdGoal = new SSAGoal();
+    $createdGoal = new SSAGoal;
 
     $ssas->shouldReceive('find')->once()->with(1)->andReturn($ssa);
     $goals->shouldReceive('create')->once()->with($dto)->andReturn($createdGoal);
@@ -199,7 +204,7 @@ it('create throws InvalidArgumentException when SSA is not found', function () {
 it('create throws InvalidArgumentException when student does not match the SSA', function () {
     [$service, $goals, $ssas] = makeGoalService();
 
-    $ssa = new ServiceSupportAgreement();
+    $ssa = new ServiceSupportAgreement;
     $ssa->id = 1;
     $ssa->student_id = 10; // mismatches dto
 
@@ -225,13 +230,13 @@ it('create throws InvalidArgumentException when student does not match the SSA',
 it('update delegates to repository', function () {
     [$service, $goals] = makeGoalService();
 
-    $goal = new SSAGoal();
+    $goal = new SSAGoal;
     $dto = UpdateSSAGoalDTO::fromArray([
         'number' => '2',
         'objective' => 'Updated objective.',
         'progress' => null,
     ]);
-    $updatedGoal = new SSAGoal();
+    $updatedGoal = new SSAGoal;
 
     $goals->shouldReceive('update')->once()->with($goal, $dto)->andReturn($updatedGoal);
 
@@ -247,8 +252,8 @@ it('update delegates to repository', function () {
 it('changeStatus delegates to repository', function () {
     [$service, $goals] = makeGoalService();
 
-    $goal = new SSAGoal();
-    $changedGoal = new SSAGoal();
+    $goal = new SSAGoal;
+    $changedGoal = new SSAGoal;
 
     $goals->shouldReceive('changeStatus')
         ->once()
@@ -263,8 +268,8 @@ it('changeStatus delegates to repository', function () {
 it('changeStatus works for discontinued status', function () {
     [$service, $goals] = makeGoalService();
 
-    $goal = new SSAGoal();
-    $changedGoal = new SSAGoal();
+    $goal = new SSAGoal;
+    $changedGoal = new SSAGoal;
 
     $goals->shouldReceive('changeStatus')
         ->once()
@@ -304,4 +309,68 @@ it('getMetricsForSsa delegates to repository', function () {
         ->and($result['mastered_goals'])->toBe(2)
         ->and($result['discontinued_goals'])->toBe(1)
         ->and($result['mastery_rate'])->toBe(40.0);
+});
+
+// ---------------------------------------------------------------------------
+// goalsTabViewDataForStudent
+// ---------------------------------------------------------------------------
+
+it('goalsTabViewDataForStudent loads all student SSAs when therapist scope is null', function () {
+    [$service, $goals, $ssas] = makeGoalService();
+
+    $g1 = new SSAGoal(['status' => SSAGoalStatus::ACTIVE]);
+    $g2 = new SSAGoal(['status' => SSAGoalStatus::MASTERED]);
+    $g3 = new SSAGoal(['status' => SSAGoalStatus::DISCONTINUED]);
+
+    $student = User::factory()->student()->create();
+    $studentId = $student->id;
+
+    $ssaOlder = ServiceSupportAgreement::factory()->create(['student_id' => $studentId]);
+    $ssaNewer = ServiceSupportAgreement::factory()->create(['student_id' => $studentId]);
+
+    $goals->shouldReceive('listForStudent')
+        ->once()
+        ->with($studentId)
+        ->andReturn(new Collection([$g1, $g2, $g3]));
+
+    $ssas->shouldReceive('getSSAsForStudentMetrics')
+        ->once()
+        ->with($studentId)
+        ->andReturn(new Collection([$ssaOlder, $ssaNewer]));
+    $ssas->shouldNotReceive('getSSAsForMetrics');
+
+    $data = $service->goalsTabViewDataForStudent($studentId);
+
+    $expectedOrder = collect([$ssaOlder->id, $ssaNewer->id])->sortDesc()->values()->all();
+
+    expect($data['goals'])->toHaveCount(3)
+        ->and($data['activeCount'])->toBe(1)
+        ->and($data['masteredCount'])->toBe(1)
+        ->and($data['discontinuedCount'])->toBe(1)
+        ->and($data['goalCreateReturnTo'])->toBe(SSAGoalReturnTo::StudentGoalsTab->value)
+        ->and($data['studentSsasForGoalsTab']->pluck('id')->all())->toBe($expectedOrder);
+});
+
+it('goalsTabViewDataForStudent loads therapist-scoped SSAs when therapist id is provided', function () {
+    [$service, $goals, $ssas] = makeGoalService();
+
+    $goals->shouldReceive('listForStudent')
+        ->once()
+        ->with(5)
+        ->andReturn(new Collection([]));
+
+    $ssas->shouldReceive('getSSAsForMetrics')
+        ->once()
+        ->with(5, 7)
+        ->andReturn(new Collection([]));
+    $ssas->shouldNotReceive('getSSAsForStudentMetrics');
+
+    $data = $service->goalsTabViewDataForStudent(5, 7);
+
+    expect($data['goals'])->toHaveCount(0)
+        ->and($data['activeCount'])->toBe(0)
+        ->and($data['masteredCount'])->toBe(0)
+        ->and($data['discontinuedCount'])->toBe(0)
+        ->and($data['goalCreateReturnTo'])->toBe(SSAGoalReturnTo::StudentGoalsTab->value)
+        ->and($data['studentSsasForGoalsTab'])->toHaveCount(0);
 });

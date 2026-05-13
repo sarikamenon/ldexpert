@@ -22,7 +22,7 @@ uses(DuskTestCase::class, DatabaseMigrations::class);
 function adminGoalAdmin(): User
 {
     return User::factory()->admin()->create([
-        'email' => 'admin+goals-' . Str::uuid() . '@example.com',
+        'email' => 'admin+goals-'.Str::uuid().'@example.com',
         'password' => bcrypt('Password123!'),
     ]);
 }
@@ -121,7 +121,7 @@ it('allows admin to mark a goal as mastered', function () {
             ->assertSee('Mark Mastered');
 
         // Intercept the SweetAlert2 confirm to auto-confirm, then click the button.
-        $browser->script("
+        $browser->script('
             window._swalConfirmAll = true;
             const orig = window.Swal ? window.Swal.fire.bind(window.Swal) : null;
             if (orig) {
@@ -132,7 +132,7 @@ it('allows admin to mark a goal as mastered', function () {
                     return orig(opts);
                 };
             }
-        ");
+        ');
 
         $browser->click('[data-status="mastered"]')
             ->pause(1500)
@@ -167,5 +167,45 @@ it('shows the empty state on the Goals tab when no goals exist', function () {
         $browser->loginAs($admin)
             ->visit(route('admin.ssas.show', ['ssa' => $ssa, 'tab' => 'goals']))
             ->assertSee('No goals yet');
+    });
+});
+
+it('shows per-SSA add goal and per-goal actions on the student Goals tab', function () {
+    $admin = adminGoalAdmin();
+    $ssa = adminGoalSsa();
+    /** @var User $student */
+    $student = User::query()->findOrFail($ssa->student_id);
+
+    SSAGoal::factory()->create([
+        'ssa_id' => $ssa->id,
+        'student_id' => $ssa->student_id,
+        'number' => '9',
+        'objective' => 'Goal visible on student tab.',
+        'status' => SSAGoalStatus::ACTIVE->value,
+    ]);
+
+    $this->browse(function (Browser $browser) use ($admin, $student, $ssa) {
+        $browser->loginAs($admin)
+            ->visit(route('admin.students.show', ['student' => $student, 'tab' => 'goals']))
+            ->assertSee('Goal visible on student tab.')
+            ->assertSee('+ Add Goal')
+            ->assertSee('Edit')
+            ->assertSee('Mark Mastered')
+            ->clickLink('Edit')
+            ->assertPathIs("/admin/ssas/{$ssa->id}/goals/".SSAGoal::query()->where('ssa_id', $ssa->id)->where('number', '9')->value('id').'/edit');
+    });
+});
+
+it('lists SSAs with add goal when student has no goals yet', function () {
+    $admin = adminGoalAdmin();
+    $ssa = adminGoalSsa();
+    /** @var User $student */
+    $student = User::query()->findOrFail($ssa->student_id);
+
+    $this->browse(function (Browser $browser) use ($admin, $student) {
+        $browser->loginAs($admin)
+            ->visit(route('admin.students.show', ['student' => $student, 'tab' => 'goals']))
+            ->assertSee('No goals for this SSA yet.')
+            ->assertSee('+ Add Goal');
     });
 });

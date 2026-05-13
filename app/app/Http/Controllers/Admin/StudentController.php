@@ -336,7 +336,7 @@ final class StudentController extends Controller
             $viewData['datatableUrl'] = route('admin.session-logs.data');
             $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'goals') {
-            $viewData['goals'] = $this->goalService->listForStudent($student->id);
+            $viewData = array_merge($viewData, $this->goalService->goalsTabViewDataForStudent($student->id));
         } elseif ($activeTab === 'comments') {
             $viewData['comments'] = $this->commentService->listByStudent($student->id);
         } elseif ($activeTab === 'documents') {
