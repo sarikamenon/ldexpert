@@ -1,7 +1,10 @@
+import { initSsaGoalStatusButtons } from '../common/ssa-goal-status';
+
 document.addEventListener('DOMContentLoaded', () => {
     initGoalsFilter();
     initSsaToggles();
     initProgressNotesToggle();
+    initSsaGoalStatusButtons();
 });
 
 function initGoalsFilter() {
@@ -42,6 +45,12 @@ function applyGoalFilter(filter) {
             item.style.display = visible ? '' : 'none';
             if (visible) visibleCount++;
         });
+
+        if (items.length === 0) {
+            section.style.display = filter === 'all' ? '' : 'none';
+
+            return;
+        }
 
         // Hide section if no goals match
         section.style.display = visibleCount > 0 ? '' : 'none';

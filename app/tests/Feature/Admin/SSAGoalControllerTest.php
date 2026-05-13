@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\SSAGoalStatus;
 use App\Enums\SSAStatus;
+use App\Http\Support\SSAGoalReturnTo;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAGoal;
@@ -78,6 +79,34 @@ it('creates a goal and redirects to goals tab', function () {
         'objective' => 'Student will improve reading fluency to 90 wpm.',
         'status' => SSAGoalStatus::ACTIVE->value,
     ]);
+});
+
+it('creates a goal and redirects to student goals tab when return_to is student_goals', function () {
+    $admin = goalAdmin();
+    $ssa = goalSsa();
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.ssas.goals.store', $ssa), [
+            'number' => '1.2',
+            'objective' => 'Return to student tab.',
+            'return_to' => SSAGoalReturnTo::StudentGoalsTab->value,
+        ]);
+
+    $response->assertRedirect(route('admin.students.show', ['student' => $ssa->student_id, 'tab' => 'goals']));
+    $response->assertSessionHas('success', 'Goal added successfully.');
+});
+
+it('rejects invalid return_to when creating a goal', function () {
+    $admin = goalAdmin();
+    $ssa = goalSsa();
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.goals.store', $ssa), [
+            'number' => '1',
+            'objective' => 'Objective text.',
+            'return_to' => 'https://evil.example',
+        ])
+        ->assertSessionHasErrors('return_to');
 });
 
 it('stores progress text when supplied', function () {

@@ -9,8 +9,11 @@ use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\DTOs\CreateSSAGoalDTO;
 use App\DTOs\UpdateSSAGoalDTO;
 use App\Enums\SSAGoalStatus;
+use App\Http\Support\SSAGoalReturnTo;
+use App\Models\ServiceSupportAgreement;
 use App\Models\SSAGoal;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -80,5 +83,38 @@ final class SSAGoalService
     public function getMetricsForSsa(int $ssaId): array
     {
         return $this->goals->getMetricsForSsa($ssaId);
+    }
+
+    /**
+     * Payload for the student profile "Goals" tab (admin: all SSAs; therapist: assigned SSAs only).
+     *
+     * @return array{
+     *     goals: Collection<int, SSAGoal>,
+     *     studentSsasForGoalsTab: SupportCollection<int, ServiceSupportAgreement>,
+     *     activeCount: int,
+     *     masteredCount: int,
+     *     discontinuedCount: int,
+     *     goalCreateReturnTo: string
+     * }
+     */
+    public function goalsTabViewDataForStudent(int $studentId, ?int $scopeTherapistId = null): array
+    {
+        $goals = $this->listForStudent($studentId);
+
+        $ssaRows = $scopeTherapistId === null
+            ? $this->ssas->getSSAsForStudentMetrics($studentId)
+            : $this->ssas->getSSAsForMetrics($studentId, $scopeTherapistId);
+
+        /** @var SupportCollection<int, ServiceSupportAgreement> $studentSsasForGoalsTab */
+        $studentSsasForGoalsTab = $ssaRows->sortByDesc('id')->values();
+
+        return [
+            'goals' => $goals,
+            'studentSsasForGoalsTab' => $studentSsasForGoalsTab,
+            'activeCount' => $goals->filter(static fn (SSAGoal $g): bool => $g->status->isActive())->count(),
+            'masteredCount' => $goals->filter(static fn (SSAGoal $g): bool => $g->status->isMastered())->count(),
+            'discontinuedCount' => $goals->filter(static fn (SSAGoal $g): bool => $g->status->isDiscontinued())->count(),
+            'goalCreateReturnTo' => SSAGoalReturnTo::StudentGoalsTab->value,
+        ];
     }
 }

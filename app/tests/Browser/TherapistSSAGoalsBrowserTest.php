@@ -27,7 +27,7 @@ uses(DuskTestCase::class, DatabaseMigrations::class);
 function therapistBrowserTherapist(): User
 {
     return User::factory()->therapist()->create([
-        'email' => 'therapist+goals-' . Str::uuid() . '@example.com',
+        'email' => 'therapist+goals-'.Str::uuid().'@example.com',
         'password' => bcrypt('Password123!'),
     ]);
 }

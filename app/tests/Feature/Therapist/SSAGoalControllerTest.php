@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Enums\SSAGoalStatus;
 use App\Enums\SSAStatus;
+use App\Http\Support\SSAGoalReturnTo;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAGoal;
@@ -87,6 +88,34 @@ it('allows assigned therapist to create a goal', function () {
         'number' => '1',
         'status' => SSAGoalStatus::ACTIVE->value,
     ]);
+});
+
+it('redirects to student goals tab when return_to is student_goals', function () {
+    $therapist = therapistGoalTherapist();
+    $ssa = therapistGoalSsa($therapist);
+
+    $response = $this->actingAs($therapist)
+        ->post(route('therapist.ssas.goals.store', $ssa), [
+            'number' => '2',
+            'objective' => 'Objective for student tab return.',
+            'return_to' => SSAGoalReturnTo::StudentGoalsTab->value,
+        ]);
+
+    $response->assertRedirect(route('therapist.students.show', ['student' => $ssa->student_id, 'tab' => 'goals']));
+    $response->assertSessionHas('success', 'Goal added successfully.');
+});
+
+it('rejects invalid return_to when therapist creates a goal', function () {
+    $therapist = therapistGoalTherapist();
+    $ssa = therapistGoalSsa($therapist);
+
+    $this->actingAs($therapist)
+        ->post(route('therapist.ssas.goals.store', $ssa), [
+            'number' => '1',
+            'objective' => 'Objective text.',
+            'return_to' => 'https://evil.example',
+        ])
+        ->assertSessionHasErrors('return_to');
 });
 
 it('returns 404 when unassigned therapist tries to create a goal', function () {

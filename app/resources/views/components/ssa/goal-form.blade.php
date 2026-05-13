@@ -2,12 +2,16 @@
     'action',
     'goal' => null,
     'cancelUrl' => null,
+    'returnTo' => null,
 ])
 
 <form method="POST" action="{{ $action }}" class="space-y-6">
     @csrf
     @if ($goal)
         @method('PUT')
+    @endif
+    @if ($returnTo)
+        <input type="hidden" name="return_to" value="{{ $returnTo->value }}" />
     @endif
 
     @if ($errors->has('goal'))
