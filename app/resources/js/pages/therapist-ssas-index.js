@@ -19,7 +19,8 @@ async function initSSATable() {
             getExtraData(d) {
                 if (!form) return;
                 d.filter_search = form.querySelector('[name="search"]')?.value ?? '';
-                d.filter_status = form.querySelector('[name="status"]')?.value ?? '';
+                const statusVal = form.querySelector('[name="status"]')?.value ?? 'active';
+                d.filter_status = statusVal === 'all' ? '' : statusVal;
                 d.filter_student_id = form.querySelector('[name="student_id"]')?.value ?? '';
             },
         });
