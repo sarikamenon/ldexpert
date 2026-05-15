@@ -51,9 +51,7 @@ class SchoolService
     {
         /** @var School */
         return $this->wrapWrite(function () use ($school, $dto) {
-            $updatedSchool = $this->schools->update($school, $dto);
-
-            return $updatedSchool;
+            return $this->schools->update($school, $dto);
         });
     }
 

@@ -189,8 +189,21 @@ final class StoreSessionLogRequest extends FormRequest
             if ($scheduleId) {
                 /** @var Schedule|null $schedule */
                 $schedule = Schedule::find($scheduleId);
-                if ($schedule && $schedule->therapist_id !== $therapist->id) {
+                if ($schedule === null) {
+                    $validator->errors()->add('schedule_id', 'The selected schedule is invalid.');
+
+                    return;
+                }
+
+                if ($schedule->therapist_id !== $therapist->id) {
                     $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
+                }
+
+                if (! $schedule->is_billable) {
+                    $validator->errors()->add(
+                        'schedule_id',
+                        'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.'
+                    );
                 }
             }
 

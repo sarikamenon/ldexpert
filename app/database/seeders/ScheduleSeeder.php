@@ -10,6 +10,7 @@ use App\Enums\ScheduleStatus;
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Models\School;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -43,7 +44,19 @@ final class ScheduleSeeder extends Seeder
             }
 
             $student = $ssa->student;
-            $schoolId = $student->studentProfile?->school_id;
+            if ($student === null || $ssa->end_date === null) {
+                continue;
+            }
+
+            /** @var \App\Models\User $student */
+            $profile = $student->studentProfile;
+            $schoolId = $profile?->school_id;
+            $school = $profile?->school;
+            if ($school === null) {
+                continue;
+            }
+
+            $isBillable = $this->resolveIsBillable($school);
 
             // Generate schedule dates based on SSA frequency and date range
             $scheduleDates = $this->generateScheduleDates(
@@ -96,6 +109,7 @@ final class ScheduleSeeder extends Seeder
                     'is_group' => false,
                     'status' => $scheduleStatus->value,
                     'billing_status' => $billingStatus->value,
+                    'is_billable' => $isBillable,
                 ]);
 
                 $totalSchedules++;
@@ -175,6 +189,11 @@ final class ScheduleSeeder extends Seeder
             ServiceFrequency::MONTHLY => $date->copy()->addMonth()->subDay(),
             ServiceFrequency::QUARTERLY => $date->copy()->addMonths(3)->subDay(),
         };
+    }
+
+    private function resolveIsBillable(School $school): bool
+    {
+        return ! $school->non_billable_scheduling;
     }
 
     private function mapFrequencyToRecurrenceType(ServiceFrequency $frequency): RecurrenceType

@@ -79,6 +79,8 @@ final class SessionLogService
                 throw new \InvalidArgumentException('Therapist does not have access to this schedule.');
             }
 
+            $this->assertScheduleAllowsSessionLogSubmission($schedule);
+
             // Validate therapist has access to SSA
             if (! $this->repository->validateTherapistAccessToSSA($therapist, $dto->ssaId)) {
                 throw new \InvalidArgumentException('Therapist does not have access to the selected SSA.');
@@ -450,6 +452,15 @@ final class SessionLogService
     {
         if ($schedule->billing_status === BillingStatus::BILLED) {
             throw new \InvalidArgumentException('Session logs cannot be added to a billed schedule.');
+        }
+    }
+
+    private function assertScheduleAllowsSessionLogSubmission(Schedule $schedule): void
+    {
+        if (! $schedule->is_billable) {
+            throw new \InvalidArgumentException(
+                'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.'
+            );
         }
     }
 

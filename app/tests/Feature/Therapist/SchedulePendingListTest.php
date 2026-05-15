@@ -10,6 +10,7 @@ use App\Enums\ScheduleStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Models\School;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
@@ -362,3 +363,4 @@ final class SchedulePendingListTest extends TestCase
         $response->assertSee(route('therapist.schedule.pending'), false);
     }
 }
+

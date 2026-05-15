@@ -98,10 +98,10 @@
             </div>
             @endif
             <div>
-                <dt class="text-sm font-medium text-foreground/70">Non-billable Scheduling?</dt>
+                <dt class="text-sm font-medium text-foreground/70">Past session submission</dt>
                 <dd class="mt-1 text-sm text-foreground">
                     <x-ui::badge :variant="$school->non_billable_scheduling ? 'primary' : 'secondary'">
-                        {{ $school->non_billable_scheduling ? 'Yes' : 'No' }}
+                        {{ $school->non_billable_scheduling ? 'Excluded from Past Sessions queue' : 'Not excluded' }}
                     </x-ui::badge>
                 </dd>
             </div>
