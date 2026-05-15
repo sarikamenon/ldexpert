@@ -139,7 +139,26 @@ final class ScheduleScope extends BaseModelScope
      */
     public static function forTherapist(Builder $builder, Model $model, User $therapist): Builder
     {
-        return $builder->where(self::qualify($model, 'therapist_id'), $therapist->id);
+        return $builder->where(function (Builder $q) use ($model, $therapist): void {
+            $q->where(self::qualify($model, 'therapist_id'), $therapist->id)
+                ->orWhere(self::qualify($model, 'sub_therapist_id'), $therapist->id);
+        });
+    }
+
+    /**
+     * For pending-queue and pending-count queries: ensures the original therapist's
+     * schedule is hidden once a sub has accepted (they shouldn't log it; the sub will).
+     * The sub's own covered schedules still appear.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function hidingAcceptedCoveredForOriginal(Builder $builder, Model $model, User $therapist): Builder
+    {
+        return $builder->where(function (Builder $q) use ($model, $therapist): void {
+            $q->whereNull(self::qualify($model, 'sub_therapist_id'))
+                ->orWhere(self::qualify($model, 'sub_therapist_id'), $therapist->id);
+        });
     }
 
     /**

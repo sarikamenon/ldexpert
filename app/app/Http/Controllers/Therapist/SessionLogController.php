@@ -29,6 +29,7 @@ use App\Http\Requests\Therapist\UpdateSessionLogRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
+use App\Models\ScheduleSubSsa;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\SessionLogComment;
@@ -165,19 +166,43 @@ final class SessionLogController extends Controller
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
-        // If schedule provided, validate access
-        if ($schedule && $schedule->therapist_id !== $therapist->id) {
-            abort(403, 'You do not have access to this schedule.');
+        // If schedule provided, validate access — original therapist OR accepted sub
+        $isAcceptedSub = false;
+        $originalTherapist = null;
+        if ($schedule) {
+            $isOwner = $schedule->therapist_id === $therapist->id;
+            $isAcceptedSub = (int) $schedule->sub_therapist_id === (int) $therapist->id;
+
+            if (! $isOwner && ! $isAcceptedSub) {
+                abort(403, 'You do not have access to this schedule.');
+            }
+
+            if ($isAcceptedSub) {
+                $originalTherapist = $schedule->therapist;
+            }
         }
 
         if ($schedule !== null && ! $schedule->is_billable) {
             abort(403, 'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.');
         }
 
-        // Get active SSAs assigned to the therapist
-        $ssas = $this->ssaService
-            ->getActiveSSAsForTherapist($therapist->id)
-            ->loadMissing(['student', 'primaryService', 'services']);
+        // When a sub is covering, load the SSA from the sub-SSA snapshot; otherwise use their own active SSAs.
+        if ($isAcceptedSub && $schedule !== null) {
+            $subSsa = ScheduleSubSsa::query()
+                ->where('schedule_id', $schedule->id)
+                ->where('sub_therapist_id', $therapist->id)
+                ->with(['ssa.student', 'ssa.primaryService', 'ssa.services'])
+                ->first();
+            $ssas = $subSsa?->ssa
+                ? ServiceSupportAgreement::with(['student', 'primaryService', 'services'])
+                    ->whereKey($subSsa->ssa->id)
+                    ->get()
+                : collect();
+        } else {
+            $ssas = $this->ssaService
+                ->getActiveSSAsForTherapist($therapist->id)
+                ->loadMissing(['student', 'primaryService', 'services']);
+        }
 
         // When coming from the standalone flow, an SSA must be selected first.
         $selectedSsaId = (int) $request->query('ssa_id', 0);
@@ -261,6 +286,7 @@ final class SessionLogController extends Controller
             'scheduleLocalStartTime' => $scheduleLocalStartTime,
             'scheduleLocalEndTime' => $scheduleLocalEndTime,
             'ssaContext' => $this->buildSsaContext($selectedSsa),
+            'originalTherapist' => $originalTherapist,
         ]);
     }
 

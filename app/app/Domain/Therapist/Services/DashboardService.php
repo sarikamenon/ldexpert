@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -27,6 +28,7 @@ class DashboardService
         private readonly ScheduleRepositoryInterface $scheduleRepository,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
         private readonly UserTimezoneService $timezoneService,
+        private readonly ScheduleSubRequestService $subRequestService,
     ) {}
 
     /**
@@ -80,6 +82,9 @@ class DashboardService
             ->values()
             ->all();
 
+        $openSubRequestCount = $this->subRequestService->countOpenForTherapist($therapist);
+        $myOpenSubRequestCount = $this->subRequestService->countMyOpenRequests($therapist);
+
         return [
             'activeStudents' => $activeStudents,
             'newStudentsThisMonth' => $newStudentsThisMonth,
@@ -94,6 +99,8 @@ class DashboardService
             'pendingScheduleCount' => $pendingScheduleCount,
             'sentBackSessionLogs' => $sentBackSessionLogs,
             'pendingSchedulesList' => $pendingSchedulesList,
+            'openSubRequestCount' => $openSubRequestCount,
+            'myOpenSubRequestCount' => $myOpenSubRequestCount,
         ];
     }
 

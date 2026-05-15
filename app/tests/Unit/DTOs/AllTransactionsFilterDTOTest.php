@@ -24,10 +24,10 @@ final class AllTransactionsFilterDTOTest extends TestCase
     public function test_populates_all_fields_from_valid_array(): void
     {
         $dto = AllTransactionsFilterDTO::fromArray([
-            'filter_date_from'   => '2025-01-01',
-            'filter_date_to'     => '2025-12-31',
-            'filter_direction'   => 'income',
-            'filter_school_id'   => '3',
+            'filter_date_from' => '2025-01-01',
+            'filter_date_to' => '2025-12-31',
+            'filter_direction' => 'income',
+            'filter_school_id' => '3',
             'filter_therapist_id' => '7',
         ]);
 

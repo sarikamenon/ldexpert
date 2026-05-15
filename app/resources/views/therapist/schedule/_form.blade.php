@@ -8,6 +8,7 @@
     'studentServiceMappings' => collect(),
     'isEdit' => false,
     'isPrivateStudent' => false,
+    'subPanel' => null,
 ])
 
 @php
@@ -353,6 +354,184 @@
         <x-input-error :messages="$errors->get('notes')" class="mt-2" />
     </x-ui::card>
 
+    {{-- Section 5: Sub Coverage --}}
+    @if (!$isEdit || ($isEdit && $subPanel && auth()->id() === $schedule?->therapist_id))
+        <x-ui::card class="p-6 space-y-4" id="sub_request_card">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-semibold text-foreground">Sub Coverage</h2>
+                    <p class="text-sm text-foreground/60">
+                        @if ($isEdit && $subPanel && $subPanel['is_accepted'])
+                            Substitute therapist confirmed for this session.
+                        @else
+                            Request a substitute therapist to cover this session if you are unavailable.
+                        @endif
+                    </p>
+                </div>
+
+                @if ($isEdit && $subPanel)
+                    <div class="shrink-0">
+                        @if ($subPanel['is_open'])
+                            <x-ui::badge variant="warning">Open</x-ui::badge>
+                        @elseif ($subPanel['is_accepted'])
+                            <span class="inline-flex items-center gap-1.5 rounded-full border border-success/20 bg-success/10 px-3 py-1 text-xs font-medium text-success">
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                                Accepted
+                            </span>
+                        @elseif ($subPanel['is_cancelled'])
+                            <x-ui::badge variant="muted">Cancelled</x-ui::badge>
+                        @endif
+                    </div>
+                @endif
+            </div>
+
+            @if (!$isEdit)
+                {{-- ── Create mode: checkbox toggle ── --}}
+                <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <input type="checkbox" name="request_sub" id="request_sub" value="1"
+                        class="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                        @checked(old('request_sub')) />
+                    <span class="text-sm font-medium text-foreground">Request a substitute therapist for this session</span>
+                </label>
+
+                <div id="sub_reason_container" class="{{ old('request_sub') ? '' : 'hidden' }} space-y-4">
+                    @include('therapist.schedule._sub_coverage_fields', [
+                        'reasonFieldName'    => 'sub_reason',
+                        'reasonFieldId'      => 'sub_reason',
+                        'reasonValue'        => old('sub_reason'),
+                        'pickerRootId'       => 'sub_invitee_picker',
+                        'pickerTriggerId'    => 'sub_picker_trigger',
+                        'pickerDropdownId'   => 'sub_picker_dropdown',
+                        'pickerSearchId'     => 'sub_picker_search',
+                        'pickerListId'       => 'sub_picker_list',
+                        'pickerPlaceholderId'=> 'sub_picker_placeholder',
+                        'hiddenInputsId'     => 'sub_invitee_inputs',
+                        'eligibleSubsUrl'    => route('therapist.sub-requests.eligible-subs'),
+                        'reasonErrors'       => $errors->get('sub_reason'),
+                        'inviteeErrors'      => $errors->get('sub_invitee_ids'),
+                        'inviteeStarErrors'  => $errors->get('sub_invitee_ids.*'),
+                    ])
+                </div>
+
+                <x-input-error :messages="$errors->get('sub_request')" class="mt-2" />
+
+            @elseif ($subPanel['is_accepted'])
+                <div class="rounded-lg border border-success/30 bg-success/5 px-4 py-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-success/30 bg-success/10 text-sm font-semibold text-success">
+                            {{ $subPanel['accepted_by_initials'] ?? '—' }}
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-baseline gap-x-2">
+                                <span class="text-sm font-semibold text-foreground">{{ $subPanel['accepted_by_name'] ?? '—' }}</span>
+                                <span class="text-sm text-foreground/60">Covering Therapist</span>
+                            </div>
+                            @if ($subPanel['accepted_at'])
+                                <p class="mt-0.5 flex items-center gap-1.5 text-sm text-foreground/60">
+                                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                                        <circle cx="10" cy="10" r="7.25" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6v4l2.5 2.5" />
+                                    </svg>
+                                    Accepted {{ $subPanel['accepted_at'] }}
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+            @elseif ($subPanel['is_cancelled'])
+                {{-- ── Edit / Cancelled ── --}}
+                <p class="text-sm text-foreground/60">This sub request was cancelled.</p>
+
+            @elseif ($subPanel['is_open'])
+                {{-- ── Edit / Open request ── --}}
+                @if ($subPanel['reason'])
+                    <div>
+                        <p class="text-xs font-medium text-foreground/70 mb-1">Reason</p>
+                        <p class="text-sm text-foreground whitespace-pre-line">{{ $subPanel['reason'] }}</p>
+                    </div>
+                @endif
+
+                @if ($subPanel['invitee_rows']->isNotEmpty())
+                    <div class="space-y-2">
+                        <p class="text-xs font-medium text-foreground/70 uppercase tracking-wider">Invitees</p>
+                        @foreach ($subPanel['invitee_rows'] as $row)
+                            <div class="flex items-center justify-between rounded-lg border border-border px-4 py-2">
+                                <span class="text-sm text-foreground">{{ $row['name'] }}</span>
+                                <x-ui::badge :variant="$row['status_variant']">{{ $row['status_label'] }}</x-ui::badge>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+
+                {{-- Manage invitees --}}
+                <div class="border-t border-border pt-4 space-y-3">
+                    <div>
+                        <p class="text-sm font-medium text-foreground">Manage Invitees</p>
+                        <p class="text-xs text-foreground/60">Add or remove therapists. Declined therapists can be re-invited. Changes save when you click Update Schedule.</p>
+                    </div>
+
+                    <div id="coverage_invitee_picker"
+                        data-eligible-subs-url="{{ $subPanel['eligible_subs_url'] }}"
+                        data-input-name="sub_invitee_ids[]"
+                        data-mode="edit"
+                        class="relative">
+                        <div id="coverage_picker_trigger"
+                            class="min-h-[2.5rem] w-full flex flex-wrap gap-1.5 items-center border border-border rounded-lg px-3 py-2 bg-background cursor-pointer focus-within:ring-2 focus-within:ring-primary/30"
+                            tabindex="0" role="combobox" aria-expanded="false" aria-haspopup="listbox">
+                            <span class="text-sm text-foreground/40" id="coverage_picker_placeholder">Loading eligible therapists…</span>
+                        </div>
+                        <div id="coverage_picker_dropdown"
+                            class="hidden absolute z-20 mt-1 w-full bg-background border border-border rounded-lg shadow-lg max-h-56 overflow-y-auto"
+                            role="listbox">
+                            <div class="p-2 border-b border-border">
+                                <input type="text" id="coverage_picker_search"
+                                    class="w-full text-sm px-2 py-1.5 rounded border border-border bg-background focus:outline-none focus:ring-1 focus:ring-primary/30"
+                                    placeholder="Search therapists…" autocomplete="off" />
+                            </div>
+                            <div id="coverage_picker_list" class="p-1"></div>
+                        </div>
+                    </div>
+
+                    <div id="coverage_invitee_inputs"></div>
+                </div>
+
+            @else
+                {{-- ── Edit / No request yet — same checkbox UI as create ── --}}
+                <label class="flex items-center gap-3 cursor-pointer select-none">
+                    <input type="checkbox" id="edit_request_sub" value="1"
+                        class="h-4 w-4 rounded border-border text-primary focus:ring-primary" />
+                    <span class="text-sm font-medium text-foreground">Request a substitute therapist for this session</span>
+                </label>
+
+                <div id="sub_reason_container" class="hidden space-y-4">
+                    <form method="POST" action="{{ $subPanel['store_url'] }}" id="sub_request_store_form">
+                        @csrf
+                        @include('therapist.schedule._sub_coverage_fields', [
+                            'reasonFieldName'    => 'reason',
+                            'reasonFieldId'      => 'edit_sub_reason',
+                            'reasonValue'        => '',
+                            'pickerRootId'       => 'sub_invitee_picker',
+                            'pickerTriggerId'    => 'sub_picker_trigger',
+                            'pickerDropdownId'   => 'sub_picker_dropdown',
+                            'pickerSearchId'     => 'sub_picker_search',
+                            'pickerListId'       => 'sub_picker_list',
+                            'pickerPlaceholderId'=> 'sub_picker_placeholder',
+                            'hiddenInputsId'     => 'sub_invitee_inputs',
+                            'eligibleSubsUrl'    => $subPanel['eligible_subs_url'],
+                            'reasonErrors'       => $errors->get('reason'),
+                            'inviteeErrors'      => $errors->get('invitee_ids'),
+                            'inviteeStarErrors'  => $errors->get('invitee_ids.*'),
+                        ])
+                        <x-ui::button type="submit" class="mt-2">Request a Sub</x-ui::button>
+                    </form>
+                </div>
+            @endif
+        </x-ui::card>
+    @endif
+
     <div class="flex justify-end gap-3">
         <a
             href="{{ route('therapist.schedule-calendar.index') }}">
@@ -360,6 +539,13 @@
                 Cancel
             </x-ui::button>
         </a>
+        @if ($isEdit && $subPanel && $subPanel['is_open'])
+            <button type="button"
+                data-cancel-url="{{ $subPanel['cancel_url'] }}"
+                class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg border border-danger/30 bg-background text-danger hover:bg-danger/10 transition-colors">
+                Cancel Sub Request
+            </button>
+        @endif
         <x-ui::button type="submit">
             {{ $isEdit ? 'Update Schedule' : 'Create Schedule' }}
         </x-ui::button>

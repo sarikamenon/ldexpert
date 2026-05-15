@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Enums\BillingStatus;
@@ -41,6 +43,16 @@ class ScheduleFactory extends Factory
             'is_billable' => true,
             'notes' => $this->faker->sentence(),
             'location_details' => null,
+            'sub_therapist_id' => null,
+            'sub_request_status' => null,
         ];
+    }
+
+    public function coveredBy(User $sub): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'sub_therapist_id' => $sub->id,
+            'sub_request_status' => 'accepted',
+        ]);
     }
 }

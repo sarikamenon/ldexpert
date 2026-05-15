@@ -98,8 +98,8 @@ class SendScheduleReminders extends Command
 
         $uniqueRecipients = [
             $profile->schedule_email => [
-                'email'    => $profile->schedule_email,
-                'name'     => $profile->parent_guardian_name ?? 'Schedule contact',
+                'email' => $profile->schedule_email,
+                'name' => $profile->parent_guardian_name ?? 'Schedule contact',
                 'timezone' => $studentTimezone,
             ],
         ];

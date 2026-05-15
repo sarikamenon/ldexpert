@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TherapistProfile extends Model
@@ -72,6 +73,12 @@ class TherapistProfile extends Model
     public function position(): BelongsTo
     {
         return $this->belongsTo(Position::class);
+    }
+
+    /** @return HasMany<TherapistContract, $this> */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(TherapistContract::class, 'therapist_id');
     }
 
     /**

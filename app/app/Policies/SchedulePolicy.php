@@ -35,6 +35,11 @@ final class SchedulePolicy
         return $this->ownsSchedule($user, $schedule);
     }
 
+    public function createSubRequest(User $user, Schedule $schedule): bool
+    {
+        return $this->ownsSchedule($user, $schedule);
+    }
+
     public function updateBillingStatus(User $user, Schedule $schedule): bool
     {
         if ($this->isAdmin($user)) {

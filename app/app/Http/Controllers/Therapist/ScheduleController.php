@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
+use App\Domain\Schedule\Sub\Presenters\SubCoveragePanelPresenter;
+use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
@@ -30,6 +32,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -42,6 +45,8 @@ final class ScheduleController extends Controller
         private readonly SchoolCalendarService $calendarService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly UserTimezoneService $timezoneService,
+        private readonly ScheduleSubRequestService $subRequestService,
+        private readonly SubCoveragePanelPresenter $subCoveragePanelPresenter,
     ) {}
 
     public function create(Request $request): View|RedirectResponse
@@ -162,6 +167,8 @@ final class ScheduleController extends Controller
             'ssa.student.studentProfile',
             'ssa.student.studentProfile.school',
             'school',
+            'activeSubRequest.invitees.therapist',
+            'activeSubRequest.acceptedBy',
         ]);
 
         $this->authorize('update', $schedule);
@@ -175,6 +182,8 @@ final class ScheduleController extends Controller
         $localStart = $schedule->localStart($tz);
         $localEnd = $schedule->localEnd($tz);
 
+        $subPanel = $this->subCoveragePanelPresenter->present($schedule, $tz);
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
             'therapistTimezone' => $therapistTimezone,
@@ -184,6 +193,7 @@ final class ScheduleController extends Controller
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
+            'subPanel' => $subPanel,
         ]);
     }
 
@@ -280,6 +290,7 @@ final class ScheduleController extends Controller
 
         $filters = ScheduleFilterDTO::fromRequest($request->validated());
         $pendingSchedules = $this->scheduleService->getPendingSchedules($therapist, $filters);
+        $pendingSchedules->loadMissing('activeSubRequest.invitees');
 
         // Reference data for filters
         $ssas = $this->ssaService
@@ -357,10 +368,42 @@ final class ScheduleController extends Controller
             return back()->withErrors(['service_id' => $e->getMessage()])->withInput();
         }
 
+        $subWarning = null;
+
+        if ($request->boolean('request_sub')) {
+            $subReason = $request->string('sub_reason')->toString() ?: null;
+            /** @var array<int, int> $subInviteeIds */
+            $subInviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
+
+            try {
+                $this->subRequestService->createForScheduleAndOccurrences($therapist, $schedule, $subInviteeIds, $subReason);
+            } catch (\InvalidArgumentException $e) {
+                // Schedule was saved — surface the sub-request failure as a warning so the
+                // therapist can raise the request manually from the edit page.
+                $subWarning = $e->getMessage();
+            } catch (\Throwable $e) {
+                Log::error('SubRequestController: failed to create sub request after schedule save', [
+                    'schedule_id' => $schedule->id,
+                    'exception' => $e,
+                ]);
+                $subWarning = 'Schedule saved, but the sub request could not be created. Please try again from the schedule edit page.';
+            }
+        }
+
         if ($request->expectsJson()) {
-            return response()->json([
-                'schedule' => $schedule,
-            ], 201);
+            $response = ['schedule' => $schedule];
+            if ($subWarning !== null) {
+                $response['sub_warning'] = $subWarning;
+            }
+
+            return response()->json($response, 201);
+        }
+
+        if ($subWarning !== null) {
+            return redirect()
+                ->route('therapist.schedule.edit', $schedule->id)
+                ->with('status', 'Schedule created successfully.')
+                ->with('warning', $subWarning);
         }
 
         return redirect()
@@ -384,7 +427,7 @@ final class ScheduleController extends Controller
 
         try {
             $updated = $this->scheduleService->updateSchedule($therapist, $id, $dto)
-                ->load(['student', 'service', 'ssa', 'school']);
+                ->load(['student', 'service', 'ssa', 'school', 'activeSubRequest']);
         } catch (ScheduleOverlapException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -398,10 +441,40 @@ final class ScheduleController extends Controller
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
         }
 
+        $subInviteeWarning = null;
+        if ($request->has('sub_invitee_ids')) {
+            $subRequest = $updated->activeSubRequest;
+            if ($subRequest && $subRequest->isOpen()) {
+                /** @var array<int, int> $inviteeIds */
+                $inviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
+                try {
+                    $this->subRequestService->syncInvitees($therapist, $subRequest, $inviteeIds);
+                } catch (\InvalidArgumentException $e) {
+                    $subInviteeWarning = $e->getMessage();
+                } catch (\Throwable $e) {
+                    Log::error('ScheduleController@update: failed to sync sub invitees', [
+                        'schedule_id' => $updated->id,
+                        'exception' => $e,
+                    ]);
+                    $subInviteeWarning = 'Schedule updated, but sub invitees could not be saved. Please try again from the schedule edit page.';
+                }
+            }
+        }
+
         if ($request->expectsJson()) {
-            return response()->json([
-                'schedule' => $updated,
-            ]);
+            $response = ['schedule' => $updated];
+            if ($subInviteeWarning !== null) {
+                $response['sub_warning'] = $subInviteeWarning;
+            }
+
+            return response()->json($response);
+        }
+
+        if ($subInviteeWarning !== null) {
+            return redirect()
+                ->route('therapist.schedule.edit', $updated->id)
+                ->with('status', 'Schedule updated successfully.')
+                ->with('warning', $subInviteeWarning);
         }
 
         return redirect()

@@ -100,6 +100,10 @@
                                     Student, Service &amp; School/Family
                                 </th>
                                 <th scope="col"
+                                    class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                                    Coverage
+                                </th>
+                                <th scope="col"
                                     class="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                                     Action
                                 </th>
@@ -126,6 +130,9 @@
                                     $startTime = $pendingLocalStart->format(config('display.time'));
                                     $endTime = $pendingLocalEnd->format(config('display.time'));
                                     $timeRange = "{$startTime} - {$endTime}";
+
+                                    $isCovering = $schedule->sub_therapist_id === auth()->id();
+                                    $originalTherapistName = $isCovering ? ($schedule->therapist?->name ?? null) : null;
                                 @endphp
                                 <tr data-schedule-id="{{ $schedule->id }}">
                                     <td class="px-6 py-4 text-sm">
@@ -157,6 +164,25 @@
                                             @endif
                                         </div>
                                     </td>
+                                    <td class="px-6 py-4 text-sm">
+                                        @if ($isCovering && $originalTherapistName)
+                                            <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                                                Covering for {{ $originalTherapistName }}
+                                            </span>
+                                        @elseif ($schedule->sub_request_status === 'requested' && $schedule->therapist_id === auth()->id())
+                                            @php
+                                                $invitees = $schedule->activeSubRequest?->invitees ?? collect();
+                                                $invitedCount = $invitees->where('status', 'invited')->count();
+                                                $declinedCount = $invitees->where('status', 'declined')->count();
+                                            @endphp
+                                            <a href="{{ route('therapist.sub-requests.index') }}"
+                                                class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning hover:bg-warning/20 transition-colors">
+                                                {{ $invitedCount }} invited{{ $declinedCount > 0 ? ' · ' . $declinedCount . ' declined' : '' }}
+                                            </a>
+                                        @else
+                                            <span class="text-foreground/40">—</span>
+                                        @endif
+                                    </td>
                                     <td class="px-6 py-4 text-sm text-right">
                                         <div class="flex items-center justify-end gap-2">
                                             <button type="button"
@@ -172,7 +198,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="3" class="px-6 py-12 text-center">
+                                    <td colspan="4" class="px-6 py-12 text-center">
                                         <p class="text-foreground/70">No past sessions found.</p>
                                         <p class="text-sm text-foreground/60 mt-2">
                                             All past schedules have been billed or marked appropriately.

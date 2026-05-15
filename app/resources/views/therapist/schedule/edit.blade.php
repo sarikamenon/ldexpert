@@ -19,6 +19,24 @@
                 </a>
             </div>
 
+            @if (session('status'))
+                <x-ui::alert variant="success">{{ session('status') }}</x-ui::alert>
+            @endif
+
+            @if (session('warning'))
+                <x-ui::alert variant="warning">
+                    <div class="flex items-start gap-2">
+                        <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                        </svg>
+                        <div>
+                            <p class="font-medium text-sm">Sub request not created</p>
+                            <p class="text-sm mt-0.5">{{ session('warning') }} You can raise the request from the Sub Coverage section below once the schedule is within the allowed window.</p>
+                        </div>
+                    </div>
+                </x-ui::alert>
+            @endif
+
             @include('therapist.schedule._form', [
                 'schedule' => $schedule,
                 'ssa' => null,
@@ -34,11 +52,17 @@
                 'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,
                 'scheduleLocalEndTime' => $scheduleLocalEndTime,
+                'subPanel' => $subPanel ?? null,
             ])
         </div>
     </div>
 
     <x-slot name="scripts">
-        @vite(['resources/js/common/select-box.js', 'resources/js/pages/therapist-schedule-time.js', 'resources/js/pages/therapist-schedule-recurrence.js'])
+        @vite([
+            'resources/js/common/select-box.js',
+            'resources/js/pages/therapist-schedule-time.js',
+            'resources/js/pages/therapist-schedule-recurrence.js',
+            'resources/js/pages/therapist-schedule-sub-coverage.js',
+        ])
     </x-slot>
 </x-app-layout>

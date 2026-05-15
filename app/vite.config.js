@@ -97,6 +97,8 @@ export default defineConfig({
                 'resources/css/fullcalendar-custom.css',
                 'resources/js/pages/admin-schedule-calendar.js',
                 'resources/js/pages/therapist-schedule-fullcalendar.js',
+                'resources/js/pages/therapist-sub-requests.js',
+                'resources/js/pages/therapist-schedule-sub-coverage.js',
             ],
             refresh: true,
         }),

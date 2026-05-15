@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Therapist;
 
 use App\Domain\Billing\Services\BillingEntryWindowService;
+use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -143,9 +144,15 @@ final class StoreSessionLogRequest extends FormRequest
 
             $repository = app(SessionLogRepositoryInterface::class);
 
+            // Determine early if this submission is from an accepted sub
+            $scheduleIdEarly = $this->input('schedule_id');
+            $subRepo = app(ScheduleSubRequestRepositoryInterface::class);
+            $isAcceptedSub = $scheduleIdEarly !== null
+                && $subRepo->findSubSsaForSchedule((int) $scheduleIdEarly, $therapist->id) !== null;
+
             // Validate therapist has access to student
             $studentId = $this->input('student_id');
-            if ($studentId && ! $repository->validateTherapistAccessToStudent($therapist, (int) $studentId)) {
+            if ($studentId && ! $isAcceptedSub && ! $repository->validateTherapistAccessToStudent($therapist, (int) $studentId)) {
                 $validator->errors()->add('student_id', 'You do not have access to this student.');
             }
 
@@ -160,7 +167,7 @@ final class StoreSessionLogRequest extends FormRequest
                     return;
                 }
 
-                if (! $repository->validateTherapistAccessToSSA($therapist, (int) $ssaId)) {
+                if (! $isAcceptedSub && ! $repository->validateTherapistAccessToSSA($therapist, (int) $ssaId)) {
                     $validator->errors()->add('ssa_id', 'You do not have access to this SSA.');
                 }
 
@@ -195,7 +202,9 @@ final class StoreSessionLogRequest extends FormRequest
                     return;
                 }
 
-                if ($schedule->therapist_id !== $therapist->id) {
+                $isOwnerOrSub = $schedule->therapist_id === $therapist->id
+                    || (int) $schedule->sub_therapist_id === (int) $therapist->id;
+                if (! $isOwnerOrSub) {
                     $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
                 }
 

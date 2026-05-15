@@ -20,6 +20,7 @@ use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
@@ -66,6 +67,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         return Schedule::query()
             ->forTherapist($therapist)
+            ->hidingAcceptedCoveredForOriginal($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
             ->forPastSessionsQueue()
@@ -73,11 +75,12 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->count();
     }
 
-    /** @return Collection<int, Schedule> */
-    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
+    /** @return EloquentCollection<int, Schedule> */
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): EloquentCollection
     {
         $query = Schedule::query()
             ->forTherapist($therapist)
+            ->hidingAcceptedCoveredForOriginal($therapist)
             ->whereDate('schedule_date', '<', now()->toDateString())
             ->where('billing_status', BillingStatus::PENDING->value)
             ->forPastSessionsQueue()

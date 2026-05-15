@@ -62,6 +62,8 @@ final class UpdateScheduleRequest extends FormRequest
             'location_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'billing_status' => ['nullable', Rule::in($billingStatuses)],
+            'sub_invitee_ids' => ['sometimes', 'array'],
+            'sub_invitee_ids.*' => ['integer', Rule::exists('users', 'id')],
         ];
     }
 

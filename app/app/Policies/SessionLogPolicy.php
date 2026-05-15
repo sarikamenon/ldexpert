@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Enums\Role;
 use App\Models\SessionLog;
 use App\Models\User;
 
@@ -12,16 +11,16 @@ final class SessionLogPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->role === Role::THERAPIST || $user->role === Role::ADMIN;
+        return $user->isTherapist() || $user->isAdmin();
     }
 
     public function view(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role === Role::ADMIN) {
+        if ($user->isAdmin()) {
             return true;
         }
 
-        if ($user->role === Role::THERAPIST) {
+        if ($user->isTherapist()) {
             return $sessionLog->therapist_id === $user->id;
         }
 
@@ -30,16 +29,16 @@ final class SessionLogPolicy
 
     public function create(User $user): bool
     {
-        return $user->role === Role::THERAPIST;
+        return $user->isTherapist();
     }
 
     public function update(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role === Role::ADMIN) {
+        if ($user->isAdmin()) {
             return $sessionLog->isDraft() || $sessionLog->isSubmitted();
         }
 
-        if ($user->role === Role::THERAPIST) {
+        if ($user->isTherapist()) {
             return $sessionLog->therapist_id === $user->id && $sessionLog->canEdit();
         }
 
@@ -48,11 +47,11 @@ final class SessionLogPolicy
 
     public function delete(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role === Role::ADMIN) {
+        if ($user->isAdmin()) {
             return $sessionLog->isDraft() || $sessionLog->isSubmitted();
         }
 
-        if ($user->role === Role::THERAPIST) {
+        if ($user->isTherapist()) {
             return $sessionLog->therapist_id === $user->id && $sessionLog->canEdit();
         }
 
@@ -61,27 +60,30 @@ final class SessionLogPolicy
 
     public function submit(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role !== Role::THERAPIST) {
+        if (! $user->isTherapist()) {
             return false;
         }
 
-        // Therapist can submit own log unless approved; service enforces draft/submitted transitions.
-        return (int) $sessionLog->therapist_id === (int) $user->id && ! $sessionLog->isApproved();
+        if ($sessionLog->isApproved()) {
+            return false;
+        }
+
+        // The sub therapist who performed the session can also submit.
+        return (int) $sessionLog->therapist_id === (int) $user->id;
     }
 
     public function approve(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role !== Role::ADMIN) {
+        if (! $user->isAdmin()) {
             return false;
         }
 
-        // Admins can only approve logs that are currently submitted.
         return $sessionLog->isSubmitted();
     }
 
     public function sendBack(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role !== Role::ADMIN) {
+        if (! $user->isAdmin()) {
             return false;
         }
 
@@ -90,11 +92,11 @@ final class SessionLogPolicy
 
     public function cancel(User $user, SessionLog $sessionLog): bool
     {
-        if ($user->role === Role::ADMIN) {
+        if ($user->isAdmin()) {
             return $sessionLog->status?->canCancel() ?? false;
         }
 
-        if ($user->role === Role::THERAPIST) {
+        if ($user->isTherapist()) {
             return $sessionLog->therapist_id === $user->id && ($sessionLog->status?->canCancel() ?? false);
         }
 

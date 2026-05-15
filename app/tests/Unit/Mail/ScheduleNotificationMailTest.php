@@ -100,7 +100,7 @@ final class ScheduleNotificationMailTest extends TestCase
         $therapist = User::factory()->create(['email' => $therapistEmail]);
         TherapistProfile::factory()->create([
             'user_id' => $therapist->id,
-            'phone'   => $therapistPhone,
+            'phone' => $therapistPhone,
         ]);
         $therapist->load('therapistProfile');
 
@@ -109,12 +109,12 @@ final class ScheduleNotificationMailTest extends TestCase
 
         /** @var Schedule $schedule */
         $schedule = Schedule::factory()->create([
-            'therapist_id'  => $therapist->id,
-            'student_id'    => $student->id,
-            'service_id'    => $service->id,
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'service_id' => $service->id,
             'schedule_date' => Carbon::tomorrow(),
-            'start_time'    => Carbon::tomorrow()->setTime(9, 0),
-            'end_time'      => Carbon::tomorrow()->setTime(10, 0),
+            'start_time' => Carbon::tomorrow()->setTime(9, 0),
+            'end_time' => Carbon::tomorrow()->setTime(10, 0),
         ]);
 
         $schedule->setRelation('therapist', $therapist);

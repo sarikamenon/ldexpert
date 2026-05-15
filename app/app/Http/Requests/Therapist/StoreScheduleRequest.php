@@ -64,6 +64,10 @@ final class StoreScheduleRequest extends FormRequest
             'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
+            'request_sub' => ['nullable', 'boolean'],
+            'sub_reason' => ['nullable', 'string', 'max:1000'],
+            'sub_invitee_ids' => ['nullable', 'array', 'min:1'],
+            'sub_invitee_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
 
@@ -101,6 +105,14 @@ final class StoreScheduleRequest extends FormRequest
 
             if (! $therapist) {
                 return;
+            }
+
+            // sub_invitee_ids is required when request_sub is true
+            if ($this->boolean('request_sub')) {
+                $inviteeIds = $this->input('sub_invitee_ids');
+                if (empty($inviteeIds) || ! is_array($inviteeIds)) {
+                    $validator->errors()->add('sub_invitee_ids', 'Please select at least one therapist to invite when requesting a sub.');
+                }
             }
 
             // Validate therapist has access to SSA and it's active

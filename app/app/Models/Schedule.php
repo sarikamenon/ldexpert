@@ -54,6 +54,8 @@ class Schedule extends Model
         'is_billable',
         'notes',
         'location_details',
+        'sub_therapist_id',
+        'sub_request_status',
     ];
 
     protected function casts(): array
@@ -144,6 +146,31 @@ class Schedule extends Model
     public function sessionLog(): HasOne
     {
         return $this->hasOne(SessionLog::class, 'schedule_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function subTherapist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sub_therapist_id');
+    }
+
+    /**
+     * @return HasOne<ScheduleSubRequest, $this>
+     */
+    public function activeSubRequest(): HasOne
+    {
+        return $this->hasOne(ScheduleSubRequest::class, 'schedule_id')
+            ->whereIn('status', ['open', 'accepted']);
+    }
+
+    /**
+     * @return HasOne<ScheduleSubSsa, $this>
+     */
+    public function subSsa(): HasOne
+    {
+        return $this->hasOne(ScheduleSubSsa::class, 'schedule_id');
     }
 
     /**
@@ -316,6 +343,33 @@ class Schedule extends Model
     public function scopeForPastSessionsQueue(Builder $query): Builder
     {
         return ScheduleScope::forPastSessionsQueue($query, $this);
+    }
+
+    /**
+     * Hides schedules that have been accepted by a sub from the original therapist's
+     * pending queue, while still showing the sub's own covered schedules.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeHidingAcceptedCoveredForOriginal(Builder $query, User $therapist): Builder
+    {
+        return ScheduleScope::hidingAcceptedCoveredForOriginal($query, $this, $therapist);
+    }
+
+    /**
+     * Matches the parent schedule itself plus all its child occurrences.
+     * Used to load all occurrences in a recurring batch when raising sub requests.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeForParentOrSelf(Builder $query, Schedule $schedule): Builder
+    {
+        return $query->where(function (Builder $q) use ($schedule): void {
+            $q->where('id', $schedule->id)
+                ->orWhere('parent_schedule_id', $schedule->id);
+        });
     }
 
     public function isRecurring(): bool

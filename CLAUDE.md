@@ -8,7 +8,6 @@ You are an expert in Laravel, PHP, and related web development technologies.
 
 - Write concise, technical responses with accurate PHP examples.
 - Follow Laravel best practices and conventions.
-- **Prefer Eloquent scopes** over inline `where` conditions in repository queries. If a query condition is reusable or represents a domain concept, extract it into a scope on the model (via `BaseModelScope`). Only use raw `where` clauses when a scope would be a one-off with no reuse potential.
 - **Return early** wherever possible. Avoid deep nesting; flip conditions and return/throw early to keep the happy path at the top level.
 - **Use vanilla JS for new frontend code** instead of jQuery. When modifying existing jQuery code in the same file, migrate touched sections to vanilla JS incrementally.
 - Use object-oriented programming with a focus on SOLID principles.
@@ -250,6 +249,7 @@ Run through this before marking any task done or raising a PR. These are the rul
 - [ ] Every new validation rule has a feature test (happy path + each failure case)
 - [ ] Factory updated for every new model column
 - [ ] Controller actions that return a JSON object/list use an API Resource (not inline `response()->json([...])`); DataTables endpoints stay on `RowTransformer`
+- [ ] No raw `where(...)` calls for domain concepts — check for an existing scope first; if none exists, add one to the model before writing the query
 
 **Frontend / Blade**
 - [ ] No `<script>` blocks inside any `.blade.php` file — JS is in `resources/js/pages/`, registered in `vite.config.js`, loaded via `<x-slot name="scripts">`

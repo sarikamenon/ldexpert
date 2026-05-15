@@ -673,4 +673,17 @@ final class EloquentSSARepository implements SSARepositoryInterface
             'no_current' => $noCurrent,
         ];
     }
+
+    public function findOriginalSsaForSubCoverage(int $studentId, int $serviceId, int $therapistId, string $sessionDate): ?ServiceSupportAgreement
+    {
+        return ServiceSupportAgreement::query()
+            ->forStudent($studentId)
+            ->forPrimaryService($serviceId)
+            ->forAssignedTherapist($therapistId)
+            ->effectiveOn($sessionDate)
+            ->activeOrPending()
+            ->orderByRaw("FIELD(status, 'active', 'pending')")
+            ->orderByDesc('start_date')
+            ->first();
+    }
 }

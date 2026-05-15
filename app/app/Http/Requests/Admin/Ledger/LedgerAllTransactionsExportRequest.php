@@ -21,10 +21,10 @@ final class LedgerAllTransactionsExportRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'filter_date_from'    => ['nullable', 'date'],
-            'filter_date_to'      => ['nullable', 'date'],
-            'filter_direction'    => ['nullable', 'string', Rule::in(array_map(fn (CashDirection $d) => $d->value, CashDirection::cases()))],
-            'filter_school_id'    => ['nullable', 'integer', 'min:1'],
+            'filter_date_from' => ['nullable', 'date'],
+            'filter_date_to' => ['nullable', 'date'],
+            'filter_direction' => ['nullable', 'string', Rule::in(array_map(fn (CashDirection $d) => $d->value, CashDirection::cases()))],
+            'filter_school_id' => ['nullable', 'integer', 'min:1'],
             'filter_therapist_id' => ['nullable', 'integer', 'min:1'],
         ];
     }

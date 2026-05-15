@@ -62,7 +62,7 @@ function makeScheduleService(array $mocks): ScheduleService
 /**
  * Stub the school repository lookup that `isSchoolBillable()` triggers on update.
  *
- * @param array{repository: MockInterface, timezoneService: MockInterface, userRepository: MockInterface, serviceRepository: MockInterface, studentRepository: MockInterface, schoolRepository: MockInterface} $mocks
+ * @param  array{repository: MockInterface, timezoneService: MockInterface, userRepository: MockInterface, serviceRepository: MockInterface, studentRepository: MockInterface, schoolRepository: MockInterface}  $mocks
  */
 function stubSchoolLookupForBillableResolution(array $mocks, Schedule $schedule): void
 {

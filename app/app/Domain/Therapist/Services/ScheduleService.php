@@ -28,6 +28,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -103,8 +104,8 @@ final class ScheduleService
         return $this->repository->getPendingCount($therapist);
     }
 
-    /** @return Collection<int, Schedule> */
-    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
+    /** @return EloquentCollection<int, Schedule> */
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): EloquentCollection
     {
         return $this->repository->getPendingSchedules($therapist, $filters);
     }
