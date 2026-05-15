@@ -53,14 +53,10 @@ final class ScheduleService
 
     /**
      * Resolve whether schedules under the given school should be flagged as billable.
-     * Inverse of the school's non_billable_scheduling flag. Null school => billable.
+     * Inverse of the school's non_billable_scheduling flag.
      */
-    private function isSchoolBillable(?int $schoolId): bool
+    private function isSchoolBillable(int $schoolId): bool
     {
-        if ($schoolId === null) {
-            return true;
-        }
-
         if (! array_key_exists($schoolId, $this->schoolBillableCache)) {
             $school = $this->schoolRepository->find($schoolId);
             $this->schoolBillableCache[$schoolId] = $school === null
@@ -216,7 +212,8 @@ final class ScheduleService
                     : null;
 
                 foreach ($dto->studentIds as $studentId) {
-                    $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId);
+                    $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId)
+                        ?? throw new \InvalidArgumentException("Student {$studentId} has no school assigned.");
 
                     $data = [
                         'therapist_id' => $therapist->id,
@@ -246,7 +243,8 @@ final class ScheduleService
                 // Recurring schedule: create parent + occurrences
                 // Parent schedule (per first student, used to store rules)
                 $firstStudentId = $dto->studentIds[0];
-                $firstSchoolId = $this->studentRepository->getSchoolIdByUserId($firstStudentId);
+                $firstSchoolId = $this->studentRepository->getSchoolIdByUserId($firstStudentId)
+                    ?? throw new \InvalidArgumentException("Student {$firstStudentId} has no school assigned.");
 
                 /** @var Schedule $parentSchedule */
                 $parentSchedule = $this->repository->create([
@@ -354,10 +352,7 @@ final class ScheduleService
             $data['start_time'] = $utcStart->toTimeString();
             $data['end_time'] = $utcEnd->toTimeString();
 
-            $effectiveSchoolId = array_key_exists('school_id', $data)
-                ? $data['school_id']
-                : $schedule->school_id;
-            $effectiveSchoolId = $effectiveSchoolId !== null ? (int) $effectiveSchoolId : null;
+            $effectiveSchoolId = (int) (array_key_exists('school_id', $data) ? $data['school_id'] : $schedule->school_id);
             $data['is_billable'] = $this->isSchoolBillable($effectiveSchoolId);
 
             // When recurrence settings change, delete all unbilled future occurrences from
@@ -544,7 +539,8 @@ final class ScheduleService
                 : null;
 
             foreach ($studentIds as $studentId) {
-                $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId);
+                $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId)
+                    ?? throw new \InvalidArgumentException("Student {$studentId} has no school assigned.");
 
                 $occurrences->push($this->repository->create([
                     'therapist_id' => $parentSchedule->therapist_id,
@@ -640,7 +636,8 @@ final class ScheduleService
                 : null;
 
             foreach ($studentIds as $studentId) {
-                $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId);
+                $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId)
+                    ?? throw new \InvalidArgumentException("Student {$studentId} has no school assigned.");
 
                 $occurrences->push($this->repository->create([
                     'therapist_id' => $parentSchedule->therapist_id,

@@ -92,6 +92,7 @@ it('creates a single non-recurring schedule record', function (): void {
     $studentUser = User::factory()->create();
     StudentProfile::factory()->create(['user_id' => $studentUser->id]);
     $service = Service::factory()->create(['is_group_service' => false]);
+    $school = School::factory()->create(['non_billable_scheduling' => false]);
 
     $mocks['repository']->shouldReceive('validateTherapistAccessToSSA')->andReturnTrue();
     $mocks['repository']->shouldReceive('validateTherapistAccessToStudents')
@@ -106,7 +107,8 @@ it('creates a single non-recurring schedule record', function (): void {
     $mocks['serviceRepository']->shouldReceive('findOrFail')
         ->once()->with($service->id)->andReturn($service);
     $mocks['studentRepository']->shouldReceive('getSchoolIdByUserId')
-        ->once()->with($studentUser->id)->andReturn(null);
+        ->once()->with($studentUser->id)->andReturn($school->id);
+    $mocks['schoolRepository']->shouldReceive('find')->once()->with($school->id)->andReturn($school);
     $mocks['repository']->shouldReceive('create')->once()->andReturnUsing(function (array $data) {
         $schedule = new Schedule($data);
         $schedule->id = 1;
@@ -270,7 +272,9 @@ it('validates shared service for group schedules', function (): void {
         ->andReturn(collect([$studentUser1, $studentUser2]));
     $mocks['serviceRepository']->shouldReceive('findOrFail')
         ->once()->with($service->id)->andReturn($service);
-    $mocks['studentRepository']->shouldReceive('getSchoolIdByUserId')->twice()->andReturn(null);
+    $school = School::factory()->create(['non_billable_scheduling' => false]);
+    $mocks['studentRepository']->shouldReceive('getSchoolIdByUserId')->twice()->andReturn($school->id);
+    $mocks['schoolRepository']->shouldReceive('find')->andReturn($school);
     $mocks['repository']->shouldReceive('create')->twice()->andReturnUsing(function (array $data) {
         $schedule = new Schedule($data);
         $schedule->id = $schedule->student_id;
@@ -460,7 +464,9 @@ it('deletes future siblings and regenerates occurrences when recurrence type cha
     $mocks['timezoneService']->shouldReceive('parseUserLocalToUtc')->andReturnUsing(fn ($dt) => Carbon::parse($dt));
     $mocks['userRepository']->shouldReceive('findById')->andReturn($therapist);
     $mocks['userRepository']->shouldReceive('findByIds')->andReturn(collect([$therapist]));
-    $mocks['studentRepository']->shouldReceive('getSchoolIdByUserId')->andReturn(null);
+    $regenSchool = School::factory()->create(['non_billable_scheduling' => false]);
+    $mocks['studentRepository']->shouldReceive('getSchoolIdByUserId')->andReturn($regenSchool->id);
+    $mocks['schoolRepository']->shouldReceive('find')->andReturn($regenSchool);
     $mocks['repository']->shouldReceive('hasOverlap')->andReturnFalse();
     $mocks['repository']->shouldReceive('create')->andReturnUsing(function (array $data) {
         $s = new Schedule($data);

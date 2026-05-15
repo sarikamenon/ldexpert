@@ -52,6 +52,10 @@ final class ScheduleSeeder extends Seeder
             $profile = $student->studentProfile;
             $schoolId = $profile?->school_id;
             $school = $profile?->school;
+            if ($school === null) {
+                continue;
+            }
+
             $isBillable = $this->resolveIsBillable($school);
 
             // Generate schedule dates based on SSA frequency and date range
@@ -187,9 +191,9 @@ final class ScheduleSeeder extends Seeder
         };
     }
 
-    private function resolveIsBillable(?School $school): bool
+    private function resolveIsBillable(School $school): bool
     {
-        return $school === null ? true : ! $school->non_billable_scheduling;
+        return ! $school->non_billable_scheduling;
     }
 
     private function mapFrequencyToRecurrenceType(ServiceFrequency $frequency): RecurrenceType
