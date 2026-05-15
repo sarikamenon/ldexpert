@@ -33,7 +33,13 @@ use Illuminate\Support\Facades\DB;
 
 final class ScheduleService
 {
-    /** @var array<int, bool> Per-instance cache of school_id => is_billable. */
+    /**
+     * Per-instance cache of school_id => is_billable.
+     * Safe because services are resolved once per request (singleton in the container),
+     * so the cache never outlives a single HTTP request or queue job.
+     *
+     * @var array<int, bool>
+     */
     private array $schoolBillableCache = [];
 
     public function __construct(

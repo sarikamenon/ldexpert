@@ -186,4 +186,13 @@ final class ScheduleScope extends BaseModelScope
     {
         return $builder->where(self::qualify($model, 'group_batch_number'), $batchNumber);
     }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function forPastSessionsQueue(Builder $builder, Model $model): Builder
+    {
+        return $builder->where(self::qualify($model, 'is_billable'), true);
+    }
 }

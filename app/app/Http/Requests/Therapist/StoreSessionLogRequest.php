@@ -191,16 +191,19 @@ final class StoreSessionLogRequest extends FormRequest
                 $schedule = Schedule::find($scheduleId);
                 if ($schedule === null) {
                     $validator->errors()->add('schedule_id', 'The selected schedule is invalid.');
-                } else {
-                    if ($schedule->therapist_id !== $therapist->id) {
-                        $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
-                    }
-                    if (! $schedule->is_billable) {
-                        $validator->errors()->add(
-                            'schedule_id',
-                            'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.'
-                        );
-                    }
+
+                    return;
+                }
+
+                if ($schedule->therapist_id !== $therapist->id) {
+                    $validator->errors()->add('schedule_id', 'You do not have access to this schedule.');
+                }
+
+                if (! $schedule->is_billable) {
+                    $validator->errors()->add(
+                        'schedule_id',
+                        'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.'
+                    );
                 }
             }
 

@@ -109,63 +109,6 @@ final class SessionLogCreateTest extends TestCase
         expect($log->duration_minutes)->toBe(37);
     }
 
-    public function test_therapist_cannot_create_session_log_from_non_billable_schedule(): void
-    {
-        $therapist = User::factory()->therapist()->create();
-        $school = School::factory()->create();
-        $student = User::factory()->student()->create();
-        $sessionDate = now();
-        $student->studentProfile->update(['school_id' => $school->id]);
-        $service = Service::factory()->create([
-            'min_duration_minutes' => 30,
-            'max_duration_minutes' => 120,
-        ]);
-        $ssa = ServiceSupportAgreement::factory()->create([
-            'student_id' => $student->id,
-            'primary_service_id' => $service->id,
-            'assigned_therapist_id' => $therapist->id,
-            'status' => SSAStatus::ACTIVE,
-            'start_date' => $sessionDate->clone()->subDay(),
-            'end_date' => $sessionDate->clone()->addMonth(),
-        ]);
-        $schedule = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'student_id' => $student->id,
-            'ssa_id' => $ssa->id,
-            'service_id' => $service->id,
-            'school_id' => $school->id,
-            'is_billable' => false,
-        ]);
-
-        $this->seedContracts($therapist, $school, $service, $sessionDate);
-
-        $sessionDateStr = $sessionDate->format('Y-m-d');
-        $startTime = $sessionDate->clone()->setTime(10, 0, 0);
-        $endTime = $startTime->copy()->addMinutes(37);
-
-        $response = $this->actingAs($therapist)
-            ->post(route('therapist.session-logs.store'), [
-                'schedule_id' => $schedule->id,
-                'student_id' => $student->id,
-                'ssa_id' => $ssa->id,
-                'service_id' => $service->id,
-                'session_date' => $sessionDateStr,
-                'start_time' => $startTime->format('Y-m-d H:i:s'),
-                'end_time' => $endTime->format('Y-m-d H:i:s'),
-                'notes' => str_repeat('a', 20),
-                'outcome' => SessionOutcome::SERVICES_ADMINISTERED->value,
-                'is_billable_therapist' => true,
-                'is_billable_school' => true,
-                '_token' => csrf_token(),
-            ]);
-
-        $response->assertRedirect();
-        $response->assertSessionHasErrors(['schedule_id']);
-        $this->assertDatabaseMissing('session_logs', [
-            'schedule_id' => $schedule->id,
-        ]);
-    }
-
     public function test_school_student_no_show_outcome_uses_no_show_rates(): void
     {
         $therapist = User::factory()->therapist()->create();

@@ -309,6 +309,15 @@ class Schedule extends Model
         return ScheduleScope::byGroupBatch($query, $this, $batchNumber);
     }
 
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeForPastSessionsQueue(Builder $query): Builder
+    {
+        return ScheduleScope::forPastSessionsQueue($query, $this);
+    }
+
     public function isRecurring(): bool
     {
         return $this->recurrence_type !== RecurrenceType::NONE;

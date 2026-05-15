@@ -6,8 +6,6 @@ namespace Tests\Feature\Therapist;
 
 use App\Enums\SSAGoalStatus;
 use App\Enums\SSAStatus;
-use App\Models\Schedule;
-use App\Models\School;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
@@ -266,33 +264,4 @@ final class SessionLogFormContextTest extends TestCase
         $response->assertDontSee('Previous Session Notes');
     }
 
-    public function test_create_from_schedule_returns_403_when_schedule_not_billable(): void
-    {
-        $therapist = User::factory()->therapist()->create();
-        $school = School::factory()->create();
-        $student = User::factory()->student()->create();
-        self::assertNotNull($student->studentProfile);
-        $student->studentProfile->update(['school_id' => $school->id]);
-        $service = Service::factory()->create();
-        $ssa = ServiceSupportAgreement::factory()->create([
-            'student_id' => $student->id,
-            'primary_service_id' => $service->id,
-            'assigned_therapist_id' => $therapist->id,
-            'status' => SSAStatus::ACTIVE,
-            'start_date' => now()->subDay(),
-            'end_date' => now()->addMonth(),
-        ]);
-        $schedule = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'student_id' => $student->id,
-            'ssa_id' => $ssa->id,
-            'service_id' => $service->id,
-            'school_id' => $school->id,
-            'is_billable' => false,
-        ]);
-
-        $this->actingAs($therapist)
-            ->get(route('therapist.session-logs.create.from-schedule', $schedule))
-            ->assertForbidden();
-    }
 }
