@@ -134,6 +134,7 @@ final class StudentController extends Controller
                     ->count(),
                 'mastery_rate' => $totalGoals > 0 ? round(($masteredGoals / $totalGoals) * 100, 1) : 0,
                 'ssas_without_active_goals' => $ssasForMetrics
+                    ->where('status', SSAStatus::ACTIVE)
                     ->pluck('id')
                     ->filter(static fn (int $ssaId): bool => ! $activeGoalsBySsa->has($ssaId))
                     ->count(),
