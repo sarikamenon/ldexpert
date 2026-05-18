@@ -40,5 +40,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('billing:send-reminders')->dailyAt('08:00');
         $schedule->command('school:notify-expiring-contracts')->dailyAt('08:00');
         $schedule->command('school:auto-extend-contracts-ssas')->dailyAt('02:00');
+        $schedule->command('sub-requests:expire-overdue')->everyTwoHours();
     }
 }

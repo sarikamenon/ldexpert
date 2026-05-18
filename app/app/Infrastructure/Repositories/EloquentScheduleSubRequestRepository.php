@@ -10,6 +10,7 @@ use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 use App\Models\ScheduleSubSsa;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -45,12 +46,51 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             ->count();
     }
 
+    /**
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function listAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): Collection
+    {
+        return ScheduleSubRequest::query()
+            ->whereIn('status', ['open', 'accepted'])
+            ->where('requested_by_id', $requester->id)
+            ->whereHas('schedule', function (Builder $q) use ($startTimeAtOrAfter): void {
+                $q->whereRaw('TIMESTAMP(schedule_date, start_time) >= ?', [
+                    $startTimeAtOrAfter->copy()->setTimezone('UTC')->format('Y-m-d H:i:s'),
+                ]);
+            })
+            ->with([
+                'schedule',
+                'schedule.student',
+                'schedule.service',
+                'schedule.school',
+                'invitees.therapist',
+            ])
+            ->get();
+    }
+
     public function findOpenForSchedule(int $scheduleId): ?ScheduleSubRequest
     {
         return ScheduleSubRequest::query()
             ->open()
             ->forSchedule($scheduleId)
             ->first();
+    }
+
+    /**
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function listOpenOverdue(CarbonInterface $cutoff): Collection
+    {
+        return ScheduleSubRequest::query()
+            ->open()
+            ->whereHas('schedule', function (Builder $q) use ($cutoff): void {
+                $q->whereRaw('TIMESTAMP(schedule_date, start_time) <= ?', [
+                    $cutoff->copy()->setTimezone('UTC')->format('Y-m-d H:i:s'),
+                ]);
+            })
+            ->with('schedule')
+            ->get();
     }
 
     /** @param array<string, mixed> $attributes */

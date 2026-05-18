@@ -385,6 +385,16 @@ final class ScheduleService
 
             $updated = $this->repository->update($schedule, $data);
 
+            // Capture which schedule columns actually changed so we can suppress the
+            // student-facing "schedule updated" email when the save only touched
+            // sub-coverage metadata (handled via separate flows in ScheduleSubRequestService).
+            $changedColumns = array_keys($updated->getChanges());
+            $meaningfulChanges = array_diff(
+                $changedColumns,
+                ['updated_at', 'sub_therapist_id', 'sub_request_status']
+            );
+            $hasMeaningfulChange = $meaningfulChanges !== [];
+
             // Regenerate future occurrences when recurrence settings changed.
             if ($recurrenceSettingsChanged && $updated->isRecurring()) {
                 $studentIds = [$updated->student_id];
@@ -419,7 +429,9 @@ final class ScheduleService
                 $updated = $this->repository->updateBillingStatus($updated, $dto->billingStatus);
             }
 
-            ScheduleUpdated::dispatch($updated);
+            if ($hasMeaningfulChange) {
+                ScheduleUpdated::dispatch($updated);
+            }
 
             return $updated;
         });

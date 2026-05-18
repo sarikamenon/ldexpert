@@ -115,7 +115,7 @@
                 </x-ui::card>
 
                 <!-- Pending Schedules -->
-                <x-ui::card>
+                <x-ui::card class="self-start">
                     <div class="p-5 border-b border-border flex items-center justify-between">
                         <h3 class="text-lg font-medium text-foreground">Past Sessions Queue</h3>
                         <a href="{{ route('therapist.schedule.pending') }}" class="text-sm text-accent hover:underline">View all</a>
@@ -147,6 +147,7 @@
                     </div>
                 </x-ui::card>
 
+                <div class="space-y-6 self-start">
                 <!-- Open Sub Requests -->
                 @if (($openSubRequestCount ?? 0) > 0)
                     <x-ui::card>
@@ -181,7 +182,7 @@
                     <x-ui::card>
                         <div class="p-5 border-b border-border flex items-center justify-between">
                             <h3 class="text-lg font-medium text-foreground">My Sub Requests</h3>
-                            <a href="{{ route('therapist.schedule.pending') }}" class="text-sm text-accent hover:underline">View queue</a>
+                            <a href="{{ route('therapist.sub-requests.index', ['tab' => 'mine']) }}" class="text-sm text-accent hover:underline">View all</a>
                         </div>
                         <div class="p-5">
                             <div class="flex items-center gap-3">
@@ -197,8 +198,8 @@
                                     </p>
                                 </div>
                             </div>
-                            <a href="{{ route('therapist.schedule.pending') }}" class="mt-4 block">
-                                <x-ui::button class="w-full" size="sm" variant="secondary">View Past Sessions Queue</x-ui::button>
+                            <a href="{{ route('therapist.sub-requests.index', ['tab' => 'mine']) }}" class="mt-4 block">
+                                <x-ui::button class="w-full" size="sm" variant="secondary">View My Sub Requests</x-ui::button>
                             </a>
                         </div>
                     </x-ui::card>
@@ -263,6 +264,7 @@
                         @endforelse
                     </div>
                 </x-ui::card>
+                </div>
             </div>
         </div>
     </div>

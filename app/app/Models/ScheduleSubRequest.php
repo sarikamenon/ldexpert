@@ -143,4 +143,24 @@ class ScheduleSubRequest extends Model
     {
         return $this->status === 'cancelled';
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (ScheduleSubRequest $request): void {
+            if ($request->isForceDeleting()) {
+                return;
+            }
+
+            $request->invitees()->get()->each->delete();
+        });
+
+        static::restoring(function (ScheduleSubRequest $request): void {
+            $request->invitees()
+                ->onlyTrashed()
+                ->where('deleted_at', $request->deleted_at)
+                ->get()
+                ->each
+                ->restore();
+        });
+    }
 }

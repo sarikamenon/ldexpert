@@ -65,7 +65,7 @@ final class StoreScheduleRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
             'request_sub' => ['nullable', 'boolean'],
-            'sub_reason' => ['nullable', 'string', 'max:1000'],
+            'sub_reason' => ['required_if:request_sub,1', 'nullable', 'string', 'max:1000'],
             'sub_invitee_ids' => ['nullable', 'array', 'min:1'],
             'sub_invitee_ids.*' => ['integer', 'exists:users,id'],
         ];
@@ -90,6 +90,7 @@ final class StoreScheduleRequest extends FormRequest
             'occurrence_dates.*.required' => 'All occurrence dates must be filled.',
             'occurrence_dates.*.date' => 'Each occurrence date must be a valid date.',
             'occurrence_dates.*.after_or_equal' => 'Each occurrence date must be on or after the schedule start date.',
+            'sub_reason.required_if' => 'Please provide a reason for the sub request.',
         ];
     }
 

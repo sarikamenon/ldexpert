@@ -127,6 +127,7 @@ function buildPickerState(els) {
             }
             return;
         }
+        e.stopPropagation();
         toggleDropdown();
     });
 
@@ -193,6 +194,11 @@ function buildPickerState(els) {
             options.forEach((o) => {
                 if (o.invitee_status === 'selected') selected.add(o.id);
             });
+            const placeholder = els.triggerEl.querySelector('.picker-placeholder');
+            if (placeholder) {
+                placeholder.textContent = 'Add therapist…';
+                placeholder.classList.remove('text-danger');
+            }
             syncHiddenInputs();
             render();
         },
@@ -242,6 +248,12 @@ async function fetchEligibleSubs(url) {
 function initCreateFormPicker() {
     const pickerRoot = document.getElementById('sub_invitee_picker');
     if (!pickerRoot) return;
+
+    // The edit-mode "no open request" branch reuses the same picker DOM ids but
+    // is owned by initEditCheckboxToggle/loadEditPickerOnce. Bail out so we
+    // don't attach a second trigger handler that toggles the dropdown twice
+    // (which causes the open-then-immediately-close flicker).
+    if (!document.getElementById('request_sub')) return;
 
     const triggerEl = document.getElementById('sub_picker_trigger');
     const dropdownEl = document.getElementById('sub_picker_dropdown');
@@ -293,8 +305,19 @@ function initCreateFormPicker() {
     }
 
     document.getElementById('request_sub')?.addEventListener('change', maybeRefreshPicker);
-    document.getElementById('service_id')?.addEventListener('change', maybeRefreshPicker);
     document.getElementById('schedule_date')?.addEventListener('change', maybeRefreshPicker);
+
+    // service_id uses Select2 which fires jQuery change events, not native ones
+    const bindServiceChange = () => {
+        const serviceEl = document.getElementById('service_id');
+        if (!serviceEl) return;
+        if (window.jQuery) {
+            window.jQuery(serviceEl).on('change', maybeRefreshPicker);
+        } else {
+            setTimeout(bindServiceChange, 50);
+        }
+    };
+    bindServiceChange();
 
     if (/** @type {HTMLInputElement|null} */ (document.getElementById('request_sub'))?.checked) {
         maybeRefreshPicker();
@@ -388,7 +411,7 @@ function loadEditPickerOnce() {
         listEl,
         placeholderEl: placeholderEl ?? dummyDiv,
         hiddenInputsEl,
-        inputName: 'invitee_ids[]',
+        inputName: 'sub_invitee_ids[]',
     });
 
     fetchEligibleSubs(url)
@@ -407,15 +430,15 @@ function bindPanelCancelHandler() {
         event.preventDefault();
 
         const result = await confirmDialog({
-            title: 'Cancel Sub Request?',
+            title: 'Withdraw Sub Request?',
             text: 'This will withdraw the coverage request. It can be re-submitted from the schedule.',
             icon: 'warning',
-            confirmButtonText: 'Yes, cancel it',
+            confirmButtonText: 'Yes, withdraw',
         });
 
         if (!result.isConfirmed) return;
 
-        showLoading('Cancelling sub request...');
+        showLoading('Withdrawing sub request...');
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
         const url = button.getAttribute('data-cancel-url') ?? '';
@@ -433,11 +456,11 @@ function bindPanelCancelHandler() {
             closeAlert();
 
             if (!response.ok) {
-                const data = await response.json().catch(() => ({ message: 'Failed to cancel sub request.' }));
-                throw new Error(data.message ?? 'Failed to cancel sub request.');
+                const data = await response.json().catch(() => ({ message: 'Failed to withdraw sub request.' }));
+                throw new Error(data.message ?? 'Failed to withdraw sub request.');
             }
 
-            await successToast('Sub request cancelled.');
+            await successToast('Sub request withdrawn.');
             window.location.reload();
         } catch (err) {
             errorAlert(err instanceof Error ? err.message : 'An error occurred.');

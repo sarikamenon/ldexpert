@@ -19,9 +19,9 @@
       array   $inviteeStarErrors
 --}}
 <div class="space-y-2">
-    <x-input-label :for="$reasonFieldId" value="Reason (optional)" />
+    <x-input-label :for="$reasonFieldId" value="Reason *" />
     <p class="text-xs text-foreground/60" id="{{ $reasonFieldId }}_help">
-        Briefly explain why you need coverage. This will be visible to the therapists you invite.
+        Briefly explain why you need coverage. This will be shared with the therapists you invite.
     </p>
     <textarea name="{{ $reasonFieldName }}" id="{{ $reasonFieldId }}" rows="3"
         aria-describedby="{{ $reasonFieldId }}_help"

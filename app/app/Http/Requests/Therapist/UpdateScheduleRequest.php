@@ -64,6 +64,8 @@ final class UpdateScheduleRequest extends FormRequest
             'billing_status' => ['nullable', Rule::in($billingStatuses)],
             'sub_invitee_ids' => ['sometimes', 'array'],
             'sub_invitee_ids.*' => ['integer', Rule::exists('users', 'id')],
+            'request_sub' => ['nullable', 'boolean'],
+            'sub_reason' => ['required_if:request_sub,1', 'nullable', 'string', 'max:1000'],
         ];
     }
 
@@ -76,6 +78,7 @@ final class UpdateScheduleRequest extends FormRequest
             'duration_minutes.max' => 'Duration may not be greater than :max minutes.',
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
+            'sub_reason.required_if' => 'Please provide a reason for the sub request.',
         ];
     }
 
@@ -117,6 +120,14 @@ final class UpdateScheduleRequest extends FormRequest
                 $weeklyDays = $this->input('weekly_days');
                 if (! is_array($weeklyDays) || count($weeklyDays) === 0) {
                     $validator->errors()->add('weekly_days', 'Please select at least one day for the custom weekly schedule.');
+                }
+            }
+
+            // sub_invitee_ids is required when request_sub is true
+            if ($this->boolean('request_sub')) {
+                $inviteeIds = $this->input('sub_invitee_ids');
+                if (! is_array($inviteeIds) || count($inviteeIds) === 0) {
+                    $validator->errors()->add('sub_invitee_ids', 'Please select at least one therapist to invite when requesting a sub.');
                 }
             }
 

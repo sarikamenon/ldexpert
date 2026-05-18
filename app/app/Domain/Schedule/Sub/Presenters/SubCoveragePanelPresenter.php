@@ -24,7 +24,10 @@ final class SubCoveragePanelPresenter
      *   accepted_by_name: string|null,
      *   accepted_by_initials: string|null,
      *   accepted_at: string|null,
-     *   invitee_rows: Collection<int, array{name: string, status_label: string, status_variant: string}>,
+     *   requested_ago: string|null,
+     *   session_in: string|null,
+     *   status_summary: string|null,
+     *   invitee_rows: Collection<int, array{name: string, status_label: string, status_variant: string, is_muted: bool}>,
      *   store_url: string,
      *   update_invitees_url: string|null,
      *   cancel_url: string|null,
@@ -36,6 +39,7 @@ final class SubCoveragePanelPresenter
         $subRequest = $schedule->activeSubRequest;
 
         $acceptedByName = $subRequest?->acceptedBy?->name;
+        $inviteeRows = $this->inviteeRows($subRequest);
 
         return [
             'has_request' => $subRequest !== null,
@@ -46,7 +50,10 @@ final class SubCoveragePanelPresenter
             'accepted_by_name' => $acceptedByName,
             'accepted_by_initials' => $this->initialsFor($acceptedByName),
             'accepted_at' => $this->formatAcceptedAt($subRequest, $viewerTimezone),
-            'invitee_rows' => $this->inviteeRows($subRequest),
+            'requested_ago' => $subRequest?->created_at?->diffForHumans(),
+            'session_in' => $this->sessionIn($schedule),
+            'status_summary' => $this->statusSummary($inviteeRows),
+            'invitee_rows' => $inviteeRows,
             'store_url' => route('therapist.sub-requests.store-for-schedule', $schedule),
             'update_invitees_url' => $subRequest ? route('therapist.sub-requests.invitees.update', $subRequest) : null,
             'cancel_url' => $subRequest ? route('therapist.sub-requests.cancel', $subRequest) : null,
@@ -54,6 +61,37 @@ final class SubCoveragePanelPresenter
                 ? route('therapist.sub-requests.eligible-subs-for-request', $subRequest)
                 : route('therapist.sub-requests.eligible-subs').'?schedule_id='.$schedule->id,
         ];
+    }
+
+    private function sessionIn(Schedule $schedule): ?string
+    {
+        $start = Carbon::parse($schedule->start_time);
+        if ($start->isPast()) {
+            return null;
+        }
+
+        return 'session '.$start->diffForHumans();
+    }
+
+    /**
+     * @param  Collection<int, array{name: string, status_label: string, status_variant: string, is_muted: bool}>  $inviteeRows
+     */
+    private function statusSummary(Collection $inviteeRows): ?string
+    {
+        if ($inviteeRows->isEmpty()) {
+            return null;
+        }
+
+        $counts = $inviteeRows->countBy('status_label');
+        $parts = [];
+        foreach (['Pending', 'Accepted', 'Declined', 'Withdrawn'] as $label) {
+            $count = $counts->get($label, 0);
+            if ($count > 0) {
+                $parts[] = $count.' '.mb_strtolower($label);
+            }
+        }
+
+        return $parts === [] ? null : implode(' · ', $parts);
     }
 
     private function initialsFor(?string $name): ?string
@@ -89,12 +127,12 @@ final class SubCoveragePanelPresenter
     }
 
     /**
-     * @return Collection<int, array{name: string, status_label: string, status_variant: string}>
+     * @return Collection<int, array{name: string, status_label: string, status_variant: string, is_muted: bool}>
      */
     private function inviteeRows(?ScheduleSubRequest $subRequest): Collection
     {
         if ($subRequest === null) {
-            /** @var Collection<int, array{name: string, status_label: string, status_variant: string}> $empty */
+            /** @var Collection<int, array{name: string, status_label: string, status_variant: string, is_muted: bool}> $empty */
             $empty = collect();
 
             return $empty;
@@ -107,19 +145,22 @@ final class SubCoveragePanelPresenter
                 'declined' => 'Declined',
                 'withdrawn' => 'Withdrawn',
                 'superseded' => 'Superseded',
+                'expired' => 'Expired',
                 default => ucfirst($invitee->status),
             };
             $statusVariant = match ($invitee->status) {
                 'invited' => 'warning',
                 'accepted' => 'success',
-                'declined', 'withdrawn', 'superseded' => 'muted',
+                'declined', 'withdrawn', 'superseded', 'expired' => 'muted',
                 default => 'muted',
             };
+            $isMuted = in_array($invitee->status, ['declined', 'withdrawn', 'superseded', 'expired'], true);
 
             return [
                 'name' => $invitee->therapist->name ?? '—',
                 'status_label' => $statusLabel,
                 'status_variant' => $statusVariant,
+                'is_muted' => $isMuted,
             ];
         });
     }

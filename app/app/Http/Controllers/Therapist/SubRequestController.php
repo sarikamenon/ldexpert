@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Therapist;
 
+use App\DataTables\Transformers\MySubRequestRowTransformer;
 use App\DataTables\Transformers\SubRequestRowTransformer;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Http\Controllers\Controller;
@@ -40,10 +41,14 @@ final class SubRequestController extends Controller
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
-        $openCount = $this->subRequestService->countOpenForTherapist($therapist);
+        $tab = $request->query('tab') === 'mine' ? 'mine' : 'invited';
+        $invitedCount = $this->subRequestService->countOpenForTherapist($therapist);
+        $mineCount = $this->subRequestService->countMyOpenRequests($therapist);
 
         return view('therapist.sub-requests.index', [
-            'openCount' => $openCount,
+            'tab' => $tab,
+            'invitedCount' => $invitedCount,
+            'mineCount' => $mineCount,
             'datatableUrl' => route('therapist.sub-requests.data'),
         ]);
     }
@@ -55,8 +60,18 @@ final class SubRequestController extends Controller
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
+        $mode = $request->input('mode') === 'mine' ? 'mine' : 'invited';
+
         $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
-        $all = $this->subRequestService->listOpenForTherapist($therapist);
+
+        if ($mode === 'mine') {
+            $all = $this->subRequestService->listAsRequester($therapist);
+            $transformer = static fn (ScheduleSubRequest $row): array => MySubRequestRowTransformer::transform($row);
+        } else {
+            $all = $this->subRequestService->listOpenForTherapist($therapist);
+            $transformer = static fn (ScheduleSubRequest $row): array => SubRequestRowTransformer::transform($row);
+        }
+
         $total = $all->count();
         $page = $all->slice($params->start, $params->length)->values();
 
@@ -65,7 +80,7 @@ final class SubRequestController extends Controller
             $total,
             $total,
             $page,
-            static fn (ScheduleSubRequest $row): array => SubRequestRowTransformer::transform($row),
+            $transformer,
         );
     }
 

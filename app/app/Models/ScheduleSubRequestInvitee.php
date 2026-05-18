@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ScheduleSubRequestInvitee extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleSubRequestInviteeFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'schedule_sub_request_id',
@@ -27,6 +28,7 @@ class ScheduleSubRequestInvitee extends Model
             'responded_at' => 'datetime',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 

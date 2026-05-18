@@ -14,6 +14,26 @@ async function initSubRequestsTable() {
         order: [[0, 'asc']],
         pageLength: 25,
         columnDefs: [{ orderable: false, targets: [1, 2, 3, 4, 5] }],
+        getExtraData(d) {
+            d.mode = table.getAttribute('data-mode') || 'invited';
+        },
+    });
+}
+
+function bindTabSwitcher() {
+    const tabs = document.querySelectorAll('[data-sub-tab]');
+    if (tabs.length === 0) return;
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', (event) => {
+            event.preventDefault();
+            const mode = tab.getAttribute('data-sub-tab');
+            if (!mode) return;
+
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', mode);
+            window.location.href = url.toString();
+        });
     });
 }
 
@@ -116,15 +136,15 @@ function bindCancelHandler() {
         event.preventDefault();
 
         const result = await confirmDialog({
-            title: 'Cancel Sub Request?',
+            title: 'Withdraw Sub Request?',
             text: 'This will withdraw the coverage request. It can be re-submitted from the schedule.',
             icon: 'warning',
-            confirmButtonText: 'Yes, cancel it',
+            confirmButtonText: 'Yes, withdraw',
         });
 
         if (!result.isConfirmed) return;
 
-        showLoading('Cancelling sub request...');
+        showLoading('Withdrawing sub request...');
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
         const url = button.getAttribute('data-cancel-url') ?? '';
@@ -142,11 +162,11 @@ function bindCancelHandler() {
             closeAlert();
 
             if (!response.ok) {
-                const data = await response.json().catch(() => ({ message: 'Failed to cancel sub request.' }));
-                throw new Error(data.message ?? 'Failed to cancel sub request.');
+                const data = await response.json().catch(() => ({ message: 'Failed to withdraw sub request.' }));
+                throw new Error(data.message ?? 'Failed to withdraw sub request.');
             }
 
-            await successToast('Sub request cancelled.');
+            await successToast('Sub request withdrawn.');
             window.location.reload();
         } catch (error) {
             errorAlert(error instanceof Error ? error.message : 'An error occurred.');
@@ -156,6 +176,7 @@ function bindCancelHandler() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     await initSubRequestsTable();
+    bindTabSwitcher();
     bindAcceptHandler();
     bindDeclineHandler();
     bindCancelHandler();

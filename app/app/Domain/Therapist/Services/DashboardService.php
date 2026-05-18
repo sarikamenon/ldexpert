@@ -47,7 +47,7 @@ class DashboardService
         $today = now()->toDateString();
         $todayFilters = new ScheduleFilterDTO(date: $today);
         $todaySchedules = $this->scheduleService->getSchedules($therapist, $todayFilters);
-        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules);
+        $formattedTodaySchedules = $this->formatSchedulesForDashboard($todaySchedules, $therapist);
         $lessonsToday = $todaySchedules->count();
 
         $startOfWeek = now()->startOfWeek();
@@ -70,7 +70,7 @@ class DashboardService
 
         $pendingSchedules = $this->scheduleService->getPendingSchedules($therapist, null);
         $pendingSchedulesLimited = $pendingSchedules->take(10)->values();
-        $pendingSchedulesList = $this->formatSchedulesForDashboard($pendingSchedulesLimited)
+        $pendingSchedulesList = $this->formatSchedulesForDashboard($pendingSchedulesLimited, $therapist)
             ->map(function (array $row, int $i) use ($pendingSchedulesLimited): array {
                 $schedule = $pendingSchedulesLimited->get($i);
                 $row['create_session_log_url'] = $schedule
@@ -108,16 +108,40 @@ class DashboardService
      * @param  Collection<int, Schedule>  $schedules
      * @return Collection<int, array<string, mixed>>
      */
-    private function formatSchedulesForDashboard(Collection $schedules): Collection
+    private function formatSchedulesForDashboard(Collection $schedules, User $viewer): Collection
     {
+        $viewerId = (int) $viewer->id;
+
         /** @var Collection<int, array<string, mixed>> */
-        return $schedules->map(function (Schedule $schedule): array {
+        return $schedules->map(function (Schedule $schedule) use ($viewerId): array {
             $studentProfile = $schedule->student?->studentProfile;
             $tz = $this->timezoneService->resolveTimezone($schedule->therapist);
             $localStart = $schedule->localStart($tz);
             $localEnd = $schedule->localEnd($tz);
             $hasEventStarted = now()->gte($schedule->startUtc());
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
+
+            $isOriginal = (int) $schedule->therapist_id === $viewerId;
+            $isSub = (int) ($schedule->sub_therapist_id ?? 0) === $viewerId;
+            $subStatus = $schedule->sub_request_status;
+            $coverageRole = null;
+            $coverageLabel = null;
+            if ($subStatus === 'accepted' && $isSub) {
+                $coverageRole = 'covering';
+                $originalName = $schedule->therapist?->name;
+                $coverageLabel = 'Covering for '.($originalName ?? 'therapist');
+            } elseif ($subStatus === 'accepted' && $isOriginal) {
+                $coverageRole = 'covered';
+                $subName = $schedule->subTherapist?->name;
+                $coverageLabel = 'Covered by '.($subName ?? 'sub');
+            } elseif ($subStatus === 'open' && $isOriginal) {
+                $coverageRole = 'open_request';
+                $coverageLabel = 'Sub requested';
+            }
+
+            // Bill button suppressed when this row is covered by a sub for the original therapist —
+            // the sub will log the session, not the requester.
+            $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
             return [
                 'id' => $schedule->id,
@@ -143,9 +167,11 @@ class DashboardService
                 'parent_email' => $studentProfile->parent_guardian_email ?? '-',
                 'parent_phone' => $studentProfile->parent_guardian_phone ?? '-',
                 'edit_url' => route('therapist.schedule.edit', $schedule->id),
-                'bill_url' => $hasEventStarted && $isPendingBilling
+                'bill_url' => $canBill
                     ? route('therapist.session-logs.create.from-schedule', $schedule->id)
                     : null,
+                'coverage_role' => $coverageRole,
+                'coverage_badge_label' => $coverageLabel,
             ];
         });
     }

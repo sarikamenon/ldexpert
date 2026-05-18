@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('status', 16)->default('invited');
             $table->datetime('responded_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['schedule_sub_request_id', 'therapist_id'], 'sub_request_invitee_unique');
             $table->index(['therapist_id', 'status']);

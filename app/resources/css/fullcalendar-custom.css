@@ -132,6 +132,40 @@
     vertical-align: middle;
 }
 
+/* Sub-coverage indicator — positioned top-right, distinct from session-log icon (bottom-right). */
+.fc-coverage-icon {
+    position: absolute;
+    top: 4px;
+    right: 5px;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.95);
+    pointer-events: none;
+}
+.fc .fc-daygrid-event .fc-coverage-icon {
+    position: static;
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    vertical-align: middle;
+}
+
+/* Coverage state — colored left bar so the role is glanceable without reading the title.
+ * covering = green (you're the sub), covered = amber (your schedule is taken by someone),
+ * open_request = blue dashed (you raised a request, awaiting acceptance). */
+.fc-event-coverage-covering {
+    border-left: 8px solid #16a34a !important;
+}
+.fc-event-coverage-covered {
+    border-left: 8px solid #f59e0b !important;
+    opacity: 0.9;
+}
+.fc-event-coverage-open_request {
+    border-left: 8px dashed #2563eb !important;
+}
+
 /* Time grid slots */
 .fc .fc-timegrid-slot {
     height: 2.5rem;

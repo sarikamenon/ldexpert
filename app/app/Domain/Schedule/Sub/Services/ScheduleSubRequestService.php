@@ -7,6 +7,8 @@ namespace App\Domain\Schedule\Sub\Services;
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
+use App\Domain\Time\UserTimezoneService;
+use App\Mail\SubRequestInvitationMail;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
 use App\Models\ServiceSupportAgreement;
@@ -14,6 +16,7 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 final class ScheduleSubRequestService
 {
@@ -21,6 +24,7 @@ final class ScheduleSubRequestService
         private readonly ScheduleSubRequestRepositoryInterface $repository,
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly SessionLogRateService $rateService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /**
@@ -53,7 +57,7 @@ final class ScheduleSubRequestService
 
         $this->assertAllEligible($inviteeIds, $schedule);
 
-        return DB::transaction(function () use ($requester, $schedule, $inviteeIds, $reason): ScheduleSubRequest {
+        $subRequest = DB::transaction(function () use ($requester, $schedule, $inviteeIds, $reason): ScheduleSubRequest {
             $subRequest = $this->repository->create([
                 'schedule_id' => $schedule->id,
                 'requested_by_id' => $requester->id,
@@ -73,6 +77,10 @@ final class ScheduleSubRequestService
 
             return $subRequest;
         });
+
+        $this->sendInvitationEmails($subRequest, $inviteeIds);
+
+        return $subRequest;
     }
 
     /**
@@ -110,11 +118,12 @@ final class ScheduleSubRequestService
 
         $this->assertAllEligible($inviteeIds, $schedule);
 
-        DB::transaction(function () use ($request, $inviteeIds): void {
+        $newlyInvitedIds = DB::transaction(function () use ($request, $inviteeIds): array {
             $existing = $this->repository->getInviteesForRequest($request->id)
                 ->keyBy('therapist_id');
 
             $newIdSet = array_flip($inviteeIds);
+            $newlyInvited = [];
 
             foreach ($inviteeIds as $therapistId) {
                 $row = $existing->get($therapistId);
@@ -125,12 +134,14 @@ final class ScheduleSubRequestService
                         'therapist_id' => $therapistId,
                         'status' => 'invited',
                     ]);
+                    $newlyInvited[] = $therapistId;
 
                     continue;
                 }
 
                 if ($row->status === 'declined') {
                     $row->update(['status' => 'invited', 'responded_at' => null]);
+                    $newlyInvited[] = $therapistId;
                 }
                 // 'invited' + in payload → no-op; terminal statuses untouched
             }
@@ -141,7 +152,13 @@ final class ScheduleSubRequestService
                     $row->update(['status' => 'withdrawn']);
                 }
             }
+
+            return $newlyInvited;
         });
+
+        if (! empty($newlyInvitedIds)) {
+            $this->sendInvitationEmails($request, $newlyInvitedIds);
+        }
     }
 
     /**
@@ -287,6 +304,41 @@ final class ScheduleSubRequestService
     }
 
     /**
+     * Mark open sub requests as `expired` when their schedule's start is within
+     * `scheduling.sub_request_cutoff_hours` (i.e. it's too late to raise a new
+     * request anyway). Still-`invited` invitee rows are flipped to `expired`.
+     *
+     * @return int Number of parent requests expired.
+     */
+    public function expireOverdue(): int
+    {
+        $cutoffHours = (int) config('scheduling.sub_request_cutoff_hours', 2);
+        $cutoff = now()->addHours($cutoffHours);
+
+        $overdue = $this->repository->listOpenOverdue($cutoff);
+
+        $count = 0;
+        foreach ($overdue as $request) {
+            DB::transaction(function () use ($request, &$count): void {
+                $request->update(['status' => 'expired']);
+
+                $this->repository->getInviteesForRequest($request->id)
+                    ->where('status', 'invited')
+                    ->each(fn ($row) => $row->update(['status' => 'expired']));
+
+                $request->schedule?->update([
+                    'sub_request_status' => null,
+                    'sub_therapist_id' => null,
+                ]);
+
+                $count++;
+            });
+        }
+
+        return $count;
+    }
+
+    /**
      * Create sub requests for the given schedule and all its recurring occurrences.
      *
      * @param  array<int, int>  $inviteeIds
@@ -346,6 +398,19 @@ final class ScheduleSubRequestService
     }
 
     /**
+     * Requester-side list for the "My Requests" tab: open + accepted requests
+     * whose schedule has not yet started in the requester's local timezone.
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function listAsRequester(User $requester): Collection
+    {
+        [$startOfTodayUtc] = $this->timezoneService->userDayUtcRange(now(), $requester);
+
+        return $this->repository->listAsRequester($requester, $startOfTodayUtc);
+    }
+
+    /**
      * Return eligible therapists for a schedule annotated with their invitee status.
      *
      * @return Collection<int, User>
@@ -363,6 +428,33 @@ final class ScheduleSubRequestService
     public function listEligibleSubsForCreate(User $requester, int $serviceId, string $date): Collection
     {
         return $this->repository->listEligibleSubsForCreate($requester, $serviceId, $date);
+    }
+
+    /**
+     * Send invitation emails to the given invitees. Failures are logged and swallowed
+     * so a mailer outage cannot fail the primary request-creation action.
+     *
+     * @param  array<int, int>  $inviteeIds
+     */
+    private function sendInvitationEmails(ScheduleSubRequest $request, array $inviteeIds): void
+    {
+        $invitees = User::query()->whereIn('id', $inviteeIds)->get();
+
+        foreach ($invitees as $invitee) {
+            if (empty($invitee->email)) {
+                continue;
+            }
+
+            try {
+                Mail::to($invitee->email)->send(new SubRequestInvitationMail($request, $invitee));
+            } catch (\Throwable $e) {
+                Log::error('ScheduleSubRequestService: failed to send invitation mail', [
+                    'sub_request_id' => $request->id,
+                    'invitee_id' => $invitee->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     private function resolveOriginalSsa(Schedule $schedule, string $sessionDate): ?ServiceSupportAgreement

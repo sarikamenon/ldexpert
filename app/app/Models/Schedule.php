@@ -166,6 +166,34 @@ class Schedule extends Model
     }
 
     /**
+     * @return HasMany<ScheduleSubRequest, $this>
+     */
+    public function subRequests(): HasMany
+    {
+        return $this->hasMany(ScheduleSubRequest::class, 'schedule_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Schedule $schedule): void {
+            if ($schedule->isForceDeleting()) {
+                return;
+            }
+
+            $schedule->subRequests()->get()->each->delete();
+        });
+
+        static::restoring(function (Schedule $schedule): void {
+            $schedule->subRequests()
+                ->onlyTrashed()
+                ->where('deleted_at', $schedule->deleted_at)
+                ->get()
+                ->each
+                ->restore();
+        });
+    }
+
+    /**
      * @return HasOne<ScheduleSubSsa, $this>
      */
     public function subSsa(): HasOne

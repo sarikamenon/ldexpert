@@ -236,7 +236,7 @@ final class ScheduleController extends Controller
         $tz = $this->timezoneService->resolveTimezone($therapist);
 
         return response()->json([
-            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule, $tz) {
+            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule, $tz, $therapist) {
                 $localStart = $schedule->localStart($tz);
                 $localEnd = $schedule->localEnd($tz);
                 $isPast = $localStart->lt(now($tz)->startOfDay());
@@ -245,6 +245,29 @@ final class ScheduleController extends Controller
                 $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
                 /** @var \App\Models\SessionLog|null $sessionLog */
                 $sessionLog = $sessionLogsBySchedule->get($schedule->id)?->first();
+
+                $viewerId = (int) $therapist->id;
+                $isOriginal = (int) $schedule->therapist_id === $viewerId;
+                $isSub = (int) ($schedule->sub_therapist_id ?? 0) === $viewerId;
+                $subStatus = $schedule->sub_request_status;
+                $coverageRole = null;
+                $coverageLabel = null;
+                if ($subStatus === 'accepted' && $isSub) {
+                    $coverageRole = 'covering';
+                    $originalName = $schedule->therapist?->name;
+                    $coverageLabel = 'Covering for '.($originalName ?? 'therapist');
+                } elseif ($subStatus === 'accepted' && $isOriginal) {
+                    $coverageRole = 'covered';
+                    $subName = $schedule->subTherapist?->name;
+                    $coverageLabel = 'Covered by '.($subName ?? 'sub');
+                } elseif ($subStatus === 'open' && $isOriginal) {
+                    $coverageRole = 'open_request';
+                    $coverageLabel = 'Sub requested';
+                }
+
+                // When the original therapist's schedule is now covered by a sub, they
+                // should not bill / log it — the sub will. Suppress billing affordance.
+                $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
                 return [
                     'id' => $schedule->id,
@@ -262,9 +285,12 @@ final class ScheduleController extends Controller
                     'is_past' => $isPast,
                     'has_event_started' => $hasEventStarted,
                     'is_billed' => $isBilled,
-                    'bill_url' => $hasEventStarted && $isPendingBilling
+                    'bill_url' => $canBill
                         ? route('therapist.session-logs.create.from-schedule', $schedule->id)
                         : null,
+                    'coverage_role' => $coverageRole,
+                    'coverage_badge_label' => $coverageLabel,
+                    'sub_request_status' => $subStatus,
                     'session_log_url' => $isPast && $isBilled && $sessionLog
                         ? route('therapist.session-logs.show', $sessionLog)
                         : null,
@@ -442,22 +468,36 @@ final class ScheduleController extends Controller
         }
 
         $subInviteeWarning = null;
-        if ($request->has('sub_invitee_ids')) {
-            $subRequest = $updated->activeSubRequest;
-            if ($subRequest && $subRequest->isOpen()) {
-                /** @var array<int, int> $inviteeIds */
-                $inviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
-                try {
-                    $this->subRequestService->syncInvitees($therapist, $subRequest, $inviteeIds);
-                } catch (\InvalidArgumentException $e) {
-                    $subInviteeWarning = $e->getMessage();
-                } catch (\Throwable $e) {
-                    Log::error('ScheduleController@update: failed to sync sub invitees', [
-                        'schedule_id' => $updated->id,
-                        'exception' => $e,
-                    ]);
-                    $subInviteeWarning = 'Schedule updated, but sub invitees could not be saved. Please try again from the schedule edit page.';
-                }
+        $subRequest = $updated->activeSubRequest;
+
+        if ($subRequest && $subRequest->isOpen() && $request->has('sub_invitee_ids')) {
+            /** @var array<int, int> $inviteeIds */
+            $inviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
+            try {
+                $this->subRequestService->syncInvitees($therapist, $subRequest, $inviteeIds);
+            } catch (\InvalidArgumentException $e) {
+                $subInviteeWarning = $e->getMessage();
+            } catch (\Throwable $e) {
+                Log::error('ScheduleController@update: failed to sync sub invitees', [
+                    'schedule_id' => $updated->id,
+                    'exception' => $e,
+                ]);
+                $subInviteeWarning = 'Schedule updated, but sub invitees could not be saved. Please try again from the schedule edit page.';
+            }
+        } elseif ($subRequest === null && $request->boolean('request_sub')) {
+            $subReason = $request->string('sub_reason')->toString() ?: null;
+            /** @var array<int, int> $newInviteeIds */
+            $newInviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
+            try {
+                $this->subRequestService->createForScheduleAndOccurrences($therapist, $updated, $newInviteeIds, $subReason);
+            } catch (\InvalidArgumentException $e) {
+                $subInviteeWarning = $e->getMessage();
+            } catch (\Throwable $e) {
+                Log::error('ScheduleController@update: failed to create sub request from edit', [
+                    'schedule_id' => $updated->id,
+                    'exception' => $e,
+                ]);
+                $subInviteeWarning = 'Schedule updated, but the sub request could not be created. Please try again from the schedule edit page.';
             }
         }
 

@@ -9,6 +9,7 @@ use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 use App\Models\ScheduleSubSsa;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
@@ -31,7 +32,24 @@ interface ScheduleSubRequestRepositoryInterface
      */
     public function countMyOpenRequests(User $requester): int;
 
+    /**
+     * Returns open + accepted requests raised by this therapist (requester-side list),
+     * filtered to schedules whose combined (schedule_date + start_time) UTC instant
+     * is at or after $startTimeAtOrAfter (UTC).
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function listAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): Collection;
+
     public function findOpenForSchedule(int $scheduleId): ?ScheduleSubRequest;
+
+    /**
+     * Open requests whose schedule's combined (schedule_date + start_time) UTC instant
+     * is on or before $cutoff. Used by the auto-expiry job.
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function listOpenOverdue(CarbonInterface $cutoff): Collection;
 
     /**
      * Return the given schedule plus all its child occurrences (same recurring batch).

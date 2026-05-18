@@ -9,6 +9,18 @@ return [
     'time' => 'g:i A',
 
     /*
+     * Standard date-only format for all user-facing date display.
+     * e.g. "May 11, 2026"
+     */
+    'date' => 'M d, Y',
+
+    /*
+     * Long date format with weekday for headers and email subjects.
+     * e.g. "Monday, May 11, 2026"
+     */
+    'date_long' => 'l, F j, Y',
+
+    /*
      * Standard datetime format combining date + 12-hour time.
      * e.g. "May 11, 2026 9:30 AM"
      */

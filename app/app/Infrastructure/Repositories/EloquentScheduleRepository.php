@@ -20,6 +20,7 @@ use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -35,7 +36,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     {
         $query = Schedule::query()
             ->forTherapist($therapist)
-            ->with(['student', 'student.studentProfile', 'service', 'ssa', 'school']);
+            ->with(['student', 'student.studentProfile', 'service', 'ssa', 'school', 'therapist', 'subTherapist', 'activeSubRequest']);
 
         // PERF NOTE: TIMESTAMP(schedule_date, start_time) is computed per-row
         // and not indexable, so the BETWEEN filter and the ORDER BY below both
@@ -85,7 +86,7 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->where('billing_status', BillingStatus::PENDING->value)
             ->forPastSessionsQueue()
             ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
-            ->with(['student', 'service', 'ssa', 'school']);
+            ->with(['student', 'service', 'ssa', 'school', 'therapist', 'subTherapist']);
 
         if ($filters) {
             if ($filters->studentId) {
@@ -526,12 +527,18 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
     public function getSchedulesForCalendar(ScheduleFilterDTO $filters): Collection
     {
         $query = Schedule::query()
-            ->with(['therapist', 'student', 'service', 'school', 'sessionLog']);
+            ->with(['therapist', 'student', 'service', 'school', 'sessionLog', 'subTherapist', 'activeSubRequest']);
 
         if ($filters->therapistIds !== null) {
-            $query->whereIn('therapist_id', $filters->therapistIds);
+            $query->where(function (Builder $q) use ($filters): void {
+                $q->whereIn('therapist_id', $filters->therapistIds)
+                    ->orWhereIn('sub_therapist_id', $filters->therapistIds);
+            });
         } elseif ($filters->therapistId) {
-            $query->where('therapist_id', $filters->therapistId);
+            $query->where(function (Builder $q) use ($filters): void {
+                $q->where('therapist_id', $filters->therapistId)
+                    ->orWhere('sub_therapist_id', $filters->therapistId);
+            });
         }
 
         if ($filters->studentIds !== null) {
