@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
@@ -121,23 +122,9 @@ class DashboardService
             $hasEventStarted = now()->gte($schedule->startUtc());
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
 
-            $isOriginal = (int) $schedule->therapist_id === $viewerId;
-            $isSub = (int) ($schedule->sub_therapist_id ?? 0) === $viewerId;
-            $subStatus = $schedule->sub_request_status;
-            $coverageRole = null;
-            $coverageLabel = null;
-            if ($subStatus === \App\Enums\ScheduleSubCoverageStatus::ACCEPTED && $isSub) {
-                $coverageRole = 'covering';
-                $originalName = $schedule->therapist?->name;
-                $coverageLabel = 'Covering for '.($originalName ?? 'therapist');
-            } elseif ($subStatus === \App\Enums\ScheduleSubCoverageStatus::ACCEPTED && $isOriginal) {
-                $coverageRole = 'covered';
-                $subName = $schedule->subTherapist?->name;
-                $coverageLabel = 'Covered by '.($subName ?? 'sub');
-            } elseif ($subStatus === \App\Enums\ScheduleSubCoverageStatus::REQUESTED && $isOriginal) {
-                $coverageRole = 'open_request';
-                $coverageLabel = 'Sub requested';
-            }
+            $coverage = CoverageRoleResolver::for($schedule, $viewerId);
+            $coverageRole = $coverage['role'];
+            $coverageLabel = $coverage['badge_label'];
 
             // Bill button suppressed when this row is covered by a sub for the original therapist —
             // the sub will log the session, not the requester.

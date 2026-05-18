@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Repositories;
 
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
@@ -73,8 +74,10 @@ interface ScheduleSubRequestRepositoryInterface
 
     /**
      * Find the accepted sub-SSA snapshot for a specific sub therapist on a schedule.
+     *
+     * @param  array<int, string>  $with  optional eager-load list
      */
-    public function findSubSsaForSchedule(int $scheduleId, int $subTherapistId): ?ScheduleSubSsa;
+    public function findSubSsaForSchedule(int $scheduleId, int $subTherapistId, array $with = []): ?ScheduleSubSsa;
 
     /**
      * Find all sub-SSA snapshots matching a performing therapist on a given date + service + student.
@@ -102,20 +105,20 @@ interface ScheduleSubRequestRepositoryInterface
     public function filterEligibleIds(array $candidateIds, Schedule $schedule): array;
 
     /**
-     * Return eligible therapists for a schedule, each annotated with their current
-     * invitee status on the schedule's open request (if any).
+     * Return eligible therapists for a schedule as flat DTOs, each annotated with
+     * their current invitee status on the schedule's open request (if any).
      * Status values: 'selected' (currently invited), 'declined', 'none'.
      *
-     * @return Collection<int, User>
+     * @return Collection<int, EligibleSubDTO>
      */
     public function listEligibleSubsFor(Schedule $schedule): Collection;
 
     /**
      * Return eligible therapists for a not-yet-created schedule (create-time picker).
      * Eligibility is based on the requester's position + active contract for the service on the date.
-     * No invitee-status annotation since no request exists yet.
+     * No existing invitations possible, so every DTO has invitee_status = 'none'.
      *
-     * @return Collection<int, User>
+     * @return Collection<int, EligibleSubDTO>
      */
     public function listEligibleSubsForCreate(User $requester, int $serviceId, string $date): Collection;
 

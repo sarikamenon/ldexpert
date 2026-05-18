@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Services;
 
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
@@ -98,7 +99,7 @@ final class ScheduleSubRequestService
         }
 
         $isOwner = (int) $actor->id === (int) $request->requested_by_id;
-        $isAdmin = $actor->role->value === 'admin';
+        $isAdmin = $actor->isAdmin();
         if (! $isOwner && ! $isAdmin) {
             throw new \InvalidArgumentException('You do not have permission to manage invitees for this request.');
         }
@@ -284,7 +285,7 @@ final class ScheduleSubRequestService
         }
 
         $isOwner = (int) $actor->id === (int) $request->requested_by_id;
-        $isAdmin = $actor->role->value === 'admin';
+        $isAdmin = $actor->isAdmin();
         if (! $isOwner && ! $isAdmin) {
             throw new \InvalidArgumentException('You do not have permission to cancel this sub request.');
         }
@@ -355,6 +356,12 @@ final class ScheduleSubRequestService
     /**
      * Create sub requests for the given schedule and all its recurring occurrences.
      *
+     * Each occurrence runs in its own transaction (via `create()`), so a later
+     * failure does NOT roll back occurrences that already succeeded — the
+     * recurring-batch contract is "best effort after the first". The first
+     * occurrence is required: its failure propagates as an InvalidArgumentException
+     * so the controller can surface the reason (e.g. cutoff exceeded).
+     *
      * @param  array<int, int>  $inviteeIds
      * @return array{created: int, skipped: int}
      */
@@ -369,6 +376,8 @@ final class ScheduleSubRequestService
 
         $created = 0;
         $skipped = 0;
+        /** @var array<int, array{schedule_id: int, reason: string}> $skippedDetails */
+        $skippedDetails = [];
         $first = true;
         foreach ($occurrences as $occurrence) {
             try {
@@ -376,17 +385,17 @@ final class ScheduleSubRequestService
                 $created++;
             } catch (\InvalidArgumentException $e) {
                 if ($first) {
-                    // Propagate the first validation failure so the controller can
-                    // surface a warning to the therapist (e.g. cutoff exceeded).
                     throw $e;
                 }
                 $skipped++;
+                $skippedDetails[] = ['schedule_id' => (int) $occurrence->id, 'reason' => $e->getMessage()];
                 Log::warning('ScheduleSubRequestService: skipped occurrence', [
                     'schedule_id' => $occurrence->id,
                     'reason' => $e->getMessage(),
                 ]);
             } catch (\Throwable $e) {
                 $skipped++;
+                $skippedDetails[] = ['schedule_id' => (int) $occurrence->id, 'reason' => $e->getMessage()];
                 Log::error('ScheduleSubRequestService: sub request creation failed', [
                     'schedule_id' => $occurrence->id,
                     'exception' => $e,
@@ -395,7 +404,7 @@ final class ScheduleSubRequestService
             $first = false;
         }
 
-        return ['created' => $created, 'skipped' => $skipped];
+        return (new SubRequestBatchResult($created, $skipped, $skippedDetails))->toArray();
     }
 
     /** @return Collection<int, ScheduleSubRequest> */
@@ -433,7 +442,7 @@ final class ScheduleSubRequestService
     /**
      * Return eligible therapists for a schedule annotated with their invitee status.
      *
-     * @return Collection<int, User>
+     * @return Collection<int, EligibleSubDTO>
      */
     public function listEligibleSubsFor(Schedule $schedule): Collection
     {
@@ -443,7 +452,7 @@ final class ScheduleSubRequestService
     /**
      * Eligible therapists for the create-time picker (no schedule row yet).
      *
-     * @return Collection<int, User>
+     * @return Collection<int, EligibleSubDTO>
      */
     public function listEligibleSubsForCreate(User $requester, int $serviceId, string $date): Collection
     {

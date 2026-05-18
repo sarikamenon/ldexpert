@@ -11,7 +11,7 @@ final class SubRequestRowTransformer extends SubRequestRowBase
     /**
      * @return array<int, string>
      */
-    public static function transform(ScheduleSubRequest $subRequest): array
+    public static function transform(ScheduleSubRequest $subRequest, string $viewerTz): array
     {
         $requesterName = $subRequest->requestedBy?->name ?? '—'; // @phpstan-ignore nullsafe.neverNull
         $requesterCell = '<span class="text-sm text-foreground">'.e($requesterName).'</span>';
@@ -37,7 +37,7 @@ final class SubRequestRowTransformer extends SubRequestRowBase
         $actionsCell = '<div class="flex items-center gap-2">'.$acceptButton.$declineButton.'</div>';
 
         return [
-            self::dateTimeCell($subRequest),
+            self::dateTimeCell($subRequest, $viewerTz),
             self::studentCell($subRequest),
             self::serviceCell($subRequest),
             $requesterCell,

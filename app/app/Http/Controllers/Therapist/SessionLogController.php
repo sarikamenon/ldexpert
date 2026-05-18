@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Domain\Billing\Services\BillingEntryWindowService;
+use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAGoalService;
@@ -29,7 +30,6 @@ use App\Http\Requests\Therapist\UpdateSessionLogRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\Schedule;
-use App\Models\ScheduleSubSsa;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SessionLog;
 use App\Models\SessionLogComment;
@@ -67,6 +67,7 @@ final class SessionLogController extends Controller
         private readonly UserTimezoneService $timezoneService,
         private readonly SSAGoalService $goalService,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
+        private readonly ScheduleSubRequestRepositoryInterface $subRequestRepository,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -188,11 +189,11 @@ final class SessionLogController extends Controller
 
         // When a sub is covering, load the SSA from the sub-SSA snapshot; otherwise use their own active SSAs.
         if ($isAcceptedSub && $schedule !== null) {
-            $subSsa = ScheduleSubSsa::query()
-                ->where('schedule_id', $schedule->id)
-                ->where('sub_therapist_id', $therapist->id)
-                ->with(['ssa.student', 'ssa.primaryService', 'ssa.services'])
-                ->first();
+            $subSsa = $this->subRequestRepository->findSubSsaForSchedule(
+                (int) $schedule->id,
+                (int) $therapist->id,
+                ['ssa.student', 'ssa.primaryService', 'ssa.services'],
+            );
             $ssas = $subSsa?->ssa
                 ? ServiceSupportAgreement::with(['student', 'primaryService', 'services'])
                     ->whereKey($subSsa->ssa->id)

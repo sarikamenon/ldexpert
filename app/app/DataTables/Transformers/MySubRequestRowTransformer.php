@@ -13,10 +13,10 @@ final class MySubRequestRowTransformer extends SubRequestRowBase
     /**
      * @return array<int, string>
      */
-    public static function transform(ScheduleSubRequest $subRequest): array
+    public static function transform(ScheduleSubRequest $subRequest, string $viewerTz): array
     {
         return [
-            self::dateTimeCell($subRequest),
+            self::dateTimeCell($subRequest, $viewerTz),
             self::studentCell($subRequest),
             self::serviceCell($subRequest),
             self::inviteesCell($subRequest),

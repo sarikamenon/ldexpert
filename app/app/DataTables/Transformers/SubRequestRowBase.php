@@ -4,19 +4,20 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
-use App\Domain\Time\UserTimezoneService;
 use App\Models\ScheduleSubRequest;
 
 /**
  * Shared cell renderers for the two sub-request DataTable views
  * (invited-tab and my-requests-tab).
+ *
+ * Viewer-derived state (timezone) is passed in by the caller — keep these
+ * methods pure so they don't reach into request scope per row.
  */
 abstract class SubRequestRowBase
 {
-    protected static function dateTimeCell(ScheduleSubRequest $subRequest): string
+    protected static function dateTimeCell(ScheduleSubRequest $subRequest, string $viewerTz): string
     {
         $schedule = $subRequest->schedule;
-        $viewerTz = app(UserTimezoneService::class)->resolveTimezone(auth()->user());
         $localStart = $schedule?->localStart($viewerTz);
 
         $date = $localStart ? $localStart->format('M d, Y') : '—';

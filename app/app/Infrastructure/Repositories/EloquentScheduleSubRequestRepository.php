@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
@@ -103,11 +104,13 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
         return ScheduleSubSsa::create($attributes);
     }
 
-    public function findSubSsaForSchedule(int $scheduleId, int $subTherapistId): ?ScheduleSubSsa
+    /** @param array<int, string> $with */
+    public function findSubSsaForSchedule(int $scheduleId, int $subTherapistId, array $with = []): ?ScheduleSubSsa
     {
         return ScheduleSubSsa::query()
             ->forSchedule($scheduleId)
             ->forSubTherapist($subTherapistId)
+            ->with($with)
             ->first();
     }
 
@@ -175,7 +178,7 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     /**
      * Return eligible therapists annotated with invitee_status: 'selected', 'declined', or 'none'.
      *
-     * @return Collection<int, User>
+     * @return Collection<int, EligibleSubDTO>
      */
     public function listEligibleSubsFor(Schedule $schedule): Collection
     {
@@ -187,13 +190,13 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             $schedule
         )->get();
 
-        return $users->map(fn (User $user): User => $this->annotateInviteeStatus($user, $inviteeStatuses));
+        return $users->map(fn (User $user): EligibleSubDTO => $this->toEligibleSubDTO($user, $inviteeStatuses));
     }
 
     /**
      * Return eligible therapists for a schedule that does not yet exist (create-time picker).
      *
-     * @return Collection<int, User>
+     * @return Collection<int, EligibleSubDTO>
      */
     public function listEligibleSubsForCreate(User $requester, int $serviceId, string $date): Collection
     {
@@ -208,7 +211,7 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             ->eligibleAsSubFor((int) $requester->id, $positionId, $serviceId, $date)
             ->get();
 
-        return $users->map(fn (User $user): User => $this->annotateInviteeStatus($user, []));
+        return $users->map(fn (User $user): EligibleSubDTO => $this->toEligibleSubDTO($user, []));
     }
 
     // ── Invitee row operations ─────────────────────────────────────────────
@@ -304,19 +307,23 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     }
 
     /**
-     * Annotate the picker-facing invitee_status property on an eligible user.
+     * Build a flat picker DTO for an eligible user.
      *
      * @param  array<int, string>  $inviteeStatuses
      */
-    private function annotateInviteeStatus(User $user, array $inviteeStatuses): User
+    private function toEligibleSubDTO(User $user, array $inviteeStatuses): EligibleSubDTO
     {
         $raw = $inviteeStatuses[$user->id] ?? null;
-        $user->invitee_status = match ($raw) { // @phpstan-ignore property.notFound
+        $inviteeStatus = match ($raw) {
             SubRequestInviteeStatus::INVITED->value => 'selected',
             SubRequestInviteeStatus::DECLINED->value => 'declined',
             default => 'none',
         };
 
-        return $user;
+        return new EligibleSubDTO(
+            id: (int) $user->id,
+            name: (string) $user->name,
+            inviteeStatus: $inviteeStatus,
+        );
     }
 }

@@ -54,8 +54,10 @@ final class ScheduleCalendarController extends Controller
 
         $schedules = $this->scheduleService->getSchedulesForCalendar($filters);
 
+        // Admin viewer is neither original nor sub therapist; pass 0 so the
+        // resolver returns null role/label and no coverage badge renders.
         $scheduleEvents = $schedules->map(
-            static fn (Schedule $s): array => ScheduleCalendarEventTransformer::transform($s)
+            static fn (Schedule $s): array => ScheduleCalendarEventTransformer::transform($s, 0)
         );
 
         // Orphan session logs (no schedule attached) — only when neither

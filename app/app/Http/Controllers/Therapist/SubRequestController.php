@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\MySubRequestRowTransformer;
 use App\DataTables\Transformers\SubRequestRowTransformer;
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
+use App\Domain\Time\UserTimezoneService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\AcceptSubRequestRequest;
 use App\Http\Requests\Therapist\StoreSubRequestRequest;
@@ -32,6 +34,7 @@ final class SubRequestController extends Controller
 
     public function __construct(
         private readonly ScheduleSubRequestService $subRequestService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function index(Request $request): View
@@ -64,15 +67,19 @@ final class SubRequestController extends Controller
 
         $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
 
+        // Resolve viewer timezone once per request — transformers stay pure
+        // and do not reach into request scope per row.
+        $viewerTz = $this->timezoneService->resolveTimezone($therapist);
+
         // Lists are scoped to the viewing therapist (their invitations or their
         // requests) so cardinality is naturally small; in-memory slicing avoids
         // a second count query and keeps the existing service contract.
         if ($mode === 'mine') {
             $all = $this->subRequestService->listAsRequester($therapist);
-            $transformer = static fn (ScheduleSubRequest $row): array => MySubRequestRowTransformer::transform($row);
+            $transformer = static fn (ScheduleSubRequest $row): array => MySubRequestRowTransformer::transform($row, $viewerTz);
         } else {
             $all = $this->subRequestService->listOpenForTherapist($therapist);
-            $transformer = static fn (ScheduleSubRequest $row): array => SubRequestRowTransformer::transform($row);
+            $transformer = static fn (ScheduleSubRequest $row): array => SubRequestRowTransformer::transform($row, $viewerTz);
         }
 
         $total = $all->count();
@@ -266,11 +273,7 @@ final class SubRequestController extends Controller
         }
 
         return response()->json(
-            $eligibles->map(fn ($user) => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'invitee_status' => $user->invitee_status ?? 'none',
-            ])->values()
+            $eligibles->map(static fn (EligibleSubDTO $dto): array => $dto->toArray())->values()
         );
     }
 

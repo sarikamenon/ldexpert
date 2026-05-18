@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
-use App\Enums\ScheduleSubCoverageStatus;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 
@@ -17,7 +17,7 @@ final class ScheduleCalendarEventTransformer
      *
      * @return array<string, mixed>
      */
-    public static function transform(Schedule $schedule): array
+    public static function transform(Schedule $schedule, int $viewerId): array
     {
         $tz = $schedule->displayTimezone();
         $localStart = $schedule->localStart($tz);
@@ -26,8 +26,7 @@ final class ScheduleCalendarEventTransformer
         $isBilled = $schedule->billing_status === BillingStatus::BILLED;
         $color = self::eventColor($schedule);
 
-        $viewerId = (int) (auth()->id() ?? 0);
-        $coverage = self::coverageContext($schedule, $viewerId);
+        $coverage = CoverageRoleResolver::for($schedule, $viewerId);
 
         return [
             'id' => $schedule->id,
@@ -58,45 +57,6 @@ final class ScheduleCalendarEventTransformer
                 'coverage_badge_label' => $coverage['badge_label'],
             ],
         ];
-    }
-
-    /**
-     * Resolve the viewer's role for this schedule's sub-coverage state.
-     *
-     * @return array{role: ?string, badge_label: ?string}
-     */
-    private static function coverageContext(Schedule $schedule, int $viewerId): array
-    {
-        $status = $schedule->sub_request_status;
-        $therapistId = (int) $schedule->therapist_id;
-        $subTherapistId = (int) ($schedule->sub_therapist_id ?? 0);
-
-        if ($status === ScheduleSubCoverageStatus::ACCEPTED && $subTherapistId === $viewerId) {
-            $originalName = $schedule->therapist?->name;
-
-            return [
-                'role' => 'covering',
-                'badge_label' => 'Covering for '.($originalName ?? 'therapist'),
-            ];
-        }
-
-        if ($status === ScheduleSubCoverageStatus::ACCEPTED && $therapistId === $viewerId) {
-            $subName = $schedule->subTherapist?->name;
-
-            return [
-                'role' => 'covered',
-                'badge_label' => 'Covered by '.($subName ?? 'sub'),
-            ];
-        }
-
-        if ($status === ScheduleSubCoverageStatus::REQUESTED && $therapistId === $viewerId) {
-            return [
-                'role' => 'open_request',
-                'badge_label' => 'Sub requested',
-            ];
-        }
-
-        return ['role' => null, 'badge_label' => null];
     }
 
     /**
