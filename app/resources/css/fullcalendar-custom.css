@@ -163,7 +163,7 @@
     opacity: 0.9;
 }
 .fc-event-coverage-open_request {
-    border-left: 8px dashed #2563eb !important;
+    border-left: 8px solid #2563eb !important;
 }
 
 /* Time grid slots */

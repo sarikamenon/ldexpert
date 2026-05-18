@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\SubRequestInviteeStatus;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 use App\Models\User;
@@ -16,15 +17,12 @@ class ScheduleSubRequestInviteeFactory extends Factory
 {
     protected $model = ScheduleSubRequestInvitee::class;
 
-    /**
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
             'schedule_sub_request_id' => ScheduleSubRequest::factory(),
             'therapist_id' => User::factory(),
-            'status' => 'invited',
+            'status' => SubRequestInviteeStatus::INVITED->value,
             'responded_at' => null,
         ];
     }
@@ -32,7 +30,7 @@ class ScheduleSubRequestInviteeFactory extends Factory
     public function declined(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'declined',
+            'status' => SubRequestInviteeStatus::DECLINED->value,
             'responded_at' => now(),
         ]);
     }
@@ -40,7 +38,7 @@ class ScheduleSubRequestInviteeFactory extends Factory
     public function accepted(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'accepted',
+            'status' => SubRequestInviteeStatus::ACCEPTED->value,
             'responded_at' => now(),
         ]);
     }
@@ -48,14 +46,14 @@ class ScheduleSubRequestInviteeFactory extends Factory
     public function superseded(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'superseded',
+            'status' => SubRequestInviteeStatus::SUPERSEDED->value,
         ]);
     }
 
     public function withdrawn(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'withdrawn',
+            'status' => SubRequestInviteeStatus::WITHDRAWN->value,
         ]);
     }
 }

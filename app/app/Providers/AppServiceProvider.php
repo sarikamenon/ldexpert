@@ -78,7 +78,9 @@ use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Infrastructure\Repositories\EloquentUserRepository;
 use App\Infrastructure\Services\Storage\LocalStorageService;
 use App\Infrastructure\Services\Storage\S3StorageService;
+use App\Models\ScheduleSubRequest;
 use App\Models\User;
+use App\Observers\ScheduleSubRequestObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Routing\Router;
@@ -144,6 +146,8 @@ class AppServiceProvider extends ServiceProvider
         Blade::anonymousComponentNamespace('components.ui', 'ui');
         Blade::anonymousComponentNamespace('components.dashboard', 'dashboard');
         $router->aliasMiddleware('role', RoleMiddleware::class);
+
+        ScheduleSubRequest::observe(ScheduleSubRequestObserver::class);
 
         // Generate password reset URLs with ?username= instead of ?email=
         ResetPassword::createUrlUsing(function (User $user, string $token) {

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Models\Scopes\ScheduleScope;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -28,6 +29,7 @@ use Illuminate\Support\Collection;
  * @property BillingStatus $billing_status
  * @property RecurrenceType|null $recurrence_type
  * @property bool $is_billable
+ * @property ScheduleSubCoverageStatus|null $sub_request_status
  */
 class Schedule extends Model
 {
@@ -69,6 +71,7 @@ class Schedule extends Model
             'is_group' => 'boolean',
             'status' => ScheduleStatus::class,
             'billing_status' => BillingStatus::class,
+            'sub_request_status' => ScheduleSubCoverageStatus::class,
             'is_billable' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -383,6 +386,24 @@ class Schedule extends Model
     public function scopeHidingAcceptedCoveredForOriginal(Builder $query, User $therapist): Builder
     {
         return ScheduleScope::hidingAcceptedCoveredForOriginal($query, $this, $therapist);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeStartingAfter(Builder $query, \Carbon\CarbonInterface $moment): Builder
+    {
+        return ScheduleScope::startingAfter($query, $this, $moment);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeStartingAtOrBefore(Builder $query, \Carbon\CarbonInterface $moment): Builder
+    {
+        return ScheduleScope::startingAtOrBefore($query, $this, $moment);
     }
 
     /**

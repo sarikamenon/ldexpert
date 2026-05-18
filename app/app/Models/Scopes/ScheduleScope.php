@@ -7,9 +7,11 @@ namespace App\Models\Scopes;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Models\Schedule;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -155,10 +157,45 @@ final class ScheduleScope extends BaseModelScope
      */
     public static function hidingAcceptedCoveredForOriginal(Builder $builder, Model $model, User $therapist): Builder
     {
-        return $builder->where(function (Builder $q) use ($model, $therapist): void {
-            $q->whereNull(self::qualify($model, 'sub_therapist_id'))
-                ->orWhere(self::qualify($model, 'sub_therapist_id'), $therapist->id);
+        $subStatusCol = self::qualify($model, 'sub_request_status');
+        $subTherapistCol = self::qualify($model, 'sub_therapist_id');
+
+        return $builder->where(function (Builder $q) use ($subStatusCol, $subTherapistCol, $therapist): void {
+            $q->where($subStatusCol, '!=', ScheduleSubCoverageStatus::ACCEPTED->value)
+                ->orWhereNull($subStatusCol)
+                ->orWhere($subTherapistCol, $therapist->id);
         });
+    }
+
+    /**
+     * Filter to schedules whose combined (schedule_date + start_time) UTC instant
+     * is strictly after the given moment. Used by sub-coverage listings to hide
+     * sessions that have already started.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function startingAfter(Builder $builder, Model $model, CarbonInterface $moment): Builder
+    {
+        return $builder->whereRaw(
+            'TIMESTAMP('.self::qualify($model, 'schedule_date').', '.self::qualify($model, 'start_time').') > ?',
+            [$moment->copy()->setTimezone('UTC')->format('Y-m-d H:i:s')]
+        );
+    }
+
+    /**
+     * Filter to schedules whose combined (schedule_date + start_time) UTC instant
+     * is at or before the given moment. Used by the auto-expiry sweep.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function startingAtOrBefore(Builder $builder, Model $model, CarbonInterface $moment): Builder
+    {
+        return $builder->whereRaw(
+            'TIMESTAMP('.self::qualify($model, 'schedule_date').', '.self::qualify($model, 'start_time').') <= ?',
+            [$moment->copy()->setTimezone('UTC')->format('Y-m-d H:i:s')]
+        );
     }
 
     /**

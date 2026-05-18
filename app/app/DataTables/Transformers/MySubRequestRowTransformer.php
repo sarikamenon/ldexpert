@@ -4,77 +4,43 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
-use App\Domain\Time\UserTimezoneService;
+use App\Enums\SubRequestInviteeStatus;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 
-final class MySubRequestRowTransformer
+final class MySubRequestRowTransformer extends SubRequestRowBase
 {
     /**
      * @return array<int, string>
      */
     public static function transform(ScheduleSubRequest $subRequest): array
     {
-        $schedule = $subRequest->schedule;
-
-        $viewerTz = app(UserTimezoneService::class)->resolveTimezone(auth()->user());
-        $localStart = $schedule?->localStart($viewerTz);
-
-        $date = $localStart ? $localStart->format('M d, Y') : '—';
-        $startTime = $localStart ? $localStart->format(config('display.time')) : '—';
-
-        $dateTimeCell = '<div class="flex flex-col space-y-1">'
-            .'<span class="text-foreground font-medium">'.e($date).'</span>'
-            .'<span class="text-sm text-foreground/70">'.e($startTime).'</span>'
-            .'</div>';
-
-        $studentName = $schedule !== null ? ($schedule->student?->name ?? '—') : '—'; // @phpstan-ignore nullsafe.neverNull
-        $schoolName = $schedule !== null ? $schedule->school?->display_name : null;
-        $studentCell = '<div class="flex flex-col">'
-            .'<span class="font-medium text-foreground">'.e($studentName).'</span>';
-        if ($schoolName) {
-            $studentCell .= '<span class="text-xs text-foreground/60 mt-1">'.e($schoolName).'</span>';
-        }
-        $studentCell .= '</div>';
-
-        $serviceName = $schedule !== null ? ($schedule->service?->name ?? '—') : '—'; // @phpstan-ignore nullsafe.neverNull
-        $serviceCell = '<span class="text-sm text-foreground">'.e($serviceName).'</span>';
-
-        $inviteesCell = self::renderInvitees($subRequest);
-
-        $reason = $subRequest->reason;
-        $reasonCell = $reason
-            ? '<span class="text-sm text-foreground/80 break-words max-w-xs">'.e($reason).'</span>'
-            : '<span class="text-foreground/40">—</span>';
-
-        $actionsCell = self::renderActions($subRequest);
-
         return [
-            $dateTimeCell,
-            $studentCell,
-            $serviceCell,
-            $inviteesCell,
-            $reasonCell,
-            $actionsCell,
+            self::dateTimeCell($subRequest),
+            self::studentCell($subRequest),
+            self::serviceCell($subRequest),
+            self::inviteesCell($subRequest),
+            self::reasonCell($subRequest),
+            self::actionsCell($subRequest),
         ];
     }
 
-    private static function renderInvitees(ScheduleSubRequest $subRequest): string
+    private static function inviteesCell(ScheduleSubRequest $subRequest): string
     {
         if ($subRequest->invitees->isEmpty()) {
             return '<span class="text-foreground/40 text-sm">No invitees</span>';
         }
 
-        $counts = $subRequest->invitees->countBy('status');
-        $parts = [];
+        $counts = $subRequest->invitees->countBy(fn (ScheduleSubRequestInvitee $i): string => $i->status->value);
         $map = [
-            'invited' => ['label' => 'pending', 'classes' => 'bg-warning/10 text-warning border border-warning/20'],
-            'accepted' => ['label' => 'accepted', 'classes' => 'bg-success/10 text-success border border-success/20'],
-            'declined' => ['label' => 'declined', 'classes' => 'bg-muted/50 text-foreground/50 border border-border'],
-            'withdrawn' => ['label' => 'withdrawn', 'classes' => 'bg-muted/50 text-foreground/50 border border-border'],
-            'expired' => ['label' => 'expired', 'classes' => 'bg-muted/50 text-foreground/50 border border-border'],
+            SubRequestInviteeStatus::INVITED->value => ['label' => 'pending', 'classes' => 'bg-warning/10 text-warning border border-warning/20'],
+            SubRequestInviteeStatus::ACCEPTED->value => ['label' => 'accepted', 'classes' => 'bg-success/10 text-success border border-success/20'],
+            SubRequestInviteeStatus::DECLINED->value => ['label' => 'declined', 'classes' => 'bg-muted/50 text-foreground/50 border border-border'],
+            SubRequestInviteeStatus::WITHDRAWN->value => ['label' => 'withdrawn', 'classes' => 'bg-muted/50 text-foreground/50 border border-border'],
+            SubRequestInviteeStatus::EXPIRED->value => ['label' => 'expired', 'classes' => 'bg-muted/50 text-foreground/50 border border-border'],
         ];
 
+        $parts = [];
         foreach ($map as $status => $meta) {
             $count = (int) $counts->get($status, 0);
             if ($count <= 0) {
@@ -100,18 +66,16 @@ final class MySubRequestRowTransformer
             .'</div>';
     }
 
-    private static function renderActions(ScheduleSubRequest $subRequest): string
+    private static function actionsCell(ScheduleSubRequest $subRequest): string
     {
         $schedule = $subRequest->schedule;
         $editUrl = $schedule !== null ? route('therapist.schedule.edit', $schedule->id) : '#';
 
-        $viewButton = '<a href="'.e($editUrl).'" '
+        $buttons = '<a href="'.e($editUrl).'" '
             .'class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded border border-border bg-background text-foreground hover:bg-muted transition-colors" '
             .'aria-label="Manage sub request">'
             .'Manage'
             .'</a>';
-
-        $buttons = $viewButton;
 
         if ($subRequest->isOpen()) {
             $cancelUrl = route('therapist.sub-requests.cancel', $subRequest);

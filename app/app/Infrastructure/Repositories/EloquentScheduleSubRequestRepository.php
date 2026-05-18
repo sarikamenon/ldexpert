@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
+use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
@@ -23,26 +24,21 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
      */
     public function listOpenForTherapist(User $sub): Collection
     {
-        return ScheduleSubRequest::query()
-            ->open()
-            ->invitedTo($sub)
+        return $this->openForTherapistQuery($sub)
             ->with(['schedule', 'schedule.student', 'schedule.service', 'schedule.school', 'requestedBy'])
             ->get();
     }
 
     public function countOpenForTherapist(User $sub): int
     {
-        return ScheduleSubRequest::query()
-            ->open()
-            ->invitedTo($sub)
-            ->count();
+        return $this->openForTherapistQuery($sub)->count();
     }
 
     public function countMyOpenRequests(User $requester): int
     {
         return ScheduleSubRequest::query()
             ->open()
-            ->where('requested_by_id', $requester->id)
+            ->requestedBy($requester)
             ->count();
     }
 
@@ -52,12 +48,10 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     public function listAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): Collection
     {
         return ScheduleSubRequest::query()
-            ->whereIn('status', ['open', 'accepted'])
-            ->where('requested_by_id', $requester->id)
+            ->active()
+            ->requestedBy($requester)
             ->whereHas('schedule', function (Builder $q) use ($startTimeAtOrAfter): void {
-                $q->whereRaw('TIMESTAMP(schedule_date, start_time) >= ?', [
-                    $startTimeAtOrAfter->copy()->setTimezone('UTC')->format('Y-m-d H:i:s'),
-                ]);
+                $q->startingAfter($startTimeAtOrAfter->copy()->subSecond()); // @phpstan-ignore method.notFound
             })
             ->with([
                 'schedule',
@@ -85,9 +79,7 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
         return ScheduleSubRequest::query()
             ->open()
             ->whereHas('schedule', function (Builder $q) use ($cutoff): void {
-                $q->whereRaw('TIMESTAMP(schedule_date, start_time) <= ?', [
-                    $cutoff->copy()->setTimezone('UTC')->format('Y-m-d H:i:s'),
-                ]);
+                $q->startingAtOrBefore($cutoff); // @phpstan-ignore method.notFound
             })
             ->with('schedule')
             ->get();
@@ -154,31 +146,30 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             return $users->whereRaw('0=1');
         }
 
-        // Must not be the requester themselves.
-        $users->where('users.id', '!=', $schedule->therapist_id);
+        return $users->eligibleAsSubFor(
+            (int) $schedule->therapist_id,
+            $requesterPositionId,
+            (int) $schedule->service_id,
+            $schedule->schedule_date->format('Y-m-d'),
+        );
+    }
 
-        // Must share the same position as the requester.
-        $users->whereHas('therapistProfile', function (Builder $q) use ($requesterPositionId): void {
-            $q->where('position_id', $requesterPositionId); // @phpstan-ignore argument.type
-        });
+    /**
+     * @param  array<int, int>  $candidateIds
+     * @return array<int, int>
+     */
+    public function filterEligibleIds(array $candidateIds, Schedule $schedule): array
+    {
+        if (empty($candidateIds)) {
+            return [];
+        }
 
-        // Must have an active contract covering the schedule's service on schedule_date.
-        $scheduleDate = $schedule->schedule_date->format('Y-m-d');
-        $serviceId = $schedule->service_id;
-
-        $users->whereHas('therapistProfile.contracts', function (Builder $q) use ($scheduleDate, $serviceId): void {
-            $q->where('status', 'active') // @phpstan-ignore argument.type
-                ->where('start_date', '<=', $scheduleDate) // @phpstan-ignore argument.type
-                ->where(function (Builder $end) use ($scheduleDate): void {
-                    $end->whereNull('end_date')
-                        ->orWhere('end_date', '>=', $scheduleDate); // @phpstan-ignore argument.type
-                })
-                ->whereHas('services', function (Builder $svc) use ($serviceId): void {
-                    $svc->where('service_id', $serviceId); // @phpstan-ignore argument.type
-                });
-        });
-
-        return $users;
+        /** @var array<int, int> */
+        return $this->applyEligibilityFilter(User::query(), $schedule)
+            ->whereIn('id', $candidateIds)
+            ->pluck('id')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
     }
 
     /**
@@ -189,39 +180,18 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     public function listEligibleSubsFor(Schedule $schedule): Collection
     {
         $openRequest = $this->findOpenForSchedule($schedule->id);
-
-        // Load existing invitee rows keyed by therapist_id for annotation.
-        /** @var array<int, string> $inviteeStatuses */
-        $inviteeStatuses = [];
-        if ($openRequest !== null) {
-            $inviteeStatuses = ScheduleSubRequestInvitee::query()
-                ->where('schedule_sub_request_id', $openRequest->id)
-                ->pluck('status', 'therapist_id')
-                ->all();
-        }
+        $inviteeStatuses = $this->loadInviteeStatusMap($openRequest);
 
         $users = $this->applyEligibilityFilter(
             User::query()->with('therapistProfile'),
             $schedule
         )->get();
 
-        return $users->map(function (User $user) use ($inviteeStatuses): User {
-            $raw = $inviteeStatuses[$user->id] ?? 'none';
-            // Map internal status → picker-facing annotation.
-            $user->invitee_status = match ($raw) { // @phpstan-ignore property.notFound
-                'invited' => 'selected',
-                'declined' => 'declined',
-                default => 'none',
-            };
-
-            return $user;
-        });
+        return $users->map(fn (User $user): User => $this->annotateInviteeStatus($user, $inviteeStatuses));
     }
 
     /**
      * Return eligible therapists for a schedule that does not yet exist (create-time picker).
-     * Runs the same position + contract filter as applyEligibilityFilter but takes raw
-     * values instead of a Schedule model so no schedule row is needed.
      *
      * @return Collection<int, User>
      */
@@ -235,27 +205,10 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
 
         $users = User::query()
             ->with('therapistProfile')
-            ->where('users.id', '!=', $requester->id)
-            ->whereHas('therapistProfile', function (Builder $q) use ($positionId): void {
-                $q->where('position_id', $positionId); // @phpstan-ignore argument.type
-            })
-            ->whereHas('therapistProfile.contracts', function (Builder $q) use ($date, $serviceId): void {
-                $q->where('status', 'active') // @phpstan-ignore argument.type
-                    ->where('start_date', '<=', $date) // @phpstan-ignore argument.type
-                    ->where(function (Builder $end) use ($date): void {
-                        $end->whereNull('end_date')
-                            ->orWhere('end_date', '>=', $date); // @phpstan-ignore argument.type
-                    })
-                    ->whereHas('services', function (Builder $svc) use ($serviceId): void {
-                        $svc->where('service_id', $serviceId); // @phpstan-ignore argument.type
-                    });
-            })
+            ->eligibleAsSubFor((int) $requester->id, $positionId, $serviceId, $date)
             ->get();
 
-        return $users->map(function (User $user): User {
-            $user->invitee_status = 'none'; // @phpstan-ignore property.notFound
-            return $user;
-        });
+        return $users->map(fn (User $user): User => $this->annotateInviteeStatus($user, []));
     }
 
     // ── Invitee row operations ─────────────────────────────────────────────
@@ -269,8 +222,17 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     public function findInviteeRow(int $requestId, int $therapistId): ?ScheduleSubRequestInvitee
     {
         return ScheduleSubRequestInvitee::query()
-            ->where('schedule_sub_request_id', $requestId)
+            ->forRequest($requestId)
             ->where('therapist_id', $therapistId)
+            ->first();
+    }
+
+    public function findAndLockInviteeRow(int $requestId, int $therapistId): ?ScheduleSubRequestInvitee
+    {
+        return ScheduleSubRequestInvitee::query()
+            ->forRequest($requestId)
+            ->where('therapist_id', $therapistId)
+            ->lockForUpdate()
             ->first();
     }
 
@@ -278,7 +240,83 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     public function getInviteesForRequest(int $requestId): Collection
     {
         return ScheduleSubRequestInvitee::query()
-            ->where('schedule_sub_request_id', $requestId)
+            ->forRequest($requestId)
             ->get();
+    }
+
+    public function bulkUpdateInviteeStatus(
+        int $requestId,
+        SubRequestInviteeStatus $currentStatus,
+        SubRequestInviteeStatus $newStatus,
+    ): int {
+        return ScheduleSubRequestInvitee::query()
+            ->forRequest($requestId)
+            ->withStatus($currentStatus)
+            ->update(['status' => $newStatus->value]);
+    }
+
+    public function bulkSupersedeOtherInvitees(
+        int $requestId,
+        int $exceptInviteeId,
+        SubRequestInviteeStatus $currentStatus = SubRequestInviteeStatus::INVITED,
+    ): int {
+        return ScheduleSubRequestInvitee::query()
+            ->forRequest($requestId)
+            ->exceptInvitee($exceptInviteeId)
+            ->withStatus($currentStatus)
+            ->update(['status' => SubRequestInviteeStatus::SUPERSEDED->value]);
+    }
+
+    // ── Internal helpers ───────────────────────────────────────────────────
+
+    /**
+     * @return Builder<ScheduleSubRequest>
+     */
+    private function openForTherapistQuery(User $sub): Builder
+    {
+        $cutoffHours = (int) config('scheduling.sub_request_cutoff_hours', 2);
+        $earliestStart = now()->addHours($cutoffHours);
+
+        return ScheduleSubRequest::query()
+            ->open()
+            ->invitedTo($sub)
+            ->whereHas('schedule', function (Builder $q) use ($earliestStart): void {
+                $q->startingAfter($earliestStart); // @phpstan-ignore method.notFound
+            });
+    }
+
+    /**
+     * Load existing invitee statuses keyed by therapist_id for picker annotation.
+     *
+     * @return array<int, string>
+     */
+    private function loadInviteeStatusMap(?ScheduleSubRequest $openRequest): array
+    {
+        if ($openRequest === null) {
+            return [];
+        }
+
+        /** @var array<int, string> */
+        return ScheduleSubRequestInvitee::query()
+            ->forRequest($openRequest->id)
+            ->pluck('status', 'therapist_id')
+            ->all();
+    }
+
+    /**
+     * Annotate the picker-facing invitee_status property on an eligible user.
+     *
+     * @param  array<int, string>  $inviteeStatuses
+     */
+    private function annotateInviteeStatus(User $user, array $inviteeStatuses): User
+    {
+        $raw = $inviteeStatuses[$user->id] ?? null;
+        $user->invitee_status = match ($raw) { // @phpstan-ignore property.notFound
+            SubRequestInviteeStatus::INVITED->value => 'selected',
+            SubRequestInviteeStatus::DECLINED->value => 'declined',
+            default => 'none',
+        };
+
+        return $user;
     }
 }

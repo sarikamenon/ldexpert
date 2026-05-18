@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Enums\SubRequestStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
 use App\Models\User;
@@ -22,7 +23,7 @@ class ScheduleSubRequestFactory extends Factory
             'schedule_id' => Schedule::factory(),
             'requested_by_id' => User::factory(),
             'reason' => $this->faker->optional()->sentence(),
-            'status' => 'open',
+            'status' => SubRequestStatus::OPEN->value,
             'accepted_by_id' => null,
             'accepted_at' => null,
             'cancelled_at' => null,
@@ -32,7 +33,7 @@ class ScheduleSubRequestFactory extends Factory
     public function accepted(User $sub): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'accepted',
+            'status' => SubRequestStatus::ACCEPTED->value,
             'accepted_by_id' => $sub->id,
             'accepted_at' => now(),
         ]);
@@ -41,7 +42,7 @@ class ScheduleSubRequestFactory extends Factory
     public function cancelled(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'cancelled',
+            'status' => SubRequestStatus::CANCELLED->value,
             'cancelled_at' => now(),
         ]);
     }

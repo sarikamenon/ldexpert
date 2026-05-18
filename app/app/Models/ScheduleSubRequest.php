@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SubRequestStatus;
 use App\Models\Concerns\HasAudits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +14,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property SubRequestStatus $status
+ */
 class ScheduleSubRequest extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleSubRequestFactory> */
@@ -31,6 +35,7 @@ class ScheduleSubRequest extends Model
     protected function casts(): array
     {
         return [
+            'status' => SubRequestStatus::class,
             'accepted_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'created_at' => 'datetime',
@@ -75,35 +80,22 @@ class ScheduleSubRequest extends Model
      */
     public function scopeOpen(Builder $query): Builder
     {
-        return $query->where('status', 'open');
+        return $query->where('status', SubRequestStatus::OPEN->value);
     }
 
     /**
-     * Filters to requests where the requester shares the same position as $sub.
+     * Open or accepted — requests still relevant to a requester's "My requests" view.
+     * Excludes terminal states (cancelled, expired).
      *
      * @param  Builder<ScheduleSubRequest>  $query
      * @return Builder<ScheduleSubRequest>
      */
-    public function scopeForSubPosition(Builder $query, User $sub): Builder
+    public function scopeActive(Builder $query): Builder
     {
-        $subPositionId = $sub->therapistProfile?->position_id;
-
-        if ($subPositionId === null) {
-            return $query->whereRaw('0=1');
-        }
-
-        return $query->whereHas('requestedBy.therapistProfile', function (Builder $q) use ($subPositionId): void {
-            $q->where('position_id', $subPositionId); // @phpstan-ignore argument.type
-        });
-    }
-
-    /**
-     * @param  Builder<ScheduleSubRequest>  $query
-     * @return Builder<ScheduleSubRequest>
-     */
-    public function scopeNotRequestedBy(Builder $query, User $user): Builder
-    {
-        return $query->where('requested_by_id', '!=', $user->id);
+        return $query->whereIn('status', [
+            SubRequestStatus::OPEN->value,
+            SubRequestStatus::ACCEPTED->value,
+        ]);
     }
 
     /**
@@ -116,6 +108,15 @@ class ScheduleSubRequest extends Model
     }
 
     /**
+     * @param  Builder<ScheduleSubRequest>  $query
+     * @return Builder<ScheduleSubRequest>
+     */
+    public function scopeRequestedBy(Builder $query, User $requester): Builder
+    {
+        return $query->where('requested_by_id', $requester->id);
+    }
+
+    /**
      * Filters to requests where the given therapist has an `invited` invitee row.
      *
      * @param  Builder<ScheduleSubRequest>  $query
@@ -124,43 +125,22 @@ class ScheduleSubRequest extends Model
     public function scopeInvitedTo(Builder $query, User $sub): Builder
     {
         return $query->whereHas('invitees', function (Builder $q) use ($sub): void {
-            $q->where('therapist_id', $sub->id) // @phpstan-ignore argument.type
-                ->where('status', 'invited'); // @phpstan-ignore argument.type
+            $q->forTherapist($sub)->pending(); // @phpstan-ignore method.notFound
         });
     }
 
     public function isOpen(): bool
     {
-        return $this->status === 'open';
+        return $this->status === SubRequestStatus::OPEN;
     }
 
     public function isAccepted(): bool
     {
-        return $this->status === 'accepted';
+        return $this->status === SubRequestStatus::ACCEPTED;
     }
 
     public function isCancelled(): bool
     {
-        return $this->status === 'cancelled';
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (ScheduleSubRequest $request): void {
-            if ($request->isForceDeleting()) {
-                return;
-            }
-
-            $request->invitees()->get()->each->delete();
-        });
-
-        static::restoring(function (ScheduleSubRequest $request): void {
-            $request->invitees()
-                ->onlyTrashed()
-                ->where('deleted_at', $request->deleted_at)
-                ->get()
-                ->each
-                ->restore();
-        });
+        return $this->status === SubRequestStatus::CANCELLED;
     }
 }

@@ -8,6 +8,9 @@ use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
 use App\Domain\Time\UserTimezoneService;
+use App\Enums\ScheduleSubCoverageStatus;
+use App\Enums\SubRequestInviteeStatus;
+use App\Enums\SubRequestStatus;
 use App\Mail\SubRequestInvitationMail;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
@@ -62,18 +65,18 @@ final class ScheduleSubRequestService
                 'schedule_id' => $schedule->id,
                 'requested_by_id' => $requester->id,
                 'reason' => $reason,
-                'status' => 'open',
+                'status' => SubRequestStatus::OPEN->value,
             ]);
 
             foreach ($inviteeIds as $therapistId) {
                 $this->repository->createInvitee([
                     'schedule_sub_request_id' => $subRequest->id,
                     'therapist_id' => $therapistId,
-                    'status' => 'invited',
+                    'status' => SubRequestInviteeStatus::INVITED->value,
                 ]);
             }
 
-            $schedule->update(['sub_request_status' => 'requested']);
+            $schedule->update(['sub_request_status' => ScheduleSubCoverageStatus::REQUESTED->value]);
 
             return $subRequest;
         });
@@ -132,15 +135,15 @@ final class ScheduleSubRequestService
                     $this->repository->createInvitee([
                         'schedule_sub_request_id' => $request->id,
                         'therapist_id' => $therapistId,
-                        'status' => 'invited',
+                        'status' => SubRequestInviteeStatus::INVITED->value,
                     ]);
                     $newlyInvited[] = $therapistId;
 
                     continue;
                 }
 
-                if ($row->status === 'declined') {
-                    $row->update(['status' => 'invited', 'responded_at' => null]);
+                if ($row->status === SubRequestInviteeStatus::DECLINED) {
+                    $row->update(['status' => SubRequestInviteeStatus::INVITED->value, 'responded_at' => null]);
                     $newlyInvited[] = $therapistId;
                 }
                 // 'invited' + in payload → no-op; terminal statuses untouched
@@ -148,8 +151,8 @@ final class ScheduleSubRequestService
 
             // IDs currently 'invited' but removed from the new payload → withdrawn
             foreach ($existing as $therapistId => $row) {
-                if ($row->status === 'invited' && ! isset($newIdSet[$therapistId])) {
-                    $row->update(['status' => 'withdrawn']);
+                if ($row->status === SubRequestInviteeStatus::INVITED && ! isset($newIdSet[$therapistId])) {
+                    $row->update(['status' => SubRequestInviteeStatus::WITHDRAWN->value]);
                 }
             }
 
@@ -163,21 +166,15 @@ final class ScheduleSubRequestService
 
     /**
      * Accept a sub request. The caller must have an `invited` invitee row.
-     * Uses lockForUpdate to guarantee only the first accepter wins.
+     *
+     * Locks the parent request row AND the invitee row before any state changes.
+     * Every guard (status, cutoff, eligibility) is re-checked inside the transaction
+     * so a concurrent accept/decline/syncInvitees cannot slip through.
      */
     public function accept(User $sub, ScheduleSubRequest $request): void
     {
-        if (! $request->isOpen()) {
-            throw new \InvalidArgumentException('This sub request is no longer open.');
-        }
-
         if ((int) $request->requested_by_id === (int) $sub->id) {
             throw new \InvalidArgumentException('You cannot accept your own sub request.');
-        }
-
-        $inviteeRow = $this->repository->findInviteeRow($request->id, $sub->id);
-        if ($inviteeRow === null || $inviteeRow->status !== 'invited') {
-            throw new \InvalidArgumentException('You have not been invited to cover this session.');
         }
 
         $schedule = $request->schedule;
@@ -185,61 +182,66 @@ final class ScheduleSubRequestService
             throw new \InvalidArgumentException('Schedule not found.');
         }
 
-        // Position match re-check
-        $requester = $request->requestedBy;
-        if ($requester === null) {
-            throw new \InvalidArgumentException('Requester not found.');
-        }
-        $requesterPositionId = $requester->therapistProfile?->position_id;
-        $subPositionId = $sub->therapistProfile?->position_id;
-        if ($requesterPositionId === null || $subPositionId === null || $requesterPositionId !== $subPositionId) {
-            throw new \InvalidArgumentException('You do not have the required position to cover this session.');
-        }
-
-        // Contract re-check (contracts can change between invite and accept)
-        $sessionDate = $schedule->schedule_date->format('Y-m-d');
-        $rate = $this->rateService->getTherapistRate($sub->id, $schedule->service_id, $sessionDate);
-        if ($rate['contract_id'] === null) {
-            throw new \InvalidArgumentException('You do not have an active contract covering this service on the session date.');
-        }
-
-        // Cutoff guard (race safety)
-        $cutoffHours = (int) config('scheduling.sub_request_cutoff_hours', 2);
-        if (now()->diffInHours($schedule->startUtc(), false) < $cutoffHours) {
-            throw new \InvalidArgumentException(
-                "Sub requests can no longer be accepted within {$cutoffHours} hour(s) of the session."
-            );
-        }
-
-        $ssa = $this->resolveOriginalSsa($schedule, $sessionDate);
-        if ($ssa === null) {
-            throw new \InvalidArgumentException('No active SSA found for the original therapist on this schedule.');
-        }
-
-        DB::transaction(function () use ($sub, $request, $schedule, $ssa, $sessionDate, $inviteeRow): void {
+        DB::transaction(function () use ($sub, $request, $schedule): void {
             $fresh = $this->repository->findAndLock($request->id);
 
             if (! $fresh->isOpen()) {
                 throw new \InvalidArgumentException('This sub request was already accepted by someone else.');
             }
 
+            $inviteeRow = $this->repository->findAndLockInviteeRow($fresh->id, $sub->id);
+            if ($inviteeRow === null || $inviteeRow->status !== SubRequestInviteeStatus::INVITED) {
+                throw new \InvalidArgumentException('You have not been invited to cover this session.');
+            }
+
+            // Cutoff guard (race safety) — re-checked inside the lock.
+            $cutoffHours = (int) config('scheduling.sub_request_cutoff_hours', 2);
+            if (now()->diffInHours($schedule->startUtc(), false) < $cutoffHours) {
+                throw new \InvalidArgumentException(
+                    "Sub requests can no longer be accepted within {$cutoffHours} hour(s) of the session."
+                );
+            }
+
+            // Position match re-check
+            $requester = $fresh->requestedBy;
+            if ($requester === null) {
+                throw new \InvalidArgumentException('Requester not found.');
+            }
+            $requesterPositionId = $requester->therapistProfile?->position_id;
+            $subPositionId = $sub->therapistProfile?->position_id;
+            if ($requesterPositionId === null || $subPositionId === null || $requesterPositionId !== $subPositionId) {
+                throw new \InvalidArgumentException('You do not have the required position to cover this session.');
+            }
+
+            // Contract re-check (contracts can change between invite and accept)
+            $sessionDate = $schedule->schedule_date->format('Y-m-d');
+            $rate = $this->rateService->getTherapistRate($sub->id, $schedule->service_id, $sessionDate);
+            if ($rate['contract_id'] === null) {
+                throw new \InvalidArgumentException('You do not have an active contract covering this service on the session date.');
+            }
+
+            $ssa = $this->resolveOriginalSsa($schedule, $sessionDate);
+            if ($ssa === null) {
+                throw new \InvalidArgumentException('No active SSA found for the original therapist on this schedule.');
+            }
+
             $fresh->update([
-                'status' => 'accepted',
+                'status' => SubRequestStatus::ACCEPTED->value,
                 'accepted_by_id' => $sub->id,
                 'accepted_at' => now(),
             ]);
 
-            // Accept this invitee row
-            $inviteeRow->update(['status' => 'accepted', 'responded_at' => now()]);
+            $inviteeRow->update([
+                'status' => SubRequestInviteeStatus::ACCEPTED->value,
+                'responded_at' => now(),
+            ]);
 
-            // Supersede all other remaining invitee rows
-            $this->repository->getInviteesForRequest($fresh->id)
-                ->reject(fn ($row) => $row->id === $inviteeRow->id || $row->status === 'accepted')
-                ->each(fn ($row) => $row->update(['status' => 'superseded']));
+            // Single-statement supersede of all OTHER still-invited invitees.
+            $this->repository->bulkSupersedeOtherInvitees($fresh->id, $inviteeRow->id);
 
             $schedule->update([
                 'sub_therapist_id' => $sub->id,
-                'sub_request_status' => 'accepted',
+                'sub_request_status' => ScheduleSubCoverageStatus::ACCEPTED->value,
             ]);
 
             $this->repository->createSubSsa([
@@ -261,16 +263,19 @@ final class ScheduleSubRequestService
     public function decline(User $sub, ScheduleSubRequest $request): void
     {
         $inviteeRow = $this->repository->findInviteeRow($request->id, $sub->id);
-        if ($inviteeRow === null || $inviteeRow->status !== 'invited') {
+        if ($inviteeRow === null || $inviteeRow->status !== SubRequestInviteeStatus::INVITED) {
             throw new \InvalidArgumentException('You do not have an active invitation for this request.');
         }
 
-        $inviteeRow->update(['status' => 'declined', 'responded_at' => now()]);
+        $inviteeRow->update([
+            'status' => SubRequestInviteeStatus::DECLINED->value,
+            'responded_at' => now(),
+        ]);
         // Parent request stays 'open' — other invitees can still accept.
     }
 
     /**
-     * Cancel an open or accepted request. Flips all `invited` invitee rows to `superseded`.
+     * Cancel an open request. Flips all `invited` invitee rows to `superseded`.
      */
     public function cancel(User $actor, ScheduleSubRequest $request): void
     {
@@ -286,14 +291,15 @@ final class ScheduleSubRequestService
 
         DB::transaction(function () use ($request): void {
             $request->update([
-                'status' => 'cancelled',
+                'status' => SubRequestStatus::CANCELLED->value,
                 'cancelled_at' => now(),
             ]);
 
-            // Flip all invited rows to superseded
-            $this->repository->getInviteesForRequest($request->id)
-                ->where('status', 'invited')
-                ->each(fn ($row) => $row->update(['status' => 'superseded']));
+            $this->repository->bulkUpdateInviteeStatus(
+                $request->id,
+                SubRequestInviteeStatus::INVITED,
+                SubRequestInviteeStatus::SUPERSEDED,
+            );
 
             $schedule = $request->schedule;
             $schedule?->update([
@@ -305,33 +311,41 @@ final class ScheduleSubRequestService
 
     /**
      * Mark open sub requests as `expired` when their schedule's start is within
-     * `scheduling.sub_request_cutoff_hours` (i.e. it's too late to raise a new
-     * request anyway). Still-`invited` invitee rows are flipped to `expired`.
+     * `scheduling.sub_request_cutoff_hours`. Still-`invited` invitee rows are flipped
+     * to `expired`. Processes requests in chunks; one transaction per chunk.
      *
      * @return int Number of parent requests expired.
      */
-    public function expireOverdue(): int
+    public function expireOverdue(int $chunkSize = 100): int
     {
         $cutoffHours = (int) config('scheduling.sub_request_cutoff_hours', 2);
         $cutoff = now()->addHours($cutoffHours);
 
         $overdue = $this->repository->listOpenOverdue($cutoff);
 
+        if ($overdue->isEmpty()) {
+            return 0;
+        }
+
         $count = 0;
-        foreach ($overdue as $request) {
-            DB::transaction(function () use ($request, &$count): void {
-                $request->update(['status' => 'expired']);
+        foreach ($overdue->chunk($chunkSize) as $chunk) {
+            DB::transaction(function () use ($chunk, &$count): void {
+                foreach ($chunk as $request) {
+                    $request->update(['status' => SubRequestStatus::EXPIRED->value]);
 
-                $this->repository->getInviteesForRequest($request->id)
-                    ->where('status', 'invited')
-                    ->each(fn ($row) => $row->update(['status' => 'expired']));
+                    $this->repository->bulkUpdateInviteeStatus(
+                        $request->id,
+                        SubRequestInviteeStatus::INVITED,
+                        SubRequestInviteeStatus::EXPIRED,
+                    );
 
-                $request->schedule?->update([
-                    'sub_request_status' => null,
-                    'sub_therapist_id' => null,
-                ]);
+                    $request->schedule?->update([
+                        'sub_request_status' => null,
+                        'sub_therapist_id' => null,
+                    ]);
 
-                $count++;
+                    $count++;
+                }
             });
         }
 
@@ -342,8 +356,9 @@ final class ScheduleSubRequestService
      * Create sub requests for the given schedule and all its recurring occurrences.
      *
      * @param  array<int, int>  $inviteeIds
+     * @return array{created: int, skipped: int}
      */
-    public function createForScheduleAndOccurrences(User $requester, Schedule $schedule, array $inviteeIds, ?string $reason): void
+    public function createForScheduleAndOccurrences(User $requester, Schedule $schedule, array $inviteeIds, ?string $reason): array
     {
         $isRecurring = $schedule->parent_schedule_id === null
             && $schedule->recurrence_type?->value !== 'none';
@@ -352,23 +367,26 @@ final class ScheduleSubRequestService
             ? $this->repository->findWithOccurrences($schedule)
             : collect([$schedule]);
 
+        $created = 0;
+        $skipped = 0;
         $first = true;
         foreach ($occurrences as $occurrence) {
             try {
                 $this->create($requester, $occurrence, $inviteeIds, $reason);
+                $created++;
             } catch (\InvalidArgumentException $e) {
                 if ($first) {
                     // Propagate the first validation failure so the controller can
                     // surface a warning to the therapist (e.g. cutoff exceeded).
                     throw $e;
                 }
-                // Subsequent occurrences: log and continue so one bad date doesn't
-                // block the rest of a recurring series.
+                $skipped++;
                 Log::warning('ScheduleSubRequestService: skipped occurrence', [
                     'schedule_id' => $occurrence->id,
                     'reason' => $e->getMessage(),
                 ]);
             } catch (\Throwable $e) {
+                $skipped++;
                 Log::error('ScheduleSubRequestService: sub request creation failed', [
                     'schedule_id' => $occurrence->id,
                     'exception' => $e,
@@ -376,6 +394,8 @@ final class ScheduleSubRequestService
             }
             $first = false;
         }
+
+        return ['created' => $created, 'skipped' => $skipped];
     }
 
     /** @return Collection<int, ScheduleSubRequest> */
@@ -446,7 +466,7 @@ final class ScheduleSubRequestService
             }
 
             try {
-                Mail::to($invitee->email)->send(new SubRequestInvitationMail($request, $invitee));
+                Mail::to($invitee->email)->queue(new SubRequestInvitationMail($request, $invitee));
             } catch (\Throwable $e) {
                 Log::error('ScheduleSubRequestService: failed to send invitation mail', [
                     'sub_request_id' => $request->id,
@@ -474,14 +494,7 @@ final class ScheduleSubRequestService
      */
     private function assertAllEligible(array $inviteeIds, Schedule $schedule): void
     {
-        $eligibleIds = $this->repository
-            ->applyEligibilityFilter(
-                \App\Models\User::query(),
-                $schedule
-            )
-            ->whereIn('id', $inviteeIds)
-            ->pluck('id')
-            ->all();
+        $eligibleIds = $this->repository->filterEligibleIds($inviteeIds, $schedule);
 
         $ineligible = array_diff($inviteeIds, $eligibleIds);
         if (! empty($ineligible)) {

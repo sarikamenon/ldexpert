@@ -6,6 +6,7 @@ namespace App\DataTables\Transformers;
 
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Models\Schedule;
 use App\Models\SessionLog;
 
@@ -51,7 +52,7 @@ final class ScheduleCalendarEventTransformer
                 'has_session_log' => $schedule->sessionLog !== null,
                 'session_log_status' => $schedule->sessionLog?->status?->value,
                 'session_log_outcome' => $schedule->sessionLog?->outcome?->value,
-                'sub_request_status' => $schedule->sub_request_status,
+                'sub_request_status' => $schedule->sub_request_status?->value,
                 'sub_therapist_name' => $schedule->subTherapist?->name,
                 'coverage_role' => $coverage['role'],
                 'coverage_badge_label' => $coverage['badge_label'],
@@ -70,7 +71,7 @@ final class ScheduleCalendarEventTransformer
         $therapistId = (int) $schedule->therapist_id;
         $subTherapistId = (int) ($schedule->sub_therapist_id ?? 0);
 
-        if ($status === 'accepted' && $subTherapistId === $viewerId) {
+        if ($status === ScheduleSubCoverageStatus::ACCEPTED && $subTherapistId === $viewerId) {
             $originalName = $schedule->therapist?->name;
 
             return [
@@ -79,7 +80,7 @@ final class ScheduleCalendarEventTransformer
             ];
         }
 
-        if ($status === 'accepted' && $therapistId === $viewerId) {
+        if ($status === ScheduleSubCoverageStatus::ACCEPTED && $therapistId === $viewerId) {
             $subName = $schedule->subTherapist?->name;
 
             return [
@@ -88,7 +89,7 @@ final class ScheduleCalendarEventTransformer
             ];
         }
 
-        if ($status === 'open' && $therapistId === $viewerId) {
+        if ($status === ScheduleSubCoverageStatus::REQUESTED && $therapistId === $viewerId) {
             return [
                 'role' => 'open_request',
                 'badge_label' => 'Sub requested',

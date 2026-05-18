@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Presenters;
 
+use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
@@ -139,28 +140,18 @@ final class SubCoveragePanelPresenter
         }
 
         return $subRequest->invitees->map(function (ScheduleSubRequestInvitee $invitee): array {
-            $statusLabel = match ($invitee->status) {
-                'invited' => 'Pending',
-                'accepted' => 'Accepted',
-                'declined' => 'Declined',
-                'withdrawn' => 'Withdrawn',
-                'superseded' => 'Superseded',
-                'expired' => 'Expired',
-                default => ucfirst($invitee->status),
-            };
-            $statusVariant = match ($invitee->status) {
-                'invited' => 'warning',
-                'accepted' => 'success',
-                'declined', 'withdrawn', 'superseded', 'expired' => 'muted',
+            $status = $invitee->status;
+            $statusVariant = match ($status) {
+                SubRequestInviteeStatus::INVITED => 'warning',
+                SubRequestInviteeStatus::ACCEPTED => 'success',
                 default => 'muted',
             };
-            $isMuted = in_array($invitee->status, ['declined', 'withdrawn', 'superseded', 'expired'], true);
 
             return [
                 'name' => $invitee->therapist->name ?? '—',
-                'status_label' => $statusLabel,
+                'status_label' => $status->label(),
                 'status_variant' => $statusVariant,
-                'is_muted' => $isMuted,
+                'is_muted' => $status !== SubRequestInviteeStatus::INVITED && $status !== SubRequestInviteeStatus::ACCEPTED,
             ];
         });
     }

@@ -30,6 +30,7 @@ final class ScheduleSubRequestPolicy
         return $user->isTherapist() && (
             (int) $subRequest->requested_by_id === (int) $user->id
             || (int) $subRequest->accepted_by_id === (int) $user->id
+            || $this->hasInvitedRow($user, $subRequest)
         );
     }
 
@@ -37,23 +38,18 @@ final class ScheduleSubRequestPolicy
     {
         return $user->isTherapist()
             && $subRequest->isOpen()
-            && (int) $subRequest->requested_by_id !== (int) $user->id;
+            && (int) $subRequest->requested_by_id !== (int) $user->id
+            && $this->hasInvitedRow($user, $subRequest);
     }
 
-    /**
-     * A therapist can decline if they are not the requester and the request is open.
-     * The service enforces the `invited` row requirement at action time.
-     */
     public function decline(User $user, ScheduleSubRequest $subRequest): bool
     {
         return $user->isTherapist()
             && $subRequest->isOpen()
-            && (int) $subRequest->requested_by_id !== (int) $user->id;
+            && (int) $subRequest->requested_by_id !== (int) $user->id
+            && $this->hasInvitedRow($user, $subRequest);
     }
 
-    /**
-     * Requester or admin can manage invitees while the request is open.
-     */
     public function manageInvitees(User $user, ScheduleSubRequest $subRequest): bool
     {
         if (! $subRequest->isOpen()) {
@@ -80,5 +76,13 @@ final class ScheduleSubRequestPolicy
 
         return $user->isTherapist()
             && (int) $subRequest->requested_by_id === (int) $user->id;
+    }
+
+    private function hasInvitedRow(User $user, ScheduleSubRequest $subRequest): bool
+    {
+        return $subRequest->invitees()
+            ->forTherapist($user)
+            ->pending()
+            ->exists();
     }
 }

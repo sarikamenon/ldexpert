@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Repositories;
 
+use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
@@ -93,6 +94,14 @@ interface ScheduleSubRequestRepositoryInterface
     public function applyEligibilityFilter(Builder $users, Schedule $schedule): Builder;
 
     /**
+     * Return the subset of $candidateIds that are eligible to cover $schedule.
+     *
+     * @param  array<int, int>  $candidateIds
+     * @return array<int, int>
+     */
+    public function filterEligibleIds(array $candidateIds, Schedule $schedule): array;
+
+    /**
      * Return eligible therapists for a schedule, each annotated with their current
      * invitee status on the schedule's open request (if any).
      * Status values: 'selected' (currently invited), 'declined', 'none'.
@@ -118,9 +127,34 @@ interface ScheduleSubRequestRepositoryInterface
     public function findInviteeRow(int $requestId, int $therapistId): ?ScheduleSubRequestInvitee;
 
     /**
+     * Lock the matching invitee row for update; null when no row exists.
+     */
+    public function findAndLockInviteeRow(int $requestId, int $therapistId): ?ScheduleSubRequestInvitee;
+
+    /**
      * Return all invitee rows for a request.
      *
      * @return Collection<int, ScheduleSubRequestInvitee>
      */
     public function getInviteesForRequest(int $requestId): Collection;
+
+    /**
+     * Bulk-update every invitee row on $requestId currently in $currentStatus
+     * to $newStatus. Returns affected row count.
+     */
+    public function bulkUpdateInviteeStatus(
+        int $requestId,
+        SubRequestInviteeStatus $currentStatus,
+        SubRequestInviteeStatus $newStatus,
+    ): int;
+
+    /**
+     * Bulk-update every invitee row on $requestId in $currentStatus (except $exceptInviteeId)
+     * to $newStatus. Used when one accepter wins and the rest must be superseded.
+     */
+    public function bulkSupersedeOtherInvitees(
+        int $requestId,
+        int $exceptInviteeId,
+        SubRequestInviteeStatus $currentStatus = SubRequestInviteeStatus::INVITED,
+    ): int;
 }

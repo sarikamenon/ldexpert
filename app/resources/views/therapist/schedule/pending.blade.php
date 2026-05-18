@@ -169,11 +169,11 @@
                                             <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                                                 Covering for {{ $originalTherapistName }}
                                             </span>
-                                        @elseif ($schedule->sub_request_status === 'requested' && $schedule->therapist_id === auth()->id())
+                                        @elseif ($schedule->sub_request_status === \App\Enums\ScheduleSubCoverageStatus::REQUESTED && $schedule->therapist_id === auth()->id())
                                             @php
                                                 $invitees = $schedule->activeSubRequest?->invitees ?? collect();
-                                                $invitedCount = $invitees->where('status', 'invited')->count();
-                                                $declinedCount = $invitees->where('status', 'declined')->count();
+                                                $invitedCount = $invitees->where('status', \App\Enums\SubRequestInviteeStatus::INVITED)->count();
+                                                $declinedCount = $invitees->where('status', \App\Enums\SubRequestInviteeStatus::DECLINED)->count();
                                             @endphp
                                             <a href="{{ route('therapist.sub-requests.index') }}"
                                                 class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning hover:bg-warning/20 transition-colors">

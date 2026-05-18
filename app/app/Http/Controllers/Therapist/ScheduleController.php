@@ -252,15 +252,15 @@ final class ScheduleController extends Controller
                 $subStatus = $schedule->sub_request_status;
                 $coverageRole = null;
                 $coverageLabel = null;
-                if ($subStatus === 'accepted' && $isSub) {
+                if ($subStatus === \App\Enums\ScheduleSubCoverageStatus::ACCEPTED && $isSub) {
                     $coverageRole = 'covering';
                     $originalName = $schedule->therapist?->name;
                     $coverageLabel = 'Covering for '.($originalName ?? 'therapist');
-                } elseif ($subStatus === 'accepted' && $isOriginal) {
+                } elseif ($subStatus === \App\Enums\ScheduleSubCoverageStatus::ACCEPTED && $isOriginal) {
                     $coverageRole = 'covered';
                     $subName = $schedule->subTherapist?->name;
                     $coverageLabel = 'Covered by '.($subName ?? 'sub');
-                } elseif ($subStatus === 'open' && $isOriginal) {
+                } elseif ($subStatus === \App\Enums\ScheduleSubCoverageStatus::REQUESTED && $isOriginal) {
                     $coverageRole = 'open_request';
                     $coverageLabel = 'Sub requested';
                 }
@@ -290,7 +290,7 @@ final class ScheduleController extends Controller
                         : null,
                     'coverage_role' => $coverageRole,
                     'coverage_badge_label' => $coverageLabel,
-                    'sub_request_status' => $subStatus,
+                    'sub_request_status' => $subStatus?->value,
                     'session_log_url' => $isPast && $isBilled && $sessionLog
                         ? route('therapist.session-logs.show', $sessionLog)
                         : null,
@@ -402,7 +402,10 @@ final class ScheduleController extends Controller
             $subInviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
 
             try {
-                $this->subRequestService->createForScheduleAndOccurrences($therapist, $schedule, $subInviteeIds, $subReason);
+                $result = $this->subRequestService->createForScheduleAndOccurrences($therapist, $schedule, $subInviteeIds, $subReason);
+                if ($result['skipped'] > 0) {
+                    $subWarning = "Sub request created for {$result['created']} session(s); {$result['skipped']} occurrence(s) were skipped (already past the cutoff or otherwise ineligible).";
+                }
             } catch (\InvalidArgumentException $e) {
                 // Schedule was saved — surface the sub-request failure as a warning so the
                 // therapist can raise the request manually from the edit page.
@@ -489,7 +492,10 @@ final class ScheduleController extends Controller
             /** @var array<int, int> $newInviteeIds */
             $newInviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
             try {
-                $this->subRequestService->createForScheduleAndOccurrences($therapist, $updated, $newInviteeIds, $subReason);
+                $result = $this->subRequestService->createForScheduleAndOccurrences($therapist, $updated, $newInviteeIds, $subReason);
+                if ($result['skipped'] > 0) {
+                    $subInviteeWarning = "Sub request created for {$result['created']} session(s); {$result['skipped']} occurrence(s) were skipped (already past the cutoff or otherwise ineligible).";
+                }
             } catch (\InvalidArgumentException $e) {
                 $subInviteeWarning = $e->getMessage();
             } catch (\Throwable $e) {

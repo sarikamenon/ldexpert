@@ -107,4 +107,13 @@ class TherapistProfile extends Model
     {
         return TherapistScope::inactive($query, $this);
     }
+
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
+    public function scopeForPosition(Builder $query, int $positionId): Builder
+    {
+        return $query->where('position_id', $positionId);
+    }
 }

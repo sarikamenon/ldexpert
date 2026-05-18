@@ -7,6 +7,7 @@ namespace Database\Factories;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Models\Schedule;
 use App\Models\School;
 use App\Models\Service;
@@ -52,7 +53,7 @@ class ScheduleFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'sub_therapist_id' => $sub->id,
-            'sub_request_status' => 'accepted',
+            'sub_request_status' => ScheduleSubCoverageStatus::ACCEPTED->value,
         ]);
     }
 }

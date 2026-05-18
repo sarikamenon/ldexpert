@@ -126,15 +126,15 @@ class DashboardService
             $subStatus = $schedule->sub_request_status;
             $coverageRole = null;
             $coverageLabel = null;
-            if ($subStatus === 'accepted' && $isSub) {
+            if ($subStatus === \App\Enums\ScheduleSubCoverageStatus::ACCEPTED && $isSub) {
                 $coverageRole = 'covering';
                 $originalName = $schedule->therapist?->name;
                 $coverageLabel = 'Covering for '.($originalName ?? 'therapist');
-            } elseif ($subStatus === 'accepted' && $isOriginal) {
+            } elseif ($subStatus === \App\Enums\ScheduleSubCoverageStatus::ACCEPTED && $isOriginal) {
                 $coverageRole = 'covered';
                 $subName = $schedule->subTherapist?->name;
                 $coverageLabel = 'Covered by '.($subName ?? 'sub');
-            } elseif ($subStatus === 'open' && $isOriginal) {
+            } elseif ($subStatus === \App\Enums\ScheduleSubCoverageStatus::REQUESTED && $isOriginal) {
                 $coverageRole = 'open_request';
                 $coverageLabel = 'Sub requested';
             }

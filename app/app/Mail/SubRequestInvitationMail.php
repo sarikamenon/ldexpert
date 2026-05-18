@@ -28,7 +28,7 @@ class SubRequestInvitationMail extends Mailable implements ShouldQueue
     {
         $brandName = config('brand.name');
         $schedule = $this->subRequest->schedule;
-        $requesterName = $this->subRequest->requestedBy->name;
+        $requesterName = $this->subRequest->requestedBy?->name ?? 'A colleague'; // @phpstan-ignore nullsafe.neverNull
 
         $tz = $this->resolveInviteeTimezone();
         $date = $schedule !== null
@@ -54,7 +54,7 @@ class SubRequestInvitationMail extends Mailable implements ShouldQueue
                 'subRequest' => $this->subRequest,
                 'schedule' => $schedule,
                 'invitee' => $this->invitee,
-                'requesterName' => $this->subRequest->requestedBy->name ?? 'A colleague',
+                'requesterName' => $this->subRequest->requestedBy?->name ?? 'A colleague', // @phpstan-ignore nullsafe.neverNull
                 'reason' => $this->subRequest->reason,
                 'scheduleDateLong' => $localStart?->format(config('display.date_long')) ?? '',
                 'scheduleStartTime' => $localStart?->format(config('display.time')) ?? '',

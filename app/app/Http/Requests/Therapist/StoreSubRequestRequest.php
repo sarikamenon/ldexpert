@@ -58,11 +58,7 @@ final class StoreSubRequestRequest extends FormRequest
             /** @var array<int, int> $ids */
             $ids = array_map('intval', $inviteeIds);
 
-            $eligibleIds = $this->subRequestRepository
-                ->applyEligibilityFilter(\App\Models\User::query(), $schedule)
-                ->whereIn('id', $ids)
-                ->pluck('id')
-                ->all();
+            $eligibleIds = $this->subRequestRepository->filterEligibleIds($ids, $schedule);
 
             $ineligible = array_diff($ids, $eligibleIds);
             if (! empty($ineligible)) {

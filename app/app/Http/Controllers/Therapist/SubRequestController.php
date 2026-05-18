@@ -64,6 +64,9 @@ final class SubRequestController extends Controller
 
         $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
 
+        // Lists are scoped to the viewing therapist (their invitations or their
+        // requests) so cardinality is naturally small; in-memory slicing avoids
+        // a second count query and keeps the existing service contract.
         if ($mode === 'mine') {
             $all = $this->subRequestService->listAsRequester($therapist);
             $transformer = static fn (ScheduleSubRequest $row): array => MySubRequestRowTransformer::transform($row);
