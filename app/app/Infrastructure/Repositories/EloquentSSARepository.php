@@ -151,13 +151,26 @@ final class EloquentSSARepository implements SSARepositoryInterface
     {
         return DB::transaction(function () use ($ssa, $dto) {
             $data = $dto->toArray();
-            // Auto-activate when assigning a therapist via the edit form (same as assignTherapist())
-            if (array_key_exists('assigned_therapist_id', $data)
-                && $data['assigned_therapist_id'] !== null
-                && $ssa->status === SSAStatus::PENDING) {
-                $data['status'] = SSAStatus::ACTIVE->value;
+
+            // Delegate therapist transitions to assignTherapist()/unassignTherapist() so
+            // history rows and status syncing stay in one place.
+            if (array_key_exists('assigned_therapist_id', $data)) {
+                $newTherapistId = $data['assigned_therapist_id'];
+                unset($data['assigned_therapist_id']);
+
+                if ($ssa->assigned_therapist_id !== $newTherapistId) {
+                    if ($newTherapistId === null) {
+                        $this->unassignTherapist($ssa);
+                    } else {
+                        $this->assignTherapist($ssa, new SSAAssignmentDTO(therapistId: $newTherapistId, reason: null));
+                    }
+                    $ssa->refresh();
+                }
             }
-            $ssa->update($data);
+
+            if ($data !== []) {
+                $ssa->update($data);
+            }
 
             $this->syncSsaServices($ssa);
 
