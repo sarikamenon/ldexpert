@@ -121,7 +121,7 @@ class ServiceSupportAgreement extends Model
      */
     public function scopePending(Builder $query): Builder
     {
-        return $query->where('status', SSAStatus::PENDING);
+        return $query->where($this->qualifyColumn('status'), SSAStatus::PENDING);
     }
 
     /**
@@ -130,7 +130,7 @@ class ServiceSupportAgreement extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('status', SSAStatus::ACTIVE);
+        return $query->where($this->qualifyColumn('status'), SSAStatus::ACTIVE);
     }
 
     /**
@@ -139,7 +139,7 @@ class ServiceSupportAgreement extends Model
      */
     public function scopeCompleted(Builder $query): Builder
     {
-        return $query->where('status', SSAStatus::COMPLETED);
+        return $query->where($this->qualifyColumn('status'), SSAStatus::COMPLETED);
     }
 
     /**
@@ -148,7 +148,63 @@ class ServiceSupportAgreement extends Model
      */
     public function scopeDeactivated(Builder $query): Builder
     {
-        return $query->where('status', SSAStatus::DEACTIVATED);
+        return $query->where($this->qualifyColumn('status'), SSAStatus::DEACTIVATED);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @param  array<int, SSAStatus>  $statuses
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeWithStatuses(Builder $query, array $statuses): Builder
+    {
+        return $query->whereIn(
+            $this->qualifyColumn('status'),
+            array_map(static fn (SSAStatus $status): string => $status->value, $statuses)
+        );
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeWithStatus(Builder $query, SSAStatus $status): Builder
+    {
+        return $query->where($this->qualifyColumn('status'), $status->value);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeForSchool(Builder $query, int $schoolId): Builder
+    {
+        return $query->whereHas('student.studentProfile', function (Builder $schoolQuery) use ($schoolId): void {
+            $schoolQuery->where('school_id', $schoolId); // @phpstan-ignore argument.type
+        });
+    }
+
+    /**
+     * Match SSAs whose student, primary service, or assigned therapist name contains the term.
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeSearchByName(Builder $query, string $term): Builder
+    {
+        $like = '%'.$term.'%';
+
+        return $query->where(function (Builder $q) use ($like): void {
+            $q->whereHas('student', function (Builder $studentQuery) use ($like): void {
+                $studentQuery->where('name', 'like', $like); // @phpstan-ignore argument.type
+            })
+                ->orWhereHas('primaryService', function (Builder $serviceQuery) use ($like): void {
+                    $serviceQuery->where('name', 'like', $like); // @phpstan-ignore argument.type
+                })
+                ->orWhereHas('assignedTherapist', function (Builder $therapistQuery) use ($like): void {
+                    $therapistQuery->where('name', 'like', $like); // @phpstan-ignore argument.type
+                });
+        });
     }
 
     /**
@@ -211,7 +267,7 @@ class ServiceSupportAgreement extends Model
      */
     public function scopeMatchableForImport(Builder $query): Builder
     {
-        return $query->whereIn('status', [
+        return $query->whereIn($this->qualifyColumn('status'), [
             SSAStatus::PENDING,
             SSAStatus::ACTIVE,
             SSAStatus::DEACTIVATED,
@@ -253,7 +309,7 @@ class ServiceSupportAgreement extends Model
      */
     public function scopeActiveOrPending(Builder $query): Builder
     {
-        return $query->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING]);
+        return $query->whereIn($this->qualifyColumn('status'), [SSAStatus::ACTIVE, SSAStatus::PENDING]);
     }
 
     /**

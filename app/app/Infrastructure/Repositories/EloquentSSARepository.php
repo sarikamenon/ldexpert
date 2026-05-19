@@ -425,39 +425,29 @@ final class EloquentSSARepository implements SSARepositoryInterface
     private function applyFilters(Builder $query, SSAFilterDTO $filters): Builder
     {
         if ($filters->search) {
-            $query->where(function (Builder $q) use ($filters) {
-                $q->whereHas('student', function (Builder $studentQuery) use ($filters) {
-                    $studentQuery->where('name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
-                })
-                    ->orWhereHas('primaryService', function (Builder $serviceQuery) use ($filters) {
-                        $serviceQuery->where('name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
-                    })
-                    ->orWhereHas('assignedTherapist', function (Builder $therapistQuery) use ($filters) {
-                        $therapistQuery->where('name', 'like', '%'.$filters->search.'%'); // @phpstan-ignore argument.type
-                    });
-            });
+            $query->searchByName($filters->search);
         }
 
-        if ($filters->status) {
-            $query->where('service_support_agreements.status', $filters->status->value);
+        if ($filters->statuses !== null && $filters->statuses !== []) {
+            $query->withStatuses($filters->statuses);
+        } elseif ($filters->status) {
+            $query->withStatus($filters->status);
         }
 
         if ($filters->studentId) {
-            $query->where('student_id', $filters->studentId);
+            $query->forStudent($filters->studentId);
         }
 
         if ($filters->serviceId) {
-            $query->where('primary_service_id', $filters->serviceId);
+            $query->forPrimaryService($filters->serviceId);
         }
 
         if ($filters->therapistId) {
-            $query->where('assigned_therapist_id', $filters->therapistId);
+            $query->forAssignedTherapist($filters->therapistId);
         }
 
         if ($filters->schoolId) {
-            $query->whereHas('student.studentProfile', function (Builder $schoolQuery) use ($filters) {
-                $schoolQuery->where('school_id', $filters->schoolId); // @phpstan-ignore argument.type
-            });
+            $query->forSchool($filters->schoolId);
         }
 
         return $query;

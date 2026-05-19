@@ -113,6 +113,7 @@ final class SSAController extends Controller
         $filterData = [
             'search' => $request->input('filter_search'),
             'status' => $request->input('filter_status'),
+            'statuses' => $request->input('filter_statuses'),
             'student_id' => $request->input('filter_student_id'),
             'service_id' => $request->input('filter_service_id'),
             'therapist_id' => $request->input('filter_therapist_id'),
