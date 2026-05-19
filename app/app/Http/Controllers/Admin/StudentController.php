@@ -314,8 +314,11 @@ final class StudentController extends Controller
 
         // Load tab-specific data only when needed
         if ($activeTab === 'ssas') {
+            $ssaFilters = $request->query();
+            unset($ssaFilters['tab']);
+
             $viewData['ssas'] = collect();
-            $viewData['ssaFilters'] = $request->query();
+            $viewData['ssaFilters'] = $ssaFilters;
             $viewData['statuses'] = SSAStatus::cases();
             // Don't show student filter in student detail view as it's redundant
             $viewData['students'] = [];

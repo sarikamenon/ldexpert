@@ -83,6 +83,13 @@ function resetFiltersToDefaults(form) {
     });
 }
 
+function isMultiSelectAtDefault(el) {
+    const defaults = (el.getAttribute('data-default-value') || '')
+        .split(',').map((v) => v.trim()).filter(Boolean).sort();
+    const current = Array.from(el.selectedOptions).map((opt) => opt.value).sort();
+    return JSON.stringify(current) === JSON.stringify(defaults);
+}
+
 function updateFiltersSummary() {
     const summary = document.getElementById('ssaFiltersSummary');
     if (!summary) return;
@@ -94,17 +101,7 @@ function updateFiltersSummary() {
 
     const statusEl = form.querySelector('select[name="statuses[]"]');
     if (statusEl) {
-        const defaults = (statusEl.getAttribute('data-default-value') || '')
-            .split(',')
-            .map((v) => v.trim())
-            .filter(Boolean)
-            .sort();
-        const current = Array.from(statusEl.selectedOptions)
-            .map((opt) => opt.value)
-            .sort();
-        if (current.length !== defaults.length || current.some((v, i) => v !== defaults[i])) {
-            count += 1;
-        }
+        if (!isMultiSelectAtDefault(statusEl)) count += 1;
     } else {
         const singleStatus = form.querySelector('[name="status"]');
         if (singleStatus && singleStatus.value && singleStatus.value !== 'all') {

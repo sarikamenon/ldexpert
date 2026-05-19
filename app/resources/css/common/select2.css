@@ -1,5 +1,17 @@
 /* Custom Select2 styles - override default Select2 styling to match design system */
 
+/*
+ * Design tokens for select2 overrides. Mirror the values from tailwind.config.js
+ * (theme.extend.colors). Select2 injects its own DOM nodes outside Blade, so we
+ * cannot use Tailwind utility classes — these custom properties keep the token
+ * indirection so changes to the design system propagate to both layers.
+ */
+:root {
+    --select2-primary: #5563b8;
+    --select2-primary-50: #eef0f9;
+    --select2-border: #e5e7eb;
+}
+
 .select2-container {
     width: 100% !important;
     font-size: 0.875rem !important;
@@ -155,9 +167,9 @@
 /* Multiple select choice tags — design-system pill style */
 .select2-container--default .select2-selection--multiple .select2-selection__choice {
     border-radius: 9999px !important;
-    background-color: #eef0f9 !important; /* primary-50 */
+    background-color: var(--select2-primary-50) !important;
     border: 1px solid transparent !important;
-    color: #5563b8 !important; /* primary */
+    color: var(--select2-primary) !important;
     padding: 0.125rem 0.5rem 0.125rem 0.625rem !important;
     margin: 0.125rem 0.25rem 0.125rem 0 !important;
     position: relative !important;
@@ -184,7 +196,7 @@
     background-color: transparent !important;
     border: none !important;
     border-radius: 9999px !important;
-    color: #5563b8 !important;
+    color: var(--select2-primary) !important;
     cursor: pointer !important;
     font-size: 0.875rem !important;
     font-weight: 600 !important;
@@ -202,8 +214,8 @@
 }
 
 .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
-    color: #5563b8 !important;
-    background-color: rgba(85, 99, 184, 0.15) !important;
+    color: var(--select2-primary) !important;
+    background-color: color-mix(in srgb, var(--select2-primary) 15%, transparent) !important;
     opacity: 1 !important;
 }
 
@@ -246,7 +258,7 @@
 .filter-divider {
     width: 1px;
     height: 1.75rem;
-    background-color: #e5e7eb;
+    background-color: var(--select2-border);
 }
 
 /* Disabled state */
