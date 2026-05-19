@@ -30,9 +30,12 @@ $(function () {
         }
     });
 
-    // Toggle Student ID required/optional based on school selection
-    const privateStudentsData = $('#private-student-data');
-    const privateStudentIds = privateStudentsData.length ? JSON.parse(privateStudentsData.text()) : [];
+    // Form data payload (private family IDs + contact info) is exposed via data-* attributes
+    // on #students-form-data, populated by the controller.
+    const $formData = $('#students-form-data');
+    const privateStudentIds = $formData.data('private-student-ids') ?? [];
+    const familyContacts = $formData.data('private-family-contacts') ?? {};
+
     const $schoolSelect = $('#school_id');
     const $idNumberLabel = $('#id_number_label');
     const $idNumberHelp = $('#id_number_help');
@@ -52,6 +55,43 @@ $(function () {
 
     $schoolSelect.on('change', updateStudentIdRequired);
     updateStudentIdRequired();
+
+    // Autofill Parent/Guardian fields from the selected private family's contact info.
+    // On initial page load: only fill empty fields (preserve old() / existing values).
+    // On user change: overwrite so the fields always match the currently selected family.
+    const $parentName = $('#parent_guardian_name');
+    const $parentPhone = $('#parent_guardian_phone');
+    const $timezone = $('#timezone');
+
+    function autofillParentGuardianFromFamily(overwrite) {
+        const selectedSchoolId = $schoolSelect.val();
+        const contact = selectedSchoolId ? familyContacts[selectedSchoolId] : null;
+
+        const setField = ($input, value) => {
+            if (overwrite || !$input.val()) {
+                $input.val(value ?? '').trigger('input').trigger('change');
+            }
+        };
+
+        if (contact) {
+            setField($parentName, contact.name);
+            setField($parentEmail, contact.email);
+            setField($parentPhone, contact.phone);
+            setField($timezone, contact.timezone);
+            return;
+        }
+
+        // Not a private family — clear fields on user change so stale family info doesn't linger.
+        if (overwrite) {
+            setField($parentName, '');
+            setField($parentEmail, '');
+            setField($parentPhone, '');
+            setField($timezone, '');
+        }
+    }
+
+    $schoolSelect.on('change', () => autofillParentGuardianFromFamily(true));
+    autofillParentGuardianFromFamily(false);
 
     // "Create and Add SSA" button sets hidden flag before form submit
     $('#create-and-add-ssa-btn').on('click', function () {

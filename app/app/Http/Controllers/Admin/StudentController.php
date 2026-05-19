@@ -182,6 +182,8 @@ final class StudentController extends Controller
         $this->authorize('create', StudentProfile::class);
 
         $data = $this->referenceData();
+        $data['isEdit'] = false;
+        $data['profile'] = null;
 
         $schoolId = $request->query('school_id');
         if ($schoolId) {
@@ -220,8 +222,12 @@ final class StudentController extends Controller
     {
         $this->authorize('update', StudentProfile::class);
 
+        $student->loadMissing('studentProfile.school');
+
         return view('admin.students.edit', [
-            'student' => $student->loadMissing('studentProfile.school'),
+            'student' => $student,
+            'isEdit' => true,
+            'profile' => $student->studentProfile,
         ] + $this->referenceData());
     }
 
@@ -610,11 +616,24 @@ final class StudentController extends Controller
     /** @return array<string, mixed> */
     private function referenceData(): array
     {
+        $schools = $this->schoolRepository->listAllForSelect();
+        $privateFamilies = $schools->where('is_private_student', true);
+
         return [
             'states' => UsStates::getStates(),
             'timezones' => UsTimezones::getTimezones(),
-            'schools' => $this->schoolRepository->listAllForSelect(),
+            'schools' => $schools,
             'statuses' => UserStatus::cases(),
+            'genderOptions' => ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+            'privateStudentIds' => $privateFamilies->pluck('id')->values(),
+            'privateFamilyContacts' => $privateFamilies->mapWithKeys(fn ($s) => [
+                $s->id => [
+                    'name' => trim(($s->contact_first_name ?? '').' '.($s->contact_last_name ?? '')),
+                    'email' => $s->contact_email,
+                    'phone' => $s->contact_phone,
+                    'timezone' => $s->timezone,
+                ],
+            ]),
         ];
     }
 }
