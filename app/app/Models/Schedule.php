@@ -10,8 +10,10 @@ use App\Enums\ScheduleStatus;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestStatus;
 use App\Models\Scopes\ScheduleScope;
+use App\Observers\ScheduleObserver;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +34,7 @@ use Illuminate\Support\Collection;
  * @property bool $is_billable
  * @property ScheduleSubCoverageStatus|null $sub_request_status
  */
+#[ObservedBy([ScheduleObserver::class])]
 class Schedule extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleFactory> */
@@ -175,26 +178,6 @@ class Schedule extends Model
     public function subRequests(): HasMany
     {
         return $this->hasMany(ScheduleSubRequest::class, 'schedule_id');
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (Schedule $schedule): void {
-            if ($schedule->isForceDeleting()) {
-                return;
-            }
-
-            $schedule->subRequests()->get()->each->delete();
-        });
-
-        static::restoring(function (Schedule $schedule): void {
-            $schedule->subRequests()
-                ->onlyTrashed()
-                ->where('deleted_at', $schedule->deleted_at)
-                ->get()
-                ->each
-                ->restore();
-        });
     }
 
     /**

@@ -194,11 +194,8 @@ final class SessionLogController extends Controller
                 (int) $therapist->id,
                 ['ssa.student', 'ssa.primaryService', 'ssa.services'],
             );
-            $ssas = $subSsa?->ssa
-                ? ServiceSupportAgreement::with(['student', 'primaryService', 'services'])
-                    ->whereKey($subSsa->ssa->id)
-                    ->get()
-                : collect();
+            // $subSsa->ssa is already eager-loaded with student, primaryService, services above.
+            $ssas = $subSsa?->ssa ? collect([$subSsa->ssa]) : collect();
         } else {
             $ssas = $this->ssaService
                 ->getActiveSSAsForTherapist($therapist->id)

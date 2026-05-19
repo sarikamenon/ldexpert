@@ -9,6 +9,7 @@ use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
 use App\Domain\Time\UserTimezoneService;
+use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\SubRequestStatus;
@@ -29,6 +30,7 @@ final class ScheduleSubRequestService
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly SessionLogRateService $rateService,
         private readonly UserTimezoneService $timezoneService,
+        private readonly UserRepositoryInterface $userRepository,
     ) {}
 
     /**
@@ -376,8 +378,6 @@ final class ScheduleSubRequestService
 
         $created = 0;
         $skipped = 0;
-        /** @var array<int, array{schedule_id: int, reason: string}> $skippedDetails */
-        $skippedDetails = [];
         $first = true;
         foreach ($occurrences as $occurrence) {
             try {
@@ -388,14 +388,12 @@ final class ScheduleSubRequestService
                     throw $e;
                 }
                 $skipped++;
-                $skippedDetails[] = ['schedule_id' => (int) $occurrence->id, 'reason' => $e->getMessage()];
                 Log::warning('ScheduleSubRequestService: skipped occurrence', [
                     'schedule_id' => $occurrence->id,
                     'reason' => $e->getMessage(),
                 ]);
             } catch (\Throwable $e) {
                 $skipped++;
-                $skippedDetails[] = ['schedule_id' => (int) $occurrence->id, 'reason' => $e->getMessage()];
                 Log::error('ScheduleSubRequestService: sub request creation failed', [
                     'schedule_id' => $occurrence->id,
                     'exception' => $e,
@@ -404,7 +402,7 @@ final class ScheduleSubRequestService
             $first = false;
         }
 
-        return (new SubRequestBatchResult($created, $skipped, $skippedDetails))->toArray();
+        return ['created' => $created, 'skipped' => $skipped];
     }
 
     /** @return Collection<int, ScheduleSubRequest> */
@@ -496,7 +494,7 @@ final class ScheduleSubRequestService
      */
     private function sendInvitationEmails(ScheduleSubRequest $request, array $inviteeIds): void
     {
-        $invitees = User::query()->whereIn('id', $inviteeIds)->get();
+        $invitees = $this->userRepository->findByIds($inviteeIds);
 
         foreach ($invitees as $invitee) {
             if (empty($invitee->email)) {

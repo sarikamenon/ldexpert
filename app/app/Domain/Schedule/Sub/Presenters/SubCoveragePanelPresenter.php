@@ -85,6 +85,9 @@ final class SubCoveragePanelPresenter
 
         $counts = $inviteeRows->countBy('status_label');
         $parts = [];
+        /**
+         * Make this use enum in future updates.
+         */
         foreach (['Pending', 'Accepted', 'Declined', 'Withdrawn'] as $label) {
             $count = $counts->get($label, 0);
             if ($count > 0) {

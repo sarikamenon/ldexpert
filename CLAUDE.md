@@ -249,7 +249,6 @@ Run through this before marking any task done or raising a PR. These are the rul
 - [ ] Every new validation rule has a feature test (happy path + each failure case)
 - [ ] Factory updated for every new model column
 - [ ] Controller actions that return a JSON object/list use an API Resource (not inline `response()->json([...])`); DataTables endpoints stay on `RowTransformer`
-- [ ] No raw `where(...)` calls for domain concepts — check for an existing scope first; if none exists, add one to the model before writing the query
 
 **Frontend / Blade**
 - [ ] No `<script>` blocks inside any `.blade.php` file — JS is in `resources/js/pages/`, registered in `vite.config.js`, loaded via `<x-slot name="scripts">`

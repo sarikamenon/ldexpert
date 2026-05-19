@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Enums\SubRequestStatus;
 use App\Models\Concerns\HasAudits;
+use App\Observers\ScheduleSubRequestObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property SubRequestStatus $status
  */
+#[ObservedBy([ScheduleSubRequestObserver::class])]
 class ScheduleSubRequest extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleSubRequestFactory> */
