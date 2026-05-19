@@ -48,6 +48,7 @@ use App\Http\Requests\Admin\Student\UpdateStudentRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\ScheduleEmailLog;
+use App\Models\School;
 use App\Models\StudentImport;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -181,7 +182,9 @@ final class StudentController extends Controller
     {
         $this->authorize('create', StudentProfile::class);
 
-        $data = $this->referenceData();
+        $data = $this->referenceData() + $this->formData();
+        $data['isEdit'] = false;
+        $data['profile'] = null;
 
         $schoolId = $request->query('school_id');
         if ($schoolId) {
@@ -220,9 +223,13 @@ final class StudentController extends Controller
     {
         $this->authorize('update', StudentProfile::class);
 
+        $student->loadMissing('studentProfile.school');
+
         return view('admin.students.edit', [
-            'student' => $student->loadMissing('studentProfile.school'),
-        ] + $this->referenceData());
+            'student' => $student,
+            'isEdit' => true,
+            'profile' => $student->studentProfile,
+        ] + $this->referenceData() + $this->formData());
     }
 
     public function show(Request $request, User $student): View
@@ -615,6 +622,29 @@ final class StudentController extends Controller
             'timezones' => UsTimezones::getTimezones(),
             'schools' => $this->schoolRepository->listAllForSelect(),
             'statuses' => UserStatus::cases(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function formData(): array
+    {
+        $privateFamilies = $this->schoolRepository->listPrivateFamilyContacts();
+
+        return [
+            'genderOptions' => ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+            'preselectedSchoolId' => null,
+            'preselectedTimezone' => null,
+            'privateStudentIdsJson' => (string) json_encode($privateFamilies->pluck('id')->values()->all()),
+            'privateFamilyContactsJson' => (string) json_encode(
+                $privateFamilies->mapWithKeys(fn (School $s) => [
+                    $s->id => [
+                        'name' => $s->contact_full_name,
+                        'email' => $s->contact_email,
+                        'phone' => $s->contact_phone,
+                        'timezone' => $s->timezone,
+                    ],
+                ])->all(),
+            ),
         ];
     }
 }

@@ -115,7 +115,83 @@ final class StudentManagementTest extends TestCase
             ->assertViewIs('admin.students.create')
             ->assertViewHas('states')
             ->assertViewHas('timezones')
-            ->assertViewHas('schools');
+            ->assertViewHas('schools')
+            ->assertViewHas('statuses')
+            ->assertViewHas('genderOptions')
+            ->assertViewHas('isEdit', false)
+            ->assertViewHas('profile', null)
+            ->assertViewHas('preselectedSchoolId', null)
+            ->assertViewHas('preselectedTimezone', null)
+            ->assertViewHas('privateStudentIdsJson')
+            ->assertViewHas('privateFamilyContactsJson');
+    }
+
+    public function test_create_form_exposes_private_family_contacts_payload(): void
+    {
+        $privateFamily = School::factory()->create([
+            'is_private_student' => true,
+            'contact_first_name' => "O'Brien",
+            'contact_last_name' => 'Family "Trust"',
+            'contact_email' => 'obrien@example.com',
+            'contact_phone' => '555-123-4567',
+            'timezone' => 'America/Los_Angeles',
+        ]);
+
+        // A non-private school must NOT appear in the payload.
+        $regularSchool = School::factory()->create([
+            'is_private_student' => false,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.students.create'));
+
+        $response->assertOk();
+
+        $idsJson = $response->viewData('privateStudentIdsJson');
+        $contactsJson = $response->viewData('privateFamilyContactsJson');
+
+        $this->assertIsString($idsJson);
+        $this->assertIsString($contactsJson);
+
+        $ids = json_decode($idsJson, true);
+        $contacts = json_decode($contactsJson, true);
+
+        $this->assertContains($privateFamily->id, $ids);
+        $this->assertNotContains($regularSchool->id, $ids);
+
+        $this->assertArrayHasKey($privateFamily->id, $contacts);
+        $this->assertSame([
+            'name' => "O'Brien Family \"Trust\"",
+            'email' => 'obrien@example.com',
+            'phone' => '555-123-4567',
+            'timezone' => 'America/Los_Angeles',
+        ], $contacts[$privateFamily->id]);
+
+        // Verify the rendered HTML attribute is properly escaped — quotes in the JSON
+        // become &quot; and the attribute parses back to the same JSON on the client.
+        $response->assertSee('id="students-form-data"', false);
+        $response->assertSee('data-private-family-contacts="'.e($contactsJson).'"', false);
+    }
+
+    public function test_create_form_preselects_school_from_query_param(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.create', ['school_id' => $this->school->id])
+        );
+
+        $response->assertOk()
+            ->assertViewHas('preselectedSchoolId', $this->school->id)
+            ->assertViewHas('preselectedTimezone', $this->school->timezone);
+    }
+
+    public function test_create_form_ignores_invalid_school_id_query_param(): void
+    {
+        $response = $this->actingAs($this->admin)->get(
+            route('admin.students.create', ['school_id' => 999_999])
+        );
+
+        $response->assertOk()
+            ->assertViewHas('preselectedSchoolId', null)
+            ->assertViewHas('preselectedTimezone', null);
     }
 
     public function test_admin_can_create_student(): void

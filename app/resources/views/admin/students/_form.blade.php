@@ -1,9 +1,3 @@
-@php
-    $isEdit = isset($student);
-    $profile = $student->studentProfile ?? null;
-    $genderOptions = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
-@endphp
-
 <form method="POST" action="{{ $isEdit ? route('admin.students.update', $student) : route('admin.students.store') }}"
     class="space-y-6">
     @csrf
@@ -152,7 +146,7 @@
                 <div class="flex items-center gap-3">
                     <x-input-label for="parent_guardian_email" value="Email" />
                     <label class="flex items-center gap-2 text-xs text-foreground/70 cursor-pointer">
-                        <input type="checkbox" id="parent_email_same_as_notification" class="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5" />
+                        <input type="checkbox" id="parent_email_same_as_notification" class="rounded border-input text-primary focus:ring-ring h-3.5 w-3.5" />
                          Same as notification email
                     </label>
                 </div>
@@ -166,12 +160,12 @@
                 <div class="flex items-center gap-3">
                     <x-input-label for="schedule_email" value="Schedule Email" />
                     <label class="flex items-center gap-2 text-xs text-foreground/70 cursor-pointer">
-                        <input type="checkbox" id="schedule_email_same_as_notification" class="rounded border-gray-300 text-primary focus:ring-primary h-3.5 w-3.5" />
+                        <input type="checkbox" id="schedule_email_same_as_notification" class="rounded border-input text-primary focus:ring-ring h-3.5 w-3.5" />
                         Same as notification email
                     </label>
                 </div>
                 <p class="mt-1 text-xs text-foreground/60">Schedule email for reminders</p>
-                <x-text-input id="schedule_email" name="schedule_email" type="email"
+                <x-ui::input id="schedule_email" name="schedule_email" type="email"
                     class="mt-1 block w-full" :value="old('schedule_email', $profile?->schedule_email)" />
                 <x-input-error :messages="$errors->get('schedule_email')" class="mt-2" />
             </div>
@@ -194,7 +188,7 @@
             <x-input-label for="address" value="Address" />
             <p class="mt-1 text-xs text-foreground/60">Street address (optional)</p>
             <textarea id="address" name="address" rows="3"
-                class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('address', $profile?->address) }}</textarea>
+                class="mt-1 block w-full border-input focus:border-primary focus:ring-ring rounded-md shadow-sm">{{ old('address', $profile?->address) }}</textarea>
             <x-input-error :messages="$errors->get('address')" class="mt-2" />
         </div>
 
@@ -231,9 +225,10 @@
         </div>
     </x-ui::card>
 
-    <script type="application/json" id="private-student-data">
-        @json($schools->where('is_private_student', true)->pluck('id'))
-    </script>
+    <div id="students-form-data"
+        data-private-student-ids="{{ $privateStudentIdsJson }}"
+        data-private-family-contacts="{{ $privateFamilyContactsJson }}"
+        hidden></div>
 
     <input type="hidden" name="redirect_to_ssa" id="redirect_to_ssa" value="0" />
 

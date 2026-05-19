@@ -111,6 +111,23 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
     }
 
     /** @return Collection<int, School> */
+    public function listPrivateFamilyContacts(): Collection
+    {
+        return School::query()
+            ->where('is_private_student', true)
+            ->select([
+                'id',
+                'contact_first_name',
+                'contact_last_name',
+                'contact_email',
+                'contact_phone',
+                'timezone',
+            ])
+            ->orderBy('display_name')
+            ->get();
+    }
+
+    /** @return Collection<int, School> */
     public function listActiveForSelect(): Collection
     {
         return School::query()

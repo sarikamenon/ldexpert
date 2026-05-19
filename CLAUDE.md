@@ -4,6 +4,10 @@
 
 You are an expert in Laravel, PHP, and related web development technologies.
 
+## Core Laravel Principle
+
+**Follow Laravel conventions first.** If Laravel has a documented way to do something, use it. Only deviate when you have a clear justification.
+
 ## Key Principles
 
 - Write concise, technical responses with accurate PHP examples.
@@ -37,8 +41,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - **Store all timestamps and date-times in UTC.** No exceptions for new code or new columns. Schedules, session logs, and any future event/instant data go in as UTC.
 - **Convert to the user-relevant timezone on read**, never store user-local. The conversion service is `App\Domain\Time\UserTimezoneService` (`parseUserLocalToUtc()` for writes, `toUserTimezone()` for reads, `resolveTimezone()` to look up a user's effective TZ).
 - **Whose timezone for display:** per-viewer — display DATETIMEs in the logged-in user's own timezone. Resolved by role: **admin** → `users.timezone`; **therapist** → `therapist_profiles.timezone`; **student** → `student_profiles.timezone`; **school** → `users.timezone`. Use `App\Domain\Time\UserTimezoneService::viewerTimezone()` (to be added) — resolve once per request, then apply to every row in the response. Do NOT use `Schedule::displayTimezone()` / `SessionLog::displayTimezone()` for viewer-facing surfaces; those resolve the **row owner's** TZ and remain reserved for queue jobs and emails that must render in the recipient's TZ. Pure DATE columns (invoice_date, due_date, bill_date, expense_date, paid_at, billing_period_*, contract/SSA start/end) are never timezone-converted. **NOTE:** Existing surfaces still resolve per-row owner TZ — implementation plan is at [`_local_docs/viewer-timezone-display-plan.md`](_local_docs/viewer-timezone-display-plan.md) and must still be applied. Until then, expect mixed behavior.
-- **Pre-format dates in controllers/services, not in Blade.** Blade should only print strings. Controllers attach pre-formatted strings (e.g. `$log->sent_at_formatted`) to view-models or transient model properties (annotate with `@property string|null` for PHPStan).
-- **Display times in 12-hour format via config.** Use `config('display.time')` (resolves to `g:i A`, e.g. `9:30 AM`) for every user-visible time string — in Blade, DataTable transformers, API Resources, controllers, and mail templates. For combined datetime strings use `config('display.datetime')` (e.g. `M d, Y g:i A`). The only exception is `<input type="time">` `value` attributes, which the HTML spec requires in `HH:MM` (24-hour) — keep those as literal `'H:i'`. Never hardcode `H:i` in display output.
+- **Date and time display formatting** is governed by [BLADE_GUIDELINES.md](app/docs/BLADE_GUIDELINES.md) (pre-format in controllers, never in Blade; use `config('display.time')` / `config('display.datetime')` for all user-visible times). Those rules apply to DataTable transformers, API Resources, and mail templates too — not just Blade.
 - **`users.timezone` must mirror the profile's timezone.** Therapist DTOs write to both `users.timezone` and `therapist_profiles.timezone`; student DTOs write to both `users.timezone` and `student_profiles.timezone`. `UserTimezoneService::resolveTimezone()` falls back to the profile if the user row is empty/UTC.
 - **Two date-column flavors — know the difference:**
   - **Event dates** (companions to a UTC `start_time`/`recorded_at`): `session_logs.session_date`, `schedules.schedule_date`. These are the **UTC calendar date** of the underlying instant — they are written through the same UTC conversion as the time column. Do NOT treat them as "school-local" or "therapist-local" dates. **For display, always derive the date from the paired datetime (`start_time`/`recorded_at`) converted to the relevant TZ — never from `session_date`/`schedule_date` directly.** TZ-shifting a DATE-only column moves the entire day boundary (a 6 AM NYC session has session_date Apr 29 UTC; that midnight UTC shifts to Apr 28 8 PM NYC, displaying as Apr 28). Use the date column only for SQL filtering at the UTC level. Convert user-local date ranges to UTC ranges via `UserTimezoneService::userDayUtcRange()` first.
@@ -110,7 +113,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 - Use shared utilities in `resources/js/common/`.
 - **Use vanilla JS for new DOM/AJAX interactivity**. Migrate touched jQuery sections incrementally when modifying existing files.
 - **Keep CSS and JS in separate files**. Use Tailwind for styles.
-- **Never put `<script>` blocks inside Blade views or partials.** All page-specific JS must live in `resources/js/pages/<name>.js`, be registered in `vite.config.js`, and loaded via `<x-slot name="scripts">@vite(...)</x-slot>` in the parent view. This applies even for small, self-contained interactions — "it's only a few lines" is not an exception.
+- **Blade view rules** (including the ban on inline `<script>` blocks, `@php` data-shaping, JSON data islands, and the form-control color tokens) live in [BLADE_GUIDELINES.md](app/docs/BLADE_GUIDELINES.md). Read it before writing or modifying any `.blade.php` file.
 
 ## User Interactions & Confirmations
 
@@ -192,37 +195,7 @@ try {
 
 ## Design System & UI/UX Standards (MANDATORY)
 
-See `app/docs/DESIGN_SYSTEM.md` for the full design system reference (colors, typography, spacing, component patterns). See `app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md` for known issues.
-
-**Key rules enforced here:**
-- **Colors**: ONLY use design system tokens (`bg-primary`, `text-danger`, etc.). NEVER hardcode hex or Tailwind palette colors. The most common violations to watch for: `gray-*` (use `border-border`, `bg-muted`, `text-foreground/40`), `blue-*` (use `bg-primary`), and raw hex like `#e5e7eb` in `style=` attributes. These look "neutral" but violate the rule just like `red-500` would. When a dynamic user-supplied color (e.g. a color picker value) must go into a `style=` attribute, that is the only valid exception — and it must be escaped with `e()`.
-- **Typography**: H1=`text-2xl font-semibold text-foreground`, H2=`text-lg`, H3=`text-sm font-medium text-foreground/70`, Body=`text-sm`, Labels=`text-xs font-medium text-foreground/70`
-- **Spacing**: Standard scale (2, 4, 6, 8). Card padding: `p-6`. Section spacing: `mb-6`.
-- **Interactive states**: All elements MUST have hover, focus, focus-visible, active, disabled states.
-- **Accessibility**: Keyboard navigation, sufficient contrast, semantic HTML, ARIA labels.
-- **Responsiveness**: Must work on mobile, tablet, desktop.
-- **Empty states**: Use `x-ui::empty-state` component.
-- **Destructive actions**: Require explicit confirmation via SweetAlert2.
-- Document new UI patterns in `app/docs/DESIGN_SYSTEM.md` BEFORE implementing.
-
-## UI Standards
-
-- Use Blade components for reusable UI elements
-- **Create Blade UI components in `resources/views/components/ui`** and reuse them.
-- **Prefer `x-ui-card` for page sections and forms**. Always add a card when adding new UI.
-- Implement responsive designs with Tailwind CSS
-- Provide clear user feedback for all actions
-- Use consistent button styles and icons
-- Implement proper form validation with error messages
-- Show loading states for async operations
-
-## Form Help Text Standards (MANDATORY)
-
-- **All form inputs MUST have help text** placed BEFORE the input (Label → Help Text → Input → Error)
-- Help text styling: `class="mt-1 text-xs text-foreground/60"` with `aria-describedby` linking
-- Pattern: `<x-input-label>` → `<p id="..._help">` → `<x-text-input aria-describedby="..._help">` → `<x-input-error>`
-- Keep help text concise (1-2 sentences). Specify units/ranges for numeric fields, timezone for dates.
-- **ALWAYS** use design system components (`x-ui::*`), never hardcoded colors or arbitrary values.
+UI rules — typography, spacing, interactive states, accessibility, responsiveness, empty states, destructive-action confirmation, color tokens, form structure, Blade components — all live in [BLADE_GUIDELINES.md](app/docs/BLADE_GUIDELINES.md). The full design-system reference is [DESIGN_SYSTEM.md](app/docs/DESIGN_SYSTEM.md); known gaps are tracked in [DESIGN_PRINCIPLES_GAP_ANALYSIS.md](app/docs/DESIGN_PRINCIPLES_GAP_ANALYSIS.md).
 
 ## Project-Enforced Conventions
 
@@ -251,9 +224,7 @@ Run through this before marking any task done or raising a PR. These are the rul
 - [ ] Controller actions that return a JSON object/list use an API Resource (not inline `response()->json([...])`); DataTables endpoints stay on `RowTransformer`
 
 **Frontend / Blade**
-- [ ] No `<script>` blocks inside any `.blade.php` file — JS is in `resources/js/pages/`, registered in `vite.config.js`, loaded via `<x-slot name="scripts">`
-- [ ] No `gray-*`, `blue-*`, `red-*` or raw hex (`#xxxxxx`) in Blade or JS — only design tokens (`border-border`, `bg-muted`, `text-foreground/*`, `bg-primary`, etc.)
-- [ ] Every form input has help text; help text and label describe **the same thing** (re-read them together)
+- [ ] Ran through the Blade checklist in [BLADE_GUIDELINES.md](app/docs/BLADE_GUIDELINES.md) (no `@php` data-shaping, no `<script>` blocks, design tokens only, form structure correct, etc.)
 
 **General**
 - [ ] `make qa` passes (Pint + PHPStan + Pest) with zero errors
