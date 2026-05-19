@@ -40,46 +40,32 @@
 @endif
 
 <x-ui::card class="p-6 space-y-6">
-    <x-ui::filter-toolbar formId="ssaFiltersForm">
-        <x-slot:filters>
-            @if ($context === 'detail')
+    @if ($context === 'detail' && $studentId)
+        @php
+            $exportFilters = $filters;
+            unset($exportFilters['tab']);
+        @endphp
+        <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-3 justify-between">
+            <form method="GET" id="ssaFiltersForm" class="flex flex-wrap items-center gap-3">
                 <input type="hidden" name="tab" value="ssas">
-            @endif
-
-            @if ($schoolId)
-                <input type="hidden" name="school_id" value="{{ $schoolId }}">
-            @endif
-            @if ($therapistId)
-                <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
-            @endif
-            @if ($studentId)
                 <input type="hidden" name="student_id" value="{{ $studentId }}">
-            @endif
 
-            <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
-                value="{{ $filters['search'] ?? '' }}" />
+                <div class="w-56 shrink-0">
+                    <x-ui::input type="search" name="search" class="h-10" placeholder="Search SSAs"
+                        value="{{ $filters['search'] ?? '' }}" />
+                </div>
 
-            <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true" data-default-value="active">
-                <option value="all">All Statuses</option>
-                @foreach ($statuses as $status)
-                    <option value="{{ $status->value }}" @selected(($filters['status'] ?? 'active') === $status->value)>
-                        {{ $status->label() }}
-                    </option>
-                @endforeach
-            </x-ui::select>
-
-            @if ($context !== 'therapist')
-                <x-ui::select name="student_id" searchable placeholder="All Students" :inline="true">
-                    <option value="">All Students</option>
-                    @foreach ($students as $student)
-                        <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
-                            {{ $student->name }}
+                <x-ui::select name="statuses[]" multiple :searchable="false" placeholder="Status: All" :inline="true" data-default-value="pending,active" class="min-w-[14rem]">
+                    @foreach ($statuses as $status)
+                        <option value="{{ $status->value }}" @selected(in_array($status->value, $filters['statuses'] ?? ['pending', 'active'], true))>
+                            {{ $status->label() }}
                         </option>
                     @endforeach
                 </x-ui::select>
 
-                <x-ui::select name="therapist_id" searchable placeholder="All Therapists" :inline="true">
-                    <option value="">All Therapists</option>
+                <x-ui::select name="therapist_id" searchable placeholder="Therapist: All" :inline="true" class="min-w-[13rem]">
+                    <option value="">Therapist: All</option>
                     @foreach ($therapists as $therapist)
                         <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
                             {{ $therapist->name }}
@@ -87,40 +73,120 @@
                     @endforeach
                 </x-ui::select>
 
-                <x-ui::select name="service_id" searchable placeholder="All Services" :inline="true">
-                    <option value="">All Services</option>
+                <x-ui::select name="service_id" searchable placeholder="Service: All" :inline="true" class="min-w-[13rem]">
+                    <option value="">Service: All</option>
                     @foreach ($services as $service)
                         <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
                             {{ $service->name }}
                         </option>
                     @endforeach
                 </x-ui::select>
-            @endif
-        </x-slot:filters>
 
-        <x-slot:actions>
-            @if ($context !== 'therapist')
-                @php
-                    $exportFilters = $filters;
-                    if ($context === 'detail') {
-                        unset($exportFilters['tab']);
-                    }
-                @endphp
+                <x-ui::button type="submit" size="lg">Filter</x-ui::button>
+            </form>
+
+            <div class="flex items-center gap-2">
+                <div class="filter-divider hidden lg:block"></div>
                 <a href="{{ route('admin.ssas.export', $exportFilters) }}">
                     <x-ui::button variant="secondary">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                         Export
                     </x-ui::button>
                 </a>
-                @if ($context === 'index' || $context === 'detail')
-                    <a href="{{ route('admin.ssas.create') }}">
-                        <x-ui::button>
-                            Add SSA
+                <a href="{{ route('admin.ssas.create') }}">
+                    <x-ui::button>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 mr-1.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                        Add SSA
+                    </x-ui::button>
+                </a>
+            </div>
+        </div>
+
+        <div
+            id="ssaFiltersSummary"
+            class="hidden items-center gap-2 text-sm text-foreground-muted"
+        >
+            <span data-filter-count>0 filters applied</span>
+            <span class="text-border">|</span>
+            <button
+                type="button"
+                class="text-primary hover:underline font-medium"
+                id="ssaFiltersClearAll"
+            >
+                Clear all
+            </button>
+        </div>
+        </div>
+    @else
+        <x-ui::filter-toolbar formId="ssaFiltersForm">
+            <x-slot:filters>
+                @if ($schoolId)
+                    <input type="hidden" name="school_id" value="{{ $schoolId }}">
+                @endif
+                @if ($therapistId)
+                    <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
+                @endif
+
+                <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
+                    value="{{ $filters['search'] ?? '' }}" />
+
+                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true" data-default-value="active">
+                    <option value="all">All Statuses</option>
+                    @foreach ($statuses as $status)
+                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? 'active') === $status->value)>
+                            {{ $status->label() }}
+                        </option>
+                    @endforeach
+                </x-ui::select>
+
+                @if ($context !== 'therapist')
+                    <x-ui::select name="student_id" searchable placeholder="All Students" :inline="true">
+                        <option value="">All Students</option>
+                        @foreach ($students as $student)
+                            <option value="{{ $student->id }}" @selected(($filters['student_id'] ?? null) == $student->id)>
+                                {{ $student->name }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
+
+                    <x-ui::select name="therapist_id" searchable placeholder="All Therapists" :inline="true">
+                        <option value="">All Therapists</option>
+                        @foreach ($therapists as $therapist)
+                            <option value="{{ $therapist->id }}" @selected(($filters['therapist_id'] ?? null) == $therapist->id)>
+                                {{ $therapist->name }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
+
+                    <x-ui::select name="service_id" searchable placeholder="All Services" :inline="true">
+                        <option value="">All Services</option>
+                        @foreach ($services as $service)
+                            <option value="{{ $service->id }}" @selected(($filters['service_id'] ?? null) == $service->id)>
+                                {{ $service->name }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
+                @endif
+            </x-slot:filters>
+
+            <x-slot:actions>
+                @if ($context !== 'therapist')
+                    <a href="{{ route('admin.ssas.export', $filters) }}">
+                        <x-ui::button variant="secondary">
+                            Export
                         </x-ui::button>
                     </a>
+                    @if ($context === 'index')
+                        <a href="{{ route('admin.ssas.create') }}">
+                            <x-ui::button>
+                                Add SSA
+                            </x-ui::button>
+                        </a>
+                    @endif
                 @endif
-            @endif
-        </x-slot:actions>
-    </x-ui::filter-toolbar>
+            </x-slot:actions>
+        </x-ui::filter-toolbar>
+    @endif
 
     @if (isset($datatableUrl) || $ssas->count() > 0)
         <div class="overflow-x-auto">

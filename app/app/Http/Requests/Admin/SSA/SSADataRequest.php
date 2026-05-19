@@ -18,12 +18,16 @@ final class SSADataRequest extends FormRequest
     /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
+        $statusValues = array_map(
+            static fn (SSAStatus $status): string => $status->value,
+            SSAStatus::cases()
+        );
+
         return [
             'filter_search' => ['nullable', 'string', 'max:255'],
-            'filter_status' => ['nullable', Rule::in(array_map(
-                static fn (SSAStatus $status): string => $status->value,
-                SSAStatus::cases()
-            ))],
+            'filter_status' => ['nullable', Rule::in($statusValues)],
+            'filter_statuses' => ['nullable', 'array'],
+            'filter_statuses.*' => [Rule::in($statusValues)],
             'filter_student_id' => ['nullable', 'integer'],
             'filter_service_id' => ['nullable', 'integer'],
             'filter_therapist_id' => ['nullable', 'integer'],

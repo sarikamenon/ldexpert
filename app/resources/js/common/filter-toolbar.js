@@ -29,12 +29,17 @@ function clearFilterForm(form) {
 
         if (el instanceof HTMLSelectElement) {
             if (el.multiple) {
+                const defaultMulti = (el.getAttribute('data-default-value') || '')
+                    .split(',')
+                    .map((v) => v.trim())
+                    .filter(Boolean);
+
                 Array.from(el.options).forEach((opt) => {
-                    opt.selected = false;
+                    opt.selected = defaultMulti.includes(opt.value);
                 });
 
                 if (typeof window.jQuery !== 'undefined') {
-                    window.jQuery(el).val([]).trigger('change');
+                    window.jQuery(el).val(defaultMulti).trigger('change');
                 } else {
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }
