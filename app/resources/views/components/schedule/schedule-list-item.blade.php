@@ -5,38 +5,15 @@
     'compact' => false,
 ])
 
-@php
-    $scheduleDate = $schedule['schedule_date'] ?? null;
-    $startTime = $schedule['start_time'] ?? null;
-    $billingStatus = $schedule['billing_status'] ?? null;
-    $isPast = $scheduleDate ? \Carbon\Carbon::parse($scheduleDate)->lt(now()->startOfDay()) : false;
-    $hasEventStarted = ($scheduleDate && $startTime)
-        ? now()->gte(\Carbon\Carbon::parse($scheduleDate . ' ' . $startTime))
-        : $isPast;
-    $isBilled = $billingStatus === 'billed';
-    $isPendingBilling = $billingStatus === 'pending';
-
-    $coverageRole = $schedule['coverage_role'] ?? null;
-    $coverageLabel = $schedule['coverage_badge_label'] ?? null;
-    $coverageClasses = match ($coverageRole) {
-        'covering' => 'bg-success/10 text-success border border-success/20',
-        'covered' => 'bg-warning/10 text-warning border border-warning/20',
-        'open_request' => 'bg-primary/10 text-primary border border-primary/20',
-        default => 'bg-muted/50 text-foreground/70 border border-border',
-    };
-    // Subs covering someone else's schedule cannot edit/delete it — they're just delivering the session.
-    $canEditOrDelete = !$isBilled && $coverageRole !== 'covering';
-@endphp
-
 @if ($compact)
     <div {{ $attributes->merge(['class' => 'rounded-lg border border-border bg-background px-3 py-2.5 transition-colors hover:bg-background/subtle']) }}>
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 flex-1 gap-3">
-                <div class="shrink-0 text-xs font-medium leading-5 text-foreground sm:w-24">
-                    <span>{{ $schedule['start_time'] ?? '' }}</span>
-                    @if (isset($schedule['end_time']))
+                <div class="w-32 shrink-0 whitespace-nowrap text-xs font-medium leading-5 text-foreground">
+                    <span>{{ $schedule['start_time_display'] ?? '' }}</span>
+                    @if (!empty($schedule['end_time_display']))
                         <span class="text-foreground/50">-</span>
-                        <span>{{ $schedule['end_time'] }}</span>
+                        <span>{{ $schedule['end_time_display'] }}</span>
                     @endif
                 </div>
 
@@ -71,13 +48,13 @@
                         @endif
                     </div>
 
-                    @if ($coverageLabel)
-                        <div class="mt-1 inline-flex items-center gap-1 rounded-base px-2 py-0.5 text-xs font-medium {{ $coverageClasses }}">
+                    @if (!empty($schedule['coverage_badge_label']))
+                        <div class="mt-1 inline-flex items-center gap-1 rounded-base px-2 py-0.5 text-xs font-medium {{ $schedule['coverage_badge_classes'] ?? '' }}">
                             <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
-                            <span>{{ $coverageLabel }}</span>
+                            <span>{{ $schedule['coverage_badge_label'] }}</span>
                         </div>
                     @endif
                 </div>
@@ -97,7 +74,7 @@
                         </svg>
                     </button>
 
-                    @if ($canEditOrDelete)
+                    @if (!empty($schedule['can_edit_or_delete']))
                         @if (isset($schedule['edit_url']))
                             <a href="{{ $schedule['edit_url'] }}"
                                 class="rounded-lg border border-border p-1.5 transition-colors hover:bg-background/subtle active:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -143,7 +120,7 @@
                                     d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </a>
-                    @elseif ($isPast && $isBilled)
+                    @elseif (!empty($schedule['is_past']) && !empty($schedule['is_billed']))
                         <button type="button"
                             class="schedule-view-session-btn rounded-lg bg-primary/10 p-1.5 text-primary transition-colors hover:bg-primary/20 active:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                             data-schedule-id="{{ $schedule['id'] ?? '' }}" title="View Session"
@@ -164,10 +141,10 @@
         <div class="flex-1">
             {{-- Compact View (Always Visible) --}}
             <div class="flex items-center gap-4 mb-2">
-                <span class="text-sm font-medium text-foreground">{{ $schedule['start_time'] ?? '' }}</span>
-                @if (isset($schedule['end_time']))
+                <span class="text-sm font-medium text-foreground">{{ $schedule['start_time_display'] ?? '' }}</span>
+                @if (!empty($schedule['end_time_display']))
                     <span class="text-sm text-foreground/70">-</span>
-                    <span class="text-sm font-medium text-foreground">{{ $schedule['end_time'] }}</span>
+                    <span class="text-sm font-medium text-foreground">{{ $schedule['end_time_display'] }}</span>
                 @endif
             </div>
 
@@ -197,13 +174,13 @@
                 <div class="text-sm text-foreground/70 mb-2">{{ $schedule['service'] }}</div>
             @endif
 
-            @if ($coverageLabel)
-                <div class="mb-2 inline-flex items-center gap-1.5 rounded-base px-2 py-0.5 text-xs font-medium {{ $coverageClasses }}">
+            @if (!empty($schedule['coverage_badge_label']))
+                <div class="mb-2 inline-flex items-center gap-1.5 rounded-base px-2 py-0.5 text-xs font-medium {{ $schedule['coverage_badge_classes'] ?? '' }}">
                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
-                    <span>{{ $coverageLabel }}</span>
+                    <span>{{ $schedule['coverage_badge_label'] }}</span>
                 </div>
             @endif
         </div>
@@ -224,7 +201,7 @@
                 </button>
 
                 {{-- Edit Button (hidden for billed schedules) --}}
-                @if (!$isBilled)
+                @if (empty($schedule['is_billed']))
                     @if (isset($schedule['edit_url']))
                         <a href="{{ $schedule['edit_url'] }}"
                             class="p-2 border border-border rounded-lg hover:bg-background/subtle transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -271,7 +248,7 @@
                                 d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </a>
-                @elseif ($isPast && $isBilled)
+                @elseif (!empty($schedule['is_past']) && !empty($schedule['is_billed']))
                     <button type="button"
                         class="schedule-view-session-btn p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         data-schedule-id="{{ $schedule['id'] ?? '' }}" title="View Session"

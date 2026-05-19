@@ -257,13 +257,18 @@ final class ScheduleController extends Controller
                 // should not bill / log it — the sub will. Suppress billing affordance.
                 $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
+                // Subs covering someone else's schedule cannot edit/delete it — they're just delivering the session.
+                $canEditOrDelete = !$isBilled && $coverageRole !== 'covering';
+
                 return [
                     'id' => $schedule->id,
                     'schedule_date' => $localStart->format('Y-m-d'),
                     'start_time' => $localStart->format('H:i'),
                     'start_time_formatted' => $localStart->format(config('display.time')),
+                    'start_time_display' => $localStart->format(config('display.time')),
                     'end_time' => $localEnd->format('H:i'),
                     'end_time_formatted' => $localEnd->format(config('display.time')),
+                    'end_time_display' => $localEnd->format(config('display.time')),
                     'school' => $schedule->school?->display_name,
                     'student' => $schedule->student?->name,
                     'service' => $schedule->service?->name,
@@ -273,11 +278,14 @@ final class ScheduleController extends Controller
                     'is_past' => $isPast,
                     'has_event_started' => $hasEventStarted,
                     'is_billed' => $isBilled,
+                    'is_pending_billing' => $isPendingBilling,
+                    'can_edit_or_delete' => $canEditOrDelete,
                     'bill_url' => $canBill
                         ? route('therapist.session-logs.create.from-schedule', $schedule->id)
                         : null,
                     'coverage_role' => $coverageRole,
                     'coverage_badge_label' => $coverageLabel,
+                    'coverage_badge_classes' => CoverageRoleResolver::badgeClassesFor($coverageRole),
                     'sub_request_status' => $schedule->sub_request_status?->value,
                     'session_log_url' => $isPast && $isBilled && $sessionLog
                         ? route('therapist.session-logs.show', $sessionLog)

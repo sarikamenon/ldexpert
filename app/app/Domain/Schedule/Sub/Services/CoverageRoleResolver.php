@@ -47,4 +47,18 @@ final class CoverageRoleResolver
 
         return ['role' => null, 'badge_label' => null];
     }
+
+    /**
+     * Tailwind class set for the coverage badge, keyed by role. Centralised so the
+     * dashboard, calendar JSON, and any future surface share one source of truth.
+     */
+    public static function badgeClassesFor(?string $role): string
+    {
+        return match ($role) {
+            'covering' => 'bg-success/10 text-success border border-success/20',
+            'covered' => 'bg-warning/10 text-warning border border-warning/20',
+            'open_request' => 'bg-primary/10 text-primary border border-primary/20',
+            default => 'bg-muted/50 text-foreground/70 border border-border',
+        };
+    }
 }
