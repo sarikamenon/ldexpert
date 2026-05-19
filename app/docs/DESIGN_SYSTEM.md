@@ -295,7 +295,7 @@ The spacing system uses Tailwind's default spacing scale (4px base unit):
 **Variants:**
 - `primary`: `bg-primary/10 text-primary border border-primary/20`
 - `secondary`: `bg-gray-100 text-gray-700 border border-gray-200` - **Uses hardcoded colors**
-- `muted`: `bg-background/subtle text-foreground border border-border`
+- `muted`: `bg-muted/50 text-foreground/50 border border-border` — low-emphasis variant for inactive, dismissed, or "no-op" states (e.g. an empty sub-coverage cell). Reads as visibly de-emphasized next to the colored variants.
 - `success`: `bg-success/10 text-success border border-success/20`
 - `warning`: `bg-warning/10 text-warning border border-warning/20`
 - `danger`: `bg-danger/10 text-danger border border-danger/20`

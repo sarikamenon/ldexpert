@@ -12,6 +12,7 @@ Define the therapist-facing navigation for the NOVA workspace. Menu is config-dr
 | Dashboard | — | Implemented | `/therapist/dashboard` |
 | Schedule | Calendar, Full Calendar, Pending Schedule | Implemented | `/therapist/schedule`, `/therapist/schedule/full-calendar`, `/therapist/schedule/pending` |
 | Session Logs | My Session Logs, Add Non-Schedule Log | Implemented | `/therapist/session-logs`, `/therapist/session-logs/create` |
+| Sub Requests | Invited, My Requests | Implemented | `/therapist/sub-requests` (see [Substitute Coverage](./sub-coverage.md)) |
 | Billing | My Bills | Implemented | `/therapist/billing` |
 | SSAs | — | Implemented (read-only) | `/therapist/ssas` |
 | Students | — | Implemented (read-only) | `/therapist/students` |

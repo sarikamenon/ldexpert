@@ -35,12 +35,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => School::class,
-            'ledgerable_id'   => $school->id,
+            'ledgerable_id' => $school->id,
             'transaction_type' => TransactionType::INVOICE_GENERATED,
-            'amount'           => 100.00,
-            'balance_after'    => 100.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 100.00,
+            'balance_after' => 100.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         $entry->load('ledgerable');
@@ -54,12 +54,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => School::class,
-            'ledgerable_id'   => $school->id,
+            'ledgerable_id' => $school->id,
             'transaction_type' => TransactionType::INVOICE_GENERATED,
-            'amount'           => 100.00,
-            'balance_after'    => 100.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 100.00,
+            'balance_after' => 100.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         // Simulate a null display_name in-memory without hitting the NOT NULL DB constraint.
@@ -78,12 +78,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => User::class,
-            'ledgerable_id'   => $businessId,
+            'ledgerable_id' => $businessId,
             'transaction_type' => TransactionType::EXPENSE,
-            'amount'           => 50.00,
-            'balance_after'    => -50.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 50.00,
+            'balance_after' => -50.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         $entry->load('ledgerable');
@@ -97,12 +97,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => User::class,
-            'ledgerable_id'   => $therapist->id,
+            'ledgerable_id' => $therapist->id,
             'transaction_type' => TransactionType::PAYMENT_MADE,
-            'amount'           => 200.00,
-            'balance_after'    => -200.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 200.00,
+            'balance_after' => -200.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         $entry->load('ledgerable');
@@ -120,12 +120,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => School::class,
-            'ledgerable_id'   => $school->id,
+            'ledgerable_id' => $school->id,
             'transaction_type' => TransactionType::INVOICE_GENERATED,
-            'amount'           => 100.00,
-            'balance_after'    => 100.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 100.00,
+            'balance_after' => 100.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         $this->assertSame('School', LedgerAccountPresenter::accountType($entry));
@@ -138,12 +138,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => User::class,
-            'ledgerable_id'   => $businessId,
+            'ledgerable_id' => $businessId,
             'transaction_type' => TransactionType::EXPENSE,
-            'amount'           => 50.00,
-            'balance_after'    => -50.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 50.00,
+            'balance_after' => -50.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         $this->assertSame('Business', LedgerAccountPresenter::accountType($entry));
@@ -155,12 +155,12 @@ final class LedgerAccountPresenterTest extends TestCase
 
         $entry = LedgerEntry::create([
             'ledgerable_type' => User::class,
-            'ledgerable_id'   => $therapist->id,
+            'ledgerable_id' => $therapist->id,
             'transaction_type' => TransactionType::PAYMENT_MADE,
-            'amount'           => 200.00,
-            'balance_after'    => -200.00,
-            'recorded_at'      => now(),
-            'recorded_by_id'   => $this->admin->id,
+            'amount' => 200.00,
+            'balance_after' => -200.00,
+            'recorded_at' => now(),
+            'recorded_by_id' => $this->admin->id,
         ]);
 
         $this->assertSame('Therapist', LedgerAccountPresenter::accountType($entry));

@@ -263,5 +263,4 @@ final class SessionLogFormContextTest extends TestCase
         $response->assertDontSee('Goals for this SSA');
         $response->assertDontSee('Previous Session Notes');
     }
-
 }

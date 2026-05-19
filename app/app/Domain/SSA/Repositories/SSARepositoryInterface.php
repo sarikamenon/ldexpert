@@ -100,4 +100,10 @@ interface SSARepositoryInterface
      * @return array{upcoming: Collection<int, ServiceSupportAgreement>, expired: Collection<int, ServiceSupportAgreement>, pending: Collection<int, ServiceSupportAgreement>, no_current: Collection<int, mixed>}
      */
     public function getExpirationReport(ExpirationReportFilterDTO $filters): array;
+
+    /**
+     * Find the active/pending SSA for the original therapist on a schedule,
+     * used when accepting a sub request to determine which SSA covers the session.
+     */
+    public function findOriginalSsaForSubCoverage(int $studentId, int $serviceId, int $therapistId, string $sessionDate): ?ServiceSupportAgreement;
 }

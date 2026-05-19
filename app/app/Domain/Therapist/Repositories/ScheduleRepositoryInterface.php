@@ -13,6 +13,7 @@ use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 interface ScheduleRepositoryInterface
@@ -27,8 +28,8 @@ interface ScheduleRepositoryInterface
 
     public function getPendingCount(User $therapist): int;
 
-    /** @return Collection<int, Schedule> */
-    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection;
+    /** @return EloquentCollection<int, Schedule> */
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): EloquentCollection;
 
     /** @return Collection<int, \App\Models\School> */
     public function getSchoolsForTherapist(User $therapist): Collection;

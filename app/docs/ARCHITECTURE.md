@@ -125,16 +125,58 @@ $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
 
 ## Scopes
 
-Query conditions that are reusable or represent a domain concept belong in a scope class, not inline in a repository. Extend `BaseModelScope` and place in `app/Models/Scopes/`.
+Any `where` condition that encodes a **domain concept** — status, ownership, date range, eligibility, role, soft-delete filter — MUST live in an Eloquent scope, not inline in a repository or service.
 
-Keep models clean by delegating scope logic
+### When a scope is required
+
+A condition requires a scope when it answers "what kind of record is this?" or "does this record belong to that entity?". Examples: `active`, `open`, `forSchool($id)`, `effectiveOn($date)`, `forStudent($id)`, `pending`.
+
+A raw `where` is only acceptable for **truly one-off structural conditions** — e.g. a JOIN alias filter inside a private query-builder method that has no domain meaning.
+
+### Where scopes live
+
+| Scope type | Location | Registration |
+|---|---|---|
+| Simple local scope (single model) | Method on the model: `scopeActive(Builder $q)` | Called as `Model::query()->active()` |
+| Complex / multi-model scope | Class in `app/Models/Scopes/`, extends `BaseModelScope` | Applied via `$query->tap(new FooScope(...))` or added to `booted()` |
+
+### Mandatory rule
+
+**Before writing any `where(...)` call**, check whether a scope already exists on the model for that concept. If it does, use the scope. If the concept has no scope yet, **add one first, then call it**. Never duplicate the same `where` condition in two places — the second occurrence proves the first should have been a scope.
+
+This rule applies everywhere: repositories, services (when a service legitimately touches a model — see boundary rules), and the `applyEligibilityFilter` pattern.
 
 ```php
-// ❌ Wrong — inline where in repository
-$query->where('status', 'active')->where('school_id', $schoolId);
+// ❌ Wrong — raw where for a domain concept
+$query->where('status', 'open');
+$query->where('school_id', $schoolId);
+$query->where('start_date', '<=', $date)->where('end_date', '>=', $date);
 
-// ✅ Correct — named scope on the model
-$query->active()->forSchool($schoolId);
+// ✅ Correct — named scope
+$query->open();
+$query->forSchool($schoolId);
+$query->effectiveOn($date);
+```
+
+### Adding a scope
+
+```php
+// Local scope on the model (simple, single-model concept)
+/** @param Builder<self> $query */
+public function scopeOpen(Builder $query): void
+{
+    $query->where('status', 'open');
+}
+
+// Complex scope class (multi-condition or reused across models)
+final class ActiveContractScope extends BaseModelScope
+{
+    public function apply(Builder $builder, Model $model): void
+    {
+        $builder->where('status', 'active')
+                ->where('start_date', '<=', now());
+    }
+}
 ```
 
 ---

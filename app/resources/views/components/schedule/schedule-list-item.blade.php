@@ -15,6 +15,17 @@
         : $isPast;
     $isBilled = $billingStatus === 'billed';
     $isPendingBilling = $billingStatus === 'pending';
+
+    $coverageRole = $schedule['coverage_role'] ?? null;
+    $coverageLabel = $schedule['coverage_badge_label'] ?? null;
+    $coverageClasses = match ($coverageRole) {
+        'covering' => 'bg-success/10 text-success border border-success/20',
+        'covered' => 'bg-warning/10 text-warning border border-warning/20',
+        'open_request' => 'bg-primary/10 text-primary border border-primary/20',
+        default => 'bg-muted/50 text-foreground/70 border border-border',
+    };
+    // Subs covering someone else's schedule cannot edit/delete it — they're just delivering the session.
+    $canEditOrDelete = !$isBilled && $coverageRole !== 'covering';
 @endphp
 
 @if ($compact)
@@ -59,6 +70,16 @@
                             {{ Str::limit($schedule['location_details'], 48) }}
                         @endif
                     </div>
+
+                    @if ($coverageLabel)
+                        <div class="mt-1 inline-flex items-center gap-1 rounded-base px-2 py-0.5 text-xs font-medium {{ $coverageClasses }}">
+                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span>{{ $coverageLabel }}</span>
+                        </div>
+                    @endif
                 </div>
             </div>
 
@@ -76,7 +97,7 @@
                         </svg>
                     </button>
 
-                    @if (!$isBilled)
+                    @if ($canEditOrDelete)
                         @if (isset($schedule['edit_url']))
                             <a href="{{ $schedule['edit_url'] }}"
                                 class="rounded-lg border border-border p-1.5 transition-colors hover:bg-background/subtle active:bg-background/subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -174,6 +195,16 @@
 
             @if (isset($schedule['service']))
                 <div class="text-sm text-foreground/70 mb-2">{{ $schedule['service'] }}</div>
+            @endif
+
+            @if ($coverageLabel)
+                <div class="mb-2 inline-flex items-center gap-1.5 rounded-base px-2 py-0.5 text-xs font-medium {{ $coverageClasses }}">
+                    <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    <span>{{ $coverageLabel }}</span>
+                </div>
             @endif
         </div>
 

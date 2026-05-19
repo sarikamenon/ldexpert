@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TherapistProfile extends Model
@@ -74,6 +75,12 @@ class TherapistProfile extends Model
         return $this->belongsTo(Position::class);
     }
 
+    /** @return HasMany<TherapistContract, $this> */
+    public function contracts(): HasMany
+    {
+        return $this->hasMany(TherapistContract::class, 'therapist_id');
+    }
+
     /**
      * @param  Builder<TherapistProfile>  $query
      * @return Builder<TherapistProfile>
@@ -99,5 +106,14 @@ class TherapistProfile extends Model
     public function scopeInactive(Builder $query): Builder
     {
         return TherapistScope::inactive($query, $this);
+    }
+
+    /**
+     * @param  Builder<TherapistProfile>  $query
+     * @return Builder<TherapistProfile>
+     */
+    public function scopeForPosition(Builder $query, int $positionId): Builder
+    {
+        return $query->where('position_id', $positionId);
     }
 }

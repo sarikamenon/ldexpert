@@ -61,8 +61,9 @@ final class ScheduleCalendarController extends Controller
 
         $schedules = $this->scheduleService->getSchedulesForCalendar($filters);
 
+        $viewerId = (int) $therapist->id;
         $scheduleEvents = $schedules->map(
-            static fn (Schedule $s): array => ScheduleCalendarEventTransformer::transform($s)
+            static fn (Schedule $s): array => ScheduleCalendarEventTransformer::transform($s, $viewerId)
         );
 
         // Orphan session logs (no schedule attached) — only when neither

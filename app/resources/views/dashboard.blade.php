@@ -115,7 +115,7 @@
                 </x-ui::card>
 
                 <!-- Pending Schedules -->
-                <x-ui::card>
+                <x-ui::card class="self-start">
                     <div class="p-5 border-b border-border flex items-center justify-between">
                         <h3 class="text-lg font-medium text-foreground">Past Sessions Queue</h3>
                         <a href="{{ route('therapist.schedule.pending') }}" class="text-sm text-accent hover:underline">View all</a>
@@ -146,6 +146,64 @@
                         @endforelse
                     </div>
                 </x-ui::card>
+
+                <div class="space-y-6 self-start">
+                <!-- Open Sub Requests -->
+                @if (($openSubRequestCount ?? 0) > 0)
+                    <x-ui::card>
+                        <div class="p-5 border-b border-border flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-foreground">Open Sub Requests</h3>
+                            <a href="{{ route('therapist.sub-requests.index') }}" class="text-sm text-accent hover:underline">View all</a>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary font-semibold text-lg w-10 h-10 shrink-0">
+                                    {{ $openSubRequestCount }}
+                                </span>
+                                <div>
+                                    <p class="text-sm font-medium text-foreground">
+                                        {{ $openSubRequestCount === 1 ? '1 open request' : "{$openSubRequestCount} open requests" }}
+                                        in your position
+                                    </p>
+                                    <p class="text-xs text-foreground/60 mt-0.5">
+                                        Therapists in your position are looking for coverage.
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="{{ route('therapist.sub-requests.index') }}" class="mt-4 block">
+                                <x-ui::button class="w-full" size="sm">View Sub Requests</x-ui::button>
+                            </a>
+                        </div>
+                    </x-ui::card>
+                @endif
+
+                <!-- My Open Sub Requests (requester view) -->
+                @if (($myOpenSubRequestCount ?? 0) > 0)
+                    <x-ui::card>
+                        <div class="p-5 border-b border-border flex items-center justify-between">
+                            <h3 class="text-lg font-medium text-foreground">My Sub Requests</h3>
+                            <a href="{{ route('therapist.sub-requests.index', ['tab' => 'mine']) }}" class="text-sm text-accent hover:underline">View all</a>
+                        </div>
+                        <div class="p-5">
+                            <div class="flex items-center gap-3">
+                                <span class="inline-flex items-center justify-center rounded-full bg-warning/10 text-warning font-semibold text-lg w-10 h-10 shrink-0">
+                                    {{ $myOpenSubRequestCount }}
+                                </span>
+                                <div>
+                                    <p class="text-sm font-medium text-foreground">
+                                        {{ $myOpenSubRequestCount === 1 ? '1 open sub request' : "{$myOpenSubRequestCount} open sub requests" }}
+                                    </p>
+                                    <p class="text-xs text-foreground/60 mt-0.5">
+                                        Awaiting acceptance from the therapists you invited.
+                                    </p>
+                                </div>
+                            </div>
+                            <a href="{{ route('therapist.sub-requests.index', ['tab' => 'mine']) }}" class="mt-4 block">
+                                <x-ui::button class="w-full" size="sm" variant="secondary">View My Sub Requests</x-ui::button>
+                            </a>
+                        </div>
+                    </x-ui::card>
+                @endif
 
                 <!-- My SSAs -->
                 <x-ui::card>
@@ -206,6 +264,7 @@
                         @endforelse
                     </div>
                 </x-ui::card>
+                </div>
             </div>
         </div>
     </div>

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\SessionLog\Services;
 
+use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -17,7 +18,6 @@ use App\Enums\ServiceStatus;
 use App\Enums\SessionLogImportRowStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
-use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
 use App\Models\School;
 use App\Models\Service;
@@ -36,6 +36,7 @@ final class SessionLogImportRowProcessor
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
         private readonly SessionLogRateService $rateService,
         private readonly UserTimezoneService $timezoneService,
+        private readonly ScheduleSubRequestRepositoryInterface $subRequestRepository,
     ) {}
 
     /**
@@ -177,18 +178,28 @@ final class SessionLogImportRowProcessor
             return;
         }
 
-        // SSA lookup
-        $ssa = $this->lookupSSA($student->id, $service->id, $sessionDate, $therapist->id);
-        if (! $ssa) {
-            $this->markError($importRow, 'No matching SSA found for student + service + date + therapist.');
+        // SSA + performer resolution (handles sub-coverage fallback)
+        $resolved = $this->resolveSsaAndPerformer($student->id, $service->id, $sessionDate, $therapist);
+        if ($resolved === null) {
+            $this->markError($importRow, "No matching SSA — and no accepted sub assignment found for '{$mappedData['therapist_email']}' on {$sessionDate}.");
+
+            return;
+        }
+        if ($resolved === 'ambiguous') {
+            $this->markError($importRow, "Ambiguous sub coverage — multiple original therapists found for '{$mappedData['therapist_email']}' on {$sessionDate}.");
 
             return;
         }
 
+        /** @var array{ssa: ServiceSupportAgreement, performer: User, originalTherapist: User|null} $resolved */
+        $ssa = $resolved['ssa'];
+        $performer = $resolved['performer'];
+        $originalTherapist = $resolved['originalTherapist'];
+
         // Billing
         try {
             $billing = $this->rateService->calculateDualBilling(
-                $therapist->id, $school->id, $service->id, $sessionDate, $durationMinutes, $outcome
+                $performer->id, $school->id, $service->id, $sessionDate, $durationMinutes, $outcome
             );
         } catch (\Exception $e) {
             $this->markError($importRow, 'Billing error: '.$e->getMessage());
@@ -205,7 +216,7 @@ final class SessionLogImportRowProcessor
 
         // Create session log
         $dto = CreateSessionLogDTO::fromArray([
-            'therapist_id' => $therapist->id,
+            'therapist_id' => $performer->id,
             'student_id' => $student->id,
             'ssa_id' => $ssa->id,
             'service_id' => $service->id,
@@ -242,9 +253,13 @@ final class SessionLogImportRowProcessor
         $logData['delivery_mode'] = 'virtual';
         $logData['is_group'] = $isGroup;
 
+        if ($originalTherapist !== null) {
+            $logData['original_therapist_id'] = $originalTherapist->id;
+        }
+
         // CSV rows are in the importing therapist's local TZ. Convert to UTC
         // for storage (per CLAUDE.md: all session_log timestamps stored UTC).
-        $logData = $this->timezoneService->convertSessionLocalToUtc($logData, $therapist);
+        $logData = $this->timezoneService->convertSessionLocalToUtc($logData, $performer);
 
         $sessionLog = $this->sessionLogRepository->create($logData);
 
@@ -314,15 +329,63 @@ final class SessionLogImportRowProcessor
     public function lookupSSA(int $studentId, int $serviceId, string $sessionDate, int $therapistId): ?ServiceSupportAgreement
     {
         return ServiceSupportAgreement::query()
-            ->where('student_id', $studentId)
-            ->where('primary_service_id', $serviceId)
-            ->where('assigned_therapist_id', $therapistId)
-            ->where('start_date', '<=', $sessionDate)
-            ->where('end_date', '>=', $sessionDate)
-            ->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING])
+            ->forStudent($studentId)
+            ->forPrimaryService($serviceId)
+            ->forAssignedTherapist($therapistId)
+            ->effectiveOn($sessionDate)
+            ->activeOrPending()
             ->orderByRaw("FIELD(status, 'active', 'pending')")
             ->orderByDesc('start_date')
             ->first();
+    }
+
+    /**
+     * Resolves SSA, performer, and original therapist for an import row.
+     *
+     * Returns:
+     *   - array{ssa: ServiceSupportAgreement, performer: User, originalTherapist: User|null} on success
+     *   - 'ambiguous' when multiple sub-SSA matches exist
+     *   - null when no match found at all
+     *
+     * @return array{ssa: ServiceSupportAgreement, performer: User, originalTherapist: User|null}|'ambiguous'|null
+     */
+    public function resolveSsaAndPerformer(int $studentId, int $serviceId, string $sessionDate, User $rowTherapist): array|string|null
+    {
+        // 1. Normal SSA lookup: row therapist is the assigned therapist.
+        $ssa = $this->lookupSSA($studentId, $serviceId, $sessionDate, $rowTherapist->id);
+        if ($ssa !== null) {
+            return ['ssa' => $ssa, 'performer' => $rowTherapist, 'originalTherapist' => null];
+        }
+
+        // 2. Sub-coverage fallback: look for an accepted ScheduleSubSsa where the
+        //    row therapist is the sub and the session matches date + service.
+        $subSsas = $this->subRequestRepository->findSubSsasForImport(
+            $rowTherapist->id,
+            $sessionDate,
+            $serviceId,
+            $studentId,
+        );
+
+        if ($subSsas->isEmpty()) {
+            return null;
+        }
+
+        if ($subSsas->count() > 1) {
+            return 'ambiguous';
+        }
+
+        $subSsa = $subSsas->first();
+        $originalSsa = $subSsa->ssa;
+
+        if ($originalSsa === null) {
+            return null;
+        }
+
+        return [
+            'ssa' => $originalSsa,
+            'performer' => $rowTherapist,
+            'originalTherapist' => $originalSsa->assignedTherapist,
+        ];
     }
 
     public function mapOutcome(string $type1): ?SessionOutcome

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Therapist\Services;
 
+use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
@@ -34,6 +35,7 @@ final class SessionLogService
         private readonly SSARepositoryInterface $ssaRepository,
         private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly UserTimezoneService $timezoneService,
+        private readonly ScheduleSubRequestRepositoryInterface $subRequestRepository,
     ) {}
 
     /**
@@ -74,23 +76,40 @@ final class SessionLogService
     public function createFromSchedule(User $therapist, Schedule $schedule, CreateSessionLogDTO $dto): SessionLog
     {
         return DB::transaction(function () use ($therapist, $schedule, $dto): SessionLog {
-            // Validate therapist has access to schedule
-            if ($schedule->therapist_id !== $therapist->id) {
+            $isSub = $schedule->sub_therapist_id !== null
+                && (int) $schedule->sub_therapist_id === (int) $therapist->id;
+
+            // Validate therapist has access to schedule (owns it or is the accepted sub)
+            if (! $isSub && (int) $schedule->therapist_id !== (int) $therapist->id) {
                 throw new \InvalidArgumentException('Therapist does not have access to this schedule.');
             }
 
             $this->assertScheduleAllowsSessionLogSubmission($schedule);
 
-            // Validate therapist has access to SSA
-            if (! $this->repository->validateTherapistAccessToSSA($therapist, $dto->ssaId)) {
-                throw new \InvalidArgumentException('Therapist does not have access to the selected SSA.');
+            // For subs, resolve SSA from the sub-SSA snapshot; for originals use normal validation.
+            if ($isSub) {
+                $subSsa = $this->subRequestRepository->findSubSsaForSchedule($schedule->id, $therapist->id);
+
+                if ($subSsa === null) {
+                    throw new \InvalidArgumentException('No sub coverage assignment found for this schedule.');
+                }
+
+                $ssa = $this->ssaRepository->findWithRelations($subSsa->ssa_id, ['student.studentProfile']);
+                if (! $ssa) {
+                    throw new \InvalidArgumentException('SSA not found.');
+                }
+            } else {
+                // Validate therapist has access to SSA
+                if (! $this->repository->validateTherapistAccessToSSA($therapist, $dto->ssaId)) {
+                    throw new \InvalidArgumentException('Therapist does not have access to the selected SSA.');
+                }
+
+                $ssa = $this->ssaRepository->findWithRelations($dto->ssaId, ['student.studentProfile']);
+                if (! $ssa) {
+                    throw new \InvalidArgumentException('SSA not found.');
+                }
             }
 
-            // Get SSA for tho_minutes and school_id
-            $ssa = $this->ssaRepository->findWithRelations($dto->ssaId, ['student.studentProfile']);
-            if (! $ssa) {
-                throw new \InvalidArgumentException('SSA not found.');
-            }
             $service = $this->serviceRepository->findOrFail($dto->serviceId);
             $this->assertSessionDateWithinSsa($dto->sessionDate, $ssa->start_date, $ssa->end_date);
             $this->assertDurationWithinServiceBounds($dto->durationMinutes, $service->min_duration_minutes, $service->max_duration_minutes);
@@ -103,7 +122,7 @@ final class SessionLogService
 
             $outcome = SessionOutcome::from($dto->outcome);
 
-            // Calculate billing amounts and validate contracts (outcome and private/school drive rate choice)
+            // Billing is always calculated against the performing therapist (sub or original).
             $billing = $this->rateService->calculateDualBilling(
                 $therapist->id,
                 $schoolId,
@@ -120,6 +139,12 @@ final class SessionLogService
             $data['schedule_id'] = $schedule->id;
             $data['school_id'] = $schoolId;
             $data['tho_minutes'] = $thoMinutes;
+
+            // Record the original therapist for audit when this is a sub-covered session.
+            if ($isSub) {
+                $data['original_therapist_id'] = $schedule->therapist_id;
+                $data['ssa_id'] = $ssa->id;
+            }
 
             // Apply billing flags based on outcome
             $this->applyOutcomeBillingFlags($data);

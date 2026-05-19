@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Enums\SSAGoalStatus;
 use App\Models\ServiceSupportAgreement;
 use App\Models\SSAGoal;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

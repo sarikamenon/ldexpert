@@ -49,6 +49,7 @@ NOVA is LD Expert's therapy services management platform that coordinates school
 
 -   [Therapist Workspace](./therapist/workspace.md) — dashboard, schedule calendar with recurring support, read-only caseload/SSA views, student comments.
 -   [Session Management & Logs](./therapist/session-logs.md) — complete session lifecycle: create, edit, submit, with dual billing calculations and document attachments.
+-   [Substitute Coverage](./therapist/sub-coverage.md) — raise sub requests with multi-invitee picker, race-safe accept, sub-SSA snapshot, importer auto-resolution, automatic expiry.
 -   [Student Comments](./therapist/student-comments.md) — contextual notes on student records visible to admins and assigned therapists.
 -   [Therapist Menu](./therapist/menu.md) — full therapist navigation structure from config/navigation.php.
 

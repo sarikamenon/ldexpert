@@ -95,6 +95,33 @@ class User extends Authenticatable implements MustVerifyEmail
         $query->where('role', $role);
     }
 
+    /**
+     * Therapists eligible to sub for a session held by $excludeTherapistId on
+     * $date for $serviceId, who share $positionId. Encapsulates the
+     * "same position + active contract covering this service on this date" rule.
+     *
+     * @param  Builder<User>  $query
+     * @return Builder<User>
+     */
+    public function scopeEligibleAsSubFor(
+        Builder $query,
+        int $excludeTherapistId,
+        int $positionId,
+        int $serviceId,
+        string $date,
+    ): Builder {
+        return $query
+            ->where('users.id', '!=', $excludeTherapistId)
+            ->whereHas('therapistProfile', function (Builder $q) use ($positionId): void {
+                $q->forPosition($positionId); // @phpstan-ignore method.notFound
+            })
+            ->whereHas('therapistProfile.contracts', function (Builder $q) use ($date, $serviceId): void {
+                $q->active() // @phpstan-ignore method.notFound
+                    ->coveringDate($date)
+                    ->forService($serviceId);
+            });
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === Role::ADMIN;

@@ -559,7 +559,7 @@ final class AllTransactionsDataTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->get(route('admin.ledger.accounts.all-transactions.export', [
                 'filter_date_from' => now()->subDays(5)->format('Y-m-d'),
-                'filter_date_to'   => now()->format('Y-m-d'),
+                'filter_date_to' => now()->format('Y-m-d'),
             ]));
 
         $response->assertOk()
@@ -607,7 +607,7 @@ final class AllTransactionsDataTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->get(route('admin.ledger.accounts.all-transactions.export', [
                 'filter_date_from' => now()->subDays(7)->format('Y-m-d'),
-                'filter_date_to'   => now()->format('Y-m-d'),
+                'filter_date_to' => now()->format('Y-m-d'),
             ]));
 
         $response->assertOk();
@@ -647,9 +647,9 @@ final class AllTransactionsDataTest extends TestCase
 
         $response = $this->actingAs($this->admin)
             ->get(route('admin.ledger.accounts.all-transactions.export', [
-                'filter_date_from'  => now()->subDays(7)->format('Y-m-d'),
-                'filter_date_to'    => now()->format('Y-m-d'),
-                'filter_direction'  => 'income',
+                'filter_date_from' => now()->subDays(7)->format('Y-m-d'),
+                'filter_date_to' => now()->format('Y-m-d'),
+                'filter_direction' => 'income',
             ]));
 
         $response->assertOk();

@@ -284,6 +284,11 @@ return [
                         'route' => 'therapist.schedule.pending',
                         'active' => 'therapist.schedule.pending',
                     ],
+                    [
+                        'label' => 'Sub Requests',
+                        'route' => 'therapist.sub-requests.index',
+                        'active' => 'therapist.sub-requests.*',
+                    ],
                 ],
             ],
             [

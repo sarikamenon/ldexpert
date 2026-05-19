@@ -28,6 +28,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -103,8 +104,8 @@ final class ScheduleService
         return $this->repository->getPendingCount($therapist);
     }
 
-    /** @return Collection<int, Schedule> */
-    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): Collection
+    /** @return EloquentCollection<int, Schedule> */
+    public function getPendingSchedules(User $therapist, ?ScheduleFilterDTO $filters = null): EloquentCollection
     {
         return $this->repository->getPendingSchedules($therapist, $filters);
     }
@@ -384,6 +385,16 @@ final class ScheduleService
 
             $updated = $this->repository->update($schedule, $data);
 
+            // Capture which schedule columns actually changed so we can suppress the
+            // student-facing "schedule updated" email when the save only touched
+            // sub-coverage metadata (handled via separate flows in ScheduleSubRequestService).
+            $changedColumns = array_keys($updated->getChanges());
+            $meaningfulChanges = array_diff(
+                $changedColumns,
+                ['updated_at', 'sub_therapist_id', 'sub_request_status']
+            );
+            $hasMeaningfulChange = $meaningfulChanges !== [];
+
             // Regenerate future occurrences when recurrence settings changed.
             if ($recurrenceSettingsChanged && $updated->isRecurring()) {
                 $studentIds = [$updated->student_id];
@@ -418,7 +429,9 @@ final class ScheduleService
                 $updated = $this->repository->updateBillingStatus($updated, $dto->billingStatus);
             }
 
-            ScheduleUpdated::dispatch($updated);
+            if ($hasMeaningfulChange) {
+                ScheduleUpdated::dispatch($updated);
+            }
 
             return $updated;
         });

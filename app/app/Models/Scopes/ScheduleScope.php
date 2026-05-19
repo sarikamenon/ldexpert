@@ -7,9 +7,11 @@ namespace App\Models\Scopes;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Models\Schedule;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -139,7 +141,71 @@ final class ScheduleScope extends BaseModelScope
      */
     public static function forTherapist(Builder $builder, Model $model, User $therapist): Builder
     {
-        return $builder->where(self::qualify($model, 'therapist_id'), $therapist->id);
+        return $builder->where(function (Builder $q) use ($model, $therapist): void {
+            $q->where(self::qualify($model, 'therapist_id'), $therapist->id)
+                ->orWhere(self::qualify($model, 'sub_therapist_id'), $therapist->id);
+        });
+    }
+
+    /**
+     * For pending-queue and pending-count queries: ensures the original therapist's
+     * schedule is hidden once a sub has accepted (they shouldn't log it; the sub will).
+     * The sub's own covered schedules still appear.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function hidingAcceptedCoveredForOriginal(Builder $builder, Model $model, User $therapist): Builder
+    {
+        $subStatusCol = self::qualify($model, 'sub_request_status');
+        $subTherapistCol = self::qualify($model, 'sub_therapist_id');
+
+        return $builder->where(function (Builder $q) use ($subStatusCol, $subTherapistCol, $therapist): void {
+            $q->where($subStatusCol, '!=', ScheduleSubCoverageStatus::ACCEPTED->value)
+                ->orWhereNull($subStatusCol)
+                ->orWhere($subTherapistCol, $therapist->id);
+        });
+    }
+
+    /**
+     * Filter to schedules whose combined (schedule_date + start_time) UTC instant
+     * is strictly after the given moment. Used by sub-coverage listings to hide
+     * sessions that have already started.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function startingAfter(Builder $builder, Model $model, CarbonInterface $moment): Builder
+    {
+        return self::compareStartTimestamp($builder, $model, '>', $moment);
+    }
+
+    /**
+     * Filter to schedules whose combined (schedule_date + start_time) UTC instant
+     * is at or before the given moment. Used by the auto-expiry sweep.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function startingAtOrBefore(Builder $builder, Model $model, CarbonInterface $moment): Builder
+    {
+        return self::compareStartTimestamp($builder, $model, '<=', $moment);
+    }
+
+    /**
+     * Shared whereRaw for the combined (schedule_date + start_time) UTC instant.
+     * MySQL CONVERT_TZ is not available in every environment, so we keep the
+     * comparison in PHP-formatted UTC and let the DB do a TIMESTAMP() compose.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    private static function compareStartTimestamp(Builder $builder, Model $model, string $operator, CarbonInterface $moment): Builder
+    {
+        return $builder->whereRaw(
+            'TIMESTAMP('.self::qualify($model, 'schedule_date').', '.self::qualify($model, 'start_time').") {$operator} ?",
+            [$moment->copy()->setTimezone('UTC')->format('Y-m-d H:i:s')]
+        );
     }
 
     /**

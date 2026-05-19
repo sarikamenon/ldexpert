@@ -29,7 +29,7 @@ it('transforms a scheduled schedule into fullcalendar event format', function ()
 
     $schedule->load(['therapist', 'student', 'service', 'school']);
 
-    $event = ScheduleCalendarEventTransformer::transform($schedule);
+    $event = ScheduleCalendarEventTransformer::transform($schedule, (int) $therapist->id);
 
     expect($event)
         ->toHaveKey('id', $schedule->id)
@@ -80,10 +80,10 @@ it('uses distinct colors for status and billing combinations', function () {
         $s->load(['therapist', 'student', 'service', 'school']);
     }
 
-    expect(ScheduleCalendarEventTransformer::transform($scheduledPending)['backgroundColor'])->toBe('#5563b8');
-    expect(ScheduleCalendarEventTransformer::transform($completedBilled)['backgroundColor'])->toBe('#059669');
-    expect(ScheduleCalendarEventTransformer::transform($completedPending)['backgroundColor'])->toBe('#d97706');
-    expect(ScheduleCalendarEventTransformer::transform($cancelled)['backgroundColor'])->toBe('#9ca3af');
+    expect(ScheduleCalendarEventTransformer::transform($scheduledPending, (int) $therapist->id)['backgroundColor'])->toBe('#5563b8');
+    expect(ScheduleCalendarEventTransformer::transform($completedBilled, (int) $therapist->id)['backgroundColor'])->toBe('#059669');
+    expect(ScheduleCalendarEventTransformer::transform($completedPending, (int) $therapist->id)['backgroundColor'])->toBe('#d97706');
+    expect(ScheduleCalendarEventTransformer::transform($cancelled, (int) $therapist->id)['backgroundColor'])->toBe('#9ca3af');
 });
 
 it('matches backgroundColor and borderColor for unified event color', function () {
@@ -99,7 +99,7 @@ it('matches backgroundColor and borderColor for unified event color', function (
 
     $schedule->load(['therapist', 'student', 'service', 'school']);
 
-    $event = ScheduleCalendarEventTransformer::transform($schedule);
+    $event = ScheduleCalendarEventTransformer::transform($schedule, (int) $therapist->id);
 
     expect($event['backgroundColor'])->toBe($event['borderColor']);
 });
@@ -118,7 +118,7 @@ it('includes all required extended props', function () {
 
     $schedule->load(['therapist', 'student', 'service', 'school']);
 
-    $event = ScheduleCalendarEventTransformer::transform($schedule);
+    $event = ScheduleCalendarEventTransformer::transform($schedule, (int) $therapist->id);
     $props = $event['extendedProps'];
 
     expect($props)
@@ -143,7 +143,7 @@ it('sets is_billed to true for billed schedules', function () {
 
     $schedule->load(['therapist', 'student', 'service', 'school']);
 
-    $event = ScheduleCalendarEventTransformer::transform($schedule);
+    $event = ScheduleCalendarEventTransformer::transform($schedule, (int) $therapist->id);
 
     expect($event['extendedProps']['is_billed'])->toBeTrue();
 });

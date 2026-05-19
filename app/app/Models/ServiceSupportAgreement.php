@@ -223,6 +223,43 @@ class ServiceSupportAgreement extends Model
      * @param  Builder<ServiceSupportAgreement>  $query
      * @return Builder<ServiceSupportAgreement>
      */
+    public function scopeForAssignedTherapist(Builder $query, int $therapistId): Builder
+    {
+        return $query->where('assigned_therapist_id', $therapistId);
+    }
+
+    /**
+     * SSAs whose date range covers the given date (start_date <= $date <= end_date,
+     * or end_date is null meaning open-ended).
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeEffectiveOn(Builder $query, string $date): Builder
+    {
+        return $query
+            ->where('start_date', '<=', $date)
+            ->where(function (Builder $q) use ($date): void {
+                $q->whereNull('end_date')
+                    ->orWhere('end_date', '>=', $date);
+            });
+    }
+
+    /**
+     * SSAs in active or pending status (the two states valid for session submission).
+     *
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
+    public function scopeActiveOrPending(Builder $query): Builder
+    {
+        return $query->whereIn('status', [SSAStatus::ACTIVE, SSAStatus::PENDING]);
+    }
+
+    /**
+     * @param  Builder<ServiceSupportAgreement>  $query
+     * @return Builder<ServiceSupportAgreement>
+     */
     public function scopeAssigned(Builder $query): Builder
     {
         return $query->whereNotNull('assigned_therapist_id');
@@ -262,6 +299,8 @@ class ServiceSupportAgreement extends Model
         $sessions = $this->sessions_per_frequency;
         $frequency = $this->frequency;
 
+        // minutes_per_session / sessions_per_frequency are cast int but may be NULL in DB.
+        // @phpstan-ignore-next-line identical.alwaysFalse, booleanOr.alwaysFalse, identical.alwaysFalse
         if ($minutes === null || $sessions === null || $frequency === null) {
             return null;
         }

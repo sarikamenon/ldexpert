@@ -75,6 +75,7 @@ class SessionLog extends Model
         'sent_back_at',
         'sent_back_by_id',
         'cancellation_reason',
+        'original_therapist_id',
     ];
 
     protected function casts(): array
@@ -197,6 +198,12 @@ class SessionLog extends Model
     public function therapistBill(): BelongsTo
     {
         return $this->belongsTo(TherapistBill::class, 'therapist_bill_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function originalTherapist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'original_therapist_id');
     }
 
     /** @return \Illuminate\Database\Eloquent\Relations\MorphMany<\App\Models\StudentDocument, $this> */

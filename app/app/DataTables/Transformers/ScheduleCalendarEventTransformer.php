@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
 use App\Enums\BillingStatus;
 use App\Enums\ScheduleStatus;
 use App\Models\Schedule;
@@ -16,7 +17,7 @@ final class ScheduleCalendarEventTransformer
      *
      * @return array<string, mixed>
      */
-    public static function transform(Schedule $schedule): array
+    public static function transform(Schedule $schedule, int $viewerId): array
     {
         $tz = $schedule->displayTimezone();
         $localStart = $schedule->localStart($tz);
@@ -24,6 +25,8 @@ final class ScheduleCalendarEventTransformer
         $isPast = $localStart->lt(now($tz)->startOfDay());
         $isBilled = $schedule->billing_status === BillingStatus::BILLED;
         $color = self::eventColor($schedule);
+
+        $coverage = CoverageRoleResolver::for($schedule, $viewerId);
 
         return [
             'id' => $schedule->id,
@@ -48,6 +51,10 @@ final class ScheduleCalendarEventTransformer
                 'has_session_log' => $schedule->sessionLog !== null,
                 'session_log_status' => $schedule->sessionLog?->status?->value,
                 'session_log_outcome' => $schedule->sessionLog?->outcome?->value,
+                'sub_request_status' => $schedule->sub_request_status?->value,
+                'sub_therapist_name' => $schedule->subTherapist?->name,
+                'coverage_role' => $coverage['role'],
+                'coverage_badge_label' => $coverage['badge_label'],
             ],
         ];
     }

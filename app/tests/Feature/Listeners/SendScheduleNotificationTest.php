@@ -28,7 +28,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: 'parent@example.com');
 
-        (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('parent@example.com');
@@ -41,7 +41,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: 'parent@example.com');
 
-        (new SendScheduleNotification())->handle(new ScheduleUpdated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleUpdated($schedule));
 
         Mail::assertSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('parent@example.com');
@@ -57,7 +57,7 @@ final class SendScheduleNotificationTest extends TestCase
             therapistEmail: 'therapist@example.com',
         );
 
-        (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNotSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('therapist@example.com');
@@ -70,7 +70,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: 'parent@example.com');
 
-        (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertSentCount(1);
     }
@@ -81,7 +81,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: null);
 
-        (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNothingSent();
     }
@@ -95,7 +95,7 @@ final class SendScheduleNotificationTest extends TestCase
             date: Carbon::yesterday(),
         );
 
-        (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNothingSent();
     }
@@ -109,7 +109,7 @@ final class SendScheduleNotificationTest extends TestCase
             sendEmail: false,
         );
 
-        (new SendScheduleNotification())->handle(new ScheduleCreated($schedule));
+        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNothingSent();
     }
@@ -128,26 +128,26 @@ final class SendScheduleNotificationTest extends TestCase
 
         $student = User::factory()->create();
         StudentProfile::factory()->create([
-            'user_id'        => $student->id,
+            'user_id' => $student->id,
             'schedule_email' => $scheduleEmail,
         ]);
         $student->load('studentProfile');
 
         $service = Service::factory()->create([
             'is_direct_service' => false,
-            'send_email'        => $sendEmail,
+            'send_email' => $sendEmail,
         ]);
 
         $scheduleDate = $date ?? Carbon::tomorrow();
 
         /** @var Schedule $schedule */
         $schedule = Schedule::factory()->create([
-            'therapist_id'  => $therapist->id,
-            'student_id'    => $student->id,
-            'service_id'    => $service->id,
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'service_id' => $service->id,
             'schedule_date' => $scheduleDate,
-            'start_time'    => $scheduleDate->copy()->setTime(9, 0),
-            'end_time'      => $scheduleDate->copy()->setTime(10, 0),
+            'start_time' => $scheduleDate->copy()->setTime(9, 0),
+            'end_time' => $scheduleDate->copy()->setTime(10, 0),
         ]);
 
         $schedule->setRelation('therapist', $therapist);

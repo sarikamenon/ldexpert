@@ -14,6 +14,7 @@ use App\Http\Controllers\Therapist\SSAGoalController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
 use App\Http\Controllers\Therapist\StudentDocumentController;
+use App\Http\Controllers\Therapist\SubRequestController;
 use Illuminate\Support\Facades\Route;
 
 // Therapist area
@@ -84,6 +85,20 @@ Route::middleware('role:therapist')
             Route::get('{qglob_request}', [QGlobRequestController::class, 'show'])->name('show');
             Route::delete('{qglob_request}', [QGlobRequestController::class, 'destroy'])->name('destroy');
         });
+
+        // Sub request routes
+        Route::prefix('sub-requests')->name('sub-requests.')->group(function () {
+            Route::get('/', [SubRequestController::class, 'index'])->name('index');
+            Route::post('data', [SubRequestController::class, 'data'])->name('data');
+            Route::get('eligible-subs', [SubRequestController::class, 'eligibleSubs'])->name('eligible-subs');
+            Route::post('{subRequest}/accept', [SubRequestController::class, 'accept'])->name('accept')->whereNumber('subRequest');
+            Route::post('{subRequest}/decline', [SubRequestController::class, 'decline'])->name('decline')->whereNumber('subRequest');
+            Route::post('{subRequest}/cancel', [SubRequestController::class, 'cancel'])->name('cancel')->whereNumber('subRequest');
+            Route::patch('{subRequest}/invitees', [SubRequestController::class, 'updateInvitees'])->name('invitees.update')->whereNumber('subRequest');
+            Route::get('{subRequest}/eligible-subs', [SubRequestController::class, 'eligibleSubs'])->name('eligible-subs-for-request')->whereNumber('subRequest');
+        });
+
+        Route::post('schedules/{schedule}/sub-request', [SubRequestController::class, 'store'])->name('sub-requests.store-for-schedule')->whereNumber('schedule');
 
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {

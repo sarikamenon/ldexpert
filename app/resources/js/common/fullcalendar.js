@@ -88,6 +88,41 @@ export function initFullCalendar(calendarEl, options) {
                 info.el.classList.add('fc-event-orphan-log');
             }
 
+            // Sub-coverage indicator: small icon + tooltip on schedules where the viewer
+            // is either the requester ("Covered by X", "Sub requested") or the covering sub
+            // ("Covering for X"). See ScheduleCalendarEventTransformer::coverageContext().
+            if (props.coverage_role) {
+                info.el.classList.add(`fc-event-coverage-${props.coverage_role}`);
+
+                if (props.coverage_badge_label) {
+                    const COVERAGE_ICONS = {
+                        covering: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z',
+                        covered: 'M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-5.13a4 4 0 11-8 0 4 4 0 018 0zm6 0a4 4 0 11-8 0 4 4 0 018 0z',
+                        open_request: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+                    };
+                    const path = COVERAGE_ICONS[props.coverage_role];
+                    if (path) {
+                        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.setAttribute('viewBox', '0 0 24 24');
+                        svg.setAttribute('fill', 'none');
+                        svg.setAttribute('stroke', 'currentColor');
+                        svg.setAttribute('stroke-width', '2');
+                        svg.setAttribute('stroke-linecap', 'round');
+                        svg.setAttribute('stroke-linejoin', 'round');
+                        svg.classList.add('fc-coverage-icon', `fc-coverage-${props.coverage_role}`);
+                        svg.setAttribute('aria-label', props.coverage_badge_label);
+                        const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        pathEl.setAttribute('d', path);
+                        svg.appendChild(pathEl);
+                        const mountEl = info.el.querySelector('.fc-event-main') ?? info.el;
+                        mountEl.appendChild(svg);
+                    }
+
+                    // Native tooltip for hover.
+                    info.el.setAttribute('title', props.coverage_badge_label);
+                }
+            }
+
             if (options.showSessionLogIndicators) {
                 const logStatus = props.session_log_status;
                 if (!props.is_past && !logStatus) return;

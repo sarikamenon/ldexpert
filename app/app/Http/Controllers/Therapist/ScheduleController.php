@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
+use App\Domain\Schedule\Sub\Presenters\SubCoveragePanelPresenter;
+use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
+use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAService;
@@ -15,7 +18,9 @@ use App\DTOs\CreateScheduleDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SubRequestInviteeStatus;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;
@@ -30,6 +35,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -42,6 +48,8 @@ final class ScheduleController extends Controller
         private readonly SchoolCalendarService $calendarService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly UserTimezoneService $timezoneService,
+        private readonly ScheduleSubRequestService $subRequestService,
+        private readonly SubCoveragePanelPresenter $subCoveragePanelPresenter,
     ) {}
 
     public function create(Request $request): View|RedirectResponse
@@ -162,6 +170,8 @@ final class ScheduleController extends Controller
             'ssa.student.studentProfile',
             'ssa.student.studentProfile.school',
             'school',
+            'activeSubRequest.invitees.therapist',
+            'activeSubRequest.acceptedBy',
         ]);
 
         $this->authorize('update', $schedule);
@@ -175,6 +185,8 @@ final class ScheduleController extends Controller
         $localStart = $schedule->localStart($tz);
         $localEnd = $schedule->localEnd($tz);
 
+        $subPanel = $this->subCoveragePanelPresenter->present($schedule, $tz);
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
             'therapistTimezone' => $therapistTimezone,
@@ -184,6 +196,7 @@ final class ScheduleController extends Controller
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
+            'subPanel' => $subPanel,
         ]);
     }
 
@@ -226,7 +239,7 @@ final class ScheduleController extends Controller
         $tz = $this->timezoneService->resolveTimezone($therapist);
 
         return response()->json([
-            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule, $tz) {
+            'schedules' => $schedules->map(function ($schedule) use ($sessionLogsBySchedule, $tz, $therapist) {
                 $localStart = $schedule->localStart($tz);
                 $localEnd = $schedule->localEnd($tz);
                 $isPast = $localStart->lt(now($tz)->startOfDay());
@@ -235,6 +248,14 @@ final class ScheduleController extends Controller
                 $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
                 /** @var \App\Models\SessionLog|null $sessionLog */
                 $sessionLog = $sessionLogsBySchedule->get($schedule->id)?->first();
+
+                $coverage = CoverageRoleResolver::for($schedule, (int) $therapist->id);
+                $coverageRole = $coverage['role'];
+                $coverageLabel = $coverage['badge_label'];
+
+                // When the original therapist's schedule is now covered by a sub, they
+                // should not bill / log it — the sub will. Suppress billing affordance.
+                $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
                 return [
                     'id' => $schedule->id,
@@ -252,9 +273,12 @@ final class ScheduleController extends Controller
                     'is_past' => $isPast,
                     'has_event_started' => $hasEventStarted,
                     'is_billed' => $isBilled,
-                    'bill_url' => $hasEventStarted && $isPendingBilling
+                    'bill_url' => $canBill
                         ? route('therapist.session-logs.create.from-schedule', $schedule->id)
                         : null,
+                    'coverage_role' => $coverageRole,
+                    'coverage_badge_label' => $coverageLabel,
+                    'sub_request_status' => $schedule->sub_request_status?->value,
                     'session_log_url' => $isPast && $isBilled && $sessionLog
                         ? route('therapist.session-logs.show', $sessionLog)
                         : null,
@@ -280,6 +304,7 @@ final class ScheduleController extends Controller
 
         $filters = ScheduleFilterDTO::fromRequest($request->validated());
         $pendingSchedules = $this->scheduleService->getPendingSchedules($therapist, $filters);
+        $pendingSchedules->loadMissing('activeSubRequest.invitees');
 
         // Reference data for filters
         $ssas = $this->ssaService
@@ -314,6 +339,9 @@ final class ScheduleController extends Controller
             'ssas' => $ssas,
             'services' => $services,
             'filters' => $filters->toArray(),
+            'subRequestRequestedStatus' => ScheduleSubCoverageStatus::REQUESTED,
+            'inviteeInvitedStatus' => SubRequestInviteeStatus::INVITED,
+            'inviteeDeclinedStatus' => SubRequestInviteeStatus::DECLINED,
         ]);
     }
 
@@ -357,10 +385,28 @@ final class ScheduleController extends Controller
             return back()->withErrors(['service_id' => $e->getMessage()])->withInput();
         }
 
+        $subWarning = null;
+        if ($request->boolean('request_sub')) {
+            /** @var array<int, int> $subInviteeIds */
+            $subInviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
+            $subReason = $request->string('sub_reason')->toString() ?: null;
+            $subWarning = $this->raiseSubRequestForNewSchedule($therapist, $schedule, $subInviteeIds, $subReason);
+        }
+
         if ($request->expectsJson()) {
-            return response()->json([
-                'schedule' => $schedule,
-            ], 201);
+            $response = ['schedule' => $schedule];
+            if ($subWarning !== null) {
+                $response['sub_warning'] = $subWarning;
+            }
+
+            return response()->json($response, 201);
+        }
+
+        if ($subWarning !== null) {
+            return redirect()
+                ->route('therapist.schedule.edit', $schedule->id)
+                ->with('status', 'Schedule created successfully.')
+                ->with('warning', $subWarning);
         }
 
         return redirect()
@@ -384,7 +430,7 @@ final class ScheduleController extends Controller
 
         try {
             $updated = $this->scheduleService->updateSchedule($therapist, $id, $dto)
-                ->load(['student', 'service', 'ssa', 'school']);
+                ->load(['student', 'service', 'ssa', 'school', 'activeSubRequest']);
         } catch (ScheduleOverlapException $e) {
             if ($request->expectsJson()) {
                 return response()->json([
@@ -398,10 +444,34 @@ final class ScheduleController extends Controller
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
         }
 
+        $subWarning = null;
+        if ($request->has('sub_invitee_ids') || $request->boolean('request_sub')) {
+            /** @var array<int, int> $inviteeIds */
+            $inviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
+            $subReason = $request->string('sub_reason')->toString() ?: null;
+            $subWarning = $this->reconcileSubRequestForUpdatedSchedule(
+                $therapist,
+                $updated,
+                $inviteeIds,
+                $request->boolean('request_sub'),
+                $subReason,
+            );
+        }
+
         if ($request->expectsJson()) {
-            return response()->json([
-                'schedule' => $updated,
-            ]);
+            $response = ['schedule' => $updated];
+            if ($subWarning !== null) {
+                $response['sub_warning'] = $subWarning;
+            }
+
+            return response()->json($response);
+        }
+
+        if ($subWarning !== null) {
+            return redirect()
+                ->route('therapist.schedule.edit', $updated->id)
+                ->with('status', 'Schedule updated successfully.')
+                ->with('warning', $subWarning);
         }
 
         return redirect()
@@ -556,6 +626,7 @@ final class ScheduleController extends Controller
             'school',
             'emailLogs.sentBy',
             'sessionLog',
+            'subTherapist',
         ]);
 
         if ($schedule === null) {
@@ -571,5 +642,70 @@ final class ScheduleController extends Controller
                 'timezone' => $tz,
                 'session_log_route' => 'therapist.session-logs.show',
             ]);
+    }
+
+    /**
+     * Bundled side-effect for schedule create: raise a sub request and (for
+     * recurring schedules) propagate to occurrences. The primary action — saving
+     * the schedule — has already succeeded; failures here become a non-fatal
+     * warning so the user can retry from the edit page (CLAUDE.md side-effects
+     * rule: never let a side-effect break the primary action's HTTP semantics).
+     *
+     * @param  array<int, int>  $inviteeIds
+     */
+    private function raiseSubRequestForNewSchedule(User $requester, Schedule $schedule, array $inviteeIds, ?string $reason): ?string
+    {
+        try {
+            $result = $this->subRequestService->createForScheduleAndOccurrences($requester, $schedule, $inviteeIds, $reason);
+            if ($result['skipped'] > 0) {
+                return "Sub request created for {$result['created']} session(s); {$result['skipped']} occurrence(s) were skipped (already past the cutoff or otherwise ineligible).";
+            }
+
+            return null;
+        } catch (\InvalidArgumentException $e) {
+            return $e->getMessage();
+        } catch (\Throwable $e) {
+            Log::error('ScheduleController@store: failed to create sub request after schedule save', [
+                'schedule_id' => $schedule->id,
+                'exception' => $e,
+            ]);
+
+            return 'Schedule saved, but the sub request could not be created. Please try again from the schedule edit page.';
+        }
+    }
+
+    /**
+     * Bundled side-effect for schedule update: either sync invitees on the
+     * existing open request, or raise a new one. Same swallow-and-warn contract
+     * as raiseSubRequestForNewSchedule().
+     *
+     * @param  array<int, int>  $inviteeIds
+     */
+    private function reconcileSubRequestForUpdatedSchedule(User $requester, Schedule $schedule, array $inviteeIds, bool $requestSubFlag, ?string $reason): ?string
+    {
+        $subRequest = $schedule->activeSubRequest;
+
+        if ($subRequest !== null && $subRequest->isOpen()) {
+            try {
+                $this->subRequestService->syncInvitees($requester, $subRequest, $inviteeIds);
+
+                return null;
+            } catch (\InvalidArgumentException $e) {
+                return $e->getMessage();
+            } catch (\Throwable $e) {
+                Log::error('ScheduleController@update: failed to sync sub invitees', [
+                    'schedule_id' => $schedule->id,
+                    'exception' => $e,
+                ]);
+
+                return 'Schedule updated, but sub invitees could not be saved. Please try again from the schedule edit page.';
+            }
+        }
+
+        if ($subRequest === null && $requestSubFlag) {
+            return $this->raiseSubRequestForNewSchedule($requester, $schedule, $inviteeIds, $reason);
+        }
+
+        return null;
     }
 }

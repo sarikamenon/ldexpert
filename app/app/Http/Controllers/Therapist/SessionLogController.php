@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Domain\Billing\Services\BillingEntryWindowService;
+use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\SSA\Services\SSAGoalService;
@@ -66,6 +67,7 @@ final class SessionLogController extends Controller
         private readonly UserTimezoneService $timezoneService,
         private readonly SSAGoalService $goalService,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
+        private readonly ScheduleSubRequestRepositoryInterface $subRequestRepository,
     ) {}
 
     public function selectSSA(Request $request): View
@@ -165,19 +167,40 @@ final class SessionLogController extends Controller
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
-        // If schedule provided, validate access
-        if ($schedule && $schedule->therapist_id !== $therapist->id) {
-            abort(403, 'You do not have access to this schedule.');
+        // If schedule provided, validate access — original therapist OR accepted sub
+        $isAcceptedSub = false;
+        $originalTherapist = null;
+        if ($schedule) {
+            $isOwner = $schedule->therapist_id === $therapist->id;
+            $isAcceptedSub = (int) $schedule->sub_therapist_id === (int) $therapist->id;
+
+            if (! $isOwner && ! $isAcceptedSub) {
+                abort(403, 'You do not have access to this schedule.');
+            }
+
+            if ($isAcceptedSub) {
+                $originalTherapist = $schedule->therapist;
+            }
         }
 
         if ($schedule !== null && ! $schedule->is_billable) {
             abort(403, 'Session logs cannot be submitted for schedules excluded from the Past Sessions queue for this organization.');
         }
 
-        // Get active SSAs assigned to the therapist
-        $ssas = $this->ssaService
-            ->getActiveSSAsForTherapist($therapist->id)
-            ->loadMissing(['student', 'primaryService', 'services']);
+        // When a sub is covering, load the SSA from the sub-SSA snapshot; otherwise use their own active SSAs.
+        if ($isAcceptedSub && $schedule !== null) {
+            $subSsa = $this->subRequestRepository->findSubSsaForSchedule(
+                (int) $schedule->id,
+                (int) $therapist->id,
+                ['ssa.student', 'ssa.primaryService', 'ssa.services'],
+            );
+            // $subSsa->ssa is already eager-loaded with student, primaryService, services above.
+            $ssas = $subSsa?->ssa ? collect([$subSsa->ssa]) : collect();
+        } else {
+            $ssas = $this->ssaService
+                ->getActiveSSAsForTherapist($therapist->id)
+                ->loadMissing(['student', 'primaryService', 'services']);
+        }
 
         // When coming from the standalone flow, an SSA must be selected first.
         $selectedSsaId = (int) $request->query('ssa_id', 0);
@@ -261,6 +284,7 @@ final class SessionLogController extends Controller
             'scheduleLocalStartTime' => $scheduleLocalStartTime,
             'scheduleLocalEndTime' => $scheduleLocalEndTime,
             'ssaContext' => $this->buildSsaContext($selectedSsa),
+            'originalTherapist' => $originalTherapist,
         ]);
     }
 

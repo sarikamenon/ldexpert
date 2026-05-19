@@ -7,9 +7,13 @@ namespace App\Models;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
+use App\Enums\ScheduleSubCoverageStatus;
+use App\Enums\SubRequestStatus;
 use App\Models\Scopes\ScheduleScope;
+use App\Observers\ScheduleObserver;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,7 +32,9 @@ use Illuminate\Support\Collection;
  * @property BillingStatus $billing_status
  * @property RecurrenceType|null $recurrence_type
  * @property bool $is_billable
+ * @property ScheduleSubCoverageStatus|null $sub_request_status
  */
+#[ObservedBy([ScheduleObserver::class])]
 class Schedule extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleFactory> */
@@ -54,6 +60,8 @@ class Schedule extends Model
         'is_billable',
         'notes',
         'location_details',
+        'sub_therapist_id',
+        'sub_request_status',
     ];
 
     protected function casts(): array
@@ -67,6 +75,7 @@ class Schedule extends Model
             'is_group' => 'boolean',
             'status' => ScheduleStatus::class,
             'billing_status' => BillingStatus::class,
+            'sub_request_status' => ScheduleSubCoverageStatus::class,
             'is_billable' => 'boolean',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -144,6 +153,39 @@ class Schedule extends Model
     public function sessionLog(): HasOne
     {
         return $this->hasOne(SessionLog::class, 'schedule_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function subTherapist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sub_therapist_id');
+    }
+
+    /**
+     * @return HasOne<ScheduleSubRequest, $this>
+     */
+    public function activeSubRequest(): HasOne
+    {
+        return $this->hasOne(ScheduleSubRequest::class, 'schedule_id')
+            ->whereIn('status', [SubRequestStatus::OPEN->value, SubRequestStatus::ACCEPTED->value]);
+    }
+
+    /**
+     * @return HasMany<ScheduleSubRequest, $this>
+     */
+    public function subRequests(): HasMany
+    {
+        return $this->hasMany(ScheduleSubRequest::class, 'schedule_id');
+    }
+
+    /**
+     * @return HasOne<ScheduleSubSsa, $this>
+     */
+    public function subSsa(): HasOne
+    {
+        return $this->hasOne(ScheduleSubSsa::class, 'schedule_id');
     }
 
     /**
@@ -316,6 +358,51 @@ class Schedule extends Model
     public function scopeForPastSessionsQueue(Builder $query): Builder
     {
         return ScheduleScope::forPastSessionsQueue($query, $this);
+    }
+
+    /**
+     * Hides schedules that have been accepted by a sub from the original therapist's
+     * pending queue, while still showing the sub's own covered schedules.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeHidingAcceptedCoveredForOriginal(Builder $query, User $therapist): Builder
+    {
+        return ScheduleScope::hidingAcceptedCoveredForOriginal($query, $this, $therapist);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeStartingAfter(Builder $query, \Carbon\CarbonInterface $moment): Builder
+    {
+        return ScheduleScope::startingAfter($query, $this, $moment);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeStartingAtOrBefore(Builder $query, \Carbon\CarbonInterface $moment): Builder
+    {
+        return ScheduleScope::startingAtOrBefore($query, $this, $moment);
+    }
+
+    /**
+     * Matches the parent schedule itself plus all its child occurrences.
+     * Used to load all occurrences in a recurring batch when raising sub requests.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeForParentOrSelf(Builder $query, Schedule $schedule): Builder
+    {
+        return $query->where(function (Builder $q) use ($schedule): void {
+            $q->where('id', $schedule->id)
+                ->orWhere('parent_schedule_id', $schedule->id);
+        });
     }
 
     public function isRecurring(): bool

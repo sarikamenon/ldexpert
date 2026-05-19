@@ -83,4 +83,33 @@ class TherapistContract extends Model
     {
         return $query->where('therapist_id', $therapistId);
     }
+
+    /**
+     * Contract whose effective range covers the given calendar date.
+     * Start date is inclusive; end date is inclusive or null (open-ended).
+     *
+     * @param  Builder<TherapistContract>  $query
+     * @return Builder<TherapistContract>
+     */
+    public function scopeCoveringDate(Builder $query, string $date): Builder
+    {
+        return $query->where('start_date', '<=', $date)
+            ->where(function (Builder $end) use ($date): void {
+                $end->whereNull('end_date')
+                    ->orWhere('end_date', '>=', $date);
+            });
+    }
+
+    /**
+     * Contract that lists a rate for the given service id.
+     *
+     * @param  Builder<TherapistContract>  $query
+     * @return Builder<TherapistContract>
+     */
+    public function scopeForService(Builder $query, int $serviceId): Builder
+    {
+        return $query->whereHas('services', function (Builder $svc) use ($serviceId): void {
+            $svc->where('service_id', $serviceId); // @phpstan-ignore argument.type
+        });
+    }
 }

@@ -64,6 +64,10 @@ final class StoreScheduleRequest extends FormRequest
             'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'location_details' => ['required', 'string', 'max:2000'],
+            'request_sub' => ['nullable', 'boolean'],
+            'sub_reason' => ['required_if:request_sub,1', 'nullable', 'string', 'max:1000'],
+            'sub_invitee_ids' => ['nullable', 'array', 'min:1'],
+            'sub_invitee_ids.*' => ['integer', 'exists:users,id'],
         ];
     }
 
@@ -86,6 +90,7 @@ final class StoreScheduleRequest extends FormRequest
             'occurrence_dates.*.required' => 'All occurrence dates must be filled.',
             'occurrence_dates.*.date' => 'Each occurrence date must be a valid date.',
             'occurrence_dates.*.after_or_equal' => 'Each occurrence date must be on or after the schedule start date.',
+            'sub_reason.required_if' => 'Please provide a reason for the sub request.',
         ];
     }
 
@@ -101,6 +106,18 @@ final class StoreScheduleRequest extends FormRequest
 
             if (! $therapist) {
                 return;
+            }
+
+            // sub_invitee_ids is required when request_sub is true
+            if ($this->boolean('request_sub')) {
+                $inviteeIds = $this->input('sub_invitee_ids');
+                if (empty($inviteeIds) || ! is_array($inviteeIds)) {
+                    $validator->errors()->add('sub_invitee_ids', 'Please select at least one therapist to invite when requesting a sub.');
+                }
+
+                if ($this->input('recurrence_type') !== RecurrenceType::NONE->value) {
+                    $validator->errors()->add('recurrence_type', 'Sub coverage can only be requested for single (non-recurring) sessions.');
+                }
             }
 
             // Validate therapist has access to SSA and it's active

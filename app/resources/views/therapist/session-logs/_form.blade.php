@@ -14,6 +14,18 @@
         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}" />
     @endif
 
+    {{-- Sub coverage banner: shown when this therapist is covering for another --}}
+    @if (isset($originalTherapist))
+        <x-ui::alert variant="info" class="mb-4">
+            <p class="font-semibold">Submitting as substitute</p>
+            <p class="text-sm mt-1">
+                You are submitting this session log on behalf of
+                <span class="font-medium">{{ $originalTherapist->name }}</span>,
+                who was originally assigned to this schedule.
+            </p>
+        </x-ui::alert>
+    @endif
+
     {{-- Billing window blocked banner (shown/hidden by JS) --}}
     <div id="billing-window-blocked" class="hidden">
         <x-ui::alert variant="danger" class="mb-4">

@@ -171,6 +171,15 @@ import { errorAlert } from '../common/sweetalert';
         serviceSelect.dataset.initialValue = state.selected_service || '';
         updateServiceOptions();
         toggleRecurrenceCard();
+
+        // Sub coverage checkbox toggle
+        const requestSubCheckbox = document.getElementById('request_sub');
+        const subReasonContainer = document.getElementById('sub_reason_container');
+        if (requestSubCheckbox && subReasonContainer) {
+            requestSubCheckbox.addEventListener('change', () => {
+                subReasonContainer.classList.toggle('hidden', !requestSubCheckbox.checked);
+            });
+        }
     });
 })();
 

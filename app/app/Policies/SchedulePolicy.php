@@ -17,7 +17,14 @@ final class SchedulePolicy
 
     public function view(User $user, Schedule $schedule): bool
     {
-        return $this->isAdmin($user) || $this->ownsSchedule($user, $schedule);
+        if ($this->isAdmin($user) || $this->ownsSchedule($user, $schedule)) {
+            return true;
+        }
+
+        // Covering sub: when an accepted sub-request assigns this schedule to the user,
+        // they need to view it to deliver the session and submit the log.
+        return $this->isTherapist($user)
+            && (int) ($schedule->sub_therapist_id ?? 0) === (int) $user->id;
     }
 
     public function create(User $user): bool
@@ -31,6 +38,11 @@ final class SchedulePolicy
     }
 
     public function delete(User $user, Schedule $schedule): bool
+    {
+        return $this->ownsSchedule($user, $schedule);
+    }
+
+    public function createSubRequest(User $user, Schedule $schedule): bool
     {
         return $this->ownsSchedule($user, $schedule);
     }
