@@ -134,6 +134,17 @@ function billingBadgeWithDot(billingStatus) {
     return badgePill(meta.label, dotMap[billingStatus] || 'bg-foreground/40', textMap[billingStatus] || 'text-foreground/70', bgMap[billingStatus] || 'bg-foreground/10');
 }
 
+function coverageBadge(coverage) {
+    if (!coverage || !coverage.role || !coverage.badge_label) return '';
+    const map = {
+        covering: { dot: 'bg-success', text: 'text-success', bg: 'bg-success/10' },
+        covered: { dot: 'bg-warning', text: 'text-warning', bg: 'bg-warning/10' },
+        open_request: { dot: 'bg-primary', text: 'text-primary', bg: 'bg-primary/10' },
+    };
+    const s = map[coverage.role] || { dot: 'bg-foreground/40', text: 'text-foreground/70', bg: 'bg-foreground/10' };
+    return badgePill(coverage.badge_label, s.dot, s.text, s.bg);
+}
+
 function badgePill(label, dotCls, textCls, bgCls) {
     return `<span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full ${bgCls} ${textCls}">
         <span class="w-1.5 h-1.5 rounded-full ${dotCls}" aria-hidden="true"></span>
@@ -172,6 +183,7 @@ function buildLeftSidebar(schedule) {
             <div class="flex items-center gap-2 flex-wrap">
                 ${statusBadgeWithDot(schedule.status)}
                 ${billingBadgeWithDot(schedule.billing_status)}
+                ${coverageBadge(schedule.coverage)}
             </div>
 
             <div>

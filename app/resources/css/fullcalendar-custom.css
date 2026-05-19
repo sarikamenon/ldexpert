@@ -1,5 +1,15 @@
 /* FullCalendar Custom Theme for NOVA */
 
+:root {
+    /* Coverage state bar colors — kept as CSS vars so they can be re-themed
+     * without touching individual selectors. Values mirror the design tokens
+     * for success / warning / primary (Tailwind doesn't emit them as runtime
+     * vars, so we declare them locally here). */
+    --coverage-covering-color: #22c55e; /* success */
+    --coverage-covered-color: #f59e0b;  /* warning */
+    --coverage-open-request-color: #5563b8; /* primary */
+}
+
 .fc {
     --fc-border-color: #e5e7eb;
     --fc-today-bg-color: rgba(85, 99, 184, 0.05);
@@ -156,14 +166,14 @@
  * covering = green (you're the sub), covered = amber (your schedule is taken by someone),
  * open_request = blue dashed (you raised a request, awaiting acceptance). */
 .fc-event-coverage-covering {
-    border-left: 8px solid #16a34a !important;
+    border-left: 8px solid var(--coverage-covering-color) !important;
 }
 .fc-event-coverage-covered {
-    border-left: 8px solid #f59e0b !important;
+    border-left: 8px solid var(--coverage-covered-color) !important;
     opacity: 0.9;
 }
 .fc-event-coverage-open_request {
-    border-left: 8px solid #2563eb !important;
+    border-left: 8px solid var(--coverage-open-request-color) !important;
 }
 
 /* Time grid slots */

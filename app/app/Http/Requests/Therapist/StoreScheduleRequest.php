@@ -114,6 +114,10 @@ final class StoreScheduleRequest extends FormRequest
                 if (empty($inviteeIds) || ! is_array($inviteeIds)) {
                     $validator->errors()->add('sub_invitee_ids', 'Please select at least one therapist to invite when requesting a sub.');
                 }
+
+                if ($this->input('recurrence_type') !== RecurrenceType::NONE->value) {
+                    $validator->errors()->add('recurrence_type', 'Sub coverage can only be requested for single (non-recurring) sessions.');
+                }
             }
 
             // Validate therapist has access to SSA and it's active

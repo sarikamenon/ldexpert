@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Enums\Role;
 use App\Models\Schedule;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class StoreSubRequestRequest extends FormRequest
 {
@@ -35,7 +38,12 @@ final class StoreSubRequestRequest extends FormRequest
         return [
             'reason' => ['nullable', 'string', 'max:1000'],
             'invitee_ids' => ['required', 'array', 'min:1'],
-            'invitee_ids.*' => ['integer', 'exists:users,id'],
+            'invitee_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where(
+                    fn (Builder $q) => $q->where('role', Role::THERAPIST->value)->whereNull('deleted_at')
+                ),
+            ],
         ];
     }
 }

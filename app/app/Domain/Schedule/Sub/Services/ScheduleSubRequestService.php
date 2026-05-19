@@ -413,6 +413,16 @@ final class ScheduleSubRequestService
         return $this->repository->listOpenForTherapist($sub);
     }
 
+    /**
+     * Paginated variant for DataTables.
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function pageOpenForTherapist(User $sub, int $offset, int $limit): Collection
+    {
+        return $this->repository->pageOpenForTherapist($sub, $offset, $limit);
+    }
+
     public function countOpenForTherapist(User $sub): int
     {
         return $this->repository->countOpenForTherapist($sub);
@@ -437,6 +447,25 @@ final class ScheduleSubRequestService
         [$startOfTodayUtc] = $this->timezoneService->userDayUtcRange(now(), $requester);
 
         return $this->repository->listAsRequester($requester, $startOfTodayUtc);
+    }
+
+    /**
+     * Paginated variant for DataTables.
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function pageAsRequester(User $requester, int $offset, int $limit): Collection
+    {
+        [$startOfTodayUtc] = $this->timezoneService->userDayUtcRange(now(), $requester);
+
+        return $this->repository->pageAsRequester($requester, $startOfTodayUtc, $offset, $limit);
+    }
+
+    public function countAsRequester(User $requester): int
+    {
+        [$startOfTodayUtc] = $this->timezoneService->userDayUtcRange(now(), $requester);
+
+        return $this->repository->countAsRequester($requester, $startOfTodayUtc);
     }
 
     /**

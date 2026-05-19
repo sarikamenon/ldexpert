@@ -86,6 +86,7 @@ final class ScheduleCalendarController extends Controller
                 'school',
                 'emailLogs.sentBy',
                 'sessionLog',
+                'subTherapist',
             ])
             ->findOrFail($id);
 

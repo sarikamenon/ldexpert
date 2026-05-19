@@ -8,6 +8,7 @@ use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Enums\ScheduleSubCoverageStatus;
+use App\Enums\SubRequestStatus;
 use App\Models\Scopes\ScheduleScope;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
@@ -165,7 +166,7 @@ class Schedule extends Model
     public function activeSubRequest(): HasOne
     {
         return $this->hasOne(ScheduleSubRequest::class, 'schedule_id')
-            ->whereIn('status', ['open', 'accepted']);
+            ->whereIn('status', [SubRequestStatus::OPEN->value, SubRequestStatus::ACCEPTED->value]);
     }
 
     /**

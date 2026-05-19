@@ -30,6 +30,19 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             ->get();
     }
 
+    /**
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function pageOpenForTherapist(User $sub, int $offset, int $limit): Collection
+    {
+        return $this->openForTherapistQuery($sub)
+            ->with(['schedule', 'schedule.student', 'schedule.service', 'schedule.school', 'requestedBy'])
+            ->orderBy('id')
+            ->offset(max(0, $offset))
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
     public function countOpenForTherapist(User $sub): int
     {
         return $this->openForTherapistQuery($sub)->count();
@@ -48,12 +61,7 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
      */
     public function listAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): Collection
     {
-        return ScheduleSubRequest::query()
-            ->active()
-            ->requestedBy($requester)
-            ->whereHas('schedule', function (Builder $q) use ($startTimeAtOrAfter): void {
-                $q->startingAfter($startTimeAtOrAfter->copy()->subSecond()); // @phpstan-ignore method.notFound
-            })
+        return $this->asRequesterQuery($requester, $startTimeAtOrAfter)
             ->with([
                 'schedule',
                 'schedule.student',
@@ -62,6 +70,43 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
                 'invitees.therapist',
             ])
             ->get();
+    }
+
+    /**
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function pageAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter, int $offset, int $limit): Collection
+    {
+        return $this->asRequesterQuery($requester, $startTimeAtOrAfter)
+            ->with([
+                'schedule',
+                'schedule.student',
+                'schedule.service',
+                'schedule.school',
+                'invitees.therapist',
+            ])
+            ->orderBy('id')
+            ->offset(max(0, $offset))
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    public function countAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): int
+    {
+        return $this->asRequesterQuery($requester, $startTimeAtOrAfter)->count();
+    }
+
+    /**
+     * @return Builder<ScheduleSubRequest>
+     */
+    private function asRequesterQuery(User $requester, CarbonInterface $startTimeAtOrAfter): Builder
+    {
+        return ScheduleSubRequest::query()
+            ->active()
+            ->requestedBy($requester)
+            ->whereHas('schedule', function (Builder $q) use ($startTimeAtOrAfter): void {
+                $q->startingAfter($startTimeAtOrAfter->copy()->subSecond()); // @phpstan-ignore method.notFound
+            });
     }
 
     public function findOpenForSchedule(int $scheduleId): ?ScheduleSubRequest
@@ -291,7 +336,7 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     /**
      * Load existing invitee statuses keyed by therapist_id for picker annotation.
      *
-     * @return array<int, string>
+     * @return array<int, SubRequestInviteeStatus>
      */
     private function loadInviteeStatusMap(?ScheduleSubRequest $openRequest): array
     {
@@ -299,7 +344,7 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             return [];
         }
 
-        /** @var array<int, string> */
+        /** @var array<int, SubRequestInviteeStatus> */
         return ScheduleSubRequestInvitee::query()
             ->forRequest($openRequest->id)
             ->pluck('status', 'therapist_id')
@@ -309,14 +354,14 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
     /**
      * Build a flat picker DTO for an eligible user.
      *
-     * @param  array<int, string>  $inviteeStatuses
+     * @param  array<int, SubRequestInviteeStatus>  $inviteeStatuses
      */
     private function toEligibleSubDTO(User $user, array $inviteeStatuses): EligibleSubDTO
     {
         $raw = $inviteeStatuses[$user->id] ?? null;
         $inviteeStatus = match ($raw) {
-            SubRequestInviteeStatus::INVITED->value => 'selected',
-            SubRequestInviteeStatus::DECLINED->value => 'declined',
+            SubRequestInviteeStatus::INVITED => 'selected',
+            SubRequestInviteeStatus::DECLINED => 'declined',
             default => 'none',
         };
 

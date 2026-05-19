@@ -18,7 +18,9 @@ use App\DTOs\CreateScheduleDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
+use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\ServiceStatus;
+use App\Enums\SubRequestInviteeStatus;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;
@@ -337,6 +339,9 @@ final class ScheduleController extends Controller
             'ssas' => $ssas,
             'services' => $services,
             'filters' => $filters->toArray(),
+            'subRequestRequestedStatus' => ScheduleSubCoverageStatus::REQUESTED,
+            'inviteeInvitedStatus' => SubRequestInviteeStatus::INVITED,
+            'inviteeDeclinedStatus' => SubRequestInviteeStatus::DECLINED,
         ]);
     }
 
@@ -621,6 +626,7 @@ final class ScheduleController extends Controller
             'school',
             'emailLogs.sentBy',
             'sessionLog',
+            'subTherapist',
         ]);
 
         if ($schedule === null) {

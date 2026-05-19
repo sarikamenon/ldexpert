@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::table('schedules', function (Blueprint $table) {
             $table->foreignId('sub_therapist_id')
                 ->nullable()
-                ->after('therapist_id')
+                ->after('status')
                 ->constrained('users');
             $table->string('sub_request_status', 16)
                 ->nullable()

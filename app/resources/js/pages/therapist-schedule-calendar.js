@@ -2,11 +2,6 @@ import { initSelectBoxes } from '../common/select-box';
 import { confirmDialog, successToast, errorAlert, showLoading, closeAlert } from '../common/sweetalert';
 import { openScheduleDetailsModal } from '../common/schedule-modal';
 
-// NOTE: The mini-calendar UI this file was originally written for has been removed.
-// Only the small bootstrapping below — bindScheduleCardActions + bindDashboardScheduleToggle —
-// still runs (loaded by dashboard.blade.php). Everything past the `if (!$calendarEl.length) return;`
-// guard around line 83 is dead code: no #calendar element is rendered anywhere now.
-// The week-grid view is served by therapist-schedule-fullcalendar.js + common/fullcalendar.js instead.
 (function ($) {
     'use strict';
 

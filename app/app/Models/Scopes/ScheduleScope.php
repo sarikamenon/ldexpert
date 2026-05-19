@@ -177,10 +177,7 @@ final class ScheduleScope extends BaseModelScope
      */
     public static function startingAfter(Builder $builder, Model $model, CarbonInterface $moment): Builder
     {
-        return $builder->whereRaw(
-            'TIMESTAMP('.self::qualify($model, 'schedule_date').', '.self::qualify($model, 'start_time').') > ?',
-            [$moment->copy()->setTimezone('UTC')->format('Y-m-d H:i:s')]
-        );
+        return self::compareStartTimestamp($builder, $model, '>', $moment);
     }
 
     /**
@@ -192,8 +189,21 @@ final class ScheduleScope extends BaseModelScope
      */
     public static function startingAtOrBefore(Builder $builder, Model $model, CarbonInterface $moment): Builder
     {
+        return self::compareStartTimestamp($builder, $model, '<=', $moment);
+    }
+
+    /**
+     * Shared whereRaw for the combined (schedule_date + start_time) UTC instant.
+     * MySQL CONVERT_TZ is not available in every environment, so we keep the
+     * comparison in PHP-formatted UTC and let the DB do a TIMESTAMP() compose.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    private static function compareStartTimestamp(Builder $builder, Model $model, string $operator, CarbonInterface $moment): Builder
+    {
         return $builder->whereRaw(
-            'TIMESTAMP('.self::qualify($model, 'schedule_date').', '.self::qualify($model, 'start_time').') <= ?',
+            'TIMESTAMP('.self::qualify($model, 'schedule_date').', '.self::qualify($model, 'start_time').") {$operator} ?",
             [$moment->copy()->setTimezone('UTC')->format('Y-m-d H:i:s')]
         );
     }

@@ -25,6 +25,15 @@ interface ScheduleSubRequestRepositoryInterface
     public function listOpenForTherapist(User $sub): Collection;
 
     /**
+     * Paginated variant of listOpenForTherapist — applies SQL LIMIT/OFFSET so
+     * large invitation lists do not materialize fully in PHP. Returns a single
+     * page of rows.
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function pageOpenForTherapist(User $sub, int $offset, int $limit): Collection;
+
+    /**
      * Count open requests where the given therapist has an `invited` invitee row.
      */
     public function countOpenForTherapist(User $sub): int;
@@ -42,6 +51,19 @@ interface ScheduleSubRequestRepositoryInterface
      * @return Collection<int, ScheduleSubRequest>
      */
     public function listAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): Collection;
+
+    /**
+     * Paginated variant of listAsRequester.
+     *
+     * @return Collection<int, ScheduleSubRequest>
+     */
+    public function pageAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter, int $offset, int $limit): Collection;
+
+    /**
+     * Count requester-side open + accepted requests within the same time window
+     * as listAsRequester / pageAsRequester. Used as the DataTables filtered total.
+     */
+    public function countAsRequester(User $requester, CarbonInterface $startTimeAtOrAfter): int;
 
     public function findOpenForSchedule(int $scheduleId): ?ScheduleSubRequest;
 

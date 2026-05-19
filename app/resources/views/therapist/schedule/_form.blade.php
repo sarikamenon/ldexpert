@@ -397,6 +397,20 @@
                 @endif
             </div>
 
+            @php
+                $subCutoffHours = (int) config('scheduling.sub_request_cutoff_hours');
+                $subCutoffLabel = $subCutoffHours.' '.\Illuminate\Support\Str::plural('hour', $subCutoffHours);
+                $showCutoffNote = !$isEdit || ($subPanel && !$subPanel['is_accepted']);
+            @endphp
+            @if ($showCutoffNote)
+                <div class="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground/80">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Sub requests must be raised at least <strong>{{ $subCutoffLabel }}</strong> before the session start time.</span>
+                </div>
+            @endif
+
             @if (!$isEdit)
                 {{-- ── Create mode: checkbox toggle ── --}}
                 <label class="flex items-center gap-3 cursor-pointer select-none">

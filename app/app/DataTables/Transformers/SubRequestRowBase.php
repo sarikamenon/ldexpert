@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\DataTables\Transformers;
 
+use App\Constants\UsTimezones;
 use App\Models\ScheduleSubRequest;
 
 /**
@@ -19,13 +20,23 @@ abstract class SubRequestRowBase
     {
         $schedule = $subRequest->schedule;
         $localStart = $schedule?->localStart($viewerTz);
+        $localEnd = $schedule?->localEnd($viewerTz);
 
         $date = $localStart ? $localStart->format('M d, Y') : '—';
-        $startTime = $localStart ? $localStart->format(config('display.time')) : '—';
+        $timeFormat = config('display.time');
+        $timeRange = $localStart && $localEnd
+            ? $localStart->format($timeFormat).' – '.$localEnd->format($timeFormat)
+            : ($localStart ? $localStart->format($timeFormat) : '—');
+        $tzLabel = $localStart ? UsTimezones::getTimezoneLabel($viewerTz) : '';
+
+        $timeLine = '<span class="text-sm text-foreground/70">'.e($timeRange).'</span>';
+        if ($tzLabel !== '') {
+            $timeLine .= '<span class="text-xs text-foreground/50 block mt-0.5">'.e($tzLabel).'</span>';
+        }
 
         return '<div class="flex flex-col space-y-1">'
             .'<span class="text-foreground font-medium">'.e($date).'</span>'
-            .'<span class="text-sm text-foreground/70">'.e($startTime).'</span>'
+            .'<div>'.$timeLine.'</div>'
             .'</div>';
     }
 

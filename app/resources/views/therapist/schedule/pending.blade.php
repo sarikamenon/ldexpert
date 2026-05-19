@@ -133,6 +133,8 @@
 
                                     $isCovering = $schedule->sub_therapist_id === auth()->id();
                                     $originalTherapistName = $isCovering ? ($schedule->therapist?->name ?? null) : null;
+                                    $showSubRequestSummary = $schedule->sub_request_status === $subRequestRequestedStatus
+                                        && $schedule->therapist_id === auth()->id();
                                 @endphp
                                 <tr data-schedule-id="{{ $schedule->id }}">
                                     <td class="px-6 py-4 text-sm">
@@ -169,11 +171,11 @@
                                             <span class="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                                                 Covering for {{ $originalTherapistName }}
                                             </span>
-                                        @elseif ($schedule->sub_request_status === \App\Enums\ScheduleSubCoverageStatus::REQUESTED && $schedule->therapist_id === auth()->id())
+                                        @elseif ($showSubRequestSummary)
                                             @php
                                                 $invitees = $schedule->activeSubRequest?->invitees ?? collect();
-                                                $invitedCount = $invitees->where('status', \App\Enums\SubRequestInviteeStatus::INVITED)->count();
-                                                $declinedCount = $invitees->where('status', \App\Enums\SubRequestInviteeStatus::DECLINED)->count();
+                                                $invitedCount = $invitees->where('status', $inviteeInvitedStatus)->count();
+                                                $declinedCount = $invitees->where('status', $inviteeDeclinedStatus)->count();
                                             @endphp
                                             <a href="{{ route('therapist.sub-requests.index') }}"
                                                 class="inline-flex items-center gap-1 rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning hover:bg-warning/20 transition-colors">

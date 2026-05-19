@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources\Schedule;
 
 use App\Constants\UsTimezones;
+use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
 use App\Models\Schedule;
 use App\Models\ScheduleEmailLog;
 use App\Models\ServiceSupportAgreement;
@@ -40,6 +41,11 @@ final class ScheduleDetailsResource extends JsonResource
         $durationMinutes = $schedule->durationMinutes();
         $studentProfile = $schedule->student?->studentProfile;
         $studentTz = $studentProfile->timezone ?? null;
+
+        $viewerId = $this->resolveViewerId($request);
+        $coverage = $viewerId !== null
+            ? CoverageRoleResolver::for($schedule, $viewerId)
+            : ['role' => null, 'badge_label' => null];
 
         return [
             'id' => $schedule->id,
@@ -104,6 +110,13 @@ final class ScheduleDetailsResource extends JsonResource
                 ])
                 ->values()
                 ->toArray(),
+            'coverage' => [
+                'role' => $coverage['role'],
+                'badge_label' => $coverage['badge_label'],
+                'status' => $schedule->sub_request_status?->value,
+                'original_therapist' => $schedule->therapist?->name,
+                'sub_therapist' => $schedule->subTherapist?->name,
+            ],
             'session_log' => $schedule->sessionLog !== null ? [
                 'id' => $schedule->sessionLog->id,
                 'status' => $schedule->sessionLog->status?->value,
@@ -170,6 +183,18 @@ final class ScheduleDetailsResource extends JsonResource
         }
 
         return $route;
+    }
+
+    private function resolveViewerId(Request $request): ?int
+    {
+        $viewerId = $this->additional['viewer_id'] ?? null;
+        if (is_int($viewerId)) {
+            return $viewerId;
+        }
+
+        $user = $request->user();
+
+        return $user?->id;
     }
 
     private static function formatDuration(int $minutes): string

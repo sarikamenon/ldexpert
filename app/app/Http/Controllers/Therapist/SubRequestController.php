@@ -10,7 +10,7 @@ use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Domain\Time\UserTimezoneService;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Therapist\AcceptSubRequestRequest;
+use App\Http\Requests\Therapist\EligibleSubsRequest;
 use App\Http\Requests\Therapist\StoreSubRequestRequest;
 use App\Http\Requests\Therapist\UpdateSubRequestInviteesRequest;
 use App\Http\Support\DataTablesRequest;
@@ -71,19 +71,18 @@ final class SubRequestController extends Controller
         // and do not reach into request scope per row.
         $viewerTz = $this->timezoneService->resolveTimezone($therapist);
 
-        // Lists are scoped to the viewing therapist (their invitations or their
-        // requests) so cardinality is naturally small; in-memory slicing avoids
-        // a second count query and keeps the existing service contract.
+        // Push pagination into SQL via LIMIT/OFFSET so large invitation lists
+        // do not materialize fully in PHP. Filtered total equals the unscoped
+        // total — these lists are already scoped to the viewing therapist.
         if ($mode === 'mine') {
-            $all = $this->subRequestService->listAsRequester($therapist);
+            $total = $this->subRequestService->countAsRequester($therapist);
+            $page = $this->subRequestService->pageAsRequester($therapist, $params->start, $params->length);
             $transformer = static fn (ScheduleSubRequest $row): array => MySubRequestRowTransformer::transform($row, $viewerTz);
         } else {
-            $all = $this->subRequestService->listOpenForTherapist($therapist);
+            $total = $this->subRequestService->countOpenForTherapist($therapist);
+            $page = $this->subRequestService->pageOpenForTherapist($therapist, $params->start, $params->length);
             $transformer = static fn (ScheduleSubRequest $row): array => SubRequestRowTransformer::transform($row, $viewerTz);
         }
-
-        $total = $all->count();
-        $page = $all->slice($params->start, $params->length)->values();
 
         return $this->dataTablesResponse(
             $params,
@@ -132,7 +131,7 @@ final class SubRequestController extends Controller
             ->with('status', 'Sub request created successfully.');
     }
 
-    public function accept(AcceptSubRequestRequest $request, ScheduleSubRequest $subRequest): JsonResponse|RedirectResponse
+    public function accept(Request $request, ScheduleSubRequest $subRequest): JsonResponse|RedirectResponse
     {
         $this->authorize('accept', $subRequest);
 
@@ -239,10 +238,11 @@ final class SubRequestController extends Controller
      * - Without {subRequest}: create-time, takes ?service_id=&date= query params.
      * - With {subRequest}: edit-time, reads schedule from the request row; annotates invitee status.
      */
-    public function eligibleSubs(Request $request, ?ScheduleSubRequest $subRequest = null): JsonResponse
+    public function eligibleSubs(EligibleSubsRequest $request, ?ScheduleSubRequest $subRequest = null): JsonResponse
     {
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
+        $validated = $request->validated();
 
         if ($subRequest !== null) {
             // Edit-time: schedule already exists — derive from sub-request row.
@@ -252,9 +252,9 @@ final class SubRequestController extends Controller
             }
 
             $eligibles = $this->subRequestService->listEligibleSubsFor($schedule);
-        } elseif ($request->filled('schedule_id')) {
+        } elseif (isset($validated['schedule_id'])) {
             // Edit-no-request: schedule exists but no sub-request yet — load via schedule_id.
-            $schedule = Schedule::find((int) $request->query('schedule_id'));
+            $schedule = Schedule::find((int) $validated['schedule_id']);
             if ($schedule === null) {
                 return response()->json(['message' => 'Schedule not found.'], 404);
             }
@@ -262,8 +262,8 @@ final class SubRequestController extends Controller
             $eligibles = $this->subRequestService->listEligibleSubsFor($schedule);
         } else {
             // Create-time: schedule not yet saved — use service_id + date directly.
-            $serviceId = (int) $request->query('service_id', 0);
-            $date = (string) $request->query('date', '');
+            $serviceId = (int) ($validated['service_id'] ?? 0);
+            $date = (string) ($validated['date'] ?? '');
 
             if ($serviceId === 0 || $date === '') {
                 return response()->json(['message' => 'service_id and date are required.'], 422);
