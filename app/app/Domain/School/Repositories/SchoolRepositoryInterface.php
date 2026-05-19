@@ -42,6 +42,9 @@ interface SchoolRepositoryInterface
     public function listAllForSelect(): Collection;
 
     /** @return Collection<int, School> */
+    public function listPrivateFamilyContacts(): Collection;
+
+    /** @return Collection<int, School> */
     public function listActiveForSelect(): Collection;
 
     public function find(int $id): ?School;

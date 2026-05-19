@@ -165,7 +165,7 @@
                     </label>
                 </div>
                 <p class="mt-1 text-xs text-foreground/60">Schedule email for reminders</p>
-                <x-text-input id="schedule_email" name="schedule_email" type="email"
+                <x-ui::input id="schedule_email" name="schedule_email" type="email"
                     class="mt-1 block w-full" :value="old('schedule_email', $profile?->schedule_email)" />
                 <x-input-error :messages="$errors->get('schedule_email')" class="mt-2" />
             </div>
@@ -226,8 +226,8 @@
     </x-ui::card>
 
     <div id="students-form-data"
-        data-private-student-ids="{{ json_encode($privateStudentIds) }}"
-        data-private-family-contacts="{{ json_encode($privateFamilyContacts) }}"
+        data-private-student-ids="{{ $privateStudentIdsJson }}"
+        data-private-family-contacts="{{ $privateFamilyContactsJson }}"
         hidden></div>
 
     <input type="hidden" name="redirect_to_ssa" id="redirect_to_ssa" value="0" />

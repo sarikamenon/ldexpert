@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property SchoolStatus $status
+ * @property-read string|null $contact_full_name
  */
 class School extends Model
 {
@@ -65,6 +66,14 @@ class School extends Model
     {
         return Attribute::make(
             get: fn () => $this->display_name ?? $this->full_name,
+        );
+    }
+
+    /** @return Attribute<string|null, string|null> */
+    protected function contactFullName(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => trim(($this->contact_first_name ?? '').' '.($this->contact_last_name ?? '')) ?: null,
         );
     }
 
