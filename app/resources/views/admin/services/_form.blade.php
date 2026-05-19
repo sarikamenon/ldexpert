@@ -95,7 +95,7 @@
                     <input type="hidden" name="is_frequency_service" value="0">
                     <input id="is_frequency_service" name="is_frequency_service" type="checkbox" value="1"
                         class="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                        @checked(old('is_frequency_service', $service->is_frequency_service ?? false))>
+                        @checked(old('is_frequency_service', $service->is_frequency_service ?? true))>
                     <label for="is_frequency_service" class="text-sm font-medium text-foreground/80 cursor-pointer">
                         Service has frequency requirement
                     </label>

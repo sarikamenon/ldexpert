@@ -119,7 +119,9 @@ class DashboardService
             $tz = $this->timezoneService->resolveTimezone($schedule->therapist);
             $localStart = $schedule->localStart($tz);
             $localEnd = $schedule->localEnd($tz);
+            $isPast = $localStart->lt(now($tz)->startOfDay());
             $hasEventStarted = now()->gte($schedule->startUtc());
+            $isBilled = $schedule->billing_status === BillingStatus::BILLED;
             $isPendingBilling = $schedule->billing_status === BillingStatus::PENDING;
 
             $coverage = CoverageRoleResolver::for($schedule, $viewerId);
@@ -130,13 +132,18 @@ class DashboardService
             // the sub will log the session, not the requester.
             $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
+            // Subs covering someone else's schedule cannot edit/delete it — they're just delivering the session.
+            $canEditOrDelete = !$isBilled && $coverageRole !== 'covering';
+
             return [
                 'id' => $schedule->id,
                 'schedule_date' => $localStart->format('Y-m-d'),
                 'start_time' => $localStart->format('H:i'),
                 'start_time_formatted' => $localStart->format(config('display.time')),
+                'start_time_display' => $localStart->format(config('display.time')),
                 'end_time' => $localEnd->format('H:i'),
                 'end_time_formatted' => $localEnd->format(config('display.time')),
+                'end_time_display' => $localEnd->format(config('display.time')),
                 'school' => $schedule->school?->display_name,
                 'student' => $schedule->student?->name,
                 'student_url' => $schedule->student?->id
@@ -146,6 +153,11 @@ class DashboardService
                 'status' => $schedule->status->value,
                 'billing_status' => $schedule->billing_status->value,
                 'is_group' => $schedule->is_group,
+                'is_past' => $isPast,
+                'has_event_started' => $hasEventStarted,
+                'is_billed' => $isBilled,
+                'is_pending_billing' => $isPendingBilling,
+                'can_edit_or_delete' => $canEditOrDelete,
                 'notes' => $schedule->notes,
                 'location_details' => $schedule->location_details,
                 'student_name' => $schedule->student?->name,
@@ -159,6 +171,7 @@ class DashboardService
                     : null,
                 'coverage_role' => $coverageRole,
                 'coverage_badge_label' => $coverageLabel,
+                'coverage_badge_classes' => CoverageRoleResolver::badgeClassesFor($coverageRole),
             ];
         });
     }
