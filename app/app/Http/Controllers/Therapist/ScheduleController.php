@@ -21,6 +21,7 @@ use App\Enums\BillingStatus;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\ServiceStatus;
 use App\Enums\SubRequestInviteeStatus;
+use App\Enums\WeekDay;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;
@@ -133,6 +134,11 @@ final class ScheduleController extends Controller
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         $isPrivateStudent = $student?->studentProfile?->school?->is_private_student === true;
+        $allowsWeekendScheduling = $student?->studentProfile?->school?->allow_weekend_scheduling === true;
+        $weekDays = collect(WeekDay::cases())
+            ->reject(static fn (WeekDay $day): bool => $day->isWeekend() && ! $allowsWeekendScheduling)
+            ->values()
+            ->all();
 
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
@@ -146,6 +152,8 @@ final class ScheduleController extends Controller
             'therapistTimezone' => $therapistTimezone,
             'therapistTimezoneLabel' => $therapistTimezoneLabel,
             'isPrivateStudent' => $isPrivateStudent,
+            'allowsWeekendScheduling' => $allowsWeekendScheduling,
+            'weekDays' => $weekDays,
         ]);
     }
 
@@ -180,6 +188,11 @@ final class ScheduleController extends Controller
         $therapistTimezoneLabel = UsTimezones::getTimezoneLabel($therapistTimezone);
 
         $isPrivateStudent = $schedule->student?->studentProfile?->school?->is_private_student === true;
+        $allowsWeekendScheduling = $schedule->student?->studentProfile?->school?->allow_weekend_scheduling === true;
+        $weekDays = collect(WeekDay::cases())
+            ->reject(static fn (WeekDay $day): bool => $day->isWeekend() && ! $allowsWeekendScheduling)
+            ->values()
+            ->all();
 
         $tz = $this->timezoneService->resolveTimezone($therapist);
         $localStart = $schedule->localStart($tz);
@@ -192,6 +205,8 @@ final class ScheduleController extends Controller
             'therapistTimezone' => $therapistTimezone,
             'therapistTimezoneLabel' => $therapistTimezoneLabel,
             'isPrivateStudent' => $isPrivateStudent,
+            'allowsWeekendScheduling' => $allowsWeekendScheduling,
+            'weekDays' => $weekDays,
             'scheduleLocalDate' => $localStart->format('Y-m-d'),
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
@@ -258,7 +273,7 @@ final class ScheduleController extends Controller
                 $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
                 // Subs covering someone else's schedule cannot edit/delete it — they're just delivering the session.
-                $canEditOrDelete = !$isBilled && $coverageRole !== 'covering';
+                $canEditOrDelete = ! $isBilled && $coverageRole !== 'covering';
 
                 return [
                     'id' => $schedule->id,

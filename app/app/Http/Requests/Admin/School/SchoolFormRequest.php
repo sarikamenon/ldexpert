@@ -46,6 +46,7 @@ abstract class SchoolFormRequest extends FormRequest
             'is_private_student' => ['sometimes', 'boolean'],
             'is_auto_extend' => ['sometimes', 'boolean'],
             'non_billable_scheduling' => ['sometimes', 'boolean'],
+            'allow_weekend_scheduling' => ['sometimes', 'boolean'],
             'external_emr_name' => ['nullable', 'string', 'max:255'],
         ];
     }

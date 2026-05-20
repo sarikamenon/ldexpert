@@ -46,6 +46,7 @@ class School extends Model
         'is_private_student',
         'is_auto_extend',
         'non_billable_scheduling',
+        'allow_weekend_scheduling',
         'external_emr_name',
         'status',
         'status_reason',
@@ -57,6 +58,7 @@ class School extends Model
             'is_private_student' => 'boolean',
             'is_auto_extend' => 'boolean',
             'non_billable_scheduling' => 'boolean',
+            'allow_weekend_scheduling' => 'boolean',
             'status' => SchoolStatus::class,
         ];
     }

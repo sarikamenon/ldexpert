@@ -8,6 +8,8 @@
     'studentServiceMappings' => collect(),
     'isEdit' => false,
     'isPrivateStudent' => false,
+    'allowsWeekendScheduling' => false,
+    'weekDays' => [],
     'subPanel' => null,
 ])
 
@@ -18,7 +20,8 @@
 
 <form method="POST"
     action="{{ $isEdit ? route('therapist.schedule.update', $schedule->id) : route('therapist.schedule.store') }}"
-    id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6">
+    id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6"
+    data-allow-weekend-scheduling="{{ $allowsWeekendScheduling ? '1' : '0' }}">
     @csrf
     @if ($isEdit)
         @method('PUT')
@@ -249,9 +252,6 @@
                         <option value="">Select recurrence type</option>
                     @endif
                     @foreach (\App\Enums\RecurrenceType::cases() as $recurrenceType)
-                        @if ($recurrenceType === \App\Enums\RecurrenceType::CUSTOM_WEEKLY && ! $isPrivateStudent)
-                            @continue
-                        @endif
                         <option value="{{ $recurrenceType->value }}" @selected($currentRecurrenceType === $recurrenceType->value)>
                             {{ $recurrenceType->label() }}
                         </option>
@@ -259,40 +259,36 @@
                 </select>
                 <p class="text-xs text-foreground/60 mt-1">
                     Select how often this schedule should repeat. Choose "None" for a single occurrence.
-                    @if ($isPrivateStudent)
-                        For multiple days per week, choose "Custom Weekly (Select Days)".
-                    @endif
+                    For multiple days per week, choose "Custom Weekly (Select Days)".
                 </p>
                 <x-input-error :messages="$errors->get('recurrence_type')" class="mt-2" />
             </div>
 
-            {{-- Day-of-week selector (custom weekly only, private students) --}}
-            @if ($isPrivateStudent)
-                <div id="weekly_days_container" class="hidden">
-                    <x-input-label value="Days of the Week *" />
-                    <p class="text-xs text-foreground/60 mt-1 mb-3" id="weekly_days_help">
-                        Select which days each week the student will be tutored (e.g. Mon, Tue, Thu). Occurrences will be generated for every selected day between the start and end date.
-                    </p>
-                    <div class="flex flex-wrap gap-2" aria-describedby="weekly_days_help">
-                        @php
-                            $oldDays = old('weekly_days', []);
-                        @endphp
-                        @foreach (\App\Enums\WeekDay::cases() as $day)
-                            <label class="weekly-day-label flex items-center gap-1.5 cursor-pointer rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-primary/10 hover:border-primary/50 select-none"
-                                title="{{ $day->label() }}">
-                                <input type="checkbox" name="weekly_days[]" value="{{ $day->value }}"
-                                    class="sr-only weekly-day-checkbox"
-                                    @checked(in_array($day->value, (array) $oldDays)) />
-                                <svg class="weekly-day-check w-0 h-3.5 opacity-0 transition-all overflow-hidden shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-                                </svg>
-                                <span>{{ $day->shortLabel() }}</span>
-                            </label>
-                        @endforeach
-                    </div>
-                    <x-input-error :messages="$errors->get('weekly_days')" class="mt-2" />
+            {{-- Day-of-week selector (custom weekly) --}}
+            <div id="weekly_days_container" class="hidden">
+                <x-input-label value="Days of the Week *" />
+                <p class="text-xs text-foreground/60 mt-1 mb-3" id="weekly_days_help">
+                    Select which days each week the student will be tutored (e.g. Mon, Tue, Thu). Occurrences will be generated for every selected day between the start and end date.
+                </p>
+                <div class="flex flex-wrap gap-2" aria-describedby="weekly_days_help">
+                    @php
+                        $oldDays = old('weekly_days', []);
+                    @endphp
+                    @foreach ($weekDays as $day)
+                        <label class="weekly-day-label flex items-center gap-1.5 cursor-pointer rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-primary/10 hover:border-primary/50 select-none"
+                            title="{{ $day->label() }}">
+                            <input type="checkbox" name="weekly_days[]" value="{{ $day->value }}"
+                                class="sr-only weekly-day-checkbox"
+                                @checked(in_array($day->value, (array) $oldDays)) />
+                            <svg class="weekly-day-check w-0 h-3.5 opacity-0 transition-all overflow-hidden shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{{ $day->shortLabel() }}</span>
+                        </label>
+                    @endforeach
                 </div>
-            @endif
+                <x-input-error :messages="$errors->get('weekly_days')" class="mt-2" />
+            </div>
 
             <div id="recurrence_end_date_container" class="{{ $currentRecurrenceType && $currentRecurrenceType !== 'none' ? '' : 'hidden' }}">
                 <x-input-label for="recurrence_end_date" value="Recurrence End Date *" />

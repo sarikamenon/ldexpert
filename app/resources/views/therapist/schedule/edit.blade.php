@@ -48,6 +48,8 @@
                 'isEdit' => true,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
                 'isPrivateStudent' => $isPrivateStudent,
+                'allowsWeekendScheduling' => $allowsWeekendScheduling ?? false,
+                'weekDays' => $weekDays,
                 'scheduleLocalDate' => $scheduleLocalDate,
                 'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,

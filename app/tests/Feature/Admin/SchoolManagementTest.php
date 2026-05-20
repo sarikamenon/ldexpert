@@ -94,6 +94,40 @@ it('updates a school', function () {
     ]);
 });
 
+it('persists allow_weekend_scheduling flag on update', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create(['allow_weekend_scheduling' => false]);
+
+    $payload = validSchoolPayload($admin->id);
+    $payload['allow_weekend_scheduling'] = '1';
+
+    $this->actingAs($admin)
+        ->patch(route('admin.schools.update', $school), $payload)
+        ->assertRedirect(route('admin.schools.index'));
+
+    $this->assertDatabaseHas('schools', [
+        'id' => $school->id,
+        'allow_weekend_scheduling' => 1,
+    ]);
+});
+
+it('defaults allow_weekend_scheduling to false when checkbox unchecked', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create(['allow_weekend_scheduling' => true]);
+
+    $payload = validSchoolPayload($admin->id);
+    $payload['allow_weekend_scheduling'] = '0';
+
+    $this->actingAs($admin)
+        ->patch(route('admin.schools.update', $school), $payload)
+        ->assertRedirect(route('admin.schools.index'));
+
+    $this->assertDatabaseHas('schools', [
+        'id' => $school->id,
+        'allow_weekend_scheduling' => 0,
+    ]);
+});
+
 it('changes school status with reason', function () {
     $admin = schoolAdminUser();
     $school = School::factory()->create(['status' => 'active']);
@@ -126,6 +160,30 @@ it('exports schools as csv', function () {
     expect($response->headers->get('content-type'))->toContain('text/csv');
     $content = $response->streamedContent();
     expect($content)->toContain('Export School');
+});
+
+it('shows Yes on overview Characteristics when weekend scheduling is allowed', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create(['allow_weekend_scheduling' => true]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', [$school, 'tab' => 'overview']));
+
+    $response->assertOk()
+        ->assertSeeText('Allow weekend scheduling?')
+        ->assertSeeText('Yes');
+});
+
+it('shows No on overview Characteristics when weekend scheduling is not allowed', function () {
+    $admin = schoolAdminUser();
+    $school = School::factory()->create(['allow_weekend_scheduling' => false]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.schools.show', [$school, 'tab' => 'overview']));
+
+    $response->assertOk()
+        ->assertSeeText('Allow weekend scheduling?')
+        ->assertSeeText('No');
 });
 
 it('allows admin to view school show page with dashboard tab', function () {

@@ -363,6 +363,7 @@ final class SchoolController extends Controller
         $validated['is_private_student'] = $request->boolean('is_private_student');
         $validated['is_auto_extend'] = $request->boolean('is_auto_extend');
         $validated['non_billable_scheduling'] = $request->boolean('non_billable_scheduling');
+        $validated['allow_weekend_scheduling'] = $request->boolean('allow_weekend_scheduling');
 
         return $validated;
     }

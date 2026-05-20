@@ -24,15 +24,22 @@ final class ScheduleCustomWeeklyTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * Shared setup: therapist + private student + service + SSA
+     * Shared setup: therapist + student + school + service + SSA.
+     *
+     * CUSTOM_WEEKLY is available regardless of `is_private_student`; the only
+     * weekend-related gating now keys on `allow_weekend_scheduling`. Both flags
+     * default to false so tests must opt in explicitly when they need them.
      *
      * @return array{therapist: User, student: User, school: School, service: Service, ssa: ServiceSupportAgreement}
      */
-    private function makePrivateStudentSetup(): array
+    private function makeStudentSetup(bool $isPrivate = false, bool $allowsWeekend = false): array
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST, 'timezone' => 'UTC']);
         $student = User::factory()->create(['role' => Role::STUDENT]);
-        $school = School::factory()->create(['is_private_student' => true]);
+        $school = School::factory()->create([
+            'is_private_student' => $isPrivate,
+            'allow_weekend_scheduling' => $allowsWeekend,
+        ]);
         StudentProfile::factory()->create([
             'user_id' => $student->id,
             'school_id' => $school->id,
@@ -74,7 +81,7 @@ final class ScheduleCustomWeeklyTest extends TestCase
 
     public function test_create_page_shows_custom_weekly_option_for_private_student(): void
     {
-        ['therapist' => $therapist, 'ssa' => $ssa] = $this->makePrivateStudentSetup();
+        ['therapist' => $therapist, 'ssa' => $ssa] = $this->makeStudentSetup(isPrivate: true);
 
         $response = $this->actingAs($therapist)
             ->get(route('therapist.schedule.create', ['ssa_id' => $ssa->id]));
@@ -84,32 +91,62 @@ final class ScheduleCustomWeeklyTest extends TestCase
         $response->assertViewHas('isPrivateStudent', true);
     }
 
-    public function test_create_page_hides_custom_weekly_for_non_private_student(): void
+    public function test_create_page_shows_custom_weekly_for_non_private_student(): void
     {
-        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
-        $student = User::factory()->create(['role' => Role::STUDENT]);
-        $school = School::factory()->create(['is_private_student' => false]);
-        StudentProfile::factory()->create(['user_id' => $student->id, 'school_id' => $school->id]);
-        $therapist->students()->attach($student->id, ['assigned_at' => now(), 'status' => 'active']);
-
-        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
-        $ssa = ServiceSupportAgreement::factory()->create([
-            'student_id' => $student->id,
-            'primary_service_id' => $service->id,
-            'assigned_therapist_id' => $therapist->id,
-            'status' => SSAStatus::ACTIVE,
-        ]);
+        ['therapist' => $therapist, 'ssa' => $ssa] = $this->makeStudentSetup();
 
         $response = $this->actingAs($therapist)
             ->get(route('therapist.schedule.create', ['ssa_id' => $ssa->id]));
 
         $response->assertStatus(200);
+        $response->assertSee(RecurrenceType::CUSTOM_WEEKLY->value);
         $response->assertViewHas('isPrivateStudent', false);
+    }
+
+    public function test_create_page_passes_weekdays_without_weekends_when_school_disallows(): void
+    {
+        ['therapist' => $therapist, 'ssa' => $ssa] = $this->makeStudentSetup();
+        // Both flags default to false; weekends therefore not allowed for this school.
+
+        $response = $this->actingAs($therapist)
+            ->get(route('therapist.schedule.create', ['ssa_id' => $ssa->id]));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('allowsWeekendScheduling', false);
+        $response->assertViewHas('weekDays', function ($weekDays): bool {
+            /** @var array<int, WeekDay> $days */
+            $days = is_array($weekDays) ? $weekDays : [];
+            $values = collect($days)->map(fn (WeekDay $d) => $d->value)->all();
+
+            return count($values) === 5
+                && ! in_array(WeekDay::SATURDAY->value, $values, true)
+                && ! in_array(WeekDay::SUNDAY->value, $values, true);
+        });
+    }
+
+    public function test_create_page_passes_weekdays_with_weekends_when_school_allows(): void
+    {
+        ['therapist' => $therapist, 'ssa' => $ssa] = $this->makeStudentSetup(allowsWeekend: true);
+
+        $response = $this->actingAs($therapist)
+            ->get(route('therapist.schedule.create', ['ssa_id' => $ssa->id]));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('allowsWeekendScheduling', true);
+        $response->assertViewHas('weekDays', function ($weekDays): bool {
+            /** @var array<int, WeekDay> $days */
+            $days = is_array($weekDays) ? $weekDays : [];
+            $values = collect($days)->map(fn (WeekDay $d) => $d->value)->all();
+
+            return count($values) === 7
+                && in_array(WeekDay::SATURDAY->value, $values, true)
+                && in_array(WeekDay::SUNDAY->value, $values, true);
+        });
     }
 
     public function test_custom_weekly_creates_schedules_on_selected_days(): void
     {
-        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makePrivateStudentSetup();
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
 
         // Next Monday as start
         $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
@@ -154,9 +191,37 @@ final class ScheduleCustomWeeklyTest extends TestCase
         $this->assertGreaterThanOrEqual(count($occurrenceDates), $count);
     }
 
+    public function test_custom_weekly_creates_schedules_for_private_student(): void
+    {
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup(isPrivate: true);
+
+        $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
+        $endDate = Carbon::parse($startDate)->addWeeks(2)->format('Y-m-d');
+        $occurrenceDates = $this->weekdayDatesBetween($startDate, $endDate, [Carbon::MONDAY, Carbon::WEDNESDAY]);
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => $startDate,
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => RecurrenceType::CUSTOM_WEEKLY->value,
+            'recurrence_end_date' => $endDate,
+            'weekly_days' => [WeekDay::MONDAY->value, WeekDay::WEDNESDAY->value],
+            'occurrence_dates' => $occurrenceDates,
+            'location_details' => 'Office A',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertStatus(201);
+    }
+
     public function test_custom_weekly_requires_weekly_days(): void
     {
-        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makePrivateStudentSetup();
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
 
         $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
         $endDate = Carbon::parse($startDate)->addWeeks(2)->format('Y-m-d');
@@ -182,9 +247,9 @@ final class ScheduleCustomWeeklyTest extends TestCase
         $response->assertJsonValidationErrors(['weekly_days']);
     }
 
-    public function test_custom_weekly_rejects_invalid_day_values(): void
+    public function test_custom_weekly_rejects_weekend_days_when_school_disallows(): void
     {
-        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makePrivateStudentSetup();
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
 
         $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
 
@@ -197,7 +262,34 @@ final class ScheduleCustomWeeklyTest extends TestCase
             'duration_minutes' => 60,
             'recurrence_type' => RecurrenceType::CUSTOM_WEEKLY->value,
             'recurrence_end_date' => Carbon::parse($startDate)->addWeeks(2)->format('Y-m-d'),
-            'weekly_days' => ['saturday', 'sunday'], // weekends — invalid
+            'weekly_days' => [WeekDay::SATURDAY->value, WeekDay::SUNDAY->value],
+            'occurrence_dates' => [$startDate],
+            'location_details' => 'Office A',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['weekly_days']);
+    }
+
+    public function test_custom_weekly_rejects_unknown_day_values(): void
+    {
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
+
+        $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => $startDate,
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => RecurrenceType::CUSTOM_WEEKLY->value,
+            'recurrence_end_date' => Carbon::parse($startDate)->addWeeks(2)->format('Y-m-d'),
+            'weekly_days' => ['funday', 'caturday'],
             'occurrence_dates' => [$startDate],
             'location_details' => 'Office A',
         ];
@@ -209,9 +301,37 @@ final class ScheduleCustomWeeklyTest extends TestCase
         $response->assertJsonValidationErrors(['weekly_days.0', 'weekly_days.1']);
     }
 
+    public function test_custom_weekly_accepts_weekend_days_when_school_allows(): void
+    {
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup(allowsWeekend: true);
+
+        $startDate = Carbon::now()->next(Carbon::SATURDAY)->format('Y-m-d');
+        $endDate = Carbon::parse($startDate)->addWeeks(2)->format('Y-m-d');
+        $occurrenceDates = $this->weekdayDatesBetween($startDate, $endDate, [Carbon::SATURDAY, Carbon::SUNDAY]);
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => $startDate,
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => RecurrenceType::CUSTOM_WEEKLY->value,
+            'recurrence_end_date' => $endDate,
+            'weekly_days' => [WeekDay::SATURDAY->value, WeekDay::SUNDAY->value],
+            'occurrence_dates' => $occurrenceDates,
+            'location_details' => 'Office A',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertStatus(201);
+    }
+
     public function test_custom_weekly_requires_end_date(): void
     {
-        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makePrivateStudentSetup();
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
 
         $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
 
@@ -238,7 +358,7 @@ final class ScheduleCustomWeeklyTest extends TestCase
 
     public function test_custom_weekly_rejects_weekend_occurrence_dates(): void
     {
-        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makePrivateStudentSetup();
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
 
         $startDate = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
         $saturday = Carbon::now()->next(Carbon::SATURDAY)->format('Y-m-d');
@@ -268,6 +388,6 @@ final class ScheduleCustomWeeklyTest extends TestCase
     {
         $values = array_column(WeekDay::cases(), 'value');
 
-        $this->assertSame(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], $values);
+        $this->assertSame(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'], $values);
     }
 }

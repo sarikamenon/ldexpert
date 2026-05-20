@@ -105,6 +105,14 @@
                     </x-ui::badge>
                 </dd>
             </div>
+            <div>
+                <dt class="text-sm font-medium text-foreground/70">Allow weekend scheduling?</dt>
+                <dd class="mt-1 text-sm text-foreground">
+                    <x-ui::badge :variant="$school->allow_weekend_scheduling ? 'primary' : 'secondary'">
+                        {{ $school->allow_weekend_scheduling ? 'Yes' : 'No' }}
+                    </x-ui::badge>
+                </dd>
+            </div>
             <div class="md:col-span-3">
                 <dt class="text-sm font-medium text-foreground/70">External EMR School/Family Name</dt>
                 <dd class="mt-1 text-sm text-foreground">{{ $school->external_emr_name ?? '—' }}</dd>

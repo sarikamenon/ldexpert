@@ -1,5 +1,6 @@
 <?php
 
+use App\Constants\UsTimezones;
 use App\DTOs\CreateSchoolDTO;
 
 it('creates dto from array and casts booleans', function () {
@@ -47,6 +48,33 @@ it('defaults is_auto_extend to false when missing from array', function () {
     $dto = CreateSchoolDTO::fromArray($payload);
 
     expect($dto->isAutoExtend)->toBeFalse();
+});
+
+it('defaults allow_weekend_scheduling to false when missing', function () {
+    $timezone = collect(UsTimezones::TIMEZONES)->keys()->first();
+
+    $dto = CreateSchoolDTO::fromArray([
+        'full_name' => 'A', 'display_name' => 'B', 'state' => 'NY',
+        'timezone' => $timezone,
+        'manager_id' => 1, 'school_type' => 'Virtual',
+    ]);
+
+    expect($dto->allowWeekendScheduling)->toBeFalse()
+        ->and($dto->toArray()['allow_weekend_scheduling'])->toBeFalse();
+});
+
+it('sets allow_weekend_scheduling to true when passed', function () {
+    $timezone = collect(UsTimezones::TIMEZONES)->keys()->first();
+
+    $dto = CreateSchoolDTO::fromArray([
+        'full_name' => 'A', 'display_name' => 'B', 'state' => 'NY',
+        'timezone' => $timezone,
+        'manager_id' => 1, 'school_type' => 'Virtual',
+        'allow_weekend_scheduling' => true,
+    ]);
+
+    expect($dto->allowWeekendScheduling)->toBeTrue()
+        ->and($dto->toArray()['allow_weekend_scheduling'])->toBeTrue();
 });
 
 it('sets is_auto_extend to true when passed', function () {

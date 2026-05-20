@@ -117,13 +117,47 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
         });
     }
 
-    public function test_custom_weekly_option_is_hidden_for_non_private_student(): void
+    public function test_custom_weekly_option_is_visible_for_non_private_student(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->therapist)
                 ->visit($this->createPageUrl())
                 ->pause(800)
-                ->assertDontSee('Custom Weekly');
+                ->assertSee('Custom Weekly');
+        });
+    }
+
+    public function test_custom_weekly_hides_saturday_sunday_when_school_disallows_weekends(): void
+    {
+        $privateSsa = $this->makePrivateStudentSetup(false);
+
+        $this->browse(function (Browser $browser) use ($privateSsa) {
+            $browser->loginAs($this->therapist)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
+                ->pause(600);
+            $browser->script("$('#recurrence_type').val('custom_weekly').trigger('change');");
+            $browser->pause(400)
+                ->assertVisible('#weekly_days_container')
+                ->assertPresent("input[name='weekly_days[]'][value='monday']")
+                ->assertPresent("input[name='weekly_days[]'][value='friday']")
+                ->assertMissing("input[name='weekly_days[]'][value='saturday']")
+                ->assertMissing("input[name='weekly_days[]'][value='sunday']");
+        });
+    }
+
+    public function test_custom_weekly_shows_saturday_sunday_when_school_allows_weekends(): void
+    {
+        $privateSsa = $this->makePrivateStudentSetup(true);
+
+        $this->browse(function (Browser $browser) use ($privateSsa) {
+            $browser->loginAs($this->therapist)
+                ->visit('/therapist/schedule/create?ssa_id='.$privateSsa->id)
+                ->pause(600);
+            $browser->script("$('#recurrence_type').val('custom_weekly').trigger('change');");
+            $browser->pause(400)
+                ->assertVisible('#weekly_days_container')
+                ->assertPresent("input[name='weekly_days[]'][value='saturday']")
+                ->assertPresent("input[name='weekly_days[]'][value='sunday']");
         });
     }
 
@@ -403,14 +437,16 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
     // -------------------------------------------------------------------------
 
     /** Shared setup: create a private-school student with an SSA and return it. */
-    private function makePrivateStudentSetup(): ServiceSupportAgreement
+    private function makePrivateStudentSetup(bool $allowsWeekend = false): ServiceSupportAgreement
     {
-        $privateSchool = School::factory()->create(['is_private_student' => true]);
-        $privateStudent = User::factory()->student()->create();
-        StudentProfile::factory()->create([
-            'user_id' => $privateStudent->id,
-            'school_id' => $privateSchool->id,
+        $privateSchool = School::factory()->create([
+            'is_private_student' => true,
+            'allow_weekend_scheduling' => $allowsWeekend,
         ]);
+        $privateStudent = User::factory()->student()->create();
+        // ->student() afterCreating already made a StudentProfile with a random school;
+        // point it at the private school so the controller resolves the right flags.
+        $privateStudent->studentProfile()->update(['school_id' => $privateSchool->id]);
         $this->therapist->students()->attach($privateStudent->id, [
             'assigned_at' => now(),
             'status' => 'active',
