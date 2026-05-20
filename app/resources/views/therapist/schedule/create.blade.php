@@ -31,6 +31,8 @@
                 'isEdit' => false,
                 'therapistTimezoneLabel' => $therapistTimezoneLabel ?? null,
                 'isPrivateStudent' => $isPrivateStudent ?? false,
+                'allowsWeekendScheduling' => $allowsWeekendScheduling ?? false,
+                'weekDays' => $weekDays,
             ])
         </div>
     </div>

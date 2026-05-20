@@ -9,6 +9,8 @@ use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
+use App\Enums\WeekDay;
+use App\Http\Requests\Concerns\ValidatesWeekendScheduling;
 use App\Models\Schedule;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
@@ -17,6 +19,8 @@ use Illuminate\Validation\Validator;
 
 final class UpdateScheduleRequest extends FormRequest
 {
+    use ValidatesWeekendScheduling;
+
     public function authorize(): bool
     {
         /** @var Schedule|null $schedule */
@@ -56,7 +60,7 @@ final class UpdateScheduleRequest extends FormRequest
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
             'weekly_days' => ['nullable', 'array'],
-            'weekly_days.*' => ['string', Rule::in(['monday', 'tuesday', 'wednesday', 'thursday', 'friday'])],
+            'weekly_days.*' => ['string', Rule::in(array_column(WeekDay::cases(), 'value'))],
             'occurrence_dates' => ['nullable', 'array'],
             'occurrence_dates.*' => ['required', 'date'],
             'location_details' => ['nullable', 'string', 'max:1000'],
@@ -149,6 +153,16 @@ final class UpdateScheduleRequest extends FormRequest
                         );
                     }
                 }
+
+                $occurrenceDatesInput = $this->input('occurrence_dates');
+
+                $this->addWeekendSchedulingErrors(
+                    $validator,
+                    $this->schoolAllowsWeekendScheduling($schoolId ? (int) $schoolId : null),
+                    $scheduleDate,
+                    $this->input('weekly_days'),
+                    is_array($occurrenceDatesInput) ? $occurrenceDatesInput : null,
+                );
             }
         });
     }

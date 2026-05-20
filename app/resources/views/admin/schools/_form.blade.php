@@ -211,6 +211,25 @@
                     </div>
                     <x-input-error :messages="$errors->get('non_billable_scheduling')" class="mt-2" />
                 </div>
+
+                <div class="p-4 border border-border rounded-lg bg-muted">
+                    <x-input-label value="Allow weekend scheduling?" />
+                    <p id="allow_weekend_scheduling_help" class="mt-1 text-xs text-foreground/60 mb-3">
+                        When enabled, therapists can schedule sessions on Saturdays and Sundays for this school's students.
+                    </p>
+                    <div class="flex items-center gap-2">
+                        <input type="hidden" name="allow_weekend_scheduling" value="0">
+                        <input id="allow_weekend_scheduling" name="allow_weekend_scheduling" type="checkbox"
+                            value="1" class="w-4 h-4 rounded border-border text-primary focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+                            aria-describedby="allow_weekend_scheduling_help"
+                            @checked(old('allow_weekend_scheduling', $school->allow_weekend_scheduling ?? false))>
+                        <label for="allow_weekend_scheduling"
+                            class="text-sm font-medium text-foreground/80 cursor-pointer">
+                            Allow Saturday/Sunday scheduling
+                        </label>
+                    </div>
+                    <x-input-error :messages="$errors->get('allow_weekend_scheduling')" class="mt-2" />
+                </div>
             </div>
 
             <div>

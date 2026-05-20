@@ -22,6 +22,7 @@ final class CreateSchoolDTO
         public readonly bool $isPrivateStudent,
         public readonly bool $isAutoExtend,
         public readonly bool $nonBillableScheduling,
+        public readonly bool $allowWeekendScheduling,
         public readonly ?string $externalEmrName,
     ) {}
 
@@ -44,6 +45,7 @@ final class CreateSchoolDTO
             isPrivateStudent: (bool) ($data['is_private_student'] ?? false),
             isAutoExtend: (bool) ($data['is_auto_extend'] ?? false),
             nonBillableScheduling: (bool) ($data['non_billable_scheduling'] ?? false),
+            allowWeekendScheduling: (bool) ($data['allow_weekend_scheduling'] ?? false),
             externalEmrName: $data['external_emr_name'] ?? null,
         );
     }
@@ -67,6 +69,7 @@ final class CreateSchoolDTO
             'is_private_student' => $this->isPrivateStudent,
             'is_auto_extend' => $this->isAutoExtend,
             'non_billable_scheduling' => $this->nonBillableScheduling,
+            'allow_weekend_scheduling' => $this->allowWeekendScheduling,
             'external_emr_name' => $this->externalEmrName,
         ];
     }

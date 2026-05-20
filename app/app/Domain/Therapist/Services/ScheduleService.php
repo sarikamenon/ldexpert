@@ -68,6 +68,20 @@ final class ScheduleService
         return $this->schoolBillableCache[$schoolId];
     }
 
+    private function schoolAllowsWeekendScheduling(Schedule $parentSchedule): bool
+    {
+        $schoolId = $parentSchedule->school_id
+            ?? $this->studentRepository->getSchoolIdByUserId((int) $parentSchedule->student_id);
+
+        if (! $schoolId) {
+            return false;
+        }
+
+        $school = $this->schoolRepository->find($schoolId);
+
+        return $school?->allow_weekend_scheduling === true;
+    }
+
     /** @return Collection<int, Schedule> */
     public function getSchedules(User $therapist, ScheduleFilterDTO $filters): Collection
     {
@@ -626,9 +640,9 @@ final class ScheduleService
             $occurrenceUtcStart = $this->timezoneService->parseUserLocalToUtc($localDateTimeStr, $therapist);
             $occurrenceUtcEnd = $occurrenceUtcStart->copy()->addMinutes($durationMinutes);
 
-            // Validate for weekends (should already be validated in request, but double-check)
+            // Validate for weekends unless the school allows weekend scheduling.
             $localDate = Carbon::parse($cleanOccurrenceDate);
-            if ($localDate->isWeekend()) {
+            if ($localDate->isWeekend() && ! $this->schoolAllowsWeekendScheduling($parentSchedule)) {
                 throw new \InvalidArgumentException(sprintf('Occurrence date %s falls on a weekend and cannot be scheduled.', $cleanOccurrenceDate));
             }
 

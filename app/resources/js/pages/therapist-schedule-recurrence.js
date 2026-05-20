@@ -16,6 +16,8 @@ $(function () {
         return;
     }
 
+    const allowWeekendScheduling = $form.attr('data-allow-weekend-scheduling') === '1';
+
     const RECURRENCE_TYPE_NONE = 'none';
     const RECURRENCE_TYPE_CUSTOM_WEEKLY = 'custom_weekly';
 
@@ -106,7 +108,7 @@ $(function () {
      */
     function getSelectedWeekdayIndices() {
         const dayMap = {
-            monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5,
+            sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
         };
         const indices = [];
         document.querySelectorAll('.weekly-day-checkbox:checked').forEach(function (checkbox) {
@@ -261,7 +263,7 @@ $(function () {
                 .attr('value', dateStr)
                 .attr('min', $scheduleDateInput.val() || '');
             
-            if (isWeekendDate) {
+            if (isWeekendDate && !allowWeekendScheduling) {
                 $input.addClass('border-warning bg-warning/10');
             }
 
@@ -280,7 +282,7 @@ $(function () {
             const $errorDiv = $('<div class="occurrence-error text-xs text-danger mt-1"></div>');
             
             $inputGroup.append($inputRow);
-            if (isWeekendDate) {
+            if (isWeekendDate && !allowWeekendScheduling) {
                 $inputGroup.append($('<p class="text-xs text-warning mt-1">⚠️ ' + dayName + ' (Weekend)</p>'));
             }
             $inputGroup.append($errorDiv);
@@ -362,7 +364,7 @@ $(function () {
             }
 
             // Check for weekend
-            if (isWeekend(dateStr)) {
+            if (isWeekend(dateStr) && !allowWeekendScheduling) {
                 const date = new Date(dateStr + 'T00:00:00');
                 const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
                 $errorDiv.text('⚠️ ' + dayName + ' is a weekend. Please adjust the date.');
@@ -489,7 +491,7 @@ $(function () {
                 }
             });
 
-            if (hasWeekend) {
+            if (hasWeekend && !allowWeekendScheduling) {
                 event.preventDefault();
                 errorAlert('One or more occurrence dates fall on a weekend. Please adjust those dates before submitting.');
                 return false;

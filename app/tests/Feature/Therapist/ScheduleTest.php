@@ -10,10 +10,12 @@ use App\Enums\Role;
 use App\Enums\ServiceStatus;
 use App\Enums\SSAStatus;
 use App\Models\Schedule;
+use App\Models\School;
 use App\Models\Service;
 use App\Models\ServiceSupportAgreement;
 use App\Models\StudentProfile;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -410,6 +412,48 @@ final class ScheduleTest extends TestCase
         );
     }
 
+    public function test_recurring_schedule_allows_weekend_dates_when_school_allows(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST, 'timezone' => 'UTC']);
+        $school = School::factory()->create(['allow_weekend_scheduling' => true]);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        StudentProfile::factory()->create([
+            'user_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+        $service = Service::factory()->create(['status' => ServiceStatus::ACTIVE]);
+
+        $ssa = ServiceSupportAgreement::factory()->create([
+            'student_id' => $student->id,
+            'primary_service_id' => $service->id,
+            'assigned_therapist_id' => $therapist->id,
+            'status' => SSAStatus::ACTIVE,
+        ]);
+
+        $therapist->students()->attach($student->id, ['assigned_at' => now(), 'status' => 'active']);
+
+        $saturday = new \DateTime;
+        while ((int) $saturday->format('w') !== 6) {
+            $saturday->modify('+1 day');
+        }
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => $saturday->format('Y-m-d'),
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'none',
+            'location_details' => 'Location',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertSuccessful();
+    }
+
     public function test_therapist_can_view_edit_page(): void
     {
         $therapist = User::factory()->create(['role' => Role::THERAPIST]);
@@ -475,6 +519,114 @@ final class ScheduleTest extends TestCase
         $updatedSchedule = Schedule::find($schedule->id);
         $this->assertEquals($payload['schedule_date'], $updatedSchedule->schedule_date->format('Y-m-d'));
         $this->assertEquals($payload['start_time'], $updatedSchedule->start_time->format('H:i'));
+    }
+
+    public function test_update_rejects_weekend_schedule_date_when_school_disallows(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $school = School::factory()->create(['allow_weekend_scheduling' => false]);
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'school_id' => $school->id,
+        ]);
+
+        $saturday = Carbon::now()->next(Carbon::SATURDAY)->format('Y-m-d');
+
+        $payload = [
+            'schedule_date' => $saturday,
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'none',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->put(route('therapist.schedule.update', $schedule->id), $payload);
+
+        $response->assertSessionHasErrors('schedule_date');
+    }
+
+    public function test_update_accepts_weekend_schedule_date_when_school_allows(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $school = School::factory()->create(['allow_weekend_scheduling' => true]);
+        $student = User::factory()->create(['role' => Role::STUDENT]);
+        StudentProfile::factory()->create(['user_id' => $student->id, 'school_id' => $school->id]);
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'student_id' => $student->id,
+            'school_id' => $school->id,
+        ]);
+
+        $saturday = Carbon::now()->next(Carbon::SATURDAY)->format('Y-m-d');
+
+        $payload = [
+            'schedule_date' => $saturday,
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'none',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->put(route('therapist.schedule.update', $schedule->id), $payload);
+
+        $response->assertSessionHasNoErrors();
+    }
+
+    public function test_update_rejects_weekend_occurrence_dates_when_school_disallows(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $school = School::factory()->create(['allow_weekend_scheduling' => false]);
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'school_id' => $school->id,
+        ]);
+
+        $monday = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
+        $saturday = Carbon::now()->next(Carbon::SATURDAY)->format('Y-m-d');
+
+        $payload = [
+            'schedule_date' => $monday,
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'weekly',
+            'recurrence_end_date' => Carbon::parse($monday)->addWeeks(2)->format('Y-m-d'),
+            'occurrence_dates' => [$monday, $saturday],
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->put(route('therapist.schedule.update', $schedule->id), $payload);
+
+        $response->assertSessionHasErrors('occurrence_dates');
+    }
+
+    public function test_update_rejects_weekend_weekly_days_when_school_disallows(): void
+    {
+        $therapist = User::factory()->create(['role' => Role::THERAPIST]);
+        $school = School::factory()->create(['allow_weekend_scheduling' => false]);
+        $schedule = Schedule::factory()->create([
+            'therapist_id' => $therapist->id,
+            'school_id' => $school->id,
+        ]);
+
+        $monday = Carbon::now()->next(Carbon::MONDAY)->format('Y-m-d');
+
+        $payload = [
+            'schedule_date' => $monday,
+            'start_time' => '09:00',
+            'end_time' => '10:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => 'custom_weekly',
+            'recurrence_end_date' => Carbon::parse($monday)->addWeeks(2)->format('Y-m-d'),
+            'weekly_days' => ['monday', 'saturday'],
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->put(route('therapist.schedule.update', $schedule->id), $payload);
+
+        $response->assertSessionHasErrors('weekly_days');
     }
 
     public function test_editing_recurring_parent_does_not_false_positive_on_own_children(): void

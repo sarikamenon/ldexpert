@@ -11,6 +11,7 @@ use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\RecurrenceType;
 use App\Enums\SSAStatus;
 use App\Enums\WeekDay;
+use App\Http\Requests\Concerns\ValidatesWeekendScheduling;
 use App\Models\ServiceSupportAgreement;
 use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,6 +20,8 @@ use Illuminate\Validation\Validator;
 
 final class StoreScheduleRequest extends FormRequest
 {
+    use ValidatesWeekendScheduling;
+
     public function __construct(
         private readonly ScheduleRepositoryInterface $scheduleRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
@@ -83,7 +86,7 @@ final class StoreScheduleRequest extends FormRequest
             'recurrence_end_date.required_unless' => 'End date is required for recurring schedules.',
             'recurrence_end_date.after' => 'End date must be after the schedule start date.',
             'weekly_days.required_if' => 'Please select at least one day of the week for a custom weekly schedule.',
-            'weekly_days.*.in' => 'Invalid day selected. Choose from Monday through Friday.',
+            'weekly_days.*.in' => 'Invalid day selected.',
             'occurrence_dates.required_unless' => 'Occurrence dates are required for recurring schedules.',
             'occurrence_dates.array' => 'Occurrence dates must be an array.',
             'occurrence_dates.min' => 'At least one occurrence date is required.',
@@ -183,30 +186,24 @@ final class StoreScheduleRequest extends FormRequest
             // Validate occurrence dates for recurring schedules
             $recurrenceType = $this->input('recurrence_type');
             $occurrenceDates = $this->input('occurrence_dates', []);
+            $occurrenceDatesArray = is_array($occurrenceDates) ? $occurrenceDates : [];
 
-            if ($recurrenceType && $recurrenceType !== RecurrenceType::NONE->value && is_array($occurrenceDates) && count($occurrenceDates) > 0) {
-                // Check for weekend dates
-                $weekendDates = [];
-                foreach ($occurrenceDates as $index => $dateStr) {
-                    if ($dateStr) {
-                        try {
-                            $date = Carbon::parse($dateStr);
-                            if ($date->isWeekend()) {
-                                $weekendDates[] = $date->format('M d, Y');
-                            }
-                        } catch (\Exception $e) {
-                            // Invalid date will be caught by validation rules
-                        }
-                    }
-                }
+            $schoolIdForWeekend = $studentCount > 0
+                ? $this->studentRepository->getSchoolIdByUserId((int) $studentIdsArray[0])
+                : null;
+            $allowsWeekend = $this->schoolAllowsWeekendScheduling($schoolIdForWeekend);
 
-                if (count($weekendDates) > 0) {
-                    $validator->errors()->add('occurrence_dates', 'The following dates fall on weekends and cannot be scheduled: '.implode(', ', $weekendDates).'. Please adjust these dates.');
-                }
+            $this->addWeekendSchedulingErrors(
+                $validator,
+                $allowsWeekend,
+                $this->input('schedule_date'),
+                $this->input('weekly_days'),
+                $recurrenceType && $recurrenceType !== RecurrenceType::NONE->value ? $occurrenceDatesArray : null,
+            );
 
-                // Check for duplicate dates
-                $uniqueDates = array_unique($occurrenceDates);
-                if (count($uniqueDates) !== count($occurrenceDates)) {
+            if ($recurrenceType && $recurrenceType !== RecurrenceType::NONE->value && count($occurrenceDatesArray) > 0) {
+                $uniqueDates = array_unique($occurrenceDatesArray);
+                if (count($uniqueDates) !== count($occurrenceDatesArray)) {
                     $validator->errors()->add('occurrence_dates', 'Duplicate occurrence dates are not allowed. Each occurrence must be on a unique date.');
                 }
             }

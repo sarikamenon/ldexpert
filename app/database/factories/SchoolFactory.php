@@ -38,6 +38,7 @@ class SchoolFactory extends Factory
             'school_type' => $this->faker->randomElement(['Virtual', 'Brick Mortar', 'Blended']),
             'is_private_student' => $this->faker->boolean(),
             'non_billable_scheduling' => $this->faker->boolean(),
+            'allow_weekend_scheduling' => $this->faker->boolean(),
             'external_emr_name' => $this->faker->optional()->company(),
             'status' => SchoolStatus::ACTIVE->value,
             'status_reason' => null,

@@ -11,6 +11,8 @@ enum WeekDay: string
     case WEDNESDAY = 'wednesday';
     case THURSDAY = 'thursday';
     case FRIDAY = 'friday';
+    case SATURDAY = 'saturday';
+    case SUNDAY = 'sunday';
 
     public function label(): string
     {
@@ -20,6 +22,8 @@ enum WeekDay: string
             self::WEDNESDAY => 'Wednesday',
             self::THURSDAY => 'Thursday',
             self::FRIDAY => 'Friday',
+            self::SATURDAY => 'Saturday',
+            self::SUNDAY => 'Sunday',
         };
     }
 
@@ -31,7 +35,14 @@ enum WeekDay: string
             self::WEDNESDAY => 'Wed',
             self::THURSDAY => 'Thu',
             self::FRIDAY => 'Fri',
+            self::SATURDAY => 'Sat',
+            self::SUNDAY => 'Sun',
         };
+    }
+
+    public function isWeekend(): bool
+    {
+        return $this === self::SATURDAY || $this === self::SUNDAY;
     }
 
     /** @return array<string, string> */
