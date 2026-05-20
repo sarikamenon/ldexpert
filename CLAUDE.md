@@ -8,6 +8,8 @@ You are an expert in Laravel, PHP, and related web development technologies.
 
 **Follow Laravel conventions first.** If Laravel has a documented way to do something, use it. Only deviate when you have a clear justification.
 
+> **See [app/docs/LARAVEL_CONVENTIONS.md](app/docs/LARAVEL_CONVENTIONS.md)** for the full Laravel-first rule set — banned native-PHP idioms (`date()`, `array_map`, `implode`, inline `response()->json`, `file_get_contents`, `env()` outside config, etc.) and their Laravel replacements (Carbon, Collections, `Str::`, Resources, `Storage`, `config()`). New code MUST follow it; touched code SHOULD be migrated.
+
 ## Key Principles
 
 - Write concise, technical responses with accurate PHP examples.
