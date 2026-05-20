@@ -131,6 +131,13 @@
                                         <div class="text-sm text-foreground/70 mt-1">
                                             {{ $row['service'] ?? 'N/A' }} · {{ $row['schedule_date'] ?? '' }}
                                         </div>
+                                        @if (!empty($row['coverage_badge_label']))
+                                            <div class="mt-2">
+                                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium {{ $row['coverage_badge_classes'] }}">
+                                                    {{ $row['coverage_badge_label'] }}
+                                                </span>
+                                            </div>
+                                        @endif
                                     </div>
                                     @if (!empty($row['create_session_log_url']))
                                         <a href="{{ $row['create_session_log_url'] }}" class="shrink-0">
