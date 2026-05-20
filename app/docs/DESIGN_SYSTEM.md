@@ -1042,7 +1042,8 @@ All design system UI components use the `x-ui::*` namespace prefix. This namespa
 |-----------|-------|
 | `x-ui::input` | Text, email, number, date, time, password inputs |
 | `x-ui::select` | Styled select with optional search (supports Select2) |
-| `x-ui::checkbox` | Checkbox with optional label |
+| `x-ui::checkbox` | Inline checkbox with optional label |
+| `x-ui::checkbox-row` | Boolean setting row (label + subtext + tooltip) for settings panels |
 | `x-ui::file-input` | File upload control |
 | `x-ui::status-toggle` | Toggle for active/inactive states |
 
@@ -1133,6 +1134,70 @@ All design system UI components use the `x-ui::*` namespace prefix. This namespa
     @checked($condition)
 />
 ```
+
+Use for inline checkboxes inside tables, filter bars, or single-line forms. For settings panels with multiple toggles, use `x-ui::checkbox-row` instead.
+
+#### x-ui::checkbox-row
+
+The standard pattern for **boolean settings** in a form — used wherever multiple toggle-style options sit together (settings panels, characteristic sections, preference grids). Renders a checkbox with a bold label, an optional info tooltip, and an optional one-line subtext. Replaces the bordered-card "toggle card" pattern, which wastes vertical space and forces inline help text to wrap.
+
+```blade
+<x-ui::checkbox-row
+    name="allow_weekend_scheduling"
+    label="Allow weekend scheduling"
+    subtext="Saturdays and Sundays available"
+    tooltip="When enabled, therapists can schedule sessions on Saturdays and Sundays."
+    :checked="old('allow_weekend_scheduling', $school->allow_weekend_scheduling ?? false)"
+/>
+```
+
+**Props**
+
+| Prop | Required | Notes |
+|---|---|---|
+| `name` | yes | Form field name. Also used as the `id` if `id` is not passed. A `<input type="hidden" value="0">` is rendered automatically so unchecked submits as `0`. |
+| `id` | no | Defaults to `name`. |
+| `label` | yes | Short, action-oriented. **2–4 words.** Sentence case. Use a noun or verb phrase (`"Private student"`, `"Allow weekend scheduling"`), not a question. |
+| `subtext` | no | One line, **≤6 words**. Plain-language clarification of what enabling the toggle means in practice (`"Family record, not a district school"`). Skip if the label is self-explanatory. |
+| `tooltip` | no | The full, long-form explanation — rendered as an info icon next to the label. This is where business rules, side-effects, and notification details go. **Do not** repeat the subtext here. |
+| `checked` | no | Boolean. Default `false`. |
+| `disabled` | no | Boolean. Default `false`. |
+| `value` | no | Submitted value when checked. Default `'1'`. |
+| `errorBag` | no | Validation key. Defaults to `name`. |
+
+**Layout**
+
+Place rows in a responsive grid. Pick the column count that lets every row fit on one line without label wrap — typically **2 columns for 2 toggles, 4 columns for 3–4 toggles**. Always stack to 1 column on mobile.
+
+```blade
+{{-- 3–4 toggles --}}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6">
+    <x-ui::checkbox-row ... />
+    <x-ui::checkbox-row ... />
+    <x-ui::checkbox-row ... />
+    <x-ui::checkbox-row ... />
+</div>
+
+{{-- 2 toggles --}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+    <x-ui::checkbox-row ... />
+    <x-ui::checkbox-row ... />
+</div>
+```
+
+**Copy rules**
+
+- **Label is the toggle, subtext is the consequence.** Label = what the setting *is*; subtext = what changes when it's on.
+- **No long sentences inline.** Anything longer than 6 words goes in the `tooltip`, not the `subtext`.
+- **No "when enabled, …" preamble in labels or subtext.** That phrasing belongs in the tooltip.
+- **No question marks in labels.** `"Private student"` not `"Private student?"`.
+- **Sentence case**, not Title Case.
+
+**When NOT to use**
+
+- For a single, primary checkbox in a flow (e.g. "I agree to the terms") — use `x-ui::checkbox` with a label.
+- For tri-state filters or multi-select option lists — use a multi-select or chip group.
+- For mutually exclusive options — use radios.
 
 #### x-ui::empty-state
 ```blade

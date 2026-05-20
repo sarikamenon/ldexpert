@@ -139,105 +139,86 @@
 
     {{-- Section C: School/Family Characteristics --}}
     <x-ui::card class="p-6">
-        <h3 class="text-lg font-semibold mb-4">School/Family Characteristics</h3>
-        <div class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <x-input-label for="school_type" value="School/Family Type *" />
-                    <p class="mt-1 text-xs text-foreground/60">Type of educational institution or family placement</p>
-                    <x-ui::select id="school_type" name="school_type" class="mt-1"
-                        placeholder="Select school/family type">
-                        <option value="">Select school/family type</option>
-                        @foreach ($schoolTypes as $type)
-                            <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? '') === $type)>
-                                {{ $type }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                    <x-input-error :messages="$errors->get('school_type')" class="mt-2" />
+        <h3 class="text-lg font-semibold mb-6">School / family characteristics</h3>
+
+        <div class="space-y-6">
+            {{-- Details subsection --}}
+            <div>
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-xs font-semibold tracking-wider text-foreground/60 uppercase">Details</span>
+                    <span class="flex-1 h-px bg-border"></span>
                 </div>
 
-                <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                    <x-input-label value="Private Student?" />
-                    <p class="mt-1 text-xs text-foreground/60 mb-3">Check if this record is a private family (not a
-                        district-enrolled school).</p>
-                    <div class="flex items-center gap-2">
-                        <input type="hidden" name="is_private_student" value="0">
-                        <input id="is_private_student" name="is_private_student" type="checkbox" value="1"
-                            class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary"
-                            @checked(old('is_private_student', $school->is_private_student ?? false))>
-                        <label for="is_private_student" class="text-sm font-medium text-foreground/80 cursor-pointer">
-                            Private students only (family; not district school)
-                        </label>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <x-input-label for="school_type" value="School / family type *" />
+                        <x-ui::select id="school_type" name="school_type" class="mt-1"
+                            placeholder="Select type">
+                            <option value="">Select type</option>
+                            @foreach ($schoolTypes as $type)
+                                <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? '') === $type)>
+                                    {{ $type }}
+                                </option>
+                            @endforeach
+                        </x-ui::select>
+                        <p class="mt-1 text-xs text-foreground/60">Educational institution or family placement</p>
+                        <x-input-error :messages="$errors->get('school_type')" class="mt-2" />
                     </div>
-                    <x-input-error :messages="$errors->get('is_private_student')" class="mt-2" />
-                </div>
 
-                <div id="is_auto_extend_section" class="p-4 border border-border rounded-lg bg-muted"
-                     style="{{ old('is_private_student', $school->is_private_student ?? false) ? '' : 'display:none' }}">
-                    <x-input-label value="Auto-Extend Contract & SSAs?" />
-                    <p id="is_auto_extend_help" class="mt-1 text-xs text-foreground/60 mb-3">
-                        When enabled, this school's active contract and all active SSAs will be automatically
-                        extended by 1 year on their expiry date. The assigned manager will be notified by email.
-                    </p>
-                    <div class="flex items-center gap-2">
-                        <input type="hidden" name="is_auto_extend" value="0">
-                        <input id="is_auto_extend" name="is_auto_extend" type="checkbox" value="1"
-                               class="w-4 h-4 rounded border-border text-primary focus:ring-primary"
-                               aria-describedby="is_auto_extend_help"
-                               @checked(old('is_auto_extend', $school->is_auto_extend ?? false))>
-                        <label for="is_auto_extend" class="text-sm font-medium text-foreground/80 cursor-pointer">
-                            Auto-extend contract and SSAs annually
-                        </label>
+                    <div>
+                        <x-input-label for="external_emr_name" value="External EMR name" />
+                        <x-ui::input id="external_emr_name" name="external_emr_name" type="text"
+                            class="mt-1 block w-full" :value="old('external_emr_name', $school->external_emr_name ?? '')" />
+                        <p class="mt-1 text-xs text-foreground/60">Name in external EMR system, if any</p>
+                        <x-input-error :messages="$errors->get('external_emr_name')" class="mt-2" />
                     </div>
-                    <x-input-error :messages="$errors->get('is_auto_extend')" class="mt-2" />
-                </div>
-
-                <div class="p-4 border border-border rounded-lg bg-muted">
-                    <x-input-label value="Past session submission?" />
-                    <p id="non_billable_scheduling_help" class="mt-1 text-xs text-foreground/60 mb-3">
-                        Use when therapists should not submit post-session logs in Nova for this school/family.
-                    </p>
-                    <div class="flex items-center gap-2">
-                        <input type="hidden" name="non_billable_scheduling" value="0">
-                        <input id="non_billable_scheduling" name="non_billable_scheduling" type="checkbox"
-                            value="1" class="w-4 h-4 rounded border-border text-primary focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
-                            aria-describedby="non_billable_scheduling_help"
-                            @checked(old('non_billable_scheduling', $school->non_billable_scheduling ?? false))>
-                        <label for="non_billable_scheduling"
-                            class="text-sm font-medium text-foreground/80 cursor-pointer">
-                            Exclude from Past Sessions submission queue
-                        </label>
-                    </div>
-                    <x-input-error :messages="$errors->get('non_billable_scheduling')" class="mt-2" />
-                </div>
-
-                <div class="p-4 border border-border rounded-lg bg-muted">
-                    <x-input-label value="Allow weekend scheduling?" />
-                    <p id="allow_weekend_scheduling_help" class="mt-1 text-xs text-foreground/60 mb-3">
-                        When enabled, therapists can schedule sessions on Saturdays and Sundays for this school's students.
-                    </p>
-                    <div class="flex items-center gap-2">
-                        <input type="hidden" name="allow_weekend_scheduling" value="0">
-                        <input id="allow_weekend_scheduling" name="allow_weekend_scheduling" type="checkbox"
-                            value="1" class="w-4 h-4 rounded border-border text-primary focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
-                            aria-describedby="allow_weekend_scheduling_help"
-                            @checked(old('allow_weekend_scheduling', $school->allow_weekend_scheduling ?? false))>
-                        <label for="allow_weekend_scheduling"
-                            class="text-sm font-medium text-foreground/80 cursor-pointer">
-                            Allow Saturday/Sunday scheduling
-                        </label>
-                    </div>
-                    <x-input-error :messages="$errors->get('allow_weekend_scheduling')" class="mt-2" />
                 </div>
             </div>
 
+            {{-- Settings subsection --}}
             <div>
-                <x-input-label for="external_emr_name" value="External EMR School/Family Name" />
-                <p class="mt-1 text-xs text-foreground/60">Name used in external EMR system (if applicable)</p>
-                <x-ui::input id="external_emr_name" name="external_emr_name" type="text"
-                    class="mt-1 block w-full" :value="old('external_emr_name', $school->external_emr_name ?? '')" />
-                <x-input-error :messages="$errors->get('external_emr_name')" class="mt-2" />
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="text-xs font-semibold tracking-wider text-foreground/60 uppercase">Settings</span>
+                    <span class="flex-1 h-px bg-border"></span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6">
+                    <x-ui::checkbox-row
+                        name="is_private_student"
+                        label="Private student"
+                        subtext="Family record, not a district school"
+                        tooltip="Check if this record is a private family rather than a district-enrolled school."
+                        :checked="old('is_private_student', $school->is_private_student ?? false)"
+                    />
+
+                    {{-- Wrapper kept for the existing JS toggler that shows/hides this row based on is_private_student --}}
+                    <div id="is_auto_extend_section"
+                         style="{{ old('is_private_student', $school->is_private_student ?? false) ? '' : 'display:none' }}">
+                        <x-ui::checkbox-row
+                            name="is_auto_extend"
+                            label="Auto-extend contract and SSAs"
+                            subtext="Extend by 1 year on expiry date"
+                            tooltip="When enabled, the active contract and all active SSAs are automatically extended by 1 year on their expiry date. The assigned manager is notified by email."
+                            :checked="old('is_auto_extend', $school->is_auto_extend ?? false)"
+                        />
+                    </div>
+
+                    <x-ui::checkbox-row
+                        name="non_billable_scheduling"
+                        label="Exclude from past sessions queue"
+                        subtext="Skip post-session log submission"
+                        tooltip="Use when therapists should not submit post-session logs in Nova for this school or family."
+                        :checked="old('non_billable_scheduling', $school->non_billable_scheduling ?? false)"
+                    />
+
+                    <x-ui::checkbox-row
+                        name="allow_weekend_scheduling"
+                        label="Allow weekend scheduling"
+                        subtext="Saturdays and Sundays available"
+                        tooltip="When enabled, therapists can schedule sessions on Saturdays and Sundays for this school's students."
+                        :checked="old('allow_weekend_scheduling', $school->allow_weekend_scheduling ?? false)"
+                    />
+                </div>
             </div>
         </div>
     </x-ui::card>
