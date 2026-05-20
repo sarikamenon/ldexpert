@@ -14,14 +14,15 @@
         <input type="hidden" name="schedule_id" value="{{ $schedule->id }}" />
     @endif
 
-    {{-- Sub coverage banner: shown when this therapist is covering for another --}}
+    {{-- Sub coverage banner: shown when this therapist covered the session as a substitute --}}
     @if (isset($originalTherapist))
         <x-ui::alert variant="info" class="mb-4">
-            <p class="font-semibold">Submitting as substitute</p>
+            <p class="font-semibold">Substitute session log</p>
             <p class="text-sm mt-1">
-                You are submitting this session log on behalf of
+                You covered this session for
                 <span class="font-medium">{{ $originalTherapist->name }}</span>,
-                who was originally assigned to this schedule.
+                who was originally assigned to this schedule. This session log will be
+                recorded under your name as the covering therapist.
             </p>
         </x-ui::alert>
     @endif
