@@ -45,23 +45,25 @@ final class StudentService
             $profileData // user_id will be set in repository
         );
 
-        if ($school?->is_private_student) {
-            try {
-                Mail::to($dto->email)->send(
-                    new WelcomeStudentMail(
-                        name: $dto->firstName.' '.$dto->lastName,
-                        username: $dto->username,
-                        email: $dto->email,
-                        plainPassword: $dto->password
-                    )
-                );
-            } catch (\Throwable $e) {
-                Log::error('StudentService: failed to send welcome email', [
-                    'email' => $dto->email,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        // TODO: Re-enable student welcome emails in the future. Temporarily disabled
+        // for both private students and bulk imports — no email is sent on student creation.
+        // if ($school?->is_private_student) {
+        //     try {
+        //         Mail::to($dto->email)->send(
+        //             new WelcomeStudentMail(
+        //                 name: $dto->firstName.' '.$dto->lastName,
+        //                 username: $dto->username,
+        //                 email: $dto->email,
+        //                 plainPassword: $dto->password
+        //             )
+        //         );
+        //     } catch (\Throwable $e) {
+        //         Log::error('StudentService: failed to send welcome email', [
+        //             'email' => $dto->email,
+        //             'error' => $e->getMessage(),
+        //         ]);
+        //     }
+        // }
 
         return $profile;
     }
