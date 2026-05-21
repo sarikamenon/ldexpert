@@ -10,6 +10,7 @@ enum DocumentType: string
     case IEP = 'iep';
     case CONSENT_FORM = 'consent_form';
     case ASSESSMENT = 'assessment';
+    case REFERRAL = 'referral';
     case COMMON = 'common';
     case OTHER = 'other';
 
@@ -20,6 +21,7 @@ enum DocumentType: string
             self::IEP => 'IEP',
             self::CONSENT_FORM => 'Consent Form',
             self::ASSESSMENT => 'Assessment',
+            self::REFERRAL => 'Referral',
             self::COMMON => 'Common Document',
             self::OTHER => 'Other',
         };
