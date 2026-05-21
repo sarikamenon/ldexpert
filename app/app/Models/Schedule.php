@@ -189,6 +189,27 @@ class Schedule extends Model
     }
 
     /**
+     * Make-up reminder rows raised for this scheduled session (it was missed).
+     *
+     * @return HasMany<ScheduleMakeupRequest, $this>
+     */
+    public function makeupRequests(): HasMany
+    {
+        return $this->hasMany(ScheduleMakeupRequest::class, 'schedule_id');
+    }
+
+    /**
+     * If this schedule is itself a make-up session, this points back to the
+     * originating make-up request row.
+     *
+     * @return HasOne<ScheduleMakeupRequest, $this>
+     */
+    public function originatingMakeupRequest(): HasOne
+    {
+        return $this->hasOne(ScheduleMakeupRequest::class, 'makeup_schedule_id');
+    }
+
+    /**
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
@@ -313,6 +334,19 @@ class Schedule extends Model
     public function scopeForStudent(Builder $query, User $student): Builder
     {
         return ScheduleScope::forStudent($query, $this, $student);
+    }
+
+    /**
+     * Sessions for a specific school on a specific calendar date.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeForSchoolOnDate(Builder $query, int $schoolId, string $date): Builder
+    {
+        return $query
+            ->where('school_id', $schoolId)
+            ->where('schedule_date', $date);
     }
 
     /**

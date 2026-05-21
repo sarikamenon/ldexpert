@@ -14,6 +14,7 @@ use App\Http\Controllers\Therapist\SSAGoalController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
 use App\Http\Controllers\Therapist\StudentDocumentController;
+use App\Http\Controllers\Therapist\MakeupRequestController;
 use App\Http\Controllers\Therapist\SubRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -99,6 +100,15 @@ Route::middleware('role:therapist')
         });
 
         Route::post('schedules/{schedule}/sub-request', [SubRequestController::class, 'store'])->name('sub-requests.store-for-schedule')->whereNumber('schedule');
+
+        // Make-Up requests
+        Route::prefix('makeup-requests')->name('makeup-requests.')->group(function () {
+            Route::get('/', [MakeupRequestController::class, 'index'])->name('index');
+            Route::post('data', [MakeupRequestController::class, 'data'])->name('data');
+            Route::get('{makeupRequest}', [MakeupRequestController::class, 'show'])->name('show')->whereNumber('makeupRequest');
+            Route::post('{makeupRequest}/decline', [MakeupRequestController::class, 'decline'])->name('decline')->whereNumber('makeupRequest');
+            Route::get('{makeupRequest}/book', [MakeupRequestController::class, 'book'])->name('book')->whereNumber('makeupRequest');
+        });
 
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {

@@ -99,6 +99,7 @@ export default defineConfig({
                 'resources/js/pages/therapist-schedule-fullcalendar.js',
                 'resources/js/pages/therapist-sub-requests.js',
                 'resources/js/pages/therapist-schedule-sub-coverage.js',
+                'resources/js/pages/therapist-makeup-requests.js',
             ],
             refresh: true,
         }),

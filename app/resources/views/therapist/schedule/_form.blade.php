@@ -26,6 +26,9 @@
     @if ($isEdit)
         @method('PUT')
     @endif
+    @if (! $isEdit && ! empty($makeupRequestId ?? null))
+        <input type="hidden" name="makeup_request_id" value="{{ $makeupRequestId }}">
+    @endif
 
     {{-- Section 1: Schedule Details --}}
     <x-ui::card class="p-6 space-y-6">

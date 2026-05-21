@@ -27,7 +27,7 @@ You are an expert in Laravel, PHP, and related web development technologies.
 > **See `app/docs/ARCHITECTURE.md`** for the full DDD layer contract, hard boundary rules with examples, and directory structure. The rules below are enforced in addition to that document.
 
 - **Monolith only**: No public API controllers. Use Blade pages with Form Requests and jQuery AJAX where asynchronous behavior is needed.
-- **Always use DTOs** for input transport between layers.
+- **Always use DTOs** for input transport between layers. New DTOs MUST live under `app/DTOs/<Domain>/<Subdomain>/` — see `app/docs/ARCHITECTURE.md` (§ DTOs → Where DTOs live).
 - **Always use Form Request classes** for validation. Controllers MUST type-hint Request objects from `app/Http/Requests/**`.
 - **Prefer Eloquent**; raw queries only with justification.
 - **Prefer `whereHas` over `whereExists` with subqueries** when filtering by related model conditions. `whereHas` uses Eloquent relationships, respects soft deletes, and reads as business logic rather than SQL. Only fall back to `whereExists`/`DB::raw` when the relationship does not exist and adding it would be disproportionate, or when performance profiling justifies it. If a `whereHas` is needed and the inverse relationship is missing from the model, add it first.

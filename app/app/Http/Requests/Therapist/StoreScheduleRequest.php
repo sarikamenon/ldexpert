@@ -71,6 +71,7 @@ final class StoreScheduleRequest extends FormRequest
             'sub_reason' => ['required_if:request_sub,1', 'nullable', 'string', 'max:1000'],
             'sub_invitee_ids' => ['nullable', 'array', 'min:1'],
             'sub_invitee_ids.*' => ['integer', 'exists:users,id'],
+            'makeup_request_id' => ['nullable', 'integer'],
         ];
     }
 

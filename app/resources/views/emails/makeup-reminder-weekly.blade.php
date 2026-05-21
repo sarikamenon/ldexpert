@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Make-Up Session Needed</title>
+</head>
+
+<body style="font-family: 'Inter', ui-sans-serif, system-ui; background:#f5f7fb; padding:24px; color:#0f172a;">
+    <table width="100%" cellpadding="0" cellspacing="0"
+        style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0;">
+        <tr>
+            <td style="padding:28px 28px 12px 28px;">
+                <p style="margin:0 0 8px; font-size:14px; color:#475569;">Hi {{ $recipientName }},</p>
+                <h1 style="margin:0; font-size:22px; color:#0f172a;">Make-Up Session Needed</h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
+                <p style="margin:0 0 12px;">
+                    {{ $studentName }}'s school is closed on the date(s) below, so their regular weekly session(s) with
+                    <strong>{{ $therapistName }}</strong> won't take place as scheduled. We'd like to offer a make-up
+                    session so {{ $studentName }} doesn't miss out.
+                </p>
+
+                <div style="margin:20px 0; padding:16px; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd;">
+                    <p style="margin:0 0 6px; color:#0369a1;"><strong>Affected session date(s)</strong></p>
+                    @foreach ($dates as $date)
+                        <p style="margin:0 0 4px; color:#0369a1;">{{ $date }}</p>
+                    @endforeach
+                </div>
+
+                <p style="margin:0 0 12px;">
+                    Please let us know by <strong>{{ $responseByDate }}</strong> whether you'd like to schedule a
+                    make-up:
+                </p>
+
+                <div style="margin:20px 0; text-align:center;">
+                    <a href="{{ $requestUrl }}"
+                        style="display:inline-block; background:#16a34a; color:#ffffff; text-decoration:none; padding:12px 22px; border-radius:6px; font-size:14px; font-weight:600; margin:0 6px;">
+                        Request Make-Up
+                    </a>
+                    <a href="{{ $declineUrl }}"
+                        style="display:inline-block; background:#e2e8f0; color:#0f172a; text-decoration:none; padding:12px 22px; border-radius:6px; font-size:14px; font-weight:600; margin:0 6px;">
+                        Decline Make-Up
+                    </a>
+                </div>
+
+                <div style="margin:20px 0; padding:10px 14px; border-radius:6px; background:#fafafa; border:1px solid #e5e7eb; border-left:3px solid #f97316;">
+                    <p style="margin:0; font-size:12px; color:#6b7280; line-height:1.6;">
+                        Questions? Reply to this email or contact {{ $therapistName }} directly at
+                        <a href="mailto:{{ $therapistEmail }}"
+                            style="color:#ea580c; text-decoration:none;">{{ $therapistEmail }}</a>.
+                    </p>
+                </div>
+            </td>
+        </tr>
+        @include('emails.partials.footer')
+    </table>
+</body>
+
+</html>

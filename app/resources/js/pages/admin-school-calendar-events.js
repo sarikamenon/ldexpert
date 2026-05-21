@@ -53,6 +53,9 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
                 event_type: $('#event_type').val(),
                 start_date: $('#event_start_date').val(),
                 end_date: $('#event_end_date').val(),
+                reminder_date: $('#event_reminder_date').val(),
+                response_date: $('#event_response_date').val(),
+                deadline_date: $('#event_deadline_date').val(),
                 notes: $('#event_notes').val(),
             };
 
@@ -496,6 +499,9 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             $('#event_type').val(event.event_type);
             $('#event_start_date').val(event.start_date);
             $('#event_end_date').val(event.end_date);
+            $('#event_reminder_date').val(event.reminder_date || '');
+            $('#event_response_date').val(event.response_date || '');
+            $('#event_deadline_date').val(event.deadline_date || '');
             $('#event_notes').val(event.notes || '');
             $cancelBtn.removeClass('hidden');
             $submitBtn.text('Update Event');
@@ -508,6 +514,9 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             $('#event_type').val('');
             $('#event_start_date').val('');
             $('#event_end_date').val('');
+            $('#event_reminder_date').val('');
+            $('#event_response_date').val('');
+            $('#event_deadline_date').val('');
             $('#event_notes').val('');
             $cancelBtn.addClass('hidden');
             $submitBtn.text('Save Event');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
+use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
 use App\Domain\Schedule\Sub\Presenters\SubCoveragePanelPresenter;
 use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
@@ -30,6 +31,7 @@ use App\Http\Requests\Therapist\StoreScheduleRequest;
 use App\Http\Requests\Therapist\UpdateScheduleRequest;
 use App\Http\Resources\Schedule\ScheduleDetailsResource;
 use App\Models\Schedule;
+use App\Models\ScheduleMakeupRequest;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -51,6 +53,7 @@ final class ScheduleController extends Controller
         private readonly UserTimezoneService $timezoneService,
         private readonly ScheduleSubRequestService $subRequestService,
         private readonly SubCoveragePanelPresenter $subCoveragePanelPresenter,
+        private readonly ScheduleMakeupRequestRepositoryInterface $makeupRequestRepository,
     ) {}
 
     public function create(Request $request): View|RedirectResponse
@@ -154,6 +157,9 @@ final class ScheduleController extends Controller
             'isPrivateStudent' => $isPrivateStudent,
             'allowsWeekendScheduling' => $allowsWeekendScheduling,
             'weekDays' => $weekDays,
+            'makeupRequestId' => $request->query('makeup_request_id') !== null
+                ? (int) $request->query('makeup_request_id')
+                : null,
         ]);
     }
 
@@ -414,6 +420,11 @@ final class ScheduleController extends Controller
             $subInviteeIds = array_map('intval', (array) $request->input('sub_invitee_ids', []));
             $subReason = $request->string('sub_reason')->toString() ?: null;
             $subWarning = $this->raiseSubRequestForNewSchedule($therapist, $schedule, $subInviteeIds, $subReason);
+        }
+
+        $makeupRequestId = $request->input('makeup_request_id');
+        if ($makeupRequestId !== null) {
+            $this->linkMakeupRequestSchedule((int) $makeupRequestId, $schedule->id);
         }
 
         if ($request->expectsJson()) {
@@ -694,6 +705,30 @@ final class ScheduleController extends Controller
             ]);
 
             return 'Schedule saved, but the sub request could not be created. Please try again from the schedule edit page.';
+        }
+    }
+
+    /**
+     * Side-effect for the make-up booking flow: link the freshly-created
+     * schedule back to the originating make-up request and flip its status
+     * to SCHEDULED. The schedule has already been saved by the time we get
+     * here, so any failure here must not propagate to the user.
+     */
+    private function linkMakeupRequestSchedule(int $makeupRequestId, int $scheduleId): void
+    {
+        try {
+            $makeupRequest = ScheduleMakeupRequest::find($makeupRequestId);
+            if ($makeupRequest === null) {
+                return;
+            }
+
+            $this->makeupRequestRepository->linkBookedSchedule($makeupRequest, $scheduleId);
+        } catch (\Throwable $e) {
+            Log::error('ScheduleController@store: failed to link make-up request to new schedule', [
+                'makeup_request_id' => $makeupRequestId,
+                'schedule_id' => $scheduleId,
+                'exception' => $e,
+            ]);
         }
     }
 

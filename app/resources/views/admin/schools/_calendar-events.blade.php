@@ -63,6 +63,36 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                        <x-input-label for="event_reminder_date" value="Email Send Date *" />
+                        <p class="mt-1 text-xs text-foreground/60" id="event_reminder_date_help">
+                            Date the make-up reminder email goes to parents.
+                        </p>
+                        <x-ui::input id="event_reminder_date" name="reminder_date" type="date"
+                            class="mt-1 block w-full" aria-describedby="event_reminder_date_help" required />
+                        <p class="text-xs text-danger mt-2 hidden" data-error-for="reminder_date"></p>
+                    </div>
+                    <div>
+                        <x-input-label for="event_response_date" value="Response Date *" />
+                        <p class="mt-1 text-xs text-foreground/60" id="event_response_date_help">
+                            Date by which a parent response is requested (shown in the email).
+                        </p>
+                        <x-ui::input id="event_response_date" name="response_date" type="date"
+                            class="mt-1 block w-full" aria-describedby="event_response_date_help" required />
+                        <p class="text-xs text-danger mt-2 hidden" data-error-for="response_date"></p>
+                    </div>
+                    <div>
+                        <x-input-label for="event_deadline_date" value="Response Deadline *" />
+                        <p class="mt-1 text-xs text-foreground/60" id="event_deadline_date_help">
+                            Hard cutoff — requests with no response by this date are auto-declined.
+                        </p>
+                        <x-ui::input id="event_deadline_date" name="deadline_date" type="date"
+                            class="mt-1 block w-full" aria-describedby="event_deadline_date_help" required />
+                        <p class="text-xs text-danger mt-2 hidden" data-error-for="deadline_date"></p>
+                    </div>
+                </div>
+
                 <div>
                     <x-input-label for="event_notes" value="Notes" />
                     <p class="mt-1 text-xs text-foreground/60" id="event_notes_help">

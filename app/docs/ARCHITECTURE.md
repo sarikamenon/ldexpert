@@ -88,6 +88,7 @@ app/
 │       ├── Repositories/       # Interfaces only
 │       └── Services/           # Business logic
 ├── DTOs/                       # Input transport between layers
+│   └── <Domain>/<Subdomain>/   # New DTOs nest by domain (see DTOs section below)
 ├── Http/
 │   ├── Controllers/            # Thin — delegate to services
 │   └── Requests/               # Form Request validation
@@ -110,6 +111,21 @@ $service->create($request->all());
 $dto = CreateSSADTO::fromRequest($request);
 $service->create($dto);
 ```
+
+### Where DTOs live
+
+New DTOs MUST be created under `app/DTOs/<Domain>/<Subdomain>/` with namespace `App\DTOs\<Domain>\<Subdomain>`. Group by the business area the DTO belongs to.
+
+```
+app/DTOs/Schedule/Makeup/CreateMakeupRequestDTO.php       // App\DTOs\Schedule\Makeup\CreateMakeupRequestDTO
+app/DTOs/Schedule/SubRequest/EligibleSubDTO.php           // App\DTOs\Schedule\SubRequest\EligibleSubDTO
+```
+
+Do NOT:
+- add new DTOs directly under `app/DTOs/` (flat root)
+- add new DTOs under `app/Domain/**/DTOs/`
+
+The flat files currently in `app/DTOs/` are legacy. Migrate them into the appropriate `app/DTOs/<Domain>/<Subdomain>/` folder gradually when touched — move the file, update its namespace, and update every import.
 
 ---
 

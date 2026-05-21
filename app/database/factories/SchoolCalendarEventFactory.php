@@ -16,7 +16,8 @@ class SchoolCalendarEventFactory extends Factory
 
     public function definition(): array
     {
-        $startDate = now()->addDays(2)->toDateString();
+        $start = now()->addDays(14);
+        $startDate = $start->toDateString();
 
         return [
             'school_id' => School::factory(),
@@ -24,6 +25,9 @@ class SchoolCalendarEventFactory extends Factory
             'event_type' => SchoolCalendarEventType::HOLIDAY->value,
             'start_date' => $startDate,
             'end_date' => $startDate,
+            'reminder_date' => $start->copy()->subDays(7)->toDateString(),
+            'response_date' => $start->copy()->subDays(5)->toDateString(),
+            'deadline_date' => $start->copy()->subDays(3)->toDateString(),
             'notes' => $this->faker->optional()->sentence(),
         ];
     }
