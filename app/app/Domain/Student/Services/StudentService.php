@@ -34,11 +34,10 @@ final class StudentService
 
         $profileData = $dto->toProfileArray(0);
 
-        if (empty($profileData['id_number']) && $dto->schoolId !== null) {
-            $school = School::find($dto->schoolId);
-            if ($school !== null && $school->is_private_student) {
-                $profileData['id_number'] = $this->generateUniqueStudentId();
-            }
+        $school = $dto->schoolId !== null ? School::find($dto->schoolId) : null;
+
+        if (empty($profileData['id_number']) && $school?->is_private_student) {
+            $profileData['id_number'] = $this->generateUniqueStudentId();
         }
 
         $profile = $this->repository->create(
@@ -46,21 +45,22 @@ final class StudentService
             $profileData // user_id will be set in repository
         );
 
-        // Send welcome email to student's user email
-        try {
-            Mail::to($dto->email)->send(
-                new WelcomeStudentMail(
-                    name: $dto->firstName.' '.$dto->lastName,
-                    username: $dto->username,
-                    email: $dto->email,
-                    plainPassword: $dto->password
-                )
-            );
-        } catch (\Throwable $e) {
-            Log::error('StudentService: failed to send welcome email', [
-                'email' => $dto->email,
-                'error' => $e->getMessage(),
-            ]);
+        if ($school?->is_private_student) {
+            try {
+                Mail::to($dto->email)->send(
+                    new WelcomeStudentMail(
+                        name: $dto->firstName.' '.$dto->lastName,
+                        username: $dto->username,
+                        email: $dto->email,
+                        plainPassword: $dto->password
+                    )
+                );
+            } catch (\Throwable $e) {
+                Log::error('StudentService: failed to send welcome email', [
+                    'email' => $dto->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $profile;
