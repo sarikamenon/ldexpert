@@ -3,6 +3,7 @@
 use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
 use App\Http\Controllers\Therapist\Finance\PayStubController;
+use App\Http\Controllers\Therapist\MakeupRequestController;
 use App\Http\Controllers\Therapist\QGlobRequestController;
 use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
@@ -14,7 +15,6 @@ use App\Http\Controllers\Therapist\SSAGoalController;
 use App\Http\Controllers\Therapist\StudentCommentController;
 use App\Http\Controllers\Therapist\StudentController;
 use App\Http\Controllers\Therapist\StudentDocumentController;
-use App\Http\Controllers\Therapist\MakeupRequestController;
 use App\Http\Controllers\Therapist\SubRequestController;
 use Illuminate\Support\Facades\Route;
 
@@ -107,6 +107,7 @@ Route::middleware('role:therapist')
             Route::post('data', [MakeupRequestController::class, 'data'])->name('data');
             Route::get('{makeupRequest}', [MakeupRequestController::class, 'show'])->name('show')->whereNumber('makeupRequest');
             Route::post('{makeupRequest}/decline', [MakeupRequestController::class, 'decline'])->name('decline')->whereNumber('makeupRequest');
+            Route::post('{makeupRequest}/not-required', [MakeupRequestController::class, 'markNotRequired'])->name('mark-not-required')->whereNumber('makeupRequest');
             Route::get('{makeupRequest}/book', [MakeupRequestController::class, 'book'])->name('book')->whereNumber('makeupRequest');
         });
 

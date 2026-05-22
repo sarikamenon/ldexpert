@@ -10,6 +10,7 @@
     'isPrivateStudent' => false,
     'allowsWeekendScheduling' => false,
     'weekDays' => [],
+    'holidayDates' => [],
     'subPanel' => null,
 ])
 
@@ -21,7 +22,8 @@
 <form method="POST"
     action="{{ $isEdit ? route('therapist.schedule.update', $schedule->id) : route('therapist.schedule.store') }}"
     id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6"
-    data-allow-weekend-scheduling="{{ $allowsWeekendScheduling ? '1' : '0' }}">
+    data-allow-weekend-scheduling="{{ $allowsWeekendScheduling ? '1' : '0' }}"
+    data-holiday-dates="@json($holidayDates)">
     @csrf
     @if ($isEdit)
         @method('PUT')
@@ -310,7 +312,7 @@
                 <p class="text-xs text-foreground/60 mt-1 mb-3">
                     Review the occurrence dates below. You can modify any date or remove unwanted
                     occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
-                    Dates falling on weekends are highlighted in yellow.
+                    Dates falling on weekends or school holidays are highlighted in yellow.
                 </p>
                 <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
                 <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />

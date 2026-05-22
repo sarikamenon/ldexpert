@@ -32,17 +32,16 @@ class ScheduleMakeupRequestFactory extends Factory
             'therapist_id' => User::factory(),
             'event_date' => $eventDate->toDateString(),
             'reminder_date' => $eventDate->copy()->subDays(7)->toDateString(),
-            'response_date' => $eventDate->copy()->subDays(5)->toDateString(),
-            'deadline_date' => $eventDate->copy()->subDays(3)->toDateString(),
+            'response_date' => $eventDate->copy()->subDays(3)->toDateString(),
             'status' => ScheduleMakeupRequestStatus::PENDING->value,
-            'batch_number' => Str::random(32),
+            'batch_number' => 'MR_'.Str::random(29),
             'reminder_sent_at' => null,
             'response_token' => Str::random(64),
             'responded_at' => null,
             'responded_by_type' => null,
             'responded_by_user_id' => null,
             'response_source' => null,
-            'decline_reason' => null,
+            'reason' => null,
             'makeup_schedule_id' => null,
         ];
     }
@@ -115,6 +114,18 @@ class ScheduleMakeupRequestFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'status' => ScheduleMakeupRequestStatus::FAILED->value,
+        ]);
+    }
+
+    public function notRequired(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => ScheduleMakeupRequestStatus::NOT_REQUIRED->value,
+            'reminder_sent_at' => null,
+            'responded_at' => null,
+            'responded_by_type' => null,
+            'responded_by_user_id' => null,
+            'response_source' => null,
         ]);
     }
 }

@@ -9,7 +9,6 @@ use App\DTOs\Schedule\Makeup\RecordMakeupResponseDTO;
 use App\Enums\ScheduleMakeupRequestStatus;
 use App\Exceptions\MakeupResponseNotAllowedException;
 use App\Models\ScheduleMakeupRequest;
-use App\Models\StudentProfile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -106,10 +105,10 @@ final class ScheduleMakeupResponseService
 
             $this->guardBatchCanRespond($locked, $head, $clock);
 
-            $parentUserId = $this->resolveParentUserId($head);
+            $responderUserId = (int) $head->student_id;
 
-            return $locked->map(function (ScheduleMakeupRequest $row) use ($buildDto, $parentUserId, $clock): ScheduleMakeupRequest {
-                $dto = $buildDto($row->id, $parentUserId, $clock);
+            return $locked->map(function (ScheduleMakeupRequest $row) use ($buildDto, $responderUserId, $clock): ScheduleMakeupRequest {
+                $dto = $buildDto($row->id, $responderUserId, $clock);
 
                 return $this->repository->recordResponse($row, $dto);
             })->values();
@@ -136,7 +135,7 @@ final class ScheduleMakeupResponseService
 
         $today = $now->startOfDay();
 
-        if ($today->greaterThan(CarbonImmutable::parse($head->deadline_date->toDateString()))) {
+        if ($today->greaterThan(CarbonImmutable::parse($head->response_date->toDateString()))) {
             throw new MakeupResponseNotAllowedException(
                 MakeupResponseNotAllowedException::REASON_DEADLINE_PASSED,
             );
@@ -152,21 +151,5 @@ final class ScheduleMakeupResponseService
                 MakeupResponseNotAllowedException::REASON_EVENT_PAST,
             );
         }
-    }
-
-    private function resolveParentUserId(ScheduleMakeupRequest $request): int
-    {
-        $profile = StudentProfile::query()
-            ->where('user_id', $request->student_id)
-            ->first();
-
-        if ($profile === null || $profile->parent_id === null) {
-            throw new MakeupResponseNotAllowedException(
-                MakeupResponseNotAllowedException::REASON_BAD_STATE,
-                "Student #{$request->student_id} has no parent on file; cannot resolve responder.",
-            );
-        }
-
-        return (int) $profile->parent_id;
     }
 }

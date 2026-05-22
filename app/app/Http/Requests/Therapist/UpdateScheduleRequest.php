@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
-use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\BillingStatus;
@@ -12,7 +11,6 @@ use App\Enums\RecurrenceType;
 use App\Enums\WeekDay;
 use App\Http\Requests\Concerns\ValidatesWeekendScheduling;
 use App\Models\Schedule;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -138,22 +136,11 @@ final class UpdateScheduleRequest extends FormRequest
             /** @var Schedule|null $schedule */
             $schedule = Schedule::find($this->route('id'));
             if ($schedule) {
-                $calendarService = app(SchoolCalendarService::class);
                 $studentRepository = app(StudentRepositoryInterface::class);
                 $schoolId = $schedule->school_id
                     ?? $studentRepository->getSchoolIdByUserId((int) $schedule->student_id);
 
                 $scheduleDate = $this->input('schedule_date');
-                if ($schoolId && $scheduleDate) {
-                    $date = Carbon::parse((string) $scheduleDate);
-                    if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
-                        $validator->errors()->add(
-                            'schedule_date',
-                            'Scheduling is not allowed on school holidays.'
-                        );
-                    }
-                }
-
                 $occurrenceDatesInput = $this->input('occurrence_dates');
 
                 $this->addWeekendSchedulingErrors(

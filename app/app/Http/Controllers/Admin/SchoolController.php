@@ -21,6 +21,7 @@ use App\DTOs\CreateSchoolDTO;
 use App\DTOs\SchoolFilterDTO;
 use App\DTOs\UpdateSchoolDTO;
 use App\Enums\Role;
+use App\Enums\SchoolCalendarEventType;
 use App\Enums\SchoolType;
 use App\Enums\SSAStatus;
 use App\Enums\UserStatus;
@@ -247,6 +248,13 @@ final class SchoolController extends Controller
             $viewData['selectedDate'] = $request->query('date')
                 ? CarbonImmutable::parse((string) $request->query('date'))
                 : CarbonImmutable::today();
+            $viewData['eventTypeOptions'] = collect(SchoolCalendarEventType::cases())
+                ->map(static fn (SchoolCalendarEventType $type): array => [
+                    'value' => $type->value,
+                    'label' => $type->label(),
+                ])
+                ->all();
+            $viewData['defaultEventType'] = SchoolCalendarEventType::HOLIDAY->value;
         } elseif ($activeTab === 'account') {
             [$defaultFrom, $defaultTo] = $this->schoolAccountViewService->defaultWindow($school);
             $viewData['accountSummary'] = $this->schoolAccountViewService->getSummary($school);

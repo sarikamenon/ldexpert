@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Domain\Schedule\Makeup\Presenters\MakeupRequestPresenter;
 use App\Domain\Schedule\Makeup\Services\ScheduleMakeupResponseService;
 use App\Exceptions\MakeupResponseNotAllowedException;
 use App\Http\Controllers\Controller;
@@ -28,6 +29,7 @@ final class ScheduleMakeupResponseController extends Controller
 {
     public function __construct(
         private readonly ScheduleMakeupResponseService $responseService,
+        private readonly MakeupRequestPresenter $presenter,
     ) {}
 
     /**
@@ -40,13 +42,13 @@ final class ScheduleMakeupResponseController extends Controller
         try {
             $updated = $this->responseService->recordParentRequest($batch);
 
-            return view('public.makeup-response.request-recorded', ['batch' => $updated]);
+            return view('public.makeup-response.request-recorded', $this->viewData($updated));
         } catch (MakeupResponseNotAllowedException $e) {
             return $this->viewForReason($e->reason, $batch);
         } catch (Throwable $e) {
             $this->logFailure($token, $batch, $e);
 
-            return view('public.makeup-response.error', ['batch' => $batch]);
+            return view('public.makeup-response.error', $this->viewData($batch));
         }
     }
 
@@ -60,13 +62,13 @@ final class ScheduleMakeupResponseController extends Controller
         try {
             $updated = $this->responseService->recordParentDecline($batch);
 
-            return view('public.makeup-response.declined', ['batch' => $updated]);
+            return view('public.makeup-response.declined', $this->viewData($updated));
         } catch (MakeupResponseNotAllowedException $e) {
             return $this->viewForReason($e->reason, $batch);
         } catch (Throwable $e) {
             $this->logFailure($token, $batch, $e);
 
-            return view('public.makeup-response.error', ['batch' => $batch]);
+            return view('public.makeup-response.error', $this->viewData($batch));
         }
     }
 
@@ -89,12 +91,32 @@ final class ScheduleMakeupResponseController extends Controller
      */
     private function viewForReason(string $reason, Collection $batch): View
     {
+        $data = $this->viewData($batch);
+
         return match ($reason) {
-            MakeupResponseNotAllowedException::REASON_ALREADY_RESPONDED => view('public.makeup-response.already-responded', ['batch' => $batch]),
-            MakeupResponseNotAllowedException::REASON_DEADLINE_PASSED => view('public.makeup-response.deadline-passed', ['batch' => $batch]),
-            MakeupResponseNotAllowedException::REASON_EVENT_PAST => view('public.makeup-response.event-past', ['batch' => $batch]),
-            default => view('public.makeup-response.error', ['batch' => $batch]),
+            MakeupResponseNotAllowedException::REASON_ALREADY_RESPONDED => view('public.makeup-response.already-responded', $data),
+            MakeupResponseNotAllowedException::REASON_DEADLINE_PASSED => view('public.makeup-response.deadline-passed', $data),
+            MakeupResponseNotAllowedException::REASON_EVENT_PAST => view('public.makeup-response.event-past', $data),
+            default => view('public.makeup-response.error', $data),
         };
+    }
+
+    /**
+     * Build the view payload — batch + a pre-formatted list of missed-session
+     * labels rendered in the student's timezone by the presenter, plus a
+     * pre-formatted response-deadline string consumed by the deadline-passed
+     * view (Blade should not format dates).
+     *
+     * @param  Collection<int, ScheduleMakeupRequest>  $batch
+     * @return array{batch: Collection<int, ScheduleMakeupRequest>, sessionLabels: array<int, string>, responseByDate: ?string}
+     */
+    private function viewData(Collection $batch): array
+    {
+        return [
+            'batch' => $batch,
+            'sessionLabels' => $this->presenter->sessionLabels($batch),
+            'responseByDate' => $batch->first()?->response_date?->format((string) config('display.date')),
+        ];
     }
 
     /**

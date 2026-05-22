@@ -38,4 +38,11 @@ final class ScheduleMakeupRequestPolicy
             && $request->isRequested()
             && $request->makeup_schedule_id === null;
     }
+
+    public function markNotRequired(User $user, ScheduleMakeupRequest $request): bool
+    {
+        return $user->isTherapist()
+            && (int) $request->therapist_id === (int) $user->id
+            && $request->isPending();
+    }
 }

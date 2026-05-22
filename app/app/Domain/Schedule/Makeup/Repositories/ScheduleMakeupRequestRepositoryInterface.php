@@ -104,7 +104,7 @@ interface ScheduleMakeupRequestRepositoryInterface
     public function markBatchFailed(string $batchNumber): int;
 
     /**
-     * Sent rows whose deadline_date < $on with no response recorded.
+     * Sent rows whose response_date < $on with no response recorded.
      * Used by AutoDeclineOverdueRemindersJob.
      *
      * @return Collection<int, ScheduleMakeupRequest>
@@ -150,4 +150,11 @@ interface ScheduleMakeupRequestRepositoryInterface
      * flip the request to SCHEDULED. Returns the updated row.
      */
     public function linkBookedSchedule(ScheduleMakeupRequest $request, int $scheduleId): ScheduleMakeupRequest;
+
+    /**
+     * Therapist marks a pending row as "not required" — the original session
+     * is still happening for this student, so no make-up is needed. Terminal
+     * state, no parent contact.
+     */
+    public function markNotRequired(ScheduleMakeupRequest $request, string $reason): ScheduleMakeupRequest;
 }

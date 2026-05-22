@@ -6,11 +6,14 @@ namespace App\Http\Requests\Therapist;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-final class DeclineMakeupRequest extends FormRequest
+final class MarkNotRequiredMakeupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->role?->value === 'therapist';
+        /** @var \App\Models\User|null $user */
+        $user = $this->user();
+
+        return $user !== null && $user->isTherapist();
     }
 
     /** @return array<string, array<int, mixed>|string> */
@@ -25,7 +28,7 @@ final class DeclineMakeupRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'reason.required' => 'Please provide a reason for declining.',
+            'reason.required' => 'Please provide a reason for marking this as not required.',
             'reason.max' => 'Reason may not be greater than :max characters.',
         ];
     }

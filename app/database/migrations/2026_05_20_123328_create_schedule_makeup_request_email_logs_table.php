@@ -13,8 +13,9 @@ return new class extends Migration
         Schema::create('schedule_makeup_request_email_logs', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('schedule_makeup_request_id')
-                ->constrained('schedule_makeup_requests')
+            $table->foreignId('schedule_makeup_request_id');
+            $table->foreign('schedule_makeup_request_id', 'smrel_request_id_fk')
+                ->references('id')->on('schedule_makeup_requests')
                 ->cascadeOnDelete();
 
             $table->string('type', 30);
@@ -37,8 +38,8 @@ return new class extends Migration
                 ['schedule_makeup_request_id', 'type'],
                 'smrel_request_type_idx'
             );
-            $table->index(['status', 'created_at']);
-            $table->index(['recipient_email', 'created_at']);
+            $table->index(['status', 'created_at'], 'smrel_status_created_idx');
+            $table->index(['recipient_email', 'created_at'], 'smrel_recipient_created_idx');
         });
     }
 

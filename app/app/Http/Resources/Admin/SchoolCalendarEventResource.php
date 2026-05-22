@@ -31,9 +31,9 @@ class SchoolCalendarEventResource extends JsonResource
             'event_type_label' => $event->event_type->label(),
             'start_date' => $event->start_date->format('Y-m-d'),
             'end_date' => $event->end_date->format('Y-m-d'),
+            'request_makeup' => $event->request_makeup,
             'reminder_date' => $event->reminder_date?->format('Y-m-d'),
             'response_date' => $event->response_date?->format('Y-m-d'),
-            'deadline_date' => $event->deadline_date?->format('Y-m-d'),
             'notes' => $event->notes,
             'is_holiday' => $event->event_type === SchoolCalendarEventType::HOLIDAY,
         ];

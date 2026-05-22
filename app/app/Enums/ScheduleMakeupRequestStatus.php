@@ -12,23 +12,25 @@ enum ScheduleMakeupRequestStatus: string
     case DECLINED = 'declined';
     case SCHEDULED = 'scheduled';
     case FAILED = 'failed';
+    case NOT_REQUIRED = 'not_required';
 
     public function label(): string
     {
         return match ($this) {
             self::PENDING => 'Pending',
-            self::SENT => 'Reminder sent',
-            self::REQUESTED => 'Make-up requested',
+            self::SENT => 'Sent',
+            self::REQUESTED => 'Requested',
             self::DECLINED => 'Declined',
-            self::SCHEDULED => 'Make-up scheduled',
+            self::SCHEDULED => 'Scheduled',
             self::FAILED => 'Send failed',
+            self::NOT_REQUIRED => 'Not required',
         };
     }
 
     public function isTerminal(): bool
     {
         return match ($this) {
-            self::DECLINED, self::SCHEDULED, self::FAILED => true,
+            self::DECLINED, self::SCHEDULED, self::FAILED, self::NOT_REQUIRED => true,
             default => false,
         };
     }

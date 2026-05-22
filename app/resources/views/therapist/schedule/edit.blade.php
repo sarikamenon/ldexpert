@@ -50,6 +50,7 @@
                 'isPrivateStudent' => $isPrivateStudent,
                 'allowsWeekendScheduling' => $allowsWeekendScheduling ?? false,
                 'weekDays' => $weekDays,
+                'holidayDates' => $holidayDates ?? [],
                 'scheduleLocalDate' => $scheduleLocalDate,
                 'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,

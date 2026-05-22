@@ -28,7 +28,6 @@ return new class extends Migration
             $table->date('event_date');
             $table->date('reminder_date');
             $table->date('response_date');
-            $table->date('deadline_date');
 
             $table->string('status', 20)->default('pending');
 
@@ -46,7 +45,7 @@ return new class extends Migration
                 ->nullable()
                 ->constrained('users');
             $table->string('response_source', 32)->nullable();
-            $table->string('decline_reason')->nullable();
+            $table->string('reason')->nullable();
 
             $table->foreignId('makeup_schedule_id')
                 ->nullable()
@@ -64,7 +63,7 @@ return new class extends Migration
             );
             $table->index(['therapist_id', 'status']);
             $table->index(['reminder_date', 'status']);
-            $table->index(['deadline_date', 'status']);
+            $table->index(['response_date', 'status']);
             $table->index('makeup_schedule_id');
             $table->index('response_token');
             $table->index('batch_number');

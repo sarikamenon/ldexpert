@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon $event_date
  * @property \Carbon\Carbon $reminder_date
  * @property \Carbon\Carbon $response_date
- * @property \Carbon\Carbon $deadline_date
  * @property \Carbon\Carbon|null $reminder_sent_at
  * @property \Carbon\Carbon|null $responded_at
  */
@@ -41,7 +40,6 @@ class ScheduleMakeupRequest extends Model
         'event_date',
         'reminder_date',
         'response_date',
-        'deadline_date',
         'status',
         'batch_number',
         'reminder_sent_at',
@@ -50,7 +48,7 @@ class ScheduleMakeupRequest extends Model
         'responded_by_type',
         'responded_by_user_id',
         'response_source',
-        'decline_reason',
+        'reason',
         'makeup_schedule_id',
     ];
 
@@ -63,7 +61,6 @@ class ScheduleMakeupRequest extends Model
             'event_date' => 'date',
             'reminder_date' => 'date',
             'response_date' => 'date',
-            'deadline_date' => 'date',
             'reminder_sent_at' => 'datetime',
             'responded_at' => 'datetime',
             'created_at' => 'datetime',
@@ -188,7 +185,7 @@ class ScheduleMakeupRequest extends Model
         return $query
             ->where('status', ScheduleMakeupRequestStatus::SENT->value)
             ->whereNull('responded_at')
-            ->whereDate('deadline_date', '<', $on->toDateString());
+            ->whereDate('response_date', '<', $on->toDateString());
     }
 
     public function isPending(): bool

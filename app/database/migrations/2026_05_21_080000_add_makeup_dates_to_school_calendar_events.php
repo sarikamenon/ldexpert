@@ -11,16 +11,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('school_calendar_events', function (Blueprint $table) {
-            $table->date('reminder_date')->nullable()->after('end_date');
+            $table->boolean('request_makeup')->default(false)->after('end_date');
+            $table->date('reminder_date')->nullable()->after('request_makeup');
             $table->date('response_date')->nullable()->after('reminder_date');
-            $table->date('deadline_date')->nullable()->after('response_date');
         });
     }
 
     public function down(): void
     {
         Schema::table('school_calendar_events', function (Blueprint $table) {
-            $table->dropColumn(['reminder_date', 'response_date', 'deadline_date']);
+            $table->dropColumn(['request_makeup', 'reminder_date', 'response_date']);
         });
     }
 };

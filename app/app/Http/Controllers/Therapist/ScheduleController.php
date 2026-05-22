@@ -41,6 +41,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 final class ScheduleController extends Controller
 {
@@ -143,6 +144,8 @@ final class ScheduleController extends Controller
             ->values()
             ->all();
 
+        $holidayDates = $schoolId ? $this->resolveUpcomingHolidayDates((int) $schoolId) : [];
+
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
             'students' => $students,
@@ -157,6 +160,7 @@ final class ScheduleController extends Controller
             'isPrivateStudent' => $isPrivateStudent,
             'allowsWeekendScheduling' => $allowsWeekendScheduling,
             'weekDays' => $weekDays,
+            'holidayDates' => $holidayDates,
             'makeupRequestId' => $request->query('makeup_request_id') !== null
                 ? (int) $request->query('makeup_request_id')
                 : null,
@@ -206,6 +210,10 @@ final class ScheduleController extends Controller
 
         $subPanel = $this->subCoveragePanelPresenter->present($schedule, $tz);
 
+        $editSchoolId = $schedule->school_id
+            ?? $schedule->student?->studentProfile?->school_id;
+        $holidayDates = $editSchoolId ? $this->resolveUpcomingHolidayDates((int) $editSchoolId) : [];
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
             'therapistTimezone' => $therapistTimezone,
@@ -213,6 +221,7 @@ final class ScheduleController extends Controller
             'isPrivateStudent' => $isPrivateStudent,
             'allowsWeekendScheduling' => $allowsWeekendScheduling,
             'weekDays' => $weekDays,
+            'holidayDates' => $holidayDates,
             'scheduleLocalDate' => $localStart->format('Y-m-d'),
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
@@ -765,5 +774,30 @@ final class ScheduleController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Holiday-date list for the scheduling form's inline warning. Failure
+     * here is non-fatal — the form still renders; the user simply loses
+     * the holiday warning hint.
+     *
+     * @return array<int, string>
+     */
+    private function resolveUpcomingHolidayDates(int $schoolId): array
+    {
+        try {
+            return $this->calendarService->listHolidayDateStringsForSchool(
+                $schoolId,
+                CarbonImmutable::today(),
+                CarbonImmutable::today()->addYear(),
+            );
+        } catch (Throwable $e) {
+            Log::error('ScheduleController: failed to load holiday dates for form', [
+                'school_id' => $schoolId,
+                'exception' => $e,
+            ]);
+
+            return [];
+        }
     }
 }

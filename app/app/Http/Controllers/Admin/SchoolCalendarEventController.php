@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\School\Services\SchoolCalendarService;
-use App\DTOs\CreateSchoolCalendarEventDTO;
-use App\DTOs\UpdateSchoolCalendarEventDTO;
+use App\DTOs\School\CalendarEvent\CreateSchoolCalendarEventDTO;
+use App\DTOs\School\CalendarEvent\UpdateSchoolCalendarEventDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SchoolCalendarEvent\StoreSchoolCalendarEventRequest;
 use App\Http\Requests\Admin\SchoolCalendarEvent\UpdateSchoolCalendarEventRequest;

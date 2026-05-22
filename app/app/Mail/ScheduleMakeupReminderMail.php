@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Mail;
 
+use App\Domain\Schedule\Makeup\Presenters\MakeupRequestPresenter;
 use App\Enums\ServiceFrequency;
 use App\Models\ScheduleMakeupRequest;
 use App\Models\User;
@@ -57,7 +58,7 @@ class ScheduleMakeupReminderMail extends Mailable
         );
     }
 
-    public function content(): Content
+    public function content(MakeupRequestPresenter $presenter): Content
     {
         $head = $this->batch->first();
         if ($head === null) {
@@ -72,12 +73,7 @@ class ScheduleMakeupReminderMail extends Mailable
 
         $dateFormat = (string) config('display.date_long');
 
-        $dates = $this->batch
-            ->map(fn (ScheduleMakeupRequest $row): string => Carbon::parse($row->event_date->toDateString())
-                ->format($dateFormat))
-            ->unique()
-            ->values()
-            ->all();
+        $sessionLabels = $presenter->sessionLabels($this->batch);
 
         $responseByDate = Carbon::parse($head->response_date->toDateString())
             ->format($dateFormat);
@@ -92,7 +88,7 @@ class ScheduleMakeupReminderMail extends Mailable
                 'studentName' => $student->name,
                 'therapistName' => $this->therapist->name,
                 'therapistEmail' => $this->therapist->email,
-                'dates' => $dates,
+                'dates' => $sessionLabels,
                 'responseByDate' => $responseByDate,
                 'requestUrl' => $requestUrl,
                 'declineUrl' => $declineUrl,

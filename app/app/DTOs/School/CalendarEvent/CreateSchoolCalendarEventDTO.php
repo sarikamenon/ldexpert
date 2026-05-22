@@ -2,20 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\DTOs;
+namespace App\DTOs\School\CalendarEvent;
 
 use App\Enums\SchoolCalendarEventType;
 
-final class UpdateSchoolCalendarEventDTO
+final class CreateSchoolCalendarEventDTO
 {
     public function __construct(
+        public readonly int $schoolId,
         public readonly string $title,
         public readonly SchoolCalendarEventType $eventType,
         public readonly string $startDate,
         public readonly string $endDate,
-        public readonly string $reminderDate,
-        public readonly string $responseDate,
-        public readonly string $deadlineDate,
+        public readonly bool $requestMakeup,
+        public readonly ?string $reminderDate,
+        public readonly ?string $responseDate,
         public readonly ?string $notes,
     ) {}
 
@@ -26,14 +27,17 @@ final class UpdateSchoolCalendarEventDTO
             ? $data['event_type']
             : SchoolCalendarEventType::from($data['event_type']);
 
+        $requestMakeup = (bool) ($data['request_makeup'] ?? false);
+
         return new self(
+            schoolId: (int) $data['school_id'],
             title: $data['title'],
             eventType: $eventType,
             startDate: $data['start_date'],
             endDate: $data['end_date'],
-            reminderDate: $data['reminder_date'],
-            responseDate: $data['response_date'],
-            deadlineDate: $data['deadline_date'],
+            requestMakeup: $requestMakeup,
+            reminderDate: $requestMakeup ? ($data['reminder_date'] ?? null) : null,
+            responseDate: $requestMakeup ? ($data['response_date'] ?? null) : null,
             notes: $data['notes'] ?? null,
         );
     }
@@ -42,13 +46,14 @@ final class UpdateSchoolCalendarEventDTO
     public function toArray(): array
     {
         return [
+            'school_id' => $this->schoolId,
             'title' => $this->title,
             'event_type' => $this->eventType->value,
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
+            'request_makeup' => $this->requestMakeup,
             'reminder_date' => $this->reminderDate,
             'response_date' => $this->responseDate,
-            'deadline_date' => $this->deadlineDate,
             'notes' => $this->notes,
         ];
     }

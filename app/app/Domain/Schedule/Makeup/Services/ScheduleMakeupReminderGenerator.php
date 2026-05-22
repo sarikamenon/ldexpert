@@ -66,15 +66,14 @@ final class ScheduleMakeupReminderGenerator
         GenerateMakeupRemindersDTO $dto,
         CarbonImmutable $windowEnd,
     ): int {
-        // Events created before the make-up date fields were required may have
-        // nulls — skip them rather than fabricate dates.
-        if ($event->reminder_date === null || $event->response_date === null || $event->deadline_date === null) {
+        // Skip events that haven't opted in to makeup requests, or that lack
+        // the required dates (legacy rows from before this feature).
+        if (! $event->request_makeup || $event->reminder_date === null || $event->response_date === null) {
             return 0;
         }
 
         $reminderDate = CarbonImmutable::parse($event->reminder_date->toDateString());
         $responseDate = CarbonImmutable::parse($event->response_date->toDateString());
-        $deadlineDate = CarbonImmutable::parse($event->deadline_date->toDateString());
 
         $skipScheduleIds = $this->repository->existingScheduleIdsForEvent($event);
         $batchIdentifiers = $this->repository->batchIdentifiersForEvent($event);
@@ -97,7 +96,6 @@ final class ScheduleMakeupReminderGenerator
                 $date,
                 $reminderDate,
                 $responseDate,
-                $deadlineDate,
                 $skipScheduleIds,
                 $batchIdentifiers,
             );
@@ -115,7 +113,6 @@ final class ScheduleMakeupReminderGenerator
         CarbonImmutable $date,
         CarbonImmutable $reminderDate,
         CarbonImmutable $responseDate,
-        CarbonImmutable $deadlineDate,
         Collection $skipScheduleIds,
         Collection $batchIdentifiers,
     ): int {
@@ -123,11 +120,11 @@ final class ScheduleMakeupReminderGenerator
 
         $created = 0;
 
-        $schedules->each(function (Schedule $schedule) use ($event, $date, $reminderDate, $responseDate, $deadlineDate, $skipScheduleIds, $batchIdentifiers, &$created): void {
+        $schedules->each(function (Schedule $schedule) use ($event, $date, $reminderDate, $responseDate, $skipScheduleIds, $batchIdentifiers, &$created): void {
             $therapistId = $schedule->sub_therapist_id ?? $schedule->therapist_id;
             $batchKey = $schedule->student_id.':'.$therapistId;
             $identifiers = $batchIdentifiers->get($batchKey) ?? [
-                'batch_number' => Str::random(32),
+                'batch_number' => 'MR_'.Str::random(29),
                 'response_token' => Str::random(64),
             ];
 
@@ -137,7 +134,6 @@ final class ScheduleMakeupReminderGenerator
                 eventDate: $date,
                 reminderDate: $reminderDate,
                 responseDate: $responseDate,
-                deadlineDate: $deadlineDate,
                 batchNumber: $identifiers['batch_number'],
                 responseToken: $identifiers['response_token'],
             );

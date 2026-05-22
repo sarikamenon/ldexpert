@@ -77,7 +77,7 @@ final class EloquentScheduleMakeupRequestRepository implements ScheduleMakeupReq
         }
 
         return ScheduleMakeupRequest::query()
-            ->with(['therapist', 'schedule'])
+            ->with(['therapist', 'schedule', 'student.studentProfile'])
             ->forBatch($batchNumber)
             ->get();
     }
@@ -242,6 +242,17 @@ final class EloquentScheduleMakeupRequestRepository implements ScheduleMakeupReq
         $request->fill([
             'makeup_schedule_id' => $scheduleId,
             'status' => ScheduleMakeupRequestStatus::SCHEDULED,
+        ]);
+        $request->save();
+
+        return $request;
+    }
+
+    public function markNotRequired(ScheduleMakeupRequest $request, string $reason): ScheduleMakeupRequest
+    {
+        $request->fill([
+            'status' => ScheduleMakeupRequestStatus::NOT_REQUIRED,
+            'reason' => $reason,
         ]);
         $request->save();
 

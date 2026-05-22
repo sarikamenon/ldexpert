@@ -20,29 +20,25 @@
                 <x-ui::alert variant="danger" class="mb-4">{{ $errors->first() }}</x-ui::alert>
             @endif
 
-            <x-ui::card class="p-6">
-                <form id="makeup-filter-form" class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3" onsubmit="return false;">
-                    <div class="flex items-end gap-3">
-                        <div>
-                            <label for="makeup-status-filter" class="block text-xs font-medium text-foreground/70 mb-1">
-                                Status
-                            </label>
-                            <select
-                                id="makeup-status-filter"
-                                name="filter_status"
-                                class="px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40">
+            <x-ui::card class="p-6 space-y-4">
+                <x-ui::filter-toolbar formId="makeup-filter-form">
+                    <x-slot:filters>
+                        <div class="w-[160px] [&_.select2-container]:!w-full">
+                            <x-ui::select name="filter_status" :searchable="false" :inline="true">
                                 <option value="">All</option>
                                 @foreach ($statusOptions as $value => $label)
                                     <option value="{{ $value }}" @selected($statusFilter === $value)>{{ $label }}</option>
                                 @endforeach
-                            </select>
+                            </x-ui::select>
                         </div>
-                        <x-ui::button type="submit" id="makeup-filter-apply">Filter</x-ui::button>
-                    </div>
-                    <div class="text-sm text-foreground/60">
-                        {{ $totalCount }} total
-                    </div>
-                </form>
+                    </x-slot:filters>
+
+                    <x-slot:actions>
+                        <div class="text-sm text-foreground/60 self-center">
+                            {{ $totalCount }} total
+                        </div>
+                    </x-slot:actions>
+                </x-ui::filter-toolbar>
 
                 <div class="overflow-x-auto">
                     <table
@@ -52,7 +48,7 @@
                         <thead class="bg-muted/40">
                             <tr>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                    Closure Date
+                                    Event Date
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
                                     Student &amp; School
@@ -61,10 +57,13 @@
                                     Service
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
-                                    Closure
+                                    Event
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
                                     Status
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">
+                                    Reason
                                 </th>
                                 <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">
                                     Actions
@@ -82,39 +81,13 @@
 
     {{-- Detail modal --}}
     <x-modal name="makeup-request-detail" max-width="lg">
-        <div class="flex flex-col bg-background">
-            {{-- Header --}}
-            <div class="flex items-start justify-between gap-3 px-6 pt-6 pb-5 border-b border-border">
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <h2 class="text-xl font-semibold text-foreground">Make-up request</h2>
-                        <span id="makeup-modal-status-pill"></span>
-                    </div>
-                    <div id="makeup-modal-subtitle" class="mt-2 flex items-center gap-2 text-sm text-foreground/70"></div>
-                </div>
-                <button
-                    type="button"
-                    class="shrink-0 text-foreground/40 hover:text-foreground rounded-md p-1 -m-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    x-on:click="$dispatch('close-modal', 'makeup-request-detail')"
-                    aria-label="Close">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-
-            {{-- Student strip --}}
-            <div id="makeup-modal-student" class="px-6 py-4 border-b border-border"></div>
-
-            {{-- Status-driven body --}}
-            <div id="makeup-modal-body" class="px-6 py-5">
-                <div class="text-center py-8 text-sm text-foreground/60">Loading...</div>
-            </div>
-
-            {{-- Footer --}}
-            <div id="makeup-modal-footer" class="flex items-center justify-between gap-3 px-6 py-4 border-t border-border"></div>
+        <div id="makeup-modal-content" class="flex flex-col bg-background">
+            <div class="px-6 py-12 text-center text-sm text-foreground/60">Loading...</div>
         </div>
     </x-modal>
+
+    {{-- Schedule details modal (opened when clicking the linked make-up session) --}}
+    <x-schedule.schedule-details-modal />
 
     <x-slot name="scripts">
         @vite(['resources/js/pages/therapist-makeup-requests.js'])

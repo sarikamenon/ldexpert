@@ -10,14 +10,14 @@
         <div class="row">
             <span class="label">{{ $batch->count() === 1 ? 'Missed session' : 'Missed sessions' }}</span>
             <span class="value">
-                @foreach ($batch as $row)
-                    {{ $row->event_date->format(config('display.date')) }}@if (! $loop->last), @endif
+                @foreach ($sessionLabels as $label)
+                    {{ $label }}@if (! $loop->last)<br>@endif
                 @endforeach
             </span>
         </div>
         <div class="row">
             <span class="label">Response was due by</span>
-            <span class="value">{{ $batch->first()->deadline_date->format(config('display.date')) }}</span>
+            <span class="value">{{ $responseByDate ?? '—' }}</span>
         </div>
         <div class="row">
             <span class="label">Therapist</span>

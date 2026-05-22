@@ -25,7 +25,6 @@ final class CreateMakeupRequestDTO
         public readonly CarbonImmutable $eventDate,
         public readonly CarbonImmutable $reminderDate,
         public readonly CarbonImmutable $responseDate,
-        public readonly CarbonImmutable $deadlineDate,
         public readonly string $batchNumber,
         public readonly string $responseToken,
         public readonly ScheduleMakeupRequestStatus $status = ScheduleMakeupRequestStatus::PENDING,
@@ -37,7 +36,6 @@ final class CreateMakeupRequestDTO
         CarbonImmutable $eventDate,
         CarbonImmutable $reminderDate,
         CarbonImmutable $responseDate,
-        CarbonImmutable $deadlineDate,
         string $batchNumber,
         string $responseToken,
     ): self {
@@ -49,7 +47,6 @@ final class CreateMakeupRequestDTO
             eventDate: $eventDate,
             reminderDate: $reminderDate,
             responseDate: $responseDate,
-            deadlineDate: $deadlineDate,
             batchNumber: $batchNumber,
             responseToken: $responseToken,
         );
@@ -66,7 +63,6 @@ final class CreateMakeupRequestDTO
             'event_date' => $this->eventDate->toDateString(),
             'reminder_date' => $this->reminderDate->toDateString(),
             'response_date' => $this->responseDate->toDateString(),
-            'deadline_date' => $this->deadlineDate->toDateString(),
             'status' => $this->status->value,
             'batch_number' => $this->batchNumber,
             'response_token' => $this->responseToken,

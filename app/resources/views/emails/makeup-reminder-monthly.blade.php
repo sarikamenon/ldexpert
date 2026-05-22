@@ -12,17 +12,16 @@
         style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0;">
         <tr>
             <td style="padding:28px 28px 12px 28px;">
-                <p style="margin:0 0 8px; font-size:14px; color:#475569;">Hi {{ $recipientName }},</p>
-                <h1 style="margin:0; font-size:22px; color:#0f172a;">Make-Up Session Needed</h1>
+                <p style="margin:0; color:#475569;">Hello!</p>
             </td>
         </tr>
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
                 <p style="margin:0 0 12px;">
-                    {{ $studentName }}'s school is closed on the date(s) below, which affects their scheduled session
-                    with <strong>{{ $therapistName }}</strong>. Because sessions are less frequent on this plan, we want
-                    to make sure {{ $studentName }} gets the time they're due — please let us know if you'd like to
-                    schedule a make-up.
+                    This is a friendly reminder that {{ $studentName }}'s school is closed on the date(s) below. Because
+                    your student is typically seen for their session on the date(s) listed, they are eligible for a
+                    make-up session with <strong>{{ $therapistName }}</strong>. Sessions are less frequent on this
+                    plan, so we want to make sure {{ $studentName }} gets the time they're due.
                 </p>
 
                 <div style="margin:20px 0; padding:16px; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd;">
@@ -33,7 +32,9 @@
                 </div>
 
                 <p style="margin:0 0 12px;">
-                    Please respond by <strong>{{ $responseByDate }}</strong>:
+                    Please let me know by <strong>{{ $responseByDate }}</strong> if you'd like me to send over available
+                    make-up times. If you would like a make-up, please select <strong>Request Make-Up</strong> and I
+                    will send over my available make-up times.
                 </p>
 
                 <div style="margin:20px 0; text-align:center;">
@@ -46,6 +47,10 @@
                         Decline Make-Up
                     </a>
                 </div>
+
+                <p style="margin:0 0 12px;">
+                    If I don't hear back by <strong>{{ $responseByDate }}</strong>, I'll mark the session as declined.
+                </p>
 
                 <div style="margin:20px 0; padding:10px 14px; border-radius:6px; background:#fafafa; border:1px solid #e5e7eb; border-left:3px solid #f97316;">
                     <p style="margin:0; font-size:12px; color:#6b7280; line-height:1.6;">

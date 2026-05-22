@@ -23,7 +23,7 @@ final class RecordMakeupResponseDTO
         public readonly ScheduleMakeupResponseSource $responseSource,
         public readonly ?int $respondedByUserId,
         public readonly CarbonImmutable $respondedAt,
-        public readonly ?string $declineReason = null,
+        public readonly ?string $reason = null,
     ) {}
 
     public static function parentRequest(int $requestId, int $parentUserId, ?CarbonImmutable $now = null): self
@@ -51,7 +51,7 @@ final class RecordMakeupResponseDTO
             responseSource: ScheduleMakeupResponseSource::EMAIL_LINK,
             respondedByUserId: $parentUserId,
             respondedAt: $now ?? CarbonImmutable::now(),
-            declineReason: $reason,
+            reason: $reason,
         );
     }
 
@@ -68,7 +68,7 @@ final class RecordMakeupResponseDTO
             responseSource: ScheduleMakeupResponseSource::THERAPIST_MANUAL,
             respondedByUserId: $therapistUserId,
             respondedAt: $now ?? CarbonImmutable::now(),
-            declineReason: $reason,
+            reason: $reason,
         );
     }
 
@@ -81,7 +81,7 @@ final class RecordMakeupResponseDTO
             'response_source' => $this->responseSource->value,
             'responded_by_user_id' => $this->respondedByUserId,
             'responded_at' => $this->respondedAt->toDateTimeString(),
-            'decline_reason' => $this->declineReason,
+            'reason' => $this->reason,
         ];
     }
 }

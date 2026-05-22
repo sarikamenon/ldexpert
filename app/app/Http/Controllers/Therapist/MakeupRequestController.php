@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\MakeupRequestRowTransformer;
+use App\Domain\Schedule\Makeup\Presenters\MakeupRequestPresenter;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
 use App\DTOs\Schedule\Makeup\RecordMakeupResponseDTO;
 use App\Enums\ScheduleMakeupRequestStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\DeclineMakeupRequest;
-use App\Http\Resources\Therapist\MakeupRequestResource;
+use App\Http\Requests\Therapist\MarkNotRequiredMakeupRequest;
 use App\Http\Support\DataTablesRequest;
 use App\Http\Support\DataTablesResponse;
 use App\Models\ScheduleMakeupRequest;
@@ -21,6 +22,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use InvalidArgumentException;
+use Throwable;
 
 final class MakeupRequestController extends Controller
 {
@@ -33,6 +36,7 @@ final class MakeupRequestController extends Controller
 
     public function __construct(
         private readonly ScheduleMakeupRequestRepositoryInterface $repository,
+        private readonly MakeupRequestPresenter $presenter,
     ) {}
 
     public function index(Request $request): View
@@ -76,25 +80,37 @@ final class MakeupRequestController extends Controller
             $total,
             $filtered,
             $page,
-            static fn (ScheduleMakeupRequest $row): array => MakeupRequestRowTransformer::transform($row),
+            static fn (ScheduleMakeupRequest $row): array => MakeupRequestRowTransformer::transform($row, $therapist),
         );
     }
 
-    public function show(Request $request, ScheduleMakeupRequest $makeupRequest): MakeupRequestResource
+    public function show(Request $request, ScheduleMakeupRequest $makeupRequest): View
     {
         $this->authorize('view', $makeupRequest);
 
-        $makeupRequest->load([
-            'schedule.service',
-            'schedule.school',
-            'schedule.ssa',
-            'student',
-            'calendarEvent',
-            'respondedBy',
-            'makeupSchedule',
-        ]);
+        try {
+            $makeupRequest->load([
+                'schedule.service',
+                'schedule.school',
+                'schedule.ssa',
+                'student',
+                'calendarEvent',
+                'respondedBy',
+                'makeupSchedule',
+            ]);
 
-        return new MakeupRequestResource($makeupRequest);
+            /** @var \App\Models\User|null $viewer */
+            $viewer = $request->user();
+            $detail = $this->presenter->detail($makeupRequest, $viewer);
+        } catch (Throwable $e) {
+            Log::error('MakeupRequestController::show failed', [
+                'makeup_request_id' => $makeupRequest->id,
+                'exception' => $e,
+            ]);
+            abort(500, 'Unable to load make-up request details.');
+        }
+
+        return view('therapist.makeup-requests._detail', ['detail' => $detail]);
     }
 
     public function decline(DeclineMakeupRequest $request, ScheduleMakeupRequest $makeupRequest): JsonResponse|RedirectResponse
@@ -103,15 +119,15 @@ final class MakeupRequestController extends Controller
 
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
-        $validated = $request->validated();
-        $reason = isset($validated['reason']) && is_string($validated['reason']) ? $validated['reason'] : null;
+        /** @var string $reason */
+        $reason = $request->validated('reason');
 
         try {
             DB::transaction(function () use ($makeupRequest, $therapist, $reason): void {
                 $locked = $this->repository->findAndLock($makeupRequest->id);
 
                 if (! ($locked->isPending() || $locked->isSent()) || $locked->isResponded()) {
-                    throw new \InvalidArgumentException('This request can no longer be declined.');
+                    throw new InvalidArgumentException('This request can no longer be declined.');
                 }
 
                 $dto = RecordMakeupResponseDTO::therapistDecline(
@@ -123,13 +139,13 @@ final class MakeupRequestController extends Controller
 
                 $this->repository->recordResponse($locked, $dto);
             });
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => $e->getMessage()], 422);
             }
 
             return back()->withErrors(['makeup_request' => $e->getMessage()]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('MakeupRequestController::decline failed', ['exception' => $e]);
 
             if ($request->expectsJson()) {
@@ -146,6 +162,48 @@ final class MakeupRequestController extends Controller
         return redirect()
             ->route('therapist.makeup-requests.index')
             ->with('status', 'Make-up request declined.');
+    }
+
+    public function markNotRequired(MarkNotRequiredMakeupRequest $request, ScheduleMakeupRequest $makeupRequest): JsonResponse|RedirectResponse
+    {
+        $this->authorize('markNotRequired', $makeupRequest);
+
+        /** @var string $reason */
+        $reason = $request->validated('reason');
+
+        try {
+            DB::transaction(function () use ($makeupRequest, $reason): void {
+                $locked = $this->repository->findAndLock($makeupRequest->id);
+
+                if (! $locked->isPending()) {
+                    throw new InvalidArgumentException('Only pending requests can be marked as not required.');
+                }
+
+                $this->repository->markNotRequired($locked, $reason);
+            });
+        } catch (InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => $e->getMessage()], 422);
+            }
+
+            return back()->withErrors(['makeup_request' => $e->getMessage()]);
+        } catch (Throwable $e) {
+            Log::error('MakeupRequestController::markNotRequired failed', ['exception' => $e]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'An unexpected error occurred.'], 500);
+            }
+
+            return back()->withErrors(['makeup_request' => 'An unexpected error occurred.']);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Marked as not required.']);
+        }
+
+        return redirect()
+            ->route('therapist.makeup-requests.index')
+            ->with('status', 'Marked as not required.');
     }
 
     public function book(Request $request, ScheduleMakeupRequest $makeupRequest): RedirectResponse
@@ -177,14 +235,8 @@ final class MakeupRequestController extends Controller
     /** @return array<string, string> */
     private function statusOptions(): array
     {
-        return [
-            ScheduleMakeupRequestStatus::PENDING->value => 'Pending',
-            ScheduleMakeupRequestStatus::SENT->value => 'Awaiting Response',
-            ScheduleMakeupRequestStatus::REQUESTED->value => 'Make-Up Requested',
-            ScheduleMakeupRequestStatus::DECLINED->value => 'Declined',
-            ScheduleMakeupRequestStatus::SCHEDULED->value => 'Scheduled',
-            ScheduleMakeupRequestStatus::FAILED->value => 'Send Failed',
-        ];
+        return collect(ScheduleMakeupRequestStatus::cases())
+            ->mapWithKeys(static fn (ScheduleMakeupRequestStatus $status): array => [$status->value => $status->label()])
+            ->all();
     }
-
 }

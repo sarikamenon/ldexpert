@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
-use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
@@ -13,7 +12,6 @@ use App\Enums\SSAStatus;
 use App\Enums\WeekDay;
 use App\Http\Requests\Concerns\ValidatesWeekendScheduling;
 use App\Models\ServiceSupportAgreement;
-use Carbon\Carbon;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -26,7 +24,6 @@ final class StoreScheduleRequest extends FormRequest
         private readonly ScheduleRepositoryInterface $scheduleRepository,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly StudentRepositoryInterface $studentRepository,
-        private readonly SchoolCalendarService $calendarService,
     ) {
         parent::__construct();
     }
@@ -209,56 +206,6 @@ final class StoreScheduleRequest extends FormRequest
                 }
             }
 
-            // Validate schedule and occurrence dates are not on holidays
-            if ($studentCount > 0) {
-                $schoolId = $this->studentRepository->getSchoolIdByUserId((int) $studentIdsArray[0]);
-
-                if ($schoolId) {
-                    $datesToCheck = array_filter(array_unique(array_merge(
-                        [$this->input('schedule_date')],
-                        is_array($occurrenceDates) ? $occurrenceDates : []
-                    )));
-
-                    if (count($datesToCheck) > 0) {
-                        $dateObjects = array_map(static fn ($date) => Carbon::parse((string) $date), $datesToCheck);
-                        $minDate = collect($dateObjects)->min();
-                        $maxDate = collect($dateObjects)->max();
-
-                        $holidayEvents = $this->calendarService->listHolidayEventsBySchoolAndRange($schoolId, $minDate, $maxDate);
-
-                        if ($holidayEvents->isNotEmpty()) {
-                            $holidayDates = [];
-                            $holidayDateKeys = [];
-                            foreach ($datesToCheck as $dateStr) {
-                                $date = Carbon::parse((string) $dateStr)->format('Y-m-d');
-                                $isHoliday = $holidayEvents->first(function ($event) use ($date) {
-                                    return $event->start_date->format('Y-m-d') <= $date
-                                        && $event->end_date->format('Y-m-d') >= $date;
-                                });
-                                if ($isHoliday) {
-                                    $holidayDateKeys[] = $date;
-                                    $holidayDates[] = Carbon::parse($date)->format('M d, Y');
-                                }
-                            }
-
-                            if (count($holidayDates) > 0) {
-                                $message = 'Scheduling is not allowed on school holidays: '.implode(', ', $holidayDates).'.';
-                                $scheduleDateKey = $this->input('schedule_date');
-                                if ($scheduleDateKey && in_array($scheduleDateKey, $holidayDateKeys, true)) {
-                                    $validator->errors()->add('schedule_date', $message);
-                                }
-                                $occurrenceHolidayDates = array_filter(
-                                    $holidayDateKeys,
-                                    static fn ($date) => $date !== $scheduleDateKey
-                                );
-                                if (count($occurrenceHolidayDates) > 0) {
-                                    $validator->errors()->add('occurrence_dates', $message);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         });
     }
 }

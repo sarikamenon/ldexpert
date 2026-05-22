@@ -18,6 +18,24 @@ $(function () {
 
     const allowWeekendScheduling = $form.attr('data-allow-weekend-scheduling') === '1';
 
+    let holidayDates = [];
+    try {
+        const raw = $form.attr('data-holiday-dates');
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                holidayDates = parsed;
+            }
+        }
+    } catch (e) {
+        holidayDates = [];
+    }
+    const holidaySet = new Set(holidayDates);
+
+    function isHoliday(dateStr) {
+        return Boolean(dateStr) && holidaySet.has(dateStr);
+    }
+
     const RECURRENCE_TYPE_NONE = 'none';
     const RECURRENCE_TYPE_CUSTOM_WEEKLY = 'custom_weekly';
 
@@ -263,14 +281,18 @@ $(function () {
                 .attr('value', dateStr)
                 .attr('min', $scheduleDateInput.val() || '');
             
-            if (isWeekendDate && !allowWeekendScheduling) {
+            const isHolidayDate = isHoliday(dateStr);
+
+            if ((isWeekendDate && !allowWeekendScheduling) || isHolidayDate) {
                 $input.addClass('border-warning bg-warning/10');
             }
 
             $inputRow.append($input);
 
-            // Add remove button for all occurrences except the first (start date)
-            if (index > 0) {
+            // Add remove button for all occurrences except the first (start date).
+            // Exception: when the start date falls on a school holiday, surface the
+            // remove button so the user can drop it just like any other holiday row.
+            if (index > 0 || isHolidayDate) {
                 const $removeBtn = $('<button type="button" class="occurrence-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors" title="Remove this occurrence">' +
                     '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                     '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' +
@@ -363,11 +385,22 @@ $(function () {
                 return;
             }
 
+            const messages = [];
+
             // Check for weekend
             if (isWeekend(dateStr) && !allowWeekendScheduling) {
                 const date = new Date(dateStr + 'T00:00:00');
                 const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-                $errorDiv.text('⚠️ ' + dayName + ' is a weekend. Please adjust the date.');
+                messages.push('⚠️ ' + dayName + ' is a weekend. Please adjust the date.');
+            }
+
+            // Check for school holiday (warning only — not blocking)
+            if (isHoliday(dateStr)) {
+                messages.push('⚠️ School holiday');
+            }
+
+            if (messages.length > 0) {
+                $errorDiv.html(messages.join('<br>'));
                 $input.addClass('border-warning bg-warning/10');
             }
         });
@@ -448,8 +481,23 @@ $(function () {
     // Handle removal of occurrence dates
     $(document).on('click', '.occurrence-remove-btn', function() {
         const $row = $(this).closest('.occurrence-date-row');
+        const wasFirst = $row.is($occurrenceDatesContainer.find('.occurrence-date-row').first());
         $row.fadeOut(200, function() {
             $row.remove();
+
+            // When the start-date row is removed (e.g. a holiday), promote the next
+            // occurrence to the new start date so #schedule_date stays in sync.
+            // Update silently — triggering "change" would regenerate the whole list
+            // and undo every removal the user just made.
+            if (wasFirst) {
+                const $nextFirst = $occurrenceDatesContainer.find('.occurrence-date-input').first();
+                const nextDate = $nextFirst.val() || '';
+                if (nextDate) {
+                    $scheduleDateInput.val(nextDate);
+                    updateEndDateMinDate();
+                }
+            }
+
             reIndexOccurrenceLabels();
             updateOccurrenceCounter();
             validateAllOccurrenceDates();

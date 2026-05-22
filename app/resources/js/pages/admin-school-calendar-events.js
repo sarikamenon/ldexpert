@@ -44,18 +44,40 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
         $resetBtn.on('click', () => resetForm());
         $cancelBtn.on('click', () => resetForm());
 
+        const requestMakeupEl = document.getElementById('event_request_makeup');
+        const makeupDatesEl = document.getElementById('event_makeup_dates');
+        const reminderDateEl = document.getElementById('event_reminder_date');
+        const responseDateEl = document.getElementById('event_response_date');
+
+        function toggleMakeupDates() {
+            if (! requestMakeupEl || ! makeupDatesEl) {
+                return;
+            }
+            if (requestMakeupEl.checked) {
+                makeupDatesEl.classList.remove('hidden');
+            } else {
+                makeupDatesEl.classList.add('hidden');
+                if (reminderDateEl) reminderDateEl.value = '';
+                if (responseDateEl) responseDateEl.value = '';
+            }
+        }
+
+        requestMakeupEl?.addEventListener('change', toggleMakeupDates);
+        toggleMakeupDates();
+
         $form.on('submit', function (e) {
             e.preventDefault();
             clearErrors();
 
+            const requestMakeup = !!requestMakeupEl?.checked;
             const payload = {
                 title: $('#event_title').val(),
                 event_type: $('#event_type').val(),
                 start_date: $('#event_start_date').val(),
                 end_date: $('#event_end_date').val(),
-                reminder_date: $('#event_reminder_date').val(),
-                response_date: $('#event_response_date').val(),
-                deadline_date: $('#event_deadline_date').val(),
+                request_makeup: requestMakeup ? 1 : 0,
+                reminder_date: requestMakeup ? $('#event_reminder_date').val() : '',
+                response_date: requestMakeup ? $('#event_response_date').val() : '',
                 notes: $('#event_notes').val(),
             };
 
@@ -499,10 +521,11 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             $('#event_type').val(event.event_type);
             $('#event_start_date').val(event.start_date);
             $('#event_end_date').val(event.end_date);
+            if (requestMakeupEl) requestMakeupEl.checked = !!event.request_makeup;
             $('#event_reminder_date').val(event.reminder_date || '');
             $('#event_response_date').val(event.response_date || '');
-            $('#event_deadline_date').val(event.deadline_date || '');
             $('#event_notes').val(event.notes || '');
+            toggleMakeupDates();
             $cancelBtn.removeClass('hidden');
             $submitBtn.text('Update Event');
         }
@@ -514,10 +537,11 @@ import { confirmDialog, errorAlert, successToast } from '../common/sweetalert';
             $('#event_type').val('');
             $('#event_start_date').val('');
             $('#event_end_date').val('');
+            if (requestMakeupEl) requestMakeupEl.checked = false;
             $('#event_reminder_date').val('');
             $('#event_response_date').val('');
-            $('#event_deadline_date').val('');
             $('#event_notes').val('');
+            toggleMakeupDates();
             $cancelBtn.addClass('hidden');
             $submitBtn.text('Save Event');
         }

@@ -18,9 +18,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property SchoolCalendarEventType $event_type
  * @property \Carbon\Carbon $start_date
  * @property \Carbon\Carbon $end_date
+ * @property bool $request_makeup
  * @property \Carbon\Carbon|null $reminder_date
  * @property \Carbon\Carbon|null $response_date
- * @property \Carbon\Carbon|null $deadline_date
  */
 #[ObservedBy([SchoolCalendarEventObserver::class])]
 class SchoolCalendarEvent extends Model
@@ -36,9 +36,9 @@ class SchoolCalendarEvent extends Model
         'event_type',
         'start_date',
         'end_date',
+        'request_makeup',
         'reminder_date',
         'response_date',
-        'deadline_date',
         'notes',
     ];
 
@@ -48,9 +48,9 @@ class SchoolCalendarEvent extends Model
             'event_type' => SchoolCalendarEventType::class,
             'start_date' => 'date',
             'end_date' => 'date',
+            'request_makeup' => 'boolean',
             'reminder_date' => 'date',
             'response_date' => 'date',
-            'deadline_date' => 'date',
         ];
     }
 
