@@ -330,7 +330,7 @@ final class ScheduleSubRequestService
 
         $coveringTherapist = $request->acceptedBy;
 
-        DB::transaction(function () use ($request): void {
+        $fresh = DB::transaction(function () use ($request): ScheduleSubRequest {
             $fresh = $this->repository->findAndLock($request->id);
 
             if (! $fresh->isAccepted()) {
@@ -354,10 +354,12 @@ final class ScheduleSubRequestService
                 'sub_request_status' => null,
                 'sub_therapist_id' => null,
             ]);
+
+            return $fresh;
         });
 
         if ($coveringTherapist !== null) {
-            Withdrawn::dispatch($request, $coveringTherapist);
+            Withdrawn::dispatch($fresh, $coveringTherapist);
         }
     }
 
