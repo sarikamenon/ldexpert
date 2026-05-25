@@ -322,6 +322,45 @@ it('rejects withdraw of a request that was never accepted', function () {
     subService()->withdraw($request->fresh());
 })->throws(InvalidArgumentException::class, 'Only accepted');
 
+it('allows withdraw right up until the session starts', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    // One minute before the session begins — still allowed.
+    Carbon::setTestNow($w['sessionStart']->copy()->subMinute());
+
+    subService()->withdraw($request->fresh());
+
+    expect($request->fresh()->status)->toBe(SubRequestStatus::WITHDRAWN);
+
+    Carbon::setTestNow();
+});
+
+it('rejects withdraw once the session has started', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    // Clock moves to the moment the session starts — coverage is now locked in.
+    Carbon::setTestNow($w['sessionStart']->copy());
+
+    try {
+        subService()->withdraw($request->fresh());
+        $this->fail('Expected withdrawal to be rejected after the session started.');
+    } catch (InvalidArgumentException $e) {
+        expect($e->getMessage())->toContain('once the session has started');
+    }
+
+    // Coverage stays intact — the sub still runs the session.
+    $request->refresh();
+    expect($request->status)->toBe(SubRequestStatus::ACCEPTED);
+    $w['schedule']->refresh();
+    expect($w['schedule']->sub_therapist_id)->toBe($w['B']->id);
+
+    Carbon::setTestNow();
+});
+
 // ─── expireOverdue() ───────────────────────────────────────────────────────
 
 it('expires open requests whose schedule is inside the cutoff window', function () {

@@ -320,7 +320,9 @@ final class ScheduleSubRequestService
      * are cleared so the original therapist resumes the session. Once the transaction
      * commits, a Withdrawn event is fired so the covering therapist is notified via a
      * queued listener. Authorization is enforced by the policy at the controller; the
-     * in-lock status re-check guards against a concurrent state change.
+     * in-lock status re-check guards against a concurrent state change. Withdrawal is
+     * permitted up until the session starts — once it is under way the covering
+     * therapist is committed to delivering it, so coverage can no longer be revoked.
      */
     public function withdraw(ScheduleSubRequest $request): void
     {
@@ -335,6 +337,10 @@ final class ScheduleSubRequestService
 
             if (! $fresh->isAccepted()) {
                 throw new \InvalidArgumentException('This sub request can no longer be withdrawn.');
+            }
+
+            if ($fresh->schedule !== null && now()->greaterThanOrEqualTo($fresh->schedule->startUtc())) {
+                throw new \InvalidArgumentException('This sub request can no longer be withdrawn once the session has started.');
             }
 
             $fresh->update([
