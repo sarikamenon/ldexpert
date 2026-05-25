@@ -93,6 +93,24 @@
                 <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_phone ?? '—' }}</dd>
             </div>
         </dl>
+
+        @if ($student->studentProfile?->parent_guardian_2_name || $student->studentProfile?->parent_guardian_2_email || $student->studentProfile?->parent_guardian_2_phone)
+            <h4 class="text-sm font-semibold text-foreground/80 mt-6 mb-3 pt-4 border-t border-border">Second Parent / Guardian</h4>
+            <dl class="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
+                <div>
+                    <dt class="text-sm font-medium text-foreground/70">Name</dt>
+                    <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_2_name ?? '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-foreground/70">Email</dt>
+                    <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_2_email ?? '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-foreground/70">Phone</dt>
+                    <dd class="mt-1 text-sm text-foreground">{{ $student->studentProfile?->parent_guardian_2_phone ?? '—' }}</dd>
+                </div>
+            </dl>
+        @endif
     </x-ui::card>
 
     {{-- Section D: Address Information --}}
