@@ -5,9 +5,11 @@ declare(strict_types=1);
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\SubRequestStatus;
+use App\Events\ScheduleSubRequest\Withdrawn;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\CreatesSubCoverageFixtures;
 
@@ -127,6 +129,46 @@ it('rejects cancel from a non-owner therapist with 403', function () {
 
     $this->actingAs($w['B'])
         ->postJson(route('therapist.sub-requests.cancel', $request))
+        ->assertStatus(403);
+});
+
+// ─── withdraw ──────────────────────────────────────────────────────────────
+
+it('withdraws an accepted request via POST when the actor is the requester', function () {
+    Event::fake([Withdrawn::class]);
+
+    $w = $this->buildSubCoverageWorld();
+    $request = app(ScheduleSubRequestService::class)
+        ->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    app(ScheduleSubRequestService::class)->accept($w['B'], $request->fresh());
+
+    $this->actingAs($w['A'])
+        ->postJson(route('therapist.sub-requests.withdraw', $request))
+        ->assertOk();
+
+    expect($request->fresh()->status)->toBe(SubRequestStatus::WITHDRAWN);
+    Event::assertDispatched(Withdrawn::class);
+});
+
+it('rejects withdraw from a non-owner therapist with 403', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = app(ScheduleSubRequestService::class)
+        ->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    app(ScheduleSubRequestService::class)->accept($w['B'], $request->fresh());
+
+    // B is the covering therapist, not the requester — cannot withdraw.
+    $this->actingAs($w['B'])
+        ->postJson(route('therapist.sub-requests.withdraw', $request))
+        ->assertStatus(403);
+});
+
+it('rejects withdraw of a request that has not been accepted with 403', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = app(ScheduleSubRequestService::class)
+        ->create($w['A'], $w['schedule'], [$w['B']->id], null);
+
+    $this->actingAs($w['A'])
+        ->postJson(route('therapist.sub-requests.withdraw', $request))
         ->assertStatus(403);
 });
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Mail;
+namespace App\Mail\ScheduleSubRequest;
 
 use App\Constants\UsTimezones;
 use App\Domain\Time\UserTimezoneService;

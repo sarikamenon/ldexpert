@@ -87,6 +87,16 @@ final class MySubRequestRowTransformer extends SubRequestRowBase
                 .'</button>';
         }
 
+        if ($subRequest->isAccepted()) {
+            $withdrawUrl = route('therapist.sub-requests.withdraw', $subRequest);
+            $buttons .= '<button type="button" '
+                .'data-withdraw-url="'.e($withdrawUrl).'" '
+                .'class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded border border-danger/30 bg-background text-danger hover:bg-danger/10 transition-colors" '
+                .'aria-label="Withdraw accepted sub request">'
+                .'Withdraw'
+                .'</button>';
+        }
+
         return '<div class="flex items-center gap-2">'.$buttons.'</div>';
     }
 }

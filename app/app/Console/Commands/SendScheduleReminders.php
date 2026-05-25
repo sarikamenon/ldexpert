@@ -7,7 +7,7 @@ namespace App\Console\Commands;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\ScheduleEmailType;
-use App\Events\ScheduleEmailSent;
+use App\Events\Schedule\EmailSent;
 use App\Mail\ScheduleReminderMail;
 use App\Models\Schedule;
 use App\Models\User;
@@ -164,7 +164,7 @@ class SendScheduleReminders extends Command
                     $recipient['timezone']
                 )
             );
-            Event::dispatch(new ScheduleEmailSent($schedule->id, $emailType, $email));
+            Event::dispatch(new EmailSent($schedule->id, $emailType, $email));
         }
 
         return true;

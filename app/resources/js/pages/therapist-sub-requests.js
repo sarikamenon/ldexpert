@@ -174,10 +174,57 @@ function bindCancelHandler() {
     });
 }
 
+function bindWithdrawHandler() {
+    document.body.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-withdraw-url]');
+        if (!button) return;
+
+        event.preventDefault();
+
+        const result = await confirmDialog({
+            title: 'Withdraw Accepted Request?',
+            text: 'Coverage will be revoked and you will run this session as originally planned. The covering therapist will be notified by email.',
+            icon: 'warning',
+            confirmButtonText: 'Yes, withdraw',
+        });
+
+        if (!result.isConfirmed) return;
+
+        showLoading('Withdrawing sub request...');
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        const url = button.getAttribute('data-withdraw-url') ?? '';
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+            });
+
+            closeAlert();
+
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({ message: 'Failed to withdraw sub request.' }));
+                throw new Error(data.message ?? 'Failed to withdraw sub request.');
+            }
+
+            await successToast('Sub request withdrawn. The covering therapist has been notified.');
+            window.location.reload();
+        } catch (error) {
+            errorAlert(error instanceof Error ? error.message : 'An error occurred.');
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     await initSubRequestsTable();
     bindTabSwitcher();
     bindAcceptHandler();
     bindDeclineHandler();
     bindCancelHandler();
+    bindWithdrawHandler();
 });

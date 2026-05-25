@@ -6,12 +6,14 @@ use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\SubRequestStatus;
-use App\Mail\SubRequestInvitationMail;
+use App\Events\ScheduleSubRequest\Withdrawn;
+use App\Mail\ScheduleSubRequest\SubRequestInvitationMail;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 use App\Models\ScheduleSubSsa;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\CreatesSubCoverageFixtures;
 
@@ -267,6 +269,97 @@ it('rejects cancel of an already-accepted request', function () {
 
     subService()->cancel($w['A'], $request->fresh());
 })->throws(InvalidArgumentException::class, 'Only open');
+
+// ─── withdraw() ────────────────────────────────────────────────────────────
+
+it('withdraws an accepted request, revokes coverage, and soft-deletes the sub-SSA', function () {
+    Event::fake([Withdrawn::class]);
+
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id, $w['C']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    $snapshot = ScheduleSubSsa::where('schedule_sub_request_id', $request->id)->first();
+    expect($snapshot)->not->toBeNull();
+
+    subService()->withdraw($request->fresh());
+
+    $request->refresh();
+    expect($request->status)->toBe(SubRequestStatus::WITHDRAWN);
+    expect($request->cancelled_at)->not->toBeNull();
+
+    // Accepting invitee reverts to superseded.
+    expect(ScheduleSubRequestInvitee::where('schedule_sub_request_id', $request->id)
+        ->where('therapist_id', $w['B']->id)
+        ->value('status'))->toBe(SubRequestInviteeStatus::SUPERSEDED);
+
+    // Sub-SSA snapshot is soft-deleted; original therapist resumes.
+    expect(ScheduleSubSsa::find($snapshot->id))->toBeNull();
+    expect(ScheduleSubSsa::withTrashed()->find($snapshot->id))->not->toBeNull();
+
+    $w['schedule']->refresh();
+    expect($w['schedule']->sub_therapist_id)->toBeNull();
+    expect($w['schedule']->sub_request_status)->toBeNull();
+});
+
+it('dispatches the Withdrawn event with the covering therapist on withdraw', function () {
+    Event::fake([Withdrawn::class]);
+
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    subService()->withdraw($request->fresh());
+
+    Event::assertDispatched(Withdrawn::class, fn (Withdrawn $e): bool => $e->subRequest->id === $request->id
+        && $e->coveringTherapist->id === $w['B']->id);
+});
+
+it('rejects withdraw of a request that was never accepted', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+
+    subService()->withdraw($request->fresh());
+})->throws(InvalidArgumentException::class, 'Only accepted');
+
+it('allows withdraw right up until the session starts', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    // One minute before the session begins — still allowed.
+    Carbon::setTestNow($w['sessionStart']->copy()->subMinute());
+
+    subService()->withdraw($request->fresh());
+
+    expect($request->fresh()->status)->toBe(SubRequestStatus::WITHDRAWN);
+
+    Carbon::setTestNow();
+});
+
+it('rejects withdraw once the session has started', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    // Clock moves to the moment the session starts — coverage is now locked in.
+    Carbon::setTestNow($w['sessionStart']->copy());
+
+    try {
+        subService()->withdraw($request->fresh());
+        $this->fail('Expected withdrawal to be rejected after the session started.');
+    } catch (InvalidArgumentException $e) {
+        expect($e->getMessage())->toContain('once the session has started');
+    }
+
+    // Coverage stays intact — the sub still runs the session.
+    $request->refresh();
+    expect($request->status)->toBe(SubRequestStatus::ACCEPTED);
+    $w['schedule']->refresh();
+    expect($w['schedule']->sub_therapist_id)->toBe($w['B']->id);
+
+    Carbon::setTestNow();
+});
 
 // ─── expireOverdue() ───────────────────────────────────────────────────────
 

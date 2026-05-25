@@ -19,8 +19,8 @@ use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
-use App\Events\ScheduleCreated;
-use App\Events\ScheduleUpdated;
+use App\Events\Schedule\Created;
+use App\Events\Schedule\Updated;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
@@ -301,11 +301,11 @@ final class ScheduleService
             // Dispatch events
             if ($dto->recurrenceType === RecurrenceType::NONE) {
                 foreach ($schedules as $schedule) {
-                    ScheduleCreated::dispatch($schedule);
+                    Created::dispatch($schedule);
                 }
             } else {
                 // For recurring, only dispatch for the parent/first occurrence to avoid spam
-                ScheduleCreated::dispatch($first);
+                Created::dispatch($first);
             }
 
             return $first;
@@ -444,7 +444,7 @@ final class ScheduleService
             }
 
             if ($hasMeaningfulChange) {
-                ScheduleUpdated::dispatch($updated);
+                Updated::dispatch($updated);
             }
 
             return $updated;

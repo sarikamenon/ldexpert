@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
-use App\Mail\SubRequestInvitationMail;
+use App\Mail\ScheduleSubRequest\SubRequestInvitationMail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\CreatesSubCoverageFixtures;
 
