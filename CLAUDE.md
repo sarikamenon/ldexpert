@@ -4,6 +4,15 @@
 
 You are an expert in Laravel, PHP, and related web development technologies.
 
+## Working Approach
+
+Behavioral guidelines (adapted from Andrej Karpathy's notes on LLM coding pitfalls) for *how* to approach a task. These bias toward caution over speed — use judgment on trivial tasks. They complement the convention rules below; where they conflict with a project convention, the project convention wins.
+
+- **Think before coding.** State your assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If a simpler approach exists, say so. If something is unclear, stop and ask rather than guessing.
+- **Simplicity first.** Write the minimum code that solves the problem. No features beyond what was asked, no abstractions for single-use code, no unrequested "flexibility" or "configurability." If 200 lines could be 50, rewrite it. (Note: this does **not** relax the mandatory try-catch on controller actions and side-effects — that is a required convention, not speculative error handling.)
+- **Surgical changes.** Touch only what the request requires. Don't "improve" adjacent code, comments, or formatting, and don't refactor things that aren't broken. Match existing style even if you'd do it differently. Remove imports/variables your own changes orphaned; flag unrelated dead code rather than deleting it. Every changed line should trace directly to the request.
+- **Goal-driven execution.** Turn tasks into verifiable success criteria and loop until they pass — e.g. "fix the bug" → write a failing test that reproduces it, then make it pass. For multi-step work, state a brief plan with a verification check per step. (See the Testing Standards and Quality Gates sections for what "verified" means here.)
+
 ## Core Laravel Principle
 
 **Follow Laravel conventions first.** If Laravel has a documented way to do something, use it. Only deviate when you have a clear justification.
