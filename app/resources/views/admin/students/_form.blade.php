@@ -178,6 +178,36 @@
                 <x-input-error :messages="$errors->get('parent_guardian_phone')" class="mt-2" />
             </div>
         </div>
+
+        <div class="pt-2 border-t border-border">
+            <h4 class="text-sm font-semibold text-foreground/80">Second Parent / Guardian (optional)</h4>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <x-input-label for="parent_guardian_2_name" value="Name" />
+                <p class="mt-1 text-xs text-foreground/60">Second parent or guardian's full name</p>
+                <x-ui::input id="parent_guardian_2_name" name="parent_guardian_2_name" type="text"
+                    class="mt-1 block w-full" :value="old('parent_guardian_2_name', $profile?->parent_guardian_2_name)" />
+                <x-input-error :messages="$errors->get('parent_guardian_2_name')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="parent_guardian_2_email" value="Email" />
+                <p class="mt-1 text-xs text-foreground/60">Second parent or guardian's email address</p>
+                <x-ui::input id="parent_guardian_2_email" name="parent_guardian_2_email" type="email"
+                    class="mt-1 block w-full" :value="old('parent_guardian_2_email', $profile?->parent_guardian_2_email)" />
+                <x-input-error :messages="$errors->get('parent_guardian_2_email')" class="mt-2" />
+            </div>
+
+            <div>
+                <x-input-label for="parent_guardian_2_phone" value="Phone" />
+                <p class="mt-1 text-xs text-foreground/60">Contact phone number (format: 123-456-7890)</p>
+                <x-ui::input id="parent_guardian_2_phone" name="parent_guardian_2_phone" type="text"
+                    class="mt-1 block w-full" placeholder="123-456-7890" :value="old('parent_guardian_2_phone', $profile?->parent_guardian_2_phone)" data-phone-input />
+                <x-input-error :messages="$errors->get('parent_guardian_2_phone')" class="mt-2" />
+            </div>
+        </div>
     </x-ui::card>
 
     {{-- Section D: Address Information --}}

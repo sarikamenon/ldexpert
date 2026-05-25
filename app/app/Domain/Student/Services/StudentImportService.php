@@ -145,6 +145,10 @@ final class StudentImportService
                 $mappedData['parent_guardian_phone'] = $this->normalizePhone($mappedData['parent_guardian_phone']);
             }
 
+            if (! empty($mappedData['parent_guardian_2_phone'])) {
+                $mappedData['parent_guardian_2_phone'] = $this->normalizePhone($mappedData['parent_guardian_2_phone']);
+            }
+
             // Resolve timezone: accept key or display label, fallback to school timezone
             $resolvedTimezone = UsTimezones::resolveFromInput($mappedData['timezone'] ?? null);
             $mappedData['timezone'] = $resolvedTimezone ?? $school->timezone;
@@ -355,6 +359,9 @@ final class StudentImportService
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
+            'parent_guardian_2_name' => ['nullable', 'string', 'max:255'],
+            'parent_guardian_2_email' => ['nullable', 'email:rfc', 'max:255'],
+            'parent_guardian_2_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string'],

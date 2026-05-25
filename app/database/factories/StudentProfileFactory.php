@@ -43,6 +43,9 @@ class StudentProfileFactory extends Factory
             'parent_guardian_email' => $this->faker->optional()->safeEmail(),
             'parent_guardian_phone' => $this->faker->optional()->numerify('###-###-####'),
             'schedule_email' => $this->faker->optional()->safeEmail(),
+            'parent_guardian_2_name' => $this->faker->optional()->name(),
+            'parent_guardian_2_email' => $this->faker->optional()->safeEmail(),
+            'parent_guardian_2_phone' => $this->faker->optional()->numerify('###-###-####'),
             'date_of_birth' => $this->faker->dateTimeBetween('-18 years', '-5 years'),
             'grade_level' => $this->faker->randomElement(['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12']),
         ];
