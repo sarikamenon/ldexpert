@@ -6,12 +6,14 @@ use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\SubRequestStatus;
-use App\Mail\SubRequestInvitationMail;
+use App\Events\ScheduleSubRequest\Withdrawn;
+use App\Mail\ScheduleSubRequest\SubRequestInvitationMail;
 use App\Models\ScheduleSubRequest;
 use App\Models\ScheduleSubRequestInvitee;
 use App\Models\ScheduleSubSsa;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Mail;
 use Tests\Support\CreatesSubCoverageFixtures;
 
@@ -267,6 +269,58 @@ it('rejects cancel of an already-accepted request', function () {
 
     subService()->cancel($w['A'], $request->fresh());
 })->throws(InvalidArgumentException::class, 'Only open');
+
+// ─── withdraw() ────────────────────────────────────────────────────────────
+
+it('withdraws an accepted request, revokes coverage, and soft-deletes the sub-SSA', function () {
+    Event::fake([Withdrawn::class]);
+
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id, $w['C']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    $snapshot = ScheduleSubSsa::where('schedule_sub_request_id', $request->id)->first();
+    expect($snapshot)->not->toBeNull();
+
+    subService()->withdraw($request->fresh());
+
+    $request->refresh();
+    expect($request->status)->toBe(SubRequestStatus::WITHDRAWN);
+    expect($request->cancelled_at)->not->toBeNull();
+
+    // Accepting invitee reverts to superseded.
+    expect(ScheduleSubRequestInvitee::where('schedule_sub_request_id', $request->id)
+        ->where('therapist_id', $w['B']->id)
+        ->value('status'))->toBe(SubRequestInviteeStatus::SUPERSEDED);
+
+    // Sub-SSA snapshot is soft-deleted; original therapist resumes.
+    expect(ScheduleSubSsa::find($snapshot->id))->toBeNull();
+    expect(ScheduleSubSsa::withTrashed()->find($snapshot->id))->not->toBeNull();
+
+    $w['schedule']->refresh();
+    expect($w['schedule']->sub_therapist_id)->toBeNull();
+    expect($w['schedule']->sub_request_status)->toBeNull();
+});
+
+it('dispatches the Withdrawn event with the covering therapist on withdraw', function () {
+    Event::fake([Withdrawn::class]);
+
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+    subService()->accept($w['B'], $request->fresh());
+
+    subService()->withdraw($request->fresh());
+
+    Event::assertDispatched(Withdrawn::class, fn (Withdrawn $e): bool => $e->subRequest->id === $request->id
+        && $e->coveringTherapist->id === $w['B']->id);
+});
+
+it('rejects withdraw of a request that was never accepted', function () {
+    $w = $this->buildSubCoverageWorld();
+    $request = subService()->create($w['A'], $w['schedule'], [$w['B']->id], null);
+
+    subService()->withdraw($request->fresh());
+})->throws(InvalidArgumentException::class, 'Only accepted');
 
 // ─── expireOverdue() ───────────────────────────────────────────────────────
 

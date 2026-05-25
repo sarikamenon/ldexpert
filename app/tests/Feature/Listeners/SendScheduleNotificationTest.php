@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Listeners;
 
-use App\Events\ScheduleCreated;
-use App\Events\ScheduleUpdated;
-use App\Listeners\SendScheduleNotification;
+use App\Events\Schedule\Created as ScheduleCreated;
+use App\Events\Schedule\Updated as ScheduleUpdated;
+use App\Listeners\Schedule\SendNotification;
 use App\Mail\ScheduleNotificationMail;
 use App\Models\Schedule;
 use App\Models\Service;
@@ -28,7 +28,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: 'parent@example.com');
 
-        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
+        (new SendNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('parent@example.com');
@@ -41,7 +41,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: 'parent@example.com');
 
-        (new SendScheduleNotification)->handle(new ScheduleUpdated($schedule));
+        (new SendNotification)->handle(new ScheduleUpdated($schedule));
 
         Mail::assertSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('parent@example.com');
@@ -57,7 +57,7 @@ final class SendScheduleNotificationTest extends TestCase
             therapistEmail: 'therapist@example.com',
         );
 
-        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
+        (new SendNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNotSent(ScheduleNotificationMail::class, function (ScheduleNotificationMail $mail): bool {
             return $mail->hasTo('therapist@example.com');
@@ -70,7 +70,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: 'parent@example.com');
 
-        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
+        (new SendNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertSentCount(1);
     }
@@ -81,7 +81,7 @@ final class SendScheduleNotificationTest extends TestCase
 
         $schedule = $this->makeSchedule(scheduleEmail: null);
 
-        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
+        (new SendNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNothingSent();
     }
@@ -95,7 +95,7 @@ final class SendScheduleNotificationTest extends TestCase
             date: Carbon::yesterday(),
         );
 
-        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
+        (new SendNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNothingSent();
     }
@@ -109,7 +109,7 @@ final class SendScheduleNotificationTest extends TestCase
             sendEmail: false,
         );
 
-        (new SendScheduleNotification)->handle(new ScheduleCreated($schedule));
+        (new SendNotification)->handle(new ScheduleCreated($schedule));
 
         Mail::assertNothingSent();
     }

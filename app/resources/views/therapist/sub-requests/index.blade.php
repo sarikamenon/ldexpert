@@ -25,7 +25,7 @@
                 <nav class="flex gap-1" role="tablist" aria-label="Sub request tabs">
                     @php
                         $tabs = [
-                            'invited' => ['label' => 'Invited to Me', 'count' => $invitedCount],
+                            'invited' => ['label' => 'My Invitations', 'count' => $invitedCount],
                             'mine' => ['label' => 'My Requests', 'count' => $mineCount],
                         ];
                     @endphp

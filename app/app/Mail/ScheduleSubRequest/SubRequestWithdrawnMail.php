@@ -1,0 +1,76 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Mail\ScheduleSubRequest;
+
+use App\Constants\UsTimezones;
+use App\Domain\Time\UserTimezoneService;
+use App\Models\ScheduleSubRequest;
+use App\Models\User;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Content;
+use Illuminate\Mail\Mailables\Envelope;
+use Illuminate\Queue\SerializesModels;
+
+/**
+ * Sent to the covering therapist when the requester withdraws a sub request
+ * they had already accepted. Coverage is revoked; the original therapist
+ * resumes the session.
+ */
+final class SubRequestWithdrawnMail extends Mailable implements ShouldQueue
+{
+    use Queueable, SerializesModels;
+
+    public function __construct(
+        public readonly ScheduleSubRequest $subRequest,
+        public readonly User $coveringTherapist,
+    ) {}
+
+    public function envelope(): Envelope
+    {
+        $brandName = config('brand.name');
+        $schedule = $this->subRequest->schedule;
+        $requesterName = $this->subRequest->requestedBy?->name ?? 'A colleague'; // @phpstan-ignore nullsafe.neverNull
+
+        $tz = $this->resolveTherapistTimezone();
+        $date = $schedule !== null
+            ? $schedule->localStart($tz)->format(config('display.date'))
+            : '';
+
+        return new Envelope(
+            subject: "{$brandName} - Coverage request from {$requesterName} for {$date} was withdrawn",
+        );
+    }
+
+    public function content(): Content
+    {
+        $schedule = $this->subRequest->schedule;
+        $tz = $this->resolveTherapistTimezone();
+
+        $localStart = $schedule?->localStart($tz);
+        $localEnd = $schedule?->localEnd($tz);
+
+        return new Content(
+            view: 'emails.sub-request-withdrawn',
+            with: [
+                'subRequest' => $this->subRequest,
+                'schedule' => $schedule,
+                'coveringTherapist' => $this->coveringTherapist,
+                'requesterName' => $this->subRequest->requestedBy?->name ?? 'A colleague', // @phpstan-ignore nullsafe.neverNull
+                'scheduleDateLong' => $localStart?->format(config('display.date_long')) ?? '',
+                'scheduleStartTime' => $localStart?->format(config('display.time')) ?? '',
+                'scheduleEndTime' => $localEnd?->format(config('display.time')) ?? '',
+                'scheduleTimezone' => UsTimezones::getTimezoneLabel($tz),
+                'reviewUrl' => url('/therapist/sub-requests'),
+            ],
+        );
+    }
+
+    private function resolveTherapistTimezone(): string
+    {
+        return app(UserTimezoneService::class)->resolveTimezone($this->coveringTherapist);
+    }
+}

@@ -13,7 +13,8 @@ use App\Domain\User\Repositories\UserRepositoryInterface;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\SubRequestStatus;
-use App\Mail\SubRequestInvitationMail;
+use App\Events\ScheduleSubRequest\Withdrawn;
+use App\Mail\ScheduleSubRequest\SubRequestInvitationMail;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
 use App\Models\ServiceSupportAgreement;
@@ -310,6 +311,54 @@ final class ScheduleSubRequestService
                 'sub_therapist_id' => null,
             ]);
         });
+    }
+
+    /**
+     * Withdraw an already-accepted request. Coverage is fully revoked: the request
+     * becomes `withdrawn`, the accepting invitee row reverts to `superseded`, the
+     * sub-SSA snapshot(s) are soft-deleted, and the schedule's sub-coverage columns
+     * are cleared so the original therapist resumes the session. Once the transaction
+     * commits, a Withdrawn event is fired so the covering therapist is notified via a
+     * queued listener. Authorization is enforced by the policy at the controller; the
+     * in-lock status re-check guards against a concurrent state change.
+     */
+    public function withdraw(ScheduleSubRequest $request): void
+    {
+        if (! $request->isAccepted()) {
+            throw new \InvalidArgumentException('Only accepted sub requests can be withdrawn.');
+        }
+
+        $coveringTherapist = $request->acceptedBy;
+
+        DB::transaction(function () use ($request): void {
+            $fresh = $this->repository->findAndLock($request->id);
+
+            if (! $fresh->isAccepted()) {
+                throw new \InvalidArgumentException('This sub request can no longer be withdrawn.');
+            }
+
+            $fresh->update([
+                'status' => SubRequestStatus::WITHDRAWN->value,
+                'cancelled_at' => now(),
+            ]);
+
+            $this->repository->bulkUpdateInviteeStatus(
+                $fresh->id,
+                SubRequestInviteeStatus::ACCEPTED,
+                SubRequestInviteeStatus::SUPERSEDED,
+            );
+
+            $this->repository->softDeleteSubSsasForRequest($fresh->id);
+
+            $fresh->schedule?->update([
+                'sub_request_status' => null,
+                'sub_therapist_id' => null,
+            ]);
+        });
+
+        if ($coveringTherapist !== null) {
+            Withdrawn::dispatch($request, $coveringTherapist);
+        }
     }
 
     /**

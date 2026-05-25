@@ -2,20 +2,18 @@
 
 declare(strict_types=1);
 
-namespace App\Events;
+namespace App\Events\Schedule;
 
-use App\Enums\ScheduleEmailType;
+use App\Models\Schedule;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ScheduleEmailSent
+class Created
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public function __construct(
-        public readonly int $scheduleId,
-        public readonly ScheduleEmailType $type,
-        public readonly string $recipientEmail,
+        public readonly Schedule $schedule
     ) {}
 }
