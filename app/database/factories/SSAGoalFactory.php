@@ -27,7 +27,8 @@ final class SSAGoalFactory extends Factory
             'ssa_id' => $ssa->id,
             'student_id' => $ssa->student_id,
             'number' => (string) $this->faker->numberBetween(1, 20),
-            'objective' => $this->faker->sentence(12),
+            'goal' => $this->faker->sentence(12),
+            'objective' => $this->faker->optional()->sentence(10),
             'progress' => $this->faker->optional()->sentence(8),
             'status' => SSAGoalStatus::ACTIVE->value,
         ];

@@ -18,7 +18,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $ssa_id
  * @property int $student_id
  * @property string $number
- * @property string $objective
+ * @property string $goal
+ * @property string|null $objective
  * @property string|null $progress
  * @property SSAGoalStatus $status
  * @property bool|null $can_transition_status Pre-computed in service for list views; not persisted.
@@ -34,6 +35,7 @@ final class SSAGoal extends Model
         'ssa_id',
         'student_id',
         'number',
+        'goal',
         'objective',
         'progress',
         'status',

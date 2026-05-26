@@ -30,7 +30,8 @@ final class StoreSSAGoalRequest extends FormRequest
     {
         return [
             'number' => ['required', 'string', 'max:50'],
-            'objective' => ['required', 'string', 'max:5000'],
+            'goal' => ['required', 'string', 'max:5000'],
+            'objective' => ['nullable', 'string', 'max:5000'],
             'progress' => ['nullable', 'string', 'max:1000'],
             'return_to' => ['nullable', new Enum(SSAGoalReturnTo::class)],
         ];
