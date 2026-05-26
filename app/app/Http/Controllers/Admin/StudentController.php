@@ -273,6 +273,10 @@ final class StudentController extends Controller
             $servedMinutes = (int) $ssasForMetrics->sum('served_minutes');
             $totalThoHours = round($totalThoMinutes / 60, 2);
             $servedHours = round($servedMinutes / 60, 2);
+            $isPrivate = (bool) $student->studentProfile?->school?->is_private_student;
+            $scheduledHours = $isPrivate
+                ? round((float) $ssasForMetrics->where('status', SSAStatus::ACTIVE)->sum(fn ($ssa) => $ssa->scheduled_hours), 2)
+                : 0.0;
             $totalGoals = $goalsForMetrics->count();
             $masteredGoals = $goalsForMetrics
                 ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::MASTERED)
@@ -283,8 +287,10 @@ final class StudentController extends Controller
                 'total_hours' => round($totalOutcomeHours, 2),
                 'total_tho_hours' => $totalThoHours,
                 'served_hours' => $servedHours,
+                'scheduled_hours' => $scheduledHours,
                 'remaining_hours' => round(max(0, $totalThoHours - $servedHours), 2),
                 'progress' => $totalThoMinutes > 0 ? round(($servedMinutes / $totalThoMinutes) * 100, 1) : 0,
+                'is_private' => $isPrivate,
             ];
 
             $viewData['metrics'] = [

@@ -283,16 +283,25 @@
                             <td>
                                 <div class="flex flex-col space-y-2">
                                     <div class="flex flex-col space-y-1">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs text-foreground/60 font-medium">THO:</span>
-                                            <span
-                                                class="text-sm text-foreground font-medium">{{ number_format($ssa->tho_hours, 2) }}</span>
-                                        </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs text-foreground/60 font-medium">Served:</span>
-                                            <span
-                                                class="text-sm text-foreground">{{ number_format($ssa->served_hours, 2) }}</span>
-                                        </div>
+                                        @if ($ssa->student?->studentProfile?->school?->is_private_student)
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-foreground/60 font-medium">Served:</span>
+                                                <span class="text-sm text-foreground font-medium">{{ number_format($ssa->served_hours, 2) }}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-foreground/60 font-medium">Scheduled:</span>
+                                                <span class="text-sm text-foreground">{{ number_format($ssa->scheduled_hours, 2) }}</span>
+                                            </div>
+                                        @else
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-foreground/60 font-medium">THO:</span>
+                                                <span class="text-sm text-foreground font-medium">{{ number_format($ssa->tho_hours, 2) }}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs text-foreground/60 font-medium">Served:</span>
+                                                <span class="text-sm text-foreground">{{ number_format($ssa->served_hours, 2) }}</span>
+                                            </div>
+                                        @endif
                                     </div>
                                     <div>
                                         <x-ui::badge :variant="match ($ssa->status) {
