@@ -68,6 +68,9 @@ $(function () {
         }
     }
     const $weeklyDaysContainer = $('#weekly_days_container');
+    const additionalDatesContainer = document.getElementById('additional_dates_container');
+    const additionalDatesList = document.getElementById('additional_dates_list');
+    const addAdditionalDateBtn = document.getElementById('add_additional_date_btn');
 
     /**
      * Get recurrence type value (handles Select2)
@@ -232,7 +235,11 @@ $(function () {
      */
     function updateOccurrenceCounter() {
         const $counter = $occurrenceDatesContainer.find('.occurrence-counter');
-        const count = $occurrenceDatesContainer.find('.occurrence-date-row').length;
+        const generated = $occurrenceDatesContainer.find('.occurrence-date-row').length;
+        const additional = additionalDatesList
+            ? additionalDatesList.querySelectorAll('.additional-date-row').length
+            : 0;
+        const count = generated + additional;
         $counter.text(count + (count === 1 ? ' session' : ' sessions') + ' scheduled');
     }
 
@@ -338,6 +345,19 @@ $(function () {
             }
         }
 
+        // Additional one-off dates only apply to custom_weekly; clear them otherwise
+        // so stale rows are not submitted under a different recurrence type.
+        if (additionalDatesContainer) {
+            if (isCustomWeekly) {
+                additionalDatesContainer.classList.remove('hidden');
+            } else {
+                additionalDatesContainer.classList.add('hidden');
+                if (additionalDatesList) {
+                    additionalDatesList.innerHTML = '';
+                }
+            }
+        }
+
         if (recurrenceType && recurrenceType !== RECURRENCE_TYPE_NONE) {
             $recurrenceEndDateContainer.removeClass('hidden');
             $recurrenceEndDateInput.attr('required', 'required');
@@ -374,14 +394,38 @@ $(function () {
      * Validate all occurrence dates for weekends and overlaps
      */
     function validateAllOccurrenceDates() {
-        $('.occurrence-date-input').each(function() {
-            const $input = $(this);
-            const dateStr = $input.val();
-            const $errorDiv = $input.closest('.occurrence-date-row').find('.occurrence-error');
-            $errorDiv.empty();
-            $input.removeClass('border-danger border-warning bg-warning/10');
+        const inputs = document.querySelectorAll('.occurrence-date-input');
+
+        // Count how often each date appears across generated and additional rows
+        // so a one-off that collides with the weekly pattern is flagged client-side
+        // (the server rejects the whole submit otherwise).
+        const dateCounts = {};
+        inputs.forEach(function (input) {
+            const dateStr = input.value;
+            if (dateStr) {
+                dateCounts[dateStr] = (dateCounts[dateStr] || 0) + 1;
+            }
+        });
+
+        inputs.forEach(function (input) {
+            const dateStr = input.value;
+            const row = input.closest('.occurrence-date-row, .additional-date-row');
+            const errorDiv = row ? row.querySelector('.occurrence-error') : null;
+            if (errorDiv) {
+                errorDiv.textContent = '';
+            }
+            input.classList.remove('border-danger', 'border-warning', 'bg-warning/10');
 
             if (!dateStr) {
+                return;
+            }
+
+            // Duplicate of another occurrence — server enforces unique dates.
+            if (dateCounts[dateStr] > 1) {
+                if (errorDiv) {
+                    errorDiv.textContent = 'This date is already scheduled. Each session must be on a unique date.';
+                }
+                input.classList.add('border-danger');
                 return;
             }
 
@@ -400,8 +444,10 @@ $(function () {
             }
 
             if (messages.length > 0) {
-                $errorDiv.html(messages.join('<br>'));
-                $input.addClass('border-warning bg-warning/10');
+                if (errorDiv) {
+                    errorDiv.innerHTML = messages.join('<br>');
+                }
+                input.classList.add('border-warning', 'bg-warning/10');
             }
         });
     }
@@ -459,10 +505,117 @@ $(function () {
         });
     });
 
+    // -------------------------------------------------------------------------
+    // Additional one-off dates (custom weekly)
+    // Extra sessions on days outside the weekly pattern. Rendered as date inputs
+    // named occurrence_dates[] so they merge with the generated dates on submit
+    // and inherit the parent session's start time and duration on the backend.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Re-number the "Additional N:" labels after a row is added or removed.
+     */
+    function reindexAdditionalDateLabels() {
+        if (!additionalDatesList) {
+            return;
+        }
+        additionalDatesList.querySelectorAll('.additional-date-row').forEach(function (row, index) {
+            const label = row.querySelector('.additional-date-label');
+            if (label) {
+                label.textContent = 'Additional ' + (index + 1) + ':';
+            }
+        });
+    }
+
+    /**
+     * Append an empty additional-date input row.
+     */
+    function addAdditionalDateRow() {
+        if (!additionalDatesList) {
+            return;
+        }
+
+        const scheduleDate = $scheduleDateInput.val() || '';
+        const count = additionalDatesList.querySelectorAll('.additional-date-row').length;
+
+        const row = document.createElement('div');
+        row.className = 'flex items-start gap-3 additional-date-row';
+
+        const label = document.createElement('label');
+        label.className = 'additional-date-label block w-32 text-sm text-foreground/70 pt-2';
+        label.textContent = 'Additional ' + (count + 1) + ':';
+
+        const group = document.createElement('div');
+        group.className = 'flex-1';
+
+        const inputRow = document.createElement('div');
+        inputRow.className = 'flex items-center gap-2';
+
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.name = 'occurrence_dates[]';
+        input.className = 'mt-1 block w-full border border-border rounded-lg px-3 py-2 text-sm occurrence-date-input additional-date-input';
+        if (scheduleDate) {
+            input.min = scheduleDate;
+        }
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'additional-date-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors';
+        removeBtn.title = 'Remove this date';
+        removeBtn.setAttribute('aria-label', 'Remove this additional date');
+        removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'occurrence-error text-xs text-danger mt-1';
+
+        // Re-validate (weekend + duplicate) and refresh the session counter as the date changes.
+        input.addEventListener('change', validateAllOccurrenceDates);
+
+        inputRow.appendChild(input);
+        inputRow.appendChild(removeBtn);
+        group.appendChild(inputRow);
+        group.appendChild(errorDiv);
+        row.appendChild(label);
+        row.appendChild(group);
+        additionalDatesList.appendChild(row);
+
+        updateOccurrenceCounter();
+        input.focus();
+    }
+
+    if (addAdditionalDateBtn) {
+        addAdditionalDateBtn.addEventListener('click', addAdditionalDateRow);
+    }
+
+    if (additionalDatesList) {
+        additionalDatesList.addEventListener('click', function (event) {
+            const btn = event.target.closest('.additional-date-remove-btn');
+            if (!btn) {
+                return;
+            }
+            const row = btn.closest('.additional-date-row');
+            if (row) {
+                row.remove();
+                reindexAdditionalDateLabels();
+                updateOccurrenceCounter();
+                validateAllOccurrenceDates();
+            }
+        });
+    }
+
     // Update min date when schedule date changes
     $scheduleDateInput.on('change', function() {
         updateEndDateMinDate();
         updateOccurrenceDates();
+
+        // Keep already-added additional dates constrained to the new start date.
+        const scheduleDate = $scheduleDateInput.val() || '';
+        if (scheduleDate) {
+            document.querySelectorAll('.additional-date-input').forEach(function (input) {
+                input.min = scheduleDate;
+            });
+        }
     });
 
     // Update occurrence dates and warning when end date changes

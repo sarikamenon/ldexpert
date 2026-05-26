@@ -7,13 +7,14 @@ namespace App\Console\Commands;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\ScheduleEmailType;
-use App\Events\ScheduleEmailSent;
+use App\Events\Schedule\EmailSent;
 use App\Mail\ScheduleReminderMail;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendScheduleReminders extends Command
@@ -31,42 +32,71 @@ class SendScheduleReminders extends Command
 
     public function handle(): int
     {
-        $this->send48HourReminders();
-        $this->send2HourReminders();
+        $startedAt = Carbon::now();
+
+        $stats48h = $this->send48HourReminders();
+        $stats2h = $this->send2HourReminders();
+
+        Log::info('schedule:send-reminders completed', [
+            'ran_at' => $startedAt->toIso8601String(),
+            '48h' => $stats48h,
+            '2h' => $stats2h,
+        ]);
 
         return self::SUCCESS;
     }
 
-    private function send48HourReminders(): void
+    /**
+     * @return array{found: int, sent: int, skipped: int}
+     */
+    private function send48HourReminders(): array
     {
         $startWindow = Carbon::now()->addHours(48);
         $endWindow = Carbon::now()->addHours(48)->addMinutes(30);
 
-        $schedules = $this->scheduleRepository->getSchedulesInWindow($startWindow, $endWindow);
-
-        foreach ($schedules as $schedule) {
-            $this->sendRemindersForSchedule($schedule, '48h');
-        }
-
-        if ($schedules->isNotEmpty()) {
-            $this->info("Sent 48h reminders for {$schedules->count()} schedules.");
-        }
+        return $this->processWindow($startWindow, $endWindow, '48h');
     }
 
-    private function send2HourReminders(): void
+    /**
+     * @return array{found: int, sent: int, skipped: int}
+     */
+    private function send2HourReminders(): array
     {
         $startWindow = Carbon::now()->addHours(2);
         $endWindow = Carbon::now()->addHours(2)->addMinutes(30);
 
+        return $this->processWindow($startWindow, $endWindow, '2h');
+    }
+
+    /**
+     * Process a single reminder window, returning per-run counts so that
+     * silent no-op runs (ran, found nothing) are distinguishable in the logs
+     * from runs that never executed.
+     *
+     * @return array{found: int, sent: int, skipped: int}
+     */
+    private function processWindow(Carbon $startWindow, Carbon $endWindow, string $type): array
+    {
         $schedules = $this->scheduleRepository->getSchedulesInWindow($startWindow, $endWindow);
 
+        $sent = 0;
         foreach ($schedules as $schedule) {
-            $this->sendRemindersForSchedule($schedule, '2h');
+            if ($this->sendRemindersForSchedule($schedule, $type)) {
+                $sent++;
+            }
         }
 
-        if ($schedules->isNotEmpty()) {
-            $this->info("Sent 2h reminders for {$schedules->count()} schedules.");
+        $found = $schedules->count();
+
+        if ($found > 0) {
+            $this->info("{$type} window: found {$found}, sent {$sent}.");
         }
+
+        return [
+            'found' => $found,
+            'sent' => $sent,
+            'skipped' => $found - $sent,
+        ];
     }
 
     /**
@@ -82,16 +112,31 @@ class SendScheduleReminders extends Command
         )->timezoneName;
     }
 
-    private function sendRemindersForSchedule(Schedule $schedule, string $type): void
+    /**
+     * @return bool True when a reminder email was queued, false when the schedule was skipped.
+     */
+    private function sendRemindersForSchedule(Schedule $schedule, string $type): bool
     {
         if ($schedule->service && ! $schedule->service->allowsScheduleEmail()) {
-            return;
+            Log::info('schedule:send-reminders skipped schedule', [
+                'schedule_id' => $schedule->id,
+                'type' => $type,
+                'reason' => 'service_disallows_email',
+            ]);
+
+            return false;
         }
 
         // Only notify student schedule contact — therapists do not receive reminder emails
         $profile = $schedule->student?->studentProfile;
         if (! $profile?->schedule_email) {
-            return;
+            Log::info('schedule:send-reminders skipped schedule', [
+                'schedule_id' => $schedule->id,
+                'type' => $type,
+                'reason' => 'no_schedule_email',
+            ]);
+
+            return false;
         }
 
         $studentTimezone = $this->resolveUserTimezone($schedule->student, $profile->timezone);
@@ -119,7 +164,9 @@ class SendScheduleReminders extends Command
                     $recipient['timezone']
                 )
             );
-            Event::dispatch(new ScheduleEmailSent($schedule->id, $emailType, $email));
+            Event::dispatch(new EmailSent($schedule->id, $emailType, $email));
         }
+
+        return true;
     }
 }

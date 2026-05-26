@@ -146,4 +146,9 @@ class ScheduleSubRequest extends Model
     {
         return $this->status === SubRequestStatus::CANCELLED;
     }
+
+    public function isWithdrawn(): bool
+    {
+        return $this->status === SubRequestStatus::WITHDRAWN;
+    }
 }

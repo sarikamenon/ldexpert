@@ -134,6 +134,13 @@
                             @if ($student->studentProfile?->schedule_email)
                                 <p class="text-xs text-foreground/60 mt-1">Schedule email: {{ $student->studentProfile->schedule_email }}</p>
                             @endif
+                            @if ($student->studentProfile?->parent_guardian_2_name || $student->studentProfile?->parent_guardian_2_email || $student->studentProfile?->parent_guardian_2_phone)
+                                <p class="text-sm font-semibold mt-2">{{ $student->studentProfile->parent_guardian_2_name ?? '—' }}</p>
+                                <p class="text-xs text-foreground/60">
+                                    {{ $student->studentProfile->parent_guardian_2_email ?? '—' }} ·
+                                    {{ $student->studentProfile->parent_guardian_2_phone ?? '—' }}
+                                </p>
+                            @endif
                         </div>
                     </div>
                 </x-ui::card>

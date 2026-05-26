@@ -102,6 +102,12 @@ interface ScheduleSubRequestRepositoryInterface
     public function findSubSsaForSchedule(int $scheduleId, int $subTherapistId, array $with = []): ?ScheduleSubSsa;
 
     /**
+     * Soft-delete every sub-SSA snapshot tied to the given request. Used when an
+     * accepted request is withdrawn and coverage is revoked. Returns affected count.
+     */
+    public function softDeleteSubSsasForRequest(int $requestId): int;
+
+    /**
      * Find all sub-SSA snapshots matching a performing therapist on a given date + service + student.
      * Used by the importer to resolve coverage when the normal SSA lookup fails.
      *

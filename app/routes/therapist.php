@@ -95,6 +95,7 @@ Route::middleware('role:therapist')
             Route::post('{subRequest}/accept', [SubRequestController::class, 'accept'])->name('accept')->whereNumber('subRequest');
             Route::post('{subRequest}/decline', [SubRequestController::class, 'decline'])->name('decline')->whereNumber('subRequest');
             Route::post('{subRequest}/cancel', [SubRequestController::class, 'cancel'])->name('cancel')->whereNumber('subRequest');
+            Route::post('{subRequest}/withdraw', [SubRequestController::class, 'withdraw'])->name('withdraw')->whereNumber('subRequest');
             Route::patch('{subRequest}/invitees', [SubRequestController::class, 'updateInvitees'])->name('invitees.update')->whereNumber('subRequest');
             Route::get('{subRequest}/eligible-subs', [SubRequestController::class, 'eligibleSubs'])->name('eligible-subs-for-request')->whereNumber('subRequest');
         });

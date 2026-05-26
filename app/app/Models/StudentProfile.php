@@ -41,6 +41,9 @@ class StudentProfile extends Model
         'parent_guardian_email',
         'parent_guardian_phone',
         'schedule_email',
+        'parent_guardian_2_name',
+        'parent_guardian_2_email',
+        'parent_guardian_2_phone',
         'date_of_birth',
         'grade_level',
     ];

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Listeners;
+namespace App\Listeners\Schedule;
 
-use App\Events\ScheduleEmailSent;
+use App\Events\Schedule\EmailSent;
 use App\Models\ScheduleEmailLog;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
-class LogScheduleEmail implements ShouldQueue
+class LogEmail implements ShouldQueue
 {
-    public function handle(ScheduleEmailSent $event): void
+    public function handle(EmailSent $event): void
     {
         ScheduleEmailLog::create([
             'schedule_id' => $event->scheduleId,

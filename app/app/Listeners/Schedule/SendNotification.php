@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Listeners;
+namespace App\Listeners\Schedule;
 
 use App\Enums\ScheduleEmailType;
-use App\Events\ScheduleCreated;
-use App\Events\ScheduleEmailSent;
-use App\Events\ScheduleUpdated;
+use App\Events\Schedule\Created;
+use App\Events\Schedule\EmailSent;
+use App\Events\Schedule\Updated;
 use App\Mail\ScheduleNotificationMail;
 use App\Models\Schedule;
 use Carbon\Carbon;
@@ -16,9 +16,9 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
-class SendScheduleNotification implements ShouldQueue
+class SendNotification implements ShouldQueue
 {
-    public function handle(ScheduleCreated|ScheduleUpdated $event): void
+    public function handle(Created|Updated $event): void
     {
         $schedule = $event->schedule;
 
@@ -30,7 +30,7 @@ class SendScheduleNotification implements ShouldQueue
         // Eager load relationships if missing to avoid N+1 in loop/mail view
         $schedule->loadMissing(['therapist', 'student.studentProfile', 'service']);
 
-        $isCreated = $event instanceof ScheduleCreated;
+        $isCreated = $event instanceof Created;
         $mailType = $isCreated ? 'created' : 'updated';
         $logType = $isCreated
             ? ScheduleEmailType::NOTIFICATION_CREATED
@@ -58,10 +58,10 @@ class SendScheduleNotification implements ShouldQueue
     ): void {
         try {
             Mail::to($email)->send(new ScheduleNotificationMail($schedule, $mailType, isRecipientStudent: $isRecipientStudent));
-            Event::dispatch(new ScheduleEmailSent($schedule->id, $logType, $email));
+            Event::dispatch(new EmailSent($schedule->id, $logType, $email));
         } catch (\Throwable $e) {
             $recipient = $isRecipientStudent ? 'student' : 'therapist';
-            Log::error("SendScheduleNotification: failed to send {$recipient} mail", [
+            Log::error("SendNotification: failed to send {$recipient} mail", [
                 'schedule_id' => $schedule->id,
                 'type' => $mailType,
                 'email' => $email,

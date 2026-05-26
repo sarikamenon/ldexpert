@@ -159,6 +159,13 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             ->first();
     }
 
+    public function softDeleteSubSsasForRequest(int $requestId): int
+    {
+        return ScheduleSubSsa::query()
+            ->where('schedule_sub_request_id', $requestId)
+            ->delete();
+    }
+
     /** @return Collection<int, ScheduleSubSsa> */
     public function findSubSsasForImport(int $subTherapistId, string $sessionDate, int $serviceId, int $studentId): Collection
     {

@@ -219,6 +219,56 @@ final class ScheduleCustomWeeklyTest extends TestCase
         $response->assertStatus(201);
     }
 
+    public function test_custom_weekly_accepts_additional_one_off_dates_on_top_of_pattern(): void
+    {
+        ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
+
+        // Weekly pattern: every Tuesday across two weeks.
+        $startDate = Carbon::now()->next(Carbon::TUESDAY)->format('Y-m-d');
+        $endDate = Carbon::parse($startDate)->addWeeks(2)->format('Y-m-d');
+        $tuesdayDates = $this->weekdayDatesBetween($startDate, $endDate, [Carbon::TUESDAY]);
+
+        // One-off extra session on the first Wednesday — not part of the weekly pattern.
+        $extraWednesday = Carbon::parse($startDate)->addDay()->format('Y-m-d');
+
+        $payload = [
+            'ssa_id' => $ssa->id,
+            'student_ids' => [$student->id],
+            'service_id' => $service->id,
+            'schedule_date' => $startDate,
+            'start_time' => '09:00',
+            'duration_minutes' => 60,
+            'recurrence_type' => RecurrenceType::CUSTOM_WEEKLY->value,
+            'recurrence_end_date' => $endDate,
+            'weekly_days' => [WeekDay::TUESDAY->value],
+            'occurrence_dates' => array_merge($tuesdayDates, [$extraWednesday]),
+            'location_details' => 'Office A',
+        ];
+
+        $response = $this->actingAs($therapist)
+            ->postJson(route('therapist.schedule.store'), $payload);
+
+        $response->assertStatus(201);
+
+        // Total sessions = every Tuesday in range + the one-off Wednesday.
+        $count = Schedule::where('therapist_id', $therapist->id)
+            ->where('student_id', $student->id)
+            ->count();
+        $this->assertSame(count($tuesdayDates) + 1, $count);
+
+        // The one-off session inherits the same start/end time as the main session.
+        $parent = Schedule::where('therapist_id', $therapist->id)
+            ->whereNull('parent_schedule_id')
+            ->firstOrFail();
+        $extra = Schedule::where('therapist_id', $therapist->id)
+            ->where('schedule_date', $extraWednesday)
+            ->first();
+
+        $this->assertNotNull($extra, 'Expected a session to be created on the additional one-off date.');
+        $this->assertSame($parent->start_time->format('H:i'), $extra->start_time->format('H:i'));
+        $this->assertSame($parent->end_time->format('H:i'), $extra->end_time->format('H:i'));
+    }
+
     public function test_custom_weekly_requires_weekly_days(): void
     {
         ['therapist' => $therapist, 'student' => $student, 'service' => $service, 'ssa' => $ssa] = $this->makeStudentSetup();
