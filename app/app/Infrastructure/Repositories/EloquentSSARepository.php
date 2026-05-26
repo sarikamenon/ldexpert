@@ -56,6 +56,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'student.studentProfile.school',
                 'primaryService',
                 'assignedTherapist',
+                'scheduledSchedules',
             ]);
 
         $queryForTotal = (clone $baseQuery);
@@ -358,7 +359,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
     {
-        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist', 'scheduledSchedules'])
             ->where('student_id', $studentId)
             ->where('assigned_therapist_id', $therapistId)
             ->get();
@@ -396,7 +397,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentMetrics(int $studentId): Collection
     {
-        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist', 'scheduledSchedules'])
             ->where('student_id', $studentId)
             ->get();
     }
