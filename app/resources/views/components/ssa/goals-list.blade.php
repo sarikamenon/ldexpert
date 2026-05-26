@@ -42,11 +42,11 @@
         {{-- Status summary bar --}}
         <div class="flex items-center gap-5 px-4 py-3 rounded-lg border border-border bg-muted/40 text-sm">
             <span class="flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-violet-500 inline-block"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-primary inline-block"></span>
                 <span class="font-medium text-foreground">{{ $activeCount }} Active</span>
             </span>
             <span class="flex items-center gap-1.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-success inline-block"></span>
                 <span class="font-medium text-foreground">{{ $masteredCount }} Mastered</span>
             </span>
             <span class="flex items-center gap-1.5">
@@ -60,13 +60,8 @@
                 @php
                     $editUrl = $editUrlResolver($goal);
                     $statusUrl = $statusUrlResolver($goal);
-
-                    $isActive = $goal->status === \App\Enums\SSAGoalStatus::ACTIVE;
-                    $isMastered = $goal->status === \App\Enums\SSAGoalStatus::MASTERED;
-                    $isDiscontinued = $goal->status === \App\Enums\SSAGoalStatus::DISCONTINUED;
-
-                    $badgeBg = $isActive ? 'bg-violet-100 text-violet-700' : ($isMastered ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-foreground/50');
-                    $dotColor = $isActive ? 'bg-violet-500' : ($isMastered ? 'bg-emerald-500' : 'bg-foreground/30');
+                    $objectiveCollapseId = 'gl-obj-' . $goal->id;
+                    $progressCollapseId = 'gl-prog-' . $goal->id;
                 @endphp
 
                 <div class="rounded-lg border border-border bg-white overflow-hidden">
@@ -74,8 +69,8 @@
                     <div class="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
                         <div class="flex items-center gap-2.5">
                             <span class="text-base font-bold text-foreground">Goal {{ $goal->number }}</span>
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $badgeBg }}">
-                                <span class="w-1.5 h-1.5 rounded-full {{ $dotColor }} inline-block"></span>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium {{ $goal->status->badgeClass() }}">
+                                <span class="w-1.5 h-1.5 rounded-full {{ $goal->status->dotColor() }} inline-block"></span>
                                 {{ $goal->status->label() }}
                             </span>
                         </div>
@@ -123,24 +118,56 @@
                     </div>
 
                     <div class="px-4 pb-4 space-y-3">
-                        {{-- Objective --}}
+                        {{-- Goal text (required, always shown) --}}
                         <div>
-                            <p class="text-xs font-semibold tracking-widest uppercase text-foreground/50 mb-1.5">Objective</p>
+                            <p class="text-xs font-semibold tracking-widest uppercase text-foreground/50 mb-1.5">Goal</p>
                             <blockquote class="border-l-4 border-l-border bg-muted/30 rounded-r pl-3 pr-3 py-2">
-                                <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->objective }}</p>
+                                <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->goal }}</p>
                             </blockquote>
                         </div>
 
-                        {{-- Progress Notes --}}
+                        {{-- Objectives (optional, collapsible) --}}
                         <div>
-                            <p class="text-xs font-semibold tracking-widest uppercase text-foreground/50 mb-1.5">Progress Notes</p>
-                            <blockquote class="border-l-4 border-l-border bg-muted/30 rounded-r pl-3 pr-3 py-2">
-                                @if ($goal->progress)
-                                    <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->progress }}</p>
-                                @else
-                                    <p class="text-sm text-foreground/40 italic">No progress recorded yet.</p>
-                                @endif
-                            </blockquote>
+                            <button type="button"
+                                class="gl-objectives-toggle inline-flex items-center gap-1.5 text-xs font-medium text-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                                aria-expanded="false"
+                                aria-controls="{{ $objectiveCollapseId }}">
+                                <svg class="gl-obj-chevron w-3.5 h-3.5 transition-transform duration-150" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+                                </svg>
+                                <span>Show objectives</span>
+                            </button>
+                            <div id="{{ $objectiveCollapseId }}" class="gl-objectives-panel hidden mt-2">
+                                <blockquote class="border-l-4 border-l-border bg-muted/30 rounded-r pl-3 pr-3 py-2">
+                                    @if ($goal->objective)
+                                        <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->objective }}</p>
+                                    @else
+                                        <p class="text-sm text-foreground/40 italic">No objectives recorded.</p>
+                                    @endif
+                                </blockquote>
+                            </div>
+                        </div>
+
+                        {{-- Progress Notes (collapsible) --}}
+                        <div>
+                            <button type="button"
+                                class="gl-progress-toggle inline-flex items-center gap-1.5 text-xs font-medium text-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                                aria-expanded="false"
+                                aria-controls="{{ $progressCollapseId }}">
+                                <svg class="gl-prog-chevron w-3.5 h-3.5 transition-transform duration-150" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
+                                </svg>
+                                <span>Show progress notes</span>
+                            </button>
+                            <div id="{{ $progressCollapseId }}" class="gl-progress-panel hidden mt-2">
+                                <blockquote class="border-l-4 border-l-border bg-muted/30 rounded-r pl-3 pr-3 py-2">
+                                    @if ($goal->progress)
+                                        <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->progress }}</p>
+                                    @else
+                                        <p class="text-sm text-foreground/40 italic">No progress recorded yet.</p>
+                                    @endif
+                                </blockquote>
+                            </div>
                         </div>
                     </div>
                 </div>

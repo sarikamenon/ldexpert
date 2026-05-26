@@ -55,16 +55,28 @@ final class TherapistSSARowTransformer
             .'<span class="text-sm text-foreground">'.e($ssa->frequency?->label() ?? '—').'</span></div>'
             .'</div>';
 
-        $tho = number_format($ssa->tho_hours, 2);
+        $isPrivate = (bool) ($ssa->student?->studentProfile?->school?->is_private_student);
         $served = number_format($ssa->served_hours, 2);
 
-        $minutesStatusCell = '<div class="flex flex-col space-y-2">'
-            .'<div class="flex flex-col space-y-1">'
-            .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">THO:</span>'
-            .'<span class="text-sm text-foreground font-medium">'.$tho.'</span></div>'
-            .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">Served:</span>'
-            .'<span class="text-sm text-foreground">'.$served.'</span></div>'
-            .'</div>';
+        if ($isPrivate) {
+            $scheduled = number_format($ssa->scheduled_hours, 2);
+            $minutesStatusCell = '<div class="flex flex-col space-y-2">'
+                .'<div class="flex flex-col space-y-1">'
+                .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">Served:</span>'
+                .'<span class="text-sm text-foreground font-medium">'.$served.'</span></div>'
+                .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">Scheduled:</span>'
+                .'<span class="text-sm text-foreground">'.$scheduled.'</span></div>'
+                .'</div>';
+        } else {
+            $tho = number_format($ssa->tho_hours, 2);
+            $minutesStatusCell = '<div class="flex flex-col space-y-2">'
+                .'<div class="flex flex-col space-y-1">'
+                .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">THO:</span>'
+                .'<span class="text-sm text-foreground font-medium">'.$tho.'</span></div>'
+                .'<div class="flex items-center gap-2"><span class="text-xs text-foreground/60 font-medium">Served:</span>'
+                .'<span class="text-sm text-foreground">'.$served.'</span></div>'
+                .'</div>';
+        }
 
         $statusVariant = match ($ssa->status) {
             SSAStatus::ACTIVE => 'success',

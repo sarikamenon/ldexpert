@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Enums\ScheduleStatus;
 use App\Enums\ServiceFrequency;
+use App\Models\Schedule;
 use App\Models\ServiceSupportAgreement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -72,4 +74,49 @@ it('formats dateRangeFormatted as ongoing when end_date is null', function () {
     ]);
 
     expect($ssa->dateRangeFormatted())->toBe('Mar 01, 2026 → ongoing');
+});
+
+it('calculates scheduled_hours from future scheduled sessions', function () {
+    $ssa = ServiceSupportAgreement::factory()->create();
+
+    // Two future scheduled sessions: 09:00–10:00 (60 min) and 14:00–14:30 (30 min) = 90 min = 1.5 h
+    Schedule::factory()->for($ssa, 'ssa')->create([
+        'schedule_date' => now()->addDay()->toDateString(),
+        'start_time' => '09:00',
+        'end_time' => '10:00',
+        'status' => ScheduleStatus::SCHEDULED,
+    ]);
+    Schedule::factory()->for($ssa, 'ssa')->create([
+        'schedule_date' => now()->addDays(3)->toDateString(),
+        'start_time' => '14:00',
+        'end_time' => '14:30',
+        'status' => ScheduleStatus::SCHEDULED,
+    ]);
+
+    $ssa->load('scheduledSchedules');
+
+    expect($ssa->scheduled_hours)->toBe(1.5);
+});
+
+it('excludes cancelled and past schedules from scheduled_hours', function () {
+    $ssa = ServiceSupportAgreement::factory()->create();
+
+    // Past scheduled session
+    Schedule::factory()->for($ssa, 'ssa')->create([
+        'schedule_date' => now()->subDay()->toDateString(),
+        'start_time' => '09:00',
+        'end_time' => '10:00',
+        'status' => ScheduleStatus::SCHEDULED,
+    ]);
+    // Future cancelled session
+    Schedule::factory()->for($ssa, 'ssa')->create([
+        'schedule_date' => now()->addDay()->toDateString(),
+        'start_time' => '09:00',
+        'end_time' => '10:00',
+        'status' => ScheduleStatus::CANCELLED,
+    ]);
+
+    $ssa->load('scheduledSchedules');
+
+    expect($ssa->scheduled_hours)->toBe(0.0);
 });

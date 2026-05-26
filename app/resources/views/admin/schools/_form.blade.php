@@ -24,7 +24,14 @@
                 </div>
 
                 <div>
-                    <x-input-label for="display_name" value="NOVA School/Family Name *" />
+                    <div class="flex items-center gap-2">
+                        <x-input-label for="display_name" value="NOVA School/Family Name *" />
+                        <label for="same_as_full_name" class="flex items-center gap-1 text-xs text-foreground/70 cursor-pointer">
+                            <input id="same_as_full_name" type="checkbox"
+                                class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
+                            Same as Full Name
+                        </label>
+                    </div>
                     <p class="mt-1 text-xs text-foreground/60">Name used within NOVA for this school or family</p>
                     <x-ui::input id="display_name" name="display_name" type="text" class="mt-1 block w-full"
                         :value="old('display_name', $school->display_name ?? '')" required />

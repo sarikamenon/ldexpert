@@ -8,7 +8,8 @@ final class UpdateSSAGoalDTO
 {
     public function __construct(
         public readonly string $number,
-        public readonly string $objective,
+        public readonly string $goal,
+        public readonly ?string $objective,
         public readonly ?string $progress,
     ) {}
 
@@ -17,7 +18,8 @@ final class UpdateSSAGoalDTO
     {
         return new self(
             number: (string) $data['number'],
-            objective: (string) $data['objective'],
+            goal: (string) $data['goal'],
+            objective: isset($data['objective']) && $data['objective'] !== '' ? (string) $data['objective'] : null,
             progress: isset($data['progress']) && $data['progress'] !== '' ? (string) $data['progress'] : null,
         );
     }
@@ -27,6 +29,7 @@ final class UpdateSSAGoalDTO
     {
         return [
             'number' => $this->number,
+            'goal' => $this->goal,
             'objective' => $this->objective,
             'progress' => $this->progress,
         ];
