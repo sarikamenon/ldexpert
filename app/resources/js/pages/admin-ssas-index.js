@@ -101,7 +101,8 @@ function updateFiltersSummary() {
 
     const statusEl = form.querySelector('select[name="statuses[]"]');
     if (statusEl) {
-        if (!isMultiSelectAtDefault(statusEl)) count += 1;
+        // Always count multi-select status as an active filter (it always filters the list)
+        count += 1;
     } else {
         const singleStatus = form.querySelector('[name="status"]');
         if (singleStatus && singleStatus.value && singleStatus.value !== 'all') {
@@ -131,6 +132,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) {
         form.addEventListener('change', updateFiltersSummary);
         form.addEventListener('input', updateFiltersSummary);
+
+        // Select2 fires jQuery change events; bridge them to updateFiltersSummary
+        if (typeof window.jQuery !== 'undefined') {
+            window.jQuery(form).find('select').on('change', updateFiltersSummary);
+        } else {
+            document.addEventListener('select2:ready', () => {
+                window.jQuery(form).find('select').on('change', updateFiltersSummary);
+            });
+        }
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             reloadDataTable();
