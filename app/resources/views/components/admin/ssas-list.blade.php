@@ -52,7 +52,7 @@
                         value="{{ $filters['search'] ?? '' }}" />
                 </div>
 
-                <x-ui::select name="statuses[]" multiple :searchable="false" placeholder="Status: All" :inline="true" data-default-value="pending,active" class="min-w-[14rem]">
+                <x-ui::select name="statuses[]" multiple :searchable="false" placeholder="Status: All" :inline="true" data-default-value="pending,active" class="min-w-[14rem] max-w-[20rem]">
                     @foreach ($statuses as $status)
                         <option value="{{ $status->value }}" @selected(in_array($status->value, $filters['statuses'] ?? ['pending', 'active'], true))>
                             {{ $status->label() }}
@@ -81,7 +81,7 @@
                 <x-ui::button type="submit" size="lg">Filter</x-ui::button>
             </form>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 shrink-0">
                 <div class="filter-divider hidden lg:block"></div>
                 <a href="{{ route('admin.ssas.export', $filters) }}">
                     <x-ui::button variant="secondary">
@@ -114,8 +114,10 @@
         </div>
         </div>
     @else
-        <x-ui::filter-toolbar formId="ssaFiltersForm">
-            <x-slot:filters>
+        <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-3 justify-between">
+            <form method="GET" id="ssaFiltersForm" class="flex flex-wrap items-center gap-3">
+                <input type="hidden" name="tab" value="ssas">
                 @if ($schoolId)
                     <input type="hidden" name="school_id" value="{{ $schoolId }}">
                 @endif
@@ -123,13 +125,14 @@
                     <input type="hidden" name="therapist_id" value="{{ $therapistId }}">
                 @endif
 
-                <x-ui::input type="text" name="search" class="w-56" placeholder="Search SSAs"
-                    value="{{ $filters['search'] ?? '' }}" />
+                <div class="w-56 shrink-0">
+                    <x-ui::input type="search" name="search" class="h-10" placeholder="Search SSAs"
+                        value="{{ $filters['search'] ?? '' }}" />
+                </div>
 
-                <x-ui::select name="status" :searchable="false" placeholder="All Statuses" :inline="true" data-default-value="active">
-                    <option value="all">All Statuses</option>
+                <x-ui::select name="statuses[]" multiple :searchable="false" placeholder="Status: All" :inline="true" data-default-value="pending,active" class="min-w-[14rem] max-w-[20rem]">
                     @foreach ($statuses as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? 'active') === $status->value)>
+                        <option value="{{ $status->value }}" @selected(in_array($status->value, $filters['statuses'] ?? ['pending', 'active'], true))>
                             {{ $status->label() }}
                         </option>
                     @endforeach
@@ -163,25 +166,46 @@
                         @endforeach
                     </x-ui::select>
                 @endif
-            </x-slot:filters>
 
-            <x-slot:actions>
+                <x-ui::button type="submit" size="lg">Filter</x-ui::button>
+            </form>
+
+            <div class="flex items-center gap-2 shrink-0">
+                <div class="filter-divider hidden lg:block"></div>
                 @if ($context !== 'therapist')
                     <a href="{{ route('admin.ssas.export', $filters) }}">
                         <x-ui::button variant="secondary">
+                            <x-ui::icon name="download" class="w-4 h-4 mr-1.5" />
                             Export
                         </x-ui::button>
                     </a>
-                    @if ($context === 'index')
-                        <a href="{{ route('admin.ssas.create') }}">
-                            <x-ui::button>
-                                Add SSA
-                            </x-ui::button>
-                        </a>
-                    @endif
                 @endif
-            </x-slot:actions>
-        </x-ui::filter-toolbar>
+                @if ($context === 'index')
+                    <a href="{{ route('admin.ssas.create') }}">
+                        <x-ui::button>
+                            <x-ui::icon name="plus" class="w-4 h-4 mr-1.5" />
+                            Add SSA
+                        </x-ui::button>
+                    </a>
+                @endif
+            </div>
+        </div>
+
+        <div
+            id="ssaFiltersSummary"
+            class="hidden items-center gap-2 text-sm text-foreground-muted"
+        >
+            <span data-filter-count>0 filters applied</span>
+            <span class="text-border">|</span>
+            <button
+                type="button"
+                class="text-primary hover:underline font-medium"
+                id="ssaFiltersClearAll"
+            >
+                Clear all
+            </button>
+        </div>
+        </div>
     @endif
 
     @if (isset($datatableUrl) || $ssas->count() > 0)
@@ -269,12 +293,12 @@
                             </td>
                             <td>
                                 <div class="flex flex-col space-y-1">
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-2 shrink-0">
                                         <span class="text-xs text-foreground/60 font-medium">Minutes:</span>
                                         <span class="text-sm text-foreground">{{ $ssa->minutes_per_session }} x
                                             {{ $ssa->sessions_per_frequency }}</span>
                                     </div>
-                                    <div class="flex items-center gap-2">
+                                    <div class="flex items-center gap-2 shrink-0">
                                         <span class="text-xs text-foreground/60 font-medium">Frequency:</span>
                                         <span class="text-sm text-foreground">{{ $ssa->frequency->label() }}</span>
                                     </div>
@@ -284,20 +308,20 @@
                                 <div class="flex flex-col space-y-2">
                                     <div class="flex flex-col space-y-1">
                                         @if ($ssa->student?->studentProfile?->school?->is_private_student)
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 shrink-0">
                                                 <span class="text-xs text-foreground/60 font-medium">Served:</span>
                                                 <span class="text-sm text-foreground font-medium">{{ number_format($ssa->served_hours, 2) }}</span>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 shrink-0">
                                                 <span class="text-xs text-foreground/60 font-medium">Scheduled:</span>
                                                 <span class="text-sm text-foreground">{{ number_format($ssa->scheduled_hours, 2) }}</span>
                                             </div>
                                         @else
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 shrink-0">
                                                 <span class="text-xs text-foreground/60 font-medium">THO:</span>
                                                 <span class="text-sm text-foreground font-medium">{{ number_format($ssa->tho_hours, 2) }}</span>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 shrink-0">
                                                 <span class="text-xs text-foreground/60 font-medium">Served:</span>
                                                 <span class="text-sm text-foreground">{{ number_format($ssa->served_hours, 2) }}</span>
                                             </div>
