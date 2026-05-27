@@ -100,6 +100,7 @@ export default defineConfig({
                 'resources/js/pages/therapist-sub-requests.js',
                 'resources/js/pages/therapist-schedule-sub-coverage.js',
                 'resources/js/pages/therapist-makeup-requests.js',
+                'resources/js/pages/therapist-makeup-availability.js',
             ],
             refresh: true,
         }),

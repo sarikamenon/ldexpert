@@ -62,6 +62,8 @@ class Schedule extends Model
         'location_details',
         'sub_therapist_id',
         'sub_request_status',
+        'created_by',
+        'updated_by',
     ];
 
     protected function casts(): array
@@ -207,6 +209,22 @@ class Schedule extends Model
     public function originatingMakeupRequest(): HasOne
     {
         return $this->hasOne(ScheduleMakeupRequest::class, 'makeup_schedule_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**

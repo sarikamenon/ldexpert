@@ -46,6 +46,8 @@ class ScheduleFactory extends Factory
             'location_details' => null,
             'sub_therapist_id' => null,
             'sub_request_status' => null,
+            'created_by' => null,
+            'updated_by' => null,
         ];
     }
 

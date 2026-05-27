@@ -5,11 +5,23 @@
 
     <div class="py-8">
         <div class="max-w-7xl mx-auto px-4 lg:px-8">
-            <div class="mb-6">
-                <h1 class="text-2xl font-semibold text-foreground">Make-Up Requests</h1>
-                <p class="text-sm text-foreground/60 mt-1">
-                    Closures where you have a scheduled session — track parent responses and book make-ups.
-                </p>
+            <div class="flex items-start justify-between mb-6">
+                <div>
+                    <h1 class="text-2xl font-semibold text-foreground">Make-Up Requests</h1>
+                    <p class="text-sm text-foreground/60 mt-1">
+                        Closures where you have a scheduled session — track parent responses and book make-ups.
+                    </p>
+                </div>
+                <a href="{{ route('therapist.makeup-requests.availability.index') }}"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium text-foreground/80 hover:bg-muted transition-colors whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    Manage Availability
+                </a>
             </div>
 
             @if (session('status'))
@@ -32,12 +44,6 @@
                             </x-ui::select>
                         </div>
                     </x-slot:filters>
-
-                    <x-slot:actions>
-                        <div class="text-sm text-foreground/60 self-center">
-                            {{ $totalCount }} total
-                        </div>
-                    </x-slot:actions>
                 </x-ui::filter-toolbar>
 
                 <div class="overflow-x-auto">

@@ -43,16 +43,12 @@ final class MakeupRequestController extends Controller
     {
         $this->authorize('viewAny', ScheduleMakeupRequest::class);
 
-        /** @var \App\Models\User $therapist */
-        $therapist = $request->user();
-
         $statusFilter = $this->parseStatus($request->query('status'));
 
         return view('therapist.makeup-requests.index', [
             'datatableUrl' => route('therapist.makeup-requests.data'),
             'statusFilter' => $statusFilter?->value,
             'statusOptions' => $this->statusOptions(),
-            'totalCount' => $this->repository->countForTherapist($therapist),
         ]);
     }
 
