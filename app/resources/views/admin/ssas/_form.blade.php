@@ -110,7 +110,7 @@
             <div id="frequency-field">
                 <x-input-label for="frequency" value="Frequency *" />
                 <p id="frequency_help" class="mt-1 text-xs text-foreground/60">How often sessions occur</p>
-                <x-ui::select id="frequency" name="frequency" class="mt-1" placeholder="Select frequency"
+                <x-ui::select id="frequency" name="frequency" searchable class="mt-1" placeholder="Select frequency"
                     aria-describedby="frequency_help">
                     <option value="">Select frequency</option>
                     @foreach ($frequencies as $frequency)

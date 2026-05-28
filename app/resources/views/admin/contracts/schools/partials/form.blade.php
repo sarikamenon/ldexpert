@@ -180,10 +180,11 @@
                             </td>
                             <td class="py-2 px-3">
                                 <select name="services[{{ $index }}][rate_type]"
-                                    class="w-full border border-border rounded-lg px-2 py-2">
+                                    class="ld-select block w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
+                                    data-select-box data-width="100%" data-searchable="true" data-placeholder="Select rate type">
                                     <option value="">Select rate type</option>
                                     @foreach ($rateTypes as $rateType)
-                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['rate_type'] ?? null) === $rateType->value)>
+                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['rate_type'] ?? 'H') === $rateType->value)>
                                             {{ $rateType->label() }}
                                         </option>
                                     @endforeach
@@ -202,10 +203,11 @@
                             </td>
                             <td class="py-2 px-3">
                                 <select name="services[{{ $index }}][no_show_rate_type]"
-                                    class="w-full border border-border rounded-lg px-2 py-2">
+                                    class="ld-select block w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
+                                    data-select-box data-width="100%" data-searchable="true" data-placeholder="Select rate type">
                                     <option value="">Select rate type</option>
                                     @foreach ($rateTypes as $rateType)
-                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['no_show_rate_type'] ?? null) === $rateType->value)>
+                                        <option value="{{ $rateType->value }}" @selected(($serviceRow['no_show_rate_type'] ?? 'H') === $rateType->value)>
                                             {{ $rateType->label() }}
                                         </option>
                                     @endforeach
@@ -261,10 +263,12 @@
                 class="w-full" />
         </td>
         <td class="py-2 px-3">
-            <select name="services[__INDEX__][rate_type]" class="w-full border border-border rounded-lg px-2 py-2">
+            <select name="services[__INDEX__][rate_type]"
+                class="ld-select block w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
+                data-select-box data-width="100%" data-searchable="true" data-placeholder="Select rate type">
                 <option value="">Select rate type</option>
                 @foreach ($rateTypes as $rateType)
-                    <option value="{{ $rateType->value }}">{{ $rateType->label() }}</option>
+                    <option value="{{ $rateType->value }}" @selected($rateType->value === 'H')>{{ $rateType->label() }}</option>
                 @endforeach
             </select>
         </td>
@@ -273,10 +277,12 @@
                 class="w-full" />
         </td>
         <td class="py-2 px-3">
-            <select name="services[__INDEX__][no_show_rate_type]" class="w-full border border-border rounded-lg px-2 py-2">
+            <select name="services[__INDEX__][no_show_rate_type]"
+                class="ld-select block w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-foreground"
+                data-select-box data-width="100%" data-searchable="true" data-placeholder="Select rate type">
                 <option value="">Select rate type</option>
                 @foreach ($rateTypes as $rateType)
-                    <option value="{{ $rateType->value }}">{{ $rateType->label() }}</option>
+                    <option value="{{ $rateType->value }}" @selected($rateType->value === 'H')>{{ $rateType->label() }}</option>
                 @endforeach
             </select>
         </td>

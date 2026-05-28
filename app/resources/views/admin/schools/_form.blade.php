@@ -163,7 +163,7 @@
                             placeholder="Select type">
                             <option value="">Select type</option>
                             @foreach ($schoolTypes as $type)
-                                <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? '') === $type)>
+                                <option value="{{ $type }}" @selected(old('school_type', $school->school_type ?? 'Virtual') === $type)>
                                     {{ $type }}
                                 </option>
                             @endforeach

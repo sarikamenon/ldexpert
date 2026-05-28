@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Therapist;
 
+use App\Domain\Time\UserTimezoneService;
 use App\Enums\Role;
+use App\Rules\NoMakeupAvailabilityScheduleOverlap;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class StoreMakeupAvailabilityRequest extends FormRequest
 {
+    public function __construct(private readonly UserTimezoneService $timezoneService)
+    {
+        parent::__construct();
+    }
+
     public function authorize(): bool
     {
         /** @var \App\Models\User $user */
@@ -20,10 +27,21 @@ final class StoreMakeupAvailabilityRequest extends FormRequest
     /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
+        /** @var \App\Models\User $therapist */
+        $therapist = $this->user();
+
+        $date  = $this->input('availability_date', '');
+        $start = $this->input('start_time', '');
+
         return [
             'availability_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
+            'end_time' => [
+                'required',
+                'date_format:H:i',
+                'after:start_time',
+                new NoMakeupAvailabilityScheduleOverlap($therapist, (string) $date, (string) $start, $this->timezoneService),
+            ],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }

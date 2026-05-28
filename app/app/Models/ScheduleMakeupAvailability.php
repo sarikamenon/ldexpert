@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,5 +48,26 @@ class ScheduleMakeupAvailability extends Model
     public function therapist(): BelongsTo
     {
         return $this->belongsTo(User::class, 'therapist_id');
+    }
+
+    public function startUtc(): CarbonImmutable
+    {
+        return CarbonImmutable::parse(
+            $this->availability_date->format('Y-m-d').' '.$this->start_time->format('H:i:s'),
+            'UTC',
+        );
+    }
+
+    public function endUtc(): CarbonImmutable
+    {
+        $startUtc = $this->startUtc();
+        $endSameDay = CarbonImmutable::parse(
+            $this->availability_date->format('Y-m-d').' '.$this->end_time->format('H:i:s'),
+            'UTC',
+        );
+
+        return $endSameDay->lessThan($startUtc)
+            ? $endSameDay->addDay()
+            : $endSameDay;
     }
 }

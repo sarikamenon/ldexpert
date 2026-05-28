@@ -10,6 +10,7 @@ use App\Domain\Time\UserTimezoneService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\StoreMakeupAvailabilityRequest;
 use App\Models\ScheduleMakeupAvailability;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -97,7 +98,7 @@ final class MakeupAvailabilityController extends Controller
             ->with('status', 'Availability window added.');
     }
 
-    public function destroy(ScheduleMakeupAvailability $availability): RedirectResponse
+    public function destroy(Request $request, ScheduleMakeupAvailability $availability): RedirectResponse|JsonResponse
     {
         $this->authorize('delete', $availability);
 
@@ -106,7 +107,15 @@ final class MakeupAvailabilityController extends Controller
         } catch (Throwable $e) {
             Log::error('MakeupAvailabilityController::destroy failed', ['exception' => $e]);
 
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unable to delete this window. Please try again.'], 500);
+            }
+
             return back()->withErrors(['availability' => 'Unable to delete this window. Please try again.']);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Availability window removed.']);
         }
 
         return redirect()

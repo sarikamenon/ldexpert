@@ -64,7 +64,7 @@
                 id="notes"
                 name="notes"
                 rows="4"
-                class="mt-1 block w-full rounded-md border-border shadow-sm focus:border-primary focus:ring-ring text-sm text-foreground placeholder:text-foreground/40"
+                class="mt-1 block w-full border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="e.g. Available after school hours"
                 aria-describedby="notes_help">{{ old('notes') }}</textarea>
             <x-input-error :messages="$errors->get('notes')" class="mt-2" />
