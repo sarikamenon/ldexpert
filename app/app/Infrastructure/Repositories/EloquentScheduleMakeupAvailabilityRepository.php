@@ -69,4 +69,54 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
             ->orderByRaw('TIMESTAMP(schedule_date, start_time)')
             ->get();
     }
+
+    /**
+     * @return Collection<int, ScheduleMakeupAvailability>
+     */
+    public function windowsForTherapistOnDates(User $therapist, array $dates): Collection
+    {
+        if ($dates === []) {
+            return new Collection;
+        }
+
+        return ScheduleMakeupAvailability::query()
+            ->forTherapist($therapist)
+            ->whereIn('availability_date', $dates)
+            ->orderBy('availability_date')
+            ->orderBy('start_time')
+            ->get();
+    }
+
+    /**
+     * @param  Collection<int, ScheduleMakeupAvailability>  $windows
+     * @return Collection<int, Schedule>
+     */
+    public function busySchedulesForWindows(User $therapist, Collection $windows): Collection
+    {
+        if ($windows->isEmpty()) {
+            return new Collection;
+        }
+
+        $query = Schedule::query()
+            ->forTherapistOwned($therapist->id)
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED]);
+
+        $query->where(function ($q) use ($windows): void {
+            foreach ($windows as $window) {
+                $q->orWhere(function ($sub) use ($window): void {
+                    $sub->where(function ($inner) use ($window): void {
+                        /** @var \Illuminate\Database\Eloquent\Builder<Schedule> $inner */
+                        $inner->overlappingWindow(
+                            $window->startUtc()->format('Y-m-d H:i:s'),
+                            $window->endUtc()->format('Y-m-d H:i:s'),
+                        );
+                    });
+                });
+            }
+        });
+
+        return $query
+            ->orderByRaw('TIMESTAMP(schedule_date, start_time)')
+            ->get();
+    }
 }

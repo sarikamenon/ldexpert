@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
+            'makeup-response/*/pick-slots',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -36,4 +36,21 @@ interface ScheduleMakeupAvailabilityRepositoryInterface
      * @param  array<int, string>  $dates  Y-m-d date strings
      */
     public function therapistHasAvailabilityForDates(User $therapist, array $dates): bool;
+
+    /**
+     * Availability windows for the therapist on the given dates, ordered by date then start_time.
+     *
+     * @param  array<int, string>  $dates  Y-m-d date strings
+     * @return Collection<int, ScheduleMakeupAvailability>
+     */
+    public function windowsForTherapistOnDates(User $therapist, array $dates): Collection;
+
+    /**
+     * Therapist's non-cancelled schedules that overlap any of the given availability windows.
+     * Used by MakeupSlotCalculator as the "busy" set.
+     *
+     * @param  Collection<int, ScheduleMakeupAvailability>  $windows
+     * @return Collection<int, Schedule>
+     */
+    public function busySchedulesForWindows(User $therapist, Collection $windows): Collection;
 }

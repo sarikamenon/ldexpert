@@ -116,6 +116,27 @@ final class ScheduleMakeupResponseService
     }
 
     /**
+     * Public guard: validate the batch can accept a response.
+     * Used by the controller to check before rendering Path 1 vs Path 2.
+     *
+     * @param  Collection<int, ScheduleMakeupRequest>  $batch
+     *
+     * @throws MakeupResponseNotAllowedException
+     */
+    public function guardCanRespond(Collection $batch, ?CarbonImmutable $now = null): void
+    {
+        $head = $batch->first();
+        if ($head === null) {
+            throw new MakeupResponseNotAllowedException(
+                MakeupResponseNotAllowedException::REASON_BAD_STATE,
+                'Empty batch.',
+            );
+        }
+
+        $this->guardBatchCanRespond($batch, $head, $now ?? CarbonImmutable::now());
+    }
+
+    /**
      * @param  Collection<int, ScheduleMakeupRequest>  $batch
      */
     private function guardBatchCanRespond(Collection $batch, ScheduleMakeupRequest $head, CarbonImmutable $now): void

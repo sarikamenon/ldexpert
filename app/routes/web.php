@@ -52,6 +52,7 @@ Route::prefix('makeup-response')
     ->middleware(['signed', 'throttle:10,1'])
     ->group(function () {
         Route::get('/{token}/request', [ScheduleMakeupResponseController::class, 'request'])->name('request');
+        Route::post('/{token}/pick-slots', [ScheduleMakeupResponseController::class, 'pickSlots'])->name('pick-slots');
         Route::get('/{token}/decline', [ScheduleMakeupResponseController::class, 'decline'])->name('decline');
     });
 
