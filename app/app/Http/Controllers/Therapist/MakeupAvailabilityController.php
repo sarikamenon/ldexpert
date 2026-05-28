@@ -6,7 +6,9 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\MakeupAvailabilityRowTransformer;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
+use App\Domain\Schedule\Makeup\Services\ScheduleMakeupAvailabilityService;
 use App\Domain\Time\UserTimezoneService;
+use App\DTOs\Schedule\Makeup\StoreMakeupAvailabilityDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\StoreMakeupAvailabilityRequest;
 use App\Models\ScheduleMakeupAvailability;
@@ -21,6 +23,7 @@ final class MakeupAvailabilityController extends Controller
 {
     public function __construct(
         private readonly ScheduleMakeupAvailabilityRepositoryInterface $repository,
+        private readonly ScheduleMakeupAvailabilityService $service,
         private readonly UserTimezoneService $timezoneService,
     ) {}
 
@@ -69,25 +72,10 @@ final class MakeupAvailabilityController extends Controller
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
 
-        /** @var string $date */
-        $date = $request->validated('availability_date');
-        /** @var string $start */
-        $start = $request->validated('start_time');
-        /** @var string $end */
-        $end = $request->validated('end_time');
-        /** @var string|null $notes */
-        $notes = $request->validated('notes');
-
         try {
-            $startUtc = $this->timezoneService->parseUserLocalToUtc($date.' '.$start.':00', $therapist);
-            $endUtc = $this->timezoneService->parseUserLocalToUtc($date.' '.$end.':00', $therapist);
-
-            $this->repository->create(
+            $this->service->create(
                 $therapist,
-                $startUtc->toDateString(),
-                $startUtc->format('H:i'),
-                $endUtc->format('H:i'),
-                $notes,
+                StoreMakeupAvailabilityDTO::fromRequest($request),
             );
         } catch (Throwable $e) {
             Log::error('MakeupAvailabilityController::store failed', ['exception' => $e]);
@@ -107,7 +95,7 @@ final class MakeupAvailabilityController extends Controller
         $this->authorize('delete', $availability);
 
         try {
-            $this->repository->delete($availability);
+            $this->service->delete($availability);
         } catch (Throwable $e) {
             Log::error('MakeupAvailabilityController::destroy failed', ['exception' => $e]);
 

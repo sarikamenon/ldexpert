@@ -164,6 +164,7 @@ final class EloquentScheduleMakeupRequestRepository implements ScheduleMakeupReq
     {
         return ScheduleMakeupRequest::query()
             ->overdueForResponse($on)
+            ->with(['therapist', 'student', 'schedule.school'])
             ->get();
     }
 

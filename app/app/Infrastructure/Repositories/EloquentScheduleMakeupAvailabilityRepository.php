@@ -10,7 +10,6 @@ use App\Models\Schedule;
 use App\Models\ScheduleMakeupAvailability;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMakeupAvailabilityRepositoryInterface
 {
@@ -20,8 +19,8 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
     public function listUpcomingForTherapist(User $therapist): Collection
     {
         return ScheduleMakeupAvailability::query()
-            ->where('therapist_id', $therapist->id)
-            ->where('availability_date', '>=', DB::raw('CURDATE()'))
+            ->forTherapist($therapist)
+            ->upcomingFromToday()
             ->orderBy('availability_date')
             ->orderBy('start_time')
             ->get();
@@ -41,6 +40,18 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
     public function delete(ScheduleMakeupAvailability $window): void
     {
         $window->delete();
+    }
+
+    public function therapistHasAvailabilityForDates(User $therapist, array $dates): bool
+    {
+        if ($dates === []) {
+            return false;
+        }
+
+        return ScheduleMakeupAvailability::query()
+            ->forTherapist($therapist)
+            ->whereIn('availability_date', $dates)
+            ->exists();
     }
 
     /**

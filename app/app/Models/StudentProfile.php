@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\StudentScope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property \Carbon\Carbon|null $date_of_birth
+ * @property-read string $first_initial_last_name
  */
 class StudentProfile extends Model
 {
@@ -77,6 +79,19 @@ class StudentProfile extends Model
     public function ssas(): HasMany
     {
         return $this->hasMany(ServiceSupportAgreement::class, 'student_id', 'user_id');
+    }
+
+    /**
+     * "Carmen DiMarzio" → "C. DiMarzio"
+     *
+     * @return Attribute<string, never>
+     */
+    protected function firstInitialLastName(): Attribute
+    {
+        // @phpstan-ignore return.type (Attribute<non-falsy-string> is not covariant with Attribute<string>)
+        return Attribute::get(function (): string {
+            return mb_strtoupper(mb_substr((string) $this->first_name, 0, 1)) . '. ' . $this->last_name;
+        });
     }
 
     /**

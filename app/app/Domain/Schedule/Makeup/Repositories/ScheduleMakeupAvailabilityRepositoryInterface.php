@@ -29,4 +29,11 @@ interface ScheduleMakeupAvailabilityRepositoryInterface
      * @return Collection<int, Schedule>
      */
     public function schedulesOverlappingWindow(ScheduleMakeupAvailability $window): Collection;
+
+    /**
+     * Whether the therapist has at least one availability window on any of the given dates.
+     *
+     * @param  array<int, string>  $dates  Y-m-d date strings
+     */
+    public function therapistHasAvailabilityForDates(User $therapist, array $dates): bool;
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Models\Scopes\ScheduleMakeupAvailabilityScope;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,6 +42,24 @@ class ScheduleMakeupAvailability extends Model
             'updated_at' => 'datetime',
             'deleted_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @param  Builder<ScheduleMakeupAvailability>  $query
+     * @return Builder<ScheduleMakeupAvailability>
+     */
+    public function scopeForTherapist(Builder $query, User $therapist): Builder
+    {
+        return ScheduleMakeupAvailabilityScope::forTherapist($query, $this, $therapist);
+    }
+
+    /**
+     * @param  Builder<ScheduleMakeupAvailability>  $query
+     * @return Builder<ScheduleMakeupAvailability>
+     */
+    public function scopeUpcomingFromToday(Builder $query): Builder
+    {
+        return ScheduleMakeupAvailabilityScope::upcomingFromToday($query, $this);
     }
 
     /**

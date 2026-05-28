@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
+use App\Domain\Schedule\Makeup\Services\TherapistMakeupNotificationService;
+use App\Models\ScheduleMakeupRequest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -14,9 +16,19 @@ final class MakeupRemindersAutoDecline extends Command
 
     protected $description = 'Auto-decline make-up reminders whose response deadline has passed without a parent reply.';
 
-    public function handle(ScheduleMakeupRequestRepositoryInterface $repository): int
-    {
-        $count = $repository->bulkAutoDecline(Carbon::today());
+    public function handle(
+        ScheduleMakeupRequestRepositoryInterface $repository,
+        TherapistMakeupNotificationService $notificationService,
+    ): int {
+        $today = Carbon::today();
+
+        $overdueRows = $repository->listOverdueForResponse($today);
+
+        $count = $repository->bulkAutoDecline($today);
+
+        $overdueRows->each(function (ScheduleMakeupRequest $request) use ($notificationService): void {
+            $notificationService->sendNonAcceptedNotification($request);
+        });
 
         $this->info(sprintf('Auto-declined %d overdue make-up reminder(s).', $count));
 

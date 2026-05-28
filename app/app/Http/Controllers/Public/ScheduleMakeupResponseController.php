@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Public;
 
 use App\Domain\Schedule\Makeup\Presenters\MakeupRequestPresenter;
+use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
 use App\Domain\Schedule\Makeup\Services\ScheduleMakeupResponseService;
+use App\Domain\Schedule\Makeup\Services\TherapistMakeupNotificationService;
 use App\Exceptions\MakeupResponseNotAllowedException;
 use App\Http\Controllers\Controller;
 use App\Models\ScheduleMakeupRequest;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -30,6 +33,8 @@ final class ScheduleMakeupResponseController extends Controller
     public function __construct(
         private readonly ScheduleMakeupResponseService $responseService,
         private readonly MakeupRequestPresenter $presenter,
+        private readonly TherapistMakeupNotificationService $notificationService,
+        private readonly ScheduleMakeupAvailabilityRepositoryInterface $availabilityRepo,
     ) {}
 
     /**
@@ -41,6 +46,8 @@ final class ScheduleMakeupResponseController extends Controller
 
         try {
             $updated = $this->responseService->recordParentRequest($batch);
+
+            $this->notifyTherapistOnAccept($updated);
 
             return view('public.makeup-response.request-recorded', $this->viewData($updated));
         } catch (MakeupResponseNotAllowedException $e) {
@@ -61,6 +68,8 @@ final class ScheduleMakeupResponseController extends Controller
 
         try {
             $updated = $this->responseService->recordParentDecline($batch);
+
+            $this->notifyTherapistOnDecline($updated);
 
             return view('public.makeup-response.declined', $this->viewData($updated));
         } catch (MakeupResponseNotAllowedException $e) {
@@ -117,6 +126,49 @@ final class ScheduleMakeupResponseController extends Controller
             'sessionLabels' => $this->presenter->sessionLabels($batch),
             'responseByDate' => $batch->first()?->response_date?->format((string) config('display.date')),
         ];
+    }
+
+    /**
+     * Email #2 (Path 2): therapist has no availability — notify them to schedule directly.
+     *
+     * @param  Collection<int, ScheduleMakeupRequest>  $batch
+     */
+    private function notifyTherapistOnAccept(Collection $batch): void
+    {
+        $head = $batch->first();
+        if ($head === null) {
+            return;
+        }
+
+        $eventDates = $batch
+            ->map(fn (ScheduleMakeupRequest $row): string => $row->event_date->toDateString())
+            ->unique()
+            ->values()
+            ->all();
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $head->therapist;
+
+        if ($this->availabilityRepo->therapistHasAvailabilityForDates($therapist, $eventDates)) {
+            return;
+        }
+
+        $this->notificationService->sendNoAvailabilityAccepted($head);
+    }
+
+    /**
+     * Email #3: notify therapist that parent declined (non-private students only).
+     *
+     * @param  Collection<int, ScheduleMakeupRequest>  $batch
+     */
+    private function notifyTherapistOnDecline(Collection $batch): void
+    {
+        $head = $batch->first();
+        if ($head === null) {
+            return;
+        }
+
+        $this->notificationService->sendDeclinedNotification($head);
     }
 
     /**
