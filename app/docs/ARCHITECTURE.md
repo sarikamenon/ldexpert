@@ -88,6 +88,7 @@ app/
 │       ├── Repositories/       # Interfaces only
 │       └── Services/           # Business logic
 ├── DTOs/                       # Input transport between layers
+│   └── <Domain>/<Subdomain>/   # New DTOs nest by domain (see DTOs section below)
 ├── Http/
 │   ├── Controllers/            # Thin — delegate to services
 │   └── Requests/               # Form Request validation
@@ -111,6 +112,21 @@ $dto = CreateSSADTO::fromRequest($request);
 $service->create($dto);
 ```
 
+### Where DTOs live
+
+New DTOs MUST be created under `app/DTOs/<Domain>/<Subdomain>/` with namespace `App\DTOs\<Domain>\<Subdomain>`. Group by the business area the DTO belongs to.
+
+```
+app/DTOs/Schedule/Makeup/CreateMakeupRequestDTO.php       // App\DTOs\Schedule\Makeup\CreateMakeupRequestDTO
+app/DTOs/Schedule/SubRequest/EligibleSubDTO.php           // App\DTOs\Schedule\SubRequest\EligibleSubDTO
+```
+
+Do NOT:
+- add new DTOs directly under `app/DTOs/` (flat root)
+- add new DTOs under `app/Domain/**/DTOs/`
+
+The flat files currently in `app/DTOs/` are legacy. Migrate them into the appropriate `app/DTOs/<Domain>/<Subdomain>/` folder gradually when touched — move the file, update its namespace, and update every import.
+
 ---
 
 ## Binding
@@ -125,59 +141,14 @@ $this->app->bind(SSARepositoryInterface::class, EloquentSSARepository::class);
 
 ## Scopes
 
-Any `where` condition that encodes a **domain concept** — status, ownership, date range, eligibility, role, soft-delete filter — MUST live in an Eloquent scope, not inline in a repository or service.
+Any `where` condition encoding a **domain concept** — status, ownership, date range, eligibility, role — MUST be an Eloquent scope. Raw `where` is only acceptable for structural one-offs with no domain meaning (e.g. a JOIN alias inside a private builder method).
 
-### When a scope is required
+**Before writing any `where(...)` call:** check if a scope exists. If yes, use it. If no, add one first, then call it. Never duplicate the same condition inline — that proves it should have been a scope. This applies in repositories, services, and everywhere queries are built.
 
-A condition requires a scope when it answers "what kind of record is this?" or "does this record belong to that entity?". Examples: `active`, `open`, `forSchool($id)`, `effectiveOn($date)`, `forStudent($id)`, `pending`.
-
-A raw `where` is only acceptable for **truly one-off structural conditions** — e.g. a JOIN alias filter inside a private query-builder method that has no domain meaning.
-
-### Where scopes live
-
-| Scope type | Location | Registration |
+| Scope type | Location | Usage |
 |---|---|---|
-| Simple local scope (single model) | Method on the model: `scopeActive(Builder $q)` | Called as `Model::query()->active()` |
-| Complex / multi-model scope | Class in `app/Models/Scopes/`, extends `BaseModelScope` | Applied via `$query->tap(new FooScope(...))` or added to `booted()` |
-
-### Mandatory rule
-
-**Before writing any `where(...)` call**, check whether a scope already exists on the model for that concept. If it does, use the scope. If the concept has no scope yet, **add one first, then call it**. Never duplicate the same `where` condition in two places — the second occurrence proves the first should have been a scope.
-
-This rule applies everywhere: repositories, services (when a service legitimately touches a model — see boundary rules), and the `applyEligibilityFilter` pattern.
-
-```php
-// ❌ Wrong — raw where for a domain concept
-$query->where('status', 'open');
-$query->where('school_id', $schoolId);
-$query->where('start_date', '<=', $date)->where('end_date', '>=', $date);
-
-// ✅ Correct — named scope
-$query->open();
-$query->forSchool($schoolId);
-$query->effectiveOn($date);
-```
-
-### Adding a scope
-
-```php
-// Local scope on the model (simple, single-model concept)
-/** @param Builder<self> $query */
-public function scopeOpen(Builder $query): void
-{
-    $query->where('status', 'open');
-}
-
-// Complex scope class (multi-condition or reused across models)
-final class ActiveContractScope extends BaseModelScope
-{
-    public function apply(Builder $builder, Model $model): void
-    {
-        $builder->where('status', 'active')
-                ->where('start_date', '<=', now());
-    }
-}
-```
+| Single-model concept | `scopeFoo(Builder $q)` on the model | `Model::query()->foo()` |
+| Multi-condition or cross-model | Class in `app/Models/Scopes/` extending `BaseModelScope` | `$query->tap(new FooScope(...))` or `booted()` |
 
 ---
 
