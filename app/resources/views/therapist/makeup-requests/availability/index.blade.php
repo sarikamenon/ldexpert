@@ -1,5 +1,5 @@
 {{--
-    @var array<int, array{id: int, date: string, start: string, end: string, notes: string|null, delete_url: string}> $rows
+    @var array<int, array{id: int, date: string, start: string, end: string, notes: string|null, booked_slots: array<int, string>, delete_url: string}> $rows
     @var string $createUrl
 --}}
 <x-app-layout>
@@ -49,6 +49,7 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Start</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">End</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Notes</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-foreground/70 uppercase tracking-wider">Booked</th>
                                     <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-foreground/70 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
@@ -59,6 +60,20 @@
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">{{ $row['start'] }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-foreground">{{ $row['end'] }}</td>
                                         <td class="px-6 py-4 text-sm text-foreground/60">{{ $row['notes'] ?? '—' }}</td>
+                                        <td class="px-6 py-4 text-sm text-foreground/60">
+                                            @if (count($row['booked_slots']) > 0)
+                                                <ul class="space-y-0.5 list-none">
+                                                    @foreach ($row['booked_slots'] as $slot)
+                                                        <li class="inline-flex items-center gap-1">
+                                                            <span class="inline-block w-2 h-2 rounded-full bg-danger/70 shrink-0"></span>
+                                                            {{ $slot }}
+                                                        </li>
+                                                    @endforeach
+                                                </ul>
+                                            @else
+                                                <span class="text-foreground/40">—</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right">
                                             <div class="flex items-center justify-end gap-1">
                                                 <button type="button"

@@ -349,6 +349,15 @@ class Schedule extends Model
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
+    public function scopeForTherapistOwned(Builder $query, int $therapistId): Builder
+    {
+        return ScheduleScope::forTherapistOwned($query, $this, $therapistId);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForStudent(Builder $query, User $student): Builder
     {
         return ScheduleScope::forStudent($query, $this, $student);
@@ -440,6 +449,15 @@ class Schedule extends Model
     public function scopeStartingAtOrBefore(Builder $query, \Carbon\CarbonInterface $moment): Builder
     {
         return ScheduleScope::startingAtOrBefore($query, $this, $moment);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeOverlappingWindow(Builder $query, string $windowStartUtc, string $windowEndUtc): Builder
+    {
+        return ScheduleScope::overlappingWindow($query, $this, $windowStartUtc, $windowEndUtc);
     }
 
     /**

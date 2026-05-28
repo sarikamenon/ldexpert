@@ -35,7 +35,11 @@ final class MakeupAvailabilityController extends Controller
         $windows = $this->repository->listUpcomingForTherapist($therapist);
 
         return view('therapist.makeup-requests.availability.index', [
-            'rows' => $windows->map(fn (ScheduleMakeupAvailability $w): array => MakeupAvailabilityRowTransformer::transform($w, $tz))->all(),
+            'rows' => $windows->map(fn (ScheduleMakeupAvailability $w): array => MakeupAvailabilityRowTransformer::transform(
+                $w,
+                $tz,
+                $this->repository->schedulesOverlappingWindow($w),
+            ))->all(),
             'createUrl' => route('therapist.makeup-requests.availability.create'),
         ]);
     }

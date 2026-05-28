@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
+use App\Enums\ScheduleStatus;
+use App\Models\Schedule;
 use App\Models\ScheduleMakeupAvailability;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -39,5 +41,21 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
     public function delete(ScheduleMakeupAvailability $window): void
     {
         $window->delete();
+    }
+
+    /**
+     * @return Collection<int, Schedule>
+     */
+    public function schedulesOverlappingWindow(ScheduleMakeupAvailability $window): Collection
+    {
+        return Schedule::query()
+            ->forTherapistOwned($window->therapist_id)
+            ->withStatuses([ScheduleStatus::SCHEDULED, ScheduleStatus::COMPLETED])
+            ->overlappingWindow(
+                $window->startUtc()->format('Y-m-d H:i:s'),
+                $window->endUtc()->format('Y-m-d H:i:s'),
+            )
+            ->orderByRaw('TIMESTAMP(schedule_date, start_time)')
+            ->get();
     }
 }
