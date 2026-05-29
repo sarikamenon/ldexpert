@@ -3,6 +3,8 @@
 > **Scope:** how a therapist's `billing_schedules` row drives the automatic generation of `therapist_bills`. Covers each form field, every Frequency × Generation Timing combination, the silent guard rails (`min_grace_days`, billing entry window), and worked examples.
 >
 > **Source of truth:** [`BillingScheduleService`](../app/Domain/Billing/Services/BillingScheduleService.php), [`BillingAutomationService`](../app/Domain/Billing/Services/BillingAutomationService.php), [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php), [`BillingSchedule`](../app/Models/BillingSchedule.php), and the [`BillingFrequency`](../app/Enums/BillingFrequency.php) / [`GenerationDayType`](../app/Enums/GenerationDayType.php) enums.
+>
+> **Companion doc:** [`BILLING_AUTOMATION_RUNTIME.md`](BILLING_AUTOMATION_RUNTIME.md) — how the daily `billing:generate` command picks schedules, decides which period to bill, sweeps sessions, advances `next_run_at`, and known bugs in the first-run path. Read this when reasoning about *when* and *what* the system bills, not just *how* fields are configured.
 
 ---
 

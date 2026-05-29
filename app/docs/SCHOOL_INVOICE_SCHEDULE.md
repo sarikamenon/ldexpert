@@ -4,7 +4,9 @@
 >
 > **Source of truth:** [`BillingScheduleService`](../app/Domain/Billing/Services/BillingScheduleService.php), [`BillingAutomationService`](../app/Domain/Billing/Services/BillingAutomationService.php), [`InvoiceService`](../app/Domain/Billing/Services/InvoiceService.php), [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php), [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php), [`BillingSchedule`](../app/Models/BillingSchedule.php), and the [`BillingFrequency`](../app/Enums/BillingFrequency.php) / [`GenerationDayType`](../app/Enums/GenerationDayType.php) / [`BillingMode`](../app/Enums/BillingMode.php) enums.
 >
-> **Companion doc:** [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md) — schedule mechanics are shared; this doc focuses on the school-specific bits.
+> **Companion docs:**
+> - [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md) — schedule mechanics are shared; this doc focuses on the school-specific bits.
+> - [`BILLING_AUTOMATION_RUNTIME.md`](BILLING_AUTOMATION_RUNTIME.md) — how the daily `billing:generate` command picks schedules, resolves periods for Standard vs Advance, sweeps sessions, advances `next_run_at`, and known bugs in the first-run path.
 
 ---
 
