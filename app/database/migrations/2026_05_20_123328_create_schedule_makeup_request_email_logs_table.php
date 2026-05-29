@@ -18,7 +18,7 @@ return new class extends Migration
                 ->references('id')->on('schedule_makeup_requests')
                 ->cascadeOnDelete();
 
-            $table->string('type', 30);
+            $table->string('type', 50);
 
             $table->string('recipient_email');
             $table->string('recipient_name')->nullable();
