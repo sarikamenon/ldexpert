@@ -227,6 +227,9 @@ final class ScheduleController extends Controller
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
             'subPanel' => $subPanel,
+            'makeupRequestId' => $request->query('makeup_request_id') !== null
+                ? (int) $request->query('makeup_request_id')
+                : null,
         ]);
     }
 
@@ -433,7 +436,7 @@ final class ScheduleController extends Controller
 
         $makeupRequestId = $request->input('makeup_request_id');
         if ($makeupRequestId !== null) {
-            $this->linkMakeupRequestSchedule((int) $makeupRequestId, $schedule->id);
+            $this->linkMakeupRequestSchedule($therapist, (int) $makeupRequestId, $schedule->id);
         }
 
         if ($request->expectsJson()) {
@@ -485,6 +488,11 @@ final class ScheduleController extends Controller
             }
 
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
+        }
+
+        $makeupRequestId = $request->input('makeup_request_id');
+        if ($makeupRequestId !== null) {
+            $this->linkMakeupRequestSchedule($therapist, (int) $makeupRequestId, $updated->id);
         }
 
         $subWarning = null;
@@ -718,12 +726,16 @@ final class ScheduleController extends Controller
     }
 
     /**
-     * Side-effect for the make-up booking flow: link the freshly-created
-     * schedule back to the originating make-up request and flip its status
-     * to SCHEDULED. The schedule has already been saved by the time we get
-     * here, so any failure here must not propagate to the user.
+     * Side-effect for the make-up booking flow: link the booked schedule back
+     * to the originating make-up request, stamp the therapist as the actor,
+     * and flip the request's status to SCHEDULED. Used by both paths — an
+     * in-place reschedule (update) of the missed session and the create-new
+     * fallback when the original session was deleted.
+     *
+     * The schedule has already been saved by the time we get here, so any
+     * failure must not propagate to the user.
      */
-    private function linkMakeupRequestSchedule(int $makeupRequestId, int $scheduleId): void
+    private function linkMakeupRequestSchedule(User $therapist, int $makeupRequestId, int $scheduleId): void
     {
         try {
             $makeupRequest = ScheduleMakeupRequest::find($makeupRequestId);
@@ -731,9 +743,23 @@ final class ScheduleController extends Controller
                 return;
             }
 
+            // Only the owning therapist may book, and only a request that is
+            // still awaiting booking. Guards against a stale/forged
+            // makeup_request_id reaching the schedule endpoints directly.
+            if ((int) $makeupRequest->therapist_id !== (int) $therapist->id
+                || ! $makeupRequest->isRequested()
+                || $makeupRequest->makeup_schedule_id !== null) {
+                return;
+            }
+
+            $schedule = Schedule::find($scheduleId);
+            if ($schedule !== null) {
+                $schedule->forceFill(['updated_by' => $therapist->id])->save();
+            }
+
             $this->makeupRequestRepository->linkBookedSchedule($makeupRequest, $scheduleId);
         } catch (\Throwable $e) {
-            Log::error('ScheduleController@store: failed to link make-up request to new schedule', [
+            Log::error('ScheduleController: failed to link make-up request to schedule', [
                 'makeup_request_id' => $makeupRequestId,
                 'schedule_id' => $scheduleId,
                 'exception' => $e,

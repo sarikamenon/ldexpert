@@ -31,6 +31,8 @@ class ScheduleMakeupReminderMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    private MakeupRequestPresenter $presenter;
+
     /**
      * @param  Collection<int, ScheduleMakeupRequest>  $batch
      */
@@ -39,7 +41,9 @@ class ScheduleMakeupReminderMail extends Mailable
         public readonly string $recipientName,
         public readonly User $therapist,
         public readonly ServiceFrequency $frequency,
-    ) {}
+    ) {
+        $this->presenter = app(MakeupRequestPresenter::class);
+    }
 
     public function envelope(): Envelope
     {
@@ -58,7 +62,7 @@ class ScheduleMakeupReminderMail extends Mailable
         );
     }
 
-    public function content(MakeupRequestPresenter $presenter): Content
+    public function content(): Content
     {
         $head = $this->batch->first();
         if ($head === null) {
@@ -73,7 +77,7 @@ class ScheduleMakeupReminderMail extends Mailable
 
         $dateFormat = (string) config('display.date_long');
 
-        $sessionLabels = $presenter->sessionLabels($this->batch);
+        $sessionLabels = $this->presenter->sessionLabelsWithService($this->batch);
 
         $responseByDate = Carbon::parse($head->response_date->toDateString())
             ->format($dateFormat);

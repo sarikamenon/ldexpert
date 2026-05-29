@@ -28,7 +28,7 @@
     @if ($isEdit)
         @method('PUT')
     @endif
-    @if (! $isEdit && ! empty($makeupRequestId ?? null))
+    @if (! empty($makeupRequestId ?? null))
         <input type="hidden" name="makeup_request_id" value="{{ $makeupRequestId }}">
     @endif
 

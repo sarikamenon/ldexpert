@@ -79,6 +79,7 @@ final class EloquentScheduleMakeupRequestRepository implements ScheduleMakeupReq
         return ScheduleMakeupRequest::query()
             ->with(['therapist', 'schedule', 'student.studentProfile'])
             ->forBatch($batchNumber)
+            ->unresponded()
             ->get();
     }
 

@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Therapist;
 use App\DataTables\Transformers\MakeupRequestRowTransformer;
 use App\Domain\Schedule\Makeup\Presenters\MakeupRequestPresenter;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\Schedule\Makeup\RecordMakeupResponseDTO;
 use App\Enums\ScheduleMakeupRequestStatus;
 use App\Http\Controllers\Controller;
@@ -37,6 +38,7 @@ final class MakeupRequestController extends Controller
     public function __construct(
         private readonly ScheduleMakeupRequestRepositoryInterface $repository,
         private readonly MakeupRequestPresenter $presenter,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function index(Request $request): View
@@ -58,6 +60,7 @@ final class MakeupRequestController extends Controller
 
         /** @var \App\Models\User $therapist */
         $therapist = $request->user();
+        $viewerTz = $this->timezoneService->resolveTimezone($therapist);
 
         $params = DataTablesRequest::fromRequest($request, self::ORDER_WHITELIST);
         $statusFilter = $this->parseStatus($request->input('filter_status'));
@@ -76,7 +79,7 @@ final class MakeupRequestController extends Controller
             $total,
             $filtered,
             $page,
-            static fn (ScheduleMakeupRequest $row): array => MakeupRequestRowTransformer::transform($row, $therapist),
+            static fn (ScheduleMakeupRequest $row): array => MakeupRequestRowTransformer::transform($row, $therapist, $viewerTz),
         );
     }
 
@@ -206,7 +209,22 @@ final class MakeupRequestController extends Controller
     {
         $this->authorize('book', $makeupRequest);
 
-        $ssaId = $makeupRequest->schedule?->ssa_id;
+        $schedule = $makeupRequest->schedule;
+
+        // Original missed session still exists — reschedule it in place via the
+        // existing edit-schedule flow. The schedule store/update threads
+        // makeup_request_id through and links makeup_schedule_id on save.
+        if ($schedule !== null) {
+            return redirect()->route('therapist.schedule.edit', [
+                'id' => $schedule->id,
+                'makeup_request_id' => $makeupRequest->id,
+            ]);
+        }
+
+        // Original session was soft-deleted — fall back to creating a new
+        // schedule row, still linked back to the make-up request. The SSA must
+        // be read from the trashed schedule since the live relation is null.
+        $ssaId = $makeupRequest->schedule()->withTrashed()->first()?->ssa_id;
 
         if ($ssaId === null) {
             return back()->with('status', 'Cannot start booking — original schedule has no SSA on file.');

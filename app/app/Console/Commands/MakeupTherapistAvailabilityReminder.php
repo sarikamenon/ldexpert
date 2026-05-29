@@ -7,7 +7,6 @@ namespace App\Console\Commands;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
 use App\Domain\Schedule\Makeup\Services\TherapistMakeupNotificationService;
-use App\Enums\ScheduleMakeupRequestStatus;
 use App\Models\ScheduleMakeupRequest;
 use App\Models\SchoolCalendarEvent;
 use App\Models\User;
@@ -55,28 +54,27 @@ final class MakeupTherapistAvailabilityReminder extends Command
                 return;
             }
 
-            $eventDates = $this->expandEventDates($event);
+            // A make-up may be booked on any availability from the closure's
+            // start date onward, so the earliest relevant date is the event start.
+            $earliestEventDate = $event->start_date->toDateString();
 
             /** @var Collection<int, ScheduleMakeupRequest> $requests */
             $requests = ScheduleMakeupRequest::query()
-                ->where('school_calendar_event_id', $event->id)
-                ->whereIn('status', [
-                    ScheduleMakeupRequestStatus::PENDING->value,
-                    ScheduleMakeupRequestStatus::SENT->value,
-                ])
+                ->forEvent($event)
+                ->unresponded()
                 ->with('therapist')
                 ->get();
 
             $therapistIds = $requests->pluck('therapist_id')->unique();
 
-            $therapistIds->each(function (int $therapistId) use ($event, $eventDates, $availabilityRepo, $notificationService, &$sent): void {
+            $therapistIds->each(function (int $therapistId) use ($event, $earliestEventDate, $availabilityRepo, $notificationService, &$sent): void {
                 /** @var User|null $therapist */
                 $therapist = User::find($therapistId);
                 if ($therapist === null) {
                     return;
                 }
 
-                if ($availabilityRepo->therapistHasAvailabilityForDates($therapist, $eventDates)) {
+                if ($availabilityRepo->therapistHasAvailabilityFromDate($therapist, $earliestEventDate)) {
                     return;
                 }
 
@@ -88,23 +86,5 @@ final class MakeupTherapistAvailabilityReminder extends Command
         $this->info(sprintf('Sent %d therapist availability reminder(s).', $sent));
 
         return self::SUCCESS;
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function expandEventDates(SchoolCalendarEvent $event): array
-    {
-        $dates = [];
-        $start = CarbonImmutable::parse($event->start_date->toDateString());
-        $end = CarbonImmutable::parse(($event->end_date ?? $event->start_date)->toDateString());
-
-        $cursor = $start;
-        while ($cursor->lessThanOrEqualTo($end)) {
-            $dates[] = $cursor->toDateString();
-            $cursor = $cursor->addDay();
-        }
-
-        return $dates;
     }
 }

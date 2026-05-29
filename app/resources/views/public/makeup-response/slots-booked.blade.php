@@ -23,7 +23,7 @@
 
     @if ($remaining->isNotEmpty())
         <p class="footer" style="color: #64748b; margin-bottom: 8px;">
-            {{ $remaining->count() }} missed {{ $remaining->count() === 1 ? 'session has' : 'sessions have' }} no available slots — your therapist will be in touch.
+            {{ $remaining->count() }} session{{ $remaining->count() === 1 ? '' : 's' }} {{ $remaining->count() === 1 ? 'has' : 'have' }} no available slots — your therapist will be in touch.
         </p>
     @endif
 

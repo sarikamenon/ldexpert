@@ -31,19 +31,21 @@ interface ScheduleMakeupAvailabilityRepositoryInterface
     public function schedulesOverlappingWindow(ScheduleMakeupAvailability $window): Collection;
 
     /**
-     * Whether the therapist has at least one availability window on any of the given dates.
+     * Whether the therapist has at least one availability window on or after the given date.
+     * A make-up may be booked on any day from the missed session onward (no upper bound).
      *
-     * @param  array<int, string>  $dates  Y-m-d date strings
+     * @param  string  $fromDate  Y-m-d date string
      */
-    public function therapistHasAvailabilityForDates(User $therapist, array $dates): bool;
+    public function therapistHasAvailabilityFromDate(User $therapist, string $fromDate): bool;
 
     /**
-     * Availability windows for the therapist on the given dates, ordered by date then start_time.
+     * Availability windows for the therapist on or after the given date, ordered by date
+     * then start_time. A make-up may be booked on any day from the missed session onward.
      *
-     * @param  array<int, string>  $dates  Y-m-d date strings
+     * @param  string  $fromDate  Y-m-d date string
      * @return Collection<int, ScheduleMakeupAvailability>
      */
-    public function windowsForTherapistOnDates(User $therapist, array $dates): Collection;
+    public function windowsForTherapistFromDate(User $therapist, string $fromDate): Collection;
 
     /**
      * Therapist's non-cancelled schedules that overlap any of the given availability windows.

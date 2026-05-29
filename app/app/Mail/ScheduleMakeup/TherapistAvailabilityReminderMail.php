@@ -41,6 +41,7 @@ class TherapistAvailabilityReminderMail extends Mailable
                 'therapistName' => $this->therapist->name,
                 'eventTitle' => $this->calendarEvent->title,
                 'eventDate' => $this->calendarEvent->start_date->format((string) config('display.date_long')),
+                'availabilityUrl' => route('therapist.makeup-requests.availability'),
             ],
         );
     }

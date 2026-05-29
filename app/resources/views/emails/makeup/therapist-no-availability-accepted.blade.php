@@ -18,7 +18,9 @@
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
                 <p style="margin:0 0 12px;">
-                    A make-up session for the upcoming holiday/school closure has been accepted by your student, <strong>{{ $studentDisplayName }}</strong>. No make-up schedule was entered into NOVA for automatic scheduling. Please reach out to this family to schedule the make-up session.
+                    A make-up session for the upcoming holiday/school closure has been accepted by your student, <strong>{{ $studentDisplayName }}</strong>. 
+                    No make-up schedule was entered into NOVA for automatic scheduling. 
+                    <strong>Please reach out to this family to schedule the make-up session.</strong>
                 </p>
             </td>
         </tr>

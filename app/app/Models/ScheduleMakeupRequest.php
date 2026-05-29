@@ -148,6 +148,20 @@ class ScheduleMakeupRequest extends Model
     }
 
     /**
+     * Rows that still await a parent response (pending or sent, not yet responded).
+     *
+     * @param  Builder<ScheduleMakeupRequest>  $query
+     * @return Builder<ScheduleMakeupRequest>
+     */
+    public function scopeUnresponded(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            ScheduleMakeupRequestStatus::PENDING->value,
+            ScheduleMakeupRequestStatus::SENT->value,
+        ])->whereNull('responded_at');
+    }
+
+    /**
      * @param  Builder<ScheduleMakeupRequest>  $query
      * @return Builder<ScheduleMakeupRequest>
      */

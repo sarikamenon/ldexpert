@@ -31,24 +31,22 @@
                 </div>
 
                 <p style="margin:0 0 12px;">
-                    Please let me know by <strong>{{ $responseByDate }}</strong> if you'd like me to send over available
-                    make-up times. If you would like a make-up, please select <strong>Request Make-Up</strong> and I
-                    will send over my available make-up times.
+                    To schedule your make-up session, please click the button below by <strong>{{ $responseByDate }}</strong>. You'll be able to select from available times that work with your schedule.
                 </p>
 
-                <div style="margin:20px 0; text-align:center;">
+                <div style="margin:24px 0; text-align:center;">
                     <a href="{{ $requestUrl }}"
-                        style="display:inline-block; background:#16a34a; color:#ffffff; text-decoration:none; padding:12px 22px; border-radius:6px; font-size:14px; font-weight:600; margin:0 6px;">
-                        Request Make-Up
+                        style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; margin-right:12px; white-space:nowrap;">
+                        Accept
                     </a>
                     <a href="{{ $declineUrl }}"
-                        style="display:inline-block; background:#e2e8f0; color:#0f172a; text-decoration:none; padding:12px 22px; border-radius:6px; font-size:14px; font-weight:600; margin:0 6px;">
-                        Decline Make-Up
+                        style="display:inline-block; background:#e5e7eb; color:#374151; text-decoration:none; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:500; white-space:nowrap;">
+                        No, Thanks
                     </a>
                 </div>
 
                 <p style="margin:0 0 12px;">
-                    If I don't hear back by <strong>{{ $responseByDate }}</strong>, I'll mark the session as declined.
+                    If you don't respond by <strong>{{ $responseByDate }}</strong>, we'll assume you don't need a make-up session at this time.
                 </p>
 
                 <div style="margin:20px 0; padding:10px 14px; border-radius:6px; background:#fafafa; border:1px solid #e5e7eb; border-left:3px solid #f97316;">

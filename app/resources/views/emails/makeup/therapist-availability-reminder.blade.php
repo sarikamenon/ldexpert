@@ -18,7 +18,9 @@
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
                 <p style="margin:0 0 12px;">
-                    There is an upcoming holiday/school closure that requires make-up sessions for students. Please enter your available make-up times into NOVA in order for families to automatically schedule with you. You can offer make-up sessions on the day of the school closure if you choose.
+                    There is an upcoming holiday/school closure that requires make-up sessions for students. 
+                    <strong>Please enter your available make-up times into NOVA in order for families to automatically schedule with you.</strong> 
+                    You can offer make-up sessions on the day of the school closure if you choose.
                 </p>
 
                 <div style="margin:20px 0; padding:16px; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd;">
@@ -29,6 +31,19 @@
                 <p style="margin:0 0 12px;">
                     If you do not enter in make-up session times, you will be responsible for scheduling make-up sessions directly.
                 </p>
+
+                <div style="margin:24px 0; text-align:center;">
+                    <a href="{{ $availabilityUrl }}"
+                        style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; padding:12px 24px; border-radius:8px; font-size:14px; font-weight:600; white-space:nowrap;">
+                        Enter Available Times
+                    </a>
+                </div>
+
+                <div style="margin:20px 0; padding:10px 14px; border-radius:6px; background:#fafafa; border:1px solid #e5e7eb; border-left:3px solid #f97316;">
+                    <p style="margin:0; font-size:12px; color:#6b7280; line-height:1.6;">
+                        If you have any questions about make-up scheduling, please contact your administrator directly.
+                    </p>
+                </div>
             </td>
         </tr>
         @include('emails.partials.footer')

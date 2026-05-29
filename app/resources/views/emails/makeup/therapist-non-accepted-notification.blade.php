@@ -18,7 +18,7 @@
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
                 <p style="margin:0 0 12px;">
-                    Your student has not accepted a make-up session for the upcoming holiday/school closure. Please enter this as an NBC-Client in the RSM. You can enter this for any date between now and the school closure (including the day of the school closure).
+                    Your student has not accepted a make-up session for the upcoming holiday/school closure. <strong>Please enter this as an NBC-Client in the RSM.</strong> You can enter this for any date between now and the school closure (including the day of the school closure).
                 </p>
 
                 <div style="margin:20px 0; padding:16px; border-radius:10px; background:#fef3c7; border:1px solid #fcd34d;">

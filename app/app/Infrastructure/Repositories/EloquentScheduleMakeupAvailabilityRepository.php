@@ -42,15 +42,11 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
         $window->delete();
     }
 
-    public function therapistHasAvailabilityForDates(User $therapist, array $dates): bool
+    public function therapistHasAvailabilityFromDate(User $therapist, string $fromDate): bool
     {
-        if ($dates === []) {
-            return false;
-        }
-
         return ScheduleMakeupAvailability::query()
             ->forTherapist($therapist)
-            ->whereIn('availability_date', $dates)
+            ->whereDate('availability_date', '>=', $fromDate)
             ->exists();
     }
 
@@ -73,15 +69,11 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
     /**
      * @return Collection<int, ScheduleMakeupAvailability>
      */
-    public function windowsForTherapistOnDates(User $therapist, array $dates): Collection
+    public function windowsForTherapistFromDate(User $therapist, string $fromDate): Collection
     {
-        if ($dates === []) {
-            return new Collection;
-        }
-
         return ScheduleMakeupAvailability::query()
             ->forTherapist($therapist)
-            ->whereIn('availability_date', $dates)
+            ->whereDate('availability_date', '>=', $fromDate)
             ->orderBy('availability_date')
             ->orderBy('start_time')
             ->get();

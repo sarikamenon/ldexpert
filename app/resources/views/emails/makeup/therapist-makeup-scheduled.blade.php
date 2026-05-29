@@ -18,8 +18,25 @@
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
                 <p style="margin:0 0 12px;">
-                    Your student (<strong>{{ $studentDisplayName }}</strong>) has scheduled a make-up session based on your NOVA availability on <strong>{{ $scheduledDateTime }}</strong>.
+                    Your student <strong>{{ $studentDisplayName }}</strong> has scheduled a make-up session based on your availability.
                 </p>
+
+                <div style="margin:20px 0; padding:16px; border-radius:10px; background:#f0fdf4; border:1px solid #bbf7d0;">
+                    <p style="margin:0 0 8px; color:#166534;"><strong>Session Details</strong></p>
+                    <p style="margin:0; color:#166534; font-size:14px;">
+                        <strong>{{ $scheduledDateTime }}</strong>
+                    </p>
+                </div>
+
+                <p style="margin:0 0 12px;">
+                    The session has been added to your calendar. Please ensure you're available at the scheduled time.
+                </p>
+
+                <div style="margin:20px 0; padding:10px 14px; border-radius:6px; background:#fafafa; border:1px solid #e5e7eb; border-left:3px solid #f97316;">
+                    <p style="margin:0; font-size:12px; color:#6b7280; line-height:1.6;">
+                        If you have any questions or need to reschedule, please contact the parent or administrator directly.
+                    </p>
+                </div>
             </td>
         </tr>
         @include('emails.partials.footer')

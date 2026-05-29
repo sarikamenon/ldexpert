@@ -70,6 +70,30 @@ final class MakeupRequestPresenter
     }
 
     /**
+     * Render the session with service name for parent-facing emails/pages.
+     * Format: "Service Name — Jun 04, 2026, 3:00 PM–3:30 PM (EST)"
+     */
+    public function sessionLabelWithService(ScheduleMakeupRequest $request): string
+    {
+        $serviceName = $request->schedule?->service->name ?? 'Session';
+        $sessionLabel = $this->sessionLabel($request);
+
+        return "{$serviceName} — {$sessionLabel}";
+    }
+
+    /**
+     * @param  Collection<int, ScheduleMakeupRequest>  $batch
+     * @return array<int, string>
+     */
+    public function sessionLabelsWithService(Collection $batch): array
+    {
+        return $batch
+            ->map(fn (ScheduleMakeupRequest $row): string => $this->sessionLabelWithService($row))
+            ->values()
+            ->all();
+    }
+
+    /**
      * Build the fully-shaped payload for the therapist `_detail` Blade view.
      * All date formatting, status banners, and policy checks are resolved
      * here so the view contains no `@php` data-shaping.
@@ -117,7 +141,7 @@ final class MakeupRequestPresenter
             'decline_banner_title' => $isAutoDecline ? 'Auto-declined — no response from parent' : 'Manually declined',
             'decline_banner_sub' => $this->declineBannerSub($request, $isAutoDecline, $respondedShort),
             'reason' => $request->reason,
-            'makeup_schedule' => $this->makeupSchedulePayload($request->makeupSchedule, $dateLong, $dateShort),
+            'makeup_schedule' => $this->makeupSchedulePayload($request->makeupSchedule, $viewerTz, $dateLong, $dateShort),
             'can_decline' => $viewer?->can('decline', $request) ?? false,
             'can_book' => $viewer?->can('book', $request) ?? false,
             'can_mark_not_required' => $viewer?->can('markNotRequired', $request) ?? false,
@@ -216,23 +240,25 @@ final class MakeupRequestPresenter
     /**
      * @return array<string, mixed>|null
      */
-    private function makeupSchedulePayload(?Schedule $schedule, string $dateLong, string $dateShort): ?array
+    private function makeupSchedulePayload(?Schedule $schedule, string $viewerTz, string $dateLong, string $dateShort): ?array
     {
         if ($schedule === null) {
             return null;
         }
 
         $timeFormat = (string) config('display.time');
-        $start = $schedule->start_time;
-        $end = $schedule->end_time;
+        // schedule_date/start_time/end_time are stored in UTC — convert to the
+        // viewer's timezone before display so this matches the calendar.
+        $start = $schedule->localStart($viewerTz);
+        $end = $schedule->localEnd($viewerTz);
         $duration = (int) $start->diffInMinutes($end);
         $timeRange = $start->format($timeFormat).' – '.$end->format($timeFormat);
         $meta = collect([$timeRange, $duration.' minutes'])->filter()->join(' · ');
 
         return [
             'id' => $schedule->id,
-            'date' => $schedule->schedule_date->format($dateLong),
-            'date_short' => $schedule->schedule_date->format($dateShort),
+            'date' => $start->format($dateLong),
+            'date_short' => $start->format($dateShort),
             'start_time' => $start->format($timeFormat),
             'end_time' => $end->format($timeFormat),
             'duration_minutes' => $duration,

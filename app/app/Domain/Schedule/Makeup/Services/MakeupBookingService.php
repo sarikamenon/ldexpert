@@ -145,10 +145,9 @@ final class MakeupBookingService
             return [];
         }
 
-        $eventDate = $makeupRequest->event_date->format('Y-m-d');
         $duration = $schedule->durationMinutes();
 
-        $windows = $this->availabilityRepo->windowsForTherapistOnDates($therapist, [$eventDate]);
+        $windows = $this->availabilityRepo->windowsForTherapistFromDate($therapist, $makeupRequest->event_date->toDateString());
 
         if ($windows->isEmpty()) {
             return [];

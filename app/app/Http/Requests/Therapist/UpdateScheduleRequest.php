@@ -68,6 +68,7 @@ final class UpdateScheduleRequest extends FormRequest
             'sub_invitee_ids.*' => ['integer', Rule::exists('users', 'id')],
             'request_sub' => ['nullable', 'boolean'],
             'sub_reason' => ['required_if:request_sub,1', 'nullable', 'string', 'max:1000'],
+            'makeup_request_id' => ['nullable', 'integer'],
         ];
     }
 

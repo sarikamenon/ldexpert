@@ -56,6 +56,7 @@
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,
                 'scheduleLocalEndTime' => $scheduleLocalEndTime,
                 'subPanel' => $subPanel ?? null,
+                'makeupRequestId' => $makeupRequestId ?? null,
             ])
         </div>
     </div>

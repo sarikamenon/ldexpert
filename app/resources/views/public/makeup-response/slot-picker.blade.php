@@ -14,6 +14,8 @@
         h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; text-align: center; }
         .subtitle { color: #64748b; font-size: 14px; margin-bottom: 24px; text-align: center; }
         .error-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; }
+        .conflict-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 14px; }
+        .conflict-banner:empty { display: none; }
         .session-group { margin-bottom: 20px; }
         .session-label { font-size: 13px; color: #64748b; margin-bottom: 4px; }
         .session-missed { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
@@ -47,7 +49,7 @@
         </div>
 
         <h1>Select Make-Up Time</h1>
-        <p class="subtitle">Pick an available time slot for {{ $batch->count() === 1 ? 'your missed session' : 'each missed session' }}.</p>
+        <p class="subtitle">Pick an available time slot for {{ $batch->count() === 1 ? 'your session' : 'each session' }}.</p>
 
         @if ($error)
             <div class="error-banner">{{ $error }}</div>
@@ -64,6 +66,8 @@
             </div>
         </div>
 
+        <div class="conflict-banner" id="conflict-banner" role="alert"></div>
+
         <form method="POST" action="{{ $submitUrl }}" id="slot-form">
 
             @foreach ($rows as $index => $row)
@@ -72,14 +76,14 @@
                 @endif
 
                 <div class="session-group">
-                    <div class="session-label">Missed session</div>
+                    <div class="session-label">Session to reschedule</div>
                     <div class="session-missed">{{ $row['label'] }}</div>
 
                     @if (count($row['slots']) > 0)
-                        <select name="slots[{{ $row['request']->id }}]" class="slot-select" required>
+                        <select name="slots[{{ $row['request']->id }}]" class="slot-select" data-duration="{{ $row['duration'] }}" required>
                             <option value="">Choose a time…</option>
                             @foreach ($row['slots'] as $slot)
-                                <option value="{{ $slot['value'] }}">{{ $slot['label'] }}</option>
+                                <option value="{{ $slot['value'] }}" data-end="{{ $slot['endUtc'] }}">{{ $slot['label'] }}</option>
                             @endforeach
                         </select>
                     @else
@@ -92,6 +96,86 @@
 
             <button type="submit" class="btn btn-primary">Confirm Make-Up Session</button>
         </form>
+
+        <script>
+            const form = document.getElementById('slot-form');
+            const selects = form.querySelectorAll('select.slot-select');
+
+            function getSelectedSlotInfo(select) {
+                if (!select.value) return null;
+                const option = select.options[select.selectedIndex];
+                return {
+                    startUtc: select.value,
+                    endUtc: option.dataset.end,
+                    selectElement: select,
+                };
+            }
+
+            function intervalsOverlap(start1, end1, start2, end2) {
+                const s1 = new Date(start1).getTime();
+                const e1 = new Date(end1).getTime();
+                const s2 = new Date(start2).getTime();
+                const e2 = new Date(end2).getTime();
+                return s1 < e2 && s2 < e1;
+            }
+
+            function checkForConflicts() {
+                const selectedSlots = [];
+
+                for (const select of selects) {
+                    const slot = getSelectedSlotInfo(select);
+                    if (slot) {
+                        selectedSlots.push(slot);
+                    }
+                }
+
+                for (let i = 0; i < selectedSlots.length; i++) {
+                    for (let j = i + 1; j < selectedSlots.length; j++) {
+                        const slot1 = selectedSlots[i];
+                        const slot2 = selectedSlots[j];
+
+                        // Check if slots overlap
+                        if (intervalsOverlap(slot1.startUtc, slot1.endUtc, slot2.startUtc, slot2.endUtc)) {
+                            return { hasConflict: true, reason: 'Selected time slots overlap. Please choose non-overlapping times for each session.' };
+                        }
+                    }
+                }
+
+                return { hasConflict: false, reason: '' };
+            }
+
+            const conflictBanner = document.getElementById('conflict-banner');
+
+            function showConflictError(message) {
+                conflictBanner.textContent = message;
+            }
+
+            function clearConflictError() {
+                conflictBanner.textContent = '';
+            }
+
+            form.addEventListener('submit', function(e) {
+                const conflict = checkForConflicts();
+
+                if (conflict.hasConflict) {
+                    e.preventDefault();
+                    showConflictError(conflict.reason);
+                    window.scrollTo(0, 0);
+                }
+            });
+
+            for (const select of selects) {
+                select.addEventListener('change', function() {
+                    const conflict = checkForConflicts();
+
+                    if (conflict.hasConflict) {
+                        showConflictError(conflict.reason);
+                    } else {
+                        clearConflictError();
+                    }
+                });
+            }
+        </script>
 
         <p class="footer">Having trouble? Contact your therapist directly.</p>
     </div>

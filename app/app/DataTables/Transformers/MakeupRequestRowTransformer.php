@@ -13,14 +13,14 @@ final class MakeupRequestRowTransformer
     /**
      * @return array<int, string>
      */
-    public static function transform(ScheduleMakeupRequest $row, User $viewer): array
+    public static function transform(ScheduleMakeupRequest $row, User $viewer, string $viewerTz): array
     {
         return [
             self::dateCell($row),
             self::studentCell($row),
             self::serviceCell($row),
             self::closureCell($row),
-            self::statusCell($row),
+            self::statusCell($row, $viewerTz),
             self::reasonCell($row),
             self::actionsCell($row, $viewer),
         ];
@@ -75,7 +75,7 @@ final class MakeupRequestRowTransformer
         return '<span class="text-sm text-foreground/80">'.e($title).'</span>';
     }
 
-    private static function statusCell(ScheduleMakeupRequest $row): string
+    private static function statusCell(ScheduleMakeupRequest $row, string $viewerTz): string
     {
         $label = $row->status->label();
         $classes = match ($row->status) {
@@ -93,8 +93,11 @@ final class MakeupRequestRowTransformer
 
         if ($row->status === ScheduleMakeupRequestStatus::SCHEDULED && $row->makeup_schedule_id !== null) {
             $schedule = $row->makeupSchedule;
-            $date = $schedule?->schedule_date?->format((string) config('display.date'));
-            $startTime = $schedule?->start_time?->format('g:i A');
+            // schedule_date/start_time are stored in UTC — convert to the
+            // viewer's timezone so this matches the schedule calendar.
+            $localStart = $schedule?->localStart($viewerTz);
+            $date = $localStart?->format((string) config('display.date'));
+            $startTime = $localStart?->format('g:i A');
             $label = trim(($date ?? '').($startTime !== null ? ', '.$startTime : ''));
 
             if ($label !== '') {

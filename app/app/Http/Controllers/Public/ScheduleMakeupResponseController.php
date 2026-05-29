@@ -60,14 +60,14 @@ final class ScheduleMakeupResponseController extends Controller
             return $this->viewForReason($e->reason, $batch);
         }
 
-        $eventDates = $this->eventDates($batch);
+        $earliestEventDate = $this->earliestEventDate($batch);
 
         /** @var ScheduleMakeupRequest $head */
         $head = $batch->first();
         /** @var \App\Models\User $therapist */
         $therapist = $head->therapist;
 
-        if ($this->availabilityRepo->therapistHasAvailabilityForDates($therapist, $eventDates)) {
+        if ($this->availabilityRepo->therapistHasAvailabilityFromDate($therapist, $earliestEventDate)) {
             return $this->showSlotPicker($batch, $token);
         }
 
@@ -195,7 +195,7 @@ final class ScheduleMakeupResponseController extends Controller
         $timeFormat = (string) config('display.time');
         $dateFormat = (string) config('display.date');
 
-        /** @var array<int, array{request: ScheduleMakeupRequest, label: string, slots: array<int, array{value: string, label: string}>}> $rows */
+        /** @var array<int, array{request: ScheduleMakeupRequest, label: string, duration: int, slots: array<int, array{value: string, label: string, endUtc: string}>}> $rows */
         $rows = [];
 
         foreach ($batch as $row) {
@@ -212,6 +212,7 @@ final class ScheduleMakeupResponseController extends Controller
             foreach ($startTimes as $startUtc) {
                 $localStart = $startUtc->setTimezone($studentTz);
                 $localEnd = $localStart->addMinutes($duration);
+                $endUtc = $startUtc->addMinutes($duration);
                 $formattedSlots[] = [
                     'value' => $startUtc->format('Y-m-d H:i:s'),
                     'label' => sprintf(
@@ -220,12 +221,14 @@ final class ScheduleMakeupResponseController extends Controller
                         $localStart->format($timeFormat),
                         $localEnd->format($timeFormat),
                     ),
+                    'endUtc' => $endUtc->format('Y-m-d H:i:s'),
                 ];
             }
 
             $rows[] = [
                 'request' => $row,
-                'label' => $this->presenter->sessionLabel($row),
+                'label' => $this->presenter->sessionLabelWithService($row),
+                'duration' => $duration,
                 'slots' => $formattedSlots,
             ];
         }
@@ -240,6 +243,7 @@ final class ScheduleMakeupResponseController extends Controller
             'submitUrl' => $submitUrl,
             'error' => $error,
             'studentTimezone' => $this->timezoneAbbreviation($studentTz),
+            'sessionLabels' => $this->presenter->sessionLabelsWithService($batch),
         ]);
     }
 
@@ -346,16 +350,16 @@ final class ScheduleMakeupResponseController extends Controller
     }
 
     /**
+     * Earliest event (missed-session) date across the batch. A make-up may be
+     * booked on any therapist availability from this date onward.
+     *
      * @param  Collection<int, ScheduleMakeupRequest>  $batch
-     * @return array<int, string>
      */
-    private function eventDates(Collection $batch): array
+    private function earliestEventDate(Collection $batch): string
     {
         return $batch
             ->map(fn (ScheduleMakeupRequest $row): string => $row->event_date->toDateString())
-            ->unique()
-            ->values()
-            ->all();
+            ->min();
     }
 
     /**

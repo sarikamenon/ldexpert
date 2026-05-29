@@ -8,7 +8,7 @@
 
     <div class="detail">
         <div class="row">
-            <span class="label">{{ $batch->count() === 1 ? 'Missed session' : 'Missed sessions' }}</span>
+            <span class="label">{{ $batch->count() === 1 ? 'Session to reschedule' : 'Sessions to reschedule' }}</span>
             <span class="value">
                 @foreach ($sessionLabels as $label)
                     {{ $label }}@if (! $loop->last)<br>@endif
