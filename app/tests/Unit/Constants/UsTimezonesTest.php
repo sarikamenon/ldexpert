@@ -2,42 +2,42 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Constants;
-
 use App\Constants\UsTimezones;
-use PHPUnit\Framework\TestCase;
 
-final class UsTimezonesTest extends TestCase
-{
-    public function test_resolve_from_input_accepts_timezone_key(): void
-    {
-        $this->assertSame('America/New_York', UsTimezones::resolveFromInput('America/New_York'));
-        $this->assertSame('America/Chicago', UsTimezones::resolveFromInput('America/Chicago'));
-        $this->assertSame('Pacific/Honolulu', UsTimezones::resolveFromInput('Pacific/Honolulu'));
-    }
+it('resolves from input by timezone key', function () {
+    expect(UsTimezones::resolveFromInput('America/New_York'))->toBe('America/New_York');
+    expect(UsTimezones::resolveFromInput('America/Chicago'))->toBe('America/Chicago');
+    expect(UsTimezones::resolveFromInput('Pacific/Honolulu'))->toBe('Pacific/Honolulu');
+    expect(UsTimezones::resolveFromInput('Asia/Karachi'))->toBe('Asia/Karachi');
+    expect(UsTimezones::resolveFromInput('Europe/Istanbul'))->toBe('Europe/Istanbul');
+    expect(UsTimezones::resolveFromInput('Europe/London'))->toBe('Europe/London');
+});
 
-    public function test_resolve_from_input_accepts_display_label(): void
-    {
-        $this->assertSame('America/New_York', UsTimezones::resolveFromInput('Eastern Time (ET)'));
-        $this->assertSame('America/Chicago', UsTimezones::resolveFromInput('Central Time (CT)'));
-        $this->assertSame('America/Los_Angeles', UsTimezones::resolveFromInput('Pacific Time (PT)'));
-    }
+it('resolves from input by display label', function () {
+    expect(UsTimezones::resolveFromInput('Eastern Time (ET)'))->toBe('America/New_York');
+    expect(UsTimezones::resolveFromInput('Central Time (CT)'))->toBe('America/Chicago');
+    expect(UsTimezones::resolveFromInput('Pacific Time (PT)'))->toBe('America/Los_Angeles');
+    expect(UsTimezones::resolveFromInput('Islamabad, Karachi (UTC+5:00)'))->toBe('Asia/Karachi');
+    expect(UsTimezones::resolveFromInput('Istanbul (UTC+3:00)'))->toBe('Europe/Istanbul');
+});
 
-    public function test_resolve_from_input_returns_null_for_empty(): void
-    {
-        $this->assertNull(UsTimezones::resolveFromInput(null));
-        $this->assertNull(UsTimezones::resolveFromInput(''));
-        $this->assertNull(UsTimezones::resolveFromInput('   '));
-    }
+it('returns null for empty input', function () {
+    expect(UsTimezones::resolveFromInput(null))->toBeNull();
+    expect(UsTimezones::resolveFromInput(''))->toBeNull();
+    expect(UsTimezones::resolveFromInput('   '))->toBeNull();
+});
 
-    public function test_resolve_from_input_returns_null_for_invalid(): void
-    {
-        $this->assertNull(UsTimezones::resolveFromInput('Invalid/Timezone'));
-        $this->assertNull(UsTimezones::resolveFromInput('Some Random Label'));
-    }
+it('returns null for invalid input', function () {
+    expect(UsTimezones::resolveFromInput('Invalid/Timezone'))->toBeNull();
+    expect(UsTimezones::resolveFromInput('Some Random Label'))->toBeNull();
+});
 
-    public function test_resolve_from_input_trims_whitespace(): void
-    {
-        $this->assertSame('America/New_York', UsTimezones::resolveFromInput('  Eastern Time (ET)  '));
-    }
-}
+it('trims whitespace before resolving', function () {
+    expect(UsTimezones::resolveFromInput('  Eastern Time (ET)  '))->toBe('America/New_York');
+});
+
+it('returns a label for the new timezones', function () {
+    expect(UsTimezones::getTimezoneLabel('Asia/Karachi'))->toBe('Islamabad, Karachi (UTC+5:00)');
+    expect(UsTimezones::getTimezoneLabel('Europe/Istanbul'))->toBe('Istanbul (UTC+3:00)');
+    expect(UsTimezones::getTimezoneLabel('Europe/London'))->toBe('Dublin, Edinburgh, Lisbon, London (UTC+0:00)');
+});

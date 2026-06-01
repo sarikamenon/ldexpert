@@ -15,6 +15,9 @@ class UsTimezones
         'America/Anchorage' => 'Alaska Time (AKT)',
         'America/Adak' => 'Hawaii-Aleutian Time (HAT)',
         'Pacific/Honolulu' => 'Hawaii Time (HT)',
+        'Asia/Karachi' => 'Islamabad, Karachi (UTC+5:00)',
+        'Europe/Istanbul' => 'Istanbul (UTC+3:00)',
+        'Europe/London' => 'Dublin, Edinburgh, Lisbon, London (UTC+0:00)',
     ];
 
     /**

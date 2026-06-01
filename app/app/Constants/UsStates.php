@@ -58,6 +58,13 @@ class UsStates
         'WI' => 'Wisconsin',
         'WY' => 'Wyoming',
         'DC' => 'District of Columbia',
+        'KHI' => 'Karachi',
+        'ISB' => 'Islamabad',
+        'IST' => 'Istanbul',
+        'LDN' => 'London',
+        'EDI' => 'Edinburgh',
+        'DUB' => 'Dublin',
+        'LIS' => 'Lisbon',
     ];
 
     /**
