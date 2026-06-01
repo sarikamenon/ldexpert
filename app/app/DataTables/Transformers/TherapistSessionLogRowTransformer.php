@@ -96,6 +96,15 @@ final class TherapistSessionLogRowTransformer
             $buttons[] = ActionButtons::submit(route('therapist.session-logs.submit', $log));
         }
 
+        if ($log->status?->canDelete()) {
+            $buttons[] = ActionButtons::delete(
+                route('therapist.session-logs.destroy', $log),
+                'Delete',
+                'Delete session log?',
+                'This will remove the session log and make the session available to log again.',
+            );
+        }
+
         $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [

@@ -92,6 +92,15 @@ final class SessionLogRowTransformer
             $buttons[] = ActionButtons::sendBack(route('admin.session-logs.show', $log).'#send-back-form');
         }
 
+        if ($log->status?->canDelete()) {
+            $buttons[] = ActionButtons::delete(
+                route('admin.session-logs.destroy', $log),
+                'Delete',
+                'Delete session log?',
+                'This will remove the session log and make the session available to log again.',
+            );
+        }
+
         $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [

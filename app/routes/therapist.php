@@ -115,6 +115,7 @@ Route::middleware('role:therapist')
             Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
             Route::post('{sessionLog}/submit', [SessionLogController::class, 'submit'])->name('submit');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
+            Route::delete('{sessionLog}', [SessionLogController::class, 'destroy'])->name('destroy');
             Route::post('{sessionLog}/comment', [SessionLogController::class, 'addComment'])->name('comment');
 
             // Session Log Documents

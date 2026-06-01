@@ -2,25 +2,27 @@ import { initDataTable, initServerSideDataTable, loadDataTablesLibrary } from '.
 import { confirmDialog } from '../common/sweetalert';
 
 const bindConfirmations = () => {
-    document.querySelectorAll('button[data-confirm-title]').forEach((button) => {
-        const form = button.closest('form');
-        if (!form || button.dataset.confirmBound === 'true') {
+    document.querySelectorAll('form[data-confirm-title]').forEach((form) => {
+        if (form.dataset.confirmBound === 'true') {
             return;
         }
 
-        button.dataset.confirmBound = 'true';
+        form.dataset.confirmBound = 'true';
 
-        button.addEventListener('click', async (event) => {
+        form.addEventListener('submit', async (event) => {
+            if (form.dataset.confirmed === 'true') return;
+
             event.preventDefault();
 
             const result = await confirmDialog({
-                title: button.dataset.confirmTitle || 'Are you sure?',
-                text: button.dataset.confirmText || '',
-                icon: button.dataset.confirmIcon || 'question',
+                title: form.dataset.confirmTitle || 'Are you sure?',
+                text: form.dataset.confirmText || '',
+                icon: form.dataset.confirmIcon || 'warning',
                 confirmButtonText: 'Yes',
             });
 
             if (result.isConfirmed) {
+                form.dataset.confirmed = 'true';
                 form.submit();
             }
         });
@@ -81,28 +83,32 @@ async function initServerSideSessionLogsTable() {
     }
 }
 
-// Event delegation for confirm dialogs on AJAX-loaded rows
+// Event delegation for confirm dialogs on AJAX-loaded rows. Confirmation
+// metadata lives on the <form data-confirm-*> wrapping the submit button,
+// so we intercept the form's submit event (capture phase).
 function bindDelegatedConfirmations() {
-    document.body.addEventListener('click', async (event) => {
-        const button = event.target.closest('#sessionLogsTable button[data-confirm-title]');
-        if (!button) return;
+    document.body.addEventListener(
+        'submit',
+        async (event) => {
+            const form = event.target.closest('#sessionLogsTable form[data-confirm-title]');
+            if (!form || form.dataset.confirmed === 'true') return;
 
-        const form = button.closest('form');
-        if (!form) return;
+            event.preventDefault();
 
-        event.preventDefault();
+            const result = await confirmDialog({
+                title: form.dataset.confirmTitle || 'Are you sure?',
+                text: form.dataset.confirmText || '',
+                icon: form.dataset.confirmIcon || 'warning',
+                confirmButtonText: 'Yes',
+            });
 
-        const result = await confirmDialog({
-            title: button.dataset.confirmTitle || 'Are you sure?',
-            text: button.dataset.confirmText || '',
-            icon: button.dataset.confirmIcon || 'question',
-            confirmButtonText: 'Yes',
-        });
-
-        if (result.isConfirmed) {
-            form.submit();
-        }
-    });
+            if (result.isConfirmed) {
+                form.dataset.confirmed = 'true';
+                form.submit();
+            }
+        },
+        true,
+    );
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

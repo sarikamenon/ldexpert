@@ -21,6 +21,7 @@ use App\Models\SessionLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 final class SessionLogController extends Controller
@@ -209,6 +210,34 @@ final class SessionLogController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function destroy(Request $request, SessionLog $sessionLog): RedirectResponse
+    {
+        $this->authorize('delete', $sessionLog);
+
+        try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->service->deleteSessionLog($user, $sessionLog);
+
+            return redirect()
+                ->route('admin.session-logs.index')
+                ->with('success', 'Session log deleted.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('Admin\SessionLogController: failed to delete session log', [
+                'session_log_id' => $sessionLog->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to delete the session log. Please try again.']);
         }
     }
 }
