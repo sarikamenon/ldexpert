@@ -71,7 +71,7 @@ function renderScheduleDetails(schedule, actionUrls) {
     $content.html(`
         <div class="flex flex-col lg:flex-row min-h-full">
             <aside class="lg:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-border p-6 bg-muted/20">
-                ${buildLeftSidebar(schedule)}
+                ${buildLeftSidebar(schedule, actionUrls)}
             </aside>
             <div class="flex-1 min-w-0 p-6 space-y-6">
                 ${buildSessionStrip(schedule, actionUrls)}
@@ -156,7 +156,7 @@ function badgePill(label, dotCls, textCls, bgCls) {
 /* Left sidebar: student summary + therapist + parent/guardian                */
 /* -------------------------------------------------------------------------- */
 
-function buildLeftSidebar(schedule) {
+function buildLeftSidebar(schedule, actionUrls = {}) {
     const student = schedule.student || {};
     const school = schedule.school || {};
     const therapist = schedule.therapist || {};
@@ -173,6 +173,14 @@ function buildLeftSidebar(schedule) {
 
     const schoolName = school.name && school.name !== '-' ? school.name : '';
 
+    const studentName = escapeHtml(student.name || 'Unknown Student');
+    const studentUrl = typeof actionUrls.studentUrl === 'function' && student.id
+        ? actionUrls.studentUrl(student.id)
+        : null;
+    const studentNameHtml = studentUrl
+        ? `<a href="${escapeHtml(studentUrl)}" target="_blank" rel="noopener" class="text-xl font-semibold text-primary hover:underline leading-tight break-words">${studentName}</a>`
+        : `<h2 class="text-xl font-semibold text-foreground leading-tight break-words">${studentName}</h2>`;
+
     const therapistItems = [
         { label: 'Assigned', value: therapist.name || '-', icon: userIcon('w-4 h-4') },
         { label: 'Timezone', value: schedule.timezone_label || schedule.timezone || '-', icon: clockIcon('w-4 h-4') },
@@ -187,7 +195,7 @@ function buildLeftSidebar(schedule) {
             </div>
 
             <div>
-                <h2 class="text-xl font-semibold text-foreground leading-tight break-words">${escapeHtml(student.name || 'Unknown Student')}</h2>
+                ${studentNameHtml}
                 ${studentMeta ? `<p class="mt-1 text-xs text-foreground/60">${studentMeta}</p>` : ''}
             </div>
 
