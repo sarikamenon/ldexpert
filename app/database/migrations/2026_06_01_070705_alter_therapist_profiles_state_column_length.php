@@ -23,8 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('therapist_profiles', function (Blueprint $table) {
-            $table->string('state', 2)->change();
-        });
+        // Intentionally left empty: narrowing state back to varchar(2) would
+        // truncate any persisted 3-letter international codes.
     }
 };

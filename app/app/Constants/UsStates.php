@@ -6,6 +6,15 @@ namespace App\Constants;
 
 class UsStates
 {
+    /**
+     * Location codes for therapist/student/school/lead records.
+     *
+     * Historically US state codes (2-letter USPS). International therapists are
+     * represented by 3-letter city codes (e.g. KHI = Karachi, LDN = London),
+     * which is why the column is varchar(3) and not constrained to US states.
+     * The "state" naming is retained for backwards compatibility.
+     */
+
     public const STATES = [
         'AL' => 'Alabama',
         'AK' => 'Alaska',
