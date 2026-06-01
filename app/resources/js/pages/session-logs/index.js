@@ -1,32 +1,6 @@
 import { initDataTable, initServerSideDataTable, loadDataTablesLibrary } from '../../common/datatables';
 import { confirmDialog } from '../../common/sweetalert';
 
-const bindConfirmations = () => {
-    document.querySelectorAll('button[data-confirm-title]').forEach((button) => {
-        const form = button.closest('form');
-        if (!form || button.dataset.confirmBound === 'true') {
-            return;
-        }
-
-        button.dataset.confirmBound = 'true';
-
-        button.addEventListener('click', async (event) => {
-            event.preventDefault();
-
-            const result = await confirmDialog({
-                title: button.dataset.confirmTitle || 'Are you sure?',
-                text: button.dataset.confirmText || '',
-                icon: button.dataset.confirmIcon || 'question',
-                confirmButtonText: 'Yes',
-            });
-
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
-    });
-};
-
 document.addEventListener('DOMContentLoaded', async () => {
     await loadDataTablesLibrary();
 
@@ -86,25 +60,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    bindConfirmations();
+    // Delegated handler for AJAX-rendered rows (DataTable action buttons).
+    // Confirmation metadata lives on the <form data-confirm-*> wrapping the
+    // submit button, so we intercept the form's submit event.
+    document.body.addEventListener(
+        'submit',
+        async (event) => {
+            const form = event.target.closest('form[data-confirm-title]');
+            if (!form || form.dataset.confirmed === 'true') return;
 
-    document.body.addEventListener('click', async (event) => {
-        const button = event.target.closest('button[data-confirm-title]');
-        if (!button) return;
-        const form = button.closest('form');
-        if (!form) return;
+            event.preventDefault();
 
-        event.preventDefault();
+            const result = await confirmDialog({
+                title: form.dataset.confirmTitle || 'Are you sure?',
+                text: form.dataset.confirmText || '',
+                icon: form.dataset.confirmIcon || 'warning',
+                confirmButtonText: 'Yes',
+            });
 
-        const result = await confirmDialog({
-            title: button.dataset.confirmTitle || 'Are you sure?',
-            text: button.dataset.confirmText || '',
-            icon: button.dataset.confirmIcon || 'question',
-            confirmButtonText: 'Yes',
-        });
-
-        if (result.isConfirmed) {
-            form.submit();
-        }
-    });
+            if (result.isConfirmed) {
+                form.dataset.confirmed = 'true';
+                form.submit();
+            }
+        },
+        true,
+    );
 });

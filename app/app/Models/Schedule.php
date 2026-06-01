@@ -9,6 +9,7 @@ use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestStatus;
+use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\ScheduleScope;
 use App\Observers\ScheduleObserver;
 use Carbon\Carbon;
@@ -38,7 +39,7 @@ use Illuminate\Support\Collection;
 class Schedule extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleFactory> */
-    use HasFactory, SoftDeletes;
+    use HasAudits, HasFactory, SoftDeletes;
 
     protected $fillable = [
         'therapist_id',
@@ -418,6 +419,11 @@ class Schedule extends Model
     public function isGroup(): bool
     {
         return $this->is_group === true;
+    }
+
+    public function isBilled(): bool
+    {
+        return $this->billing_status === BillingStatus::BILLED;
     }
 
     public function durationMinutes(): int
