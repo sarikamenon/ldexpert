@@ -29,6 +29,7 @@ import { initSelectBoxes } from '../common/select-box';
                 openScheduleDetailsModal(scheduleId, detailsUrl, {
                     editUrl: (id) => `/therapist/schedule/${id}/edit`,
                     billUrl: (id) => `/therapist/session-logs/create/schedule/${id}`,
+                    studentUrl: (id) => `/therapist/students/${id}`,
                 });
             },
             getExtraParams: function () {

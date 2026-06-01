@@ -26,8 +26,10 @@ import { initSelectBoxes } from '../common/select-box';
                 }
 
                 const scheduleId = props.schedule_id;
-                // Admin view is read-only — no action URLs
-                openScheduleDetailsModal(scheduleId, detailsUrl, {});
+                // Admin view is read-only — only the student link is offered
+                openScheduleDetailsModal(scheduleId, detailsUrl, {
+                    studentUrl: (id) => `/admin/students/${id}`,
+                });
             },
             getExtraParams: function () {
                 return {

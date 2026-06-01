@@ -56,7 +56,9 @@ import { openScheduleDetailsModal } from '../common/schedule-modal';
             $(document).on('click', '.schedule-details-view-btn, .schedule-view-session-btn', function () {
                 const scheduleId = $(this).data('schedule-id');
                 if (!scheduleId) return;
-                openScheduleDetailsModal(scheduleId, '/therapist/schedule');
+                openScheduleDetailsModal(scheduleId, '/therapist/schedule', {
+                    studentUrl: (id) => `/therapist/students/${id}`,
+                });
             });
         }
 
