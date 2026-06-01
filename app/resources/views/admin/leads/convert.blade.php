@@ -29,13 +29,22 @@
         <p class="mt-4 text-xs text-foreground/60">Name, date of birth, parent/guardian info, and address will be carried over from the lead. Fill in the required fields below to create the student account.</p>
     </x-ui::card>
 
-    <form method="POST" action="{{ route('admin.leads.convert.store', $lead) }}" class="space-y-6">
+    @if (session('error'))
+        <x-ui::alert variant="error" class="mb-4">{{ session('error') }}</x-ui::alert>
+    @endif
+
+    <form method="POST" action="{{ route('admin.leads.convert.store', $lead) }}" class="space-y-6"
+        data-lead-last-name="{{ $lead->last_name }}"
+        data-lead-parent-name="{{ $lead->parent_guardian_name }}"
+        data-lead-parent-email="{{ $lead->parent_guardian_email }}"
+        data-lead-parent-phone="{{ $lead->parent_guardian_phone }}"
+        data-lead-address="{{ $lead->address }}">
         @csrf
 
         {{-- Required Student Fields --}}
         <x-ui::card class="p-6 space-y-4">
             <h3 class="text-lg font-semibold">Student Account Details</h3>
-            <p class="text-sm text-foreground/60">These fields are required to create a student account. A password will be auto-generated.</p>
+            <p class="text-sm text-foreground/60">Username, email, and timezone are required. A password will be auto-generated.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -57,8 +66,8 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <x-input-label for="school_id" value="School/Family *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="school_help">School or family where the student is enrolled</p>
+                    <x-input-label for="school_id" value="School/Family" />
+                    <p class="mt-1 text-xs text-foreground/60" id="school_help">Pick an existing school/family, or leave empty to create a new one below.</p>
                     <x-ui::select name="school_id" id="school_id" class="mt-1" placeholder="Select School/Family" aria-describedby="school_help">
                         <option value="">Select School/Family</option>
                         @foreach ($schools as $school)
@@ -71,8 +80,8 @@
                 </div>
 
                 <div>
-                    <x-input-label for="id_number" value="Student ID *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="id_number_help">Unique student identifier from the school or family</p>
+                    <x-input-label for="id_number" value="Student ID" />
+                    <p class="mt-1 text-xs text-foreground/60" id="id_number_help">Required for non-private schools. Auto-generated for private families if left blank.</p>
                     <x-ui::input id="id_number" name="id_number" type="text" class="mt-1 block w-full"
                         :value="old('id_number')" aria-describedby="id_number_help" />
                     <x-input-error :messages="$errors->get('id_number')" class="mt-2" />
@@ -86,7 +95,7 @@
                     <x-ui::select name="timezone" id="timezone" class="mt-1" placeholder="Select Timezone" aria-describedby="tz_help">
                         <option value="">Select Timezone</option>
                         @foreach ($timezones as $tz => $label)
-                            <option value="{{ $tz }}" @selected(old('timezone') === $tz)>
+                            <option value="{{ $tz }}" @selected(old('timezone', 'America/New_York') === $tz)>
                                 {{ $label }}
                             </option>
                         @endforeach
@@ -95,7 +104,7 @@
                 </div>
 
                 <div>
-                    <x-input-label for="grade_level" value="Grade Level *" />
+                    <x-input-label for="grade_level" value="Grade Level" />
                     <p class="mt-1 text-xs text-foreground/60" id="grade_help">Current grade level</p>
                     <x-ui::input id="grade_level" name="grade_level" type="text" class="mt-1 block w-full"
                         :value="old('grade_level', $lead->grade_level ?? '')" aria-describedby="grade_help" />
@@ -103,7 +112,7 @@
                 </div>
 
                 <div>
-                    <x-input-label for="gender" value="Gender *" />
+                    <x-input-label for="gender" value="Gender" />
                     <p class="mt-1 text-xs text-foreground/60" id="gender_help">Student's gender identity</p>
                     <x-ui::select id="gender" name="gender" class="mt-1" placeholder="Select Gender" aria-describedby="gender_help">
                         <option value="">Select Gender</option>
@@ -119,7 +128,7 @@
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <x-input-label for="city" value="City *" />
+                    <x-input-label for="city" value="City" />
                     <p class="mt-1 text-xs text-foreground/60" id="city_help">City name</p>
                     <x-ui::input id="city" name="city" type="text" class="mt-1 block w-full"
                         :value="old('city', $lead->city ?? '')" aria-describedby="city_help" />
@@ -127,7 +136,7 @@
                 </div>
 
                 <div>
-                    <x-input-label for="state" value="State *" />
+                    <x-input-label for="state" value="State" />
                     <p class="mt-1 text-xs text-foreground/60" id="state_help">US state</p>
                     <x-ui::select name="state" id="state" class="mt-1" placeholder="Select State" aria-describedby="state_help">
                         <option value="">Select State</option>
@@ -141,7 +150,7 @@
                 </div>
 
                 <div>
-                    <x-input-label for="zip_code" value="ZIP Code *" />
+                    <x-input-label for="zip_code" value="ZIP Code" />
                     <p class="mt-1 text-xs text-foreground/60" id="zip_help">ZIP or postal code</p>
                     <x-ui::input id="zip_code" name="zip_code" type="text" class="mt-1 block w-full"
                         :value="old('zip_code', $lead->zip_code ?? '')" aria-describedby="zip_help" />
@@ -160,6 +169,160 @@
             </div>
         </x-ui::card>
 
+        {{-- New School/Family Details (shown when no existing school is picked; collapsed by default) --}}
+        <x-ui::card id="new_family_panel" class="p-6"
+            style="{{ old('school_id', $lead->school_id) ? 'display:none' : '' }}">
+            <button type="button" id="new_family_toggle"
+                class="flex w-full items-center justify-between text-left"
+                aria-expanded="{{ $errors->has('family_name') || $errors->has('family_state') || $errors->has('family_timezone') || $errors->has('family_school_type') ? 'true' : 'false' }}"
+                aria-controls="new_family_body">
+                <span>
+                    <span class="block text-lg font-semibold">New School/Family Details</span>
+                    <span class="block text-sm text-foreground/60">No existing school selected — a new one will be created from this lead. Click to review and edit.</span>
+                </span>
+                <svg id="new_family_chevron" class="w-5 h-5 shrink-0 text-foreground/60 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+
+            <div id="new_family_body" class="mt-4 space-y-4"
+                style="{{ $errors->has('family_name') || $errors->has('family_state') || $errors->has('family_timezone') || $errors->has('family_school_type') ? '' : 'display:none' }}">
+                <x-ui::checkbox-row
+                    name="create_private_family"
+                    id="create_private_family"
+                    label="Private family"
+                    subtext="Check if this is a private family (not a district school). Student ID is auto-generated for private families."
+                    :checked="old('create_private_family', false)"
+                />
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="family_name" value="School/Family Name *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="family_name_help">Display name for the new school/family</p>
+                    <x-ui::input id="family_name" name="family_name" type="text" class="mt-1 block w-full"
+                        :value="old('family_name')" aria-describedby="family_name_help" />
+                    <x-input-error :messages="$errors->get('family_name')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="family_school_type" value="Type *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="family_type_help">Family placement type</p>
+                    <x-ui::select id="family_school_type" name="family_school_type" class="mt-1" aria-describedby="family_type_help">
+                        @foreach ($schoolTypes as $type)
+                            <option value="{{ $type->value }}" @selected(old('family_school_type', \App\Enums\SchoolType::VIRTUAL->value) === $type->value)>
+                                {{ $type->value }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('family_school_type')" class="mt-2" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="family_state" value="State *" />
+                    <x-ui::select name="family_state" id="family_state" class="mt-1" placeholder="Select State">
+                        <option value="">Select State</option>
+                        @foreach ($states as $code => $name)
+                            <option value="{{ $code }}" @selected(old('family_state', $lead->state ?? '') === $code)>
+                                {{ $name }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('family_state')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="family_timezone" value="Timezone *" />
+                    <x-ui::select name="family_timezone" id="family_timezone" class="mt-1" placeholder="Select Timezone">
+                        <option value="">Select Timezone</option>
+                        @foreach ($timezones as $tz => $label)
+                            <option value="{{ $tz }}" @selected(old('family_timezone', 'America/New_York') === $tz)>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('family_timezone')" class="mt-2" />
+                </div>
+            </div>
+
+            <div>
+                <x-input-label for="family_address" value="Address" />
+                <textarea id="family_address" name="family_address" rows="2"
+                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('family_address', $lead->address ?? '') }}</textarea>
+                <x-input-error :messages="$errors->get('family_address')" class="mt-2" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <x-input-label for="family_contact_first_name" value="Contact First Name" />
+                    <x-ui::input id="family_contact_first_name" name="family_contact_first_name" type="text"
+                        class="mt-1 block w-full" :value="old('family_contact_first_name')" />
+                    <x-input-error :messages="$errors->get('family_contact_first_name')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="family_contact_last_name" value="Contact Last Name" />
+                    <x-ui::input id="family_contact_last_name" name="family_contact_last_name" type="text"
+                        class="mt-1 block w-full" :value="old('family_contact_last_name')" />
+                    <x-input-error :messages="$errors->get('family_contact_last_name')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="family_contact_phone" value="Contact Phone" />
+                    <x-ui::input id="family_contact_phone" name="family_contact_phone" type="text"
+                        class="mt-1 block w-full" placeholder="123-456-7890"
+                        :value="old('family_contact_phone', $lead->parent_guardian_phone ?? '')" />
+                    <x-input-error :messages="$errors->get('family_contact_phone')" class="mt-2" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <x-input-label for="family_contact_email" value="Contact Email" />
+                    <x-ui::input id="family_contact_email" name="family_contact_email" type="email"
+                        class="mt-1 block w-full" :value="old('family_contact_email', $lead->parent_guardian_email ?? '')" />
+                    <x-input-error :messages="$errors->get('family_contact_email')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="family_invoice_email" value="Invoice Email" />
+                    <x-ui::input id="family_invoice_email" name="family_invoice_email" type="email"
+                        class="mt-1 block w-full" :value="old('family_invoice_email')" />
+                    <x-input-error :messages="$errors->get('family_invoice_email')" class="mt-2" />
+                </div>
+            </div>
+
+            <div>
+                <x-input-label for="family_external_emr_name" value="External EMR Name" />
+                <x-ui::input id="family_external_emr_name" name="family_external_emr_name" type="text"
+                    class="mt-1 block w-full" :value="old('family_external_emr_name')" />
+                <x-input-error :messages="$errors->get('family_external_emr_name')" class="mt-2" />
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+                <x-ui::checkbox-row
+                    name="family_is_auto_extend"
+                    label="Auto-extend contract and SSAs"
+                    subtext="Extend by 1 year on expiry date"
+                    :checked="old('family_is_auto_extend', false)"
+                />
+                <x-ui::checkbox-row
+                    name="family_non_billable_scheduling"
+                    label="Exclude from past sessions queue"
+                    subtext="Skip post-session log submission"
+                    :checked="old('family_non_billable_scheduling', false)"
+                />
+                <x-ui::checkbox-row
+                    name="family_allow_weekend_scheduling"
+                    label="Allow weekend scheduling"
+                    subtext="Saturdays and Sundays available"
+                    :checked="old('family_allow_weekend_scheduling', false)"
+                />
+            </div>
+            </div>{{-- /#new_family_body --}}
+        </x-ui::card>
+
         <div class="flex items-center justify-end gap-3">
             <a href="{{ route('admin.leads.show', $lead) }}">
                 <x-ui::button variant="secondary">Cancel</x-ui::button>
@@ -167,4 +330,6 @@
             <x-ui::button type="submit">Convert to Student</x-ui::button>
         </div>
     </form>
+
+    @vite(['resources/js/pages/admin-leads-convert.js'])
 </x-admin.layouts.app>

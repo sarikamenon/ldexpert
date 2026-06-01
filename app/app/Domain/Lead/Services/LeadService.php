@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Lead\Services;
 
 use App\Domain\Lead\Repositories\LeadRepositoryInterface;
+use App\Domain\School\Services\SchoolService;
 use App\Domain\Student\Services\StudentService;
 use App\DTOs\ChangeLeadStatusDTO;
 use App\DTOs\ConvertLeadDTO;
@@ -18,12 +19,14 @@ use App\Models\LeadNote;
 use App\Models\StudentProfile;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Support\Facades\DB;
 
 final class LeadService
 {
     public function __construct(
         private readonly LeadRepositoryInterface $repository,
         private readonly StudentService $studentService,
+        private readonly SchoolService $schoolService,
     ) {}
 
     public function create(CreateLeadDTO $dto): Lead
@@ -62,16 +65,25 @@ final class LeadService
 
     public function convertToStudent(Lead $lead, ConvertLeadDTO $dto): StudentProfile
     {
-        $studentDTO = $dto->toCreateStudentDTO($lead);
-        $profile = $this->studentService->create($studentDTO);
+        return DB::transaction(function () use ($lead, $dto): StudentProfile {
+            $schoolId = $dto->schoolId;
 
-        $this->repository->update($lead, [
-            'status' => LeadStatus::ENROLLED->value,
-            'converted_student_id' => $profile->user_id,
-            'converted_at' => Carbon::now(),
-        ]);
+            if ($schoolId === null) {
+                $school = $this->schoolService->createSchool($dto->toCreateSchoolDTO());
+                $schoolId = (int) $school->id;
+            }
 
-        return $profile;
+            $studentDTO = $dto->toCreateStudentDTO($lead, $schoolId);
+            $profile = $this->studentService->create($studentDTO);
+
+            $this->repository->update($lead, [
+                'status' => LeadStatus::ENROLLED->value,
+                'converted_student_id' => $profile->user_id,
+                'converted_at' => Carbon::now(),
+            ]);
+
+            return $profile;
+        });
     }
 
     public function find(int $id): ?Lead
