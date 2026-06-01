@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Constants;
 
+use Illuminate\Support\Carbon;
+
 class UsTimezones
 {
     public const TIMEZONES = [
@@ -15,9 +17,26 @@ class UsTimezones
         'America/Anchorage' => 'Alaska Time (AKT)',
         'America/Adak' => 'Hawaii-Aleutian Time (HAT)',
         'Pacific/Honolulu' => 'Hawaii Time (HT)',
-        'Asia/Karachi' => 'Islamabad, Karachi (UTC+5:00)',
-        'Europe/Istanbul' => 'Istanbul (UTC+3:00)',
-        'Europe/London' => 'Dublin, Edinburgh, Lisbon, London (UTC+0:00)',
+        'Asia/Karachi' => 'Islamabad, Karachi',
+        'Europe/Istanbul' => 'Istanbul',
+        'Europe/London' => 'Edinburgh, London',
+        'Europe/Dublin' => 'Dublin',
+        'Europe/Lisbon' => 'Lisbon',
+    ];
+
+    /**
+     * International zones whose label carries a live, DST-aware UTC offset
+     * (e.g. "Edinburgh, London (UTC+01:00)"). The US zones keep their fixed
+     * abbreviation labels above.
+     *
+     * @var list<string>
+     */
+    private const OFFSET_LABELLED = [
+        'Asia/Karachi',
+        'Europe/Istanbul',
+        'Europe/London',
+        'Europe/Dublin',
+        'Europe/Lisbon',
     ];
 
     /**
@@ -25,12 +44,26 @@ class UsTimezones
      */
     public static function getTimezones(): array
     {
-        return self::TIMEZONES;
+        $timezones = self::TIMEZONES;
+
+        foreach (array_keys($timezones) as $timezone) {
+            $timezones[$timezone] = self::getTimezoneLabel($timezone);
+        }
+
+        return $timezones;
     }
 
     public static function getTimezoneLabel(string $timezone): string
     {
-        return self::TIMEZONES[$timezone] ?? $timezone;
+        $label = self::TIMEZONES[$timezone] ?? $timezone;
+
+        if (! in_array($timezone, self::OFFSET_LABELLED, true)) {
+            return $label;
+        }
+
+        $offset = Carbon::now($timezone)->format('P');
+
+        return "{$label} (UTC{$offset})";
     }
 
     /**
