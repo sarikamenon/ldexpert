@@ -122,7 +122,6 @@
         <div class="bill-info">
             <div><strong>Bill #:</strong> {{ $bill->bill_number }}</div>
             <div><strong>Date:</strong> {{ $bill->bill_date->format('M d, Y') }}</div>
-            <div><strong>Due Date:</strong> {{ $bill->due_date->format('M d, Y') }}</div>
             <div><strong>Billing Period:</strong> {{ $bill->billing_period_start->format('M d') }} -
                 {{ $bill->billing_period_end->format('M d, Y') }}</div>
         </div>
