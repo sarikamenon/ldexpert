@@ -222,6 +222,32 @@ it('sends invoice via email', function () {
         ->and($invoice->fresh()->sent_by_id)->toBe($admin->id);
 });
 
+it('prevents admin from sending zero amount invoice', function () {
+    Mail::fake();
+
+    $admin = invoiceAdminUser();
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT->value,
+        'subtotal' => 0,
+        'tax_total' => 0,
+        'total' => 0,
+        'school_invoice_email' => 'billing@school.com',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.invoices.send', $invoice), [
+            'message' => null,
+        ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasErrors(['error' => 'Zero amount invoices cannot be sent.']);
+    Mail::assertNothingSent();
+
+    $invoice->refresh();
+    expect($invoice->status)->toBe(InvoiceStatus::DRAFT)
+        ->and($invoice->sent_at)->toBeNull();
+});
+
 it('allows admin to download invoice PDF', function () {
     $admin = invoiceAdminUser();
     $invoice = Invoice::factory()->create();

@@ -7,6 +7,7 @@
 > **Companion docs:**
 > - [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md) — schedule mechanics are shared; this doc focuses on the school-specific bits.
 > - [`BILLING_AUTOMATION_RUNTIME.md`](BILLING_AUTOMATION_RUNTIME.md) — how the daily `billing:generate` command picks schedules, resolves periods for Standard vs Advance, sweeps sessions, advances `next_run_at`, and known bugs in the first-run path.
+> - [`INVOICING.md`](INVOICING.md) — the end-to-end invoice reference: manual vs automatic creation, Standard vs Advance line sourcing, the data model, lifecycle (send/pay/reconcile), and known gaps.
 
 ---
 

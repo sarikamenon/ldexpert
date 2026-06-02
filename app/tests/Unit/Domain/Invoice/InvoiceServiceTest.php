@@ -6,6 +6,7 @@ use App\Domain\Invoice\Services\CompanyInfoService;
 use App\Domain\Invoice\Services\InvoiceService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\CreateInvoiceDTO;
+use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
@@ -179,3 +180,44 @@ test('invoice service sends invoice via email', function () {
     Mail::assertSent(\App\Mail\InvoiceMail::class);
     expect($result)->toBe($invoice);
 });
+
+test('invoice service prevents sending zero amount invoice', function () {
+    $user = User::factory()->admin()->create();
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT,
+        'subtotal' => 0,
+        'tax_total' => 0,
+        'total' => 0,
+        'school_invoice_email' => 'billing@school.com',
+    ]);
+
+    $dto = SendInvoiceDTO::fromArray([
+        'email' => null,
+        'message' => null,
+    ]);
+
+    $this->repository->shouldNotReceive('markAsSent');
+    $this->ledgerService->shouldNotReceive('createInvoiceGeneratedEntry');
+
+    $this->service->sendInvoice($user, $invoice, $dto);
+})->throws(\InvalidArgumentException::class, 'Zero amount invoices cannot be sent.');
+
+test('invoice service prevents resending email for zero amount invoice', function () {
+    $user = User::factory()->admin()->create();
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::SENT,
+        'subtotal' => 0,
+        'tax_total' => 0,
+        'total' => 0,
+        'school_invoice_email' => 'billing@school.com',
+    ]);
+
+    $dto = ResendInvoiceEmailDTO::fromArray([
+        'email' => 'billing@school.com',
+        'message' => null,
+    ]);
+
+    $this->service->resendInvoiceEmail($user, $invoice, $dto);
+
+    Mail::assertNothingSent();
+})->throws(\InvalidArgumentException::class, 'Zero amount invoices cannot be sent.');
