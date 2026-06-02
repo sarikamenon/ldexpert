@@ -241,7 +241,6 @@ When `billing_mode = advance`, [`AdvanceBillingService::processAdvanceSchedule()
 1. **Resolve the upcoming period** via [`resolveUpcomingPeriod()`](../app/Domain/Billing/Services/AdvanceBillingService.php#L708) — this calls the same [`BillingScheduleService::determineBillingPeriod()`](../app/Domain/Billing/Services/BillingScheduleService.php#L181) used by postpaid, so the period is **calendar-aligned by Frequency**, not a rolling N-day window from the run date.
 2. **Charge lines** — scan `schedules` for `status = SCHEDULED` where `schedule_date` falls within that upcoming period; one charge line per scheduled session.
 3. **Adjustment lines** — for the *prior* period, compare what was advance-billed against what actually got delivered (approved session logs); add positive or negative adjustment lines to reconcile.
-4. Same `invoices` row format and same `due_date = today + 30 days` rule applies.
 
 ### 6.1 What "upcoming period" actually means by Frequency
 
@@ -267,6 +266,7 @@ Suppose a school is on Monthly + Advance:
 - **June 1 run** bills June's scheduled sessions ($X) **plus** an adjustment line for May: `-2 cancelled × rate` and `+1 makeup × rate`, netting against the May overbill.
 
 The reconciliation logic lives in [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php) (lines 286-350). No manual credit notes needed.
+3. Same `invoices` row format and same `due_date = today + 30 days` rule applies.
 
 This means a school in Advance mode that paid for 20 sessions in May but only used 18 will see a -2 session adjustment on the June invoice — no manual credit notes needed.
 
