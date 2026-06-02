@@ -48,6 +48,8 @@
             @if ($invoice->isDraft())
                 <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" class="inline"
                     data-is-private-family="{{ ($invoice->school?->is_private_student ?? false) ? '1' : '0' }}"
+                    data-invoice-total="{{ $invoice->total }}"
+                    data-attach-sessions-url="{{ route('admin.invoices.attach-sessions', $invoice) }}"
                     x-data="{ loading: false }" x-on:submit="loading = true">
                     @csrf
                     <x-ui::button type="submit" variant="success" x-bind:disabled="loading">
@@ -99,7 +101,7 @@
                 <div class="text-sm text-foreground">
                     <p class="font-medium">{{ $invoice->company_name }}</p>
                     @if ($invoice->company_address)
-                        <p class="mt-1">{{ $invoice->company_address }}</p>
+                        <p class="mt-1">{!! nl2br(e($invoice->company_address)) !!}</p>
                     @endif
                     @if ($invoice->company_phone)
                         <p>{{ $invoice->company_phone }}</p>

@@ -23,7 +23,7 @@
             <div class="text-sm text-foreground">
                 <p class="font-medium">{{ $bill->company_name }}</p>
                 @if ($bill->company_address)
-                    <p class="mt-1">{{ $bill->company_address }}</p>
+                    <p class="mt-1">{!! nl2br(e($bill->company_address)) !!}</p>
                 @endif
                 @if ($bill->company_phone)
                     <p>{{ $bill->company_phone }}</p>
@@ -39,10 +39,6 @@
         <div>
             <p class="text-sm text-foreground/70">Bill Date</p>
             <p class="text-sm font-medium mt-1">{{ $bill->bill_date->format('M d, Y') }}</p>
-        </div>
-        <div>
-            <p class="text-sm text-foreground/70">Due Date</p>
-            <p class="text-sm font-medium mt-1">{{ $bill->due_date->format('M d, Y') }}</p>
         </div>
         @if ($bill->sent_at)
             <div>

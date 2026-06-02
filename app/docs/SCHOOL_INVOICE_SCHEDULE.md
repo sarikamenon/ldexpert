@@ -4,7 +4,10 @@
 >
 > **Source of truth:** [`BillingScheduleService`](../app/Domain/Billing/Services/BillingScheduleService.php), [`BillingAutomationService`](../app/Domain/Billing/Services/BillingAutomationService.php), [`InvoiceService`](../app/Domain/Billing/Services/InvoiceService.php), [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php), [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php), [`BillingSchedule`](../app/Models/BillingSchedule.php), and the [`BillingFrequency`](../app/Enums/BillingFrequency.php) / [`GenerationDayType`](../app/Enums/GenerationDayType.php) / [`BillingMode`](../app/Enums/BillingMode.php) enums.
 >
-> **Companion doc:** [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md) — schedule mechanics are shared; this doc focuses on the school-specific bits.
+> **Companion docs:**
+> - [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md) — schedule mechanics are shared; this doc focuses on the school-specific bits.
+> - [`BILLING_AUTOMATION_RUNTIME.md`](BILLING_AUTOMATION_RUNTIME.md) — how the daily `billing:generate` command picks schedules, resolves periods for Standard vs Advance, sweeps sessions, advances `next_run_at`, and known bugs in the first-run path.
+> - [`INVOICING.md`](INVOICING.md) — the end-to-end invoice reference: manual vs automatic creation, Standard vs Advance line sourcing, the data model, lifecycle (send/pay/reconcile), and known gaps.
 
 ---
 
@@ -235,9 +238,35 @@ When `billing:generate` finds a due school-invoice schedule, [`BillingAutomation
 
 When `billing_mode = advance`, [`AdvanceBillingService::processAdvanceSchedule()`](../app/Domain/Billing/Services/AdvanceBillingService.php) runs instead:
 
-1. **Charge lines** — scan `schedules` for `status = SCHEDULED` where `schedule_date` falls within the *upcoming* period; one charge line per scheduled session.
-2. **Adjustment lines** — for the *prior* period, compare what was advance-billed against what actually got delivered (approved session logs); add positive or negative adjustment lines to reconcile.
-3. Same `invoices` row format and same `due_date = today + 30 days` rule applies.
+1. **Resolve the upcoming period** via [`resolveUpcomingPeriod()`](../app/Domain/Billing/Services/AdvanceBillingService.php#L708) — this calls the same [`BillingScheduleService::determineBillingPeriod()`](../app/Domain/Billing/Services/BillingScheduleService.php#L181) used by postpaid, so the period is **calendar-aligned by Frequency**, not a rolling N-day window from the run date.
+2. **Charge lines** — scan `schedules` for `status = SCHEDULED` where `schedule_date` falls within that upcoming period; one charge line per scheduled session.
+3. **Adjustment lines** — for the *prior* period, compare what was advance-billed against what actually got delivered (approved session logs); add positive or negative adjustment lines to reconcile.
+4. Same `invoices` row format and same `due_date = today + 30 days` rule applies.
+
+### 6.1 What "upcoming period" actually means by Frequency
+
+> ⚠️ **Common misconception:** Advance billing does **not** look at "next 7 / 14 / 15 / 30 days from the run date." It looks at the next **calendar-aligned billing period** — the same period boundaries documented in §2.2 and §4.
+
+Concrete examples — schedule runs on **Sun 5/31/2026**, last_period_end = 5/24 (or unset):
+
+| Frequency | Upcoming period that gets billed | Notes |
+|---|---|---|
+| **Weekly** | Mon 6/1 → Sun 6/7 | Always full Mon–Sun, never a rolling 7 days |
+| **Bi-Weekly** | Mon 5/25 → Sun 6/7 | 14-day block aligned to the 2026-01-05 epoch |
+| **Semi-Monthly** | 6/1 → 6/15 | The next first-half period (would be 6/16 → 6/30 if last_period_end was already 6/15) |
+| **Monthly** | 6/1 → 6/30 | Full June, even though the run is on 5/31 |
+
+So if you run a **monthly** advance schedule on May 30th, it bills **all scheduled sessions in June 1 – June 30**, not "30 rolling days from May 30." The same holds for semi-monthly: a late-May run bills 6/1–6/15, not 5/30–6/14.
+
+### 6.2 Adjustment example
+
+Suppose a school is on Monthly + Advance:
+
+- **May 1 run** bills 20 scheduled sessions for 5/1–5/31 → invoice for $2,000.
+- During May, 2 sessions get cancelled and 1 extra makeup session is added & approved.
+- **June 1 run** bills June's scheduled sessions ($X) **plus** an adjustment line for May: `-2 cancelled × rate` and `+1 makeup × rate`, netting against the May overbill.
+
+The reconciliation logic lives in [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php) (lines 286-350). No manual credit notes needed.
 
 This means a school in Advance mode that paid for 20 sessions in May but only used 18 will see a -2 session adjustment on the June invoice — no manual credit notes needed.
 

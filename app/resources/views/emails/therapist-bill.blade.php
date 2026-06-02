@@ -39,11 +39,8 @@
                         {{ $bill->billing_period_start->format('M d') }} -
                         {{ $bill->billing_period_end->format('M d, Y') }}
                     </p>
-                    <p style="margin:0 0 4px; color:#0369a1;">
-                        <strong>Total Amount:</strong> ${{ number_format($bill->total_due, 2) }}
-                    </p>
                     <p style="margin:0; color:#0369a1;">
-                        <strong>Due Date:</strong> {{ $bill->due_date->format('M d, Y') }}
+                        <strong>Total Amount:</strong> ${{ number_format($bill->total_due, 2) }}
                     </p>
                 </div>
 

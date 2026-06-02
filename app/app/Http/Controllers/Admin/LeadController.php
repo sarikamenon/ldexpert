@@ -16,6 +16,7 @@ use App\DTOs\LeadFilterDTO;
 use App\DTOs\UpdateLeadDTO;
 use App\Enums\LeadSource;
 use App\Enums\LeadStatus;
+use App\Enums\SchoolType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Lead\ChangeLeadStatusRequest;
 use App\Http\Requests\Admin\Lead\ConvertLeadRequest;
@@ -28,7 +29,9 @@ use App\Models\Lead;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 final class LeadController extends Controller
 {
@@ -176,9 +179,22 @@ final class LeadController extends Controller
 
         $validated = $request->validated();
         $validated['password'] = Str::password(12);
+        $validated['manager_id'] = $request->user()?->id;
 
-        $dto = ConvertLeadDTO::fromArray($validated);
-        $profile = $this->leadService->convertToStudent($lead, $dto);
+        try {
+            $dto = ConvertLeadDTO::fromArray($validated);
+            $profile = $this->leadService->convertToStudent($lead, $dto);
+        } catch (Throwable $exception) {
+            Log::error('Lead conversion failed', [
+                'lead_id' => $lead->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'Could not convert this lead. Please try again.');
+        }
 
         return redirect()
             ->route('admin.students.show', $profile->user_id)
@@ -216,6 +232,7 @@ final class LeadController extends Controller
             'states' => UsStates::STATES,
             'timezones' => UsTimezones::TIMEZONES,
             'genders' => ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
+            'schoolTypes' => SchoolType::cases(),
         ];
     }
 }

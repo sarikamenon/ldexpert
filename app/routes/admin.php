@@ -201,6 +201,7 @@ Route::middleware('role:admin')
             Route::post('{sessionLog}/approve', [SessionLogController::class, 'approve'])->name('approve');
             Route::post('{sessionLog}/send-back', [SessionLogController::class, 'sendBack'])->name('send-back');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
+            Route::delete('{sessionLog}', [SessionLogController::class, 'destroy'])->name('destroy');
         });
 
         // Settings

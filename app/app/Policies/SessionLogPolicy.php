@@ -45,14 +45,23 @@ final class SessionLogPolicy
         return false;
     }
 
+    /**
+     * HTTP authorization gate: may this user delete this log at all?
+     * The business invariant (status must allow deletion, plus the unbill
+     * side-effect) is enforced again in SessionLogService::deleteSessionLog()
+     * for non-HTTP callers. Both layers gate on status?->canDelete() so they
+     * stay in sync.
+     */
     public function delete(User $user, SessionLog $sessionLog): bool
     {
+        $canDelete = $sessionLog->status?->canDelete() ?? false;
+
         if ($user->isAdmin()) {
-            return $sessionLog->isDraft() || $sessionLog->isSubmitted();
+            return $canDelete;
         }
 
         if ($user->isTherapist()) {
-            return $sessionLog->therapist_id === $user->id && $sessionLog->canEdit();
+            return $sessionLog->therapist_id === $user->id && $canDelete;
         }
 
         return false;

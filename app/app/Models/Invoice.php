@@ -166,6 +166,11 @@ class Invoice extends Model
         return $this->status === InvoiceStatus::PAID;
     }
 
+    public function isZeroAmount(): bool
+    {
+        return (float) $this->total <= 0.0;
+    }
+
     public function getTotalPaidAttribute(): float
     {
         return (float) $this->paymentAllocations()->sum('allocated_amount');

@@ -106,7 +106,7 @@
             <div>
                 <strong>{{ $bill->company_name }}</strong><br>
                 @if ($bill->company_address)
-                    {{ $bill->company_address }}<br>
+                    {!! nl2br(e($bill->company_address)) !!}<br>
                 @endif
                 @if ($bill->company_phone)
                     Phone: {{ $bill->company_phone }}<br>
@@ -122,7 +122,6 @@
         <div class="bill-info">
             <div><strong>Bill #:</strong> {{ $bill->bill_number }}</div>
             <div><strong>Date:</strong> {{ $bill->bill_date->format('M d, Y') }}</div>
-            <div><strong>Due Date:</strong> {{ $bill->due_date->format('M d, Y') }}</div>
             <div><strong>Billing Period:</strong> {{ $bill->billing_period_start->format('M d') }} -
                 {{ $bill->billing_period_end->format('M d, Y') }}</div>
         </div>

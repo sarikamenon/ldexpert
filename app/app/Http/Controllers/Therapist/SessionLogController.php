@@ -38,6 +38,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -475,6 +476,49 @@ final class SessionLogController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function destroy(Request $request, SessionLog $sessionLog): JsonResponse|RedirectResponse
+    {
+        $this->authorize('delete', $sessionLog);
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+
+        try {
+            $this->sessionLogService->deleteSessionLog($therapist, $sessionLog);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Session log deleted successfully.']);
+            }
+
+            return redirect()
+                ->route('therapist.session-logs.index')
+                ->with('success', 'Session log deleted successfully.');
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('Therapist\SessionLogController: failed to delete session log', [
+                'session_log_id' => $sessionLog->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            $message = 'Failed to delete the session log. Please try again.';
+
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $message], 500);
+            }
+
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $message]);
         }
     }
 

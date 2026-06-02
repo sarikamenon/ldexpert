@@ -44,4 +44,14 @@ class SchoolFactory extends Factory
             'status_reason' => null,
         ];
     }
+
+    public function private(): static
+    {
+        return $this->state(fn (): array => ['is_private_student' => true]);
+    }
+
+    public function nonPrivate(): static
+    {
+        return $this->state(fn (): array => ['is_private_student' => false]);
+    }
 }

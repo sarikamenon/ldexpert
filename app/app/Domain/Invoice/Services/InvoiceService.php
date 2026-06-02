@@ -176,6 +176,10 @@ final class InvoiceService
             throw new \InvalidArgumentException('Invoice cannot be sent in its current status.');
         }
 
+        if ($invoice->isZeroAmount()) {
+            throw new \InvalidArgumentException('Zero amount invoices cannot be sent.');
+        }
+
         return DB::transaction(function () use ($user, $invoice, $dto) {
             // Determine recipient email
             $recipientEmail = $dto->email
@@ -232,6 +236,9 @@ final class InvoiceService
         }
         if ($invoice->isPaid()) {
             throw new \InvalidArgumentException('Cannot resend email for a paid invoice.');
+        }
+        if ($invoice->isZeroAmount()) {
+            throw new \InvalidArgumentException('Zero amount invoices cannot be sent.');
         }
 
         // Reuse existing payment token — do NOT regenerate
