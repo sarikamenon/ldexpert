@@ -33,6 +33,12 @@
         .detail .row .label { color: #64748b; }
         .detail .row .value { font-weight: 600; }
         .footer { color: #94a3b8; font-size: 12px; margin-top: 16px; }
+        .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; transition: background 0.15s; }
+        .btn + .btn { margin-top: 10px; }
+        .btn-danger { background: #dc2626; color: #fff; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-secondary { background: #f1f5f9; color: #0f172a; }
+        .btn-secondary:hover { background: #e2e8f0; }
     </style>
 </head>
 

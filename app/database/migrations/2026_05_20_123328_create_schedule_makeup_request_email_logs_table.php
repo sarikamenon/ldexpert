@@ -33,6 +33,7 @@ return new class extends Migration
             $table->json('metadata')->nullable();
 
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(
                 ['schedule_makeup_request_id', 'type'],

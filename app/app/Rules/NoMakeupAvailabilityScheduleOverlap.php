@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Rules;
 
 use App\Domain\Time\UserTimezoneService;
-use App\Enums\ScheduleStatus;
 use App\Models\Schedule;
 use App\Models\User;
 use Closure;
@@ -31,17 +30,22 @@ final class NoMakeupAvailabilityScheduleOverlap implements ValidationRule
 
         try {
             $startUtc = $this->timezoneService->parseUserLocalToUtc($this->date.' '.$this->startTime.':00', $this->therapist);
-            $endUtc   = $this->timezoneService->parseUserLocalToUtc($this->date.' '.$value.':00', $this->therapist);
+            $endUtc = $this->timezoneService->parseUserLocalToUtc($this->date.' '.$value.':00', $this->therapist);
         } catch (\Throwable) {
             return;
         }
 
+        // Compare on the full (schedule_date + time) UTC instant, not a single
+        // schedule_date with H:i:s bounds: a therapist-local window can straddle the
+        // UTC day boundary, so its start and end land on different UTC dates. The
+        // single-date predicate would miss the part on the second date entirely.
         $conflict = Schedule::query()
-            ->where('therapist_id', $this->therapist->id)
-            ->where('schedule_date', $startUtc->toDateString())
-            ->where('status', ScheduleStatus::SCHEDULED->value)
-            ->where('start_time', '<', $endUtc->format('H:i:s'))
-            ->where('end_time', '>', $startUtc->format('H:i:s'))
+            ->forTherapistOwned($this->therapist->id)
+            ->scheduled()
+            ->overlappingWindow(
+                $startUtc->format('Y-m-d H:i:s'),
+                $endUtc->format('Y-m-d H:i:s'),
+            )
             ->exists();
 
         if ($conflict) {

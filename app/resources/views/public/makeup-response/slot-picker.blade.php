@@ -34,6 +34,7 @@
         .detail .row .value { font-weight: 600; }
         .footer { color: #94a3b8; font-size: 12px; margin-top: 16px; text-align: center; }
     </style>
+    @vite('resources/js/pages/makeup-slot-picker.js')
 </head>
 
 <body>
@@ -96,86 +97,6 @@
 
             <button type="submit" class="btn btn-primary">Confirm Make-Up Session</button>
         </form>
-
-        <script>
-            const form = document.getElementById('slot-form');
-            const selects = form.querySelectorAll('select.slot-select');
-
-            function getSelectedSlotInfo(select) {
-                if (!select.value) return null;
-                const option = select.options[select.selectedIndex];
-                return {
-                    startUtc: select.value,
-                    endUtc: option.dataset.end,
-                    selectElement: select,
-                };
-            }
-
-            function intervalsOverlap(start1, end1, start2, end2) {
-                const s1 = new Date(start1).getTime();
-                const e1 = new Date(end1).getTime();
-                const s2 = new Date(start2).getTime();
-                const e2 = new Date(end2).getTime();
-                return s1 < e2 && s2 < e1;
-            }
-
-            function checkForConflicts() {
-                const selectedSlots = [];
-
-                for (const select of selects) {
-                    const slot = getSelectedSlotInfo(select);
-                    if (slot) {
-                        selectedSlots.push(slot);
-                    }
-                }
-
-                for (let i = 0; i < selectedSlots.length; i++) {
-                    for (let j = i + 1; j < selectedSlots.length; j++) {
-                        const slot1 = selectedSlots[i];
-                        const slot2 = selectedSlots[j];
-
-                        // Check if slots overlap
-                        if (intervalsOverlap(slot1.startUtc, slot1.endUtc, slot2.startUtc, slot2.endUtc)) {
-                            return { hasConflict: true, reason: 'Selected time slots overlap. Please choose non-overlapping times for each session.' };
-                        }
-                    }
-                }
-
-                return { hasConflict: false, reason: '' };
-            }
-
-            const conflictBanner = document.getElementById('conflict-banner');
-
-            function showConflictError(message) {
-                conflictBanner.textContent = message;
-            }
-
-            function clearConflictError() {
-                conflictBanner.textContent = '';
-            }
-
-            form.addEventListener('submit', function(e) {
-                const conflict = checkForConflicts();
-
-                if (conflict.hasConflict) {
-                    e.preventDefault();
-                    showConflictError(conflict.reason);
-                    window.scrollTo(0, 0);
-                }
-            });
-
-            for (const select of selects) {
-                select.addEventListener('change', function() {
-                    const conflict = checkForConflicts();
-
-                    if (conflict.hasConflict) {
-                        showConflictError(conflict.reason);
-                    } else {
-                        clearConflictError();
-                    }
-                });
-            }
-        </script>
 
         <p class="footer">Having trouble? Contact your therapist directly.</p>
     </div>

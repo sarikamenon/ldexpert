@@ -50,7 +50,10 @@ final class MakeupTherapistAvailabilityReminder extends Command
             $reminderDate = CarbonImmutable::parse($event->reminder_date->toDateString());
             $sendDate = $reminderDate->subDays($offsetDays);
 
-            if ($today->lessThan($sendDate) || $today->greaterThan($reminderDate)) {
+            // Fire on exactly one day. The command runs daily and the reminder is a
+            // single nudge; gating on the whole [sendDate, reminderDate] window would
+            // re-send every day (no email-log row is written to de-dupe).
+            if (! $today->isSameDay($sendDate)) {
                 return;
             }
 

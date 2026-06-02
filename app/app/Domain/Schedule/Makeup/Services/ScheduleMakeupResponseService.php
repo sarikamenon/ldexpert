@@ -105,6 +105,8 @@ final class ScheduleMakeupResponseService
 
             $this->guardBatchCanRespond($locked, $head, $clock);
 
+            // Students do not have a separate parent user row in this codebase, so the
+            // student's own user id is recorded as the responder for a parent response.
             $responderUserId = (int) $head->student_id;
 
             return $locked->map(function (ScheduleMakeupRequest $row) use ($buildDto, $responderUserId, $clock): ScheduleMakeupRequest {

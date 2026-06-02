@@ -111,4 +111,20 @@ final class EloquentScheduleMakeupAvailabilityRepository implements ScheduleMake
             ->orderByRaw('TIMESTAMP(schedule_date, start_time)')
             ->get();
     }
+
+    /**
+     * @param  array<int, string>  $dates
+     */
+    public function lockTherapistSchedulesForDates(User $therapist, array $dates): void
+    {
+        if ($dates === []) {
+            return;
+        }
+
+        Schedule::query()
+            ->forTherapistOwned($therapist->id)
+            ->whereIn('schedule_date', array_values(array_unique($dates)))
+            ->lockForUpdate()
+            ->get();
+    }
 }

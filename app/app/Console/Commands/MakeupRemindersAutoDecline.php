@@ -9,6 +9,7 @@ use App\Domain\Schedule\Makeup\Services\TherapistMakeupNotificationService;
 use App\Models\ScheduleMakeupRequest;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 final class MakeupRemindersAutoDecline extends Command
 {
@@ -26,9 +27,16 @@ final class MakeupRemindersAutoDecline extends Command
 
         $count = $repository->bulkAutoDecline($today);
 
-        $overdueRows->each(function (ScheduleMakeupRequest $request) use ($notificationService): void {
-            $notificationService->sendNonAcceptedNotification($request);
-        });
+        // One therapist notification per batch (not per missed-session row): a
+        // multi-day closure produces several rows in one batch but is a single email.
+        $overdueRows
+            ->groupBy('batch_number')
+            ->each(function (Collection $batch) use ($notificationService): void {
+                $head = $batch->first();
+                if ($head instanceof ScheduleMakeupRequest) {
+                    $notificationService->sendNonAcceptedNotification($head);
+                }
+            });
 
         $this->info(sprintf('Auto-declined %d overdue make-up reminder(s).', $count));
 

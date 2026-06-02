@@ -53,7 +53,12 @@ Route::prefix('makeup-response')
     ->group(function () {
         Route::get('/{token}/request', [ScheduleMakeupResponseController::class, 'request'])->name('request');
         Route::post('/{token}/pick-slots', [ScheduleMakeupResponseController::class, 'pickSlots'])->name('pick-slots');
-        Route::get('/{token}/decline', [ScheduleMakeupResponseController::class, 'decline'])->name('decline');
+        // Decline is a destructive state change, so it must not be a GET: email
+        // link-scanners and prefetchers issue automated GETs against URLs in mail
+        // and would silently decline the whole batch. GET only renders a confirmation
+        // page; the CSRF-protected POST performs the decline.
+        Route::get('/{token}/decline', [ScheduleMakeupResponseController::class, 'confirmDecline'])->name('decline');
+        Route::post('/{token}/decline', [ScheduleMakeupResponseController::class, 'decline'])->name('decline.submit');
     });
 
 require __DIR__.'/auth.php';

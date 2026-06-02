@@ -6,10 +6,10 @@ namespace App\Domain\Schedule\Makeup\Services;
 
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
+use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\DTOs\OverlapCheckDTO;
 use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\Schedule\Makeup\MakeupSlotPickDTO;
-use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ScheduleMakeupRequestStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleMakeupAvailability;
@@ -73,6 +73,24 @@ final class MakeupBookingService
             /** @var User $therapist */
             $therapist = $locked->therapist;
 
+            // Row-lock the therapist's schedules for the affected dates so a concurrent
+            // booking into the same availability window serializes behind us: the
+            // availability recompute below then reflects anything a racing request committed.
+            $this->availabilityRepo->lockTherapistSchedulesForDates($therapist, [
+                $pick->date(),
+                $schedule->schedule_date->toDateString(),
+            ]);
+
+            // Re-validate the chosen start against the live availability grid (windows −
+            // booked schedules → valid 15-min starts). The rendered picker is advisory
+            // only; this is the authoritative gate, so a tampered or stale pick — an
+            // out-of-window time or a slot taken since the page loaded — is rejected here.
+            if (! $this->pickIsAvailable($locked, $pick)) {
+                throw new MakeupSlotConflictException(
+                    'The selected time slot is no longer available. Please pick another.',
+                );
+            }
+
             $overlapCheck = new OverlapCheckDTO(
                 date: $pick->date(),
                 startTime: $pick->startTime(),
@@ -104,6 +122,23 @@ final class MakeupBookingService
 
             return $this->makeupRequestRepo->linkBookedSchedule($locked, $schedule->id);
         });
+    }
+
+    /**
+     * Whether the chosen start is a currently-valid sub-slot for this request —
+     * i.e. it falls inside a therapist availability window, is 15-min aligned, and
+     * the missed session's duration fits without colliding with a booked schedule.
+     * Recomputed from the DB so it reflects the latest bookings under the row lock.
+     */
+    private function pickIsAvailable(ScheduleMakeupRequest $makeupRequest, MakeupSlotPickDTO $pick): bool
+    {
+        foreach ($this->availableStartTimes($makeupRequest) as $start) {
+            if ($start->equalTo($pick->startUtc)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

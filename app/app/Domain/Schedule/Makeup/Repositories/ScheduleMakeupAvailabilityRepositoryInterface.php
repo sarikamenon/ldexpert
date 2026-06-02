@@ -55,4 +55,14 @@ interface ScheduleMakeupAvailabilityRepositoryInterface
      * @return Collection<int, Schedule>
      */
     public function busySchedulesForWindows(User $therapist, Collection $windows): Collection;
+
+    /**
+     * Acquire a row-level lock (SELECT … FOR UPDATE) on the therapist's schedules for the
+     * given dates. Must be called inside a transaction. Serializes concurrent make-up
+     * bookings competing for the same availability window so the post-lock availability
+     * recompute reflects any booking a racing request just committed.
+     *
+     * @param  array<int, string>  $dates  Y-m-d UTC date strings
+     */
+    public function lockTherapistSchedulesForDates(User $therapist, array $dates): void;
 }

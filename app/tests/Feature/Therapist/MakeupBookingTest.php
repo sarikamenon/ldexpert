@@ -58,10 +58,12 @@ it('book redirects to the edit flow when the original schedule still exists', fu
 it('book falls back to creating a schedule when the original was soft-deleted', function () {
     [$therapist, $request, $schedule] = makeupBookingFixture();
 
-    // Soft-delete the original — the live relation goes null but ssa_id must
-    // still be recoverable via withTrashed() for the create fallback.
+    // Soft-delete the original — the live relation goes null but ssa_id must still be
+    // recoverable via withTrashed() for the create fallback. The make-up deletion guard
+    // now blocks soft-deleting a schedule with a `requested` request, so bypass model
+    // events to simulate a row that became trashed before the request existed.
     $ssaId = $schedule->ssa_id;
-    $schedule->delete();
+    Schedule::withoutEvents(fn () => $schedule->delete());
 
     $response = $this->actingAs($therapist)
         ->get(route('therapist.makeup-requests.book', $request->id));

@@ -9,6 +9,7 @@ use App\Enums\ScheduleMakeupEmailLogType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property ScheduleMakeupEmailLogStatus $status
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class ScheduleMakeupRequestEmailLog extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleMakeupRequestEmailLogFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'schedule_makeup_request_id',
@@ -44,6 +45,7 @@ class ScheduleMakeupRequestEmailLog extends Model
             'metadata' => 'array',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
         ];
     }
 

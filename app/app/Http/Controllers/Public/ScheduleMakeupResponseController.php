@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Public;
 
+use App\Constants\UsTimezones;
 use App\Domain\Schedule\Makeup\Presenters\MakeupRequestPresenter;
 use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
 use App\Domain\Schedule\Makeup\Services\MakeupBookingService;
@@ -19,6 +20,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 use Throwable;
 
@@ -156,7 +158,34 @@ final class ScheduleMakeupResponseController extends Controller
     }
 
     /**
-     * GET — landing page when the parent clicks "Decline Make-Up".
+     * GET — confirmation page when the parent clicks "Decline Make-Up".
+     *
+     * Declining is destructive (it flips the whole batch to `declined`), so the GET
+     * is read-only: it renders a confirmation page with a CSRF-protected POST form.
+     * This prevents email link-scanners / prefetchers from silently declining.
+     */
+    public function confirmDecline(string $token): View
+    {
+        $batch = $this->resolveOrAbort($token);
+
+        try {
+            $this->responseService->guardCanRespond($batch);
+        } catch (MakeupResponseNotAllowedException $e) {
+            return $this->viewForReason($e->reason, $batch);
+        }
+
+        /** @var ScheduleMakeupRequest $head */
+        $head = $batch->first();
+
+        return view('public.makeup-response.decline-confirm', [
+            ...$this->viewData($batch),
+            'submitUrl' => $this->signedDeclineUrl($token),
+            'therapistName' => $head->therapist->name ?? '—',
+        ]);
+    }
+
+    /**
+     * POST — record the decline for the whole batch (CSRF-protected).
      */
     public function decline(string $token): View
     {
@@ -363,7 +392,11 @@ final class ScheduleMakeupResponseController extends Controller
     }
 
     /**
-     * Resolve parent user id from the batch's student chain.
+     * Resolve the actor user id for a parent response from the batch's student chain.
+     *
+     * Students do not have a separate parent user row in this codebase, so the
+     * student's own user id is recorded as the responder for a parent email-link
+     * response (and as `schedules.updated_by` on a Path 1 booking).
      *
      * @param  Collection<int, ScheduleMakeupRequest>  $batch
      */
@@ -471,12 +504,17 @@ final class ScheduleMakeupResponseController extends Controller
 
     private function signedPickSlotsUrl(string $token): string
     {
-        return (string) \Illuminate\Support\Facades\URL::signedRoute('makeup-response.pick-slots', ['token' => $token]);
+        return (string) URL::signedRoute('makeup-response.pick-slots', ['token' => $token]);
+    }
+
+    private function signedDeclineUrl(string $token): string
+    {
+        return (string) URL::signedRoute('makeup-response.decline.submit', ['token' => $token]);
     }
 
     private function timezoneAbbreviation(string $timezone): string
     {
-        $label = \App\Constants\UsTimezones::getTimezoneLabel($timezone);
+        $label = UsTimezones::getTimezoneLabel($timezone);
 
         if (preg_match('/\(([^)]+)\)\s*$/', $label, $matches) === 1) {
             return $matches[1];
