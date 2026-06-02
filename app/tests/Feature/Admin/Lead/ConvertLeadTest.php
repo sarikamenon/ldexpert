@@ -79,7 +79,7 @@ it('creates a private family from the lead when no school is picked and the box 
             'family_state' => 'MA',
             'family_timezone' => 'America/New_York',
             'family_contact_first_name' => 'Maria',
-            'family_contact_email' => 'maria@example.com',
+            'family_contact_email' => 'maria@gmail.com',
         ])
     );
 

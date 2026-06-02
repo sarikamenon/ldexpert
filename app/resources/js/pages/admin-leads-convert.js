@@ -107,7 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     schoolSelect.addEventListener("change", syncPanelVisibility);
 
-    // Initial state: panel collapsed by default unless server-side validation expanded it.
+    // Initial state: panel expanded by default (aria-expanded="true") when shown.
     syncPanelVisibility();
     setExpanded(toggle.getAttribute("aria-expanded") === "true");
 });

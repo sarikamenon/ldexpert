@@ -35,10 +35,7 @@
 
     <form method="POST" action="{{ route('admin.leads.convert.store', $lead) }}" class="space-y-6"
         data-lead-last-name="{{ $lead->last_name }}"
-        data-lead-parent-name="{{ $lead->parent_guardian_name }}"
-        data-lead-parent-email="{{ $lead->parent_guardian_email }}"
-        data-lead-parent-phone="{{ $lead->parent_guardian_phone }}"
-        data-lead-address="{{ $lead->address }}">
+        data-lead-parent-name="{{ $lead->parent_guardian_name }}">
         @csrf
 
         {{-- Required Student Fields --}}
@@ -174,7 +171,7 @@
             style="{{ old('school_id', $lead->school_id) ? 'display:none' : '' }}">
             <button type="button" id="new_family_toggle"
                 class="flex w-full items-center justify-between text-left"
-                aria-expanded="{{ $errors->has('family_name') || $errors->has('family_state') || $errors->has('family_timezone') || $errors->has('family_school_type') ? 'true' : 'false' }}"
+                aria-expanded="true"
                 aria-controls="new_family_body">
                 <span>
                     <span class="block text-lg font-semibold">New School/Family Details</span>
@@ -185,8 +182,7 @@
                 </svg>
             </button>
 
-            <div id="new_family_body" class="mt-4 space-y-6"
-                style="{{ $errors->has('family_name') || $errors->has('family_state') || $errors->has('family_timezone') || $errors->has('family_school_type') ? '' : 'display:none' }}">
+            <div id="new_family_body" class="mt-4 space-y-6">
 
                 {{-- School/Family Information --}}
                 <div class="space-y-4">
