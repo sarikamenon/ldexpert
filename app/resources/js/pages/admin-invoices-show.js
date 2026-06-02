@@ -3,13 +3,39 @@
  * Handles invoice send and resend email confirmations
  */
 
-import { confirmDialog } from '../common/sweetalert';
+import { actionAlert, confirmDialog } from '../common/sweetalert';
 
 document.addEventListener('DOMContentLoaded', function () {
     const sendForm = document.querySelector('form[action*="/send"]');
     if (sendForm && !sendForm.action.includes('resend')) {
         sendForm.addEventListener('submit', async function (e) {
             e.preventDefault();
+
+            // Reset the Alpine loading state set by x-on:submit so the button
+            // does not stay stuck while a dialog is open or after it is dismissed.
+            const sendFormData = window.Alpine?.$data(sendForm);
+            if (sendFormData) {
+                sendFormData.loading = false;
+            }
+
+            const invoiceTotal = Number.parseFloat(sendForm.dataset.invoiceTotal ?? '0');
+            if (invoiceTotal <= 0) {
+                const attachSessionsUrl = sendForm.dataset.attachSessionsUrl ?? '';
+
+                const result = await actionAlert({
+                    title: 'Cannot send this invoice',
+                    text: 'This invoice total is $0.00, so it cannot be sent. Add billable sessions or keep it as draft.',
+                    icon: 'warning',
+                    confirmButtonText: 'Add or remove sessions',
+                    cancelButtonText: 'Close',
+                    reverseButtons: true,
+                });
+
+                if (result.isConfirmed && attachSessionsUrl) {
+                    window.location.href = attachSessionsUrl;
+                }
+                return;
+            }
 
             const isFamily = sendForm.getAttribute('data-is-private-family') === '1';
             const recipientEntity = isFamily ? 'family' : 'school';
