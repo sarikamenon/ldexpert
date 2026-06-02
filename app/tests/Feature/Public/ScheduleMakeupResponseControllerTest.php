@@ -73,15 +73,17 @@ it('decline POST flips batch to DECLINED and renders declined view', function ()
     expect($row->fresh()->status)->toBe(ScheduleMakeupRequestStatus::DECLINED);
 });
 
-it('decline POST returns 404 on a second submit (batch no longer unresponded)', function () {
+it('decline POST renders already-responded on a second submit', function () {
     Mail::fake();
     [$row, $token] = sentBatchFixture();
 
     $url = signedMakeupUrl('makeup-response.decline.submit', $token);
     $this->post($url); // first submit declines
-    $response = $this->post($url); // second — batch gone from unresponded scope
+    $response = $this->post($url); // second — batch already responded
 
-    $response->assertNotFound();
+    $response->assertOk()->assertViewIs('public.makeup-response.already-responded');
+    // Status stays DECLINED — the second click is a no-op, not an error.
+    expect($row->fresh()->status)->toBe(ScheduleMakeupRequestStatus::DECLINED);
 });
 
 it('decline GET renders deadline-passed view when response_date is in the past', function () {
@@ -185,7 +187,7 @@ it('request route Path 2: renders deadline-passed view when response_date is pas
     expect($row->fresh()->status)->toBe(ScheduleMakeupRequestStatus::SENT);
 });
 
-it('request route Path 2: returns 404 on second click (batch no longer unresponded)', function () {
+it('request route Path 2: renders already-responded on second click', function () {
     Mail::fake();
 
     $therapist = User::factory()->therapist()->create();
@@ -199,7 +201,7 @@ it('request route Path 2: returns 404 on second click (batch no longer unrespond
     $token = str_repeat('q', 64);
     $bn = 'MR_'.str_repeat('q', 29);
 
-    ScheduleMakeupRequest::factory()->sent()->create([
+    $row = ScheduleMakeupRequest::factory()->sent()->create([
         'therapist_id' => $therapist->id,
         'student_id' => $student->id,
         'response_token' => $token,
@@ -211,9 +213,10 @@ it('request route Path 2: returns 404 on second click (batch no longer unrespond
 
     $url = signedMakeupUrl('makeup-response.request', $token);
     $this->get($url); // first click → REQUESTED
-    $response = $this->get($url); // second click — row no longer unresponded → 404
+    $response = $this->get($url); // second click — already responded
 
-    $response->assertNotFound();
+    $response->assertOk()->assertViewIs('public.makeup-response.already-responded');
+    expect($row->fresh()->status)->toBe(ScheduleMakeupRequestStatus::REQUESTED);
 });
 
 it('request route returns 404 for an unknown token', function () {
@@ -388,6 +391,30 @@ it('pick-slots books a valid slot: row SCHEDULED, schedule rescheduled in place,
         ->and($schedule->updated_by)->toBe($student->id);
 
     Mail::assertSent(\App\Mail\ScheduleMakeup\TherapistMakeupScheduledMail::class);
+});
+
+it('renders already-responded when revisiting request/decline after a slot is booked', function () {
+    Mail::fake();
+    [$row, $token, , , $eventDate] = path1BookableFixture('w');
+
+    // Book the slot (status → SCHEDULED, responded_at set).
+    $bookUrl = signedMakeupUrl('makeup-response.pick-slots', $token);
+    $this->post($bookUrl, ['slots' => [$row->id => $eventDate.' 14:00:00']])
+        ->assertOk()->assertViewIs('public.makeup-response.slots-booked');
+
+    expect($row->fresh()->status)->toBe(ScheduleMakeupRequestStatus::SCHEDULED);
+
+    // Re-clicking "Request Make-Up" must show the friendly already-responded page,
+    // not a 404 (the bug: booked rows fell out of the unresponded batch lookup).
+    $this->get(signedMakeupUrl('makeup-response.request', $token))
+        ->assertOk()->assertViewIs('public.makeup-response.already-responded');
+
+    // Re-clicking "Decline" likewise.
+    $this->get(signedMakeupUrl('makeup-response.decline', $token))
+        ->assertOk()->assertViewIs('public.makeup-response.already-responded');
+
+    // Status is unchanged by the revisits.
+    expect($row->fresh()->status)->toBe(ScheduleMakeupRequestStatus::SCHEDULED);
 });
 
 it('pick-slots rejects an out-of-window time and re-renders the picker without booking', function () {

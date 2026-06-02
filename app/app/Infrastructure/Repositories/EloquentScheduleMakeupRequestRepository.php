@@ -76,10 +76,14 @@ final class EloquentScheduleMakeupRequestRepository implements ScheduleMakeupReq
             return new Collection;
         }
 
+        // Return every row in the batch — including already-responded ones — so
+        // the response controller's guard can render the friendly "already
+        // responded" page instead of 404'ing on a second click. Filtering to
+        // unresponded rows here resolved the batch to empty once booked/declined,
+        // which surfaced as "page not found".
         return ScheduleMakeupRequest::query()
             ->with(['therapist', 'schedule', 'student.studentProfile'])
             ->forBatch($batchNumber)
-            ->unresponded()
             ->get();
     }
 
