@@ -23,7 +23,7 @@
             <div class="text-sm text-foreground">
                 <p class="font-medium">{{ $bill->company_name }}</p>
                 @if ($bill->company_address)
-                    <p class="mt-1">{{ $bill->company_address }}</p>
+                    <p class="mt-1">{!! nl2br(e($bill->company_address)) !!}</p>
                 @endif
                 @if ($bill->company_phone)
                     <p>{{ $bill->company_phone }}</p>

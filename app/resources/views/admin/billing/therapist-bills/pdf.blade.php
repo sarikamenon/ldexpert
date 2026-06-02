@@ -106,7 +106,7 @@
             <div>
                 <strong>{{ $bill->company_name }}</strong><br>
                 @if ($bill->company_address)
-                    {{ $bill->company_address }}<br>
+                    {!! nl2br(e($bill->company_address)) !!}<br>
                 @endif
                 @if ($bill->company_phone)
                     Phone: {{ $bill->company_phone }}<br>
