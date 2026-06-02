@@ -21,7 +21,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ $submitUrl }}">
+    <form method="POST" action="{{ $submitUrl }}" style="margin-bottom: 10px;">
         @csrf
         <button type="submit" class="btn btn-danger">Yes, decline make-up</button>
     </form>
