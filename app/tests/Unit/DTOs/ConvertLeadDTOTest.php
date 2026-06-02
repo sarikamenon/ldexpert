@@ -71,6 +71,7 @@ it('builds a private-family school DTO from the family_* values and forces priva
         managerId: 7,
         schoolId: null,
         createPrivateFamily: true,
+        familyFullName: 'Rivera Family Official',
         familyName: 'Rivera Family',
         familySchoolType: SchoolType::VIRTUAL->value,
         familyState: 'MA',
@@ -85,7 +86,7 @@ it('builds a private-family school DTO from the family_* values and forces priva
 
     $school = $dto->toCreateSchoolDTO();
 
-    expect($school->fullName)->toBe('Rivera Family')
+    expect($school->fullName)->toBe('Rivera Family Official')
         ->and($school->displayName)->toBe('Rivera Family')
         ->and($school->schoolType)->toBe(SchoolType::VIRTUAL->value)
         ->and($school->state)->toBe('MA')

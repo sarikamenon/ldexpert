@@ -14,7 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
+    const familyFullName = document.getElementById("family_full_name");
     const familyName = document.getElementById("family_name");
+    const familySameAsFull = document.getElementById("family_same_as_full_name");
     const familyState = document.getElementById("family_state");
     const familyTimezone = document.getElementById("family_timezone");
     const familyContactFirst = document.getElementById(
@@ -40,8 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const prefillFamily = () => {
+        const derived = deriveFamilyName();
+        if (familyFullName && !familyFullName.value) {
+            familyFullName.value = derived;
+        }
         if (familyName && !familyName.value) {
-            familyName.value = deriveFamilyName();
+            familyName.value = derived;
         }
         if (familyState && !familyState.value && studentState) {
             familyState.value = studentState.value;
@@ -77,6 +83,22 @@ document.addEventListener("DOMContentLoaded", () => {
             setExpanded(false);
         }
     };
+
+    // "Same as Full Name" copies the full name into the NOVA name field.
+    if (familyFullName && familyName && familySameAsFull) {
+        const syncDisplayName = () => {
+            if (familySameAsFull.checked) {
+                familyName.value = familyFullName.value;
+            }
+        };
+        familySameAsFull.addEventListener("change", syncDisplayName);
+        familyFullName.addEventListener("input", syncDisplayName);
+        familyName.addEventListener("input", () => {
+            if (familyName.value !== familyFullName.value) {
+                familySameAsFull.checked = false;
+            }
+        });
+    }
 
     toggle.addEventListener("click", () => {
         const expanded = toggle.getAttribute("aria-expanded") === "true";

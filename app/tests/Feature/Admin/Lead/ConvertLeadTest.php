@@ -73,6 +73,7 @@ it('creates a private family from the lead when no school is picked and the box 
         route('admin.leads.convert.store', $lead),
         basePayload([
             'create_private_family' => '1',
+            'family_full_name' => 'Rivera Family',
             'family_name' => 'Rivera Family',
             'family_school_type' => 'Virtual',
             'family_state' => 'MA',
@@ -102,6 +103,7 @@ it('creates a normal (non-private) school when no school is picked and the box i
     $this->actingAs($admin)->post(
         route('admin.leads.convert.store', $lead),
         basePayload([
+            'family_full_name' => 'North Ridge Academy',
             'family_name' => 'North Ridge Academy',
             'family_school_type' => 'Brick Mortar',
             'family_state' => 'MA',
@@ -128,6 +130,7 @@ it('requires a student id when creating a normal school (box unchecked)', functi
     $response = $this->actingAs($admin)->post(
         route('admin.leads.convert.store', $lead),
         basePayload([
+            'family_full_name' => 'North Ridge Academy',
             'family_name' => 'North Ridge Academy',
             'family_school_type' => 'Brick Mortar',
             'family_state' => 'MA',
@@ -147,6 +150,7 @@ it('errors when creating a family but the family name is blank', function () {
         route('admin.leads.convert.store', $lead),
         basePayload([
             'create_private_family' => '1',
+            'family_full_name' => 'Rivera Family',
             'family_state' => 'MA',
             'family_timezone' => 'America/New_York',
             'family_school_type' => 'Virtual',
@@ -166,6 +170,7 @@ it('errors when the new family name already exists', function () {
         route('admin.leads.convert.store', $lead),
         basePayload([
             'create_private_family' => '1',
+            'family_full_name' => 'Rivera Family',
             'family_name' => 'Rivera Family',
             'family_school_type' => 'Virtual',
             'family_state' => 'MA',

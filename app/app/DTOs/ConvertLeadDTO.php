@@ -24,6 +24,7 @@ final class ConvertLeadDTO
         public readonly ?string $state = null,
         public readonly ?string $zipCode = null,
         public readonly ?string $scheduleEmail = null,
+        public readonly ?string $familyFullName = null,
         public readonly ?string $familyName = null,
         public readonly ?string $familySchoolType = null,
         public readonly ?string $familyState = null,
@@ -60,6 +61,7 @@ final class ConvertLeadDTO
             state: $data['state'] ?? null,
             zipCode: $data['zip_code'] ?? null,
             scheduleEmail: $data['schedule_email'] ?? null,
+            familyFullName: $data['family_full_name'] ?? null,
             familyName: $data['family_name'] ?? null,
             familySchoolType: $data['family_school_type'] ?? null,
             familyState: $data['family_state'] ?? null,
@@ -113,7 +115,7 @@ final class ConvertLeadDTO
     public function toCreateSchoolDTO(): CreateSchoolDTO
     {
         return new CreateSchoolDTO(
-            fullName: (string) $this->familyName,
+            fullName: (string) ($this->familyFullName ?? $this->familyName),
             displayName: (string) $this->familyName,
             address: $this->familyAddress,
             state: (string) $this->familyState,

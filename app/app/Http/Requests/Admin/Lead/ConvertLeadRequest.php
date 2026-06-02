@@ -38,6 +38,7 @@ final class ConvertLeadRequest extends FormRequest
             'schedule_email' => ['nullable', 'email:rfc', 'max:255'],
 
             // New school/family fields (required when no existing school is picked).
+            'family_full_name' => [Rule::requiredIf($creatingSchool), 'nullable', 'string', 'max:255'],
             'family_name' => [Rule::requiredIf($creatingSchool), 'nullable', 'string', 'max:255', Rule::unique('schools', 'display_name')],
             'family_school_type' => [Rule::requiredIf($creatingSchool), 'nullable', Rule::in(SchoolType::values())],
             'family_state' => [Rule::requiredIf($creatingSchool), 'nullable', Rule::in(array_keys(UsStates::STATES))],
@@ -98,7 +99,8 @@ final class ConvertLeadRequest extends FormRequest
             'username.unique' => 'This username is already taken.',
             'username.regex' => 'Username can only contain letters, numbers, dots, and dashes.',
             'id_number.required' => 'Student ID is required for non-private schools/families.',
-            'family_name.required' => 'Enter a name for the new school/family.',
+            'family_full_name.required' => 'Enter the full name for the new school/family.',
+            'family_name.required' => 'Enter a NOVA name for the new school/family.',
             'family_name.unique' => 'A school or family with this name already exists.',
             'family_contact_phone.regex' => 'Phone number can only contain digits and dashes.',
         ];

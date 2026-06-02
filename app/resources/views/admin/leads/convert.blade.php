@@ -185,141 +185,198 @@
                 </svg>
             </button>
 
-            <div id="new_family_body" class="mt-4 space-y-4"
+            <div id="new_family_body" class="mt-4 space-y-6"
                 style="{{ $errors->has('family_name') || $errors->has('family_state') || $errors->has('family_timezone') || $errors->has('family_school_type') ? '' : 'display:none' }}">
-                <x-ui::checkbox-row
-                    name="create_private_family"
-                    id="create_private_family"
-                    label="Private family"
-                    subtext="Check if this is a private family (not a district school). Student ID is auto-generated for private families."
-                    :checked="old('create_private_family', false)"
-                />
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <x-input-label for="family_name" value="School/Family Name *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="family_name_help">Display name for the new school/family</p>
-                    <x-ui::input id="family_name" name="family_name" type="text" class="mt-1 block w-full"
-                        :value="old('family_name')" aria-describedby="family_name_help" />
-                    <x-input-error :messages="$errors->get('family_name')" class="mt-2" />
+                {{-- School/Family Information --}}
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="family_full_name" value="Full School/Family Name *" />
+                            <p class="mt-1 text-xs text-foreground/60">Complete official name of the school or family</p>
+                            <x-ui::input id="family_full_name" name="family_full_name" type="text" class="mt-1 block w-full"
+                                :value="old('family_full_name')" />
+                            <x-input-error :messages="$errors->get('family_full_name')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <x-input-label for="family_name" value="NOVA School/Family Name *" />
+                                <label for="family_same_as_full_name" class="flex items-center gap-1 text-xs text-foreground/70 cursor-pointer">
+                                    <input id="family_same_as_full_name" type="checkbox"
+                                        class="w-3.5 h-3.5 rounded border-input text-primary focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
+                                    Same as Full Name
+                                </label>
+                            </div>
+                            <p class="mt-1 text-xs text-foreground/60">Name used within NOVA for this school or family</p>
+                            <x-ui::input id="family_name" name="family_name" type="text" class="mt-1 block w-full"
+                                :value="old('family_name')" />
+                            <x-input-error :messages="$errors->get('family_name')" class="mt-2" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <x-input-label for="family_address" value="Address" />
+                        <p class="mt-1 text-xs text-foreground/60">Physical address of the school or family (optional)</p>
+                        <textarea id="family_address" name="family_address" rows="3"
+                            class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('family_address', $lead->address ?? '') }}</textarea>
+                        <x-input-error :messages="$errors->get('family_address')" class="mt-2" />
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="family_state" value="State *" />
+                            <p class="mt-1 text-xs text-foreground/60">US state where the school or family is located</p>
+                            <x-ui::select name="family_state" id="family_state" class="mt-1" placeholder="Select State">
+                                <option value="">Select State</option>
+                                @foreach ($states as $code => $name)
+                                    <option value="{{ $code }}" @selected(old('family_state', $lead->state ?? '') === $code)>
+                                        {{ $name }}
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                            <x-input-error :messages="$errors->get('family_state')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="family_timezone" value="Time Zone *" />
+                            <p class="mt-1 text-xs text-foreground/60">Timezone for scheduling and time conversions</p>
+                            <x-ui::select name="family_timezone" id="family_timezone" class="mt-1" placeholder="Select Time Zone">
+                                <option value="">Select Time Zone</option>
+                                @foreach ($timezones as $tz => $label)
+                                    <option value="{{ $tz }}" @selected(old('family_timezone', 'America/New_York') === $tz)>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                            <x-input-error :messages="$errors->get('family_timezone')" class="mt-2" />
+                        </div>
+                    </div>
                 </div>
 
+                {{-- Contact Information --}}
                 <div>
-                    <x-input-label for="family_school_type" value="Type *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="family_type_help">Family placement type</p>
-                    <x-ui::select id="family_school_type" name="family_school_type" class="mt-1" aria-describedby="family_type_help">
-                        @foreach ($schoolTypes as $type)
-                            <option value="{{ $type->value }}" @selected(old('family_school_type', \App\Enums\SchoolType::VIRTUAL->value) === $type->value)>
-                                {{ $type->value }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                    <x-input-error :messages="$errors->get('family_school_type')" class="mt-2" />
-                </div>
-            </div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-xs font-semibold tracking-wider text-foreground/60 uppercase">Contact Information</span>
+                        <span class="flex-1 h-px bg-border"></span>
+                    </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <x-input-label for="family_state" value="State *" />
-                    <x-ui::select name="family_state" id="family_state" class="mt-1" placeholder="Select State">
-                        <option value="">Select State</option>
-                        @foreach ($states as $code => $name)
-                            <option value="{{ $code }}" @selected(old('family_state', $lead->state ?? '') === $code)>
-                                {{ $name }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                    <x-input-error :messages="$errors->get('family_state')" class="mt-2" />
-                </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="family_contact_first_name" value="Primary Contact First Name" />
+                                <x-ui::input id="family_contact_first_name" name="family_contact_first_name" type="text"
+                                    class="mt-1 block w-full" :value="old('family_contact_first_name')" />
+                                <x-input-error :messages="$errors->get('family_contact_first_name')" class="mt-2" />
+                            </div>
 
-                <div>
-                    <x-input-label for="family_timezone" value="Timezone *" />
-                    <x-ui::select name="family_timezone" id="family_timezone" class="mt-1" placeholder="Select Timezone">
-                        <option value="">Select Timezone</option>
-                        @foreach ($timezones as $tz => $label)
-                            <option value="{{ $tz }}" @selected(old('family_timezone', 'America/New_York') === $tz)>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </x-ui::select>
-                    <x-input-error :messages="$errors->get('family_timezone')" class="mt-2" />
-                </div>
-            </div>
+                            <div>
+                                <x-input-label for="family_contact_last_name" value="Primary Contact Last Name" />
+                                <x-ui::input id="family_contact_last_name" name="family_contact_last_name" type="text"
+                                    class="mt-1 block w-full" :value="old('family_contact_last_name')" />
+                                <x-input-error :messages="$errors->get('family_contact_last_name')" class="mt-2" />
+                            </div>
+                        </div>
 
-            <div>
-                <x-input-label for="family_address" value="Address" />
-                <textarea id="family_address" name="family_address" rows="2"
-                    class="mt-1 block w-full border-gray-300 focus:border-primary focus:ring-primary rounded-md shadow-sm">{{ old('family_address', $lead->address ?? '') }}</textarea>
-                <x-input-error :messages="$errors->get('family_address')" class="mt-2" />
-            </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <x-input-label for="family_contact_phone" value="Phone Number" />
+                                <p class="mt-1 text-xs text-foreground/60">Contact phone number (format: 123-456-7890)</p>
+                                <x-ui::input id="family_contact_phone" name="family_contact_phone" type="text"
+                                    class="mt-1 block w-full" placeholder="123-456-7890"
+                                    :value="old('family_contact_phone', $lead->parent_guardian_phone ?? '')" />
+                                <x-input-error :messages="$errors->get('family_contact_phone')" class="mt-2" />
+                            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <x-input-label for="family_contact_first_name" value="Contact First Name" />
-                    <x-ui::input id="family_contact_first_name" name="family_contact_first_name" type="text"
-                        class="mt-1 block w-full" :value="old('family_contact_first_name')" />
-                    <x-input-error :messages="$errors->get('family_contact_first_name')" class="mt-2" />
+                            <div>
+                                <x-input-label for="family_contact_email" value="Email Address" />
+                                <p class="mt-1 text-xs text-foreground/60">Primary contact email address</p>
+                                <x-ui::input id="family_contact_email" name="family_contact_email" type="email"
+                                    class="mt-1 block w-full" :value="old('family_contact_email', $lead->parent_guardian_email ?? '')" />
+                                <x-input-error :messages="$errors->get('family_contact_email')" class="mt-2" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <x-input-label for="family_invoice_email" value="Invoice Email" />
+                            <p class="mt-1 text-xs text-foreground/60">Email address where invoices should be sent</p>
+                            <x-ui::input id="family_invoice_email" name="family_invoice_email" type="email"
+                                class="mt-1 block w-full" :value="old('family_invoice_email')" />
+                            <x-input-error :messages="$errors->get('family_invoice_email')" class="mt-2" />
+                        </div>
+                    </div>
                 </div>
 
+                {{-- Characteristics: Details --}}
                 <div>
-                    <x-input-label for="family_contact_last_name" value="Contact Last Name" />
-                    <x-ui::input id="family_contact_last_name" name="family_contact_last_name" type="text"
-                        class="mt-1 block w-full" :value="old('family_contact_last_name')" />
-                    <x-input-error :messages="$errors->get('family_contact_last_name')" class="mt-2" />
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-xs font-semibold tracking-wider text-foreground/60 uppercase">Details</span>
+                        <span class="flex-1 h-px bg-border"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <x-input-label for="family_school_type" value="School / family type *" />
+                            <x-ui::select id="family_school_type" name="family_school_type" class="mt-1" placeholder="Select type">
+                                @foreach ($schoolTypes as $type)
+                                    <option value="{{ $type->value }}" @selected(old('family_school_type', \App\Enums\SchoolType::VIRTUAL->value) === $type->value)>
+                                        {{ $type->value }}
+                                    </option>
+                                @endforeach
+                            </x-ui::select>
+                            <p class="mt-1 text-xs text-foreground/60">Educational institution or family placement</p>
+                            <x-input-error :messages="$errors->get('family_school_type')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="family_external_emr_name" value="External EMR name" />
+                            <x-ui::input id="family_external_emr_name" name="family_external_emr_name" type="text"
+                                class="mt-1 block w-full" :value="old('family_external_emr_name')" />
+                            <p class="mt-1 text-xs text-foreground/60">Name in external EMR system, if any</p>
+                            <x-input-error :messages="$errors->get('family_external_emr_name')" class="mt-2" />
+                        </div>
+                    </div>
                 </div>
 
+                {{-- Characteristics: Settings --}}
                 <div>
-                    <x-input-label for="family_contact_phone" value="Contact Phone" />
-                    <x-ui::input id="family_contact_phone" name="family_contact_phone" type="text"
-                        class="mt-1 block w-full" placeholder="123-456-7890"
-                        :value="old('family_contact_phone', $lead->parent_guardian_phone ?? '')" />
-                    <x-input-error :messages="$errors->get('family_contact_phone')" class="mt-2" />
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-xs font-semibold tracking-wider text-foreground/60 uppercase">Settings</span>
+                        <span class="flex-1 h-px bg-border"></span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-6">
+                        <x-ui::checkbox-row
+                            name="create_private_family"
+                            id="create_private_family"
+                            label="Private student"
+                            subtext="Family record, not a district school"
+                            tooltip="Check if this record is a private family rather than a district-enrolled school. Student ID is auto-generated for private families."
+                            :checked="old('create_private_family', false)"
+                        />
+
+                        <x-ui::checkbox-row
+                            name="family_is_auto_extend"
+                            label="Auto-extend contract and SSAs"
+                            subtext="Extend by 1 year on expiry date"
+                            :checked="old('family_is_auto_extend', false)"
+                        />
+
+                        <x-ui::checkbox-row
+                            name="family_non_billable_scheduling"
+                            label="Exclude from past sessions queue"
+                            subtext="Skip post-session log submission"
+                            :checked="old('family_non_billable_scheduling', false)"
+                        />
+
+                        <x-ui::checkbox-row
+                            name="family_allow_weekend_scheduling"
+                            label="Allow weekend scheduling"
+                            subtext="Saturdays and Sundays available"
+                            :checked="old('family_allow_weekend_scheduling', false)"
+                        />
+                    </div>
                 </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <x-input-label for="family_contact_email" value="Contact Email" />
-                    <x-ui::input id="family_contact_email" name="family_contact_email" type="email"
-                        class="mt-1 block w-full" :value="old('family_contact_email', $lead->parent_guardian_email ?? '')" />
-                    <x-input-error :messages="$errors->get('family_contact_email')" class="mt-2" />
-                </div>
-
-                <div>
-                    <x-input-label for="family_invoice_email" value="Invoice Email" />
-                    <x-ui::input id="family_invoice_email" name="family_invoice_email" type="email"
-                        class="mt-1 block w-full" :value="old('family_invoice_email')" />
-                    <x-input-error :messages="$errors->get('family_invoice_email')" class="mt-2" />
-                </div>
-            </div>
-
-            <div>
-                <x-input-label for="family_external_emr_name" value="External EMR Name" />
-                <x-ui::input id="family_external_emr_name" name="family_external_emr_name" type="text"
-                    class="mt-1 block w-full" :value="old('family_external_emr_name')" />
-                <x-input-error :messages="$errors->get('family_external_emr_name')" class="mt-2" />
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
-                <x-ui::checkbox-row
-                    name="family_is_auto_extend"
-                    label="Auto-extend contract and SSAs"
-                    subtext="Extend by 1 year on expiry date"
-                    :checked="old('family_is_auto_extend', false)"
-                />
-                <x-ui::checkbox-row
-                    name="family_non_billable_scheduling"
-                    label="Exclude from past sessions queue"
-                    subtext="Skip post-session log submission"
-                    :checked="old('family_non_billable_scheduling', false)"
-                />
-                <x-ui::checkbox-row
-                    name="family_allow_weekend_scheduling"
-                    label="Allow weekend scheduling"
-                    subtext="Saturdays and Sundays available"
-                    :checked="old('family_allow_weekend_scheduling', false)"
-                />
-            </div>
             </div>{{-- /#new_family_body --}}
         </x-ui::card>
 
