@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Services;
 
-use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
 use App\Domain\SSA\Repositories\SSARepositoryInterface;
 use App\Domain\Therapist\Services\SessionLogRateService;
 use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
+use App\DTOs\Schedule\SubRequest\EligibleSubDTO;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\SubRequestStatus;

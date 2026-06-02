@@ -6,7 +6,6 @@ namespace App\Http\Requests\Therapist;
 
 use App\Domain\Billing\Services\BillingEntryWindowService;
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
-use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
@@ -238,8 +237,6 @@ final class StoreSessionLogRequest extends FormRequest
                 }
             }
 
-            // Validate session date is not a holiday
-            $calendarService = app(SchoolCalendarService::class);
             $studentRepository = app(StudentRepositoryInterface::class);
             $schoolId = null;
 
@@ -258,14 +255,6 @@ final class StoreSessionLogRequest extends FormRequest
 
             if (! $schoolId && $studentId) {
                 $schoolId = $studentRepository->getSchoolIdByUserId((int) $studentId);
-            }
-
-            $sessionDate = $this->input('session_date');
-            if ($schoolId && $sessionDate) {
-                $date = Carbon::parse((string) $sessionDate);
-                if ($calendarService->isHolidayDate((int) $schoolId, $date)) {
-                    $validator->errors()->add('session_date', 'Session date falls on a school holiday.');
-                }
             }
 
             // Validate active contracts cover the session date

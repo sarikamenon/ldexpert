@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Repositories;
 
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
-use App\DTOs\CreateSchoolCalendarEventDTO;
-use App\DTOs\UpdateSchoolCalendarEventDTO;
+use App\DTOs\School\CalendarEvent\CreateSchoolCalendarEventDTO;
+use App\DTOs\School\CalendarEvent\UpdateSchoolCalendarEventDTO;
 use App\Enums\SchoolCalendarEventType;
 use App\Models\SchoolCalendarEvent;
 use Carbon\CarbonInterface;

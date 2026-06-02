@@ -16,5 +16,6 @@ Schedule::command('school:notify-expiring-contracts')->dailyAt('08:00');
 Schedule::command('school:auto-extend-contracts-ssas')->dailyAt('02:00');
 Schedule::command('sub-requests:expire-overdue')->hourly();
 Schedule::command('makeup-reminders:generate')->dailyAt('03:00');
+Schedule::command('makeup-reminders:therapist-availability')->dailyAt('06:00');
 Schedule::command('makeup-reminders:send-due')->dailyAt('07:00');
 Schedule::command('makeup-reminders:auto-decline')->dailyAt('04:00');

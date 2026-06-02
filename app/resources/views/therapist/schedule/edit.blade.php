@@ -50,11 +50,13 @@
                 'isPrivateStudent' => $isPrivateStudent,
                 'allowsWeekendScheduling' => $allowsWeekendScheduling ?? false,
                 'weekDays' => $weekDays,
+                'holidayDates' => $holidayDates ?? [],
                 'scheduleLocalDate' => $scheduleLocalDate,
                 'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,
                 'scheduleLocalEndTime' => $scheduleLocalEndTime,
                 'subPanel' => $subPanel ?? null,
+                'makeupRequestId' => $makeupRequestId ?? null,
             ])
         </div>
     </div>

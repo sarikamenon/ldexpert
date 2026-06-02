@@ -14,7 +14,6 @@ class UsStates
      * which is why the column is varchar(3) and not constrained to US states.
      * The "state" naming is retained for backwards compatibility.
      */
-
     public const STATES = [
         'AL' => 'Alabama',
         'AK' => 'Alaska',

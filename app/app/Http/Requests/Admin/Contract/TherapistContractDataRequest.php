@@ -25,7 +25,7 @@ final class TherapistContractDataRequest extends FormRequest
             'filter_search' => ['nullable', 'string', 'max:255'],
             'filter_therapist_ids' => ['nullable', 'array'],
             'filter_therapist_ids.*' => ['integer', 'exists:therapist_profiles,id'],
-            'filter_therapist_id' => ['nullable', 'integer', 'exists:users,id'],
+            'filter_therapist_id' => ['nullable', 'integer', 'exists:therapist_profiles,id'],
         ];
     }
 }

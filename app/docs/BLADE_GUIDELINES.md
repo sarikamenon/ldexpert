@@ -198,6 +198,7 @@ Every form input must follow this order: **Label → Help Text → Input → Err
 - **Always wrap forms and page sections in `<x-ui::card class="p-6 space-y-4">`** — never bare `<div>`s for sections.
 - Page-specific reusable widgets go in `resources/views/components/<page>/`.
 - Documented patterns live in `app/docs/DESIGN_SYSTEM.md`. New patterns are documented there **before** being implemented.
+- **`<x-ui::select>` with `:inline="true"` ignores width classes/props** — Select2 auto-sizes to content. To force a fixed width, wrap it in `<div class="w-[Npx] [&_.select2-container]:!w-full">` so the override survives Select2's async re-init.
 
 ---
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\DTOs;
+namespace App\DTOs\School\CalendarEvent;
 
 use App\Enums\SchoolCalendarEventType;
 use App\Models\SchoolCalendarEvent;
@@ -16,6 +16,9 @@ final class SchoolCalendarEventResponseDTO
         public readonly SchoolCalendarEventType $eventType,
         public readonly string $startDate,
         public readonly string $endDate,
+        public readonly bool $requestMakeup,
+        public readonly ?string $reminderDate,
+        public readonly ?string $responseDate,
         public readonly ?string $notes,
     ) {}
 
@@ -28,6 +31,9 @@ final class SchoolCalendarEventResponseDTO
             eventType: $event->event_type,
             startDate: $event->start_date->format('Y-m-d'),
             endDate: $event->end_date->format('Y-m-d'),
+            requestMakeup: $event->request_makeup,
+            reminderDate: $event->reminder_date?->format('Y-m-d'),
+            responseDate: $event->response_date?->format('Y-m-d'),
             notes: $event->notes,
         );
     }
@@ -43,6 +49,9 @@ final class SchoolCalendarEventResponseDTO
             'event_type_label' => $this->eventType->label(),
             'start_date' => $this->startDate,
             'end_date' => $this->endDate,
+            'request_makeup' => $this->requestMakeup,
+            'reminder_date' => $this->reminderDate,
+            'response_date' => $this->responseDate,
             'notes' => $this->notes,
             'is_holiday' => $this->eventType === SchoolCalendarEventType::HOLIDAY,
         ];

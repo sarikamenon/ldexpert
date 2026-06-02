@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Domain\Schedule\Sub\DTOs;
+namespace App\DTOs\Schedule\SubRequest;
 
 /**
  * Picker-facing view of an eligible substitute therapist for a schedule.

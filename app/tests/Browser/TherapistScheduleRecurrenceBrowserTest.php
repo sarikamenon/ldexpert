@@ -655,7 +655,9 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
             $browser->script("document.getElementById('start_time').value = '09:00';");
             $browser->script("document.getElementById('duration_minutes').value = '60';");
             $browser->script("$('#recurrence_type').val('custom_weekly').trigger('change');");
-            $browser->pause(400);
+            // Wait for the Select2 change handler to reveal the custom-weekly fields
+            // rather than racing a fixed pause (the add button lives inside this container).
+            $browser->waitFor('#additional_dates_container:not(.hidden)');
             $browser->script("document.getElementById('recurrence_end_date').value = '$endDate'; document.getElementById('recurrence_end_date').dispatchEvent(new Event('change', {bubbles: true}));");
             $browser->pause(400);
             // Weekly pattern: Monday only.
@@ -669,7 +671,9 @@ final class TherapistScheduleRecurrenceBrowserTest extends DuskTestCase
             ");
             $browser->pause(400);
             // Add a one-off Wednesday.
-            $browser->click('#add_additional_date_btn')->pause(300);
+            $browser->waitFor('#add_additional_date_btn')
+                ->click('#add_additional_date_btn')
+                ->waitFor('.additional-date-input');
             $browser->script("var i = document.querySelector('.additional-date-input'); i.value = '$extraDate'; i.dispatchEvent(new Event('change', {bubbles: true}));");
             $browser->pause(300)
                 ->type('#location_details', 'Private Office');

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Repositories;
 
-use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
+use App\DTOs\Schedule\SubRequest\EligibleSubDTO;
 use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;

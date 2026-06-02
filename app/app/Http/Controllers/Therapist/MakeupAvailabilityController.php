@@ -1,0 +1,117 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Controllers\Therapist;
+
+use App\DataTables\Transformers\MakeupAvailabilityRowTransformer;
+use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupAvailabilityRepositoryInterface;
+use App\Domain\Schedule\Makeup\Services\ScheduleMakeupAvailabilityService;
+use App\Domain\Time\UserTimezoneService;
+use App\DTOs\Schedule\Makeup\StoreMakeupAvailabilityDTO;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Therapist\StoreMakeupAvailabilityRequest;
+use App\Models\ScheduleMakeupAvailability;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
+use Throwable;
+
+final class MakeupAvailabilityController extends Controller
+{
+    public function __construct(
+        private readonly ScheduleMakeupAvailabilityRepositoryInterface $repository,
+        private readonly ScheduleMakeupAvailabilityService $service,
+        private readonly UserTimezoneService $timezoneService,
+    ) {}
+
+    public function index(Request $request): View
+    {
+        $this->authorize('viewAny', ScheduleMakeupAvailability::class);
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $windows = $this->repository->listUpcomingForTherapist($therapist);
+
+        return view('therapist.makeup-requests.availability.index', [
+            'rows' => $windows->map(fn (ScheduleMakeupAvailability $w): array => MakeupAvailabilityRowTransformer::transform(
+                $w,
+                $tz,
+                $this->repository->schedulesOverlappingWindow($w),
+            ))->all(),
+            'createUrl' => route('therapist.makeup-requests.availability.create'),
+        ]);
+    }
+
+    public function create(Request $request): View
+    {
+        $this->authorize('create', ScheduleMakeupAvailability::class);
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $now = now()->setTimezone($tz);
+
+        return view('therapist.makeup-requests.availability.create', [
+            'formDefaults' => [
+                'availability_date' => $now->toDateString(),
+                'start_time' => $now->format('H:i'),
+                'end_time' => $now->addHours(3)->format('H:i'),
+            ],
+        ]);
+    }
+
+    public function store(StoreMakeupAvailabilityRequest $request): RedirectResponse
+    {
+        $this->authorize('create', ScheduleMakeupAvailability::class);
+
+        /** @var \App\Models\User $therapist */
+        $therapist = $request->user();
+
+        try {
+            $this->service->create(
+                $therapist,
+                StoreMakeupAvailabilityDTO::fromRequest($request),
+            );
+        } catch (Throwable $e) {
+            Log::error('MakeupAvailabilityController::store failed', ['exception' => $e]);
+
+            return back()
+                ->withInput()
+                ->withErrors(['availability' => 'Unable to save availability window. Please try again.']);
+        }
+
+        return redirect()
+            ->route('therapist.makeup-requests.availability.index')
+            ->with('status', 'Availability window added.');
+    }
+
+    public function destroy(Request $request, ScheduleMakeupAvailability $availability): RedirectResponse|JsonResponse
+    {
+        $this->authorize('delete', $availability);
+
+        try {
+            $this->service->delete($availability);
+        } catch (Throwable $e) {
+            Log::error('MakeupAvailabilityController::destroy failed', ['exception' => $e]);
+
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unable to delete this window. Please try again.'], 500);
+            }
+
+            return back()->withErrors(['availability' => 'Unable to delete this window. Please try again.']);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Availability window removed.']);
+        }
+
+        return redirect()
+            ->route('therapist.makeup-requests.availability.index')
+            ->with('status', 'Availability window removed.');
+    }
+}

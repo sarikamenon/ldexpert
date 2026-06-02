@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Therapist;
 
 use App\Constants\UsTimezones;
+use App\Domain\Schedule\Makeup\Repositories\ScheduleMakeupRequestRepositoryInterface;
 use App\Domain\Schedule\Sub\Presenters\SubCoveragePanelPresenter;
 use App\Domain\Schedule\Sub\Services\CoverageRoleResolver;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
@@ -23,6 +24,7 @@ use App\Enums\ServiceStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\WeekDay;
 use App\Exceptions\CannotDeleteBilledScheduleException;
+use App\Exceptions\CannotDeleteScheduleWithMakeupException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
@@ -30,6 +32,7 @@ use App\Http\Requests\Therapist\StoreScheduleRequest;
 use App\Http\Requests\Therapist\UpdateScheduleRequest;
 use App\Http\Resources\Schedule\ScheduleDetailsResource;
 use App\Models\Schedule;
+use App\Models\ScheduleMakeupRequest;
 use App\Models\Service;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -39,6 +42,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 final class ScheduleController extends Controller
 {
@@ -51,6 +55,7 @@ final class ScheduleController extends Controller
         private readonly UserTimezoneService $timezoneService,
         private readonly ScheduleSubRequestService $subRequestService,
         private readonly SubCoveragePanelPresenter $subCoveragePanelPresenter,
+        private readonly ScheduleMakeupRequestRepositoryInterface $makeupRequestRepository,
     ) {}
 
     public function create(Request $request): View|RedirectResponse
@@ -140,6 +145,8 @@ final class ScheduleController extends Controller
             ->values()
             ->all();
 
+        $holidayDates = $schoolId ? $this->resolveUpcomingHolidayDates((int) $schoolId) : [];
+
         return view('therapist.schedule.create', [
             'selectedDate' => $selectedDate,
             'students' => $students,
@@ -154,6 +161,10 @@ final class ScheduleController extends Controller
             'isPrivateStudent' => $isPrivateStudent,
             'allowsWeekendScheduling' => $allowsWeekendScheduling,
             'weekDays' => $weekDays,
+            'holidayDates' => $holidayDates,
+            'makeupRequestId' => $request->query('makeup_request_id') !== null
+                ? (int) $request->query('makeup_request_id')
+                : null,
         ]);
     }
 
@@ -200,6 +211,10 @@ final class ScheduleController extends Controller
 
         $subPanel = $this->subCoveragePanelPresenter->present($schedule, $tz);
 
+        $editSchoolId = $schedule->school_id
+            ?? $schedule->student?->studentProfile?->school_id;
+        $holidayDates = $editSchoolId ? $this->resolveUpcomingHolidayDates((int) $editSchoolId) : [];
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
             'therapistTimezone' => $therapistTimezone,
@@ -207,11 +222,15 @@ final class ScheduleController extends Controller
             'isPrivateStudent' => $isPrivateStudent,
             'allowsWeekendScheduling' => $allowsWeekendScheduling,
             'weekDays' => $weekDays,
+            'holidayDates' => $holidayDates,
             'scheduleLocalDate' => $localStart->format('Y-m-d'),
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
             'subPanel' => $subPanel,
+            'makeupRequestId' => $request->query('makeup_request_id') !== null
+                ? (int) $request->query('makeup_request_id')
+                : null,
         ]);
     }
 
@@ -416,6 +435,11 @@ final class ScheduleController extends Controller
             $subWarning = $this->raiseSubRequestForNewSchedule($therapist, $schedule, $subInviteeIds, $subReason);
         }
 
+        $makeupRequestId = $request->input('makeup_request_id');
+        if ($makeupRequestId !== null) {
+            $this->linkMakeupRequestSchedule($therapist, (int) $makeupRequestId, $schedule->id);
+        }
+
         if ($request->expectsJson()) {
             $response = ['schedule' => $schedule];
             if ($subWarning !== null) {
@@ -465,6 +489,11 @@ final class ScheduleController extends Controller
             }
 
             return back()->withErrors(['start_time' => $e->getMessage()])->withInput();
+        }
+
+        $makeupRequestId = $request->input('makeup_request_id');
+        if ($makeupRequestId !== null) {
+            $this->linkMakeupRequestSchedule($therapist, (int) $makeupRequestId, $updated->id);
         }
 
         $subWarning = null;
@@ -517,7 +546,7 @@ final class ScheduleController extends Controller
 
         try {
             $this->scheduleService->deleteSchedule($therapist, $id);
-        } catch (CannotDeleteBilledScheduleException $e) {
+        } catch (CannotDeleteBilledScheduleException|CannotDeleteScheduleWithMakeupException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ], 422);
@@ -548,7 +577,13 @@ final class ScheduleController extends Controller
             ], 422);
         }
 
-        $deletedCount = $this->scheduleService->deleteFutureRecurringSchedules($therapist, $id);
+        try {
+            $deletedCount = $this->scheduleService->deleteFutureRecurringSchedules($therapist, $id);
+        } catch (CannotDeleteBilledScheduleException|CannotDeleteScheduleWithMakeupException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -569,7 +604,13 @@ final class ScheduleController extends Controller
 
         $this->authorize('delete', $schedule);
 
-        $this->scheduleService->removeStudentFromOccurrence($therapist, $id);
+        try {
+            $this->scheduleService->removeStudentFromOccurrence($therapist, $id);
+        } catch (CannotDeleteScheduleWithMakeupException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -698,6 +739,48 @@ final class ScheduleController extends Controller
     }
 
     /**
+     * Side-effect for the make-up booking flow: link the booked schedule back
+     * to the originating make-up request, stamp the therapist as the actor,
+     * and flip the request's status to SCHEDULED. Used by both paths — an
+     * in-place reschedule (update) of the missed session and the create-new
+     * fallback when the original session was deleted.
+     *
+     * The schedule has already been saved by the time we get here, so any
+     * failure must not propagate to the user.
+     */
+    private function linkMakeupRequestSchedule(User $therapist, int $makeupRequestId, int $scheduleId): void
+    {
+        try {
+            $makeupRequest = ScheduleMakeupRequest::find($makeupRequestId);
+            if ($makeupRequest === null) {
+                return;
+            }
+
+            // Only the owning therapist may book, and only a request that is
+            // still awaiting booking. Guards against a stale/forged
+            // makeup_request_id reaching the schedule endpoints directly.
+            if ((int) $makeupRequest->therapist_id !== (int) $therapist->id
+                || ! $makeupRequest->isRequested()
+                || $makeupRequest->makeup_schedule_id !== null) {
+                return;
+            }
+
+            $schedule = Schedule::find($scheduleId);
+            if ($schedule !== null) {
+                $schedule->forceFill(['updated_by' => $therapist->id])->save();
+            }
+
+            $this->makeupRequestRepository->linkBookedSchedule($makeupRequest, $scheduleId);
+        } catch (\Throwable $e) {
+            Log::error('ScheduleController: failed to link make-up request to schedule', [
+                'makeup_request_id' => $makeupRequestId,
+                'schedule_id' => $scheduleId,
+                'exception' => $e,
+            ]);
+        }
+    }
+
+    /**
      * Bundled side-effect for schedule update: either sync invitees on the
      * existing open request, or raise a new one. Same swallow-and-warn contract
      * as raiseSubRequestForNewSchedule().
@@ -730,5 +813,30 @@ final class ScheduleController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Holiday-date list for the scheduling form's inline warning. Failure
+     * here is non-fatal — the form still renders; the user simply loses
+     * the holiday warning hint.
+     *
+     * @return array<int, string>
+     */
+    private function resolveUpcomingHolidayDates(int $schoolId): array
+    {
+        try {
+            return $this->calendarService->listHolidayDateStringsForSchool(
+                $schoolId,
+                CarbonImmutable::today(),
+                CarbonImmutable::today()->addYear(),
+            );
+        } catch (Throwable $e) {
+            Log::error('ScheduleController: failed to load holiday dates for form', [
+                'school_id' => $schoolId,
+                'exception' => $e,
+            ]);
+
+            return [];
+        }
     }
 }

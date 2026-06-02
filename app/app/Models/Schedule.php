@@ -63,6 +63,8 @@ class Schedule extends Model
         'location_details',
         'sub_therapist_id',
         'sub_request_status',
+        'created_by',
+        'updated_by',
     ];
 
     protected function casts(): array
@@ -190,6 +192,43 @@ class Schedule extends Model
     }
 
     /**
+     * Make-up reminder rows raised for this scheduled session (it was missed).
+     *
+     * @return HasMany<ScheduleMakeupRequest, $this>
+     */
+    public function makeupRequests(): HasMany
+    {
+        return $this->hasMany(ScheduleMakeupRequest::class, 'schedule_id');
+    }
+
+    /**
+     * If this schedule is itself a make-up session, this points back to the
+     * originating make-up request row.
+     *
+     * @return HasOne<ScheduleMakeupRequest, $this>
+     */
+    public function originatingMakeupRequest(): HasOne
+    {
+        return $this->hasOne(ScheduleMakeupRequest::class, 'makeup_schedule_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function updatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /**
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
@@ -311,9 +350,31 @@ class Schedule extends Model
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
+    public function scopeForTherapistOwned(Builder $query, int $therapistId): Builder
+    {
+        return ScheduleScope::forTherapistOwned($query, $this, $therapistId);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
     public function scopeForStudent(Builder $query, User $student): Builder
     {
         return ScheduleScope::forStudent($query, $this, $student);
+    }
+
+    /**
+     * Sessions for a specific school on a specific calendar date.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeForSchoolOnDate(Builder $query, int $schoolId, string $date): Builder
+    {
+        return $query
+            ->where('school_id', $schoolId)
+            ->where('schedule_date', $date);
     }
 
     /**
@@ -389,6 +450,15 @@ class Schedule extends Model
     public function scopeStartingAtOrBefore(Builder $query, \Carbon\CarbonInterface $moment): Builder
     {
         return ScheduleScope::startingAtOrBefore($query, $this, $moment);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeOverlappingWindow(Builder $query, string $windowStartUtc, string $windowEndUtc): Builder
+    {
+        return ScheduleScope::overlappingWindow($query, $this, $windowStartUtc, $windowEndUtc);
     }
 
     /**

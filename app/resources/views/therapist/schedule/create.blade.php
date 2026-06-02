@@ -33,6 +33,8 @@
                 'isPrivateStudent' => $isPrivateStudent ?? false,
                 'allowsWeekendScheduling' => $allowsWeekendScheduling ?? false,
                 'weekDays' => $weekDays,
+                'holidayDates' => $holidayDates ?? [],
+                'makeupRequestId' => $makeupRequestId ?? null,
             ])
         </div>
     </div>

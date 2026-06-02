@@ -148,6 +148,17 @@ final class ScheduleScope extends BaseModelScope
     }
 
     /**
+     * Primary therapist only — excludes sessions the therapist is covering as a sub.
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function forTherapistOwned(Builder $builder, Model $model, int $therapistId): Builder
+    {
+        return $builder->where(self::qualify($model, 'therapist_id'), $therapistId);
+    }
+
+    /**
      * For pending-queue and pending-count queries: ensures the original therapist's
      * schedule is hidden once a sub has accepted (they shouldn't log it; the sub will).
      * The sub's own covered schedules still appear.
@@ -190,6 +201,25 @@ final class ScheduleScope extends BaseModelScope
     public static function startingAtOrBefore(Builder $builder, Model $model, CarbonInterface $moment): Builder
     {
         return self::compareStartTimestamp($builder, $model, '<=', $moment);
+    }
+
+    /**
+     * Filter to schedules whose UTC interval overlaps [windowStart, windowEnd).
+     * Overlap condition: schedule starts before window ends AND schedule ends after window starts.
+     * Expects UTC datetime strings (Y-m-d H:i:s).
+     *
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function overlappingWindow(Builder $builder, Model $model, string $windowStartUtc, string $windowEndUtc): Builder
+    {
+        $date = self::qualify($model, 'schedule_date');
+        $st   = self::qualify($model, 'start_time');
+        $et   = self::qualify($model, 'end_time');
+
+        return $builder
+            ->whereRaw("TIMESTAMP({$date}, {$st}) < ?", [$windowEndUtc])
+            ->whereRaw("TIMESTAMP({$date}, {$et}) > ?", [$windowStartUtc]);
     }
 
     /**

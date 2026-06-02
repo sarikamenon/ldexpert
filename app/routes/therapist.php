@@ -3,6 +3,8 @@
 use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
 use App\Http\Controllers\Therapist\Finance\PayStubController;
+use App\Http\Controllers\Therapist\MakeupAvailabilityController;
+use App\Http\Controllers\Therapist\MakeupRequestController;
 use App\Http\Controllers\Therapist\QGlobRequestController;
 use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
@@ -100,6 +102,23 @@ Route::middleware('role:therapist')
         });
 
         Route::post('schedules/{schedule}/sub-request', [SubRequestController::class, 'store'])->name('sub-requests.store-for-schedule')->whereNumber('schedule');
+
+        // Make-Up requests
+        Route::prefix('makeup-requests')->name('makeup-requests.')->group(function () {
+            Route::get('/', [MakeupRequestController::class, 'index'])->name('index');
+            Route::post('data', [MakeupRequestController::class, 'data'])->name('data');
+            Route::get('{makeupRequest}', [MakeupRequestController::class, 'show'])->name('show')->whereNumber('makeupRequest');
+            Route::post('{makeupRequest}/decline', [MakeupRequestController::class, 'decline'])->name('decline')->whereNumber('makeupRequest');
+            Route::post('{makeupRequest}/not-required', [MakeupRequestController::class, 'markNotRequired'])->name('mark-not-required')->whereNumber('makeupRequest');
+            Route::get('{makeupRequest}/book', [MakeupRequestController::class, 'book'])->name('book')->whereNumber('makeupRequest');
+
+            Route::prefix('availability')->name('availability.')->group(function () {
+                Route::get('/', [MakeupAvailabilityController::class, 'index'])->name('index');
+                Route::get('create', [MakeupAvailabilityController::class, 'create'])->name('create');
+                Route::post('/', [MakeupAvailabilityController::class, 'store'])->name('store');
+                Route::delete('{availability}', [MakeupAvailabilityController::class, 'destroy'])->name('destroy')->whereNumber('availability');
+            });
+        });
 
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
