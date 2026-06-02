@@ -36,6 +36,23 @@ enum ScheduleMakeupRequestStatus: string
     }
 
     /**
+     * Statuses that block deleting the originating scheduled session: the
+     * reminder is out (sent), the parent accepted (requested), or a make-up
+     * has been booked (scheduled). Deleting the schedule under any of these
+     * would orphan an in-flight or committed make-up.
+     *
+     * @return array<int, string>
+     */
+    public static function blockingScheduleDeletionValues(): array
+    {
+        return [
+            self::SENT->value,
+            self::REQUESTED->value,
+            self::SCHEDULED->value,
+        ];
+    }
+
+    /**
      * @return array<int, string>
      */
     public static function values(): array

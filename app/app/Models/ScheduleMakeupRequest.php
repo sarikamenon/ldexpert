@@ -171,6 +171,18 @@ class ScheduleMakeupRequest extends Model
     }
 
     /**
+     * Rows whose status blocks deleting the originating scheduled session
+     * (sent / requested / scheduled). See ScheduleMakeupRequestStatus.
+     *
+     * @param  Builder<ScheduleMakeupRequest>  $query
+     * @return Builder<ScheduleMakeupRequest>
+     */
+    public function scopeBlockingScheduleDeletion(Builder $query): Builder
+    {
+        return $query->whereIn('status', ScheduleMakeupRequestStatus::blockingScheduleDeletionValues());
+    }
+
+    /**
      * @param  Builder<ScheduleMakeupRequest>  $query
      * @return Builder<ScheduleMakeupRequest>
      */

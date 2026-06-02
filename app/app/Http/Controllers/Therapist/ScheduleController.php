@@ -24,6 +24,7 @@ use App\Enums\ServiceStatus;
 use App\Enums\SubRequestInviteeStatus;
 use App\Enums\WeekDay;
 use App\Exceptions\CannotDeleteBilledScheduleException;
+use App\Exceptions\CannotDeleteScheduleWithMakeupException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\ScheduleFilterRequest;
@@ -545,7 +546,7 @@ final class ScheduleController extends Controller
 
         try {
             $this->scheduleService->deleteSchedule($therapist, $id);
-        } catch (CannotDeleteBilledScheduleException $e) {
+        } catch (CannotDeleteBilledScheduleException|CannotDeleteScheduleWithMakeupException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
             ], 422);
@@ -576,7 +577,13 @@ final class ScheduleController extends Controller
             ], 422);
         }
 
-        $deletedCount = $this->scheduleService->deleteFutureRecurringSchedules($therapist, $id);
+        try {
+            $deletedCount = $this->scheduleService->deleteFutureRecurringSchedules($therapist, $id);
+        } catch (CannotDeleteBilledScheduleException|CannotDeleteScheduleWithMakeupException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,
@@ -597,7 +604,13 @@ final class ScheduleController extends Controller
 
         $this->authorize('delete', $schedule);
 
-        $this->scheduleService->removeStudentFromOccurrence($therapist, $id);
+        try {
+            $this->scheduleService->removeStudentFromOccurrence($therapist, $id);
+        } catch (CannotDeleteScheduleWithMakeupException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 422);
+        }
 
         return response()->json([
             'success' => true,

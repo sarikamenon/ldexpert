@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace App\Observers;
 
+use App\Exceptions\CannotDeleteScheduleWithMakeupException;
 use App\Models\Schedule;
 
 final class ScheduleObserver
 {
+    /**
+     * @throws CannotDeleteScheduleWithMakeupException
+     */
     public function deleting(Schedule $schedule): void
     {
         if ($schedule->isForceDeleting()) {
             return;
+        }
+
+        if ($schedule->makeupRequests()->blockingScheduleDeletion()->exists()) {
+            throw new CannotDeleteScheduleWithMakeupException;
         }
 
         $schedule->subRequests()->get()->each->delete();
