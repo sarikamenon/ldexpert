@@ -33,9 +33,8 @@ final class SessionLogController extends Controller
      */
     private const ORDER_WHITELIST = [
         0 => 'session_logs.session_date',
-        4 => 'session_logs.school_invoice_amount',
-        5 => 'session_logs.therapist_billable_amount',
-        6 => 'session_logs.status',
+        3 => 'session_logs.school_invoice_amount',
+        5 => 'session_logs.status',
     ];
 
     public function __construct(

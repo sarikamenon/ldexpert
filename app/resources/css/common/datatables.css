@@ -166,6 +166,28 @@ table.session-log-table.dataTable thead th {
     padding: 0.5rem 0.75rem;
 }
 
+/* Notes column: cap width so long notes wrap instead of stretching the table */
+table.session-log-table .notes-cell {
+    max-width: 18rem;
+    white-space: normal;
+}
+
+/* Clamp the preview to 2 lines; the .notes-expanded class is the single
+   switch the JS toggles to reveal the full text. */
+table.session-log-table .notes-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+}
+
+table.session-log-table .notes-text.notes-expanded {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+}
+
 table.dataTable tbody tr {
     transition: background-color 0.15s;
 }

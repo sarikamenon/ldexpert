@@ -12,10 +12,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (table && dataUrl) {
         const isTherapistForm = formId === 'sessionLogsFiltersForm';
 
+        // The admin table has a non-orderable Notes column (index 4); the
+        // therapist table has no Notes column, so only disable ordering there.
+        const columnDefs = [{ orderable: false, targets: -1 }];
+        if (!isTherapistForm) {
+            columnDefs.push({ orderable: false, targets: 4 });
+        }
+
         await initServerSideDataTable(table.id ? `#${table.id}` : '.session-log-table', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
-            columnDefs: [{ orderable: false, targets: -1 }],
+            columnDefs,
             getExtraData(d) {
                 if (!form) return;
                 if (isTherapistForm) {
@@ -35,6 +42,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             },
         });
+
+        // Reveal the "Read more" toggle only on notes that actually overflow
+        // the 2-line clamp. A MutationObserver on the tbody re-runs this on
+        // every redraw (paging/search/sort re-render the rows) without
+        // depending on jQuery's draw.dt event.
+        const revealOverflowingNotes = () => {
+            document.querySelectorAll('[data-notes-cell]').forEach((cell) => {
+                const text = cell.querySelector('[data-notes-text]');
+                const toggle = cell.querySelector('[data-notes-toggle]');
+                if (!text || !toggle) return;
+                if (text.classList.contains('notes-expanded')) return;
+                toggle.classList.toggle('hidden', text.scrollHeight <= text.clientHeight + 1);
+            });
+        };
+
+        const tbody = table.querySelector('tbody');
+        if (tbody) {
+            new MutationObserver(revealOverflowingNotes).observe(tbody, { childList: true });
+        }
+        revealOverflowingNotes();
 
         if (form && table.id) {
             form.addEventListener('change', () => {
@@ -59,6 +86,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             dom: 'lfrt',
         });
     }
+
+    // Delegated handler for the notes "Read more / Read less" toggle. Rows are
+    // re-rendered on every redraw, so we bind once on the body.
+    document.body.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-notes-toggle]');
+        if (!toggle) return;
+
+        const text = toggle.closest('[data-notes-cell]')?.querySelector('[data-notes-text]');
+        if (!text) return;
+
+        const expanded = text.classList.toggle('notes-expanded');
+        toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        toggle.textContent = expanded ? 'Read less' : 'Read more';
+    });
 
     // Delegated handler for AJAX-rendered rows (DataTable action buttons).
     // Confirmation metadata lives on the <form data-confirm-*> wrapping the

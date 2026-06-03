@@ -23,8 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('session_logs', function (Blueprint $table) {
-            $table->dropIndex(['original_therapist_id', 'session_date']);
             $table->dropConstrainedForeignId('original_therapist_id');
+            $table->dropIndex(['original_therapist_id', 'session_date']);
         });
     }
 };
