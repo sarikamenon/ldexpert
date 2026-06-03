@@ -26,8 +26,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('schedules', function (Blueprint $table) {
-            $table->dropIndex(['sub_therapist_id', 'schedule_date']);
             $table->dropConstrainedForeignId('sub_therapist_id');
+            $table->dropIndex(['sub_therapist_id', 'schedule_date']);
             $table->dropColumn('sub_request_status');
         });
     }

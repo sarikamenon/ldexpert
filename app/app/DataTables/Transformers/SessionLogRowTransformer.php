@@ -22,26 +22,27 @@ final class SessionLogRowTransformer
 
         $dateTimeDate = $sessionDate->format('M d, Y');
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
-        $dateTimeCell = '<div class="flex flex-col space-y-1">'
-            .'<span class="text-foreground font-medium">'.e($dateTimeDate).'</span>';
-        if ($duration) {
-            $dateTimeCell .= '<span class="text-xs text-foreground/60">'.e($duration).'</span>';
-        }
-        $dateTimeCell .= '</div>';
-
         $entryCreated = $createdAt ? $createdAt->format('M d, Y') : null;
         $entryDiff = DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt);
-        $entryInfoCell = '<div class="flex flex-col space-y-1">';
-        if ($entryCreated) {
-            $entryInfoCell .= '<span class="text-xs text-foreground/60">'.e($entryCreated).'</span>';
+
+        $dateLine = e($dateTimeDate);
+        if ($duration) {
+            $dateLine .= ' <span class="text-foreground/60 font-normal">· '.e($duration).'</span>';
         }
-        if ($entryDiff) {
-            $entryInfoCell .= '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium bg-warning/10 text-warning border border-warning/20 w-fit">'.e($entryDiff).'</span>';
+
+        $dateCell = '<div class="flex flex-col">'
+            .'<span class="text-foreground font-medium whitespace-nowrap">'.$dateLine.'</span>';
+        if ($entryCreated || $entryDiff) {
+            $dateCell .= '<span class="inline-flex flex-wrap items-center gap-1 text-xs text-foreground/50">';
+            if ($entryCreated) {
+                $dateCell .= 'Entry: '.e($entryCreated);
+            }
+            if ($entryDiff) {
+                $dateCell .= '<span class="inline-flex items-center px-2 py-0.5 leading-none rounded-base font-medium bg-warning/10 text-warning border border-warning/20">'.e($entryDiff).'</span>';
+            }
+            $dateCell .= '</span>';
         }
-        if (! $entryCreated && ! $entryDiff) {
-            $entryInfoCell .= '<span class="text-gray-500">-</span>';
-        }
-        $entryInfoCell .= '</div>';
+        $dateCell .= '</div>';
 
         $studentName = $log->student->name ?? null;
         $schoolName = $log->school->display_name ?? null;
@@ -62,12 +63,16 @@ final class SessionLogRowTransformer
         $therapistCell = '<div class="flex flex-col">';
         $therapistCell .= '<span class="font-medium text-foreground">'.e($therapistName).'</span>';
         if ($serviceName) {
-            $therapistCell .= '<span class="text-sm text-foreground/70 mt-0.5">'.e($serviceName).'</span>';
+            $therapistCell .= '<span class="text-xs text-foreground/60 mt-1">'.e($serviceName).'</span>';
         }
         $therapistCell .= '</div>';
 
-        $schoolAmountCell = self::formatCurrency($log->school_invoice_amount);
-        $therapistAmountCell = self::formatCurrency($log->therapist_billable_amount);
+        $amountsCell = '<div class="flex flex-col space-y-1">'
+            .'<span class="text-xs text-foreground/60">School: <span class="text-foreground font-medium">'.e(self::formatCurrency($log->school_invoice_amount)).'</span></span>'
+            .'<span class="text-xs text-foreground/60">Therapist: <span class="text-foreground font-medium">'.e(self::formatCurrency($log->therapist_billable_amount)).'</span></span>'
+            .'</div>';
+
+        $notesCell = self::notesCell($log->notes);
 
         $statusLabel = self::getStatusLabel($log);
         $statusVariant = match ($statusLabel) {
@@ -104,15 +109,27 @@ final class SessionLogRowTransformer
         $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [
-            $dateTimeCell,
-            $entryInfoCell,
+            $dateCell,
             $studentSchoolCell,
             $therapistCell,
-            $schoolAmountCell,
-            $therapistAmountCell,
+            $amountsCell,
+            $notesCell,
             $statusCell,
             $actionsCell,
         ];
+    }
+
+    private static function notesCell(?string $notes): string
+    {
+        $notes = $notes !== null ? trim($notes) : '';
+        if ($notes === '') {
+            return '<span class="text-gray-500">-</span>';
+        }
+
+        return '<div class="notes-cell" data-notes-cell>'
+            .'<div class="notes-text text-sm text-foreground/80" data-notes-text>'.e($notes).'</div>'
+            .'<button type="button" class="notes-toggle hidden text-xs text-primary mt-1 hover:underline" data-notes-toggle aria-expanded="false">Read more</button>'
+            .'</div>';
     }
 
     private static function formatCurrency(float|string|null $amount): string

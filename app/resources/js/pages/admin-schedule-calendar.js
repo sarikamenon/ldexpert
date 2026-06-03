@@ -16,7 +16,7 @@ import { initSelectBoxes } from '../common/select-box';
 
         const calendar = initFullCalendar(calendarEl, {
             eventsUrl: eventsUrl,
-            initialView: 'timeGridWeek',
+            initialView: 'dayGridMonth',
             showSessionLogIndicators: true,
             onEventClick: function (event) {
                 const props = event.extendedProps;
