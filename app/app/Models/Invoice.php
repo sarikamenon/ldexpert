@@ -105,6 +105,16 @@ class Invoice extends Model
     }
 
     /**
+     * Schedules billed on this (advance) invoice.
+     *
+     * @return HasMany<Schedule, $this>
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class, 'invoice_id');
+    }
+
+    /**
      * @return HasMany<InvoiceLineItem, $this>
      */
     public function lineItems(): HasMany

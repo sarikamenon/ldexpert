@@ -8,6 +8,7 @@ final class CreateInvoiceDTO
 {
     /**
      * @param  array<int>  $sessionLogIds
+     * @param  array<int>  $scheduleIds  Selected schedules for the advance branch (§6).
      */
     public function __construct(
         public readonly int $schoolId,
@@ -17,6 +18,7 @@ final class CreateInvoiceDTO
         public readonly string $billingPeriodEnd,
         public readonly array $sessionLogIds,
         public readonly ?string $notes = null,
+        public readonly array $scheduleIds = [],
     ) {}
 
     /**
@@ -35,6 +37,9 @@ final class CreateInvoiceDTO
                 ? array_map(fn ($id) => (int) $id, $data['session_log_ids'])
                 : [],
             notes: $data['notes'] ?? null,
+            scheduleIds: isset($data['schedule_ids']) && is_array($data['schedule_ids'])
+                ? array_map(fn ($id) => (int) $id, $data['schedule_ids'])
+                : [],
         );
     }
 
@@ -52,6 +57,7 @@ final class CreateInvoiceDTO
             'billing_period_end' => $this->billingPeriodEnd,
             'session_log_ids' => $this->sessionLogIds,
             'notes' => $this->notes,
+            'schedule_ids' => $this->scheduleIds,
         ];
     }
 }

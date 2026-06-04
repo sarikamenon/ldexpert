@@ -327,7 +327,13 @@ final class BillingAutomationService
             return $this->scheduleService->determineBillingPeriod($schedule->frequency, $nextDay);
         }
 
-        return $this->scheduleService->determineBillingPeriod($schedule->frequency, now());
+        // First-ever run: anchor the first period on billing_start_date when set,
+        // so the first invoice covers the intended period instead of "now".
+        $anchor = $schedule->billing_start_date !== null
+            ? $schedule->billing_start_date->copy()
+            : now();
+
+        return $this->scheduleService->determineBillingPeriod($schedule->frequency, $anchor);
     }
 
     private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): void

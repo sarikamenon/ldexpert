@@ -9,14 +9,12 @@ use App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoiceService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
-use App\Domain\Therapist\Services\SessionLogRateService;
 use App\DTOs\BillingRunResultDTO;
 use App\DTOs\InvoiceLineItemDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleRunStatus;
 use App\Enums\InvoiceLineType;
 use App\Enums\InvoiceStatus;
-use App\Enums\ScheduleStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Models\BillingSchedule;
@@ -27,7 +25,6 @@ use App\Models\SessionLog;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 final class AdvanceBillingService
 {
@@ -37,7 +34,7 @@ final class AdvanceBillingService
         private readonly InvoiceRepositoryInterface $invoiceRepository,
         private readonly InvoiceService $invoiceService,
         private readonly SchoolRepositoryInterface $schoolRepository,
-        private readonly SessionLogRateService $rateService,
+        private readonly AdvanceChargeLineBuilder $chargeLineBuilder,
         private readonly BillingScheduleService $billingScheduleService,
     ) {}
 
@@ -168,6 +165,8 @@ final class AdvanceBillingService
                 $invoice,
                 $allLines->map(fn (InvoiceLineItemDTO $l): array => $l->toArray())->all()
             );
+
+            $this->stampSchedulesOnInvoice($advanceLines, $invoice);
 
             $result = new BillingRunResultDTO(
                 billingScheduleId: $schedule->id,
@@ -359,49 +358,30 @@ final class AdvanceBillingService
         Carbon $periodStart,
         Carbon $periodEnd,
     ): Collection {
-        /** @var Collection<int, InvoiceLineItemDTO> $lines */
-        $lines = collect();
+        return $this->chargeLineBuilder->build($schoolId, $periodStart, $periodEnd);
+    }
 
-        /** @var Collection<int, Schedule> $schedules */
-        $schedules = Schedule::query()
-            ->where('school_id', $schoolId)
-            ->where('schedule_date', '>=', $periodStart->toDateString())
-            ->where('schedule_date', '<=', $periodEnd->toDateString())
-            ->where('status', ScheduleStatus::SCHEDULED->value)
-            ->with(['service', 'therapist', 'school'])
-            ->orderBy('schedule_date')
-            ->get();
+    /**
+     * Stamp invoice_id onto every schedule that became an ADVANCE_SCHEDULED line,
+     * so the generator's notYetInvoiced() filter never re-charges them.
+     *
+     * @param  Collection<int, InvoiceLineItemDTO>  $advanceLines
+     */
+    private function stampSchedulesOnInvoice(Collection $advanceLines, Invoice $invoice): void
+    {
+        $scheduleIds = $advanceLines
+            ->map(fn (InvoiceLineItemDTO $line): ?int => $line->scheduleId)
+            ->filter()
+            ->values()
+            ->all();
 
-        foreach ($schedules as $schedule) {
-            $rate = $this->getScheduleRate($schedule);
-
-            if ($rate === null) {
-                Log::warning('Could not determine rate for scheduled session', [
-                    'schedule_id' => $schedule->id,
-                    'school_id' => $schoolId,
-                ]);
-
-                continue;
-            }
-
-            $serviceName = $schedule->service->name ?? 'Session';
-            $date = $schedule->schedule_date->format('D M j');
-            $duration = $schedule->durationMinutes();
-            $isGroup = $schedule->is_group ? ' (group)' : '';
-
-            $lines->push(new InvoiceLineItemDTO(
-                lineType: InvoiceLineType::ADVANCE_SCHEDULED->value,
-                description: "{$serviceName} — {$date} ({$duration} min){$isGroup}",
-                billingPeriodStart: $periodStart->toDateString(),
-                billingPeriodEnd: $periodEnd->toDateString(),
-                quantity: 1,
-                unitPrice: $rate,
-                total: $rate,
-                scheduleId: $schedule->id,
-            ));
+        if ($scheduleIds === []) {
+            return;
         }
 
-        return $lines;
+        Schedule::query()
+            ->whereIn('id', $scheduleIds)
+            ->update(['invoice_id' => $invoice->id]);
     }
 
     /**
@@ -570,32 +550,6 @@ final class AdvanceBillingService
     }
 
     /**
-     * Get the billing rate for a scheduled session using the rate service.
-     */
-    private function getScheduleRate(Schedule $schedule): ?float
-    {
-        try {
-            $durationMinutes = $schedule->durationMinutes();
-            $result = $this->rateService->calculateDualBilling(
-                $schedule->therapist_id,
-                $schedule->school_id,
-                $schedule->service_id,
-                $schedule->schedule_date->toDateString(),
-                $durationMinutes,
-            );
-
-            return $result['school']['invoice_amount'] ?? null;
-        } catch (\Throwable $e) {
-            Log::warning('Rate calculation failed for schedule', [
-                'schedule_id' => $schedule->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
-    }
-
-    /**
      * Create the advance invoice record for a school.
      */
     private function createAdvanceInvoice(
@@ -697,7 +651,13 @@ final class AdvanceBillingService
             return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $nextDay);
         }
 
-        return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, now());
+        // First-ever run: anchor on billing_start_date when set so the first
+        // advance charge covers the intended period instead of "now".
+        $anchor = $schedule->billing_start_date !== null
+            ? $schedule->billing_start_date->copy()
+            : now();
+
+        return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $anchor);
     }
 
     /**

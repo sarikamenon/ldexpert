@@ -24,7 +24,7 @@ test('billing settings service updates settings', function () {
         'default_frequency' => 'monthly',
         'default_generation_day_type' => 'fixed_delay',
         'default_generation_day_of_week' => 4,
-        'default_min_grace_days' => 5,
+        'default_delay_days' => 5,
         'default_payment_terms_days' => 45,
         'default_auto_generate' => false,
         'default_auto_send' => true,
@@ -37,7 +37,7 @@ test('billing settings service updates settings', function () {
     $updated = $service->updateSettings($dto);
 
     expect($updated->default_frequency->value)->toBe('monthly')
-        ->and($updated->default_min_grace_days)->toBe(5)
+        ->and($updated->default_delay_days)->toBe(5)
         ->and($updated->default_payment_terms_days)->toBe(45)
         ->and($updated->default_auto_generate)->toBeFalse()
         ->and($updated->default_auto_send)->toBeTrue()
@@ -52,7 +52,7 @@ test('billing settings service updates persist in database', function () {
         'default_frequency' => 'weekly',
         'default_generation_day_type' => 'day_of_week',
         'default_generation_day_of_week' => 1,
-        'default_min_grace_days' => 0,
+        'default_delay_days' => 0,
         'default_payment_terms_days' => 15,
         'default_auto_generate' => true,
         'default_auto_send' => false,

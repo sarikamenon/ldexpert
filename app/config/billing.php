@@ -14,6 +14,6 @@ return [
     |
     */
 
-    'entry_window_days_after_week_start' => 9,
+    'entry_window_days_after_week_start' => 90,
 
 ];

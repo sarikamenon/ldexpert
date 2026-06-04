@@ -12,7 +12,7 @@
 
         <x-ui::card class="p-6 space-y-6 mb-6">
             <h2 class="text-lg font-semibold text-foreground">Standard Billing Defaults</h2>
-            <p class="text-sm text-foreground/60">These defaults are applied when creating new billing schedules for regular schools or families.</p>
+            <p class="text-sm text-foreground/60">Applied to therapist bills only.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -53,12 +53,12 @@
                     <x-input-error :messages="$errors->get('default_generation_day_of_week')" class="mt-2" />
                 </div>
 
-                <div id="grace_wrapper" style="{{ old('default_generation_day_type', $settings->default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
-                    <x-input-label for="default_min_grace_days" value="Default Grace Days *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="grace_help">Minimum days to wait after period ends before generating.</p>
-                    <x-ui::input type="number" id="default_min_grace_days" name="default_min_grace_days" class="mt-1 block w-full"
-                        value="{{ old('default_min_grace_days', $settings->default_min_grace_days) }}" min="0" max="14" aria-describedby="grace_help" />
-                    <x-input-error :messages="$errors->get('default_min_grace_days')" class="mt-2" />
+                <div id="delay_wrapper" style="{{ old('default_generation_day_type', $settings->default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
+                    <x-input-label for="default_delay_days" value="Default Delay Days *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="delay_help">Days after the period ends before generating (used only with Fixed Delay generation type). 0 means the next day.</p>
+                    <x-ui::input type="number" id="default_delay_days" name="default_delay_days" class="mt-1 block w-full"
+                        value="{{ old('default_delay_days', $settings->default_delay_days) }}" min="0" max="30" aria-describedby="delay_help" />
+                    <x-input-error :messages="$errors->get('default_delay_days')" class="mt-2" />
                 </div>
 
                 <div>
@@ -100,7 +100,7 @@
         </x-ui::card>
 
         <x-ui::card class="p-6 space-y-6 mb-6">
-            <h2 class="text-lg font-semibold text-foreground">Advance Billing Defaults (Prepaid School/Family)</h2>
+            <h2 class="text-lg font-semibold text-foreground">Advance Invoice Defaults (Prepaid School/Family)</h2>
             <p class="text-sm text-foreground/60">These defaults are applied to school/family records with the Private Student flag enabled. They can be overridden per record.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -142,12 +142,12 @@
                     <x-input-error :messages="$errors->get('advance_default_generation_day_of_week')" class="mt-2" />
                 </div>
 
-                <div id="adv_grace_wrapper" style="{{ old('advance_default_generation_day_type', $settings->advance_default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
-                    <x-input-label for="advance_default_min_grace_days" value="Grace Days *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="adv_grace_help">Minimum days to wait after period ends before generating.</p>
-                    <x-ui::input type="number" id="advance_default_min_grace_days" name="advance_default_min_grace_days" class="mt-1 block w-full"
-                        value="{{ old('advance_default_min_grace_days', $settings->advance_default_min_grace_days) }}" min="0" max="14" aria-describedby="adv_grace_help" />
-                    <x-input-error :messages="$errors->get('advance_default_min_grace_days')" class="mt-2" />
+                <div id="adv_delay_wrapper" style="{{ old('advance_default_generation_day_type', $settings->advance_default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
+                    <x-input-label for="advance_default_delay_days" value="Delay Days *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="adv_delay_help">Days after the period ends before generating (used only with Fixed Delay generation type). 0 means the next day.</p>
+                    <x-ui::input type="number" id="advance_default_delay_days" name="advance_default_delay_days" class="mt-1 block w-full"
+                        value="{{ old('advance_default_delay_days', $settings->advance_default_delay_days) }}" min="0" max="30" aria-describedby="adv_delay_help" />
+                    <x-input-error :messages="$errors->get('advance_default_delay_days')" class="mt-2" />
                 </div>
 
                 <div>
@@ -183,6 +183,80 @@
                             </div>
                         </div>
                         --}}
+                    </div>
+                </div>
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6 space-y-6 mb-6">
+            <h2 class="text-lg font-semibold text-foreground">Standard Invoice Defaults (Postpaid School)</h2>
+            <p class="text-sm text-foreground/60">These defaults are applied to postpaid school invoices (schools without the Private Student flag). They can be overridden per record.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <x-input-label for="standard_default_frequency" value="Frequency *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="std_freq_help">Default billing frequency for standard school invoices.</p>
+                    <x-ui::select id="standard_default_frequency" name="standard_default_frequency" class="mt-1" required :searchable="false" aria-describedby="std_freq_help">
+                        @foreach (\App\Enums\BillingFrequency::cases() as $freq)
+                            <option value="{{ $freq->value }}" @selected(old('standard_default_frequency', $settings->standard_default_frequency->value) === $freq->value)>{{ $freq->label() }}</option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('standard_default_frequency')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="standard_default_generation_day_type" value="Generation Type *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="std_gen_type_help">How generation timing is determined for standard school invoices.</p>
+                    <x-ui::select id="standard_default_generation_day_type" name="standard_default_generation_day_type" class="mt-1" required :searchable="false" aria-describedby="std_gen_type_help">
+                        @foreach (\App\Enums\GenerationDayType::cases() as $type)
+                            <option value="{{ $type->value }}" @selected(old('standard_default_generation_day_type', $settings->standard_default_generation_day_type->value) === $type->value)>{{ $type->label() }}</option>
+                        @endforeach
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('standard_default_generation_day_type')" class="mt-2" />
+                </div>
+
+                <div id="std_dow_wrapper" style="{{ old('standard_default_generation_day_type', $settings->standard_default_generation_day_type->value) === 'fixed_delay' ? 'display:none' : '' }}">
+                    <x-input-label for="standard_default_generation_day_of_week" value="Day of Week *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="std_dow_help">Which weekday to generate on for standard school invoices.</p>
+                    <x-ui::select id="standard_default_generation_day_of_week" name="standard_default_generation_day_of_week" class="mt-1" :searchable="false" aria-describedby="std_dow_help">
+                        @php $stdDow = old('standard_default_generation_day_of_week', (string) $settings->standard_default_generation_day_of_week); @endphp
+                        <option value="0" @selected($stdDow === '0')>Sunday</option>
+                        <option value="1" @selected($stdDow === '1')>Monday</option>
+                        <option value="2" @selected($stdDow === '2')>Tuesday</option>
+                        <option value="3" @selected($stdDow === '3')>Wednesday</option>
+                        <option value="4" @selected($stdDow === '4')>Thursday</option>
+                        <option value="5" @selected($stdDow === '5')>Friday</option>
+                        <option value="6" @selected($stdDow === '6')>Saturday</option>
+                    </x-ui::select>
+                    <x-input-error :messages="$errors->get('standard_default_generation_day_of_week')" class="mt-2" />
+                </div>
+
+                <div id="std_delay_wrapper" style="{{ old('standard_default_generation_day_type', $settings->standard_default_generation_day_type->value) === 'day_of_week' ? 'display:none' : '' }}">
+                    <x-input-label for="standard_default_delay_days" value="Delay Days *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="std_delay_help">Days after the period ends before generating (used only with Fixed Delay generation type). 0 means the next day.</p>
+                    <x-ui::input type="number" id="standard_default_delay_days" name="standard_default_delay_days" class="mt-1 block w-full"
+                        value="{{ old('standard_default_delay_days', $settings->standard_default_delay_days) }}" min="0" max="30" aria-describedby="std_delay_help" />
+                    <x-input-error :messages="$errors->get('standard_default_delay_days')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="standard_default_payment_terms_days" value="Payment Terms (Days) *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="std_terms_help">Due date = generation date + this many days.</p>
+                    <x-ui::input type="number" id="standard_default_payment_terms_days" name="standard_default_payment_terms_days" class="mt-1 block w-full" required
+                        value="{{ old('standard_default_payment_terms_days', $settings->standard_default_payment_terms_days) }}" min="1" max="90" aria-describedby="std_terms_help" />
+                    <x-input-error :messages="$errors->get('standard_default_payment_terms_days')" class="mt-2" />
+                </div>
+
+                <div class="flex items-start gap-3 md:col-span-2">
+                    <div class="flex items-start gap-3">
+                        <input type="hidden" name="standard_default_auto_generate" value="0">
+                        <input type="checkbox" id="standard_default_auto_generate" name="standard_default_auto_generate" value="1"
+                            class="mt-1 rounded border-border text-primary focus:ring-ring"
+                            @checked(old('standard_default_auto_generate', $settings->standard_default_auto_generate))>
+                        <div>
+                            <x-input-label for="standard_default_auto_generate" value="Auto-generate by default" />
+                            <p class="text-xs text-foreground/60">Standard school invoices will auto-generate drafts.</p>
+                        </div>
                     </div>
                 </div>
             </div>

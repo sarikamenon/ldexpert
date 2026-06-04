@@ -11,6 +11,7 @@ Artisan::command('inspire', function () {
 Schedule::command('schedule:send-reminders')->everyThirtyMinutes();
 Schedule::command('leads:send-follow-up-reminders')->dailyAt('08:00');
 Schedule::command('billing:generate')->dailyAt('02:00');
+Schedule::command('billing:reconcile-advance')->monthlyOn(10, '02:00');
 Schedule::command('billing:send-reminders')->dailyAt('08:00');
 Schedule::command('school:notify-expiring-contracts')->dailyAt('08:00');
 Schedule::command('school:auto-extend-contracts-ssas')->dailyAt('02:00');

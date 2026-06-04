@@ -9,7 +9,6 @@ use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
-use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Mail\WelcomeTherapistMail;
 use App\Models\Position;
 use App\Models\TherapistProfile;
@@ -28,7 +27,7 @@ final class TherapistServiceTest extends TestCase
     {
         parent::setUp();
         Mail::fake();
-        $this->service = new TherapistService(new EloquentTherapistRepository);
+        $this->service = app(TherapistService::class);
 
         Position::factory()->create(['name' => 'SLP']);
         Position::factory()->create(['name' => 'OT']);

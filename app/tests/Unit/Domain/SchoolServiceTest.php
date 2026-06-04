@@ -1,5 +1,8 @@
 <?php
 
+use App\Domain\Billing\Services\BillingScheduleService;
+use App\Domain\Billing\Services\BillingSettingsService;
+use App\Domain\Billing\Services\BillingStartDateResolver;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\School\Services\SchoolService;
 use App\DTOs\ChangeSchoolStatusDTO;
@@ -17,7 +20,12 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->repository = Mockery::mock(SchoolRepositoryInterface::class);
-    $this->service = new SchoolService($this->repository);
+    $this->service = new SchoolService(
+        $this->repository,
+        app(BillingScheduleService::class),
+        app(BillingSettingsService::class),
+        app(BillingStartDateResolver::class),
+    );
 });
 
 afterEach(function () {
@@ -39,7 +47,9 @@ test('school service delegates listing and metrics', function () {
 
 test('school service wraps writes via repository', function () {
     $manager = User::factory()->admin()->create();
-    $school = School::factory()->make(['manager_id' => $manager->id]);
+    // Persisted (not make()) so the billing-schedule hook in createSchool() can
+    // stamp schedulable_id from a real school id.
+    $school = School::factory()->create(['manager_id' => $manager->id, 'is_private_student' => true]);
     $createDto = CreateSchoolDTO::fromArray([
         'full_name' => 'Full School',
         'display_name' => 'Display School',

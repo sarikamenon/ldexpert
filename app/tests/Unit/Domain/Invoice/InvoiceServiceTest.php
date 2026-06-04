@@ -31,6 +31,10 @@ beforeEach(function () {
         $this->companyInfoService,
         $this->schoolRepository,
         $this->ledgerService,
+        app(\App\Domain\Billing\Services\BillingScheduleService::class),
+        app(\App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface::class),
+        app(\App\Domain\Billing\Services\AdvanceChargeLineBuilder::class),
+        app(\App\Domain\Billing\Services\BillingSettingsService::class),
     );
 
     // Set up company settings
@@ -107,6 +111,7 @@ test('invoice service generates invoice with snapshots', function () {
     $school = School::factory()->create([
         'full_name' => 'Test School Full',
         'display_name' => 'Test School',
+        'is_private_student' => false, // standard (session-log) billing path
     ]);
 
     $sessionLog1 = SessionLog::factory()->make(['id' => 1, 'school_id' => $school->id, 'school_invoice_amount' => 100.00]);

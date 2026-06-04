@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Domain\Invoice\Services;
 
+use App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface;
+use App\Domain\Billing\Services\AdvanceChargeLineBuilder;
+use App\Domain\Billing\Services\BillingScheduleService;
+use App\Domain\Billing\Services\BillingSettingsService;
 use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
@@ -11,16 +15,23 @@ use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\InvoiceFilterDTO;
+use App\DTOs\InvoiceLineItemDTO;
 use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
+use App\Enums\BillingMode;
+use App\Enums\BillingScheduleType;
 use App\Enums\InvoiceEmailType;
 use App\Enums\InvoiceStatus;
 use App\Mail\InvoiceMail;
+use App\Models\BillingSchedule;
 use App\Models\Invoice;
 use App\Models\InvoiceEmailLog;
+use App\Models\InvoiceLineItem;
+use App\Models\Schedule;
 use App\Models\School;
 use App\Models\SessionLog;
 use App\Models\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -33,6 +44,10 @@ final class InvoiceService
         private readonly CompanyInfoService $companyInfoService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly LedgerService $ledgerService,
+        private readonly BillingScheduleService $billingScheduleService,
+        private readonly InvoiceLineItemRepositoryInterface $lineItemRepository,
+        private readonly AdvanceChargeLineBuilder $chargeLineBuilder,
+        private readonly BillingSettingsService $billingSettingsService,
     ) {}
 
     public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
@@ -41,6 +56,12 @@ final class InvoiceService
             $school = $this->schoolRepository->find($dto->schoolId);
             if (! $school) {
                 throw new \InvalidArgumentException('School/family not found.');
+            }
+
+            // Advance (prepaid) schools bill from selectable schedules, not session
+            // logs, and produce an advance-mode invoice (§6).
+            if ($this->billingScheduleService->resolveSchoolBillingMode($school) === BillingMode::ADVANCE) {
+                return $this->generateAdvanceInvoice($dto, $school);
             }
 
             $invoiceNumber = ! empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
@@ -78,7 +99,7 @@ final class InvoiceService
                 'subtotal' => $totals['subtotal'],
                 'tax_total' => $totals['tax_total'],
                 'total' => $totals['total'],
-                'due_date' => now()->addDays(30)->toDateString(),
+                'due_date' => Carbon::parse($dto->invoiceDate)->addDays(30)->toDateString(),
                 'notes' => $dto->notes,
                 ...$schoolSnapshot,
                 ...$companySnapshot,
@@ -110,13 +131,131 @@ final class InvoiceService
             'subtotal' => 0,
             'tax_total' => 0,
             'total' => 0,
-            'due_date' => now()->addDays(30)->toDateString(),
+            'due_date' => Carbon::parse($dto->invoiceDate)->addDays(30)->toDateString(),
             'notes' => $dto->notes,
             ...$schoolSnapshot,
             ...$companySnapshot,
         ]);
 
         return $invoice->load(['sessionLogs']);
+    }
+
+    /**
+     * Generate a manual advance (prepaid) invoice from selectable schedules.
+     *
+     * Mirrors the automated advance path: charge lines only (no prior-period
+     * adjustments, per Q10), billing_mode = advance, and schedules.invoice_id
+     * stamped (§5) so the generator never re-charges them. Reuses the shared
+     * AdvanceChargeLineBuilder so manual and automated amounts match. The due
+     * date follows the school's configured payment terms, and the school's
+     * BillingSchedule tracking is advanced like advanceSchedule() (Q6) so the
+     * automated next run reconciles this invoice and bills the following period.
+     *
+     * Must run inside the generateInvoice() transaction.
+     */
+    private function generateAdvanceInvoice(CreateInvoiceDTO $dto, School $school): Invoice
+    {
+        $invoiceNumber = ! empty($dto->invoiceNumber) ? $dto->invoiceNumber : $this->repository->generateInvoiceNumber();
+        $schoolSnapshot = $this->copySchoolSnapshot($school);
+        $companySnapshot = $this->copyCompanySnapshot();
+
+        $periodStart = Carbon::parse($dto->billingPeriodStart);
+        $periodEnd = Carbon::parse($dto->billingPeriodEnd);
+
+        $schedule = $this->billingScheduleService->getEntityConfig(
+            School::class,
+            $dto->schoolId,
+            BillingScheduleType::SCHOOL_INVOICE->value,
+        );
+        $paymentTermsDays = $this->resolveAdvancePaymentTermsDays($schedule);
+
+        // Reuse the shared charge-line builder (notYetInvoiced + rate logic),
+        // then keep only the admin-selected schedules.
+        $chargeLines = $this->chargeLineBuilder
+            ->build($dto->schoolId, $periodStart, $periodEnd)
+            ->when(
+                $dto->scheduleIds !== [],
+                fn (Collection $lines): Collection => $lines->filter(
+                    fn (InvoiceLineItemDTO $line): bool => in_array($line->scheduleId, $dto->scheduleIds, true)
+                )->values(),
+            );
+
+        $subtotal = round((float) $chargeLines->sum(fn (InvoiceLineItemDTO $line): float => $line->total), 2);
+
+        $invoice = $this->repository->create([
+            'school_id' => $dto->schoolId,
+            'invoice_number' => $invoiceNumber,
+            'invoice_date' => $dto->invoiceDate,
+            'billing_period_start' => $dto->billingPeriodStart,
+            'billing_period_end' => $dto->billingPeriodEnd,
+            'billing_mode' => BillingMode::ADVANCE->value,
+            'status' => InvoiceStatus::DRAFT->value,
+            'subtotal' => $subtotal,
+            'tax_total' => 0,
+            'total' => $subtotal,
+            'due_date' => Carbon::parse($dto->invoiceDate)->addDays($paymentTermsDays)->toDateString(),
+            'notes' => $dto->notes,
+            ...$schoolSnapshot,
+            ...$companySnapshot,
+        ]);
+
+        if ($chargeLines->isNotEmpty()) {
+            $sortOrder = 0;
+            $this->lineItemRepository->createMany(
+                $invoice,
+                $chargeLines->map(function (InvoiceLineItemDTO $line) use (&$sortOrder): array {
+                    return [
+                        ...$line->toArray(),
+                        'sort_order' => $sortOrder++,
+                    ];
+                })->all()
+            );
+
+            $this->stampSchedulesOnInvoice($chargeLines, $invoice);
+        }
+
+        // Advance the schedule's tracking so the automated next run reconciles
+        // this manual invoice and bills the following period (Q6).
+        if ($schedule !== null) {
+            $this->billingScheduleService->advanceSchedule($schedule, $periodEnd);
+        }
+
+        return $invoice->load(['lineItems', 'sessionLogs']);
+    }
+
+    /**
+     * Payment terms for an advance invoice: the school's BillingSchedule value,
+     * or the advance settings default when no schedule exists (pre-§4 schools).
+     */
+    private function resolveAdvancePaymentTermsDays(?BillingSchedule $schedule): int
+    {
+        if ($schedule !== null) {
+            return (int) $schedule->payment_terms_days;
+        }
+
+        return $this->billingSettingsService->getSettings()->advance_default_payment_terms_days;
+    }
+
+    /**
+     * Stamp invoice_id on every schedule that became an ADVANCE_SCHEDULED line (§5).
+     *
+     * @param  Collection<int, InvoiceLineItemDTO>  $chargeLines
+     */
+    private function stampSchedulesOnInvoice(Collection $chargeLines, Invoice $invoice): void
+    {
+        $scheduleIds = $chargeLines
+            ->map(fn (InvoiceLineItemDTO $line): ?int => $line->scheduleId)
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($scheduleIds === []) {
+            return;
+        }
+
+        Schedule::query()
+            ->whereIn('id', $scheduleIds)
+            ->update(['invoice_id' => $invoice->id]);
     }
 
     /**
@@ -287,6 +426,11 @@ final class InvoiceService
             throw new \InvalidArgumentException('Sessions can only be attached to draft invoices.');
         }
 
+        // Advance invoices re-select schedules, not session logs.
+        if ($invoice->isAdvanceMode()) {
+            return $this->attachSchedulesToAdvanceDraft($invoice, $dto);
+        }
+
         return DB::transaction(function () use ($invoice, $dto): Invoice {
             $this->repository->unlinkAllSessionsForInvoice($invoice);
 
@@ -311,6 +455,129 @@ final class InvoiceService
             $this->repository->updateTotals($invoice, $totals['subtotal'], $totals['tax_total'], $totals['total']);
 
             return $invoice->refresh()->load(['sessionLogs.student', 'sessionLogs.service', 'sessionLogs.therapist']);
+        });
+    }
+
+    /**
+     * Assemble the selectable-schedule rows for an advance draft's attach page.
+     *
+     * Candidate schedules = not-yet-invoiced schedules in the period (with their
+     * computed charge amount) plus the schedules already on this invoice. Returns
+     * display rows and the currently-attached schedule ids for pre-checking.
+     *
+     * @return array{rows: Collection<int, array{schedule: Schedule, amount: float, attached: bool}>, attachedScheduleIds: array<int, int>}
+     */
+    public function getAdvanceAttachData(Invoice $invoice): array
+    {
+        $schoolId = (int) $invoice->school_id;
+        $periodStart = $invoice->billing_period_start !== null
+            ? $invoice->billing_period_start->copy()
+            : now()->startOfMonth();
+        $periodEnd = $invoice->billing_period_end !== null
+            ? $invoice->billing_period_end->copy()
+            : now()->endOfMonth();
+
+        // Amounts for not-yet-invoiced schedules in the period, keyed by schedule id.
+        $amountByScheduleId = $this->chargeLineBuilder
+            ->build($schoolId, $periodStart, $periodEnd)
+            ->mapWithKeys(fn (InvoiceLineItemDTO $line): array => [$line->scheduleId => $line->total]);
+
+        // Already-attached schedules are excluded from the builder (they are no
+        // longer notYetInvoiced), so source their amount from this invoice's
+        // existing line items instead of defaulting to 0.
+        $existingLineAmounts = $this->lineItemRepository
+            ->getForInvoice($invoice->id)
+            ->filter(fn (InvoiceLineItem $line): bool => $line->schedule_id !== null)
+            ->mapWithKeys(fn (InvoiceLineItem $line): array => [$line->schedule_id => (float) $line->total]);
+
+        $amountByScheduleId = $amountByScheduleId->union($existingLineAmounts);
+
+        /** @var Collection<int, Schedule> $attached */
+        $attached = Schedule::query()
+            ->forInvoice($invoice->id)
+            ->with(['student', 'service', 'therapist'])
+            ->orderBy('schedule_date')
+            ->get();
+
+        /** @var Collection<int, Schedule> $available */
+        $available = Schedule::query()
+            ->where('school_id', $schoolId)
+            ->betweenScheduleDates($periodStart->toDateString(), $periodEnd->toDateString())
+            ->scheduled()
+            ->notYetInvoiced()
+            ->with(['student', 'service', 'therapist'])
+            ->orderBy('schedule_date')
+            ->get();
+
+        $attachedIds = $attached->pluck('id')->map(fn ($id): int => (int) $id)->all();
+
+        $rows = $attached
+            ->concat($available)
+            ->unique('id')
+            ->map(fn (Schedule $schedule): array => [
+                'schedule' => $schedule,
+                'amount' => (float) ($amountByScheduleId->get($schedule->id) ?? 0.0),
+                'attached' => in_array($schedule->id, $attachedIds, true),
+            ])
+            ->values();
+
+        return [
+            'rows' => $rows,
+            'attachedScheduleIds' => $attachedIds,
+        ];
+    }
+
+    /**
+     * Re-select the schedules on an advance draft invoice (unlink-all-then-relink).
+     *
+     * Clears schedules.invoice_id for the whole prior set (§5 detach-clear),
+     * rebuilds ADVANCE_SCHEDULED charge lines for the new selection, re-stamps,
+     * and recomputes totals. Charge lines only (Q10).
+     */
+    private function attachSchedulesToAdvanceDraft(Invoice $invoice, AttachSessionsDTO $dto): Invoice
+    {
+        return DB::transaction(function () use ($invoice, $dto): Invoice {
+            // Detach the entire prior set so a removed schedule becomes billable again.
+            Schedule::query()->forInvoice($invoice->id)->update(['invoice_id' => null]);
+            $this->lineItemRepository->deleteForInvoice($invoice->id);
+
+            if ($dto->scheduleIds === []) {
+                $this->repository->updateTotals($invoice, 0, 0, 0);
+
+                return $invoice->refresh()->load(['lineItems', 'sessionLogs']);
+            }
+
+            $periodStart = $invoice->billing_period_start !== null
+                ? $invoice->billing_period_start->copy()
+                : now()->startOfMonth();
+            $periodEnd = $invoice->billing_period_end !== null
+                ? $invoice->billing_period_end->copy()
+                : now()->endOfMonth();
+
+            $schoolId = (int) $invoice->school_id;
+
+            $chargeLines = $this->chargeLineBuilder
+                ->build($schoolId, $periodStart, $periodEnd)
+                ->filter(fn (InvoiceLineItemDTO $line): bool => in_array($line->scheduleId, $dto->scheduleIds, true))
+                ->values();
+
+            $sortOrder = 0;
+            $this->lineItemRepository->createMany(
+                $invoice,
+                $chargeLines->map(function (InvoiceLineItemDTO $line) use (&$sortOrder): array {
+                    return [
+                        ...$line->toArray(),
+                        'sort_order' => $sortOrder++,
+                    ];
+                })->all()
+            );
+
+            $this->stampSchedulesOnInvoice($chargeLines, $invoice);
+
+            $subtotal = round((float) $chargeLines->sum(fn (InvoiceLineItemDTO $line): float => $line->total), 2);
+            $this->repository->updateTotals($invoice, $subtotal, 0, $subtotal);
+
+            return $invoice->refresh()->load(['lineItems', 'sessionLogs']);
         });
     }
 }

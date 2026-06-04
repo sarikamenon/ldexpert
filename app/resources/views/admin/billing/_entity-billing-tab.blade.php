@@ -94,9 +94,9 @@
 
             <div id="eb_fixedDelayGroup" style="display: none;">
                 <x-input-label for="eb_generation_delay_days" value="Delay Days" />
-                <p class="mt-1 text-xs text-foreground/60" id="eb_delay_help">Number of days after period end to generate.</p>
+                <p class="mt-1 text-xs text-foreground/60" id="eb_delay_help">Number of days after period end to generate. 0 means the next day.</p>
                 <x-ui::input type="number" id="eb_generation_delay_days" name="generation_delay_days" class="mt-1 block w-full"
-                    value="3" min="1" max="30" aria-describedby="eb_delay_help" />
+                    value="3" min="0" max="30" aria-describedby="eb_delay_help" />
             </div>
 
             <input type="hidden" id="eb_min_grace_days" name="min_grace_days" value="2">
