@@ -15,18 +15,28 @@
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
+            width: 100%;
+            margin-bottom: 16px;
             padding-bottom: 20px;
             border-bottom: 2px solid #333;
         }
 
+        .header td {
+            vertical-align: top;
+            border: none;
+            padding: 0;
+        }
+
         .company-info {
-            flex: 1;
+            width: 60%;
+        }
+
+        .company-info > div {
+            margin-bottom: 8px;
         }
 
         .bill-info {
+            width: 40%;
             text-align: right;
         }
 
@@ -100,32 +110,34 @@
 </head>
 
 <body>
-    <div class="header">
-        <div class="company-info">
-            <div class="bill-title">BILL</div>
-            <div>
-                <strong>{{ $bill->company_name }}</strong><br>
-                @if ($bill->company_address)
-                    {!! nl2br(e($bill->company_address)) !!}<br>
-                @endif
-                @if ($bill->company_phone)
-                    Phone: {{ $bill->company_phone }}<br>
-                @endif
-                @if ($bill->company_email)
-                    Email: {{ $bill->company_email }}<br>
-                @endif
-                @if ($bill->company_tax_id)
-                    Tax ID: {{ $bill->company_tax_id }}
-                @endif
-            </div>
-        </div>
-        <div class="bill-info">
-            <div><strong>Bill #:</strong> {{ $bill->bill_number }}</div>
-            <div><strong>Date:</strong> {{ $bill->bill_date->format('M d, Y') }}</div>
-            <div><strong>Billing Period:</strong> {{ $bill->billing_period_start->format('M d') }} -
-                {{ $bill->billing_period_end->format('M d, Y') }}</div>
-        </div>
-    </div>
+    <table class="header">
+        <tr>
+            <td class="company-info">
+                <div class="bill-title">BILL</div>
+                <div>
+                    <strong>{{ $bill->company_name }}</strong><br>
+                    @if ($bill->company_address)
+                        {!! nl2br(e($bill->company_address)) !!}<br>
+                    @endif
+                    @if ($bill->company_phone)
+                        Phone: {{ $bill->company_phone }}<br>
+                    @endif
+                    @if ($bill->company_email)
+                        Email: {{ $bill->company_email }}<br>
+                    @endif
+                    @if ($bill->company_tax_id)
+                        Tax ID: {{ $bill->company_tax_id }}
+                    @endif
+                </div>
+            </td>
+            <td class="bill-info">
+                <div><strong>Bill #:</strong> {{ $bill->bill_number }}</div>
+                <div><strong>Date:</strong> {{ $bill->bill_date->format('M d, Y') }}</div>
+                <div><strong>Billing Period:</strong> {{ $bill->billing_period_start->format('M d') }} -
+                    {{ $bill->billing_period_end->format('M d, Y') }}</div>
+            </td>
+        </tr>
+    </table>
 
     <div class="bill-to">
         <h3>Bill To:</h3>

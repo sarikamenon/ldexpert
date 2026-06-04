@@ -15,18 +15,28 @@
         }
 
         .header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
+            width: 100%;
+            margin-bottom: 16px;
             padding-bottom: 20px;
             border-bottom: 2px solid #333;
         }
 
+        .header td {
+            vertical-align: top;
+            border: none;
+            padding: 0;
+        }
+
         .company-info {
-            flex: 1;
+            width: 60%;
+        }
+
+        .company-info > div {
+            margin-bottom: 8px;
         }
 
         .invoice-info {
+            width: 40%;
             text-align: right;
         }
 
@@ -100,33 +110,35 @@
 </head>
 
 <body>
-    <div class="header">
-        <div class="company-info">
-            <div class="invoice-title">INVOICE</div>
-            <div>
-                <strong>{{ $invoice->company_name }}</strong><br>
-                @if ($invoice->company_address)
-                    {!! nl2br(e($invoice->company_address)) !!}<br>
-                @endif
-                @if ($invoice->company_phone)
-                    Phone: {{ $invoice->company_phone }}<br>
-                @endif
-                @if ($invoice->company_email)
-                    Email: {{ $invoice->company_email }}<br>
-                @endif
-                @if ($invoice->company_tax_id)
-                    Tax ID: {{ $invoice->company_tax_id }}
-                @endif
-            </div>
-        </div>
-        <div class="invoice-info">
-            <div><strong>Invoice #:</strong> {{ $invoice->invoice_number }}</div>
-            <div><strong>Date:</strong> {{ $invoice->created_at->format('M d, Y') }}</div>
-            <div><strong>Due Date:</strong> {{ $invoice->due_date->format('M d, Y') }}</div>
-            <div><strong>Billing Period:</strong> {{ $invoice->billing_period_start->format('M d') }} -
-                {{ $invoice->billing_period_end->format('M d, Y') }}</div>
-        </div>
-    </div>
+    <table class="header">
+        <tr>
+            <td class="company-info">
+                <div class="invoice-title">INVOICE</div>
+                <div>
+                    <strong>{{ $invoice->company_name }}</strong><br>
+                    @if ($invoice->company_address)
+                        {!! nl2br(e($invoice->company_address)) !!}<br>
+                    @endif
+                    @if ($invoice->company_phone)
+                        Phone: {{ $invoice->company_phone }}<br>
+                    @endif
+                    @if ($invoice->company_email)
+                        Email: {{ $invoice->company_email }}<br>
+                    @endif
+                    @if ($invoice->company_tax_id)
+                        Tax ID: {{ $invoice->company_tax_id }}
+                    @endif
+                </div>
+            </td>
+            <td class="invoice-info">
+                <div><strong>Invoice #:</strong> {{ $invoice->invoice_number }}</div>
+                <div><strong>Date:</strong> {{ $invoice->invoice_date->format('M d, Y') }}</div>
+                <div><strong>Due Date:</strong> {{ $invoice->due_date->format('M d, Y') }}</div>
+                <div><strong>Billing Period:</strong> {{ $invoice->billing_period_start->format('M d') }} -
+                    {{ $invoice->billing_period_end->format('M d, Y') }}</div>
+            </td>
+        </tr>
+    </table>
 
     <div class="bill-to">
         <h3>Bill To:</h3>

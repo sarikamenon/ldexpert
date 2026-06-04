@@ -62,8 +62,21 @@ final class InvoicePdfService
             'standardLines' => $standardLines,
             'adjustmentSubtotal' => $adjustmentSubtotal,
             'advanceSubtotal' => $advanceSubtotal,
+            'paymentTermsDays' => $this->resolvePaymentTermsDays($invoice),
         ])
             ->setPaper('a4', 'portrait')
             ->setOption('enable-local-file-access', true);
+    }
+
+    /**
+     * Whole-day Net payment terms (due_date − invoice_date), defaulting to 30.
+     */
+    private function resolvePaymentTermsDays(Invoice $invoice): int
+    {
+        if ($invoice->due_date === null) {
+            return 30;
+        }
+
+        return (int) round($invoice->invoice_date->diffInDays($invoice->due_date));
     }
 }
