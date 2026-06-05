@@ -11,7 +11,7 @@
         @method('PUT')
 
         <x-ui::card class="p-6 space-y-6 mb-6">
-            <h2 class="text-lg font-semibold text-foreground">Standard Billing Defaults</h2>
+            <h2 class="text-lg font-semibold text-foreground">Standard Billing Defaults (Therapists)</h2>
             <p class="text-sm text-foreground/60">Applied to therapist bills only.</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
