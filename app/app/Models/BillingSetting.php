@@ -29,6 +29,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $standard_default_delay_days
  * @property int $standard_default_payment_terms_days
  * @property bool $standard_default_auto_generate
+ * @property bool $standard_default_auto_send
  */
 class BillingSetting extends Model
 {
@@ -55,6 +56,7 @@ class BillingSetting extends Model
         'standard_default_delay_days',
         'standard_default_payment_terms_days',
         'standard_default_auto_generate',
+        'standard_default_auto_send',
         'reminder_days_before_due',
         'reminder_days_after_due',
         'reminder_overdue_repeat_days',
@@ -88,6 +90,7 @@ class BillingSetting extends Model
             'standard_default_delay_days' => 'integer',
             'standard_default_payment_terms_days' => 'integer',
             'standard_default_auto_generate' => 'boolean',
+            'standard_default_auto_send' => 'boolean',
             'reminder_days_before_due' => 'integer',
             'reminder_days_after_due' => 'integer',
             'reminder_overdue_repeat_days' => 'integer',

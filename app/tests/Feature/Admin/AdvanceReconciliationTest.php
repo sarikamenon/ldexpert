@@ -116,7 +116,18 @@ test('a late-approved non-billable May session produces a reconciliation credit 
 
     $entry = LedgerEntry::find($result['credit_note_ledger_entry_id']);
     expect($entry->transaction_type)->toBe(TransactionType::CREDIT_NOTE)
-        ->and((float) $entry->amount)->toBe(100.0);
+        ->and((float) $entry->amount)->toBe(100.0)
+        // Posted against the school account (we owe the family).
+        ->and($entry->ledgerable_type)->toBe(School::class)
+        ->and((int) $entry->ledgerable_id)->toBe($school->id)
+        // CREDIT_NOTE balanceDelta is -1: a fresh account drops to -100.
+        ->and((float) $entry->balance_after)->toBe(-100.0)
+        // recorded_at = the run date (the 10th), NOT the May session date (Q9: not backdated).
+        ->and($entry->recorded_at->toDateString())->toBe('2026-06-10')
+        // Posted by the resolved system admin, and notes reference the period + schedule.
+        ->and($entry->recorded_by_id)->toBe(User::where('role', 'admin')->first()->id)
+        ->and($entry->notes)->toContain('May 2026')
+        ->and($entry->notes)->toContain('schedule #'.$config->id);
 });
 
 test('a late-approved extra billable May session produces a draft settlement invoice', function () {
@@ -138,6 +149,29 @@ test('a late-approved extra billable May session produces a draft settlement inv
         ->and($settlement->billing_mode)->toBe(BillingMode::ADVANCE)
         ->and((float) $settlement->total)->toBe(100.0)
         ->and($settlement->lineItems()->count())->toBe(1);
+});
+
+test('a reconciliation credit note chains its balance_after onto the school ledger', function () {
+    $school = advanceSchoolForRecon();
+    $config = advanceScheduleFor($school);
+    $schedule = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-12']);
+
+    // Seed a prior credit balance on the school account: -40 before reconciliation.
+    $ledger = app(\App\Domain\Finance\Services\LedgerService::class);
+    $seed = $ledger->createCreditNoteForSchool($school->id, 40.0, 'Seed credit', User::where('role', 'admin')->first()->id, now());
+    expect((float) $seed->balance_after)->toBe(-40.0);
+
+    // Over-charged $100 in advance, session later non-billable → -100 reconciliation credit.
+    priorAdvanceInvoiceWithLine($school, $schedule->id, null, 100.0);
+    mayApprovedLog($school, $schedule->id, billable: false, amount: 0.0);
+
+    $result = $this->service->reconcileSchedule($config, now());
+
+    $entry = LedgerEntry::find($result['credit_note_ledger_entry_id']);
+
+    // The new credit chains onto the seeded balance: -40 then -140.
+    expect((float) $entry->amount)->toBe(100.0)
+        ->and((float) $entry->balance_after)->toBe(-140.0);
 });
 
 test('a current-month June session is NOT touched by the June 10 run', function () {
@@ -203,10 +237,14 @@ test('dry run computes the delta without creating anything', function () {
     priorAdvanceInvoiceWithLine($school, $schedule->id, null, 100.0);
     mayApprovedLog($school, $schedule->id, billable: false, amount: 0.0);
 
+    // Baseline: the testing DB may carry demo ledger rows from seed migrations.
+    // A dry run must not add any NEW entries on top of whatever already exists.
+    $ledgerBefore = LedgerEntry::count();
+
     $result = $this->service->reconcileSchedule($config, now(), dryRun: true);
 
     expect($result['status'])->toBe('dry_run')
         ->and($result['net_amount'])->toBe(-100.0)
         ->and(AdvanceReconciliation::count())->toBe(0)
-        ->and(LedgerEntry::count())->toBe(0);
+        ->and(LedgerEntry::count())->toBe($ledgerBefore);
 });

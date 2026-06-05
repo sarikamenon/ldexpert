@@ -10,12 +10,17 @@ use App\Domain\Invoice\Services\InvoiceService;
 use App\DTOs\BillingRunResultDTO;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\CreateTherapistBillDTO;
+use App\DTOs\SendInvoiceDTO;
+use App\DTOs\SendTherapistBillDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleRunStatus;
 use App\Enums\InvoiceLineType;
 use App\Enums\SessionLogStatus;
 use App\Models\BillingSchedule;
+use App\Models\BillingScheduleRun;
+use App\Models\Invoice;
 use App\Models\SessionLog;
+use App\Models\TherapistBill;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -127,7 +132,7 @@ final class BillingAutomationService
             return $this->buildDryRunResult($schedule, $periodStart, $periodEnd, $sessions);
         }
 
-        return DB::transaction(function () use ($schedule, $periodStart, $periodEnd, $sessions, $schoolId): BillingRunResultDTO {
+        [$result, $invoice, $run] = DB::transaction(function () use ($schedule, $periodStart, $periodEnd, $sessions, $schoolId): array {
             $sessionsFromPrior = $sessions->filter(
                 fn (SessionLog $s): bool => $s->session_date->lt($periodStart)
             )->count();
@@ -160,11 +165,15 @@ final class BillingAutomationService
                 autoSent: false,
             );
 
-            $this->logRun($schedule, $result);
+            $run = $this->logRun($schedule, $result);
             $this->scheduleService->advanceSchedule($schedule, $periodEnd);
 
-            return $result;
+            return [$result, $invoice, $run];
         });
+
+        // Auto-send happens AFTER the generation transaction commits — a mailer
+        // failure must never roll back a successfully generated invoice.
+        return $this->maybeAutoSendInvoice($schedule, $invoice, $result, $run);
     }
 
     /**
@@ -195,7 +204,7 @@ final class BillingAutomationService
             return $this->buildDryRunResult($schedule, $periodStart, $periodEnd, $sessions);
         }
 
-        return DB::transaction(function () use ($schedule, $periodStart, $periodEnd, $sessions, $therapistId): BillingRunResultDTO {
+        [$result, $bill, $run] = DB::transaction(function () use ($schedule, $periodStart, $periodEnd, $sessions, $therapistId): array {
             $sessionsFromPrior = $sessions->filter(
                 fn (SessionLog $s): bool => $s->session_date->lt($periodStart)
             )->count();
@@ -227,11 +236,14 @@ final class BillingAutomationService
                 autoSent: false,
             );
 
-            $this->logRun($schedule, $result);
+            $run = $this->logRun($schedule, $result);
             $this->scheduleService->advanceSchedule($schedule, $periodEnd);
 
-            return $result;
+            return [$result, $bill, $run];
         });
+
+        // Auto-send after the transaction commits (mailer failure must not roll back the bill).
+        return $this->maybeAutoSendBill($schedule, $bill, $result, $run);
     }
 
     /**
@@ -336,9 +348,9 @@ final class BillingAutomationService
         return $this->scheduleService->determineBillingPeriod($schedule->frequency, $anchor);
     }
 
-    private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): void
+    private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): BillingScheduleRun
     {
-        $this->scheduleRepository->logRun([
+        return $this->scheduleRepository->logRun([
             'billing_schedule_id' => $schedule->id,
             'billing_period_start' => $result->billingPeriodStart,
             'billing_period_end' => $result->billingPeriodEnd,
@@ -357,6 +369,62 @@ final class BillingAutomationService
             'started_at' => now(),
             'completed_at' => now(),
         ]);
+    }
+
+    /**
+     * Auto-send a freshly generated school invoice when the schedule opts in.
+     *
+     * Runs outside the generation transaction. Skips zero-amount invoices (the
+     * send path rejects them anyway) and swallows mailer failures — a send
+     * failure must never undo a successfully generated invoice. On success the
+     * run row's auto_sent flag is updated to reflect what actually happened.
+     */
+    private function maybeAutoSendInvoice(BillingSchedule $schedule, Invoice $invoice, BillingRunResultDTO $result, BillingScheduleRun $run): BillingRunResultDTO
+    {
+        if (! $schedule->auto_send || (float) $invoice->total <= 0) {
+            return $result;
+        }
+
+        try {
+            $this->invoiceService->sendInvoice($this->getSystemUser(), $invoice, new SendInvoiceDTO);
+            $run->update(['auto_sent' => true]);
+
+            return $result->withAutoSent(true);
+        } catch (\Throwable $e) {
+            Log::error('Billing auto-send invoice failed', [
+                'schedule_id' => $schedule->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $result;
+        }
+    }
+
+    /**
+     * Auto-send a freshly generated therapist bill when the schedule opts in.
+     * Same guarantees as maybeAutoSendInvoice().
+     */
+    private function maybeAutoSendBill(BillingSchedule $schedule, TherapistBill $bill, BillingRunResultDTO $result, BillingScheduleRun $run): BillingRunResultDTO
+    {
+        if (! $schedule->auto_send || (float) $bill->total_due <= 0) {
+            return $result;
+        }
+
+        try {
+            $this->therapistBillService->sendBill($this->getSystemUser(), $bill, new SendTherapistBillDTO);
+            $run->update(['auto_sent' => true]);
+
+            return $result->withAutoSent(true);
+        } catch (\Throwable $e) {
+            Log::error('Billing auto-send bill failed', [
+                'schedule_id' => $schedule->id,
+                'therapist_bill_id' => $bill->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $result;
+        }
     }
 
     private function getSystemUser(): User

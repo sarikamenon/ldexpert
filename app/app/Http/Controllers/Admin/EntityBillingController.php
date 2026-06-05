@@ -86,7 +86,7 @@ final class EntityBillingController extends Controller
                     'generation_delay_days' => $settings->standard_default_delay_days,
                     'payment_terms_days' => $settings->standard_default_payment_terms_days,
                     'auto_generate' => $settings->standard_default_auto_generate,
-                    'auto_send' => false,
+                    'auto_send' => $settings->standard_default_auto_send,
                 ];
         } else {
             $data = [

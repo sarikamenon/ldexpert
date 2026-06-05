@@ -24,6 +24,29 @@ final class BillingRunResultDTO
     ) {}
 
     /**
+     * Return a copy with the auto-sent flag set (the DTO is immutable).
+     */
+    public function withAutoSent(bool $autoSent): self
+    {
+        return new self(
+            billingScheduleId: $this->billingScheduleId,
+            status: $this->status,
+            billingPeriodStart: $this->billingPeriodStart,
+            billingPeriodEnd: $this->billingPeriodEnd,
+            sessionsFound: $this->sessionsFound,
+            sessionsFromPriorPeriods: $this->sessionsFromPriorPeriods,
+            adjustmentsCount: $this->adjustmentsCount,
+            adjustmentTotal: $this->adjustmentTotal,
+            carryForwardAmount: $this->carryForwardAmount,
+            invoiceId: $this->invoiceId,
+            therapistBillId: $this->therapistBillId,
+            totalAmount: $this->totalAmount,
+            autoSent: $autoSent,
+            errorMessage: $this->errorMessage,
+        );
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self

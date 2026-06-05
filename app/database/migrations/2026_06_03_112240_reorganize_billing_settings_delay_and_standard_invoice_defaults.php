@@ -25,6 +25,7 @@ return new class extends Migration
             $table->unsignedInteger('standard_default_delay_days')->default(2)->after('standard_default_generation_day_of_week');
             $table->unsignedInteger('standard_default_payment_terms_days')->default(30)->after('standard_default_delay_days');
             $table->boolean('standard_default_auto_generate')->default(true)->after('standard_default_payment_terms_days');
+            $table->boolean('standard_default_auto_send')->default(false)->after('standard_default_auto_generate');
         });
     }
 
@@ -38,6 +39,7 @@ return new class extends Migration
                 'standard_default_delay_days',
                 'standard_default_payment_terms_days',
                 'standard_default_auto_generate',
+                'standard_default_auto_send',
             ]);
         });
 

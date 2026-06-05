@@ -11,6 +11,7 @@ use App\Domain\Invoice\Services\InvoiceService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\BillingRunResultDTO;
 use App\DTOs\InvoiceLineItemDTO;
+use App\DTOs\SendInvoiceDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleRunStatus;
 use App\Enums\InvoiceLineType;
@@ -18,13 +19,16 @@ use App\Enums\InvoiceStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Models\BillingSchedule;
+use App\Models\BillingScheduleRun;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
 use App\Models\Schedule;
 use App\Models\SessionLog;
+use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 final class AdvanceBillingService
 {
@@ -137,7 +141,7 @@ final class AdvanceBillingService
             );
         }
 
-        return DB::transaction(function () use (
+        [$result, $invoice, $run] = DB::transaction(function () use (
             $schedule,
             $schoolId,
             $completedPeriod,
@@ -148,7 +152,7 @@ final class AdvanceBillingService
             $advanceTotal,
             $netTotal,
             $newCarryForward,
-        ): BillingRunResultDTO {
+        ): array {
             $invoice = $this->createAdvanceInvoice(
                 $schoolId,
                 $upcomingPeriod['start'],
@@ -184,11 +188,14 @@ final class AdvanceBillingService
                 autoSent: false,
             );
 
-            $this->logRun($schedule, $result);
+            $run = $this->logRun($schedule, $result);
             $this->billingScheduleService->advanceSchedule($schedule, $completedPeriod['end']);
 
-            return $result;
+            return [$result, $invoice, $run];
         });
+
+        // Auto-send after commit (a mailer failure must not roll back the invoice).
+        return $this->maybeAutoSendInvoice($schedule, $invoice, $result, $run);
     }
 
     /**
@@ -673,9 +680,9 @@ final class AdvanceBillingService
         return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $nextDay);
     }
 
-    private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): void
+    private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): BillingScheduleRun
     {
-        $this->scheduleRepository->logRun([
+        return $this->scheduleRepository->logRun([
             'billing_schedule_id' => $schedule->id,
             'billing_period_start' => $result->billingPeriodStart,
             'billing_period_end' => $result->billingPeriodEnd,
@@ -694,5 +701,40 @@ final class AdvanceBillingService
             'started_at' => now(),
             'completed_at' => now(),
         ]);
+    }
+
+    /**
+     * Auto-send a freshly generated advance invoice when the schedule opts in.
+     *
+     * Runs outside the generation transaction. Skips non-positive totals (a
+     * fully-credited advance invoice nets to $0 and the send path rejects it) and
+     * swallows mailer failures so a send failure never undoes a generated invoice.
+     */
+    private function maybeAutoSendInvoice(BillingSchedule $schedule, Invoice $invoice, BillingRunResultDTO $result, BillingScheduleRun $run): BillingRunResultDTO
+    {
+        if (! $schedule->auto_send || (float) $invoice->total <= 0) {
+            return $result;
+        }
+
+        $admin = User::query()->where('role', 'admin')->orderBy('id')->first();
+
+        if ($admin === null) {
+            return $result;
+        }
+
+        try {
+            $this->invoiceService->sendInvoice($admin, $invoice, new SendInvoiceDTO);
+            $run->update(['auto_sent' => true]);
+
+            return $result->withAutoSent(true);
+        } catch (\Throwable $e) {
+            Log::error('Advance billing auto-send invoice failed', [
+                'schedule_id' => $schedule->id,
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $result;
+        }
     }
 }

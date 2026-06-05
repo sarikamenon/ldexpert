@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(php artisan test:*)",
+      "Bash(*artisan test*)",
+      "Bash(*vendor/bin/pest*)",
+      "Bash(*vendor/bin/phpunit*)",
+      "Bash(*migrate:fresh*)",
+      "Bash(*db:seed*)",
+      "Bash(*migrate:refresh*)"
+    ]
+  }
+}

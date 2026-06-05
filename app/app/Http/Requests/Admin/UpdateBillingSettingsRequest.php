@@ -42,6 +42,7 @@ final class UpdateBillingSettingsRequest extends FormRequest
             'standard_default_delay_days' => ['required', 'integer', 'min:0', 'max:30'],
             'standard_default_payment_terms_days' => ['required', 'integer', 'min:1', 'max:90'],
             'standard_default_auto_generate' => ['boolean'],
+            'standard_default_auto_send' => ['boolean'],
             'reminder_days_before_due' => ['required', 'integer', 'min:1', 'max:30'],
             'reminder_days_after_due' => ['required', 'integer', 'min:1', 'max:30'],
             'reminder_overdue_repeat_days' => ['required', 'integer', 'min:1', 'max:30'],
