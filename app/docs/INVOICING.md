@@ -30,10 +30,10 @@ An **invoice** bills a **school or a private family** for therapy work over a **
 
 There are also two ways an invoice gets **created**:
 
-1. **Manual** — an admin clicks "Create Invoice", picks a school/family + period, and attaches approved session logs.
+1. **Manual** — an admin clicks "Create Invoice", picks a school/family + period, and attaches either approved session logs (Standard) or scheduled sessions (Advance).
 2. **Automatic** — the daily `billing:generate` command processes every due `billing_schedules` row.
 
-> ⚠️ **The single most important asymmetry in this system:** *the manual path only ever produces a **Standard** invoice.* See [§8 Known gaps](#8-known-gaps--gotchas). Advance invoices are produced **only** by the automatic path.
+> **The manual path now honors the school's billing type.** [`InvoiceService::generateInvoice()`](../../app/app/Domain/Invoice/Services/InvoiceService.php#L53) resolves the school's effective billing mode via `resolveSchoolBillingMode()` and routes advance schools through `generateAdvanceInvoice()` (schedule-driven, `billing_mode = advance`, charge lines only — no adjustments). Standard schools keep the session-log flow. See §4.5.
 
 ---
 
@@ -57,7 +57,7 @@ Created in [`2025_12_31_095337_create_invoices_table.php`](../../app/database/mi
 | `invoice_type` | string(30), default `school` | `school` / family variant |
 | `subtotal` / `tax_total` / `total` | decimal(10,2) | `tax_total` is always 0 today (see §8) |
 | `carry_forward_balance` | decimal(10,2), default 0 | advance-mode overpayment carried to next period |
-| `due_date` | date | **hardcoded** to `invoice_date + 30 days` on the manual path |
+| `due_date` | date | `invoice_date + payment_terms_days` (from the school's `billing_schedules`, falling back to the matching billing-settings default) — honored on all paths |
 | `school_*` / `company_*` / `parent_*` | strings | **snapshot** columns — frozen copies of school/company/parent details at creation time, so the invoice never mutates if the source records change later |
 | `sent_at` / `sent_by_id` | dateTime / FK → `users` | stamped when sent |
 | `paid_at` | dateTime, nullable | |
@@ -141,13 +141,14 @@ Routes: [`routes/admin.php:233-240`](../../app/routes/admin.php#L233-L240).
 
 ### 4.2 Step 1 — create the draft
 
-[`InvoiceController::store()`](../../app/app/Http/Controllers/Admin/InvoiceController.php#L119-L145) validates via [`CreateInvoiceRequest`](../../app/app/Http/Requests/Admin/Invoice/CreateInvoiceRequest.php), builds a [`CreateInvoiceDTO`](../../app/app/DTOs/CreateInvoiceDTO.php), and calls [`InvoiceService::generateInvoice()`](../../app/app/Domain/Invoice/Services/InvoiceService.php#L38-L91).
+[`InvoiceController::store()`](../../app/app/Http/Controllers/Admin/InvoiceController.php#L119-L145) validates via [`CreateInvoiceRequest`](../../app/app/Http/Requests/Admin/Invoice/CreateInvoiceRequest.php), builds a [`CreateInvoiceDTO`](../../app/app/DTOs/CreateInvoiceDTO.php), and calls [`InvoiceService::generateInvoice()`](../../app/app/Domain/Invoice/Services/InvoiceService.php#L53).
 
-The form collects **only**: `school_id`, `invoice_date`, `invoice_number` (optional, auto-generated if blank), `billing_period_start`, `billing_period_end`, optional `session_log_ids`, `notes`. There is **no `billing_mode` field** — so the new row falls back to the DB default `standard`.
+The form collects: `school_id`, `invoice_date`, `invoice_number` (optional, auto-generated if blank), `billing_period_start`, `billing_period_end`, optional `session_log_ids` (Standard) or `schedule_ids` (Advance), `notes`. There is no explicit `billing_mode` field on the form — `generateInvoice()` **resolves the mode from the school** via `resolveSchoolBillingMode()` (reads the `school_invoice` `BillingSchedule`; falls back to `is_private_student === true ⇒ advance` for pre-config schools) and branches:
+- **Advance school** → `generateAdvanceInvoice()` builds `ADVANCE_SCHEDULED` lines from the selected schedules, sets `billing_mode = advance`, stamps `schedules.invoice_id`, and advances the schedule's tracking — see §4.5.
+- **Standard, no session logs** → `createDraftWithoutSessions()` writes a `$0` draft and redirects to the **attach-sessions** picker.
+- **Standard, session logs selected** → fetches them via `getApprovedSessionLogsForInvoice()` (must be `APPROVED` + `is_billable_school` + not already on an invoice + belong to the chosen school), computes totals, creates the invoice, links the logs.
 
-Two branches inside `generateInvoice()`:
-- **No session logs selected** → `createDraftWithoutSessions()` writes a `$0` draft and redirects to the **attach-sessions** picker.
-- **Session logs selected** → fetches them via `getApprovedSessionLogsForInvoice()` (must be `APPROVED` + `is_billable_school` + not already on an invoice + belong to the chosen school), computes totals, creates the invoice, links the logs.
+Either branch stamps `due_date = invoice_date + payment_terms_days` (from the school's schedule, else the matching settings default).
 
 ### 4.3 Step 2 — attach/remove sessions ("Add or remove sessions")
 
@@ -164,11 +165,21 @@ SessionLog::query()
 
 [`storeAttachedSessions()`](../../app/app/Http/Controllers/Admin/InvoiceController.php#L305-L327) → [`InvoiceService::attachSessionsToDraft()`](../../app/app/Domain/Invoice/Services/InvoiceService.php#L277-L308): unlinks all current logs, re-validates the requested IDs via `getSessionLogsForInvoiceUpdate()` (same school, approved, billable, and either unlinked or already on *this* invoice), re-links them, and recomputes totals. Selecting nothing zeroes the invoice.
 
-> **Why the picker can be empty:** because it queries **`session_logs`** (approved, billable, unlinked), an invoice whose period has **no approved session logs** shows nothing to add — even if future `schedules` exist for that period. Schedules are not session logs. This is by design for Standard mode. See [§8](#8-known-gaps--gotchas).
+> **The Standard picker queries `session_logs`** (approved, billable, unlinked). A Standard invoice whose period has no approved session logs shows nothing to add. Advance schools use a **separate schedule picker** instead — see §4.5.
 
 ### 4.4 Totals (Standard)
 
 [`calculateTotals()`](../../app/app/Domain/Invoice/Services/InvoiceService.php#L126-L137): `subtotal = Σ session_logs.school_invoice_amount`, `tax_total = 0`, `total = subtotal`.
+
+### 4.5 Manual Advance invoices
+
+When `resolveSchoolBillingMode()` returns `advance`, the manual path mirrors the automated advance flow's **charge** side (no adjustments — those are left to the automated 1st-of-month run and the 10th-of-month `billing:reconcile-advance` catch-up):
+
+- **Create/attach** present **schedules** for the period (only `notYetInvoiced()`, per the `schedules.invoice_id` dedup) via [`attach-schedules.blade.php`](../../app/resources/views/admin/invoices/attach-schedules.blade.php), not session logs.
+- [`generateAdvanceInvoice()`](../../app/app/Domain/Invoice/Services/InvoiceService.php) builds `ADVANCE_SCHEDULED` lines for the selected schedules via the shared [`AdvanceChargeLineBuilder`](../../app/app/Domain/Billing/Services/AdvanceChargeLineBuilder.php) (same rate logic as automation), sets `billing_mode = advance`, persists the line items, and stamps `schedules.invoice_id`.
+- **Re-attach** (`attachSchedulesToAdvanceDraft()`) clears the prior set's `schedules.invoice_id`, deletes the invoice's line items, rebuilds for the new selection, and re-stamps. Empty selection zeroes the invoice and frees the schedules.
+- The manual advance invoice **advances the schedule's tracking** (`last_period_end` + `next_run_at`, like `advanceSchedule()`), so the automated next run reconciles it via `getPreviousAdvanceInvoice()` (which matches advance invoices regardless of manual/auto origin).
+- `due_date = invoice_date + payment_terms_days` (schedule terms, else `advance_default_payment_terms_days`).
 
 ---
 
@@ -252,17 +263,13 @@ Resend: `POST .../resend-email` → `resendEmail()` → `resendInvoiceEmail()` (
 
 ## 8. Known gaps & gotchas
 
-1. **Manual create always produces a Standard invoice.** The "Create Invoice" form, [`CreateInvoiceRequest`](../../app/app/Http/Requests/Admin/Invoice/CreateInvoiceRequest.php), and [`CreateInvoiceDTO`](../../app/app/DTOs/CreateInvoiceDTO.php) have **no `billing_mode` field**, and [`InvoiceService::generateInvoice()`](../../app/app/Domain/Invoice/Services/InvoiceService.php#L38) never reads the family's `billing_schedules.billing_mode`. The new row therefore takes the DB default `standard`. **Consequence:** a private family configured for **Advance** billing, if invoiced manually, gets a **Standard** invoice — whose session picker then needs approved `session_logs` and shows nothing if only future `schedules` exist. (This is the source of the "schedules exist but Add/remove sessions is empty, and the invoice totals $0" symptom.) A fix would resolve the family's `BillingSchedule` and route advance families through `AdvanceBillingService` (or at minimum set `billing_mode` correctly).
+1. **`session_date` is filtered as UTC, not therapist-local** in the available-sessions query — flagged inline at [`EloquentInvoiceRepository.php:181`](../../app/app/Infrastructure/Repositories/EloquentInvoiceRepository.php#L181) (`_local_docs/session-logs-utc-migration-plan.md`). A session near a day boundary can fall outside the expected period.
 
-2. **`session_date` is filtered as UTC, not therapist-local** in the available-sessions query — flagged inline at [`EloquentInvoiceRepository.php:181`](../../app/app/Infrastructure/Repositories/EloquentInvoiceRepository.php#L181) (`_local_docs/session-logs-utc-migration-plan.md`). A session near a day boundary can fall outside the expected period.
+2. **`tax_total` is always 0** — `calculateTotals()` has a placeholder comment; no tax engine exists yet.
 
-3. **`due_date` is hardcoded** to `+30 days` on the manual path (`InvoiceService`), ignoring any payment-terms config. The advance path uses the schedule's `payment_terms_days`.
+3. **No `voided` status** — the enum is `draft`/`sent`/`paid` only, despite the column comment. Soft-delete is the only "remove" path. ⚠️ If a void/cancel/destroy path is ever added, it MUST clear `schedules.invoice_id` on the freed schedules (the advance dedup invariant).
 
-4. **`tax_total` is always 0** — `calculateTotals()` has a placeholder comment; no tax engine exists yet.
-
-5. **No `voided` status** — the enum is `draft`/`sent`/`paid` only, despite the column comment. Soft-delete is the only "remove" path.
-
-6. **Standard invoices don't write `invoice_line_items`** — they link `session_logs` directly. Only Advance invoices populate `invoice_line_items`. Any reporting that reads `invoice_line_items` will miss Standard invoices.
+4. **Standard invoices don't write `invoice_line_items`** — they link `session_logs` directly. Only Advance invoices populate `invoice_line_items`. Any reporting that reads `invoice_line_items` will miss Standard invoices.
 
 ---
 
@@ -270,7 +277,9 @@ Resend: `POST .../resend-email` → `resendEmail()` → `resendInvoiceEmail()` (
 
 | Situation | Lines come from | Status filter | Linkage |
 |---|---|---|---|
-| Manual create / attach-sessions | `session_logs` | `APPROVED` + `is_billable_school` + `invoice_id IS NULL` | `session_logs.invoice_id` |
+| Manual Standard create / attach-sessions | `session_logs` | `APPROVED` + `is_billable_school` + `invoice_id IS NULL` | `session_logs.invoice_id` |
+| Manual Advance create / attach-schedules | `schedules` | `SCHEDULED`, in period, `notYetInvoiced()` | `invoice_line_items.schedule_id` + `schedules.invoice_id` |
 | Auto Standard sweep | `session_logs` | approved, billable, uninvoiced, `session_date <= period_end` | `session_logs.invoice_id` |
-| Auto Advance — upcoming charges | `schedules` | `SCHEDULED`, `schedule_date` in upcoming period | `invoice_line_items.schedule_id` |
+| Auto Advance — upcoming charges | `schedules` | `SCHEDULED`, `schedule_date` in upcoming period, `notYetInvoiced()` | `invoice_line_items.schedule_id` + `schedules.invoice_id` |
 | Auto Advance — reconciliation | `session_logs` (completed period) | approved | `invoice_line_items.session_log_id` / `source_invoice_id` |
+| 10th-of-month catch-up (`billing:reconcile-advance`) | `session_logs` (prior calendar month) | approved | settlement invoice line items / ledger `credit_note` |
