@@ -116,13 +116,20 @@ final class SSAService
             ]);
         }
 
-        // Can only complete or deactivate from ACTIVE status
-        if (in_array($dto->status, [SSAStatus::COMPLETED, SSAStatus::DEACTIVATED], true)) {
-            if ($ssa->status !== SSAStatus::ACTIVE) {
-                throw ValidationException::withMessages([
-                    'status' => 'Can only complete or deactivate an active SSA.',
-                ]);
-            }
+        $rules = [
+            SSAStatus::COMPLETED->value   => [SSAStatus::ACTIVE],
+            SSAStatus::DEACTIVATED->value => [SSAStatus::ACTIVE, SSAStatus::PENDING],
+        ];
+
+        $allowedStatuses = $rules[$dto->status->value] ?? null;
+
+        if ($allowedStatuses !== null && !in_array($ssa->status, $allowedStatuses, true)) {
+            $action = ucfirst($dto->status->value);
+            $allowedLabels = implode(' or ', array_map(fn($s) => $s->label(), $allowedStatuses));
+
+            throw ValidationException::withMessages([
+                'status' => "Can only {$action} a {$allowedLabels} SSA.",
+            ]);
         }
 
         return $this->repository->changeStatus($ssa, $dto);

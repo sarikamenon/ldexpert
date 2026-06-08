@@ -474,6 +474,60 @@ test('assigning therapist to pending SSA auto-activates it', function () {
     ]);
 });
 
+test('allows deactivating a pending SSA', function () {
+    $admin = ssaAdmin();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::PENDING->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.ssas.status', $ssa), [
+            'status' => SSAStatus::DEACTIVATED->value,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'status' => SSAStatus::DEACTIVATED->value,
+    ]);
+});
+
+test('allows deactivating an active SSA', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.ssas.status', $ssa), [
+            'status' => SSAStatus::DEACTIVATED->value,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'status' => SSAStatus::DEACTIVATED->value,
+    ]);
+});
+
+test('prevents deactivating a completed SSA', function () {
+    $admin = ssaAdmin();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'status' => SSAStatus::COMPLETED->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.ssas.status', $ssa), [
+            'status' => SSAStatus::DEACTIVATED->value,
+        ])
+        ->assertStatus(422);
+});
+
 test('unassigning therapist reverts SSA to pending status', function () {
     $admin = ssaAdmin();
     $therapist = ssaTherapist();
