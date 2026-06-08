@@ -80,7 +80,7 @@ Column: `generation_delay_days` — int 1–30. Only meaningful when **Generatio
 ### 2.6 Billing Start Date
 Column: `billing_start_date` — nullable date.
 
-**⚠️ Currently informational only on both sides.** The column is stored from the form but **no production code reads it** in `BillingAutomationService`, `InvoiceService`, or `AdvanceBillingService`. The scheduler does not use it to gate "don't sweep sessions before this date" or "don't run before this date." Treat as a planned feature or wire it up before relying on it.
+**Now wired (anchors the first period).** On the first-ever run (`last_period_end` null), the advance and standard flows anchor the billing period on `billing_start_date` instead of `now()`, so the first invoice covers the intended period. See `AdvanceBillingService::resolveCompletedPeriod()` / `BillingAutomationService::resolveCurrentPeriod()` — both fall back to `now()` only when `billing_start_date` is null. It does **not** gate session sweeping ("don't bill sessions before this date"); it only sets the first period anchor.
 
 ### 2.7 Payment Terms (Days) *
 Column: `payment_terms_days` — int 1–90.
@@ -95,7 +95,7 @@ Acts as a **floor on every Generation Timing mode**. The run can never happen so
 ### 2.9 Hidden but important: `auto_generate` / `auto_send` / `is_active`
 - `is_active` — schedule is enabled at all.
 - `auto_generate` — the daily `billing:generate` command will fire it. If `false`, the schedule still tracks `next_run_at` but waits for a manual trigger.
-- `auto_send` — reserved; not yet used to auto-email invoices.
+- `auto_send` — when `true` **and** the generated invoice total is **> 0**, the run auto-emails the invoice (or therapist bill) to the recipient immediately after the generation transaction commits, reusing the manual send path (`InvoiceService::sendInvoice` / `TherapistBillService::sendBill`). The send runs **outside** the generation transaction and is wrapped in try-catch — a mailer failure is logged and swallowed, never rolling back a successfully generated invoice. On success the `billing_schedule_runs.auto_sent` flag is set. Zero-amount invoices are never auto-sent. Toggled per-schedule and seeded from the billing-settings defaults (`*_auto_send`). See `BillingAutomationService::maybeAutoSendInvoice/Bill` and `AdvanceBillingService::maybeAutoSendInvoice`.
 
 ---
 
@@ -270,12 +270,26 @@ The reconciliation logic lives in [`AdvanceBillingService`](../app/Domain/Billin
 
 This means a school in Advance mode that paid for 20 sessions in May but only used 18 will see a -2 session adjustment on the June invoice — no manual credit notes needed.
 
+### 6.3 The 10th-of-month catch-up reconcile (`billing:reconcile-advance`)
+
+The 1st-of-month run (§6.2) only reconciles sessions that were **approved by run time**. Sessions approved *after* it — a therapist logs late, an admin approves on the 5th — are missed by that run. A second scheduled command, [`billing:reconcile-advance`](../app/Console/Commands/ReconcileAdvanceInvoices.php) (`->monthlyOn(10, '02:00')`), catches them. It reconciles **strictly the prior calendar month** (`now()->subMonth()`); current-month sessions are still in their open advance period and are never touched. Idempotent via the `advance_reconciliations` table — a `(schedule, period)` is reconciled at most once.
+
+[`AdvanceReconciliationService::reconcileSchedule()`](../app/Domain/Billing/Services/AdvanceReconciliationService.php) computes a **per-session late delta** = `should_bill − already_billed`, where `already_billed` is the sum of that session's prior-month `invoice_line_items.total` across the school's invoices (the original advance charge **plus** every prior adjustment/settlement line). A session already fully reconciled by the 1st-run nets to 0 and is skipped — it is **never re-billed**. Each non-zero delta becomes a **status-based** line (no-show / cancelled / rate-difference / additional-session, via the shared `AdvanceAdjustmentClassifier`), so a settlement invoice reads like the regular advance invoice.
+
+**Net into ONE document (Q8b).** The run nets all deltas and emits a single document by the **net sign** — never a settlement invoice *and* a credit note in the same run:
+
+| Net of all deltas | Output |
+|---|---|
+| **> 0** (school owes us) | one **draft settlement invoice** carrying every status-based line, `total = net` |
+| **< 0** (we owe the school) | one **ledger `credit_note`** for `\|net\|` (`recorded_at` = run date; no invoice). Single net entry — the ledger has no line items; per-session detail stays in the session logs |
+| **= 0** | neither document; only the `advance_reconciliations` row marking the period done |
+
 ---
 
 ## 7. Known gaps / things to flag
 
-- **`payment_terms_days` is ignored.** [`InvoiceService::generateInvoice()`](../app/Domain/Billing/Services/InvoiceService.php#L81) hardcodes `+30 days`. Should be `today + schedule.payment_terms_days`, matching the therapist side.
-- **`billing_start_date` is half-wired.** Stored from the form, never read by the scheduler or invoice service. Either implement the gating semantics or remove the field.
-- **No "Fixed Date" Generation Timing.** Schools that pay strictly on the 1st cannot express that today — the 2-day grace floor pushes the run to the 2nd or 3rd. The closest workaround is Monthly + Fixed Delay = 1, accepting the 1-2 day drift.
-- **`auto_send` is dormant.** Schedule stores it, but invoices are not auto-emailed today. Sending is a manual step.
+- **`payment_terms_days` — now honored.** Advance invoices set `due_date = today + payment_terms_days`. (Standard manual invoices fall back to the billing-settings default when no schedule applies.)
+- **`billing_start_date` — now wired.** Anchors the first billing period (§2.6); no longer dead.
+- **`min_grace_days` / grace floor — removed from generation timing.** The grace columns were renamed to `*_delay_days` and the floor no longer gates the run; `day_of_week` and `fixed_delay` walk from `period_end` directly. (Column kept dormant for backward-compat.)
+- **`auto_send` — now implemented** (§2.9). Non-zero invoices/bills auto-email when the schedule opts in.
 - **System user fallback.** Generated invoices are attributed to the oldest admin by id — there's no dedicated `system` user. Worth knowing if you audit `created_by` columns downstream.

@@ -134,6 +134,10 @@ $upcomingPeriod = $this->resolveUpcomingPeriod($schedule);
 
 Net result: a single invoice each cycle that bills the upcoming period *and* trues up the previous one. Over/underbilling settles automatically; no manual credit notes needed.
 
+> **Late-approved sessions** that the 1st-of-month run missed are caught by a second command, **`billing:reconcile-advance`** (scheduled `monthlyOn(10)`). It reconciles the prior calendar month only and emits **one document by the net sign** — a settlement invoice (net > 0) or a single ledger credit note (net < 0), never both. See [`SCHOOL_INVOICE_SCHEDULE.md` §6.3](SCHOOL_INVOICE_SCHEDULE.md) for the full reference.
+>
+> **Auto-send:** when a schedule has `auto_send = true` and the generated invoice/bill is non-zero, the run emails it immediately after the generation transaction commits (outside the transaction, failures logged + swallowed). `billing_schedule_runs.auto_sent` records the outcome.
+
 ### Why Advance bills "future" sessions
 
 This is the design — `Schedule` rows represent *committed* sessions, not delivered ones. Billing them in advance lets schools pay before the work happens. Reconciliation against actual `session_logs` happens on the next cycle. This is intentional and only applies to Advance schools (typically `is_private_student = true`).

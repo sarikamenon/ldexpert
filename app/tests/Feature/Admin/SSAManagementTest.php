@@ -474,6 +474,28 @@ test('assigning therapist to pending SSA auto-activates it', function () {
     ]);
 });
 
+test('assigning therapist to deactivated SSA auto-activates it', function () {
+    $admin = ssaAdmin();
+    $therapist = ssaTherapist();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'assigned_therapist_id' => null,
+        'status' => SSAStatus::DEACTIVATED->value,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.ssas.assign-therapist', $ssa), [
+            'therapist_id' => $therapist->id,
+        ])
+        ->assertOk()
+        ->assertJson(['success' => true]);
+
+    $this->assertDatabaseHas('service_support_agreements', [
+        'id' => $ssa->id,
+        'assigned_therapist_id' => $therapist->id,
+        'status' => SSAStatus::ACTIVE->value,
+    ]);
+});
+
 test('allows deactivating a pending SSA', function () {
     $admin = ssaAdmin();
     $ssa = ServiceSupportAgreement::factory()->create([
