@@ -93,7 +93,7 @@ Acts as a **floor on every Generation Timing mode**. The run can never happen so
 ### 2.8 Hidden but important: `auto_generate` / `auto_send` / `is_active`
 - `is_active` — schedule is enabled at all.
 - `auto_generate` — the daily `billing:generate` command will fire it. If `false`, the schedule still tracks `next_run_at` but waits for a manual trigger.
-- `auto_send` — reserved; currently a flag stored on the bill (`auto_sent` is always `false` in `BillingAutomationService` today).
+- `auto_send` — when `true` **and** the generated bill's `total_due > 0`, the run auto-emails the bill to the therapist right after the generation transaction commits, via `TherapistBillService::sendBill()`. Runs **outside** the transaction, wrapped in try-catch (a mailer failure is logged and swallowed, never failing generation); on success `billing_schedule_runs.auto_sent` is set and the run DTO carries `autoSent: true`. Zero-amount bills are never auto-sent.
 
 ---
 
@@ -217,7 +217,7 @@ When `billing:generate` finds a due schedule, [`BillingAutomationService::proces
 
 ## 6. Known gaps / things to flag
 
-- **`billing_start_date` is half-wired.** Stored from the form, never read by the scheduler. Either implement the gating semantics (likely: don't sweep sessions with `session_date < billing_start_date`, and don't run before that date) or remove the field.
+- **`billing_start_date` — now wired** as the first-period anchor (parallels the school side); no longer dead.
 - **No "Fixed Date" Generation Timing.** Clients who pay on the 15th + last-day cannot express that today. Closest workarounds are Monthly + Fixed Delay = 30 (last-of-next-month) or Semi-Monthly + Fixed Delay = 30 (15th + EOM, drifts in Feb / 31-day months). A proper anchor-date mode would be additive — new enum case, new column for `delay_months`.
-- **`auto_send` is dormant.** The schedule stores it and the run DTO carries `autoSent`, but `BillingAutomationService` always sets `auto_sent: false`. Sending bills is currently a manual step.
+- **`auto_send` — now implemented** (§2.8). Non-zero bills auto-email the therapist when the schedule opts in; the run DTO's `autoSent` reflects the real outcome.
 - **System user fallback.** `BillingAutomationService::getSystemUser()` picks the oldest admin by id to attribute generated bills — there's no dedicated `system` user. Worth knowing if you audit `created_by` columns downstream.

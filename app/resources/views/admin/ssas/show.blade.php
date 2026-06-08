@@ -44,6 +44,10 @@
                     Deactivate
                 </x-ui::button>
             @elseif ($ssa->status === \App\Enums\SSAStatus::PENDING)
+            <x-ui::button variant="danger" class="change-status-btn" data-ssa-id="{{ $ssa->id }}"
+                    data-status="deactivated">
+                    Deactivate
+                </x-ui::button>
                 <span class="text-sm text-foreground/70">Will activate when therapist is assigned</span>
             @elseif ($ssa->status === \App\Enums\SSAStatus::DEACTIVATED)
                 @if ($ssa->canBeActivated())

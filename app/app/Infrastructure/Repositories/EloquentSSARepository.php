@@ -216,8 +216,8 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'assigned_therapist_id' => $dto->therapistId,
             ];
 
-            // Automatically change status to ACTIVE if currently PENDING
-            if ($ssa->status === SSAStatus::PENDING) {
+            // Automatically change status to ACTIVE if currently PENDING or DEACTIVATED
+            if (in_array($ssa->status, [SSAStatus::PENDING, SSAStatus::DEACTIVATED], true)) {
                 $updateData['status'] = SSAStatus::ACTIVE->value;
             }
 
