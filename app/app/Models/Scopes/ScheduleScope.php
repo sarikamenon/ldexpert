@@ -111,6 +111,24 @@ final class ScheduleScope extends BaseModelScope
      * @param  Builder<Schedule>  $builder
      * @return Builder<Schedule>
      */
+    public static function notYetInvoiced(Builder $builder, Model $model): Builder
+    {
+        return $builder->whereNull(self::qualify($model, 'invoice_id'));
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
+    public static function forInvoice(Builder $builder, Model $model, int $invoiceId): Builder
+    {
+        return $builder->where(self::qualify($model, 'invoice_id'), $invoiceId);
+    }
+
+    /**
+     * @param  Builder<Schedule>  $builder
+     * @return Builder<Schedule>
+     */
     public static function recurring(Builder $builder, Model $model): Builder
     {
         return $builder->where(self::qualify($model, 'recurrence_type'), '!=', RecurrenceType::NONE->value);
@@ -214,8 +232,8 @@ final class ScheduleScope extends BaseModelScope
     public static function overlappingWindow(Builder $builder, Model $model, string $windowStartUtc, string $windowEndUtc): Builder
     {
         $date = self::qualify($model, 'schedule_date');
-        $st   = self::qualify($model, 'start_time');
-        $et   = self::qualify($model, 'end_time');
+        $st = self::qualify($model, 'start_time');
+        $et = self::qualify($model, 'end_time');
 
         return $builder
             ->whereRaw("TIMESTAMP({$date}, {$st}) < ?", [$windowEndUtc])

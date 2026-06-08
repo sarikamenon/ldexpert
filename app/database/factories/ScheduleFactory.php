@@ -30,6 +30,7 @@ class ScheduleFactory extends Factory
             'ssa_id' => ServiceSupportAgreement::factory(),
             'service_id' => Service::factory(),
             'school_id' => School::factory(),
+            'invoice_id' => null,
             'parent_schedule_id' => null,
             'schedule_date' => $this->faker->date(),
             'start_time' => '09:00',

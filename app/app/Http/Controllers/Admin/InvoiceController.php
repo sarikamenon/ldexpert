@@ -31,6 +31,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 final class InvoiceController extends Controller
@@ -256,12 +257,35 @@ final class InvoiceController extends Controller
         return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
     }
 
-    public function attachSessions(Request $request, Invoice $invoice): View
+    public function attachSessions(Request $request, Invoice $invoice): View|RedirectResponse
     {
         $this->authorize('update', $invoice);
 
         if (! $invoice->isDraft()) {
             abort(404);
+        }
+
+        // Advance invoices select schedules (not session logs) for the period.
+        if ($invoice->isAdvanceMode()) {
+            try {
+                $advanceData = $this->invoiceService->getAdvanceAttachData($invoice);
+            } catch (\Throwable $e) {
+                Log::error('Failed to load advance attach data', [
+                    'invoice_id' => $invoice->id,
+                    'exception' => $e,
+                ]);
+
+                return redirect()
+                    ->route('admin.invoices.show', $invoice)
+                    ->withErrors(['error' => 'Unable to load schedules for this invoice. Please try again later.']);
+            }
+
+            return view('admin.invoices.attach-schedules', [
+                'invoice' => $invoice,
+                'scheduleRows' => $advanceData['rows'],
+                'attachedScheduleIds' => $advanceData['attachedScheduleIds'],
+                'periodLabel' => $advanceData['periodLabel'],
+            ]);
         }
 
         $filters = [

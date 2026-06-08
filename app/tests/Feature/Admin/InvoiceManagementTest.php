@@ -67,7 +67,7 @@ it('allows admin to view invoice create page', function () {
     $admin = invoiceAdminUser();
     $therapist = User::factory()->therapist()->create();
     $student = User::factory()->student()->create();
-    $school = School::factory()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
     $service = Service::factory()->create();
     $ssa = ServiceSupportAgreement::factory()->create([
         'student_id' => $student->id,
@@ -91,6 +91,7 @@ it('creates an invoice from selected session logs', function () {
     $therapist = User::factory()->therapist()->create();
     $student = User::factory()->student()->create();
     $school = School::factory()->create([
+        'is_private_student' => false,
         'full_name' => 'Test School Full',
         'display_name' => 'Test School',
         'contact_email' => 'contact@school.com',
@@ -136,11 +137,80 @@ it('creates an invoice from selected session logs', function () {
         ->and($log2->fresh()->invoice_id)->toBe($invoice->id);
 });
 
+it('derives the standard invoice due date from the invoice date, not today', function () {
+    $admin = invoiceAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create(['is_private_student' => false, 'state' => 'CA']);
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+
+    // Backdate the invoice date a couple of months in the past.
+    $invoiceDate = now()->subMonths(2)->startOfMonth();
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.store'), [
+            'school_id' => $school->id,
+            'invoice_date' => $invoiceDate->format('Y-m-d'),
+            'billing_period_start' => $invoiceDate->copy()->startOfMonth()->format('Y-m-d'),
+            'billing_period_end' => $invoiceDate->copy()->endOfMonth()->format('Y-m-d'),
+            'session_log_ids' => [$log->id],
+        ])
+        ->assertRedirect();
+
+    $invoice = Invoice::where('school_id', $school->id)->first();
+
+    // due_date = invoice_date + 30 days, NOT now() + 30 days.
+    expect($invoice->due_date->toDateString())
+        ->toBe($invoiceDate->copy()->addDays(30)->toDateString());
+});
+
+it('creates an invoice for a school with an international 3-letter state code', function () {
+    // Regression: invoices.school_state was varchar(2) while schools.state is
+    // varchar(50), so snapshotting an international state (e.g. ISB) overflowed.
+    $admin = invoiceAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create([
+        'is_private_student' => false,
+        'state' => 'ISB',
+    ]);
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.invoices.store'), [
+            'school_id' => $school->id,
+            'invoice_date' => now()->format('Y-m-d'),
+            'billing_period_start' => now()->startOfMonth()->format('Y-m-d'),
+            'billing_period_end' => now()->endOfMonth()->format('Y-m-d'),
+            'session_log_ids' => [$log->id],
+        ])
+        ->assertRedirect();
+
+    $response->assertSessionHas('success', 'Invoice created successfully.');
+
+    $invoice = Invoice::where('school_id', $school->id)->first();
+    expect($invoice)->not->toBeNull()
+        ->and($invoice->school_state)->toBe('ISB');
+});
+
 it('verifies snapshot data persists even if school changes', function () {
     $admin = invoiceAdminUser();
     $therapist = User::factory()->therapist()->create();
     $student = User::factory()->student()->create();
     $school = School::factory()->create([
+        'is_private_student' => false,
         'full_name' => 'Original School Name',
         'display_name' => 'Original Display',
     ]);
@@ -261,7 +331,7 @@ it('allows admin to download invoice PDF', function () {
 
 it('creates draft with no sessions and redirects to attach-sessions', function () {
     $admin = invoiceAdminUser();
-    $school = School::factory()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
 
     $payload = [
         'school_id' => $school->id,
@@ -288,7 +358,7 @@ it('attach-sessions page shows for draft and updates sessions', function () {
     $admin = invoiceAdminUser();
     $therapist = User::factory()->therapist()->create();
     $student = User::factory()->student()->create();
-    $school = School::factory()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
     $service = Service::factory()->create();
     $ssa = ServiceSupportAgreement::factory()->create([
         'student_id' => $student->id,
@@ -325,7 +395,7 @@ it('attach-sessions allows removing sessions', function () {
     $admin = invoiceAdminUser();
     $therapist = User::factory()->therapist()->create();
     $student = User::factory()->student()->create();
-    $school = School::factory()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
     $service = Service::factory()->create();
     $ssa = ServiceSupportAgreement::factory()->create([
         'student_id' => $student->id,
@@ -371,7 +441,7 @@ it('prevents creating invoice with already invoiced session logs', function () {
     $admin = invoiceAdminUser();
     $therapist = User::factory()->therapist()->create();
     $student = User::factory()->student()->create();
-    $school = School::factory()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
     $service = Service::factory()->create();
     $ssa = ServiceSupportAgreement::factory()->create([
         'student_id' => $student->id,

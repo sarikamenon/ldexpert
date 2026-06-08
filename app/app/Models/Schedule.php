@@ -41,12 +41,25 @@ class Schedule extends Model
     /** @use HasFactory<\Database\Factories\ScheduleFactory> */
     use HasAudits, HasFactory, SoftDeletes;
 
+    /**
+     * invoice_id is billing plumbing: it rotates whenever a schedule is attached
+     * to or detached from an (advance) invoice, mostly via mass updates that
+     * bypass model events anyway. Exclude it from the audit timeline so the
+     * meaningful schedule changes are not drowned out by invoice-link churn.
+     *
+     * @var array<int, string>
+     */
+    protected array $auditIgnoreFields = [
+        'invoice_id',
+    ];
+
     protected $fillable = [
         'therapist_id',
         'student_id',
         'ssa_id',
         'service_id',
         'school_id',
+        'invoice_id',
         'parent_schedule_id',
         'schedule_date',
         'start_time',
@@ -124,6 +137,16 @@ class Schedule extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
+    }
+
+    /**
+     * The advance invoice this schedule has been billed on, if any.
+     *
+     * @return BelongsTo<Invoice, $this>
+     */
+    public function invoice(): BelongsTo
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
     /**
@@ -299,6 +322,28 @@ class Schedule extends Model
     public function scopeNotBillable(Builder $query): Builder
     {
         return ScheduleScope::notBillable($query, $this);
+    }
+
+    /**
+     * Schedules not yet placed on any (advance) invoice.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeNotYetInvoiced(Builder $query): Builder
+    {
+        return ScheduleScope::notYetInvoiced($query, $this);
+    }
+
+    /**
+     * Schedules placed on a specific invoice.
+     *
+     * @param  Builder<Schedule>  $query
+     * @return Builder<Schedule>
+     */
+    public function scopeForInvoice(Builder $query, int $invoiceId): Builder
+    {
+        return ScheduleScope::forInvoice($query, $this, $invoiceId);
     }
 
     /**

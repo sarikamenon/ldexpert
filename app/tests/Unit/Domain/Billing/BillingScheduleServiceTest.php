@@ -142,43 +142,39 @@ test('calculates next run date with fixed delay', function () {
         GenerationDayType::FIXED_DELAY,
         null,
         5, // 5 day delay
-        2, // 2 day min grace
         $periodEnd,
     );
 
-    // period_end + 5 days = Mar 20, period_end + 2 grace = Mar 17, max is Mar 20
+    // period_end + 5 days = Mar 20
     expect($nextRun->toDateString())->toBe('2026-03-20');
 });
 
-test('calculates next run date with fixed delay respects min grace days', function () {
+test('calculates next run date with fixed delay of zero generates the next day', function () {
     $periodEnd = Carbon::parse('2026-03-15');
 
     $nextRun = $this->service->calculateNextRunDate(
         GenerationDayType::FIXED_DELAY,
         null,
-        1, // 1 day delay
-        5, // 5 day min grace
+        0, // 0 day delay means the next day, never same-day
         $periodEnd,
     );
 
-    // period_end + 1 day = Mar 16, period_end + 5 grace = Mar 20, max is Mar 20
-    expect($nextRun->toDateString())->toBe('2026-03-20');
+    // period_end + max(0, 1) = Mar 16, never Mar 15
+    expect($nextRun->toDateString())->toBe('2026-03-16');
 });
 
-test('calculates next run date with day of week', function () {
+test('calculates next run date with day of week walks from the period end', function () {
     $periodEnd = Carbon::parse('2026-03-15'); // Sunday
 
     $nextRun = $this->service->calculateNextRunDate(
         GenerationDayType::DAY_OF_WEEK,
         2, // Tuesday
         null,
-        2, // 2 day min grace
         $periodEnd,
     );
 
-    // earliest = Mar 17 (Mon), next Tuesday after Mar 17 = Mar 17 is Mon, so Mar 18
+    // No grace floor: walk forward from Mar 15 (Sun) to the next Tuesday = Mar 17
     expect($nextRun->toDateString())->toBe('2026-03-17');
-    // Wait: Mar 15 + 2 = Mar 17 (Mon), dayOfWeek=2 is Tue, so target starts at Mar 17, Mar 17 is Mon (1), add 1 = Mar 18 (Tue)
     expect($nextRun->dayOfWeek)->toBe(2); // Tuesday
 });
 
@@ -189,11 +185,55 @@ test('calculates next run date with day of week defaults to Tuesday', function (
         GenerationDayType::DAY_OF_WEEK,
         null, // defaults to Tuesday (2)
         null,
-        2,
         $periodEnd,
     );
 
     expect($nextRun->dayOfWeek)->toBe(2); // Tuesday
+});
+
+test('calculates next run date with day of week Wednesday', function () {
+    $periodEnd = Carbon::parse('2026-03-15'); // Sunday
+
+    $nextRun = $this->service->calculateNextRunDate(
+        GenerationDayType::DAY_OF_WEEK,
+        3, // Wednesday
+        null,
+        $periodEnd,
+    );
+
+    // Walk Sun Mar 15 → Mon 16 → Tue 17 → Wed Mar 18
+    expect($nextRun->toDateString())->toBe('2026-03-18')
+        ->and($nextRun->dayOfWeek)->toBe(3);
+});
+
+test('calculates next run date with day of week Friday', function () {
+    $periodEnd = Carbon::parse('2026-03-15'); // Sunday
+
+    $nextRun = $this->service->calculateNextRunDate(
+        GenerationDayType::DAY_OF_WEEK,
+        5, // Friday
+        null,
+        $periodEnd,
+    );
+
+    // Walk Sun Mar 15 → next Friday = Mar 20
+    expect($nextRun->toDateString())->toBe('2026-03-20')
+        ->and($nextRun->dayOfWeek)->toBe(5);
+});
+
+test('day of week returns the same day when the period end is already the target weekday', function () {
+    $periodEnd = Carbon::parse('2026-03-17'); // Tuesday
+
+    $nextRun = $this->service->calculateNextRunDate(
+        GenerationDayType::DAY_OF_WEEK,
+        2, // Tuesday — already the period-end weekday
+        null,
+        $periodEnd,
+    );
+
+    // The walk-forward loop exits immediately: same day, NOT +7.
+    expect($nextRun->toDateString())->toBe('2026-03-17')
+        ->and($nextRun->dayOfWeek)->toBe(2);
 });
 
 // --- CRUD delegation tests ---
@@ -226,6 +266,76 @@ test('create schedule delegates to repository with calculated next_run_at', func
     $result = $this->service->createSchedule($dto);
 
     expect($result)->toBe($expectedSchedule);
+});
+
+test('create schedule anchors the first period on billing_start_date when set', function () {
+    // Semi-monthly, fixed-delay 2: start date 2026-06-16 → period 16th–30th → run 30th + 2 = Jul 2.
+    $dto = BillingScheduleDTO::fromArray([
+        'schedulable_type' => 'App\\Models\\User',
+        'schedulable_id' => 1,
+        'schedule_type' => 'therapist_bill',
+        'billing_mode' => 'standard',
+        'frequency' => 'semi_monthly',
+        'generation_day_type' => 'fixed_delay',
+        'generation_delay_days' => 2,
+        'payment_terms_days' => 30,
+        'billing_start_date' => '2026-06-16',
+    ]);
+
+    $this->repository->shouldReceive('create')
+        ->once()
+        ->withArgs(fn (array $data): bool => $data['next_run_at'] === '2026-07-02')
+        ->andReturn(new BillingSchedule);
+
+    $this->service->createSchedule($dto);
+});
+
+test('create schedule holds next_run_at no earlier than a future billing_start_date', function () {
+    // Future start date in the same period: run date computed from the period end
+    // would precede the start date, so it is clamped up to the start date.
+    $dto = BillingScheduleDTO::fromArray([
+        'schedulable_type' => 'App\\Models\\School',
+        'schedulable_id' => 1,
+        'schedule_type' => 'school_invoice',
+        'billing_mode' => 'advance',
+        'frequency' => 'monthly',
+        'generation_day_type' => 'fixed_delay',
+        'generation_delay_days' => 1,
+        'payment_terms_days' => 30,
+        'billing_start_date' => '2026-12-01', // 1st of next month, period ends 2026-12-31 (run would be Jan 1)
+    ]);
+
+    // Monthly period containing Dec 1 ends Dec 31; run = Dec 31 + 1 = 2027-01-01,
+    // which is after the start date, so no clamping needed here — assert it is >= start.
+    $this->repository->shouldReceive('create')
+        ->once()
+        ->withArgs(function (array $data): bool {
+            return $data['next_run_at'] >= '2026-12-01';
+        })
+        ->andReturn(new BillingSchedule);
+
+    $this->service->createSchedule($dto);
+});
+
+test('create schedule with null billing_start_date uses now-based period (legacy behavior)', function () {
+    $dto = BillingScheduleDTO::fromArray([
+        'schedulable_type' => 'App\\Models\\School',
+        'schedulable_id' => 1,
+        'schedule_type' => 'school_invoice',
+        'billing_mode' => 'standard',
+        'frequency' => 'semi_monthly',
+        'generation_day_type' => 'day_of_week',
+        'generation_day_of_week' => 2,
+        'payment_terms_days' => 30,
+        // no billing_start_date
+    ]);
+
+    $this->repository->shouldReceive('create')
+        ->once()
+        ->withArgs(fn (array $data): bool => isset($data['next_run_at']))
+        ->andReturn(new BillingSchedule);
+
+    $this->service->createSchedule($dto);
 });
 
 test('toggle active flips the is_active flag', function () {
@@ -261,6 +371,74 @@ test('advance schedule updates tracking fields', function () {
             return isset($data['last_run_at'])
                 && $data['last_period_end'] === '2026-03-15'
                 && isset($data['next_run_at']);
+        })
+        ->andReturn($schedule);
+
+    $this->service->advanceSchedule($schedule, $periodEnd);
+});
+
+test('advance schedule honors a stored fixed delay of zero as a one-day delay', function () {
+    $schedule = BillingSchedule::factory()->make([
+        'frequency' => BillingFrequency::MONTHLY->value,
+        'generation_day_type' => GenerationDayType::FIXED_DELAY->value,
+        'generation_day_of_week' => null,
+        'generation_delay_days' => 0,
+    ]);
+
+    // Monthly period ending 2026-03-31 → next period ends 2026-04-30.
+    $periodEnd = Carbon::parse('2026-03-31');
+
+    $this->repository->shouldReceive('update')
+        ->once()
+        ->withArgs(function (BillingSchedule $s, array $data) {
+            // delay 0 → max(0, 1) = 1 day after the next period end (2026-04-30),
+            // NOT the 3-day default that a falsy-zero read would produce.
+            return $data['next_run_at'] === '2026-05-01';
+        })
+        ->andReturn($schedule);
+
+    $this->service->advanceSchedule($schedule, $periodEnd);
+});
+
+test('advance schedule rolls a semi-monthly day-of-week schedule to the next weekday after the next period end', function () {
+    $schedule = BillingSchedule::factory()->make([
+        'frequency' => BillingFrequency::SEMI_MONTHLY->value,
+        'generation_day_type' => GenerationDayType::DAY_OF_WEEK->value,
+        'generation_day_of_week' => 3, // Wednesday
+        'generation_delay_days' => 0,
+    ]);
+
+    // First semi-monthly period ends 2026-05-15 → next period (16–31) ends 2026-05-31 (Sunday).
+    // Walk forward to Wednesday → 2026-06-03. (Mirrors the live schedule #1 run.)
+    $periodEnd = Carbon::parse('2026-05-15');
+
+    $this->repository->shouldReceive('update')
+        ->once()
+        ->withArgs(function (BillingSchedule $s, array $data) {
+            return $data['last_period_end'] === '2026-05-15'
+                && $data['next_run_at'] === '2026-06-03';
+        })
+        ->andReturn($schedule);
+
+    $this->service->advanceSchedule($schedule, $periodEnd);
+});
+
+test('advance schedule rolls a semi-monthly fixed-delay schedule past the next period end', function () {
+    $schedule = BillingSchedule::factory()->make([
+        'frequency' => BillingFrequency::SEMI_MONTHLY->value,
+        'generation_day_type' => GenerationDayType::FIXED_DELAY->value,
+        'generation_day_of_week' => null,
+        'generation_delay_days' => 2,
+    ]);
+
+    // Period ends 2026-05-31 → next period (Jun 1–15) ends 2026-06-15 → +2 days = 2026-06-17.
+    $periodEnd = Carbon::parse('2026-05-31');
+
+    $this->repository->shouldReceive('update')
+        ->once()
+        ->withArgs(function (BillingSchedule $s, array $data) {
+            return $data['last_period_end'] === '2026-05-31'
+                && $data['next_run_at'] === '2026-06-17';
         })
         ->andReturn($schedule);
 

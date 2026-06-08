@@ -365,3 +365,17 @@ it('prevents therapist from deleting a bill', function () {
     $response->assertForbidden();
     expect(TherapistBill::find($bill->id))->not->toBeNull();
 });
+
+it('shows the due date on the therapist bill detail page', function () {
+    $admin = billingAdminUser();
+    $bill = TherapistBill::factory()->create([
+        'due_date' => '2026-07-15',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.billing.therapist-bills.show', $bill));
+
+    $response->assertOk()
+        ->assertSee('Due Date')
+        ->assertSee('Jul 15, 2026');
+});
