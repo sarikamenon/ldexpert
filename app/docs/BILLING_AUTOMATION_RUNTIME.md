@@ -63,11 +63,11 @@ So three conditions must hold:
 
 ## 3. Where `next_run_at` comes from
 
-It's computed by `BillingScheduleService::calculateNextRunDate()` — the math documented in the two companion docs (`period_end + min_grace_days`, then walk-to-weekday or add-delay). It gets written to the DB at exactly three moments:
+It's computed by `BillingScheduleService::calculateNextRunDate()` — the math documented in the two companion docs (walk-to-weekday, or `period_end + max(delay, 1)`; **no grace floor**). It gets written to the DB at exactly three moments:
 
 | When | What gets stamped | Code |
 |---|---|---|
-| Schedule created | `next_run_at` for the period containing `now()` | [`createSchedule()`](../app/Domain/Billing/Services/BillingScheduleService.php#L70-L88) |
+| Schedule created | `next_run_at` for the first period (anchored on `billing_start_date` if set, else the period containing `now()`) | [`createSchedule()`](../app/Domain/Billing/Services/BillingScheduleService.php#L70-L130) |
 | Schedule updated | `next_run_at` for the *next* period after `last_period_end` (or current period if never run) | [`updateSchedule()`](../app/Domain/Billing/Services/BillingScheduleService.php#L90-L115) |
 | After every successful run | `next_run_at` for the period after the one just billed | [`advanceSchedule()`](../app/Domain/Billing/Services/BillingScheduleService.php#L212-L229) |
 
@@ -86,14 +86,20 @@ private function resolveCurrentPeriod(BillingSchedule $schedule): array
         $nextDay = $schedule->last_period_end->copy()->addDay();
         return $this->scheduleService->determineBillingPeriod($schedule->frequency, $nextDay);
     }
-    return $this->scheduleService->determineBillingPeriod($schedule->frequency, now());
+
+    // First-ever run: anchor on billing_start_date when set, else now().
+    $anchor = $schedule->billing_start_date !== null
+        ? $schedule->billing_start_date->copy()
+        : now();
+
+    return $this->scheduleService->determineBillingPeriod($schedule->frequency, $anchor);
 }
 ```
 
 Two branches:
 
 - **Subsequent run** (`last_period_end` is set) — period = the billing period starting the day after `last_period_end`. This walks forward sequentially, period by period, regardless of how late the cron actually fires.
-- **First-ever run** (`last_period_end` is null) — period = the billing period **containing `now()`** at the moment the cron fires. Not the period anchored at schedule creation — this is the source of the bug in §6.1 below.
+- **First-ever run** (`last_period_end` is null) — period = the billing period **containing `billing_start_date`** when that is set (so the first invoice covers the intended period), falling back to the period **containing `now()`** only for legacy schedules with no start date. See §6.1 for the residual edge case when neither is set.
 
 The sweep then runs against this period:
 
@@ -146,25 +152,25 @@ This is the design — `Schedule` rows represent *committed* sessions, not deliv
 
 ## 6. Known issues in the first-run path
 
-### 6.1 Skipped first period on Standard schedules created mid-period
+### 6.1 First period anchored on `billing_start_date` (legacy null-start edge case)
 
-**Symptom.** When a Standard schedule is created in the middle of a billing period, the first period boundary is silently skipped — no `billing_schedule_runs` row is ever recorded for it.
+**Now mitigated.** The first period is anchored on `billing_start_date` (§3, §4). Every schedule **auto-created** with an entity (therapist/school) gets a computed `billing_start_date`, so the first run bills the intended period. The residual edge case below applies **only** to legacy schedules with a null `billing_start_date`.
 
-**Trace.** Settings: `frequency = semi_monthly`, `generation_day_type = fixed_delay`, `generation_delay_days = 3`, `min_grace_days = 2`. Schedule created on **5/4/2026** (mid first-half period).
+**Residual symptom (null start date only).** When such a schedule is created mid-period, `resolveCurrentPeriod()` falls back to the period **containing `now()`** at first run, so the first period boundary is silently skipped — no `billing_schedule_runs` row is recorded for it.
+
+**Trace (null `billing_start_date`).** Settings: `frequency = semi_monthly`, `generation_day_type = fixed_delay`, `generation_delay_days = 3`. Schedule created on **5/4/2026** (mid first-half period).
 
 | Step | Date | What happens |
 |---|---|---|
-| Create | 5/4 | `determineCurrentPeriodEnd(now=5/4)` → 5/15. `calculateNextRunDate(5/15)` → **`next_run_at = 5/18`**. |
+| Create | 5/4 | `determineCurrentPeriodEnd(now=5/4)` → 5/15. `calculateNextRunDate(5/15)` (delay 3) → **`next_run_at = 5/18`**. |
 | Cron 5/5–5/17 | — | `next_run_at = 5/18`, not yet due → skipped silently. |
-| **Cron 5/18** | 5/18 | `due()` matches. `resolveCurrentPeriod()`: `last_period_end` is null → falls into else branch → `determineBillingPeriod(semi_monthly, now=5/18)` → **period = 5/16–5/31**, *not* 5/1–5/15. |
-| Sweep | 5/18 | Query: `session_date <= 5/31`, no lower bound → pulls in any approved un-billed sessions from 5/1–5/15 *and* 5/16–5/18. They all land in the **5/16–5/31 bill**. |
+| **Cron 5/18** | 5/18 | `due()` matches. `resolveCurrentPeriod()`: `last_period_end` null **and** `billing_start_date` null → else branch → `determineBillingPeriod(semi_monthly, now=5/18)` → **period = 5/16–5/31**, *not* 5/1–5/15. |
+| Sweep | 5/18 | Query: `session_date <= 5/31`, no lower bound → pulls any approved un-billed sessions from 5/1–5/15 *and* 5/16–5/18 into the **5/16–5/31 bill**. |
 | Advance | 5/18 | `last_period_end = 5/31`, `next_run_at = 6/3`. |
 
-**Consequence.** No `billing_schedule_runs` row ever has `billing_period_start = 5/1` / `billing_period_end = 5/15`. The 5/1–5/15 period is invisible in run history. The work *does* get billed (via the open-ended sweep) but it's attributed to the wrong period and shows up in the wrong bill — which may confuse the school or therapist reading the bill ("Why is a 5/3 session on my 5/16–5/31 invoice?").
+**Consequence (legacy only).** No `billing_schedule_runs` row has `billing_period_start = 5/1` / `billing_period_end = 5/15`; the work still gets billed (via the open-ended sweep) but is attributed to the wrong period.
 
-**Suggested fix.** Anchor the first period off the schedule's creation date, not `now()` at run time. Options:
-- In `createSchedule()`, set `last_period_end` to the period end *before* the creation date so the first run computes its period via the `last_period_end + 1` branch (e.g. for a 5/4 creation, set `last_period_end = 4/30`, so first run bills 5/1–5/15).
-- Or in `resolveCurrentPeriod()`, fall back to the schedule's `created_at` instead of `now()` when `last_period_end` is null.
+**Fix.** Set `billing_start_date` on the schedule — `createSchedule()` then anchors the first period and `next_run_at` on it. This is done automatically on entity creation; for hand-created legacy schedules, set it via the per-entity UI.
 
 ### 6.2 Open-ended sweep can pull pre-creation sessions
 
@@ -174,17 +180,15 @@ This is the design — `Schedule` rows represent *committed* sessions, not deliv
 
 **Whether this is wanted depends on intent:**
 - **Onboarding/catch-up:** correct behaviour — backfill old un-billed work.
-- **Clean cutover** ("start billing from May 1 forward, ignore April"): no way to express this today.
+- **Clean cutover** ("start billing from May 1 forward, ignore April"): still **not** expressible — see §6.3.
 
-The intended gate is `billing_start_date`, but it's not wired — see §6.3.
+**Suggested fix.** Add `->where('session_date', '>=', $schedule->billing_start_date)` to both sweep queries when a start date is set. (`billing_start_date` already anchors the first *period*; it does not yet bound the sweep.)
 
-**Suggested fix.** Once `billing_start_date` is honored, add `->where('session_date', '>=', $schedule->billing_start_date)` to both sweep queries.
+### 6.3 `billing_start_date` anchors the period but does not gate the sweep
 
-### 6.3 `billing_start_date` is half-wired
+`billing_start_date` **is** wired as the first-period anchor: `createSchedule()` computes the first `next_run_at` from it, and `resolveCurrentPeriod()` / `AdvanceBillingService::resolveCompletedPeriod()` seed the first period from it (§3, §4). What it does **not** do is bound the session sweep — the sweep queries still have no lower bound on `session_date` (§4).
 
-The column exists on `billing_schedules`, is captured by the form, validated, and persisted — but **no production code reads it**. Verified via `grep` across `app/Domain`, `app/Jobs`, `app/Console`. The scheduler does not consult it when computing `next_run_at`, and the sweep does not use it to gate sessions.
-
-**Consequence.** Admins setting "Billing Start Date" on the form get no behavioural change. This is the missing piece for §6.2; once it's read, the open-ended sweep stops being an issue for clean cutovers.
+**Consequence.** Setting "Billing Start Date" controls *which period the first invoice covers* and *when the schedule first runs*, but it does **not** stop the first run from sweeping older un-billed sessions (§6.2). For a clean cutover that ignores pre-start work, the sweep would need the lower-bound filter suggested in §6.2.
 
 ### 6.4 Schedule reactivated after a gap silently forgets missed periods
 
@@ -204,19 +208,23 @@ The column exists on `billing_schedules`, is captured by the form, validated, an
 
 ## 7. End-to-end example — Semi-Monthly, Fixed Delay = 3, created 5/4
 
-Therapist `Jane`. `frequency = semi_monthly`, `generation_day_type = fixed_delay`, `generation_delay_days = 3`, `min_grace_days = 2`, `payment_terms_days = 30`. Schedule created on **5/4/2026**.
+Therapist `Jane`. `frequency = semi_monthly`, `generation_day_type = fixed_delay`, `generation_delay_days = 3`, `payment_terms_days = 30`. Schedule created on **5/4/2026**. (No grace floor — `next_run = period_end + max(delay, 1)`.)
+
+**With `billing_start_date` set (the auto-create default).** On entity creation the resolver sets `billing_start_date = 5/1` (created on/before the 15th → 1st of month), so the first period is anchored correctly:
 
 | Date | Cron behavior | DB state after run |
 |---|---|---|
-| 5/4 (create) | — | `next_run_at = 5/18`, `last_period_end = null` |
-| 5/5 – 5/17 | `next_run_at = 5/18`, today < 5/18 → skipped | unchanged |
-| **5/18** | due → run. `resolveCurrentPeriod()` → period **5/16–5/31** (bug §6.1: should be 5/1–5/15). Sweep `session_date <= 5/31` pulls in any un-billed sessions from both halves of May. Bill generated, `due_date = 5/18 + 30 = 6/17`. | `last_period_end = 5/31`, `next_run_at = 6/3` (5/31 + grace 2 → 6/2, Fixed Delay 3 → 6/3, max wins) |
+| 5/4 (create) | `createSchedule()` anchors on `billing_start_date = 5/1` → first period 5/1–5/15, end 5/15 → `next_run_at = 5/18` (5/15 + 3) | `next_run_at = 5/18`, `last_period_end = null`, `billing_start_date = 5/1` |
+| 5/5 – 5/17 | not yet due → skipped | unchanged |
+| **5/18** | due → run. `resolveCurrentPeriod()`: `last_period_end` null → anchors on `billing_start_date = 5/1` → period **5/1–5/15**. Bill `due_date = 5/18 + 30 = 6/17`. | `last_period_end = 5/15`, `next_run_at = 6/3` (next period 5/16–5/31 end 5/31 + 3) |
 | 5/19 – 6/2 | skipped | unchanged |
-| **6/3** | due → run. `resolveCurrentPeriod()` → `last_period_end + 1 = 6/1` → period **6/1–6/15**. Sweep `session_date <= 6/15`. Bill `due_date = 6/3 + 30 = 7/3`. | `last_period_end = 6/15`, `next_run_at = 6/18` (6/15 + 3) |
+| **6/3** | due → run. `last_period_end + 1 = 5/16` → period **5/16–5/31**. Bill `due_date = 7/3`. | `last_period_end = 5/31`, `next_run_at = 6/18` (next period 6/1–6/15 end 6/15 + 3) |
 | 6/4 – 6/17 | skipped | unchanged |
-| **6/18** | due → run. Period **6/16–6/30**. Bill `due_date = 7/18`. | `last_period_end = 6/30`, `next_run_at = 7/3` |
+| **6/18** | due → run. Period **6/1–6/15**. Bill `due_date = 7/18`. | `last_period_end = 6/15`, `next_run_at = 7/3` (next period 6/16–6/30 end 6/30 + 3) |
 
-After the first cycle, the loop self-stabilizes into a clean every-15-days cadence. Only the **first** run is anomalous (§6.1).
+Every semi-monthly period gets its own run, in order — no skipped first period.
+
+**With a null `billing_start_date` (legacy hand-created schedule).** The first run instead anchors on `now()`, skipping the 5/1–5/15 period — see the §6.1 trace.
 
 ---
 
@@ -246,6 +254,6 @@ A common ask: "We pay therapists on the 15th + last day of the month, one period
 Two paths:
 
 1. **Accounting pays on calendar anchors regardless of `due_date`.** Configure `frequency = semi_monthly`, any Generation Timing with a small delay (e.g. Fixed Delay = 3), and the bill will be ready in time. Accounting cuts checks on its own cadence. **No code change needed.**
-2. **Accounting reads the bill's `due_date`.** Then no current combination works cleanly because `due_date = run_date + payment_terms_days` and the run date drifts by weekday or by month length. A new `FIXED_DATE` Generation Timing mode (anchor to 15th + EOM with a months-offset) is the clean fix. See [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md#8-known-gaps--things-to-flag) for the implementation sketch.
+2. **Accounting reads the bill's `due_date`.** Then no current combination works cleanly because `due_date = run_date + payment_terms_days` and the run date drifts by weekday or by month length. A new `FIXED_DATE` Generation Timing mode (anchor to 15th + EOM with a months-offset) is the clean fix. See [`THERAPIST_BILLING_SCHEDULE.md` §6](THERAPIST_BILLING_SCHEDULE.md) for the implementation sketch.
 
 The runtime mechanics above don't change between these two paths — only the configuration (path 1) or a new enum case (path 2).

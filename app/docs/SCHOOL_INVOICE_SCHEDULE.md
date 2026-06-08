@@ -1,8 +1,8 @@
 # School Invoice — Schedule Configuration Reference
 
-> **Scope:** how a school's `billing_schedules` row (with `schedule_type = SCHOOL_INVOICE`) drives the automatic generation of `invoices`. Covers each form field, the Standard vs Advance billing modes, every Frequency × Generation Timing combination, the silent guard rails (`min_grace_days`, billing entry window), and worked examples.
+> **Scope:** how a school's `billing_schedules` row (with `schedule_type = SCHOOL_INVOICE`) drives the automatic generation of `invoices`. Covers each form field, the Standard vs Advance billing modes, every Frequency × Generation Timing combination, the billing entry window, and worked examples.
 >
-> **Source of truth:** [`BillingScheduleService`](../app/Domain/Billing/Services/BillingScheduleService.php), [`BillingAutomationService`](../app/Domain/Billing/Services/BillingAutomationService.php), [`InvoiceService`](../app/Domain/Billing/Services/InvoiceService.php), [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php), [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php), [`BillingSchedule`](../app/Models/BillingSchedule.php), and the [`BillingFrequency`](../app/Enums/BillingFrequency.php) / [`GenerationDayType`](../app/Enums/GenerationDayType.php) / [`BillingMode`](../app/Enums/BillingMode.php) enums.
+> **Source of truth:** [`BillingScheduleService`](../app/Domain/Billing/Services/BillingScheduleService.php), [`BillingAutomationService`](../app/Domain/Billing/Services/BillingAutomationService.php), [`InvoiceService`](../app/Domain/Invoice/Services/InvoiceService.php), [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php), [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php), [`BillingSchedule`](../app/Models/BillingSchedule.php), and the [`BillingFrequency`](../app/Enums/BillingFrequency.php) / [`GenerationDayType`](../app/Enums/GenerationDayType.php) / [`BillingMode`](../app/Enums/BillingMode.php) enums.
 >
 > **Companion docs:**
 > - [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md) — schedule mechanics are shared; this doc focuses on the school-specific bits.
@@ -16,10 +16,10 @@
 A school invoice schedule answers **three** questions on each run:
 
 1. **What window of work are we billing for?** — driven by `frequency` (the *billing period*).
-2. **On what date do we cut the invoice?** — driven by `generation_day_type` + (`generation_day_of_week` *or* `generation_delay_days`), with `min_grace_days` as a floor.
+2. **On what date do we cut the invoice?** — driven by `generation_day_type` + (`generation_day_of_week` *or* `generation_delay_days`). There is **no grace floor** — the run date is computed directly off `period_end` (see §3).
 3. **Are we billing for work already delivered or work about to happen?** — driven by `billing_mode` (Standard / Advance). This question doesn't exist for therapist bills.
 
-The invoice's `due_date` is currently **hardcoded to `run_date + 30 days`** — see §7 (Known gaps).
+The invoice's `due_date` is `invoice_date + payment_terms_days` — honored on every path (manual, standard-auto, advance-auto). See §2.7.
 
 A schedule is picked up by [`BillingGenerate`](../app/Console/Commands/BillingGenerate.php) (`php artisan billing:generate --type=school_invoice`) which calls `BillingAutomationService::processAllDueSchedules()` for every schedule whose `next_run_at <= today` and `is_active = true` and `auto_generate = true`.
 
@@ -59,38 +59,39 @@ Picks **how** the run date is computed after the period closes (Standard) or bef
 - **`day_of_week`** — generate on a specific weekday (e.g. every Monday).
 - **`fixed_delay`** — generate N days after the period ends.
 
-Math lives in [`BillingScheduleService::calculateNextRunDate()`](../app/Domain/Billing/Services/BillingScheduleService.php#L151):
+Math lives in [`BillingScheduleService::calculateNextRunDate()`](../app/Domain/Billing/Services/BillingScheduleService.php#L196):
 
 ```
-earliest_run = period_end + min_grace_days   ← floor, always applied
-
 if mode == fixed_delay:
-    run = max(period_end + generation_delay_days, earliest_run)
+    run = period_end + max(generation_delay_days, 1)   ← delay 0 ⇒ next day
 
 if mode == day_of_week:
-    run = first date >= earliest_run whose weekday == generation_day_of_week
+    run = first date >= period_end whose weekday == generation_day_of_week
 ```
+
+> Neither branch applies a grace floor — both walk directly from `period_end`. (The old `min_grace_days` floor was removed; see §3 and §7.)
 
 ### 2.4 Day of Week
 Column: `generation_day_of_week` — int 0–6 (0 = Sunday, 6 = Saturday). Only meaningful when **Generation Timing = Day of Week**. Defaults to Tuesday (2).
 
 ### 2.5 Delay Days
-Column: `generation_delay_days` — int 1–30. Only meaningful when **Generation Timing = Fixed Delay**. Defaults to 3. **Capped from below by `min_grace_days`** — see §3.
+Column: `generation_delay_days` — int 0–30. Only meaningful when **Generation Timing = Fixed Delay**. Defaults to 3. The run date is `period_end + max(generation_delay_days, 1)` — a value of **0 means the next day** (never the same day as the period end). No grace floor is applied — see §3.
 
 ### 2.6 Billing Start Date
 Column: `billing_start_date` — nullable date.
 
-**Now wired (anchors the first period).** On the first-ever run (`last_period_end` null), the advance and standard flows anchor the billing period on `billing_start_date` instead of `now()`, so the first invoice covers the intended period. See `AdvanceBillingService::resolveCompletedPeriod()` / `BillingAutomationService::resolveCurrentPeriod()` — both fall back to `now()` only when `billing_start_date` is null. It does **not** gate session sweeping ("don't bill sessions before this date"); it only sets the first period anchor.
+**Anchors the first billing period.** On the first-ever run (`last_period_end` null), the advance and standard flows anchor the billing period on `billing_start_date` instead of `now()`, so the first invoice covers the intended period — see [`AdvanceBillingService::resolveCompletedPeriod()`](../app/Domain/Billing/Services/AdvanceBillingService.php) / [`BillingAutomationService::resolveCurrentPeriod()`](../app/Domain/Billing/Services/BillingAutomationService.php#L336) (both fall back to `now()` only when `billing_start_date` is null). On auto-create, [`BillingStartDateResolver::forSchool()`](../app/Domain/Billing/Services/BillingStartDateResolver.php) computes it: private/advance → 1st of next month; non-private/standard → 1st of current month. A future start date holds the schedule idle until then. It does **not** gate session sweeping ("don't bill sessions before this date") — it only sets the first-period anchor.
 
 ### 2.7 Payment Terms (Days) *
 Column: `payment_terms_days` — int 1–90.
 
-**⚠️ Currently ignored on the school side.** [`InvoiceService::generateInvoice()`](../app/Domain/Billing/Services/InvoiceService.php#L81) hardcodes `due_date = today + 30 days`. The form lets the admin set this value, but it is not honored at invoice creation time. (Therapist bills *do* honor it — see [`BillingAutomationService:211`](../app/Domain/Billing/Services/BillingAutomationService.php#L211).) See §7 (Known gaps).
+Drives the invoice **due date**: `due_date = invoice_date + payment_terms_days`. Honored on **every** school path:
+- **Standard auto** — [`BillingAutomationService::processSchoolInvoice()`](../app/Domain/Billing/Services/BillingAutomationService.php#L111) passes `payment_terms_days` into [`InvoiceService::generateInvoice()`](../app/Domain/Invoice/Services/InvoiceService.php#L102).
+- **Advance auto** — [`AdvanceBillingService::createAdvanceInvoice()`](../app/Domain/Billing/Services/AdvanceBillingService.php) resolves it from the schedule.
+- **Manual** — `InvoiceService::generateInvoice()` uses `payment_terms_days` from the school's `school_invoice` schedule, falling back to the matching billing-settings default.
 
-### 2.8 Hidden but important: `min_grace_days`
-Column: `min_grace_days` — int 0–14, default 2.
-
-Acts as a **floor on every Generation Timing mode**. The run can never happen sooner than `period_end + min_grace_days`, no matter what's in `generation_delay_days` or which weekday is chosen.
+### 2.8 Dormant column: `min_grace_days`
+Column: `min_grace_days` — int 0–14. **No longer read by any generation logic** — the grace floor was removed (see §3 and §7). The column is kept in the DB for backward-compat and receives a value on save (mirroring `generation_delay_days`), but it does **not** affect the run date.
 
 ### 2.9 Hidden but important: `auto_generate` / `auto_send` / `is_active`
 - `is_active` — schedule is enabled at all.
@@ -103,25 +104,26 @@ Acts as a **floor on every Generation Timing mode**. The run can never happen so
 
 When the schedule form first loads for a school, every field is **pre-populated from the global Admin Billing Settings**, not blank. The settings live on the singleton `billing_settings` row, edited by admins at [`resources/views/admin/billing/settings.blade.php`](../resources/views/admin/billing/settings.blade.php) (route: `admin.billing.settings`). The admin can override any field on the per-school form before saving — that override is what gets persisted to the schedule's `billing_schedules` row.
 
-**Which defaults are used is decided automatically**, not by the admin: [`EntityBillingController:60-64`](../app/Http/Controllers/Admin/EntityBillingController.php#L60-L64) checks the school's `is_private_student` flag — if `true` → Advance (Prepaid) defaults, otherwise → Standard (Postpaid) defaults. The admin can still flip the Billing Mode radio on the form after load.
+**Which defaults are used is decided automatically**, not by the admin: [`EntityBillingController::show()`](../app/Http/Controllers/Admin/EntityBillingController.php#L69-L102) checks the school's `is_private_student` flag — if `true` → **Advance Invoice Defaults**, otherwise → **Standard Invoice Defaults**. (Therapists always use the **Standard Billing Defaults** `default_*` block.) The admin can still flip the Billing Mode radio on the form after load.
 
-**Standard (Postpaid)** — sourced in [`EntityBillingController:88-99`](../app/Http/Controllers/Admin/EntityBillingController.php#L88-L99):
+There are **three** default sets on the `billing_settings` singleton, each a parallel column family:
+
+**Standard Invoice Defaults (Postpaid School)** — `standard_default_*` columns, used for non-private schools:
 
 | Form field | Pre-filled from `billing_settings` column |
 |---|---|
 | Billing Mode | hardcoded `'standard'` |
-| Frequency | `default_frequency` |
-| Generation Timing | `default_generation_day_type` |
-| Day of Week | `default_generation_day_of_week` |
-| Delay Days | **`null`** — no `default_generation_delay_days` column exists; user fills in manually if switching to Fixed Delay |
-| Grace Days (hidden) | `default_min_grace_days` |
-| Payment Terms | `default_payment_terms_days` |
-| Auto Generate | `default_auto_generate` |
-| Auto Send | `default_auto_send` |
-| Billing Start Date | `null` |
+| Frequency | `standard_default_frequency` |
+| Generation Timing | `standard_default_generation_day_type` |
+| Day of Week | `standard_default_generation_day_of_week` |
+| Delay Days | `standard_default_delay_days` |
+| Payment Terms | `standard_default_payment_terms_days` |
+| Auto Generate | `standard_default_auto_generate` |
+| Auto Send | `standard_default_auto_send` |
+| Billing Start Date | `null` (computed on auto-create — see §2.6) |
 | Notes | `null` |
 
-**Advance (Prepaid)** — sourced in [`EntityBillingController:70-82`](../app/Http/Controllers/Admin/EntityBillingController.php#L70-L82) — uses the parallel `advance_default_*` columns:
+**Advance Invoice Defaults (Prepaid School/Family)** — parallel `advance_default_*` columns, used for private-student schools:
 
 | Form field | Pre-filled from `billing_settings` column |
 |---|---|
@@ -129,54 +131,55 @@ When the schedule form first loads for a school, every field is **pre-populated 
 | Frequency | `advance_default_frequency` |
 | Generation Timing | `advance_default_generation_day_type` |
 | Day of Week | `advance_default_generation_day_of_week` |
-| Delay Days | **`null`** — no `advance_default_generation_delay_days` column exists |
-| Grace Days (hidden) | `advance_default_min_grace_days` |
+| Delay Days | `advance_default_delay_days` |
 | Payment Terms | `advance_default_payment_terms_days` |
 | Auto Generate | `advance_default_auto_generate` |
 | Auto Send | `advance_default_auto_send` |
-| Billing Start Date | `null` |
+| Billing Start Date | `null` (computed on auto-create — see §2.6) |
 | Notes | `null` |
+
+> The **Standard Billing Defaults** (`default_*`) set is the therapist-bill family — see [`THERAPIST_BILLING_SCHEDULE.md`](THERAPIST_BILLING_SCHEDULE.md). The grace columns were renamed to `*_delay_days` (`default_delay_days`, `advance_default_delay_days`, `standard_default_delay_days`).
 
 **Why this matters:** changing a default in Admin Billing Settings only affects **schedules created after** that change — existing schedules already have their values copied into `billing_schedules` and keep using those. If you need to update all schools at once, the global setting is not enough; you'd have to backfill the per-schedule rows.
 
-> ⚠️ As called out in §7, the entity billing tab currently hardcodes `min_grace_days = 2` in a hidden input, so the `default_min_grace_days` / `advance_default_min_grace_days` value from settings is **not** actually applied on that screen today. Treat as a bug.
+> **Note:** the entity billing tab no longer hardcodes a hidden `min_grace_days`; that column is dormant (§2.8) and the form persists a value mirroring the chosen Delay Days. The Delay Days field is sourced from the `*_delay_days` setting for the selected mode.
 
 ---
 
-## 3. Why `min_grace_days` exists and why it's a floor
+## 3. Generation timing and the late-entry buffer (the old grace floor, removed)
 
-**Why a grace period:** session logs can be entered after the work happens. If invoices generated the instant the period closed, late entries (Sunday session entered Monday morning) would miss the current cycle and get pushed to next period.
+**Historical note:** generation timing used to apply a `min_grace_days` **floor** — the run could never happen sooner than `period_end + min_grace_days`. That floor was **removed** from both Generation Timing modes. `fixed_delay` now runs at `period_end + max(generation_delay_days, 1)` and `day_of_week` walks forward from `period_end` directly. The `min_grace_days` column is dormant (§2.8).
 
-**Why a floor, not a default:** an admin could otherwise set `Fixed Delay = 1` or pick a `Day of Week` that lands sooner than the entry buffer allows, silently losing late entries every cycle. The floor guarantees the buffer always exists regardless of how the user configures the rest.
+**Why a buffer still matters:** session logs can be entered after the work happens. If invoices generated the instant the period closed, late entries (Sunday session entered Monday morning) would miss the current cycle. With the floor gone, the buffer is now expressed **only** through the chosen Delay Days (or the weekday gap) — an admin who wants a buffer must configure `fixed_delay` with a non-trivial delay (or a later weekday). A `Fixed Delay = 0` now generates the very next day with no buffer.
 
-The matching guard on the data-entry side is [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php) — therapists are blocked from entering sessions past the configured cutoff (`config('billing.entry_window_days_after_week_start')`). The two guards work as a pair.
+The matching guard on the data-entry side is [`BillingEntryWindowService`](../app/Domain/Billing/Services/BillingEntryWindowService.php) — therapists are blocked from entering sessions past the configured cutoff (`config('billing.entry_window_days_after_week_start')`). It still operates independently; it is no longer paired with a generation-side floor.
 
 ---
 
 ## 4. Frequency × Generation Timing — full combination matrix
 
-All examples assume **`min_grace_days = 2`**, **Standard (Postpaid)** mode, and a hardcoded **due date = run date + 30**. Reference month: May 2026 (5/1 = Fri, 5/15 = Fri, 5/31 = Sun).
+All examples assume **`payment_terms_days = 30`** (so due date = run date + 30), **Standard (Postpaid)** mode, and **no grace floor** (run dates are computed directly off `period_end`). Reference month: May 2026 (5/1 = Fri, 5/15 = Fri, 5/31 = Sun).
 
 ### 4.1 Weekly
 
-**Period:** Monday → Sunday. Example block: Mon 5/4 → Sun 5/10. `period_end = 5/10`, `earliest_run = 5/12` (Tue).
+**Period:** Monday → Sunday. Example block: Mon 5/4 → Sun 5/10. `period_end = 5/10` (Sun).
 
 | Mode | Setting | Run date | Due date (+30) |
 |---|---|---|---|
-| Day of Week | Monday | Mon 5/18 | 6/17 |
+| Day of Week | Monday | Mon 5/11 | 6/10 |
 | Day of Week | Tuesday | Tue 5/12 | 6/11 |
 | Day of Week | Friday | Fri 5/15 | 6/14 |
-| Fixed Delay | 1 | Tue 5/12 *(floor wins)* | 6/11 |
+| Fixed Delay | 1 | Mon 5/11 | 6/10 |
 | Fixed Delay | 3 | Wed 5/13 | 6/12 |
 | Fixed Delay | 7 | Sun 5/17 | 6/16 |
 
 ### 4.2 Bi-Weekly
 
-**Period:** 14-day blocks aligned to Mon 2026-01-05 (see [`biWeeklyPeriod()`](../app/Domain/Billing/Services/BillingScheduleService.php#L274)). Example block: Mon 5/11 → Sun 5/24. `period_end = 5/24`, `earliest_run = 5/26` (Tue).
+**Period:** 14-day blocks aligned to Mon 2026-01-05 (see [`biWeeklyPeriod()`](../app/Domain/Billing/Services/BillingScheduleService.php#L274)). Example block: Mon 5/11 → Sun 5/24. `period_end = 5/24` (Sun).
 
 | Mode | Setting | Run date | Due date |
 |---|---|---|---|
-| Day of Week | Monday | Mon 6/1 | 7/1 |
+| Day of Week | Monday | Mon 5/25 | 6/24 |
 | Day of Week | Tuesday | Tue 5/26 | 6/25 |
 | Fixed Delay | 2 | Tue 5/26 | 6/25 |
 | Fixed Delay | 7 | Sun 5/31 | 6/30 |
@@ -186,35 +189,35 @@ All examples assume **`min_grace_days = 2`**, **Standard (Postpaid)** mode, and 
 
 **Period:** day 1–15, then day 16–EOM (see [`semiMonthlyPeriod()`](../app/Domain/Billing/Services/BillingScheduleService.php#L234)). Two periods per month → two invoices per month.
 
-For **first-half** period 5/1–5/15: `period_end = Fri 5/15`, `earliest_run = Sun 5/17`.
-For **second-half** period 5/16–5/31: `period_end = Sun 5/31`, `earliest_run = Tue 6/2`.
+For **first-half** period 5/1–5/15: `period_end = Fri 5/15`.
+For **second-half** period 5/16–5/31: `period_end = Sun 5/31`.
 
 | Mode | Setting | First-half run | Second-half run |
 |---|---|---|---|
-| Day of Week | Monday | Mon 5/18 | Mon 6/8 |
+| Day of Week | Monday | Mon 5/18 | Mon 6/1 |
 | Day of Week | Tuesday | Tue 5/19 | Tue 6/2 |
-| Day of Week | Friday | Fri 5/22 | Fri 6/5 |
+| Day of Week | Friday | Fri 5/15 | Fri 6/5 |
 | Fixed Delay | 2 | Sun 5/17 | Tue 6/2 |
 | Fixed Delay | 5 | Wed 5/20 | Fri 6/5 |
 | Fixed Delay | 15 | Sun 5/30 | Mon 6/15 |
 
-> Runs drift by weekday because Day of Week walks forward from whatever weekday 5/15 / 5/31 land on. There is no current combination that pins runs to "always 15th + last day."
+> Runs drift by weekday because Day of Week walks forward from whatever weekday 5/15 / 5/31 land on. (When `period_end` itself is the target weekday — e.g. first-half Friday on 5/15 — the run lands on the period-end day, since there's no grace floor pushing it out.) There is no current combination that pins runs to "always 15th + last day."
 
 ### 4.4 Monthly
 
-**Period:** 1st → last of month. Example: May 2026. `period_end = Sun 5/31`, `earliest_run = Tue 6/2`.
+**Period:** 1st → last of month. Example: May 2026. `period_end = Sun 5/31`.
 
 | Mode | Setting | Run date | Due date |
 |---|---|---|---|
-| Day of Week | Monday | Mon 6/8 | 7/8 |
+| Day of Week | Monday | Mon 6/1 | 7/1 |
 | Day of Week | Tuesday | Tue 6/2 | 7/2 |
-| **Fixed Delay** | **1** *(floor wins)* | **Tue 6/2** | **7/2** |
+| Fixed Delay | 1 | Mon 6/1 | 7/1 |
 | Fixed Delay | 3 | Wed 6/3 | 7/3 |
 | Fixed Delay | 5 | Fri 6/5 | 7/5 |
 | Fixed Delay | 15 | Mon 6/15 | 7/15 |
 | Fixed Delay | 30 | Tue 6/30 *(month-length drift)* | 7/30 |
 
-> **Closest match to "invoice for 5/1–5/31, generate on the 1st":** Monthly + Fixed Delay = 1 → generates on Tue 6/2 (the 2-day grace floor pushes it from 6/1 to 6/2).
+> **Closest match to "invoice for 5/1–5/31, generate on the 1st":** Monthly + Fixed Delay = 1 → generates on Mon 6/1 (now that the grace floor is gone, `period_end + 1` lands exactly on the 1st).
 
 ---
 
@@ -226,7 +229,7 @@ When `billing:generate` finds a due school-invoice schedule, [`BillingAutomation
 2. **Sweep sessions** via `sweepUnInvoicedSessions(school_id, periodEnd)` — pulls every approved, uninvoiced, billable session log up to `periodEnd` (so prior-period leftovers ride along).
 3. **Empty sweep → skip + advance.** Logs a `SKIPPED_NO_SESSIONS` run and advances `next_run_at` for the next period.
 4. **Generate the invoice** inside a `DB::transaction`:
-    - `InvoiceService::generateInvoice()` creates the `invoices` row with `due_date = today + 30 days` (hardcoded — see §7).
+    - `InvoiceService::generateInvoice()` creates the `invoices` row with `due_date = invoice_date + payment_terms_days` (the schedule's terms are passed through — see §2.7).
     - Each session becomes a line item carrying `billing_period_start` / `billing_period_end`.
     - Run is logged as `SUCCESS` with totals on `billing_schedule_runs`.
     - `scheduleService->advanceSchedule()` updates `last_run_at`, `last_period_end`, and recomputes `next_run_at` for the next period end.
@@ -265,8 +268,7 @@ Suppose a school is on Monthly + Advance:
 - During May, 2 sessions get cancelled and 1 extra makeup session is added & approved.
 - **June 1 run** bills June's scheduled sessions ($X) **plus** an adjustment line for May: `-2 cancelled × rate` and `+1 makeup × rate`, netting against the May overbill.
 
-The reconciliation logic lives in [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php) (lines 286-350). No manual credit notes needed.
-3. Same `invoices` row format and same `due_date = today + 30 days` rule applies.
+The reconciliation logic lives in [`AdvanceBillingService`](../app/Domain/Billing/Services/AdvanceBillingService.php) (`buildAdjustmentLines()` / `detectExtraSessions()`). No manual credit notes needed. The `due_date = invoice_date + payment_terms_days` rule (§2.7) applies here too.
 
 This means a school in Advance mode that paid for 20 sessions in May but only used 18 will see a -2 session adjustment on the June invoice — no manual credit notes needed.
 
@@ -286,10 +288,10 @@ The 1st-of-month run (§6.2) only reconciles sessions that were **approved by ru
 
 ---
 
-## 7. Known gaps / things to flag
+## 7. Behaviour notes / things to flag
 
-- **`payment_terms_days` — now honored.** Advance invoices set `due_date = today + payment_terms_days`. (Standard manual invoices fall back to the billing-settings default when no schedule applies.)
-- **`billing_start_date` — now wired.** Anchors the first billing period (§2.6); no longer dead.
-- **`min_grace_days` / grace floor — removed from generation timing.** The grace columns were renamed to `*_delay_days` and the floor no longer gates the run; `day_of_week` and `fixed_delay` walk from `period_end` directly. (Column kept dormant for backward-compat.)
-- **`auto_send` — now implemented** (§2.9). Non-zero invoices/bills auto-email when the schedule opts in.
+- **`due_date` = `invoice_date + payment_terms_days`** on every path (§2.7) — manual, standard-auto, and advance-auto. There is no `+30` hardcode.
+- **Generation timing has no grace floor.** `fixed_delay` = `period_end + max(delay, 1)` (delay 0 ⇒ next day); `day_of_week` walks from `period_end` directly (§3). The `min_grace_days` column is dormant (§2.8); the `billing_settings` grace columns are renamed `*_delay_days`.
+- **`billing_start_date` anchors the first billing period** (§2.6) for both Standard and Advance. It does **not** gate session sweeping.
+- **`auto_send`** auto-emails non-zero invoices when the schedule opts in (§2.9).
 - **System user fallback.** Generated invoices are attributed to the oldest admin by id — there's no dedicated `system` user. Worth knowing if you audit `created_by` columns downstream.
