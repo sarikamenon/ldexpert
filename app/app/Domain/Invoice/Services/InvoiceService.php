@@ -99,7 +99,7 @@ final class InvoiceService
                 'subtotal' => $totals['subtotal'],
                 'tax_total' => $totals['tax_total'],
                 'total' => $totals['total'],
-                'due_date' => Carbon::parse($dto->invoiceDate)->addDays(30)->toDateString(),
+                'due_date' => Carbon::parse($dto->invoiceDate)->addDays($dto->paymentTermsDays ?? 30)->toDateString(),
                 'notes' => $dto->notes,
                 ...$schoolSnapshot,
                 ...$companySnapshot,
@@ -131,7 +131,7 @@ final class InvoiceService
             'subtotal' => 0,
             'tax_total' => 0,
             'total' => 0,
-            'due_date' => Carbon::parse($dto->invoiceDate)->addDays(30)->toDateString(),
+            'due_date' => Carbon::parse($dto->invoiceDate)->addDays($dto->paymentTermsDays ?? 30)->toDateString(),
             'notes' => $dto->notes,
             ...$schoolSnapshot,
             ...$companySnapshot,
@@ -465,7 +465,7 @@ final class InvoiceService
      * computed charge amount) plus the schedules already on this invoice. Returns
      * display rows and the currently-attached schedule ids for pre-checking.
      *
-     * @return array{rows: Collection<int, array{schedule: Schedule, amount: float, attached: bool}>, attachedScheduleIds: array<int, int>}
+     * @return array{rows: Collection<int, array{id: int, date: string, student: string, service: string, therapist: string, duration: string, amount: float, amountFormatted: string, attached: bool}>, attachedScheduleIds: array<int, int>, periodLabel: string}
      */
     public function getAdvanceAttachData(Invoice $invoice): array
     {
@@ -478,8 +478,11 @@ final class InvoiceService
             : now()->endOfMonth();
 
         // Amounts for not-yet-invoiced schedules in the period, keyed by schedule id.
+        // ADVANCE_SCHEDULED lines always carry a schedule id; guard the nullable
+        // type so a null key cannot collapse unrelated amounts together.
         $amountByScheduleId = $this->chargeLineBuilder
             ->build($schoolId, $periodStart, $periodEnd)
+            ->filter(fn (InvoiceLineItemDTO $line): bool => $line->scheduleId !== null)
             ->mapWithKeys(fn (InvoiceLineItemDTO $line): array => [$line->scheduleId => $line->total]);
 
         // Already-attached schedules are excluded from the builder (they are no
@@ -511,19 +514,34 @@ final class InvoiceService
 
         $attachedIds = $attached->pluck('id')->map(fn ($id): int => (int) $id)->all();
 
+        $dateFormat = (string) config('display.date');
+
         $rows = $attached
             ->concat($available)
             ->unique('id')
-            ->map(fn (Schedule $schedule): array => [
-                'schedule' => $schedule,
-                'amount' => (float) ($amountByScheduleId->get($schedule->id) ?? 0.0),
-                'attached' => in_array($schedule->id, $attachedIds, true),
-            ])
+            ->map(function (Schedule $schedule) use ($amountByScheduleId, $attachedIds, $dateFormat): array {
+                $amount = (float) ($amountByScheduleId->get($schedule->id) ?? 0.0);
+
+                return [
+                    'id' => (int) $schedule->id,
+                    'date' => $schedule->schedule_date->format($dateFormat),
+                    'student' => $schedule->student->name ?? '—',
+                    'service' => $schedule->service->name ?? '—',
+                    'therapist' => $schedule->therapist->name ?? '—',
+                    'duration' => $schedule->durationMinutes().' min',
+                    'amount' => $amount,
+                    'amountFormatted' => '$'.number_format($amount, 2),
+                    'attached' => in_array($schedule->id, $attachedIds, true),
+                ];
+            })
             ->values();
+
+        $periodLabel = $periodStart->format($dateFormat).' – '.$periodEnd->format($dateFormat);
 
         return [
             'rows' => $rows,
             'attachedScheduleIds' => $attachedIds,
+            'periodLabel' => $periodLabel,
         ];
     }
 

@@ -270,10 +270,10 @@ test('advance attach data lists not-yet-invoiced and already-attached schedules'
     $data = $this->service->getAdvanceAttachData($invoice->fresh());
 
     expect($data['attachedScheduleIds'])->toBe([$attached->id])
-        ->and($data['rows']->pluck('schedule.id')->all())->toContain($attached->id, $available->id);
+        ->and($data['rows']->pluck('id')->all())->toContain($attached->id, $available->id);
 
     // Both attached and available rows must carry the real charge amount (not 0).
-    $rowsById = $data['rows']->keyBy(fn (array $row): int => $row['schedule']->id);
+    $rowsById = $data['rows']->keyBy(fn (array $row): int => $row['id']);
     expect($rowsById[$attached->id]['amount'])->toBe(100.0)
         ->and($rowsById[$available->id]['amount'])->toBe(100.0);
 });

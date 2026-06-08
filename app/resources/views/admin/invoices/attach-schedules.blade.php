@@ -38,7 +38,7 @@
                 <div>
                     <h2 class="text-lg font-semibold text-foreground">Scheduled sessions</h2>
                     <p class="mt-1 text-xs text-foreground/60">
-                        Schedules in {{ $invoice->billing_period_start?->format('M d, Y') }} – {{ $invoice->billing_period_end?->format('M d, Y') }} for this school or family. Charged in advance.
+                        Schedules in {{ $periodLabel }} for this school or family. Charged in advance.
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -67,18 +67,18 @@
                             @foreach ($scheduleRows as $row)
                                 <tr class="border-b border-border hover:bg-background/subtle">
                                     <td class="py-3 px-4">
-                                        <x-ui::checkbox name="schedule_ids[]" value="{{ $row['schedule']->id }}"
+                                        <x-ui::checkbox name="schedule_ids[]" value="{{ $row['id'] }}"
                                             class="session-log-checkbox"
                                             :checked="$row['attached']"
                                             data-amount="{{ $row['amount'] }}"
-                                            aria-label="Select schedule {{ $row['schedule']->id }}" />
+                                            aria-label="Select schedule {{ $row['id'] }}" />
                                     </td>
-                                    <td class="py-3 px-4 text-sm">{{ $row['schedule']->schedule_date->format('M d, Y') }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $row['schedule']->student->name ?? '—' }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $row['schedule']->service->name ?? '—' }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $row['schedule']->therapist->name ?? '—' }}</td>
-                                    <td class="py-3 px-4 text-sm">{{ $row['schedule']->durationMinutes() }} min</td>
-                                    <td class="py-3 px-4 text-sm font-medium">${{ number_format($row['amount'], 2) }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $row['date'] }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $row['student'] }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $row['service'] }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $row['therapist'] }}</td>
+                                    <td class="py-3 px-4 text-sm">{{ $row['duration'] }}</td>
+                                    <td class="py-3 px-4 text-sm font-medium">{{ $row['amountFormatted'] }}</td>
                                 </tr>
                             @endforeach
                         </tbody>

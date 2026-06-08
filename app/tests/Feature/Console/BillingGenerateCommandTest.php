@@ -146,6 +146,32 @@ test('standard generation sweeps a late prior-period session onto the current in
     Carbon::setTestNow();
 });
 
+test('standard school invoice due date honors the schedule payment terms, not a hardcoded 30', function () {
+    Carbon::setTestNow('2026-05-20 02:00:00');
+
+    User::factory()->admin()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+
+    $schedule = BillingSchedule::factory()->forSchool($school)->due()->create([
+        'billing_mode' => BillingMode::STANDARD->value,
+        'last_period_end' => '2026-05-15',
+        'payment_terms_days' => 45,
+    ]);
+
+    billableSchoolLog($school, $therapist, $student, '2026-05-18', amount: 100.0);
+
+    $this->artisan('billing:generate', ['--schedule' => $schedule->id])->assertExitCode(0);
+
+    $invoice = Invoice::where('school_id', $school->id)->first();
+    expect($invoice)->not->toBeNull()
+        // due_date = invoice_date + 45 (the schedule's terms), not + 30.
+        ->and($invoice->due_date->toDateString())->toBe($invoice->invoice_date->copy()->addDays(45)->toDateString());
+
+    Carbon::setTestNow();
+});
+
 test('weekly generation produces a 7-day period; bi-weekly produces a 14-day period', function () {
     Carbon::setTestNow('2026-05-20 02:00:00');
 

@@ -284,6 +284,7 @@ final class InvoiceController extends Controller
                 'invoice' => $invoice,
                 'scheduleRows' => $advanceData['rows'],
                 'attachedScheduleIds' => $advanceData['attachedScheduleIds'],
+                'periodLabel' => $advanceData['periodLabel'],
             ]);
         }
 

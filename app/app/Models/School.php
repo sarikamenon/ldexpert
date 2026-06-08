@@ -44,7 +44,6 @@ class School extends Model
         'invoice_email',
         'school_type',
         'is_private_student',
-        'first_schedule_notified_at',
         'is_auto_extend',
         'non_billable_scheduling',
         'allow_weekend_scheduling',
@@ -57,7 +56,6 @@ class School extends Model
     {
         return [
             'is_private_student' => 'boolean',
-            'first_schedule_notified_at' => 'datetime',
             'is_auto_extend' => 'boolean',
             'non_billable_scheduling' => 'boolean',
             'allow_weekend_scheduling' => 'boolean',

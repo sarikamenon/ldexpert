@@ -41,6 +41,18 @@ class Schedule extends Model
     /** @use HasFactory<\Database\Factories\ScheduleFactory> */
     use HasAudits, HasFactory, SoftDeletes;
 
+    /**
+     * invoice_id is billing plumbing: it rotates whenever a schedule is attached
+     * to or detached from an (advance) invoice, mostly via mass updates that
+     * bypass model events anyway. Exclude it from the audit timeline so the
+     * meaningful schedule changes are not drowned out by invoice-link churn.
+     *
+     * @var array<int, string>
+     */
+    protected array $auditIgnoreFields = [
+        'invoice_id',
+    ];
+
     protected $fillable = [
         'therapist_id',
         'student_id',

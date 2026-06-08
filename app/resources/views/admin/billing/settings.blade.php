@@ -41,14 +41,9 @@
                     <x-input-label for="default_generation_day_of_week" value="Default Day of Week *" />
                     <p class="mt-1 text-xs text-foreground/60" id="dow_help">Which weekday to generate on (when using Day of Week type).</p>
                     <x-ui::select id="default_generation_day_of_week" name="default_generation_day_of_week" class="mt-1" :searchable="false" aria-describedby="dow_help">
-                        @php $dow = old('default_generation_day_of_week', (string) $settings->default_generation_day_of_week); @endphp
-                        <option value="0" @selected($dow === '0')>Sunday</option>
-                        <option value="1" @selected($dow === '1')>Monday</option>
-                        <option value="2" @selected($dow === '2')>Tuesday</option>
-                        <option value="3" @selected($dow === '3')>Wednesday</option>
-                        <option value="4" @selected($dow === '4')>Thursday</option>
-                        <option value="5" @selected($dow === '5')>Friday</option>
-                        <option value="6" @selected($dow === '6')>Saturday</option>
+                        @foreach ($daysOfWeek as $value => $label)
+                            <option value="{{ $value }}" @selected(old('default_generation_day_of_week', (string) $settings->default_generation_day_of_week) === $value)>{{ $label }}</option>
+                        @endforeach
                     </x-ui::select>
                     <x-input-error :messages="$errors->get('default_generation_day_of_week')" class="mt-2" />
                 </div>
@@ -128,14 +123,9 @@
                     <x-input-label for="advance_default_generation_day_of_week" value="Day of Week *" />
                     <p class="mt-1 text-xs text-foreground/60" id="adv_dow_help">Which weekday to generate on for advance schedules.</p>
                     <x-ui::select id="advance_default_generation_day_of_week" name="advance_default_generation_day_of_week" class="mt-1" :searchable="false" aria-describedby="adv_dow_help">
-                        @php $advDow = old('advance_default_generation_day_of_week', (string) $settings->advance_default_generation_day_of_week); @endphp
-                        <option value="0" @selected($advDow === '0')>Sunday</option>
-                        <option value="1" @selected($advDow === '1')>Monday</option>
-                        <option value="2" @selected($advDow === '2')>Tuesday</option>
-                        <option value="3" @selected($advDow === '3')>Wednesday</option>
-                        <option value="4" @selected($advDow === '4')>Thursday</option>
-                        <option value="5" @selected($advDow === '5')>Friday</option>
-                        <option value="6" @selected($advDow === '6')>Saturday</option>
+                        @foreach ($daysOfWeek as $value => $label)
+                            <option value="{{ $value }}" @selected(old('advance_default_generation_day_of_week', (string) $settings->advance_default_generation_day_of_week) === $value)>{{ $label }}</option>
+                        @endforeach
                     </x-ui::select>
                     <x-input-error :messages="$errors->get('advance_default_generation_day_of_week')" class="mt-2" />
                 </div>
@@ -215,14 +205,9 @@
                     <x-input-label for="standard_default_generation_day_of_week" value="Day of Week *" />
                     <p class="mt-1 text-xs text-foreground/60" id="std_dow_help">Which weekday to generate on for standard school invoices.</p>
                     <x-ui::select id="standard_default_generation_day_of_week" name="standard_default_generation_day_of_week" class="mt-1" :searchable="false" aria-describedby="std_dow_help">
-                        @php $stdDow = old('standard_default_generation_day_of_week', (string) $settings->standard_default_generation_day_of_week); @endphp
-                        <option value="0" @selected($stdDow === '0')>Sunday</option>
-                        <option value="1" @selected($stdDow === '1')>Monday</option>
-                        <option value="2" @selected($stdDow === '2')>Tuesday</option>
-                        <option value="3" @selected($stdDow === '3')>Wednesday</option>
-                        <option value="4" @selected($stdDow === '4')>Thursday</option>
-                        <option value="5" @selected($stdDow === '5')>Friday</option>
-                        <option value="6" @selected($stdDow === '6')>Saturday</option>
+                        @foreach ($daysOfWeek as $value => $label)
+                            <option value="{{ $value }}" @selected(old('standard_default_generation_day_of_week', (string) $settings->standard_default_generation_day_of_week) === $value)>{{ $label }}</option>
+                        @endforeach
                     </x-ui::select>
                     <x-input-error :messages="$errors->get('standard_default_generation_day_of_week')" class="mt-2" />
                 </div>

@@ -15,6 +15,7 @@ use App\DTOs\SendTherapistBillDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleRunStatus;
 use App\Enums\InvoiceLineType;
+use App\Enums\Role;
 use App\Enums\SessionLogStatus;
 use App\Models\BillingSchedule;
 use App\Models\BillingScheduleRun;
@@ -145,6 +146,7 @@ final class BillingAutomationService
                 'billing_period_start' => $periodStart->toDateString(),
                 'billing_period_end' => $periodEnd->toDateString(),
                 'session_log_ids' => $sessions->pluck('id')->all(),
+                'payment_terms_days' => $schedule->payment_terms_days,
             ]));
 
             $this->createStandardLineItems($invoice->id, $sessions, $periodStart, $periodEnd);
@@ -431,7 +433,7 @@ final class BillingAutomationService
     {
         /** @var User $user */
         $user = User::query()
-            ->where('role', 'admin')
+            ->byRole(Role::ADMIN)
             ->orderBy('id')
             ->firstOrFail();
 

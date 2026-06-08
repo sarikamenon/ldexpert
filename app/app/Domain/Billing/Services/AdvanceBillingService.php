@@ -16,6 +16,7 @@ use App\Enums\BillingMode;
 use App\Enums\BillingScheduleRunStatus;
 use App\Enums\InvoiceLineType;
 use App\Enums\InvoiceStatus;
+use App\Enums\Role;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Models\BillingSchedule;
@@ -716,7 +717,7 @@ final class AdvanceBillingService
             return $result;
         }
 
-        $admin = User::query()->where('role', 'admin')->orderBy('id')->first();
+        $admin = User::query()->byRole(Role::ADMIN)->orderBy('id')->first();
 
         if ($admin === null) {
             return $result;

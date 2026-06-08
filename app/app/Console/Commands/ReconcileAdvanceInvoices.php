@@ -47,7 +47,7 @@ class ReconcileAdvanceInvoices extends Command
         $results = [];
         foreach ($schedules as $schedule) {
             try {
-                $results[] = $this->reconciliationService->reconcileSchedule($schedule, $referenceDate, $dryRun);
+                $results = [...$results, ...$this->reconciliationService->reconcileSchedule($schedule, $referenceDate, $dryRun)];
             } catch (\Throwable $e) {
                 Log::error('Advance reconciliation failed', [
                     'schedule_id' => $schedule->id,
@@ -91,7 +91,7 @@ class ReconcileAdvanceInvoices extends Command
             return;
         }
 
-        $rows = array_map(static fn (array $r): array => [
+        $rows = collect($results)->map(static fn (array $r): array => [
             $r['schedule_id'],
             "{$r['period_start']} to {$r['period_end']}",
             $r['status'],
@@ -99,7 +99,7 @@ class ReconcileAdvanceInvoices extends Command
             '$'.number_format($r['net_amount'], 2),
             $r['settlement_invoice_id'] ?? '—',
             $r['credit_note_ledger_entry_id'] ?? '—',
-        ], $results);
+        ])->all();
 
         $this->table(
             ['Schedule', 'Period', 'Status', 'Lines', 'Net', 'Settlement Inv', 'Credit Note'],

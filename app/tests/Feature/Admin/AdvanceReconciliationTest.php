@@ -53,22 +53,33 @@ function advanceScheduleFor(School $school): BillingSchedule
     ]);
 }
 
-// A prior-month (May) advance invoice carrying one ADVANCE_SCHEDULED line for $amount.
-function priorAdvanceInvoiceWithLine(School $school, int $scheduleId, ?int $sessionLogId, float $amount): Invoice
+// The semi-monthly half of May that contains a given day, matching how the
+// 1st-of-month advance run stamps billing_period on each ADVANCE_SCHEDULED line.
+// @return array{string, string}
+function mayHalfFor(int $day): array
 {
+    return $day <= 15 ? ['2026-05-01', '2026-05-15'] : ['2026-05-16', '2026-05-31'];
+}
+
+// A prior-month (May) advance invoice carrying one ADVANCE_SCHEDULED line for
+// $amount, stamped with the semi-monthly half the session falls in (default May 12).
+function priorAdvanceInvoiceWithLine(School $school, int $scheduleId, ?int $sessionLogId, float $amount, int $day = 12): Invoice
+{
+    [$start, $end] = mayHalfFor($day);
+
     $invoice = Invoice::factory()->create([
         'school_id' => $school->id,
         'billing_mode' => BillingMode::ADVANCE->value,
         'status' => InvoiceStatus::SENT->value,
-        'billing_period_start' => '2026-05-01',
-        'billing_period_end' => '2026-05-31',
+        'billing_period_start' => $start,
+        'billing_period_end' => $end,
     ]);
 
     $invoice->lineItems()->create([
         'line_type' => InvoiceLineType::ADVANCE_SCHEDULED->value,
         'description' => 'May advance charge',
-        'billing_period_start' => '2026-05-01',
-        'billing_period_end' => '2026-05-31',
+        'billing_period_start' => $start,
+        'billing_period_end' => $end,
         'quantity' => 1,
         'unit_price' => $amount,
         'total' => $amount,
@@ -78,6 +89,22 @@ function priorAdvanceInvoiceWithLine(School $school, int $scheduleId, ?int $sess
     ]);
 
     return $invoice;
+}
+
+// A semi-monthly schedule reconciles BOTH halves of the prior month, so
+// reconcileSchedule returns one result per half. Pick the half that produced
+// lines or a document (the one the test set up); fall back to the first.
+// @param  list<array<string, mixed>>  $results
+// @return array<string, mixed>
+function materialResult(array $results): array
+{
+    foreach ($results as $r) {
+        if ($r['lines'] > 0 || $r['settlement_invoice_id'] !== null || $r['credit_note_ledger_entry_id'] !== null) {
+            return $r;
+        }
+    }
+
+    return $results[0];
 }
 
 function mayApprovedLog(School $school, int $scheduleId, bool $billable, float $amount): \App\Models\SessionLog
@@ -107,7 +134,7 @@ test('a late-approved non-billable May session produces a reconciliation credit 
     priorAdvanceInvoiceWithLine($school, $schedule->id, null, 100.0);
     mayApprovedLog($school, $schedule->id, billable: false, amount: 0.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['net_amount'])->toBe(-100.0)
@@ -138,7 +165,7 @@ test('a late-approved extra billable May session produces a draft settlement inv
     // No prior billing for this session (already_billed = 0); approved billable $100.
     mayApprovedLog($school, $schedule->id, billable: true, amount: 100.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['net_amount'])->toBe(100.0)
@@ -163,7 +190,7 @@ test('mixed charges and credits netting positive produce ONE settlement invoice,
     priorAdvanceInvoiceWithLine($school, $cancelled->id, null, 100.0);
     mayApprovedLog($school, $cancelled->id, billable: false, amount: 0.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['net_amount'])->toBe(20.0)
@@ -193,7 +220,7 @@ test('mixed charges and credits netting negative produce ONE credit note, no set
     priorAdvanceInvoiceWithLine($school, $cancelled->id, null, 100.0);
     mayApprovedLog($school, $cancelled->id, billable: false, amount: 0.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['net_amount'])->toBe(-50.0)
@@ -216,13 +243,14 @@ test('mixed charges and credits netting exactly zero produce neither document', 
     priorAdvanceInvoiceWithLine($school, $cancelled->id, null, 100.0);
     mayApprovedLog($school, $cancelled->id, billable: false, amount: 0.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['net_amount'])->toBe(0.0)
         ->and($result['settlement_invoice_id'])->toBeNull()
         ->and($result['credit_note_ledger_entry_id'])->toBeNull()
-        ->and(AdvanceReconciliation::count())->toBe(1);
+        // Semi-monthly: both halves of May are marked reconciled.
+        ->and(AdvanceReconciliation::count())->toBe(2);
 });
 
 test('a reconciliation credit note chains its balance_after onto the school ledger', function () {
@@ -239,7 +267,7 @@ test('a reconciliation credit note chains its balance_after onto the school ledg
     priorAdvanceInvoiceWithLine($school, $schedule->id, null, 100.0);
     mayApprovedLog($school, $schedule->id, billable: false, amount: 0.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     $entry = LedgerEntry::find($result['credit_note_ledger_entry_id']);
 
@@ -263,7 +291,7 @@ test('a current-month June session is NOT touched by the June 10 run', function 
         'session_date' => '2026-06-05',
     ]);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['lines'])->toBe(0)
@@ -282,9 +310,11 @@ test('running reconcile twice for the same period does not double-credit', funct
     $this->service->reconcileSchedule($config, now());
     $second = $this->service->reconcileSchedule($config, now());
 
-    expect($second['status'])->toBe('skipped_already_reconciled')
+    // Every half of the second run is skipped (already reconciled).
+    expect(collect($second)->every(fn (array $r): bool => $r['status'] === 'skipped_already_reconciled'))->toBeTrue()
         ->and(LedgerEntry::where('transaction_type', TransactionType::CREDIT_NOTE->value)->count())->toBe(1)
-        ->and(AdvanceReconciliation::count())->toBe(1);
+        // Semi-monthly: both halves of May, written once across the two runs.
+        ->and(AdvanceReconciliation::count())->toBe(2);
 });
 
 test('a zero-delta period still writes a reconciliation row to mark it done', function () {
@@ -296,11 +326,12 @@ test('a zero-delta period still writes a reconciliation row to mark it done', fu
     priorAdvanceInvoiceWithLine($school, $schedule->id, null, 100.0);
     mayApprovedLog($school, $schedule->id, billable: true, amount: 100.0);
 
-    $result = $this->service->reconcileSchedule($config, now());
+    $result = materialResult($this->service->reconcileSchedule($config, now()));
 
     expect($result['status'])->toBe('reconciled')
         ->and($result['lines'])->toBe(0)
-        ->and(AdvanceReconciliation::count())->toBe(1);
+        // Semi-monthly: both halves of May are marked reconciled.
+        ->and(AdvanceReconciliation::count())->toBe(2);
 });
 
 test('dry run computes the delta without creating anything', function () {
@@ -315,7 +346,7 @@ test('dry run computes the delta without creating anything', function () {
     // A dry run must not add any NEW entries on top of whatever already exists.
     $ledgerBefore = LedgerEntry::count();
 
-    $result = $this->service->reconcileSchedule($config, now(), dryRun: true);
+    $result = materialResult($this->service->reconcileSchedule($config, now(), dryRun: true));
 
     expect($result['status'])->toBe('dry_run')
         ->and($result['net_amount'])->toBe(-100.0)

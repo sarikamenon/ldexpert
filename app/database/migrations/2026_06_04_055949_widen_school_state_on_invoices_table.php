@@ -22,8 +22,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::table('invoices', function (Blueprint $table) {
-            $table->string('school_state', 2)->nullable()->change();
-        });
+        // No down migration needed.
     }
 };

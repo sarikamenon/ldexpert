@@ -69,8 +69,8 @@ test('the command reconciles advance school schedules and ignores standard + the
 
     $this->artisan('billing:reconcile-advance')->assertSuccessful();
 
-    // Exactly one reconciliation (the advance school), with a settlement invoice.
-    expect(AdvanceReconciliation::count())->toBe(1);
+    // The advance school only — semi-monthly, so both halves of May are marked.
+    expect(AdvanceReconciliation::count())->toBe(2);
     $settlement = Invoice::query()
         ->where('billing_mode', BillingMode::ADVANCE->value)
         ->where('status', InvoiceStatus::DRAFT->value)
@@ -112,8 +112,8 @@ test('the no-arg command reconciles every active advance schedule in one run', f
 
     $this->artisan('billing:reconcile-advance')->assertSuccessful();
 
-    // Both schedules reconciled in the single run.
-    expect(AdvanceReconciliation::count())->toBe(2)
+    // Both schedules reconciled in the single run; semi-monthly → 2 halves each.
+    expect(AdvanceReconciliation::count())->toBe(4)
         ->and(AdvanceReconciliation::where('billing_schedule_id', $configA->id)->exists())->toBeTrue()
         ->and(AdvanceReconciliation::where('billing_schedule_id', $configB->id)->exists())->toBeTrue();
 
@@ -143,19 +143,21 @@ function commandReconLog(School $school, int $scheduleId, bool $billable, float 
 
 function commandPriorAdvanceLine(School $school, int $scheduleId, float $amount): Invoice
 {
+    // The session is logged on May 12, so the original advance run stamps the
+    // first semi-monthly half (1st–15th) — match it so already_billed lines up.
     $invoice = Invoice::factory()->create([
         'school_id' => $school->id,
         'billing_mode' => BillingMode::ADVANCE->value,
         'status' => InvoiceStatus::SENT->value,
         'billing_period_start' => '2026-05-01',
-        'billing_period_end' => '2026-05-31',
+        'billing_period_end' => '2026-05-15',
     ]);
 
     $invoice->lineItems()->create([
         'line_type' => InvoiceLineType::ADVANCE_SCHEDULED->value,
         'description' => 'May advance charge',
         'billing_period_start' => '2026-05-01',
-        'billing_period_end' => '2026-05-31',
+        'billing_period_end' => '2026-05-15',
         'quantity' => 1,
         'unit_price' => $amount,
         'total' => $amount,

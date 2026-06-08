@@ -77,6 +77,8 @@ final class InvoicePdfService
             return 30;
         }
 
-        return (int) round($invoice->invoice_date->diffInDays($invoice->due_date));
+        // absolute: true — Carbon 3 returns a signed diff, so guard against a
+        // due_date that precedes invoice_date yielding negative terms.
+        return (int) round($invoice->invoice_date->diffInDays($invoice->due_date, absolute: true));
     }
 }

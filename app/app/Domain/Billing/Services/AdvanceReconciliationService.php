@@ -12,6 +12,7 @@ use App\DTOs\InvoiceLineItemDTO;
 use App\Enums\BillingMode;
 use App\Enums\InvoiceLineType;
 use App\Enums\InvoiceStatus;
+use App\Enums\Role;
 use App\Enums\SessionLogStatus;
 use App\Models\AdvanceReconciliation;
 use App\Models\BillingSchedule;
@@ -38,18 +39,68 @@ final class AdvanceReconciliationService
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly LedgerService $ledgerService,
         private readonly AdvanceAdjustmentClassifier $adjustmentClassifier,
+        private readonly BillingScheduleService $billingScheduleService,
     ) {}
 
     /**
      * Reconcile the prior calendar month for a single advance schedule.
      *
-     * @return array{schedule_id: int, status: string, period_start: string, period_end: string, net_amount: float, settlement_invoice_id: ?int, credit_note_ledger_entry_id: ?int, lines: int}
+     * The schedule's frequency may split the month into several billing periods
+     * (e.g. semi-monthly → 1st–15th and 16th–EOM). Each sub-period is reconciled
+     * independently against the exact boundaries the 1st-of-month run stamped on
+     * the original invoice lines, so already-billed totals match and no session is
+     * re-charged. Returns one result row per reconciled sub-period.
+     *
+     * @return array<int, array{schedule_id: int, status: string, period_start: string, period_end: string, net_amount: float, settlement_invoice_id: ?int, credit_note_ledger_entry_id: ?int, lines: int}>
      */
     public function reconcileSchedule(BillingSchedule $schedule, Carbon $referenceDate, bool $dryRun = false): array
     {
-        $periodStart = $referenceDate->copy()->subMonthNoOverflow()->startOfMonth()->startOfDay();
-        $periodEnd = $referenceDate->copy()->subMonthNoOverflow()->endOfMonth()->startOfDay();
+        return $this->priorMonthPeriods($schedule, $referenceDate)
+            ->map(fn (array $period): array => $this->reconcilePeriod($schedule, $period['start'], $period['end'], $dryRun))
+            ->all();
+    }
 
+    /**
+     * Enumerate the schedule's billing periods that fall within the prior calendar
+     * month, derived from its own frequency (not a hardcoded full month).
+     *
+     * @return Collection<int, array{start: Carbon, end: Carbon}>
+     */
+    private function priorMonthPeriods(BillingSchedule $schedule, Carbon $referenceDate): Collection
+    {
+        $monthStart = $referenceDate->copy()->subMonthNoOverflow()->startOfMonth()->startOfDay();
+        $monthEnd = $referenceDate->copy()->subMonthNoOverflow()->endOfMonth()->startOfDay();
+
+        /** @var Collection<int, array{start: Carbon, end: Carbon}> $periods */
+        $periods = new Collection;
+        $cursor = $monthStart->copy();
+
+        // Walk frequency periods from the 1st of the prior month; keep those whose
+        // period END lands inside the prior month, so weekly/bi-weekly periods that
+        // straddle a month boundary are reconciled with the month they close in.
+        while ($cursor->lessThanOrEqualTo($monthEnd)) {
+            $period = $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $cursor);
+
+            if ($period['end']->betweenIncluded($monthStart, $monthEnd)) {
+                $periods->push([
+                    'start' => $period['start']->copy()->startOfDay(),
+                    'end' => $period['end']->copy()->startOfDay(),
+                ]);
+            }
+
+            $cursor = $period['end']->copy()->addDay()->startOfDay();
+        }
+
+        return $periods;
+    }
+
+    /**
+     * Reconcile a single billing period for a schedule.
+     *
+     * @return array{schedule_id: int, status: string, period_start: string, period_end: string, net_amount: float, settlement_invoice_id: ?int, credit_note_ledger_entry_id: ?int, lines: int}
+     */
+    private function reconcilePeriod(BillingSchedule $schedule, Carbon $periodStart, Carbon $periodEnd, bool $dryRun): array
+    {
         $schoolId = (int) $schedule->schedulable_id;
 
         $base = [
@@ -136,9 +187,9 @@ final class AdvanceReconciliationService
     {
         /** @var Collection<int, SessionLog> $logs */
         $logs = SessionLog::query()
-            ->where('school_id', $schoolId)
-            ->where('status', SessionLogStatus::APPROVED->value)
-            ->whereBetween('session_date', [$periodStart->toDateString(), $periodEnd->toDateString()])
+            ->forSchoolId($schoolId)
+            ->withStatuses([SessionLogStatus::APPROVED->value])
+            ->betweenSessionDates($periodStart->toDateString(), $periodEnd->toDateString())
             ->with(['service', 'student', 'schedule'])
             ->get();
 
@@ -321,7 +372,7 @@ final class AdvanceReconciliationService
     {
         /** @var User $user */
         $user = User::query()
-            ->where('role', 'admin')
+            ->byRole(Role::ADMIN)
             ->orderBy('id')
             ->firstOrFail();
 

@@ -37,7 +37,6 @@ class SchoolFactory extends Factory
             'invoice_email' => $this->faker->safeEmail(),
             'school_type' => $this->faker->randomElement(['Virtual', 'Brick Mortar', 'Blended']),
             'is_private_student' => $this->faker->boolean(),
-            'first_schedule_notified_at' => null,
             'non_billable_scheduling' => $this->faker->boolean(),
             'allow_weekend_scheduling' => $this->faker->boolean(),
             'external_emr_name' => $this->faker->optional()->company(),
