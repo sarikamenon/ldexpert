@@ -8,6 +8,7 @@ use App\Domain\Finance\Services\LedgerService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoiceService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\DTOs\InvoiceLineItemDTO;
 use App\Enums\BillingMode;
 use App\Enums\InvoiceLineType;
 use App\Enums\InvoiceStatus;
@@ -36,6 +37,7 @@ final class AdvanceReconciliationService
         private readonly InvoiceService $invoiceService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly LedgerService $ledgerService,
+        private readonly AdvanceAdjustmentClassifier $adjustmentClassifier,
     ) {}
 
     /**
@@ -65,31 +67,26 @@ final class AdvanceReconciliationService
             return [...$base, 'status' => 'skipped_already_reconciled'];
         }
 
-        // Per-session late delta, strictly within the prior calendar month.
-        $deltas = $this->computeLateDeltas($schoolId, $periodStart, $periodEnd);
+        // Per-session late delta, strictly within the prior calendar month, classified
+        // into status-based ADJUST_* lines (no-show / cancelled / rate-diff / extra).
+        $lines = $this->buildReconcileLines($schoolId, $periodStart, $periodEnd);
+        $net = round((float) $lines->sum(fn (InvoiceLineItemDTO $l): float => $l->total), 2);
 
         if ($dryRun) {
-            $net = $deltas->sum(fn (array $d): float => $d['delta']);
-
-            return [...$base, 'status' => 'dry_run', 'net_amount' => round((float) $net, 2), 'lines' => $deltas->count()];
+            return [...$base, 'status' => 'dry_run', 'net_amount' => $net, 'lines' => $lines->count()];
         }
 
-        return DB::transaction(function () use ($schedule, $schoolId, $periodStart, $periodEnd, $deltas, $base): array {
-            $charges = $deltas->filter(fn (array $d): bool => $d['delta'] > 0)->values();
-            $credits = $deltas->filter(fn (array $d): bool => $d['delta'] < 0)->values();
-
+        return DB::transaction(function () use ($schedule, $schoolId, $periodStart, $periodEnd, $lines, $net, $base): array {
+            // Net decides ONE document (never both): owed-to-us → settlement invoice
+            // carrying every status-based line; owed-to-family → a single credit note.
             $settlementInvoiceId = null;
-            if ($charges->isNotEmpty()) {
-                $settlementInvoiceId = $this->createSettlementInvoice($schedule, $schoolId, $periodStart, $periodEnd, $charges);
-            }
-
             $creditLedgerEntryId = null;
-            $creditTotal = (float) $credits->sum(fn (array $d): float => abs($d['delta']));
-            if ($creditTotal >= 0.01) {
-                $creditLedgerEntryId = $this->createReconciliationCreditNote($schedule, $schoolId, $periodStart, $creditTotal);
-            }
 
-            $net = (float) $deltas->sum(fn (array $d): float => $d['delta']);
+            if ($net >= 0.01) {
+                $settlementInvoiceId = $this->createSettlementInvoice($schedule, $schoolId, $periodStart, $periodEnd, $lines, $net);
+            } elseif ($net <= -0.01) {
+                $creditLedgerEntryId = $this->createReconciliationCreditNote($schedule, $schoolId, $periodStart, abs($net));
+            }
 
             AdvanceReconciliation::query()->create([
                 'billing_schedule_id' => $schedule->id,
@@ -99,7 +96,7 @@ final class AdvanceReconciliationService
                 'source_invoice_id' => null,
                 'credit_note_ledger_entry_id' => $creditLedgerEntryId,
                 'settlement_invoice_id' => $settlementInvoiceId,
-                'net_amount' => round($net, 2),
+                'net_amount' => $net,
                 'reconciled_at' => now(),
                 'recorded_by_id' => null,
             ]);
@@ -107,10 +104,10 @@ final class AdvanceReconciliationService
             return [
                 ...$base,
                 'status' => 'reconciled',
-                'net_amount' => round($net, 2),
+                'net_amount' => $net,
                 'settlement_invoice_id' => $settlementInvoiceId,
                 'credit_note_ledger_entry_id' => $creditLedgerEntryId,
-                'lines' => $deltas->count(),
+                'lines' => $lines->count(),
             ];
         });
     }
@@ -125,11 +122,17 @@ final class AdvanceReconciliationService
     }
 
     /**
-     * Per-session late delta = should_bill − already_billed, for prior-month logs.
+     * Build status-based reconciliation lines for prior-month sessions.
      *
-     * @return Collection<int, array{session: SessionLog, delta: float}>
+     * Line AMOUNT = should_bill − already_billed (the late catch-up delta, so an
+     * already-reconciled session nets to 0 and is dropped — never re-billed). Line
+     * TYPE/label = the session outcome via the shared classifier, so the settlement
+     * invoice reads like the regular advance invoice (no-show / cancelled / rate
+     * adjustment / additional session).
+     *
+     * @return Collection<int, InvoiceLineItemDTO>
      */
-    private function computeLateDeltas(int $schoolId, Carbon $periodStart, Carbon $periodEnd): Collection
+    private function buildReconcileLines(int $schoolId, Carbon $periodStart, Carbon $periodEnd): Collection
     {
         /** @var Collection<int, SessionLog> $logs */
         $logs = SessionLog::query()
@@ -141,8 +144,10 @@ final class AdvanceReconciliationService
 
         $billed = $this->billedTotalsForPeriod($schoolId, $periodStart, $periodEnd);
 
+        $sortOrder = 0;
+
         return $logs
-            ->map(function (SessionLog $log) use ($billed): array {
+            ->map(function (SessionLog $log) use ($billed, $periodStart, $periodEnd, &$sortOrder): ?InvoiceLineItemDTO {
                 $shouldBill = $log->is_billable_school ? (float) $log->school_invoice_amount : 0.0;
 
                 $key = $log->schedule_id !== null
@@ -150,9 +155,48 @@ final class AdvanceReconciliationService
                     : 'session:'.$log->id;
                 $alreadyBilled = $billed[$key] ?? 0.0;
 
-                return ['session' => $log, 'delta' => round($shouldBill - $alreadyBilled, 2)];
+                $delta = round($shouldBill - $alreadyBilled, 2);
+
+                if (abs($delta) < 0.01) {
+                    return null;
+                }
+
+                $serviceName = $log->service->name ?? 'Session';
+                $date = $log->session_date->format('D M j');
+
+                // Never previously billed + a positive billable amount = a brand-new
+                // (extra/unscheduled) session, mirroring the advance flow's extra-session line.
+                if ($alreadyBilled <= 0.0 && $delta > 0) {
+                    return new InvoiceLineItemDTO(
+                        lineType: InvoiceLineType::ADJUST_EXTRA_SESSION->value,
+                        description: "{$serviceName} — {$date} (additional session)",
+                        billingPeriodStart: $periodStart->toDateString(),
+                        billingPeriodEnd: $periodEnd->toDateString(),
+                        quantity: 1,
+                        unitPrice: $delta,
+                        total: $delta,
+                        sortOrder: $sortOrder++,
+                        scheduleId: $log->schedule_id,
+                        sessionLogId: $log->id,
+                    );
+                }
+
+                $suffix = $this->adjustmentClassifier->descriptionSuffixFor($log->outcome);
+
+                return new InvoiceLineItemDTO(
+                    lineType: $this->adjustmentClassifier->lineTypeFor($log->outcome),
+                    description: "{$serviceName} — {$date} — {$suffix}",
+                    billingPeriodStart: $periodStart->toDateString(),
+                    billingPeriodEnd: $periodEnd->toDateString(),
+                    quantity: 1,
+                    unitPrice: $delta,
+                    total: $delta,
+                    sortOrder: $sortOrder++,
+                    scheduleId: $log->schedule_id,
+                    sessionLogId: $log->id,
+                );
             })
-            ->filter(fn (array $d): bool => abs($d['delta']) >= 0.01)
+            ->filter()
             ->values();
     }
 
@@ -198,22 +242,26 @@ final class AdvanceReconciliationService
     }
 
     /**
-     * Create a DRAFT settlement invoice for net-positive catch-up charges.
+     * Create a DRAFT settlement invoice for a net-positive reconciliation.
      *
-     * @param  Collection<int, array{session: SessionLog, delta: float}>  $charges
+     * Carries EVERY status-based reconciliation line (charges and credits alike,
+     * like the regular advance invoice's "Adjustments from Previous Period"); the
+     * invoice total is the net of them all.
+     *
+     * @param  Collection<int, InvoiceLineItemDTO>  $lines
      */
     private function createSettlementInvoice(
         BillingSchedule $schedule,
         int $schoolId,
         Carbon $periodStart,
         Carbon $periodEnd,
-        Collection $charges,
+        Collection $lines,
+        float $net,
     ): int {
         $school = $this->schoolRepository->find($schoolId);
         $schoolSnapshot = $school !== null ? $this->invoiceService->copySchoolSnapshot($school) : [];
         $companySnapshot = $this->invoiceService->copyCompanySnapshot();
 
-        $subtotal = round((float) $charges->sum(fn (array $d): float => $d['delta']), 2);
         $paymentTermsDays = (int) $schedule->payment_terms_days;
 
         $invoice = $this->invoiceRepository->create([
@@ -224,36 +272,18 @@ final class AdvanceReconciliationService
             'billing_period_end' => $periodEnd->toDateString(),
             'billing_mode' => BillingMode::ADVANCE->value,
             'status' => InvoiceStatus::DRAFT->value,
-            'subtotal' => $subtotal,
+            'subtotal' => round($net, 2),
             'tax_total' => 0,
-            'total' => $subtotal,
+            'total' => round($net, 2),
             'due_date' => now()->addDays($paymentTermsDays)->toDateString(),
             'notes' => 'Late-approval catch-up for '.$periodStart->format('M Y').'.',
             ...$schoolSnapshot,
             ...$companySnapshot,
         ]);
 
-        $sortOrder = 0;
-        $lineItems = $charges->map(function (array $d) use ($periodStart, $periodEnd, &$sortOrder): array {
-            $session = $d['session'];
-            $serviceName = $session->service->name ?? 'Session';
-            $date = $session->session_date->format('D M j');
-
-            return [
-                'line_type' => InvoiceLineType::ADJUST_EXTRA_SESSION->value,
-                'description' => "{$serviceName} — {$date} (late approval)",
-                'billing_period_start' => $periodStart->toDateString(),
-                'billing_period_end' => $periodEnd->toDateString(),
-                'quantity' => 1,
-                'unit_price' => $d['delta'],
-                'total' => $d['delta'],
-                'sort_order' => $sortOrder++,
-                'schedule_id' => $session->schedule_id,
-                'session_log_id' => $session->id,
-            ];
-        })->all();
-
-        $invoice->lineItems()->createMany($lineItems);
+        $invoice->lineItems()->createMany(
+            $lines->map(fn (InvoiceLineItemDTO $l): array => $l->toArray())->all()
+        );
 
         return (int) $invoice->id;
     }

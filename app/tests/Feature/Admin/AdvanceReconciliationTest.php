@@ -151,6 +151,80 @@ test('a late-approved extra billable May session produces a draft settlement inv
         ->and($settlement->lineItems()->count())->toBe(1);
 });
 
+test('mixed charges and credits netting positive produce ONE settlement invoice, no credit note', function () {
+    $school = advanceSchoolForRecon();
+    $config = advanceScheduleFor($school);
+
+    $extra = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-10']);
+    $cancelled = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-20']);
+
+    // Extra billable session never billed → +120. Advance-charged $100 then non-billable → -100. Net +20.
+    mayApprovedLog($school, $extra->id, billable: true, amount: 120.0);
+    priorAdvanceInvoiceWithLine($school, $cancelled->id, null, 100.0);
+    mayApprovedLog($school, $cancelled->id, billable: false, amount: 0.0);
+
+    $result = $this->service->reconcileSchedule($config, now());
+
+    expect($result['status'])->toBe('reconciled')
+        ->and($result['net_amount'])->toBe(20.0)
+        ->and($result['settlement_invoice_id'])->not->toBeNull()
+        ->and($result['credit_note_ledger_entry_id'])->toBeNull();
+
+    $invoice = Invoice::find($result['settlement_invoice_id']);
+    // Carries BOTH lines (the extra charge and the cancellation credit), netting to 20.
+    expect((float) $invoice->total)->toBe(20.0)
+        ->and($invoice->lineItems()->count())->toBe(2)
+        ->and((float) $invoice->lineItems()->sum('total'))->toBe(20.0)
+        ->and($invoice->lineItems()->where('line_type', InvoiceLineType::ADJUST_EXTRA_SESSION->value)->exists())->toBeTrue()
+        ->and($invoice->lineItems()->where('line_type', InvoiceLineType::ADJUST_CANCEL_NON_BILLABLE->value)->exists())->toBeTrue()
+        // No separate credit note created.
+        ->and(LedgerEntry::where('transaction_type', TransactionType::CREDIT_NOTE->value)->count())->toBe(0);
+});
+
+test('mixed charges and credits netting negative produce ONE credit note, no settlement invoice', function () {
+    $school = advanceSchoolForRecon();
+    $config = advanceScheduleFor($school);
+
+    $extra = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-10']);
+    $cancelled = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-20']);
+
+    // Extra +50, cancelled -100 → net -50 → single credit note, no invoice.
+    mayApprovedLog($school, $extra->id, billable: true, amount: 50.0);
+    priorAdvanceInvoiceWithLine($school, $cancelled->id, null, 100.0);
+    mayApprovedLog($school, $cancelled->id, billable: false, amount: 0.0);
+
+    $result = $this->service->reconcileSchedule($config, now());
+
+    expect($result['status'])->toBe('reconciled')
+        ->and($result['net_amount'])->toBe(-50.0)
+        ->and($result['settlement_invoice_id'])->toBeNull()
+        ->and($result['credit_note_ledger_entry_id'])->not->toBeNull();
+
+    $entry = LedgerEntry::find($result['credit_note_ledger_entry_id']);
+    expect((float) $entry->amount)->toBe(50.0);
+});
+
+test('mixed charges and credits netting exactly zero produce neither document', function () {
+    $school = advanceSchoolForRecon();
+    $config = advanceScheduleFor($school);
+
+    $extra = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-10']);
+    $cancelled = Schedule::factory()->create(['school_id' => $school->id, 'schedule_date' => '2026-05-20']);
+
+    // Extra +100, cancelled -100 → net 0 → only the reconciliation row.
+    mayApprovedLog($school, $extra->id, billable: true, amount: 100.0);
+    priorAdvanceInvoiceWithLine($school, $cancelled->id, null, 100.0);
+    mayApprovedLog($school, $cancelled->id, billable: false, amount: 0.0);
+
+    $result = $this->service->reconcileSchedule($config, now());
+
+    expect($result['status'])->toBe('reconciled')
+        ->and($result['net_amount'])->toBe(0.0)
+        ->and($result['settlement_invoice_id'])->toBeNull()
+        ->and($result['credit_note_ledger_entry_id'])->toBeNull()
+        ->and(AdvanceReconciliation::count())->toBe(1);
+});
+
 test('a reconciliation credit note chains its balance_after onto the school ledger', function () {
     $school = advanceSchoolForRecon();
     $config = advanceScheduleFor($school);

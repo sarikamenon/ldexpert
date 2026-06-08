@@ -9,6 +9,7 @@ use App\DTOs\CreateTherapistDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleType;
 use App\Models\BillingSchedule;
+use App\Models\BillingSetting;
 use App\Models\Position;
 use App\Models\School;
 use App\Models\User;
@@ -100,6 +101,8 @@ test('creating a private-student school seeds an advance school_invoice schedule
 test('creating a non-private school seeds a standard school_invoice schedule starting this month', function () {
     $manager = User::factory()->admin()->create();
 
+    BillingSetting::getSettings()->update(['standard_default_auto_send' => true]);
+
     $dto = CreateSchoolDTO::fromArray([
         'full_name' => 'Public School',
         'display_name' => 'Public School',
@@ -126,5 +129,6 @@ test('creating a non-private school seeds a standard school_invoice schedule sta
 
     expect($schedule)->not->toBeNull()
         ->and($schedule->billing_mode)->toBe(BillingMode::STANDARD)
+        ->and($schedule->auto_send)->toBeTrue()
         ->and($schedule->billing_start_date->toDateString())->toBe(now()->copy()->startOfMonth()->toDateString());
 });
