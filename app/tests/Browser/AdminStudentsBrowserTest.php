@@ -216,7 +216,7 @@ final class AdminStudentsBrowserTest extends DuskTestCase
                 ->press('Create Student')
                 ->waitForText('Possible duplicate student')
                 ->press('Go back')
-                ->pause(500)
+                ->waitUntilMissingText('Possible duplicate student')
                 ->assertPathIs('/admin/students/create');
         });
 

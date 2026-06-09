@@ -166,8 +166,6 @@ $(function () {
             confirmButtonText: 'Create anyway',
             cancelButtonText: 'Go back',
             reverseButtons: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
             customClass: {
                 popup: 'rounded-lg',
                 confirmButton: 'rounded-lg px-4 py-2',

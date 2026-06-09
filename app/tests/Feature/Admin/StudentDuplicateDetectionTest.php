@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-function admin(): User
+function duplicateAdmin(): User
 {
     return User::factory()->admin()->create();
 }
@@ -46,7 +46,7 @@ it('redirects back with matches and does not create when a name duplicate exists
     $school = School::factory()->create();
     existingStudent($school);
 
-    $response = $this->actingAs(admin())
+    $response = $this->actingAs(duplicateAdmin())
         ->post(route('admin.students.store'), newStudentPayload($school));
 
     $response->assertRedirect()->assertSessionHas('duplicateMatches');
@@ -57,7 +57,7 @@ it('creates the student when the duplicate is acknowledged', function () {
     $school = School::factory()->create();
     existingStudent($school);
 
-    $response = $this->actingAs(admin())->post(
+    $response = $this->actingAs(duplicateAdmin())->post(
         route('admin.students.store'),
         newStudentPayload($school, ['duplicate_acknowledged' => '1']),
     );
@@ -70,7 +70,7 @@ it('creates the student normally when there is no name match', function () {
     $school = School::factory()->create();
     existingStudent($school, ['first_name' => 'Bob']);
 
-    $response = $this->actingAs(admin())
+    $response = $this->actingAs(duplicateAdmin())
         ->post(route('admin.students.store'), newStudentPayload($school));
 
     $response->assertRedirect(route('admin.students.index'))->assertSessionHas('status');
@@ -81,7 +81,7 @@ it('does not flag a sibling sharing the parent email but with a different name',
     $school = School::factory()->create();
     existingStudent($school, ['first_name' => 'Bob'], ['email' => 'parent@example.com']);
 
-    $response = $this->actingAs(admin())->post(
+    $response = $this->actingAs(duplicateAdmin())->post(
         route('admin.students.store'),
         newStudentPayload($school, ['email' => 'parent@example.com']),
     );
@@ -94,7 +94,7 @@ it('does not flag a student against itself when editing', function () {
     $profile = existingStudent($school);
     $student = $profile->user;
 
-    $response = $this->actingAs(admin())->put(route('admin.students.update', $student), [
+    $response = $this->actingAs(duplicateAdmin())->put(route('admin.students.update', $student), [
         'first_name' => 'Jane',
         'last_name' => 'Smith',
         'username' => $student->username,
