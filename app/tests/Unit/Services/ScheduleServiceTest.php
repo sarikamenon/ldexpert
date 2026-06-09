@@ -91,7 +91,9 @@ it('creates a single non-recurring schedule record', function (): void {
     $therapist = User::factory()->create();
     $studentUser = User::factory()->create();
     StudentProfile::factory()->create(['user_id' => $studentUser->id]);
-    $service = Service::factory()->create(['is_group_service' => false]);
+    // is_direct_service must be pinned: the service only calls
+    // validateStudentsShareService for direct services, which this test asserts.
+    $service = Service::factory()->create(['is_group_service' => false, 'is_direct_service' => true]);
     $school = School::factory()->create(['non_billable_scheduling' => false]);
 
     $mocks['repository']->shouldReceive('validateTherapistAccessToSSA')->andReturnTrue();
@@ -837,4 +839,51 @@ it('throws ScheduleOverlapException when a student has a conflicting schedule', 
         locationDetails: null,
         durationMinutes: 60,
     )))->toThrow(ScheduleOverlapException::class);
+});
+
+// ---------------------------------------------------------------------------
+// findById
+// ---------------------------------------------------------------------------
+
+it('delegates findById to the repository with the given relations', function (): void {
+    $mocks = makeScheduleMocks();
+    $schedule = Schedule::factory()->make(['id' => 7]);
+
+    $mocks['repository']->shouldReceive('findById')
+        ->once()->with(7, ['student', 'service'])->andReturn($schedule);
+
+    expect(makeScheduleService($mocks)->findById(7, ['student', 'service']))->toBe($schedule);
+});
+
+// ---------------------------------------------------------------------------
+// deleteTherapistFutureSchedules
+// ---------------------------------------------------------------------------
+
+it('soft-deletes each future scheduled session for the therapist and returns the count', function (): void {
+    $mocks = makeScheduleMocks();
+    $therapist = User::factory()->create();
+    $first = Schedule::factory()->make(['id' => 1]);
+    $second = Schedule::factory()->make(['id' => 2]);
+
+    $mocks['repository']->shouldReceive('getFutureScheduledForTherapistOwned')
+        ->once()
+        ->with($therapist->id, Mockery::type(Carbon::class))
+        ->andReturn(collect([$first, $second]));
+    $mocks['repository']->shouldReceive('delete')->once()->with($first);
+    $mocks['repository']->shouldReceive('delete')->once()->with($second);
+
+    expect(makeScheduleService($mocks)->deleteTherapistFutureSchedules($therapist))->toBe(2);
+});
+
+it('returns zero and deletes nothing when the therapist has no future schedules', function (): void {
+    $mocks = makeScheduleMocks();
+    $therapist = User::factory()->create();
+
+    $mocks['repository']->shouldReceive('getFutureScheduledForTherapistOwned')
+        ->once()
+        ->with($therapist->id, Mockery::type(Carbon::class))
+        ->andReturn(collect());
+    $mocks['repository']->shouldNotReceive('delete');
+
+    expect(makeScheduleService($mocks)->deleteTherapistFutureSchedules($therapist))->toBe(0);
 });

@@ -75,6 +75,13 @@ final class ScheduleController extends Controller
                 ->with('error', 'The selected SSA does not belong to this therapist or is not active.');
         }
 
+        // The form renders the student as a required hidden field; guarantee it is present
+        // here rather than null-checking deep in the view.
+        if (! $ssa->student) {
+            return redirect()->route('admin.schedule-calendar.index')
+                ->with('error', 'The selected SSA has no associated student.');
+        }
+
         return view('admin.schedule.create', [
             'therapistId' => $therapistId,
             'therapistName' => $therapist->name,

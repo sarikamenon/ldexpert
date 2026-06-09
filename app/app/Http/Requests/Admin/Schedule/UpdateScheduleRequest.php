@@ -20,15 +20,15 @@ final class UpdateScheduleRequest extends FormRequest
     /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
-        $recurrenceTypes = array_map(
-            static fn (RecurrenceType $type): string => $type->value,
-            RecurrenceType::cases()
-        );
+        $recurrenceTypes = collect(RecurrenceType::cases())
+            ->map(static fn (RecurrenceType $type): string => $type->value)
+            ->all();
 
-        $billingStatuses = array_map(
-            static fn (BillingStatus $status): string => $status->value,
-            BillingStatus::cases()
-        );
+        $billingStatuses = collect(BillingStatus::cases())
+            ->map(static fn (BillingStatus $status): string => $status->value)
+            ->all();
+
+        $weekDayValues = collect(WeekDay::cases())->pluck('value')->all();
 
         return [
             'schedule_date' => ['required', 'date', 'after_or_equal:today'],
@@ -42,7 +42,7 @@ final class UpdateScheduleRequest extends FormRequest
             'recurrence_type' => ['nullable', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['nullable', 'date', 'after:schedule_date'],
             'weekly_days' => ['nullable', 'array'],
-            'weekly_days.*' => ['string', Rule::in(array_column(WeekDay::cases(), 'value'))],
+            'weekly_days.*' => ['string', Rule::in($weekDayValues)],
             'occurrence_dates' => ['nullable', 'array'],
             'occurrence_dates.*' => ['required', 'date'],
             'location_details' => ['nullable', 'string', 'max:2000'],

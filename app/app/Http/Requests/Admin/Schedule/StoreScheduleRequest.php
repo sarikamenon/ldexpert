@@ -32,10 +32,11 @@ final class StoreScheduleRequest extends FormRequest
     /** @return array<string, array<int, mixed>|string> */
     public function rules(): array
     {
-        $recurrenceTypes = array_map(
-            static fn (RecurrenceType $type): string => $type->value,
-            RecurrenceType::cases()
-        );
+        $recurrenceTypes = collect(RecurrenceType::cases())
+            ->map(static fn (RecurrenceType $type): string => $type->value)
+            ->all();
+
+        $weekDayValues = collect(WeekDay::cases())->pluck('value')->all();
 
         return [
             'therapist_id' => ['required', 'integer', Rule::exists('users', 'id')->where('role', 'therapist')],
@@ -54,7 +55,7 @@ final class StoreScheduleRequest extends FormRequest
             'recurrence_type' => ['required', Rule::in($recurrenceTypes)],
             'recurrence_end_date' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'date', 'after:schedule_date'],
             'weekly_days' => ['required_if:recurrence_type,'.RecurrenceType::CUSTOM_WEEKLY->value, 'nullable', 'array', 'min:1'],
-            'weekly_days.*' => [Rule::in(array_column(WeekDay::cases(), 'value'))],
+            'weekly_days.*' => [Rule::in($weekDayValues)],
             'occurrence_dates' => ['required_unless:recurrence_type,'.RecurrenceType::NONE->value, 'nullable', 'array', 'min:1'],
             'occurrence_dates.*' => ['required', 'date', 'after_or_equal:schedule_date'],
             'notes' => ['nullable', 'string', 'max:1000'],
@@ -82,8 +83,8 @@ final class StoreScheduleRequest extends FormRequest
         $validator->after(function (Validator $validator): void {
             $therapistId = (int) $this->input('therapist_id');
             $ssaId = $this->input('ssa_id');
-            /** @var array<int, int> $studentIds */
-            $studentIds = is_array($this->input('student_ids', [])) ? array_map('intval', (array) $this->input('student_ids', [])) : [];
+            $studentIds = collect((array) $this->input('student_ids', []))
+                ->map(static fn ($id): int => (int) $id);
 
             if (! $therapistId || ! $ssaId) {
                 return;
@@ -105,33 +106,29 @@ final class StoreScheduleRequest extends FormRequest
                 $validator->errors()->add('ssa_id', 'You can only create schedules for active SSAs.');
             }
 
-            foreach ($studentIds as $studentId) {
-                if ($ssa->student_id !== $studentId) {
-                    $validator->errors()->add('student_ids', 'All students must belong to the selected SSA.');
-                    break;
-                }
+            if ($studentIds->contains(static fn (int $studentId): bool => $ssa->student_id !== $studentId)) {
+                $validator->errors()->add('student_ids', 'All students must belong to the selected SSA.');
             }
 
             $recurrenceType = $this->input('recurrence_type');
-            /** @var array<int, string> $occurrenceDates */
-            $occurrenceDates = is_array($this->input('occurrence_dates', [])) ? (array) $this->input('occurrence_dates', []) : [];
+            $occurrenceDates = collect((array) $this->input('occurrence_dates', []));
 
-            $schoolId = count($studentIds) > 0
-                ? $this->studentRepository->getSchoolIdByUserId($studentIds[0])
+            $schoolId = $studentIds->isNotEmpty()
+                ? $this->studentRepository->getSchoolIdByUserId((int) $studentIds->first())
                 : null;
+
+            $isRecurring = $recurrenceType && $recurrenceType !== RecurrenceType::NONE->value;
 
             $this->addWeekendSchedulingErrors(
                 $validator,
                 $this->schoolAllowsWeekendScheduling($schoolId),
                 $this->input('schedule_date'),
                 $this->input('weekly_days'),
-                $recurrenceType && $recurrenceType !== RecurrenceType::NONE->value ? $occurrenceDates : null,
+                $isRecurring ? $occurrenceDates->all() : null,
             );
 
-            if ($recurrenceType && $recurrenceType !== RecurrenceType::NONE->value && count($occurrenceDates) > 0) {
-                if (count(array_unique($occurrenceDates)) !== count($occurrenceDates)) {
-                    $validator->errors()->add('occurrence_dates', 'Duplicate occurrence dates are not allowed.');
-                }
+            if ($isRecurring && $occurrenceDates->isNotEmpty() && $occurrenceDates->duplicates()->isNotEmpty()) {
+                $validator->errors()->add('occurrence_dates', 'Duplicate occurrence dates are not allowed.');
             }
         });
     }
