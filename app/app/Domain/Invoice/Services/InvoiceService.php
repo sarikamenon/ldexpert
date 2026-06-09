@@ -329,9 +329,9 @@ final class InvoiceService
                 throw new \InvalidArgumentException('No email address available for sending invoice.');
             }
 
-            // Generate payment token for online payment link
+            // Generate payment token for online payment link (private-student schools only)
             $paymentUrl = null;
-            if ((float) $invoice->total > 0) {
+            if ((float) $invoice->total > 0 && $invoice->allowsOnlinePayment()) {
                 $invoice->ensurePaymentToken();
                 $paymentUrl = $invoice->getPaymentUrl();
             }
@@ -380,9 +380,9 @@ final class InvoiceService
             throw new \InvalidArgumentException('Zero amount invoices cannot be sent.');
         }
 
-        // Reuse existing payment token — do NOT regenerate
+        // Reuse existing payment token — do NOT regenerate (private-student schools only)
         $paymentUrl = null;
-        if ((float) $invoice->total > 0 && $invoice->payment_token) {
+        if ((float) $invoice->total > 0 && $invoice->payment_token && $invoice->allowsOnlinePayment()) {
             $paymentUrl = $invoice->getPaymentUrl();
         }
 

@@ -186,6 +186,47 @@ test('invoice service sends invoice via email', function () {
     expect($result)->toBe($invoice);
 });
 
+test('invoice service includes payment link for private-student schools', function () {
+    $user = User::factory()->admin()->create();
+    $school = School::factory()->create(['is_private_student' => true]);
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT,
+        'school_id' => $school->id,
+        'school_invoice_email' => 'family@example.com',
+        'total' => 250.00,
+    ]);
+
+    $dto = SendInvoiceDTO::fromArray(['email' => null, 'message' => null]);
+
+    $this->repository->shouldReceive('markAsSent')->once()->andReturn($invoice);
+    $this->ledgerService->shouldReceive('createInvoiceGeneratedEntry')->once();
+
+    $this->service->sendInvoice($user, $invoice, $dto);
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, fn ($mail) => $mail->paymentUrl !== null);
+});
+
+test('invoice service omits payment link for non-private schools', function () {
+    $user = User::factory()->admin()->create();
+    $school = School::factory()->create(['is_private_student' => false]);
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT,
+        'school_id' => $school->id,
+        'school_invoice_email' => 'billing@school.com',
+        'total' => 250.00,
+    ]);
+
+    $dto = SendInvoiceDTO::fromArray(['email' => null, 'message' => null]);
+
+    $this->repository->shouldReceive('markAsSent')->once()->andReturn($invoice);
+    $this->ledgerService->shouldReceive('createInvoiceGeneratedEntry')->once();
+
+    $this->service->sendInvoice($user, $invoice, $dto);
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, fn ($mail) => $mail->paymentUrl === null);
+    expect($invoice->fresh()->payment_token)->toBeNull();
+});
+
 test('invoice service prevents sending zero amount invoice', function () {
     $user = User::factory()->admin()->create();
     $invoice = Invoice::factory()->create([
