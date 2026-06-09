@@ -258,9 +258,12 @@
     <div id="students-form-data"
         data-private-student-ids="{{ $privateStudentIdsJson }}"
         data-private-family-contacts="{{ $privateFamilyContactsJson }}"
+        data-school-timezones="{{ $schoolTimezonesJson }}"
+        data-duplicate-matches="{{ $duplicateMatchesJson }}"
         hidden></div>
 
     <input type="hidden" name="redirect_to_ssa" id="redirect_to_ssa" value="0" />
+    <input type="hidden" name="duplicate_acknowledged" id="duplicate_acknowledged" value="0" />
 
     <div class="flex items-center justify-end gap-3">
         <a href="{{ route('admin.students.index') }}">
