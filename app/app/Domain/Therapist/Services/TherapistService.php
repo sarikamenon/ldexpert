@@ -16,6 +16,7 @@ use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleType;
+use App\Enums\UserStatus;
 use App\Mail\WelcomeTherapistMail;
 use App\Models\TherapistProfile;
 use App\Models\User;
@@ -33,6 +34,7 @@ final class TherapistService
         private readonly BillingScheduleService $billingScheduleService,
         private readonly BillingSettingsService $billingSettingsService,
         private readonly BillingStartDateResolver $billingStartDateResolver,
+        private readonly ScheduleService $scheduleService,
     ) {}
 
     public function create(CreateTherapistDTO $dto): TherapistProfile
@@ -108,7 +110,22 @@ final class TherapistService
 
     public function changeStatus(User $user, ChangeTherapistStatusDTO $dto): User
     {
-        return $this->repository->changeStatus($user, $dto);
+        return DB::transaction(function () use ($user, $dto): User {
+            $updated = $this->repository->changeStatus($user, $dto);
+
+            // Deactivating a therapist removes their future scheduled sessions so they
+            // are not left on the calendar with no one to deliver them.
+            if ($dto->status === UserStatus::INACTIVE->value) {
+                $deletedCount = $this->scheduleService->deleteTherapistFutureSchedules($user);
+
+                Log::info('Deactivated therapist: removed future schedules.', [
+                    'therapist_id' => $user->id,
+                    'deleted_count' => $deletedCount,
+                ]);
+            }
+
+            return $updated;
+        });
     }
 
     /** @return Collection<int, User> */

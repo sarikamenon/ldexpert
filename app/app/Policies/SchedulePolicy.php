@@ -27,11 +27,15 @@ final class SchedulePolicy
 
     public function create(User $user): bool
     {
-        return $user->isTherapist();
+        return $user->isTherapist() || $user->isAdmin();
     }
 
     public function update(User $user, Schedule $schedule): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
         // Covering subs can edit the schedule they're covering so they can adjust
         // session details before delivering it; only the owner may delete it.
         return $this->ownsSchedule($user, $schedule)
@@ -40,7 +44,7 @@ final class SchedulePolicy
 
     public function delete(User $user, Schedule $schedule): bool
     {
-        return $this->ownsSchedule($user, $schedule);
+        return $user->isAdmin() || $this->ownsSchedule($user, $schedule);
     }
 
     public function createSubRequest(User $user, Schedule $schedule): bool

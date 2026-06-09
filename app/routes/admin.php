@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\Reports\SSACaseloadReportController;
 use App\Http\Controllers\Admin\Reports\SSAExpirationReportController;
 use App\Http\Controllers\Admin\Reports\SSAUtilizationReportController;
 use App\Http\Controllers\Admin\ScheduleCalendarController;
+use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\SchoolCalendarEventController;
 use App\Http\Controllers\Admin\SchoolContractController;
 use App\Http\Controllers\Admin\SchoolController;
@@ -173,6 +174,17 @@ Route::middleware('role:admin')
             Route::get('/', [ScheduleCalendarController::class, 'index'])->name('index');
             Route::get('events', [ScheduleCalendarController::class, 'events'])->name('events');
             Route::get('{id}', [ScheduleCalendarController::class, 'show'])->name('show');
+        });
+
+        // Schedule CRUD (admin create/edit/delete on behalf of therapists)
+        Route::prefix('schedule')->name('schedule.')->group(function () {
+            Route::get('create', [ScheduleController::class, 'create'])->name('create');
+            Route::get('therapist-ssas', [ScheduleController::class, 'therapistSsas'])->name('therapist-ssas');
+            Route::post('/', [ScheduleController::class, 'store'])->name('store');
+            Route::get('{id}/edit', [ScheduleController::class, 'edit'])->name('edit');
+            Route::put('{id}', [ScheduleController::class, 'update'])->name('update');
+            Route::delete('{id}', [ScheduleController::class, 'destroy'])->name('destroy');
+            Route::delete('{id}/future-recurring', [ScheduleController::class, 'destroyFutureRecurring'])->name('destroy-future-recurring');
         });
 
         Route::prefix('qglob-requests')->name('qglob-requests.')->group(function () {
