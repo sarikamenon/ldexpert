@@ -239,4 +239,13 @@ class Invoice extends Model
 
         return route('payment.show', $this->payment_token);
     }
+
+    /**
+     * Online payment (the "Pay Now" link) is offered only to private-student
+     * schools. Regular schools receive the invoice without a pay-online link.
+     */
+    public function allowsOnlinePayment(): bool
+    {
+        return $this->school?->is_private_student === true;
+    }
 }
