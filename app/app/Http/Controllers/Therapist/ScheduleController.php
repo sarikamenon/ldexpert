@@ -401,7 +401,7 @@ final class ScheduleController extends Controller
         $dto = CreateScheduleDTO::fromArray($data);
 
         try {
-            $schedule = $this->scheduleService->createSchedule($therapist, $dto)
+            $schedule = $this->scheduleService->createSchedule($therapist, $dto, $therapist->id)
                 ->load(['student', 'service', 'ssa', 'school']);
         } catch (ScheduleOverlapException $e) {
             if ($request->expectsJson()) {
@@ -476,7 +476,7 @@ final class ScheduleController extends Controller
         $dto = UpdateScheduleDTO::fromArray($request->validated());
 
         try {
-            $updated = $this->scheduleService->updateSchedule($therapist, $id, $dto)
+            $updated = $this->scheduleService->updateSchedule($therapist, $id, $dto, $therapist->id)
                 ->load(['student', 'service', 'ssa', 'school', 'activeSubRequest']);
         } catch (ScheduleOverlapException $e) {
             if ($request->expectsJson()) {

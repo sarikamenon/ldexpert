@@ -19,6 +19,7 @@ use App\Models\School;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -235,6 +236,15 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->first();
     }
 
+    /** @param array<int, string> $relations */
+    public function findById(int $scheduleId, array $relations = []): ?Schedule
+    {
+        return Schedule::query()
+            ->with($relations)
+            ->whereKey($scheduleId)
+            ->first();
+    }
+
     /** @return Collection<int, Schedule> */
     public function getRecurringOccurrences(Schedule $parentSchedule): Collection
     {
@@ -262,6 +272,19 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->byRecurringBatch($recurringBatchNumber)
             ->scheduleDateFrom($fromDate)
             ->unbilled()
+            ->orderBy('schedule_date')
+            ->orderBy('start_time')
+            ->get();
+    }
+
+    /** @return Collection<int, Schedule> */
+    public function getFutureScheduledForTherapistOwned(int $therapistId, CarbonInterface $now): Collection
+    {
+        return Schedule::query()
+            ->forTherapistOwned($therapistId)
+            ->scheduled()
+            ->unbilled()
+            ->startingAfter($now)
             ->orderBy('schedule_date')
             ->orderBy('start_time')
             ->get();

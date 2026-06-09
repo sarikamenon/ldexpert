@@ -142,6 +142,54 @@ it('creates a single non-recurring schedule record', function (): void {
         ->and($schedule->billing_status)->toBe(BillingStatus::PENDING);
 });
 
+it('stamps the acting user on created_by and updated_by when an actor id is given', function (): void {
+    $mocks = makeScheduleMocks();
+    $therapist = User::factory()->create();
+    $admin = User::factory()->create();
+    $studentUser = User::factory()->create();
+    StudentProfile::factory()->create(['user_id' => $studentUser->id]);
+    $service = Service::factory()->create(['is_group_service' => false, 'is_direct_service' => true]);
+    $school = School::factory()->create(['non_billable_scheduling' => false]);
+
+    $mocks['repository']->shouldReceive('validateTherapistAccessToSSA')->andReturnTrue();
+    $mocks['repository']->shouldReceive('validateTherapistAccessToStudents')->andReturnTrue();
+    $mocks['repository']->shouldReceive('validateStudentsShareService')->andReturnTrue();
+    $mocks['timezoneService']->shouldReceive('parseUserLocalToUtc')
+        ->andReturnUsing(fn ($dt) => Carbon::parse($dt));
+    $mocks['repository']->shouldReceive('hasOverlap')->andReturnFalse();
+    $mocks['userRepository']->shouldReceive('findByIds')->andReturn(collect([$studentUser]));
+    $mocks['serviceRepository']->shouldReceive('findOrFail')->andReturn($service);
+    $mocks['studentRepository']->shouldReceive('getSchoolIdByUserId')->andReturn($school->id);
+    $mocks['schoolRepository']->shouldReceive('find')->andReturn($school);
+    $mocks['repository']->shouldReceive('create')->once()->andReturnUsing(function (array $data) {
+        $schedule = new Schedule($data);
+        $schedule->id = 1;
+
+        return $schedule;
+    });
+
+    $schedule = makeScheduleService($mocks)->createSchedule($therapist, new CreateScheduleDTO(
+        therapistId: $therapist->id,
+        ssaId: null,
+        serviceId: $service->id,
+        studentIds: [$studentUser->id],
+        scheduleDate: '2025-01-01',
+        startTime: '09:00',
+        endTime: '10:00',
+        recurrenceType: RecurrenceType::NONE,
+        recurrenceEndDate: null,
+        isGroup: false,
+        occurrenceCount: null,
+        occurrenceDates: null,
+        notes: null,
+        locationDetails: null,
+        durationMinutes: 60,
+    ), $admin->id);
+
+    expect($schedule->created_by)->toBe($admin->id)
+        ->and($schedule->updated_by)->toBe($admin->id);
+});
+
 it('marks schedule as non-billable when school non_billable_scheduling flag is enabled', function (): void {
     $mocks = makeScheduleMocks();
     $therapist = User::factory()->create();
