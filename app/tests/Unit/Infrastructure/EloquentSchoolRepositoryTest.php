@@ -97,3 +97,13 @@ test('repository filters by status and metrics', function () {
         'inactive' => 1,
     ]);
 });
+
+test('repository lists school timezones as an id => timezone map', function () {
+    $a = School::factory()->create(['timezone' => 'America/Los_Angeles']);
+    $b = School::factory()->create(['timezone' => 'America/Chicago']);
+
+    $map = $this->repository->listSchoolTimezones();
+
+    expect($map[$a->id])->toBe('America/Los_Angeles')
+        ->and($map[$b->id])->toBe('America/Chicago');
+});

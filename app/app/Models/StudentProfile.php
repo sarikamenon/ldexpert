@@ -90,7 +90,7 @@ class StudentProfile extends Model
     {
         // @phpstan-ignore return.type (Attribute<non-falsy-string> is not covariant with Attribute<string>)
         return Attribute::get(function (): string {
-            return mb_strtoupper(mb_substr((string) $this->first_name, 0, 1)) . '. ' . $this->last_name;
+            return mb_strtoupper(mb_substr((string) $this->first_name, 0, 1)).'. '.$this->last_name;
         });
     }
 
@@ -138,5 +138,14 @@ class StudentProfile extends Model
     public function scopeWithSchool(Builder $query): Builder
     {
         return StudentScope::withSchool($query);
+    }
+
+    /**
+     * @param  Builder<StudentProfile>  $query
+     * @return Builder<StudentProfile>
+     */
+    public function scopeMatchingName(Builder $query, string $firstName, string $lastName): Builder
+    {
+        return StudentScope::matchingName($query, $firstName, $lastName);
     }
 }

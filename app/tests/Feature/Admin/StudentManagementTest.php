@@ -137,9 +137,11 @@ final class StudentManagementTest extends TestCase
             'timezone' => 'America/Los_Angeles',
         ]);
 
-        // A non-private school must NOT appear in the payload.
+        // A non-private school must NOT appear in the contacts payload, but its timezone
+        // MUST appear in the school-timezones map so selecting it fills the timezone field.
         $regularSchool = School::factory()->create([
             'is_private_student' => false,
+            'timezone' => 'America/Chicago',
         ]);
 
         $response = $this->actingAs($this->admin)->get(route('admin.students.create'));
@@ -148,6 +150,14 @@ final class StudentManagementTest extends TestCase
 
         $idsJson = $response->viewData('privateStudentIdsJson');
         $contactsJson = $response->viewData('privateFamilyContactsJson');
+        $timezonesJson = $response->viewData('schoolTimezonesJson');
+
+        $this->assertIsString($timezonesJson);
+        $timezones = json_decode($timezonesJson, true);
+
+        // Both private and regular schools expose their timezone here.
+        $this->assertSame('America/Los_Angeles', $timezones[$privateFamily->id]);
+        $this->assertSame('America/Chicago', $timezones[$regularSchool->id]);
 
         $this->assertIsString($idsJson);
         $this->assertIsString($contactsJson);

@@ -14,6 +14,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
+use App\Domain\Student\Services\DuplicateStudentService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Student\Services\StudentImportListService;
@@ -26,6 +27,7 @@ use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\StoreStudentImportDTO;
+use App\DTOs\Student\Duplicate\DuplicateCandidateDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
@@ -56,6 +58,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -65,6 +68,7 @@ final class StudentController extends Controller
 
     public function __construct(
         private readonly StudentService $studentService,
+        private readonly DuplicateStudentService $duplicateStudentService,
         private readonly StudentImportService $importService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
@@ -203,6 +207,12 @@ final class StudentController extends Controller
         $this->authorize('create', StudentProfile::class);
 
         $validated = $request->validated();
+
+        $duplicateRedirect = $this->duplicateGuard($request, $validated);
+        if ($duplicateRedirect !== null) {
+            return $duplicateRedirect;
+        }
+
         $validated['password'] = Str::password(12);
 
         $dto = CreateStudentDTO::fromArray($validated);
@@ -386,12 +396,53 @@ final class StudentController extends Controller
     {
         $this->authorize('update', StudentProfile::class);
 
-        $dto = UpdateStudentDTO::fromArray($request->validated());
+        $validated = $request->validated();
+
+        $duplicateRedirect = $this->duplicateGuard($request, $validated, $student->id);
+        if ($duplicateRedirect !== null) {
+            return $duplicateRedirect;
+        }
+
+        $dto = UpdateStudentDTO::fromArray($validated);
         $this->studentService->update($student, $dto);
 
         return redirect()
             ->route('admin.students.index')
             ->with('status', 'Student information updated successfully.');
+    }
+
+    /**
+     * Run the duplicate name-gate check. Returns a redirect-back-with-matches when a
+     * possible duplicate exists and the admin has not acknowledged it; null otherwise
+     * (no match, acknowledged, or the check itself failed — never block the save).
+     *
+     * @param  array<string, mixed>  $validated
+     */
+    private function duplicateGuard(Request $request, array $validated, ?int $excludeUserId = null): ?RedirectResponse
+    {
+        if ($request->input('duplicate_acknowledged') === '1') {
+            return null;
+        }
+
+        try {
+            $candidate = DuplicateCandidateDTO::fromArray($validated);
+            $matches = $this->duplicateStudentService->findMatches($candidate, $excludeUserId);
+
+            if ($matches->isEmpty()) {
+                return null;
+            }
+
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('duplicateMatches', $matches->map(static fn ($match) => $match->toArray())->all());
+        } catch (\Throwable $e) {
+            Log::error('StudentController: duplicate check failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     public function updateStatus(ChangeStudentStatusRequest $request, User $student): JsonResponse
@@ -643,6 +694,8 @@ final class StudentController extends Controller
             'genderOptions' => ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
             'preselectedSchoolId' => null,
             'preselectedTimezone' => null,
+            'duplicateMatchesJson' => (string) json_encode(session('duplicateMatches', [])),
+            'schoolTimezonesJson' => (string) json_encode($this->schoolRepository->listSchoolTimezones()->all()),
             'privateStudentIdsJson' => (string) json_encode($privateFamilies->pluck('id')->values()->all()),
             'privateFamilyContactsJson' => (string) json_encode(
                 $privateFamilies->mapWithKeys(fn (School $s) => [

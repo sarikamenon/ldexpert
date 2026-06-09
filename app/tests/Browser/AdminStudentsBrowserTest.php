@@ -175,4 +175,51 @@ final class AdminStudentsBrowserTest extends DuskTestCase
                 ->assertPathIs('/admin/students');
         });
     }
+
+    public function test_duplicate_warning_confirm_creates_student(): void
+    {
+        // setUp() already created "Browser Student" at $this->school.
+        $this->browse(function (Browser $browser) {
+            $browser->loginAs($this->admin)
+                ->visit('/admin/students/create')
+                ->type('@student-first-name', 'Browser')
+                ->type('@student-last-name', 'Student')
+                ->type('@student-username', 'browser.dup.confirm')
+                ->type('@student-email', 'dup.confirm@example.com')
+                ->type('@student-date-of-birth', '2012-05-05')
+                ->select('timezone', 'America/New_York')
+                ->select('school_id', (string) $this->school->id)
+                ->press('Create Student')
+                // Server redirects back; the confirm dialog appears on reload.
+                ->waitForText('Possible duplicate student')
+                ->assertSee('Browser Student')
+                ->press('Create anyway')
+                ->waitForLocation('/admin/students')
+                ->assertSee('Student added successfully.');
+        });
+
+        $this->assertDatabaseHas('users', ['email' => 'dup.confirm@example.com']);
+    }
+
+    public function test_duplicate_warning_cancel_keeps_admin_on_form(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->loginAs($this->admin)
+                ->visit('/admin/students/create')
+                ->type('@student-first-name', 'Browser')
+                ->type('@student-last-name', 'Student')
+                ->type('@student-username', 'browser.dup.cancel')
+                ->type('@student-email', 'dup.cancel@example.com')
+                ->type('@student-date-of-birth', '2012-05-05')
+                ->select('timezone', 'America/New_York')
+                ->select('school_id', (string) $this->school->id)
+                ->press('Create Student')
+                ->waitForText('Possible duplicate student')
+                ->press('Go back')
+                ->pause(500)
+                ->assertPathIs('/admin/students/create');
+        });
+
+        $this->assertDatabaseMissing('users', ['email' => 'dup.cancel@example.com']);
+    }
 }
