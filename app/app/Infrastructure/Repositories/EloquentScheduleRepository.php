@@ -504,8 +504,31 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forStudent($student)
             ->with(['therapist', 'service', 'ssa', 'school']);
 
-        if ($filters->date) {
-            $query->whereDate('schedule_date', $filters->date);
+        // The user picks From/To in the logged-in viewer's timezone, so convert
+        // each bound to its UTC day boundary and filter on the paired instant
+        // TIMESTAMP(schedule_date, start_time). Comparing the raw UTC date
+        // column against local dates would drop or pull in boundary-day rows
+        // for viewers far from UTC.
+        // PERF NOTE: the TIMESTAMP() expression is not indexable, so these
+        // bounds force a filesort. Acceptable while per-student schedule lists
+        // stay small; if this grows, add a stored generated `start_at_utc`
+        // column and index it (see the therapist daily-list note above).
+        $viewerTz = $filters->viewerTimezone;
+
+        if ($filters->dateFrom) {
+            [$startUtc] = $this->timezoneService->userDayUtcRange($filters->dateFrom, null, $viewerTz);
+            $query->whereRaw(
+                'TIMESTAMP(schedule_date, start_time) >= ?',
+                [$startUtc->format('Y-m-d H:i:s')],
+            );
+        }
+
+        if ($filters->dateTo) {
+            [, $endUtc] = $this->timezoneService->userDayUtcRange($filters->dateTo, null, $viewerTz);
+            $query->whereRaw(
+                'TIMESTAMP(schedule_date, start_time) <= ?',
+                [$endUtc->format('Y-m-d H:i:s')],
+            );
         }
 
         if ($filters->status) {

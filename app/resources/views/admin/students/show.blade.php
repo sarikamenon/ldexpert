@@ -183,9 +183,10 @@
         <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []"
             :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($scheduleFilters))
-        <x-admin.schedules-list :schedules="$schedules ?? collect()" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
+        <x-admin.schedules-list :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
             :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail"
-            :datatable-url="$scheduleDatatableUrl ?? null" :student-id="$scheduleStudentId ?? null" />
+            :datatable-url="$scheduleDatatableUrl ?? null" :student-id="$scheduleStudentId ?? null"
+            :default-date-from="$scheduleDefaultDateFrom ?? null" :default-date-to="$scheduleDefaultDateTo ?? null" />
     @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
         <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
             :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />

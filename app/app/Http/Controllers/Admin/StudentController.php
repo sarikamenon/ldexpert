@@ -23,6 +23,7 @@ use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\TherapistService;
+use App\Domain\Time\UserTimezoneService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
@@ -81,6 +82,7 @@ final class StudentController extends Controller
         private readonly PositionCatalogService $positionCatalogService,
         private readonly StudentImportListService $importListService,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /** Column index => allowed order column for student imports list. */
@@ -162,13 +164,20 @@ final class StudentController extends Controller
             abort(403, 'Student mismatch.');
         }
 
+        // Resolve the logged-in admin's timezone once; both the date-range
+        // filter and the displayed rows render against this viewer timezone so
+        // they stay consistent at day boundaries.
+        $viewerTimezone = $this->timezoneService->resolveTimezone($request->user());
+
         $filters = ScheduleFilterDTO::fromRequest([
             'student_id' => $student->id,
-            'date' => $request->input('filter_date'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
             'status' => $request->input('filter_status'),
             'billing_status' => $request->input('filter_billing_status'),
             'ssa_id' => $request->input('filter_ssa_id'),
             'therapist_id' => $request->input('filter_therapist_id'),
+            'viewer_timezone' => $viewerTimezone,
         ]);
         $params = DataTablesRequest::fromRequest($request, self::STUDENT_SCHEDULES_ORDER_WHITELIST);
         $result = $this->scheduleService->listForDataTablesForStudent($student, $filters, $params);
@@ -178,7 +187,7 @@ final class StudentController extends Controller
             $result['recordsTotal'],
             $result['recordsFiltered'],
             $result['rows'],
-            static fn ($schedule) => ScheduleRowTransformer::transform($schedule),
+            static fn ($schedule) => ScheduleRowTransformer::transform($schedule, $viewerTimezone),
         );
     }
 
@@ -349,8 +358,16 @@ final class StudentController extends Controller
             $viewData['datatableUrl'] = route('admin.therapists.data');
             $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'schedule') {
-            $viewData['schedules'] = collect();
-            $viewData['scheduleFilters'] = $request->query();
+            $defaultDateFrom = now()->toDateString();
+            $defaultDateTo = now()->addDays(7)->toDateString();
+
+            $scheduleFilters = $request->query();
+            $scheduleFilters['date_from'] ??= $defaultDateFrom;
+            $scheduleFilters['date_to'] ??= $defaultDateTo;
+
+            $viewData['scheduleFilters'] = $scheduleFilters;
+            $viewData['scheduleDefaultDateFrom'] = $defaultDateFrom;
+            $viewData['scheduleDefaultDateTo'] = $defaultDateTo;
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
             $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);

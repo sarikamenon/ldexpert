@@ -23,6 +23,7 @@ final class ScheduleFilterDTO
         public readonly ?int $therapistId = null,
         public readonly ?array $therapistIds = null,
         public readonly ?array $studentIds = null,
+        public readonly ?string $viewerTimezone = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -55,6 +56,9 @@ final class ScheduleFilterDTO
             studentIds: isset($data['student_ids']) && is_array($data['student_ids']) && $data['student_ids'] !== []
                 ? array_map('intval', $data['student_ids'])
                 : null,
+            viewerTimezone: isset($data['viewer_timezone']) && $data['viewer_timezone'] !== ''
+                ? (string) $data['viewer_timezone']
+                : null,
         );
     }
 
@@ -74,6 +78,7 @@ final class ScheduleFilterDTO
             'therapist_id' => $this->therapistId,
             'therapist_ids' => $this->therapistIds,
             'student_ids' => $this->studentIds,
+            'viewer_timezone' => $this->viewerTimezone,
         ];
     }
 }
