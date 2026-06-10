@@ -349,6 +349,15 @@ final class InvoiceService
                 throw new \InvalidArgumentException('No invoice email address available for sending invoice.');
             }
 
+            // Persist the resolved recipient onto the invoice snapshot so the show
+            // page, PDFs ("Bill To"), and future resends reflect what was actually
+            // sent — covers the case where the school had no invoice email at
+            // creation and the admin supplied or corrected it on send.
+            if ($invoice->school_invoice_email !== $recipientEmail) {
+                $invoice->school_invoice_email = $recipientEmail;
+                $invoice->save();
+            }
+
             // Generate payment token for online payment link (private-student schools only)
             $paymentUrl = null;
             if ((float) $invoice->total > 0 && $invoice->allowsOnlinePayment()) {
@@ -398,6 +407,13 @@ final class InvoiceService
         }
         if ($invoice->isZeroAmount()) {
             throw new \InvalidArgumentException('Zero amount invoices cannot be sent.');
+        }
+
+        // Keep the invoice snapshot aligned with the corrected recipient so the
+        // show page, PDFs, and later resends reflect the address actually used.
+        if ($dto->email && $invoice->school_invoice_email !== $dto->email) {
+            $invoice->school_invoice_email = $dto->email;
+            $invoice->save();
         }
 
         // Reuse existing payment token — do NOT regenerate (private-student schools only)

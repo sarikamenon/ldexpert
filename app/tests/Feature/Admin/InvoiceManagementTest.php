@@ -378,6 +378,71 @@ it('sends invoice via email', function () {
         ->and($invoice->fresh()->sent_by_id)->toBe($admin->id);
 });
 
+it('sends a draft with a missing email snapshot using the address supplied on send', function () {
+    Mail::fake();
+
+    $admin = invoiceAdminUser();
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT->value,
+        'school_invoice_email' => null,
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.send', $invoice), [
+            'email' => 'typed@school.com',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Invoice sent successfully.');
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
+        return $mail->hasTo('typed@school.com');
+    });
+
+    // The supplied address is persisted onto the invoice snapshot.
+    expect($invoice->fresh()->school_invoice_email)->toBe('typed@school.com')
+        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::SENT);
+});
+
+it('persists a corrected email onto the snapshot when resending', function () {
+    Mail::fake();
+
+    $admin = invoiceAdminUser();
+    $invoice = Invoice::factory()->sent()->create([
+        'school_invoice_email' => 'old@school.com',
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.resend-email', $invoice), [
+            'email' => 'corrected@school.com',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Invoice email resent successfully.');
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
+        return $mail->hasTo('corrected@school.com');
+    });
+
+    expect($invoice->fresh()->school_invoice_email)->toBe('corrected@school.com');
+});
+
+it('shows the send modal with a recipient email field on a draft invoice', function () {
+    $admin = invoiceAdminUser();
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT->value,
+        'school_invoice_email' => null,
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.invoices.show', $invoice))
+        ->assertOk()
+        ->assertSee('open-send-email-modal')
+        ->assertSee('id="send-email-form"', false)
+        ->assertSee('name="email"', false);
+});
+
 it('prevents admin from sending zero amount invoice', function () {
     Mail::fake();
 
