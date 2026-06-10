@@ -31,6 +31,9 @@
                 <div style="margin:20px 0; padding:16px; border-radius:10px; background:#fef2f2; border:1px solid #fecaca;">
                     <p style="margin:0 0 8px; color:#dc2626; font-weight:600;">Overdue Invoice:</p>
                     <p style="margin:0 0 4px; color:#991b1b;">
+                        <strong>Invoice Number:</strong> {{ $invoice->invoice_number }}
+                    </p>
+                    <p style="margin:0 0 4px; color:#991b1b;">
                         <strong>Amount Due:</strong> ${{ number_format((float) $invoice->total, 2) }}
                     </p>
                     <p style="margin:0 0 4px; color:#991b1b;">

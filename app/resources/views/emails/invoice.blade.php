@@ -32,6 +32,9 @@
                     style="margin:20px 0; padding:16px; border-radius:10px; background:#f0f9ff; border:1px solid #bae6fd;">
                     <p style="margin:0 0 8px; color:#0369a1; font-weight:600;">Invoice Summary:</p>
                     <p style="margin:0 0 4px; color:#0369a1;">
+                        <strong>Invoice Number:</strong> {{ $invoice->invoice_number }}
+                    </p>
+                    <p style="margin:0 0 4px; color:#0369a1;">
                         <strong>Billing Period:</strong>
                         {{ $invoice->billing_period_start->format(config('display.date_short')) }} -
                         {{ $invoice->billing_period_end->format(config('display.date')) }}

@@ -560,7 +560,7 @@ it('prevents creating invoice with already invoiced session logs', function () {
         ->assertSessionHasErrors();
 });
 
-it('renders the invoice email with a date-range subject, new payment copy, and no invoice number', function () {
+it('renders the invoice email with a date-range subject, new payment copy, and the invoice number in the summary', function () {
     $invoice = Invoice::factory()->create([
         'billing_period_start' => '2026-06-01',
         'billing_period_end' => '2026-06-30',
@@ -571,6 +571,7 @@ it('renders the invoice email with a date-range subject, new payment copy, and n
 
     $mail = new \App\Mail\InvoiceMail($invoice, null, 'https://pay.example.com/abc');
 
+    // The subject stays date-range only; the number lives in the body summary.
     expect($mail->envelope()->subject)->toBe('Invoice - June 1 - June 30');
 
     $html = $mail->render();
@@ -582,7 +583,7 @@ it('renders the invoice email with a date-range subject, new payment copy, and n
         ->toContain('Warmly,')
         ->toContain('The LD Expert Team')
         ->toContain('The invoice includes 0 session(s) totaling')
-        ->not->toContain('INV-20260610-003')
+        ->toContain('INV-20260610-003')
         // The date-range heading was removed from the body.
         ->not->toContain('<h1');
 });
@@ -611,7 +612,7 @@ it('counts line items, not session logs, on an advance invoice email', function 
     expect($html)->toContain('The invoice includes 1 scheduled session(s) totaling');
 });
 
-it('renders the reminder email aligned with the main invoice email (no number, shared contact/sign-off)', function () {
+it('renders the reminder email aligned with the main invoice email (shared contact/sign-off, number in summary)', function () {
     $invoice = Invoice::factory()->create([
         'invoice_number' => 'INV-20260610-009',
         'due_date' => '2026-07-09',
@@ -631,10 +632,10 @@ it('renders the reminder email aligned with the main invoice email (no number, s
         ->toContain('706 Mesa Ridge, San Antonio, TX 78258')
         ->toContain('Warmly,')
         ->toContain('The LD Expert Team')
-        ->not->toContain('INV-20260610-009');
+        ->toContain('INV-20260610-009');
 });
 
-it('renders the overdue email aligned with the main invoice email (no number, shared contact/sign-off)', function () {
+it('renders the overdue email aligned with the main invoice email (shared contact/sign-off, number in summary)', function () {
     $invoice = Invoice::factory()->create([
         'invoice_number' => 'INV-20260610-010',
         'due_date' => '2026-07-09',
@@ -653,5 +654,5 @@ it('renders the overdue email aligned with the main invoice email (no number, sh
         ->toContain('@StephanieTsapakis')
         ->toContain('Warmly,')
         ->toContain('The LD Expert Team')
-        ->not->toContain('INV-20260610-010');
+        ->toContain('INV-20260610-010');
 });
