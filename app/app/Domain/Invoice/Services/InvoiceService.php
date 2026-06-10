@@ -443,6 +443,33 @@ final class InvoiceService
         ]);
     }
 
+    /**
+     * Backfill the invoice's school invoice_email from an address supplied at
+     * send time, but only when the school has none yet — so future invoices for
+     * that school inherit it instead of hitting the same missing-email dead-end.
+     * A school that already has an invoice email is left untouched (the typed
+     * address was a one-off override, not a correction to persist school-wide).
+     *
+     * @return bool Whether the school record was updated.
+     */
+    public function backfillSchoolInvoiceEmail(Invoice $invoice, ?string $email): bool
+    {
+        if (! $email) {
+            return false;
+        }
+
+        $school = $invoice->school;
+
+        if ($school === null || filled($school->invoice_email)) {
+            return false;
+        }
+
+        $school->invoice_email = $email;
+        $school->save();
+
+        return true;
+    }
+
     public function find(int $id): ?Invoice
     {
         return $this->repository->find($id);

@@ -49,7 +49,7 @@
                 {{-- The send modal carries the recipient email field, so the admin can
                      supply or correct the address when the snapshot is missing
                      (e.g. the school had no invoice email when the invoice was created). --}}
-                <x-ui::button type="button" variant="success" id="open-send-email-button"
+                <x-ui::button type="button" variant="success" id="open-send-email-button" x-data=""
                     data-is-private-family="{{ ($invoice->school?->is_private_student ?? false) ? '1' : '0' }}"
                     data-invoice-total="{{ $invoice->total }}"
                     data-attach-sessions-url="{{ route('admin.invoices.attach-sessions', $invoice) }}"
@@ -364,17 +364,6 @@
                                     aria-describedby="send_email_help"
                                     value="{{ old('email', $invoice->school_invoice_email) }}" required />
                                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                            </div>
-
-                            <div>
-                                <x-input-label for="send_message" value="Custom Message" />
-                                <p class="mt-1 text-xs text-foreground/60" id="send_message_help">
-                                    Optional message to include in the email body. Leave blank to use the default.
-                                </p>
-                                <textarea id="send_message" name="message" rows="3"
-                                    aria-describedby="send_message_help"
-                                    class="mt-1 block w-full border-border rounded-md shadow-sm focus:ring-2 focus:ring-ring">{{ old('message') }}</textarea>
-                                <x-input-error :messages="$errors->get('message')" class="mt-2" />
                             </div>
                         </div>
 
