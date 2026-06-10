@@ -139,7 +139,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
     {
         return School::query()
             ->active()
-            ->select(['id', 'display_name'])
+            ->select(['id', 'display_name', 'is_private_student'])
             ->orderBy('display_name')
             ->get();
     }

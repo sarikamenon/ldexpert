@@ -37,6 +37,7 @@ final class CreateInvoiceRequest extends FormRequest
             'school_id' => ['required', 'integer', Rule::exists('schools', 'id')],
             'invoice_number' => ['nullable', 'string', 'max:255', 'regex:/^[A-Z0-9\-]+$/', Rule::unique('invoices', 'invoice_number')],
             'invoice_date' => ['required', 'date'],
+            'due_date' => ['nullable', 'date', 'after_or_equal:invoice_date'],
             'billing_period_start' => ['required', 'date'],
             'billing_period_end' => ['required', 'date', 'after_or_equal:billing_period_start'],
             'session_log_ids' => ['nullable', 'array'],

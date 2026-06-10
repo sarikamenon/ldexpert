@@ -7,6 +7,7 @@ namespace App\Mail;
 use App\Models\Invoice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
+use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -23,14 +24,21 @@ class InvoiceMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $dateRange = $this->invoice->billing_period_start->format(config('display.date_short_month')).' - '
+            .$this->invoice->billing_period_end->format(config('display.date_short_month'));
+
         return new Envelope(
-            subject: "Invoice {$this->invoice->invoice_number} - {$this->invoice->school_display_name}",
+            from: new Address(
+                config('invoice.from_address'),
+                config('invoice.from_name'),
+            ),
+            subject: "Invoice - {$dateRange}",
         );
     }
 
     public function content(): Content
     {
-        $this->invoice->loadMissing('school');
+        $this->invoice->loadMissing(['school', 'sessionLogs', 'lineItems']);
 
         return new Content(
             view: 'emails.invoice',

@@ -14,6 +14,7 @@ use App\Enums\BillingScheduleType;
 use App\Enums\GenerationDayType;
 use App\Models\BillingSchedule;
 use App\Models\BillingScheduleRun;
+use App\Models\BillingSetting;
 use App\Models\School;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -57,6 +58,69 @@ final class BillingScheduleService
         return $school->is_private_student === true
             ? BillingMode::ADVANCE
             : BillingMode::STANDARD;
+    }
+
+    /**
+     * Resolve a school's effective payment-terms days for invoice due dates.
+     *
+     * Prefers the school's school_invoice BillingSchedule value; falls back to
+     * the mode-specific billing-settings default (advance vs standard) when the
+     * school has no schedule, matching resolveSchoolBillingMode()'s fallback.
+     */
+    public function resolveSchoolPaymentTermsDays(School $school): int
+    {
+        $schedule = $this->getEntityConfig(
+            School::class,
+            $school->id,
+            BillingScheduleType::SCHOOL_INVOICE->value,
+        );
+
+        if ($schedule !== null) {
+            return $schedule->payment_terms_days;
+        }
+
+        $settings = BillingSetting::getSettings();
+
+        return $this->resolveSchoolBillingMode($school) === BillingMode::ADVANCE
+            ? $settings->advance_default_payment_terms_days
+            : $settings->standard_default_payment_terms_days;
+    }
+
+    /**
+     * Batch-resolve effective payment-terms days for many schools without N+1:
+     * one schedules query plus a single settings read.
+     *
+     * @param  Collection<int, School>  $schools  Each must carry id + is_private_student.
+     * @return array<int, int> Map of school id => payment-terms days.
+     */
+    public function resolveSchoolPaymentTermsDaysMap(Collection $schools): array
+    {
+        if ($schools->isEmpty()) {
+            return [];
+        }
+
+        $schedules = BillingSchedule::query()
+            ->forSchools()
+            ->where('schedule_type', BillingScheduleType::SCHOOL_INVOICE->value)
+            ->whereIn('schedulable_id', $schools->pluck('id'))
+            ->get()
+            ->keyBy('schedulable_id');
+
+        $settings = BillingSetting::getSettings();
+
+        return $schools->mapWithKeys(function (School $school) use ($schedules, $settings): array {
+            $schedule = $schedules->get($school->id);
+
+            if ($schedule !== null) {
+                return [$school->id => $schedule->payment_terms_days];
+            }
+
+            $days = $school->is_private_student === true
+                ? $settings->advance_default_payment_terms_days
+                : $settings->standard_default_payment_terms_days;
+
+            return [$school->id => $days];
+        })->all();
     }
 
     /**

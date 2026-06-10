@@ -4,19 +4,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Invoice {{ $invoice->invoice_number }}</title>
+    <title>Invoice</title>
 </head>
 
 <body style="font-family: 'Inter', ui-sans-serif, system-ui; background:#f5f7fb; padding:24px; color:#0f172a;">
     <table width="100%" cellpadding="0" cellspacing="0"
         style="max-width:640px; margin:0 auto; background:#ffffff; border-radius:12px; border:1px solid #e2e8f0;">
         <tr>
-            <td style="padding:28px 28px 12px 28px;">
-                <h1 style="margin:0; font-size:22px; color:#0f172a;">Invoice {{ $invoice->invoice_number }}</h1>
-            </td>
-        </tr>
-        <tr>
-            <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
+            <td style="padding:28px 28px 0 28px; line-height:1.5; color:#475569;">
                 @php
                     $defaultSalutation = ($invoice->school?->is_private_student ?? false)
                         ? 'Family contact'
@@ -27,10 +22,10 @@
                 </p>
 
                 <p style="margin:0 0 16px;">
-                    Please find attached invoice <strong>{{ $invoice->invoice_number }}</strong> for services provided
+                    Please find attached the invoice for services provided
                     during the billing period of
-                    <strong>{{ $invoice->billing_period_start->format('M d') }} -
-                        {{ $invoice->billing_period_end->format('M d, Y') }}</strong>.
+                    <strong>{{ $invoice->billing_period_start->format(config('display.date_short')) }} -
+                        {{ $invoice->billing_period_end->format(config('display.date')) }}</strong>.
                 </p>
 
                 <div
@@ -41,14 +36,14 @@
                     </p>
                     <p style="margin:0 0 4px; color:#0369a1;">
                         <strong>Billing Period:</strong>
-                        {{ $invoice->billing_period_start->format('M d') }} -
-                        {{ $invoice->billing_period_end->format('M d, Y') }}
+                        {{ $invoice->billing_period_start->format(config('display.date_short')) }} -
+                        {{ $invoice->billing_period_end->format(config('display.date')) }}
                     </p>
                     <p style="margin:0 0 4px; color:#0369a1;">
                         <strong>Total Amount:</strong> ${{ number_format($invoice->total, 2) }}
                     </p>
                     <p style="margin:0; color:#0369a1;">
-                        <strong>Due Date:</strong> {{ $invoice->due_date->format('M d, Y') }}
+                        <strong>Due Date:</strong> {{ $invoice->due_date->format(config('display.date')) }}
                     </p>
                 </div>
 
@@ -70,25 +65,33 @@
                     </p>
                 @endif
 
+                @if ($invoice->isAdvanceMode())
+                    <p style="margin:0 0 16px;">
+                        The invoice includes {{ $invoice->lineItems->count() }} scheduled session(s) totaling
+                        ${{ number_format($invoice->subtotal, 2) }}.
+                    </p>
+                @else
+                    <p style="margin:0 0 16px;">
+                        The invoice includes {{ $invoice->sessionLogs->count() }} session(s) totaling
+                        ${{ number_format($invoice->subtotal, 2) }}.
+                    </p>
+                @endif
+
                 <p style="margin:0 0 16px;">
-                    The invoice includes {{ $invoice->sessionLogs->count() }} session(s) totaling
-                    ${{ number_format($invoice->subtotal, 2) }}.
+                    Please pay your invoice by using the link above. If you have any questions, please contact us at
+                    <a href="mailto:{{ config('invoice.contact_email') }}"
+                        style="color:#5563b8;">{{ config('invoice.contact_email') }}</a>.
                 </p>
 
                 <p style="margin:0 0 16px;">
-                    Please remit payment by the due date. If you have any questions about this invoice, please contact
-                    us at
-                    <a href="mailto:{{ $invoice->company_email ?? 'support@nova.com' }}"
-                        style="color:#5563b8;">{{ $invoice->company_email ?? 'our office' }}</a>.
+                    To avoid a convenience fee, you can also pay via Venmo or check.<br>
+                    Venmo: {{ config('invoice.venmo_handle') }}<br>
+                    Mailing address for check payment: {{ config('invoice.check_mailing_address') }}
                 </p>
 
                 <p style="margin:24px 0 0;">
-                    Thank you for your business!
-                </p>
-
-                <p style="margin:24px 0 0;">
-                    Best regards,<br>
-                    {{ $invoice->company_name }}
+                    Warmly,<br>
+                    The LD Expert Team
                 </p>
             </td>
         </tr>

@@ -23,9 +23,7 @@ final class InvoiceRowTransformer
         $schoolName = $invoice->school_display_name ?? '—';
         $schoolCell = '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($schoolName).'</a>';
 
-        $period = $invoice->billing_period_start && $invoice->billing_period_end
-            ? $invoice->billing_period_start->format('M d').' - '.$invoice->billing_period_end->format('M d, Y')
-            : '—';
+        $period = $invoice->billing_period_start->format('M d').' - '.$invoice->billing_period_end->format('M d, Y');
 
         $total = '$'.number_format((float) $invoice->total, 2);
 
