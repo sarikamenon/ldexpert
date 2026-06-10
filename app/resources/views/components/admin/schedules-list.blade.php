@@ -10,13 +10,12 @@
     'datatableUrl' => null,
     /** Student ID for filter_student_id in data request (when datatableUrl is set). */
     'studentId' => null,
+    /** Default From/To bounds (also the clear-all reset target). */
+    'defaultDateFrom' => null,
+    'defaultDateTo' => null,
 ])
 
 <x-ui::card class="p-6 space-y-6">
-    @php
-        $defaultDateFrom = now()->toDateString();
-        $defaultDateTo = now()->addDays(7)->toDateString();
-    @endphp
     <div class="space-y-2">
     <div class="flex flex-wrap items-center gap-3 justify-between">
         <form method="GET" id="scheduleFiltersForm" class="flex flex-wrap items-center gap-3">

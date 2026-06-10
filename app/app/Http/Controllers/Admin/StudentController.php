@@ -350,12 +350,17 @@ final class StudentController extends Controller
             $viewData['datatableUrl'] = route('admin.therapists.data');
             $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'schedule') {
+            $defaultDateFrom = now()->toDateString();
+            $defaultDateTo = now()->addDays(7)->toDateString();
+
             $scheduleFilters = $request->query();
-            $scheduleFilters['date_from'] ??= now()->toDateString();
-            $scheduleFilters['date_to'] ??= now()->addDays(7)->toDateString();
+            $scheduleFilters['date_from'] ??= $defaultDateFrom;
+            $scheduleFilters['date_to'] ??= $defaultDateTo;
 
             $viewData['schedules'] = collect();
             $viewData['scheduleFilters'] = $scheduleFilters;
+            $viewData['scheduleDefaultDateFrom'] = $defaultDateFrom;
+            $viewData['scheduleDefaultDateTo'] = $defaultDateTo;
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
             $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);
