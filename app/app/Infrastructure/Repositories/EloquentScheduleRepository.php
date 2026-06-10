@@ -504,8 +504,12 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forStudent($student)
             ->with(['therapist', 'service', 'ssa', 'school']);
 
-        if ($filters->date) {
-            $query->whereDate('schedule_date', $filters->date);
+        if ($filters->dateFrom && $filters->dateTo) {
+            $query->betweenScheduleDates($filters->dateFrom, $filters->dateTo);
+        } elseif ($filters->dateFrom) {
+            $query->where('schedule_date', '>=', $filters->dateFrom);
+        } elseif ($filters->dateTo) {
+            $query->where('schedule_date', '<=', $filters->dateTo);
         }
 
         if ($filters->status) {

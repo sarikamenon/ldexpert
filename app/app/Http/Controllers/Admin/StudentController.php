@@ -164,7 +164,8 @@ final class StudentController extends Controller
 
         $filters = ScheduleFilterDTO::fromRequest([
             'student_id' => $student->id,
-            'date' => $request->input('filter_date'),
+            'date_from' => $request->input('filter_date_from'),
+            'date_to' => $request->input('filter_date_to'),
             'status' => $request->input('filter_status'),
             'billing_status' => $request->input('filter_billing_status'),
             'ssa_id' => $request->input('filter_ssa_id'),
@@ -349,8 +350,12 @@ final class StudentController extends Controller
             $viewData['datatableUrl'] = route('admin.therapists.data');
             $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'schedule') {
+            $scheduleFilters = $request->query();
+            $scheduleFilters['date_from'] ??= now()->toDateString();
+            $scheduleFilters['date_to'] ??= now()->addDays(7)->toDateString();
+
             $viewData['schedules'] = collect();
-            $viewData['scheduleFilters'] = $request->query();
+            $viewData['scheduleFilters'] = $scheduleFilters;
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
             $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);
