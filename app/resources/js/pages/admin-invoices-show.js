@@ -6,21 +6,24 @@
 import { actionAlert, confirmDialog } from '../common/sweetalert';
 
 document.addEventListener('DOMContentLoaded', function () {
-    const sendForm = document.querySelector('form[action*="/send"]');
-    if (sendForm && !sendForm.action.includes('resend')) {
-        sendForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
+    // The Send button opens the send modal (which carries the recipient email
+    // field). A $0.00 invoice can never be sent, so intercept the click and steer
+    // the admin to attach sessions instead of opening the modal.
+    const sendButton = document.getElementById('open-send-email-button');
+    if (sendButton) {
+        sendButton.addEventListener(
+            'click',
+            async function (e) {
+                const invoiceTotal = Number.parseFloat(sendButton.dataset.invoiceTotal ?? '0');
+                if (invoiceTotal > 0) {
+                    return;
+                }
 
-            // Reset the Alpine loading state set by x-on:submit so the button
-            // does not stay stuck while a dialog is open or after it is dismissed.
-            const sendFormData = window.Alpine?.$data(sendForm);
-            if (sendFormData) {
-                sendFormData.loading = false;
-            }
+                // Stop Alpine's $dispatch from opening the modal for a $0 invoice.
+                e.preventDefault();
+                e.stopImmediatePropagation();
 
-            const invoiceTotal = Number.parseFloat(sendForm.dataset.invoiceTotal ?? '0');
-            if (invoiceTotal <= 0) {
-                const attachSessionsUrl = sendForm.dataset.attachSessionsUrl ?? '';
+                const attachSessionsUrl = sendButton.dataset.attachSessionsUrl ?? '';
 
                 const result = await actionAlert({
                     title: 'Cannot send this invoice',
@@ -34,10 +37,17 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (result.isConfirmed && attachSessionsUrl) {
                     window.location.href = attachSessionsUrl;
                 }
-                return;
-            }
+            },
+            true
+        );
+    }
 
-            const isFamily = sendForm.getAttribute('data-is-private-family') === '1';
+    const sendForm = document.getElementById('send-email-form');
+    if (sendForm) {
+        sendForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const isFamily = sendButton?.getAttribute('data-is-private-family') === '1';
             const recipientEntity = isFamily ? 'family' : 'school';
 
             const result = await confirmDialog({

@@ -227,9 +227,14 @@ final class InvoiceController extends Controller
             $user = $request->user();
             $this->invoiceService->sendInvoice($user, $invoice, $dto);
 
+            $backfilled = $this->invoiceService->backfillSchoolInvoiceEmail($invoice, $dto->email);
+            $message = $backfilled
+                ? 'Invoice sent successfully. Saved this email to the school/family for future invoices.'
+                : 'Invoice sent successfully.';
+
             return redirect()
                 ->route('admin.invoices.show', $invoice)
-                ->with('success', 'Invoice sent successfully.');
+                ->with('success', $message);
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()
@@ -252,9 +257,14 @@ final class InvoiceController extends Controller
             $user = $request->user();
             $this->invoiceService->resendInvoiceEmail($user, $invoice, $dto);
 
+            $backfilled = $this->invoiceService->backfillSchoolInvoiceEmail($invoice, $dto->email);
+            $message = $backfilled
+                ? 'Invoice email resent successfully. Saved this email to the school/family for future invoices.'
+                : 'Invoice email resent successfully.';
+
             return redirect()
                 ->route('admin.invoices.show', $invoice)
-                ->with('success', 'Invoice email resent successfully.');
+                ->with('success', $message);
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()

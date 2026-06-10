@@ -378,6 +378,107 @@ it('sends invoice via email', function () {
         ->and($invoice->fresh()->sent_by_id)->toBe($admin->id);
 });
 
+it('sends a draft with a missing email snapshot using the address supplied on send, backfilling the school', function () {
+    Mail::fake();
+
+    $admin = invoiceAdminUser();
+    // School has no invoice email — the very case that produced a null snapshot.
+    $school = School::factory()->create(['invoice_email' => null]);
+    $invoice = Invoice::factory()->create([
+        'school_id' => $school->id,
+        'status' => InvoiceStatus::DRAFT->value,
+        'school_invoice_email' => null,
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.send', $invoice), [
+            'email' => 'typed@school.com',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Invoice sent successfully. Saved this email to the school/family for future invoices.');
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
+        return $mail->hasTo('typed@school.com');
+    });
+
+    // Persisted onto the invoice snapshot AND backfilled onto the school.
+    expect($invoice->fresh()->school_invoice_email)->toBe('typed@school.com')
+        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::SENT)
+        ->and($school->fresh()->invoice_email)->toBe('typed@school.com');
+});
+
+it('does not overwrite a school that already has an invoice email when sending', function () {
+    Mail::fake();
+
+    $admin = invoiceAdminUser();
+    $school = School::factory()->create(['invoice_email' => 'school@existing.com']);
+    $invoice = Invoice::factory()->create([
+        'school_id' => $school->id,
+        'status' => InvoiceStatus::DRAFT->value,
+        'school_invoice_email' => 'school@existing.com',
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.send', $invoice), [
+            'email' => 'oneoff@override.com',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Invoice sent successfully.');
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
+        return $mail->hasTo('oneoff@override.com');
+    });
+
+    // The one-off override lands on the invoice snapshot but never clobbers the school.
+    expect($invoice->fresh()->school_invoice_email)->toBe('oneoff@override.com')
+        ->and($school->fresh()->invoice_email)->toBe('school@existing.com');
+});
+
+it('persists a corrected email onto the snapshot when resending', function () {
+    Mail::fake();
+
+    $admin = invoiceAdminUser();
+    $school = School::factory()->create(['invoice_email' => 'old@school.com']);
+    $invoice = Invoice::factory()->sent()->create([
+        'school_id' => $school->id,
+        'school_invoice_email' => 'old@school.com',
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.resend-email', $invoice), [
+            'email' => 'corrected@school.com',
+        ])
+        ->assertRedirect()
+        ->assertSessionHas('success', 'Invoice email resent successfully.');
+
+    Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
+        return $mail->hasTo('corrected@school.com');
+    });
+
+    // The snapshot updates; the school already had an email, so it is left intact.
+    expect($invoice->fresh()->school_invoice_email)->toBe('corrected@school.com')
+        ->and($school->fresh()->invoice_email)->toBe('old@school.com');
+});
+
+it('shows the send modal with a recipient email field on a draft invoice', function () {
+    $admin = invoiceAdminUser();
+    $invoice = Invoice::factory()->create([
+        'status' => InvoiceStatus::DRAFT->value,
+        'school_invoice_email' => null,
+        'total' => 100.00,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.invoices.show', $invoice))
+        ->assertOk()
+        ->assertSee('open-send-email-modal')
+        ->assertSee('id="send-email-form"', false)
+        ->assertSee('name="email"', false);
+});
+
 it('prevents admin from sending zero amount invoice', function () {
     Mail::fake();
 

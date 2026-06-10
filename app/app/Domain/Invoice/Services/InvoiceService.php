@@ -349,6 +349,15 @@ final class InvoiceService
                 throw new \InvalidArgumentException('No invoice email address available for sending invoice.');
             }
 
+            // Persist the resolved recipient onto the invoice snapshot so the show
+            // page, PDFs ("Bill To"), and future resends reflect what was actually
+            // sent — covers the case where the school had no invoice email at
+            // creation and the admin supplied or corrected it on send.
+            if ($invoice->school_invoice_email !== $recipientEmail) {
+                $invoice->school_invoice_email = $recipientEmail;
+                $invoice->save();
+            }
+
             // Generate payment token for online payment link (private-student schools only)
             $paymentUrl = null;
             if ((float) $invoice->total > 0 && $invoice->allowsOnlinePayment()) {
@@ -400,6 +409,13 @@ final class InvoiceService
             throw new \InvalidArgumentException('Zero amount invoices cannot be sent.');
         }
 
+        // Keep the invoice snapshot aligned with the corrected recipient so the
+        // show page, PDFs, and later resends reflect the address actually used.
+        if ($dto->email && $invoice->school_invoice_email !== $dto->email) {
+            $invoice->school_invoice_email = $dto->email;
+            $invoice->save();
+        }
+
         // Reuse existing payment token — do NOT regenerate (private-student schools only)
         $paymentUrl = null;
         if ((float) $invoice->total > 0 && $invoice->payment_token && $invoice->allowsOnlinePayment()) {
@@ -425,6 +441,33 @@ final class InvoiceService
             'sent_by_id' => $user->id,
             'sent_at' => now(),
         ]);
+    }
+
+    /**
+     * Backfill the invoice's school invoice_email from an address supplied at
+     * send time, but only when the school has none yet — so future invoices for
+     * that school inherit it instead of hitting the same missing-email dead-end.
+     * A school that already has an invoice email is left untouched (the typed
+     * address was a one-off override, not a correction to persist school-wide).
+     *
+     * @return bool Whether the school record was updated.
+     */
+    public function backfillSchoolInvoiceEmail(Invoice $invoice, ?string $email): bool
+    {
+        if (! $email) {
+            return false;
+        }
+
+        $school = $invoice->school;
+
+        if ($school === null || filled($school->invoice_email)) {
+            return false;
+        }
+
+        $school->invoice_email = $email;
+        $school->save();
+
+        return true;
     }
 
     public function find(int $id): ?Invoice
