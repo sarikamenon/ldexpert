@@ -11,11 +11,15 @@ use App\Models\Schedule;
 final class ScheduleRowTransformer
 {
     /**
+     * Render one schedule row. When $viewerTimezone is given, dates render in
+     * the logged-in viewer's timezone so they match a viewer-timezone date
+     * filter; otherwise they fall back to the row owner's display timezone.
+     *
      * @return array<int, string> 8 cell HTML strings (Date, Time, Therapist, SSA, Service, School, Status, Billing)
      */
-    public static function transform(Schedule $schedule): array
+    public static function transform(Schedule $schedule, ?string $viewerTimezone = null): array
     {
-        $tz = $schedule->displayTimezone();
+        $tz = $viewerTimezone ?? $schedule->displayTimezone();
         $localStart = $schedule->localStart($tz);
         $localEnd = $schedule->localEnd($tz);
 

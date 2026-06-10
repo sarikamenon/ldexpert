@@ -26,21 +26,18 @@ function studentSchedulePayload(int $studentId, array $filters = []): array
 }
 
 /**
- * Create a student whose viewer timezone is pinned for deterministic
- * date-range assertions. users.timezone takes precedence over the random
- * profile timezone the factory assigns.
+ * Create an admin whose timezone is pinned. The date-range filter and the
+ * displayed rows resolve against the logged-in viewer (admin) timezone, so
+ * pinning it keeps boundary assertions deterministic.
  */
-function studentInTimezone(string $timezone): User
+function adminInTimezone(string $timezone): User
 {
-    $student = User::factory()->student()->create(['timezone' => $timezone]);
-    $student->studentProfile?->update(['timezone' => $timezone]);
-
-    return $student;
+    return User::factory()->admin()->create(['timezone' => $timezone]);
 }
 
 it('returns only schedules inside the date range window', function () {
-    $admin = User::factory()->admin()->create();
-    $student = studentInTimezone('UTC');
+    $admin = adminInTimezone('UTC');
+    $student = User::factory()->student()->create();
 
     Schedule::factory()->create([
         'student_id' => $student->id,
@@ -71,8 +68,8 @@ it('returns only schedules inside the date range window', function () {
 });
 
 it('filters with only a lower bound when date_to is omitted', function () {
-    $admin = User::factory()->admin()->create();
-    $student = studentInTimezone('UTC');
+    $admin = adminInTimezone('UTC');
+    $student = User::factory()->student()->create();
 
     Schedule::factory()->create([
         'student_id' => $student->id,
@@ -95,8 +92,8 @@ it('filters with only a lower bound when date_to is omitted', function () {
 });
 
 it('filters with only an upper bound when date_from is omitted', function () {
-    $admin = User::factory()->admin()->create();
-    $student = studentInTimezone('UTC');
+    $admin = adminInTimezone('UTC');
+    $student = User::factory()->student()->create();
 
     Schedule::factory()->create([
         'student_id' => $student->id,
@@ -119,8 +116,8 @@ it('filters with only an upper bound when date_from is omitted', function () {
 });
 
 it('returns all schedules when no date range is supplied', function () {
-    $admin = User::factory()->admin()->create();
-    $student = studentInTimezone('UTC');
+    $admin = adminInTimezone('UTC');
+    $student = User::factory()->student()->create();
 
     Schedule::factory()->count(3)->create(['student_id' => $student->id]);
 
@@ -133,12 +130,12 @@ it('returns all schedules when no date range is supplied', function () {
     expect($response->json('recordsFiltered'))->toBe(3);
 });
 
-it('matches the date range against the student viewer timezone, not raw UTC', function () {
-    $admin = User::factory()->admin()->create();
+it('matches the date range against the viewer timezone, not raw UTC', function () {
     // New York is UTC-4 in June. A schedule stored at 2026-06-17 02:00 UTC is
-    // 2026-06-16 22:00 local, so a viewer asking for "up to 2026-06-16" must
-    // see it. A raw-UTC-date comparison would wrongly exclude it.
-    $student = studentInTimezone('America/New_York');
+    // 2026-06-16 22:00 in the admin's local time, so a viewer asking for "up to
+    // 2026-06-16" must see it. A raw-UTC-date comparison would wrongly exclude it.
+    $admin = adminInTimezone('America/New_York');
+    $student = User::factory()->student()->create();
 
     Schedule::factory()->create([
         'student_id' => $student->id,

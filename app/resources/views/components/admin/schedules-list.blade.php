@@ -1,5 +1,4 @@
 @props([
-    'schedules',
     'filters' => [],
     'statuses' => [],
     'billingStatuses' => [],
@@ -103,66 +102,7 @@
                     <th class="px-3 py-2 text-left font-semibold text-foreground/70">Billing</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-border">
-                @if(isset($datatableUrl))
-                @else
-                @forelse ($schedules as $schedule)
-                    @php
-                        $rowTz = $schedule->displayTimezone();
-                        $rowLocalStart = $schedule->localStart($rowTz);
-                        $rowLocalEnd = $schedule->localEnd($rowTz);
-                    @endphp
-                    <tr>
-                        <td class="px-3 py-2">{{ $rowLocalStart->format('Y-m-d') }}</td>
-                        <td class="px-3 py-2">
-                            {{ $rowLocalStart->format(config('display.time')) }} - {{ $rowLocalEnd->format(config('display.time')) }}
-                        </td>
-                        <td class="px-3 py-2">
-                            @if ($schedule->therapist)
-                                <a href="{{ route('admin.therapists.show', $schedule->therapist) }}"
-                                    class="text-primary hover:underline">
-                                    {{ $schedule->therapist->name }}
-                                </a>
-                            @else
-                                —
-                            @endif
-                        </td>
-                        <td class="px-3 py-2">
-                            @if ($schedule->ssa)
-                                <a href="{{ route('admin.ssas.show', $schedule->ssa) }}"
-                                    class="text-primary hover:underline">
-                                    #{{ $schedule->ssa->id }}
-                                </a>
-                            @else
-                                —
-                            @endif
-                        </td>
-                        <td class="px-3 py-2">{{ $schedule->service?->name ?? '—' }}</td>
-                        <td class="px-3 py-2">{{ $schedule->school?->display_name ?? '—' }}</td>
-                        <td class="px-3 py-2">
-                            <x-ui::badge :variant="$schedule->status?->value === 'completed' ? 'success' : ($schedule->status?->value === 'cancelled' ? 'danger' : 'secondary')">
-                                {{ $schedule->status?->label() ?? '—' }}
-                            </x-ui::badge>
-                        </td>
-                        <td class="px-3 py-2">
-                            <x-ui::badge :variant="$schedule->billing_status?->value === 'billed' ? 'success' : 'secondary'">
-                                {{ $schedule->billing_status?->label() ?? '—' }}
-                            </x-ui::badge>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td class="px-3 py-6 text-center text-foreground/70" colspan="8">No schedules found</td>
-                    </tr>
-                @endforelse
-                @endif
-            </tbody>
+            <tbody class="divide-y divide-border"></tbody>
         </table>
     </div>
-
-    @if(!isset($datatableUrl) && method_exists($schedules, 'links'))
-    <div>
-        {{ $schedules->withQueryString()->links() }}
-    </div>
-    @endif
 </x-ui::card>
