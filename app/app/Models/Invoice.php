@@ -24,8 +24,8 @@ use Illuminate\Support\Str;
  * @property float $carry_forward_balance
  * @property Carbon $invoice_date
  * @property Carbon|null $due_date
- * @property Carbon|null $billing_period_start
- * @property Carbon|null $billing_period_end
+ * @property Carbon $billing_period_start
+ * @property Carbon $billing_period_end
  * @property Carbon|null $sent_at
  */
 class Invoice extends Model

@@ -116,7 +116,12 @@ final class InvoiceController extends Controller
         $schools = $this->schoolRepository->listActiveForSelect();
         $schoolPaymentTermsDays = $this->billingScheduleService->resolveSchoolPaymentTermsDaysMap($schools);
 
-        $paymentTermsDays = $this->billingSettingsService->getSettings()->default_payment_terms_days;
+        // Page-load seed only: no school is selected yet, so there's no
+        // advance/standard mode to key off. Use the standard default (the common
+        // case); the JS recomputes from the school's resolved terms the moment
+        // one is picked. The legacy default_payment_terms_days is intentionally
+        // not used here — it's the therapist/generic default, not school-mode aware.
+        $paymentTermsDays = $this->billingSettingsService->getSettings()->standard_default_payment_terms_days;
         $defaultDueDate = now()->addDays($paymentTermsDays)->format('Y-m-d');
 
         return view('admin.invoices.create', [
@@ -303,8 +308,8 @@ final class InvoiceController extends Controller
 
         $filters = [
             'school_id' => $invoice->school_id,
-            'date_from' => $request->input('date_from', $invoice->billing_period_start?->format('Y-m-d')),
-            'date_to' => $request->input('date_to', $invoice->billing_period_end?->format('Y-m-d')),
+            'date_from' => $request->input('date_from', $invoice->billing_period_start->format('Y-m-d')),
+            'date_to' => $request->input('date_to', $invoice->billing_period_end->format('Y-m-d')),
             'therapist_id' => $request->input('therapist_id'),
             'student_id' => $request->input('student_id'),
             'service_id' => $request->input('service_id'),

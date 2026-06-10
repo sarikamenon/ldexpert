@@ -24,8 +24,8 @@ class InvoiceMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $dateRange = $this->invoice->billing_period_start?->format('F j').' - '
-            .$this->invoice->billing_period_end?->format('F j');
+        $dateRange = $this->invoice->billing_period_start->format(config('display.date_short_month')).' - '
+            .$this->invoice->billing_period_end->format(config('display.date_short_month'));
 
         return new Envelope(
             from: new Address(

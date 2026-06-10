@@ -24,8 +24,8 @@
                 <p style="margin:0 0 16px;">
                     Please find attached the invoice for services provided
                     during the billing period of
-                    <strong>{{ $invoice->billing_period_start->format('M d') }} -
-                        {{ $invoice->billing_period_end->format('M d, Y') }}</strong>.
+                    <strong>{{ $invoice->billing_period_start->format(config('display.date_short')) }} -
+                        {{ $invoice->billing_period_end->format(config('display.date')) }}</strong>.
                 </p>
 
                 <div
@@ -33,14 +33,14 @@
                     <p style="margin:0 0 8px; color:#0369a1; font-weight:600;">Invoice Summary:</p>
                     <p style="margin:0 0 4px; color:#0369a1;">
                         <strong>Billing Period:</strong>
-                        {{ $invoice->billing_period_start->format('M d') }} -
-                        {{ $invoice->billing_period_end->format('M d, Y') }}
+                        {{ $invoice->billing_period_start->format(config('display.date_short')) }} -
+                        {{ $invoice->billing_period_end->format(config('display.date')) }}
                     </p>
                     <p style="margin:0 0 4px; color:#0369a1;">
                         <strong>Total Amount:</strong> ${{ number_format($invoice->total, 2) }}
                     </p>
                     <p style="margin:0; color:#0369a1;">
-                        <strong>Due Date:</strong> {{ $invoice->due_date->format('M d, Y') }}
+                        <strong>Due Date:</strong> {{ $invoice->due_date->format(config('display.date')) }}
                     </p>
                 </div>
 

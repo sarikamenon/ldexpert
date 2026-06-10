@@ -71,6 +71,7 @@ final class InvoiceService
             if (empty($dto->sessionLogIds)) {
                 return $this->createDraftWithoutSessions(
                     $dto,
+                    $school,
                     $invoiceNumber,
                     $schoolSnapshot,
                     $companySnapshot
@@ -99,7 +100,7 @@ final class InvoiceService
                 'subtotal' => $totals['subtotal'],
                 'tax_total' => $totals['tax_total'],
                 'total' => $totals['total'],
-                'due_date' => $this->resolveDueDate($dto),
+                'due_date' => $this->resolveDueDate($dto, $school),
                 'notes' => $dto->notes,
                 ...$schoolSnapshot,
                 ...$companySnapshot,
@@ -117,6 +118,7 @@ final class InvoiceService
      */
     private function createDraftWithoutSessions(
         CreateInvoiceDTO $dto,
+        School $school,
         string $invoiceNumber,
         array $schoolSnapshot,
         array $companySnapshot
@@ -131,7 +133,7 @@ final class InvoiceService
             'subtotal' => 0,
             'tax_total' => 0,
             'total' => 0,
-            'due_date' => $this->resolveDueDate($dto),
+            'due_date' => $this->resolveDueDate($dto, $school),
             'notes' => $dto->notes,
             ...$schoolSnapshot,
             ...$companySnapshot,
@@ -278,16 +280,19 @@ final class InvoiceService
 
     /**
      * Resolve the invoice due date: honour the user-supplied date when present,
-     * otherwise derive it from the invoice date plus the payment-terms days.
+     * otherwise derive it from the invoice date plus the school's effective
+     * payment-terms days (its school_invoice schedule, else the mode-specific
+     * billing-settings default). Only standard-mode invoices reach this — the
+     * advance path resolves its own due date.
      */
-    private function resolveDueDate(CreateInvoiceDTO $dto): string
+    private function resolveDueDate(CreateInvoiceDTO $dto, School $school): string
     {
         if ($dto->dueDate !== null) {
             return Carbon::parse($dto->dueDate)->toDateString();
         }
 
         return Carbon::parse($dto->invoiceDate)
-            ->addDays($dto->paymentTermsDays ?? 30)
+            ->addDays($this->billingScheduleService->resolveSchoolPaymentTermsDays($school))
             ->toDateString();
     }
 
@@ -485,12 +490,8 @@ final class InvoiceService
     public function getAdvanceAttachData(Invoice $invoice): array
     {
         $schoolId = (int) $invoice->school_id;
-        $periodStart = $invoice->billing_period_start !== null
-            ? $invoice->billing_period_start->copy()
-            : now()->startOfMonth();
-        $periodEnd = $invoice->billing_period_end !== null
-            ? $invoice->billing_period_end->copy()
-            : now()->endOfMonth();
+        $periodStart = $invoice->billing_period_start->copy();
+        $periodEnd = $invoice->billing_period_end->copy();
 
         // Amounts for not-yet-invoiced schedules in the period, keyed by schedule id.
         // ADVANCE_SCHEDULED lines always carry a schedule id; guard the nullable
@@ -580,12 +581,8 @@ final class InvoiceService
                 return $invoice->refresh()->load(['lineItems', 'sessionLogs']);
             }
 
-            $periodStart = $invoice->billing_period_start !== null
-                ? $invoice->billing_period_start->copy()
-                : now()->startOfMonth();
-            $periodEnd = $invoice->billing_period_end !== null
-                ? $invoice->billing_period_end->copy()
-                : now()->endOfMonth();
+            $periodStart = $invoice->billing_period_start->copy();
+            $periodEnd = $invoice->billing_period_end->copy();
 
             $schoolId = (int) $invoice->school_id;
 

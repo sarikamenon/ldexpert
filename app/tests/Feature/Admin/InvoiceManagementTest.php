@@ -1,7 +1,11 @@
 <?php
 
+use App\Enums\BillingMode;
+use App\Enums\BillingScheduleType;
 use App\Enums\InvoiceStatus;
 use App\Enums\SessionLogStatus;
+use App\Models\BillingSchedule;
+use App\Models\BillingSetting;
 use App\Models\Invoice;
 use App\Models\School;
 use App\Models\Service;
@@ -84,6 +88,39 @@ it('allows admin to view invoice create page', function () {
         ->assertViewIs('admin.invoices.create')
         ->assertViewHas('schools')
         ->assertViewHas('invoiceNumber');
+});
+
+it('renders each school option with its resolved payment-terms days', function () {
+    $admin = invoiceAdminUser();
+
+    // Distinct defaults so the schedule / standard-fallback branches are visible.
+    BillingSetting::getSettings()->update([
+        'standard_default_payment_terms_days' => 45,
+    ]);
+
+    $withSchedule = School::factory()->create([
+        'is_private_student' => false,
+        'display_name' => 'Scheduled School',
+    ]);
+    BillingSchedule::factory()->forSchool($withSchedule)->create([
+        'schedule_type' => BillingScheduleType::SCHOOL_INVOICE->value,
+        'billing_mode' => BillingMode::STANDARD->value,
+        'payment_terms_days' => 7,
+    ]);
+
+    $noSchedule = School::factory()->create([
+        'is_private_student' => false,
+        'display_name' => 'Fallback School',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.invoices.create'));
+
+    // School with a school_invoice schedule shows its own terms; the no-schedule
+    // school falls back to the standard default, not the legacy generic default.
+    $response->assertOk()
+        ->assertSee('data-payment-terms-days="7"', false)
+        ->assertSee('data-payment-terms-days="45"', false);
 });
 
 it('creates an invoice from selected session logs', function () {
@@ -572,4 +609,49 @@ it('counts line items, not session logs, on an advance invoice email', function 
     $html = (new \App\Mail\InvoiceMail($invoice))->render();
 
     expect($html)->toContain('The invoice includes 1 scheduled session(s) totaling');
+});
+
+it('renders the reminder email aligned with the main invoice email (no number, shared contact/sign-off)', function () {
+    $invoice = Invoice::factory()->create([
+        'invoice_number' => 'INV-20260610-009',
+        'due_date' => '2026-07-09',
+        'total' => 60.00,
+    ]);
+
+    $mail = new \App\Mail\InvoiceReminderMail($invoice, 'https://pay.example.com/abc');
+
+    expect($mail->envelope()->subject)->toBe('Payment Reminder — Due Jul 09, 2026');
+    expect($mail->envelope()->from?->address)->toBe('info@ldexpert.org');
+
+    $html = $mail->render();
+
+    expect($html)
+        ->toContain('info@ldexpert.org')
+        ->toContain('@StephanieTsapakis')
+        ->toContain('706 Mesa Ridge, San Antonio, TX 78258')
+        ->toContain('Warmly,')
+        ->toContain('The LD Expert Team')
+        ->not->toContain('INV-20260610-009');
+});
+
+it('renders the overdue email aligned with the main invoice email (no number, shared contact/sign-off)', function () {
+    $invoice = Invoice::factory()->create([
+        'invoice_number' => 'INV-20260610-010',
+        'due_date' => '2026-07-09',
+        'total' => 60.00,
+    ]);
+
+    $mail = new \App\Mail\InvoiceOverdueMail($invoice, 5, 'https://pay.example.com/abc');
+
+    expect($mail->envelope()->subject)->toBe('Overdue Payment — 5 Days Past Due');
+    expect($mail->envelope()->from?->address)->toBe('info@ldexpert.org');
+
+    $html = $mail->render();
+
+    expect($html)
+        ->toContain('info@ldexpert.org')
+        ->toContain('@StephanieTsapakis')
+        ->toContain('Warmly,')
+        ->toContain('The LD Expert Team')
+        ->not->toContain('INV-20260610-010');
 });
