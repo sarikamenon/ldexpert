@@ -23,7 +23,7 @@ final class ScheduleRowTransformer
         $localStart = $schedule->localStart($tz);
         $localEnd = $schedule->localEnd($tz);
 
-        $dateCell = $localStart->format('Y-m-d');
+        $dateCell = $localStart->format(config('display.date'));
         $timeCell = $localStart->format(config('display.time')).' - '.$localEnd->format(config('display.time'));
 
         $therapistCell = $schedule->therapist

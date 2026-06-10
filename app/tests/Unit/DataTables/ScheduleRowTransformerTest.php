@@ -19,8 +19,10 @@ test('renders the date in the given viewer timezone', function () {
 
     $row = ScheduleRowTransformer::transform($schedule, 'America/New_York');
 
+    $expectedDate = CarbonImmutable::parse('2026-06-16')->format(config('display.date'));
+
     expect($row)->toHaveCount(8)
-        ->and($row[0])->toBe('2026-06-16');
+        ->and($row[0])->toBe($expectedDate);
 });
 
 test('falls back to the row display timezone when no viewer timezone is given', function () {
@@ -30,7 +32,7 @@ test('falls back to the row display timezone when no viewer timezone is given', 
     ]);
 
     $expectedTz = $schedule->displayTimezone();
-    $expectedDate = $schedule->localStart($expectedTz)->format('Y-m-d');
+    $expectedDate = $schedule->localStart($expectedTz)->format(config('display.date'));
 
     $row = ScheduleRowTransformer::transform($schedule);
 
