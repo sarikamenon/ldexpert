@@ -38,7 +38,8 @@
                     <x-ui::select id="school_id" name="school_id" class="mt-1" required searchable placeholder="Select School/Family" aria-describedby="school_id_help">
                         <option value="">Select School/Family</option>
                         @foreach ($schools ?? [] as $school)
-                            <option value="{{ $school->id }}" @selected(old('school_id') == $school->id)>
+                            <option value="{{ $school->id }}" @selected(old('school_id') == $school->id)
+                                data-payment-terms-days="{{ $schoolPaymentTermsDays[$school->id] ?? $paymentTermsDays }}">
                                 {{ $school->display_name }}
                             </option>
                         @endforeach
@@ -47,19 +48,28 @@
                 </div>
 
                 <div class="space-y-1">
-                    <x-input-label for="invoice_date" value="Invoice Date *" />
-                    <p class="mt-1 text-xs text-foreground/60" id="invoice_date_help">Date when the invoice is issued.</p>
-                    <x-ui::input type="date" id="invoice_date" name="invoice_date" class="mt-1 block w-full" required
-                        value="{{ old('invoice_date', now()->format('Y-m-d')) }}" aria-describedby="invoice_date_help" />
-                    <x-input-error :messages="$errors->get('invoice_date')" class="mt-2" />
-                </div>
-
-                <div class="space-y-1">
                     <x-input-label for="invoice_number" value="Invoice Number *" />
                     <p class="mt-1 text-xs text-foreground/60" id="invoice_number_help">Auto-generated number is shown. You can edit if needed.</p>
                     <x-ui::input type="text" id="invoice_number" name="invoice_number" class="mt-1 block w-full"
                         value="{{ old('invoice_number', $invoiceNumber ?? '') }}" aria-describedby="invoice_number_help" />
                     <x-input-error :messages="$errors->get('invoice_number')" class="mt-2" />
+                </div>
+
+                <div class="space-y-1">
+                    <x-input-label for="invoice_date" value="Invoice Date *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="invoice_date_help">Date when the invoice is issued.</p>
+                    <x-ui::input type="date" id="invoice_date" name="invoice_date" class="mt-1 block w-full" required
+                        value="{{ old('invoice_date', now()->format('Y-m-d')) }}" aria-describedby="invoice_date_help"
+                        data-payment-terms-days="{{ $paymentTermsDays }}" />
+                    <x-input-error :messages="$errors->get('invoice_date')" class="mt-2" />
+                </div>
+
+                <div class="space-y-1">
+                    <x-input-label for="due_date" value="Due Date *" />
+                    <p class="mt-1 text-xs text-foreground/60" id="due_date_help">Based on the school's <span data-due-date-terms>{{ $paymentTermsDays }}</span>-day payment terms. Editable.</p>
+                    <x-ui::input type="date" id="due_date" name="due_date" class="mt-1 block w-full" required
+                        value="{{ old('due_date', $defaultDueDate) }}" aria-describedby="due_date_help" />
+                    <x-input-error :messages="$errors->get('due_date')" class="mt-2" />
                 </div>
 
                 <div class="space-y-1">

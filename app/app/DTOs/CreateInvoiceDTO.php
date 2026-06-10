@@ -21,6 +21,7 @@ final class CreateInvoiceDTO
         public readonly ?string $notes = null,
         public readonly array $scheduleIds = [],
         public readonly ?int $paymentTermsDays = null,
+        public readonly ?string $dueDate = null,
     ) {}
 
     /**
@@ -42,6 +43,7 @@ final class CreateInvoiceDTO
                 ? collect($data['schedule_ids'])->map(fn ($id): int => (int) $id)->all()
                 : [],
             paymentTermsDays: isset($data['payment_terms_days']) ? (int) $data['payment_terms_days'] : null,
+            dueDate: $data['due_date'] ?? null,
         );
     }
 
@@ -60,6 +62,7 @@ final class CreateInvoiceDTO
             'notes' => $this->notes,
             'schedule_ids' => $this->scheduleIds,
             'payment_terms_days' => $this->paymentTermsDays,
+            'due_date' => $this->dueDate,
         ];
     }
 }

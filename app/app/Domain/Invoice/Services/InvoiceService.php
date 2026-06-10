@@ -99,7 +99,7 @@ final class InvoiceService
                 'subtotal' => $totals['subtotal'],
                 'tax_total' => $totals['tax_total'],
                 'total' => $totals['total'],
-                'due_date' => Carbon::parse($dto->invoiceDate)->addDays($dto->paymentTermsDays ?? 30)->toDateString(),
+                'due_date' => $this->resolveDueDate($dto),
                 'notes' => $dto->notes,
                 ...$schoolSnapshot,
                 ...$companySnapshot,
@@ -131,7 +131,7 @@ final class InvoiceService
             'subtotal' => 0,
             'tax_total' => 0,
             'total' => 0,
-            'due_date' => Carbon::parse($dto->invoiceDate)->addDays($dto->paymentTermsDays ?? 30)->toDateString(),
+            'due_date' => $this->resolveDueDate($dto),
             'notes' => $dto->notes,
             ...$schoolSnapshot,
             ...$companySnapshot,
@@ -193,7 +193,8 @@ final class InvoiceService
             'subtotal' => $subtotal,
             'tax_total' => 0,
             'total' => $subtotal,
-            'due_date' => Carbon::parse($dto->invoiceDate)->addDays($paymentTermsDays)->toDateString(),
+            'due_date' => $dto->dueDate
+                ?? Carbon::parse($dto->invoiceDate)->addDays($paymentTermsDays)->toDateString(),
             'notes' => $dto->notes,
             ...$schoolSnapshot,
             ...$companySnapshot,
@@ -276,6 +277,21 @@ final class InvoiceService
     }
 
     /**
+     * Resolve the invoice due date: honour the user-supplied date when present,
+     * otherwise derive it from the invoice date plus the payment-terms days.
+     */
+    private function resolveDueDate(CreateInvoiceDTO $dto): string
+    {
+        if ($dto->dueDate !== null) {
+            return Carbon::parse($dto->dueDate)->toDateString();
+        }
+
+        return Carbon::parse($dto->invoiceDate)
+            ->addDays($dto->paymentTermsDays ?? 30)
+            ->toDateString();
+    }
+
+    /**
      * @return array<string, string|null>
      */
     public function copySchoolSnapshot(School $school): array
@@ -320,13 +336,12 @@ final class InvoiceService
         }
 
         return DB::transaction(function () use ($user, $invoice, $dto) {
-            // Determine recipient email
+            // Determine recipient email — invoice email only, no contact-email fallback
             $recipientEmail = $dto->email
-                ?? $invoice->school_invoice_email
-                ?? $invoice->school_contact_email;
+                ?? $invoice->school_invoice_email;
 
             if (! $recipientEmail) {
-                throw new \InvalidArgumentException('No email address available for sending invoice.');
+                throw new \InvalidArgumentException('No invoice email address available for sending invoice.');
             }
 
             // Generate payment token for online payment link (private-student schools only)

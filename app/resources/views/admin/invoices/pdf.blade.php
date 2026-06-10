@@ -150,9 +150,7 @@
             @if ($invoice->school_state)
                 {{ $invoice->school_state }}<br>
             @endif
-            @if ($invoice->school_contact_email)
-                {{ $invoice->school_contact_email }}
-            @endif
+            Email: {{ $invoice->school_invoice_email }}
         </div>
     </div>
 

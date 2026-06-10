@@ -170,6 +170,55 @@ it('derives the standard invoice due date from the invoice date, not today', fun
         ->toBe($invoiceDate->copy()->addDays(30)->toDateString());
 });
 
+it('honours a user-supplied due date over the payment-terms default', function () {
+    $admin = invoiceAdminUser();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+    $school = School::factory()->create(['is_private_student' => false, 'state' => 'CA']);
+    $service = Service::factory()->create();
+    $ssa = ServiceSupportAgreement::factory()->create([
+        'student_id' => $student->id,
+        'assigned_therapist_id' => $therapist->id,
+    ]);
+
+    $log = createApprovedSessionLog($therapist, $student, $school, $service, $ssa);
+
+    $invoiceDate = now()->startOfMonth();
+    $customDueDate = $invoiceDate->copy()->addDays(7);
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.store'), [
+            'school_id' => $school->id,
+            'invoice_date' => $invoiceDate->format('Y-m-d'),
+            'due_date' => $customDueDate->format('Y-m-d'),
+            'billing_period_start' => $invoiceDate->copy()->startOfMonth()->format('Y-m-d'),
+            'billing_period_end' => $invoiceDate->copy()->endOfMonth()->format('Y-m-d'),
+            'session_log_ids' => [$log->id],
+        ])
+        ->assertRedirect();
+
+    $invoice = Invoice::where('school_id', $school->id)->first();
+
+    expect($invoice->due_date->toDateString())->toBe($customDueDate->toDateString());
+});
+
+it('rejects a due date earlier than the invoice date', function () {
+    $admin = invoiceAdminUser();
+    $school = School::factory()->create(['is_private_student' => false, 'state' => 'CA']);
+
+    $invoiceDate = now()->startOfMonth();
+
+    $this->actingAs($admin)
+        ->post(route('admin.invoices.store'), [
+            'school_id' => $school->id,
+            'invoice_date' => $invoiceDate->format('Y-m-d'),
+            'due_date' => $invoiceDate->copy()->subDay()->format('Y-m-d'),
+            'billing_period_start' => $invoiceDate->copy()->startOfMonth()->format('Y-m-d'),
+            'billing_period_end' => $invoiceDate->copy()->endOfMonth()->format('Y-m-d'),
+        ])
+        ->assertSessionHasErrors('due_date');
+});
+
 it('creates an invoice for a school with an international 3-letter state code', function () {
     // Regression: invoices.school_state was varchar(2) while schools.state is
     // varchar(50), so snapshotting an international state (e.g. ISB) overflowed.
@@ -472,4 +521,55 @@ it('prevents creating invoice with already invoiced session logs', function () {
         ->post(route('admin.invoices.store'), $payload)
         ->assertRedirect()
         ->assertSessionHasErrors();
+});
+
+it('renders the invoice email with a date-range subject, new payment copy, and no invoice number', function () {
+    $invoice = Invoice::factory()->create([
+        'billing_period_start' => '2026-06-01',
+        'billing_period_end' => '2026-06-30',
+        'invoice_number' => 'INV-20260610-003',
+        'subtotal' => 60.00,
+        'total' => 60.00,
+    ]);
+
+    $mail = new \App\Mail\InvoiceMail($invoice, null, 'https://pay.example.com/abc');
+
+    expect($mail->envelope()->subject)->toBe('Invoice - June 1 - June 30');
+
+    $html = $mail->render();
+
+    expect($html)
+        ->toContain('info@ldexpert.org')
+        ->toContain('@StephanieTsapakis')
+        ->toContain('706 Mesa Ridge, San Antonio, TX 78258')
+        ->toContain('Warmly,')
+        ->toContain('The LD Expert Team')
+        ->toContain('The invoice includes 0 session(s) totaling')
+        ->not->toContain('INV-20260610-003')
+        // The date-range heading was removed from the body.
+        ->not->toContain('<h1');
+});
+
+it('counts line items, not session logs, on an advance invoice email', function () {
+    $invoice = Invoice::factory()->create([
+        'billing_mode' => \App\Enums\BillingMode::ADVANCE->value,
+        'subtotal' => 60.00,
+        'total' => 60.00,
+    ]);
+
+    \App\Models\InvoiceLineItem::create([
+        'invoice_id' => $invoice->id,
+        'line_type' => \App\Enums\InvoiceLineType::ADVANCE_SCHEDULED->value,
+        'description' => 'Speech therapy — weekly',
+        'billing_period_start' => $invoice->billing_period_start,
+        'billing_period_end' => $invoice->billing_period_end,
+        'quantity' => 1,
+        'unit_price' => 60.00,
+        'total' => 60.00,
+        'sort_order' => 0,
+    ]);
+
+    $html = (new \App\Mail\InvoiceMail($invoice))->render();
+
+    expect($html)->toContain('The invoice includes 1 scheduled session(s) totaling');
 });

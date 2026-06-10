@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\DataTables\Transformers\InvoiceRowTransformer;
+use App\Domain\Billing\Services\BillingScheduleService;
+use App\Domain\Billing\Services\BillingSettingsService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoicePdfService;
 use App\Domain\Invoice\Services\InvoiceService;
@@ -58,6 +60,8 @@ final class InvoiceController extends Controller
         private readonly TherapistService $therapistService,
         private readonly StudentService $studentService,
         private readonly ServiceCatalogService $serviceCatalogService,
+        private readonly BillingSettingsService $billingSettingsService,
+        private readonly BillingScheduleService $billingScheduleService,
     ) {}
 
     public function index(InvoiceIndexRequest $request): View
@@ -109,11 +113,20 @@ final class InvoiceController extends Controller
         $dateFrom = now()->subDays(30)->format('Y-m-d');
         $dateTo = now()->format('Y-m-d');
 
+        $schools = $this->schoolRepository->listActiveForSelect();
+        $schoolPaymentTermsDays = $this->billingScheduleService->resolveSchoolPaymentTermsDaysMap($schools);
+
+        $paymentTermsDays = $this->billingSettingsService->getSettings()->default_payment_terms_days;
+        $defaultDueDate = now()->addDays($paymentTermsDays)->format('Y-m-d');
+
         return view('admin.invoices.create', [
-            'schools' => $this->schoolRepository->listActiveForSelect(),
+            'schools' => $schools,
             'invoiceNumber' => $this->invoiceRepository->generateInvoiceNumber(),
             'defaultDateFrom' => $dateFrom,
             'defaultDateTo' => $dateTo,
+            'paymentTermsDays' => $paymentTermsDays,
+            'schoolPaymentTermsDays' => $schoolPaymentTermsDays,
+            'defaultDueDate' => $defaultDueDate,
         ]);
     }
 

@@ -74,8 +74,14 @@
         <x-ui::alert variant="success" class="mb-4">{{ session('success') }}</x-ui::alert>
     @endif
 
-    @if (session('error'))
-        <x-ui::alert variant="danger" class="mb-4">{{ session('error') }}</x-ui::alert>
+    @if (session('error') || $errors->has('error'))
+        <x-ui::alert variant="danger" class="mb-4">
+            {{ session('error') ?? $errors->first('error') }}
+            @if (! $invoice->school_invoice_email && $invoice->school_id)
+                <a href="{{ route('admin.schools.edit', $invoice->school_id) }}"
+                    class="font-medium underline hover:no-underline">Edit school/family to add an invoice email</a>.
+            @endif
+        </x-ui::alert>
     @endif
 
     <x-ui::card class="p-6 mb-6">
@@ -90,9 +96,7 @@
                     @if ($invoice->school_state)
                         <p>{{ $invoice->school_state }}</p>
                     @endif
-                    @if ($invoice->school_contact_email)
-                        <p class="mt-1">{{ $invoice->school_contact_email }}</p>
-                    @endif
+                    <p class="mt-1">Email: {{ $invoice->school_invoice_email }}</p>
                 </div>
             </div>
 
@@ -116,7 +120,7 @@
         <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-border">
             <div>
                 <p class="text-sm text-foreground/70">Invoice Date</p>
-                <p class="text-sm font-medium mt-1">{{ $invoice->created_at->format('M d, Y') }}</p>
+                <p class="text-sm font-medium mt-1">{{ $invoice->invoice_date->format('M d, Y') }}</p>
             </div>
             <div>
                 <p class="text-sm text-foreground/70">Due Date</p>
@@ -368,7 +372,7 @@
                                 <x-text-input id="resend_email" name="email" type="email"
                                     class="mt-1 block w-full"
                                     aria-describedby="resend_email_help"
-                                    value="{{ old('email', $invoice->school_invoice_email ?? $invoice->school_contact_email) }}"
+                                    value="{{ old('email', $invoice->school_invoice_email) }}"
                                     required />
                                 <x-input-error :messages="$errors->get('email')" class="mt-2" />
                             </div>
