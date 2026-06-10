@@ -10,9 +10,14 @@ architectural decisions live in [../adr/](../adr/).
   invoices, advance reconciliation, the ledger.
 - [Students](./students.md) — student records, their relationship to schools/families and
   parents, and duplicate detection.
+- [Services](./services.md) — the work types a therapist logs, their independent flags
+  (direct/indirect, THO counting, billable), and how sessions count toward owed hours.
 
 ## Relationships
 
 - **Students → Billing & Invoicing**: Billing generates School Invoices for the
   school/family a student belongs to; Billing references students by ID, it does not own
   student data.
+- **Services → Billing & Invoicing**: a Service's `is_billable` flag governs whether it
+  reaches invoicing; its THO/served minutes are a utilization metric only and feed no
+  billing calculation.
