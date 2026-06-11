@@ -42,6 +42,7 @@
         'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
         'scheduleLocalStartTime' => $scheduleLocalStartTime,
         'scheduleLocalEndTime'   => $scheduleLocalEndTime,
+        'occurrenceRows'         => $occurrenceRows ?? [],
         'formAction'             => route('admin.schedule.update', $schedule->id),
         'therapistId'            => null,
     ])

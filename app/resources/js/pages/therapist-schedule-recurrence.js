@@ -44,6 +44,55 @@ $(function () {
     const originalRecurrenceType = $warningBanner.data('original-recurrence-type') ?? null;
     const originalRecurrenceEndDate = $warningBanner.data('original-recurrence-end-date') ?? null;
 
+    const $startTimeInput = $('#start_time');
+    const $regeneratedFlag = $('#occurrences_regenerated');
+
+    // Pre-rendered occurrence rows for an existing recurring series (edit mode).
+    // Each: { date, start_time, end_time, is_custom_time, is_anchor }.
+    let serverOccurrenceRows = [];
+    const occurrenceContainerEl = document.getElementById('occurrence_dates_container');
+    const isOccurrenceEditMode = occurrenceContainerEl?.dataset.editMode === '1';
+    if (isOccurrenceEditMode) {
+        try {
+            const parsed = JSON.parse(occurrenceContainerEl.dataset.occurrenceRows || '[]');
+            if (Array.isArray(parsed)) {
+                serverOccurrenceRows = parsed;
+            }
+        } catch (e) {
+            serverOccurrenceRows = [];
+        }
+    }
+
+    // Series-level default time, used to pre-fill new occurrence rows and to
+    // decide whether a row's time is "custom" (i.e. detaches it from the series).
+    function getSeriesStartTime() {
+        return $startTimeInput.val() || '';
+    }
+
+    function getSeriesEndTime() {
+        // Mirror the time module: end = start + duration. Compute from the
+        // duration field so the default end time tracks edits to start/duration.
+        const start = getSeriesStartTime();
+        const duration = parseInt($('#duration_minutes').val(), 10);
+        if (!start || !Number.isFinite(duration)) {
+            return '';
+        }
+        const [h, m] = start.split(':').map(Number);
+        const total = h * 60 + m + duration;
+        const eh = Math.floor((total % 1440) / 60);
+        const em = total % 60;
+        return String(eh).padStart(2, '0') + ':' + String(em).padStart(2, '0');
+    }
+
+    // Mark the series as regenerated so the backend rebuilds (delete + recreate)
+    // instead of reconciling occurrences in place. Used when the recurrence type
+    // or end date changes in edit mode.
+    function markRegenerated() {
+        if ($regeneratedFlag.length) {
+            $regeneratedFlag.val('1');
+        }
+    }
+
     /**
      * Show or hide the recurrence change warning banner (edit mode only).
      */
@@ -253,76 +302,121 @@ $(function () {
     }
 
     /**
-     * Render occurrence dates as editable inputs with remove buttons
+     * Build one occurrence row element. `row` is { date, startTime, endTime }.
+     * In edit mode each row also carries start/end time inputs so an individual
+     * session's time can be edited; otherwise only the date input is rendered.
      */
-    function renderOccurrenceDates(dates) {
+    function buildOccurrenceRow(row, index) {
+        const dateStr = row.date;
+        const isWeekendDate = isWeekend(dateStr);
+        const dayName = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }) : '';
+        const isHolidayDate = isHoliday(dateStr);
+
+        const $item = $('<div class="flex items-start gap-3 occurrence-date-row"></div>');
+        const $label = $('<label class="occurrence-label block w-32 text-sm text-foreground/70 pt-2">' +
+            (index === 0 ? 'Start Date:' : 'Occurrence ' + (index + 1) + ':') +
+            '</label>');
+
+        const $inputGroup = $('<div class="flex-1"></div>');
+        const $inputRow = $('<div class="flex items-center gap-2"></div>');
+
+        const $input = $('<input>')
+            .attr('type', 'date')
+            .attr('name', 'occurrence_dates[]')
+            .attr('class', 'mt-1 block w-full border border-border rounded-lg px-3 py-2 text-sm occurrence-date-input')
+            .attr('data-index', index)
+            .attr('value', dateStr)
+            .attr('min', $scheduleDateInput.val() || '');
+
+        if ((isWeekendDate && !allowWeekendScheduling) || isHolidayDate) {
+            $input.addClass('border-warning bg-warning/10');
+        }
+
+        $inputRow.append($input);
+
+        // Per-occurrence start/end time (edit mode only).
+        if (isOccurrenceEditMode) {
+            const $start = $('<input>')
+                .attr('type', 'time')
+                .attr('name', 'occurrence_start_times[]')
+                .attr('class', 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-start-time-input')
+                .attr('value', row.startTime || getSeriesStartTime());
+            const $end = $('<input>')
+                .attr('type', 'time')
+                .attr('name', 'occurrence_end_times[]')
+                .attr('class', 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-end-time-input')
+                .attr('value', row.endTime || getSeriesEndTime());
+            $inputRow.append($start);
+            $inputRow.append($('<span class="pt-2 text-foreground/40 text-sm">–</span>'));
+            $inputRow.append($end);
+        }
+
+        // Remove button for all occurrences except the first (start date), unless
+        // the start date is a holiday (then it can be dropped like any other).
+        if (index > 0 || isHolidayDate) {
+            const $removeBtn = $('<button type="button" class="occurrence-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors" title="Remove this occurrence">' +
+                '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' +
+                '</svg>' +
+                '</button>');
+            $inputRow.append($removeBtn);
+        }
+
+        const $errorDiv = $('<div class="occurrence-error text-xs text-danger mt-1"></div>');
+
+        $inputGroup.append($inputRow);
+        if (isWeekendDate && !allowWeekendScheduling) {
+            $inputGroup.append($('<p class="text-xs text-warning mt-1">⚠️ ' + dayName + ' (Weekend)</p>'));
+        }
+        $inputGroup.append($errorDiv);
+
+        $item.append($label).append($inputGroup);
+        return $item;
+    }
+
+    /**
+     * Render occurrence rows. Accepts either Date objects (pattern-generated) or
+     * row objects { date, startTime, endTime } (edit-mode, server or rebuilt).
+     */
+    function renderOccurrenceDates(rows) {
         $occurrenceDatesContainer.empty();
 
-        if (dates.length === 0) {
+        if (rows.length === 0) {
             return;
         }
 
-        // Counter showing total sessions
+        const normalized = rows.map((row) => {
+            if (row instanceof Date) {
+                return { date: formatDate(row), startTime: getSeriesStartTime(), endTime: getSeriesEndTime() };
+            }
+            return row;
+        });
+
         const $counter = $('<p class="occurrence-counter text-sm font-medium text-primary mb-2"></p>');
         $occurrenceDatesContainer.append($counter);
 
         const $list = $('<div class="space-y-3"></div>');
-        
-        dates.forEach((date, index) => {
-            const dateStr = formatDate(date);
-            const isWeekendDate = isWeekend(dateStr);
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-            
-            const $item = $('<div class="flex items-start gap-3 occurrence-date-row"></div>');
-            const $label = $('<label class="occurrence-label block w-32 text-sm text-foreground/70 pt-2">' + 
-                (index === 0 ? 'Start Date:' : 'Occurrence ' + (index + 1) + ':') + 
-                '</label>');
-            
-            const $inputGroup = $('<div class="flex-1"></div>');
-            const $inputRow = $('<div class="flex items-center gap-2"></div>');
-            const $input = $('<input>')
-                .attr('type', 'date')
-                .attr('name', 'occurrence_dates[]')
-                .attr('class', 'mt-1 block w-full border border-border rounded-lg px-3 py-2 text-sm occurrence-date-input')
-                .attr('data-index', index)
-                .attr('value', dateStr)
-                .attr('min', $scheduleDateInput.val() || '');
-            
-            const isHolidayDate = isHoliday(dateStr);
-
-            if ((isWeekendDate && !allowWeekendScheduling) || isHolidayDate) {
-                $input.addClass('border-warning bg-warning/10');
-            }
-
-            $inputRow.append($input);
-
-            // Add remove button for all occurrences except the first (start date).
-            // Exception: when the start date falls on a school holiday, surface the
-            // remove button so the user can drop it just like any other holiday row.
-            if (index > 0 || isHolidayDate) {
-                const $removeBtn = $('<button type="button" class="occurrence-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors" title="Remove this occurrence">' +
-                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
-                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' +
-                    '</svg>' +
-                    '</button>');
-                $inputRow.append($removeBtn);
-            }
-            
-            const $errorDiv = $('<div class="occurrence-error text-xs text-danger mt-1"></div>');
-            
-            $inputGroup.append($inputRow);
-            if (isWeekendDate && !allowWeekendScheduling) {
-                $inputGroup.append($('<p class="text-xs text-warning mt-1">⚠️ ' + dayName + ' (Weekend)</p>'));
-            }
-            $inputGroup.append($errorDiv);
-            
-            $item.append($label).append($inputGroup);
-            $list.append($item);
-        });
+        normalized.forEach((row, index) => $list.append(buildOccurrenceRow(row, index)));
 
         $occurrenceDatesContainer.append($list);
         $occurrenceDatesContainer.removeClass('hidden');
         updateOccurrenceCounter();
+    }
+
+    /**
+     * Render the pre-existing occurrence rows for a recurring series (edit mode),
+     * preserving each row's stored date and time instead of regenerating.
+     */
+    function renderServerOccurrenceRows() {
+        if (serverOccurrenceRows.length === 0) {
+            return;
+        }
+        renderOccurrenceDates(serverOccurrenceRows.map((r) => ({
+            date: r.date,
+            startTime: r.start_time,
+            endTime: r.end_time,
+        })));
+        validateAllOccurrenceDates();
     }
 
     /**
@@ -370,8 +464,15 @@ $(function () {
         }
     }
 
+    // True until the first user-driven change in edit mode, so initial setup
+    // renders the stored occurrences instead of regenerating the series.
+    let editInitialRender = isOccurrenceEditMode;
+
     /**
-     * Update occurrence dates when recurrence type, schedule date, or end date changes
+     * Update occurrence dates when recurrence type, schedule date, or end date
+     * changes. In edit mode the first pass renders the stored rows untouched;
+     * any later pass means the user changed the pattern, so we regenerate and
+     * flag the series for a backend rebuild.
      */
     function updateOccurrenceDates() {
         const recurrenceType = getRecurrenceType();
@@ -383,9 +484,19 @@ $(function () {
             return;
         }
 
+        if (isOccurrenceEditMode && editInitialRender) {
+            editInitialRender = false;
+            renderServerOccurrenceRows();
+            return;
+        }
+
+        if (isOccurrenceEditMode) {
+            markRegenerated();
+        }
+
         const dates = generateOccurrenceDates(scheduleDate, endDate, recurrenceType);
         renderOccurrenceDates(dates);
-        
+
         // Validate after rendering
         validateAllOccurrenceDates();
     }
@@ -573,6 +684,31 @@ $(function () {
         input.addEventListener('change', validateAllOccurrenceDates);
 
         inputRow.appendChild(input);
+
+        // In edit mode keep the parallel time arrays aligned: every occurrence
+        // date input must have a matching start/end time input.
+        if (isOccurrenceEditMode) {
+            const startInput = document.createElement('input');
+            startInput.type = 'time';
+            startInput.name = 'occurrence_start_times[]';
+            startInput.className = 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-start-time-input';
+            startInput.value = getSeriesStartTime();
+
+            const sep = document.createElement('span');
+            sep.className = 'pt-2 text-foreground/40 text-sm';
+            sep.textContent = '–';
+
+            const endInput = document.createElement('input');
+            endInput.type = 'time';
+            endInput.name = 'occurrence_end_times[]';
+            endInput.className = 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-end-time-input';
+            endInput.value = getSeriesEndTime();
+
+            inputRow.appendChild(startInput);
+            inputRow.appendChild(sep);
+            inputRow.appendChild(endInput);
+        }
+
         inputRow.appendChild(removeBtn);
         group.appendChild(inputRow);
         group.appendChild(errorDiv);
@@ -661,8 +797,15 @@ $(function () {
     $form.on('submit', function(event) {
         const recurrenceType = getRecurrenceType();
 
+        // In edit mode, when the user only adjusted individual occurrences (no
+        // full regenerate), the pattern-level rules (weekly days, end date) don't
+        // apply — the submitted occurrence list is reconciled as-is.
+        const isReconcileOnlyEdit = isOccurrenceEditMode
+            && $regeneratedFlag.length
+            && $regeneratedFlag.val() !== '1';
+
         // Only validate end date if recurrence type is not "none"
-        if (recurrenceType && recurrenceType !== RECURRENCE_TYPE_NONE) {
+        if (recurrenceType && recurrenceType !== RECURRENCE_TYPE_NONE && !isReconcileOnlyEdit) {
             // For custom_weekly, require at least one day selected
             if (recurrenceType === RECURRENCE_TYPE_CUSTOM_WEEKLY && getSelectedWeekdayIndices().length === 0) {
                 event.preventDefault();

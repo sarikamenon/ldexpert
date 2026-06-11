@@ -55,6 +55,7 @@
                 'scheduleLocalDateFormatted' => $scheduleLocalDateFormatted,
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,
                 'scheduleLocalEndTime' => $scheduleLocalEndTime,
+                'occurrenceRows' => $occurrenceRows ?? [],
                 'subPanel' => $subPanel ?? null,
                 'makeupRequestId' => $makeupRequestId ?? null,
             ])

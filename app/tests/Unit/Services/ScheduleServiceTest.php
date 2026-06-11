@@ -6,6 +6,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Repositories\ServiceRepositoryInterface;
 use App\Domain\Student\Repositories\StudentRepositoryInterface;
 use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
+use App\Domain\Therapist\Services\OccurrenceSyncService;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Repositories\UserRepositoryInterface;
@@ -56,6 +57,12 @@ function makeScheduleService(array $mocks): ScheduleService
         $mocks['serviceRepository'],
         $mocks['studentRepository'],
         $mocks['schoolRepository'],
+        new OccurrenceSyncService(
+            $mocks['repository'],
+            $mocks['timezoneService'],
+            $mocks['userRepository'],
+            $mocks['studentRepository'],
+        ),
     );
 }
 

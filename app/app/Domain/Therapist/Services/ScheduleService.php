@@ -847,6 +847,47 @@ final class ScheduleService
         };
     }
 
+    /**
+     * Editable occurrence rows for a recurring schedule's edit form: the anchor
+     * plus its unbilled future siblings, each as a user-local date + start/end
+     * time, with a flag marking rows whose time differs from the series default.
+     *
+     * @return array<int, array{date: string, start_time: string, end_time: string, is_custom_time: bool, is_anchor: bool}>
+     */
+    public function buildOccurrenceRows(Schedule $schedule, User $therapist): array
+    {
+        if (! $schedule->isRecurring() || $schedule->recurring_batch_number === null) {
+            return [];
+        }
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $seriesStartTime = $schedule->localStart($tz)->format('H:i');
+        $seriesEndTime = $schedule->localEnd($tz)->format('H:i');
+
+        return $this->repository
+            ->getUnbilledFutureRecurringOccurrencesByBatch(
+                $schedule->recurring_batch_number,
+                $schedule->schedule_date->format('Y-m-d'),
+            )
+            ->map(function (Schedule $occurrence) use ($tz, $seriesStartTime, $seriesEndTime, $schedule): array {
+                $start = $occurrence->localStart($tz);
+                $end = $occurrence->localEnd($tz);
+                $startTime = $start->format('H:i');
+                $endTime = $end->format('H:i');
+
+                return [
+                    'date' => $start->format('Y-m-d'),
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'is_custom_time' => $startTime !== $seriesStartTime || $endTime !== $seriesEndTime,
+                    'is_anchor' => $occurrence->id === $schedule->id,
+                ];
+            })
+            ->sortBy('date')
+            ->values()
+            ->all();
+    }
+
     public function generateBatchNumber(string $type = 'recurring'): string
     {
         return $this->repository->generateBatchNumber($type);

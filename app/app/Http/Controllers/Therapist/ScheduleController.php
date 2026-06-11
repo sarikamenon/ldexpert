@@ -227,6 +227,7 @@ final class ScheduleController extends Controller
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
+            'occurrenceRows' => $this->scheduleService->buildOccurrenceRows($schedule, $therapist),
             'subPanel' => $subPanel,
             'makeupRequestId' => $request->query('makeup_request_id') !== null
                 ? (int) $request->query('makeup_request_id')

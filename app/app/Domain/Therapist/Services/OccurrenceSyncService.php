@@ -17,6 +17,8 @@ use App\Enums\ScheduleStatus;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
 use App\Models\User;
+use Carbon\CarbonInterface;
+use Illuminate\Support\Collection;
 
 /**
  * Reconciles the per-occurrence list submitted from the recurring-series editor
@@ -111,7 +113,7 @@ final class OccurrenceSyncService
      * matches the series time, detach the row from the batch so a later
      * series-level regeneration leaves it untouched.
      *
-     * @param  \Illuminate\Support\Collection<int, User>  $students
+     * @param  Collection<int, User>  $students
      */
     private function updateExisting(
         Schedule $occurrence,
@@ -119,10 +121,10 @@ final class OccurrenceSyncService
         string $utcEndTime,
         bool $matchesSeriesTime,
         User $therapist,
-        \Illuminate\Support\Collection $students,
+        Collection $students,
     ): void {
-        $timeChanged = $occurrence->start_time?->format('H:i:s') !== $utcStartTime
-            || $occurrence->end_time?->format('H:i:s') !== $utcEndTime;
+        $timeChanged = $occurrence->start_time->format('H:i:s') !== $utcStartTime
+            || $occurrence->end_time->format('H:i:s') !== $utcEndTime;
 
         if ($timeChanged) {
             $this->assertNoOverlap(
@@ -149,7 +151,7 @@ final class OccurrenceSyncService
 
     /**
      * @param  array<int, int>  $studentIds
-     * @param  \Illuminate\Support\Collection<int, User>  $students
+     * @param  Collection<int, User>  $students
      */
     private function createOccurrence(
         Schedule $anchor,
@@ -159,7 +161,7 @@ final class OccurrenceSyncService
         array $studentIds,
         bool $isGroup,
         User $therapist,
-        \Illuminate\Support\Collection $students,
+        Collection $students,
         bool $matchesSeriesTime,
     ): void {
         $this->assertNoOverlap($therapist, $students, $utcDate, $utcStartTime, $utcEndTime, null);
@@ -218,7 +220,7 @@ final class OccurrenceSyncService
         $data['parent_schedule_id'] = null;
     }
 
-    private function resolveUtcEnd(string $date, string $startTime, string $endTime, User $therapist): \Carbon\CarbonImmutable
+    private function resolveUtcEnd(string $date, string $startTime, string $endTime, User $therapist): CarbonInterface
     {
         $utcStart = $this->timezoneService->parseUserLocalToUtc($date.' '.$startTime, $therapist);
         $utcEnd = $this->timezoneService->parseUserLocalToUtc($date.' '.$endTime, $therapist);
@@ -230,11 +232,11 @@ final class OccurrenceSyncService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, User>  $students
+     * @param  Collection<int, User>  $students
      */
     private function assertNoOverlap(
         User $therapist,
-        \Illuminate\Support\Collection $students,
+        Collection $students,
         string $utcDate,
         string $utcStartTime,
         string $utcEndTime,
