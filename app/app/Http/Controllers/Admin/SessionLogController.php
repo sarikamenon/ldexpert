@@ -9,6 +9,7 @@ use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
+use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Services\UserService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SendBackSessionLogRequest;
@@ -43,6 +44,7 @@ final class SessionLogController extends Controller
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly StudentDocumentService $documentService,
+        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function index(SessionLogIndexRequest $request): View
@@ -97,12 +99,16 @@ final class SessionLogController extends Controller
 
         $result = $this->indexService->listForDataTables($filters, $params);
 
+        /** @var \App\Models\User $viewer */
+        $viewer = $request->user();
+        $timezone = $this->timezoneService->resolveTimezone($viewer);
+
         return $this->dataTablesResponse(
             $params,
             $result['recordsTotal'],
             $result['recordsFiltered'],
             $result['rows'],
-            static fn (SessionLog $log): array => SessionLogRowTransformer::transform($log),
+            static fn (SessionLog $log): array => SessionLogRowTransformer::transform($log, $timezone),
         );
     }
 

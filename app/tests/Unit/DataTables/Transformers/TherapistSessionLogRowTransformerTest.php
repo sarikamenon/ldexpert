@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\DataTables\Transformers\SessionLogRowTransformer;
+use App\DataTables\Transformers\TherapistSessionLogRowTransformer;
 use App\Models\SessionLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -11,17 +11,26 @@ uses(RefreshDatabase::class);
 /**
  * @return array<int, string>
  */
-function transformSessionLog(SessionLog $log, string $timezone = 'UTC'): array
+function transformTherapistSessionLog(SessionLog $log, string $timezone = 'UTC'): array
 {
     $log->load(['student', 'school', 'therapist', 'service']);
 
-    return SessionLogRowTransformer::transform($log, $timezone);
+    return TherapistSessionLogRowTransformer::transform($log, $timezone);
 }
 
-it('returns seven columns in the new merged order', function () {
-    $row = transformSessionLog(SessionLog::factory()->create());
+it('returns seven columns in the merged order matching the admin layout', function () {
+    $row = transformTherapistSessionLog(SessionLog::factory()->create());
 
     expect($row)->toHaveCount(7);
+});
+
+it('keeps the session time range in the merged date cell', function () {
+    $log = SessionLog::factory()->create();
+
+    $dateCell = transformTherapistSessionLog($log)[0];
+
+    expect($dateCell)->toContain(' - ')
+        ->and($dateCell)->toContain('Entry:');
 });
 
 it('derives the displayed date from the viewer timezone across the UTC day boundary', function (string $startUtc, string $endUtc, string $timezone, string $expectedDate) {
@@ -31,7 +40,7 @@ it('derives the displayed date from the viewer timezone across the UTC day bound
         'end_time' => $endUtc,
     ]);
 
-    $dateCell = transformSessionLog($log, $timezone)[0];
+    $dateCell = transformTherapistSessionLog($log, $timezone)[0];
 
     expect($dateCell)->toContain($expectedDate);
 })->with([
@@ -45,7 +54,7 @@ it('merges both amounts into a single Amounts cell', function () {
         'therapist_billable_amount' => 80,
     ]);
 
-    $amountsCell = transformSessionLog($log)[3];
+    $amountsCell = transformTherapistSessionLog($log)[3];
 
     expect($amountsCell)
         ->toContain('School:')
@@ -59,7 +68,7 @@ it('renders the escaped notes preview with a read-more toggle', function () {
         'notes' => 'Child engaged well & completed all tasks',
     ]);
 
-    $notesCell = transformSessionLog($log)[4];
+    $notesCell = transformTherapistSessionLog($log)[4];
 
     expect($notesCell)
         ->toContain('data-notes-cell')
@@ -72,7 +81,7 @@ it('renders the escaped notes preview with a read-more toggle', function () {
 it('shows a dash in the notes cell when notes are empty', function () {
     $log = SessionLog::factory()->create(['notes' => '   ']);
 
-    $notesCell = transformSessionLog($log)[4];
+    $notesCell = transformTherapistSessionLog($log)[4];
 
     expect($notesCell)
         ->toContain('-')

@@ -68,15 +68,14 @@
 
     @if (!empty($datatableUrl))
         <div class="overflow-x-auto">
-            <table id="sessionLogsTable" class="w-full display" data-datatable-url="{{ $datatableUrl }}">
+            <table id="sessionLogsTable" class="w-full display session-log-table" data-datatable-url="{{ $datatableUrl }}">
                 <thead>
                     <tr>
-                        <th>Date / Time</th>
-                        <th>Entry Info</th>
-                        <th>Student / School/Family</th>
-                        <th>Therapist / Service</th>
-                        <th>School/Family Amount</th>
-                        <th>Therapist Amount</th>
+                        <th>Date</th>
+                        <th>Student & School/Family</th>
+                        <th>Therapist & Service</th>
+                        <th>Amounts</th>
+                        <th>Notes</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
