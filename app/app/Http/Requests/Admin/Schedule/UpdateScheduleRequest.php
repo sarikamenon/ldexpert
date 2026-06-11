@@ -7,11 +7,15 @@ namespace App\Http\Requests\Admin\Schedule;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\WeekDay;
+use App\Http\Requests\Concerns\ValidatesOccurrenceTimes;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 final class UpdateScheduleRequest extends FormRequest
 {
+    use ValidatesOccurrenceTimes;
+
     public function authorize(): bool
     {
         return $this->user()?->isAdmin() === true;
@@ -45,6 +49,11 @@ final class UpdateScheduleRequest extends FormRequest
             'weekly_days.*' => ['string', Rule::in($weekDayValues)],
             'occurrence_dates' => ['nullable', 'array'],
             'occurrence_dates.*' => ['required', 'date'],
+            'occurrence_start_times' => ['nullable', 'array'],
+            'occurrence_start_times.*' => ['required', 'date_format:H:i'],
+            'occurrence_end_times' => ['nullable', 'array'],
+            'occurrence_end_times.*' => ['required', 'date_format:H:i'],
+            'occurrences_regenerated' => ['nullable', 'boolean'],
             'location_details' => ['nullable', 'string', 'max:2000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'billing_status' => ['nullable', Rule::in($billingStatuses)],
@@ -60,5 +69,12 @@ final class UpdateScheduleRequest extends FormRequest
             'schedule_date.after_or_equal' => 'Schedule date cannot be in the past.',
             'recurrence_end_date.after' => 'Recurrence end date must be after schedule date.',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator): void {
+            $this->validateOccurrenceTimeRules($validator);
+        });
     }
 }

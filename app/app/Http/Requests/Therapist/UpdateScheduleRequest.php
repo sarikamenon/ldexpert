@@ -9,6 +9,7 @@ use App\Domain\Therapist\Repositories\ScheduleRepositoryInterface;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\WeekDay;
+use App\Http\Requests\Concerns\ValidatesOccurrenceTimes;
 use App\Http\Requests\Concerns\ValidatesWeekendScheduling;
 use App\Models\Schedule;
 use App\Models\User;
@@ -18,6 +19,7 @@ use Illuminate\Validation\Validator;
 
 final class UpdateScheduleRequest extends FormRequest
 {
+    use ValidatesOccurrenceTimes;
     use ValidatesWeekendScheduling;
 
     public function authorize(): bool
@@ -59,6 +61,11 @@ final class UpdateScheduleRequest extends FormRequest
             'weekly_days.*' => ['string', Rule::in(array_column(WeekDay::cases(), 'value'))],
             'occurrence_dates' => ['nullable', 'array'],
             'occurrence_dates.*' => ['required', 'date'],
+            'occurrence_start_times' => ['nullable', 'array'],
+            'occurrence_start_times.*' => ['required', 'date_format:H:i'],
+            'occurrence_end_times' => ['nullable', 'array'],
+            'occurrence_end_times.*' => ['required', 'date_format:H:i'],
+            'occurrences_regenerated' => ['nullable', 'boolean'],
             'location_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'billing_status' => ['nullable', Rule::in($billingStatuses)],
@@ -96,6 +103,7 @@ final class UpdateScheduleRequest extends FormRequest
 
             $this->validateSsaAndStudentAccess($validator, $therapist, $schedule);
             $this->validateRecurrenceRules($validator);
+            $this->validateOccurrenceTimeRules($validator);
             $this->validateSubRequestRules($validator);
             $this->validateSchoolCalendarRules($validator, $schedule);
         });

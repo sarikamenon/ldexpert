@@ -26,6 +26,11 @@ final class UpdateScheduleDTO
         public readonly ?int $durationMinutes = null,
         /** @var array<int, string>|null */
         public readonly ?array $occurrenceDates = null,
+        /** @var array<int, string>|null */
+        public readonly ?array $occurrenceStartTimes = null,
+        /** @var array<int, string>|null */
+        public readonly ?array $occurrenceEndTimes = null,
+        public readonly bool $occurrencesRegenerated = false,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -58,6 +63,16 @@ final class UpdateScheduleDTO
             $occurrenceDates = $data['occurrence_dates'];
         }
 
+        $occurrenceStartTimes = null;
+        if (isset($data['occurrence_start_times']) && is_array($data['occurrence_start_times']) && count($data['occurrence_start_times']) > 0) {
+            $occurrenceStartTimes = $data['occurrence_start_times'];
+        }
+
+        $occurrenceEndTimes = null;
+        if (isset($data['occurrence_end_times']) && is_array($data['occurrence_end_times']) && count($data['occurrence_end_times']) > 0) {
+            $occurrenceEndTimes = $data['occurrence_end_times'];
+        }
+
         return new self(
             ssaId: isset($data['ssa_id']) && $data['ssa_id'] !== ''
                 ? (int) $data['ssa_id']
@@ -83,6 +98,9 @@ final class UpdateScheduleDTO
                 ? (int) $data['duration_minutes']
                 : null,
             occurrenceDates: $occurrenceDates,
+            occurrenceStartTimes: $occurrenceStartTimes,
+            occurrenceEndTimes: $occurrenceEndTimes,
+            occurrencesRegenerated: (bool) ($data['occurrences_regenerated'] ?? false),
         );
     }
 

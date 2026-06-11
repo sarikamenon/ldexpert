@@ -14,6 +14,7 @@ use App\DTOs\CreateScheduleDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\OverlapCheckDTO;
 use App\DTOs\OverlapExclusionsDTO;
+use App\DTOs\Schedule\OccurrenceInputDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
@@ -50,6 +51,7 @@ final class ScheduleService
         private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly StudentRepositoryInterface $studentRepository,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly OccurrenceSyncService $occurrenceSyncService,
     ) {}
 
     /**
@@ -354,8 +356,27 @@ final class ScheduleService
                 && $dto->recurrenceType !== $schedule->recurrence_type;
             $endDateChanged = $dto->recurrenceEndDate !== null
                 && $dto->recurrenceEndDate !== $schedule->recurrence_end_date?->format('Y-m-d');
-            $occurrenceDatesChanged = $dto->occurrenceDates !== null;
-            $recurrenceSettingsChanged = $recurrenceChanged || $endDateChanged || $occurrenceDatesChanged;
+
+            // The occurrence list is posted on every save of a recurring schedule.
+            // Treat it as "changed" only when it actually differs from what is
+            // stored, so a no-op save no longer rebuilds the whole series.
+            $occurrenceDatesChanged = $dto->occurrenceDates !== null
+                && $this->occurrenceListDiffersFromBatch($schedule, $dto->occurrenceDates);
+
+            // A full regenerate (delete + recreate all unbilled future occurrences)
+            // is only warranted when the recurrence rule changed, or the client
+            // explicitly rebuilt the list (e.g. end date / pattern changed in the UI).
+            $regenerate = $recurrenceChanged || $endDateChanged || $dto->occurrencesRegenerated;
+
+            // Otherwise, when an occurrence list is submitted that differs from the
+            // DB (dates added/removed or per-occurrence times edited), reconcile it
+            // in place — preserving row ids and any linked session logs.
+            $syncOccurrences = ! $regenerate
+                && $dto->occurrenceDates !== null
+                && $schedule->recurring_batch_number !== null
+                && ($occurrenceDatesChanged || $dto->occurrenceStartTimes !== null);
+
+            $recurrenceSettingsChanged = $regenerate;
 
             // Validate overlap (exclude current schedule and its entire batch so
             // siblings in the same recurring series don't false-positive against the new time).
@@ -452,6 +473,36 @@ final class ScheduleService
                 } else {
                     $this->generateRecurringOccurrences($updated, $studentIds, $updated->isGroup());
                 }
+            }
+
+            // Reconcile individually-edited occurrences in place (no full rebuild):
+            // updates matching rows' times, detaches rows whose date/time leaves the
+            // series pattern, deletes removed dates, and creates added ones.
+            if ($syncOccurrences && $updated->isRecurring() && $dto->occurrenceDates !== null) {
+                $studentIds = [$updated->student_id];
+                if ($updated->isGroup()) {
+                    $groupStudentIds = $this->repository
+                        ->getGroupSchedulesByBatch($updated->group_batch_number ?? '')
+                        ->pluck('student_id')
+                        ->unique()
+                        ->all();
+
+                    if ($groupStudentIds !== []) {
+                        $studentIds = $groupStudentIds;
+                    }
+                }
+
+                $this->occurrenceSyncService->sync(
+                    $updated,
+                    OccurrenceInputDTO::listFromArrays(
+                        $dto->occurrenceDates,
+                        $dto->occurrenceStartTimes,
+                        $dto->occurrenceEndTimes,
+                    ),
+                    $studentIds,
+                    $updated->isGroup(),
+                    $therapist,
+                );
             }
 
             // Update billing status if provided
@@ -730,6 +781,48 @@ final class ScheduleService
         }
 
         return $occurrences;
+    }
+
+    /**
+     * Compare the submitted occurrence dates against the local dates already
+     * stored for this schedule's batch (anchor + unbilled future siblings).
+     * Returns true when the sets differ — i.e. a date was added or removed.
+     *
+     * @param  array<int, string>  $submittedDates  user-local Y-m-d strings (may include trailing time)
+     */
+    private function occurrenceListDiffersFromBatch(Schedule $schedule, array $submittedDates): bool
+    {
+        if ($schedule->recurring_batch_number === null) {
+            return true;
+        }
+
+        /** @var User|null $therapist */
+        $therapist = $this->userRepository->findById($schedule->therapist_id);
+        if ($therapist === null) {
+            return true;
+        }
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+
+        $existingDates = $this->repository
+            ->getUnbilledFutureRecurringOccurrencesByBatch(
+                $schedule->recurring_batch_number,
+                $schedule->schedule_date->format('Y-m-d'),
+            )
+            ->map(fn (Schedule $s): string => $s->startUtc()->setTimezone($tz)->format('Y-m-d'))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        $normalizedSubmitted = collect($submittedDates)
+            ->map(static fn (string $date): string => str_contains($date, ' ') ? explode(' ', $date)[0] : $date)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return $existingDates !== $normalizedSubmitted;
     }
 
     private function calculateRecurrenceEndDate(string $startDate, RecurrenceType $type, int $occurrenceCount): string
