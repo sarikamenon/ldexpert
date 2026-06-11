@@ -361,7 +361,7 @@
                         <x-ui::checkbox-row
                             name="family_non_billable_scheduling"
                             label="Exclude from past sessions queue"
-                            subtext="Skip post-session log submission"
+                            subtext="Skip past-session log submission"
                             :checked="old('family_non_billable_scheduling', false)"
                         />
 

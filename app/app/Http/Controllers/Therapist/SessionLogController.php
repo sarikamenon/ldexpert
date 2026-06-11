@@ -54,7 +54,7 @@ final class SessionLogController extends Controller
      */
     private const ORDER_WHITELIST = [
         0 => 'session_logs.session_date',
-        4 => 'session_logs.therapist_billable_amount',
+        3 => 'session_logs.therapist_billable_amount',
         5 => 'session_logs.status',
     ];
 
@@ -153,13 +153,14 @@ final class SessionLogController extends Controller
         $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
 
         $result = $this->sessionLogIndexService->listForDataTablesForTherapist($therapist, $filters, $params);
+        $timezone = $this->timezoneService->resolveTimezone($therapist);
 
         return $this->dataTablesResponse(
             $params,
             $result['recordsTotal'],
             $result['recordsFiltered'],
             $result['rows'],
-            static fn (SessionLog $log): array => TherapistSessionLogRowTransformer::transform($log),
+            static fn (SessionLog $log): array => TherapistSessionLogRowTransformer::transform($log, $timezone),
         );
     }
 

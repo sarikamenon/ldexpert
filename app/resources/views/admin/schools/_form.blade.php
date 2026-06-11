@@ -213,7 +213,7 @@
                     <x-ui::checkbox-row
                         name="non_billable_scheduling"
                         label="Exclude from past sessions queue"
-                        subtext="Skip post-session log submission"
+                        subtext="Skip past-session log submission"
                         tooltip="Use when therapists should not submit post-session logs in Nova for this school or family."
                         :checked="old('non_billable_scheduling', $school->non_billable_scheduling ?? false)"
                     />

@@ -1,4 +1,5 @@
 import { initDataTable, initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
+import { initSessionLogNotes } from '../common/session-log-notes';
 import { confirmDialog } from '../common/sweetalert';
 
 const bindConfirmations = () => {
@@ -44,7 +45,11 @@ async function initServerSideSessionLogsTable() {
         await initServerSideDataTable('#sessionLogsTable', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
-            columnDefs: [{ orderable: false, targets: -1 }],
+            // Notes column (index 4) is not orderable; mirrors session-logs/index.js
+            columnDefs: [
+                { orderable: false, targets: -1 },
+                { orderable: false, targets: 4 },
+            ],
             getExtraData(d) {
                 if (!form) return;
                 d.filter_date_from = form.querySelector('[name="date_from"]')?.value ?? '';
@@ -54,6 +59,8 @@ async function initServerSideSessionLogsTable() {
                 d.filter_ssa_id = form.querySelector('[name="ssa_id"]')?.value ?? '';
             },
         });
+
+        initSessionLogNotes(table);
 
         // Reload table when filters change
         if (form) {
