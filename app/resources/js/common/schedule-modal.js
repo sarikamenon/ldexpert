@@ -550,12 +550,13 @@ function renderFooter(schedule, actionUrls) {
         const sep = editBase.includes('?') ? '&' : '?';
 
         if (schedule.is_recurring) {
-            // Recurring: offer both scopes. "Edit this schedule" detaches on a
-            // date/time change; "Edit recurring series" opens the full editor.
+            // Recurring: offer both scopes. "Edit this schedule" edits only this
+            // session (it stays in the series as a modified session); "Edit future
+            // schedules" opens the full editor for all future sessions.
             buttons.push(`<a href="${escapeAttr(editBase + sep + 'scope=occurrence')}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 Edit this schedule
             </a>`);
-            buttons.push(`<a href="${escapeAttr(editBase + sep + 'scope=series')}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            buttons.push(`<a href="${escapeAttr(editBase + sep + 'scope=future')}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 Edit future schedules
             </a>`);
         } else {

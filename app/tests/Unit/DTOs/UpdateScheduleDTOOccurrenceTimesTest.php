@@ -42,22 +42,3 @@ it('treats empty occurrence time arrays as null', function (): void {
     expect($dto->occurrenceStartTimes)->toBeNull()
         ->and($dto->occurrenceEndTimes)->toBeNull();
 });
-
-it('maps edit_scope to editScope', function (string $scope): void {
-    $dto = UpdateScheduleDTO::fromArray([
-        'schedule_date' => '2026-07-06',
-        'start_time' => '09:00',
-        'edit_scope' => $scope,
-    ]);
-
-    expect($dto->editScope)->toBe($scope);
-})->with(['occurrence', 'series']);
-
-it('leaves editScope null when edit_scope is absent or empty', function (mixed $value): void {
-    $data = ['schedule_date' => '2026-07-06', 'start_time' => '09:00'];
-    if ($value !== 'ABSENT') {
-        $data['edit_scope'] = $value;
-    }
-
-    expect(UpdateScheduleDTO::fromArray($data)->editScope)->toBeNull();
-})->with(['ABSENT', '']);

@@ -100,7 +100,8 @@ function syncDto(array $dates, ?array $startTimes = null, ?array $endTimes = nul
 
 /**
  * Occurrence-scope ("Edit this schedule") DTO: edits a single schedule, posts no
- * recurrence/occurrence fields. Date/time changes detach it from the series.
+ * recurrence/occurrence fields. Date/time changes keep it in the series as a
+ * modified session (it is never detached).
  */
 function occurrenceDto(string $date, string $startTime = '09:00', int $durationMinutes = 60, ?string $notes = null): UpdateScheduleDTO
 {
@@ -118,7 +119,6 @@ function occurrenceDto(string $date, string $startTime = '09:00', int $durationM
         notes: $notes,
         billingStatus: null,
         durationMinutes: $durationMinutes,
-        editScope: 'occurrence',
     );
 }
 

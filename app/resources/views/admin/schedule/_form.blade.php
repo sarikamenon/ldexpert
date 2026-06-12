@@ -279,7 +279,7 @@
                 <p class="text-xs text-foreground/60 mt-1 mb-3">
                     @if ($isEdit)
                         Edit any session's date or time below, or remove unwanted occurrences with the ✕ button.
-                        A session whose time differs from the series is treated as a one-off and removed from the series.
+                        A session whose time differs from the series stays in the series as a modified session.
                     @else
                         Review and adjust generated occurrence dates. Remove any you don't want.
                     @endif

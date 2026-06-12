@@ -67,11 +67,14 @@ Editing the **series' Recurrence End Date** is additive: extending creates only
 the new dates beyond the old end; shrinking deletes only the rows past the new
 end. It never rebuilds the series.
 
-## Edit scope (occurrence vs series)
+## Edit scope (occurrence vs future)
 
-How far an edit reaches — distinct from a schedule's *shape* ("single"/"recurring"):
+How far an edit reaches — distinct from a schedule's *shape* ("single"/"recurring").
+The scope is carried internally as the `?scope=` query param on the edit route
+(`occurrence` | `future`), surfaced in the UI as "Edit this schedule" vs "Edit
+future schedules":
 - **occurrence** — edit only this one schedule. Date/time changes apply to this
   session as a [[modified-occurrence]] (it stays in the series); notes/location
   changes likewise affect only this row. Siblings are never touched.
-- **series** — edit the whole recurring series (the full recurrence editor:
+- **future** — edit the whole recurring series (the full recurrence editor:
   per-occurrence rows, recurrence end date).

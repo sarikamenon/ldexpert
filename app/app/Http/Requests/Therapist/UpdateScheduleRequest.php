@@ -66,7 +66,6 @@ final class UpdateScheduleRequest extends FormRequest
             'occurrence_end_times' => ['nullable', 'array'],
             'occurrence_end_times.*' => ['required', 'date_format:H:i'],
             'occurrences_regenerated' => ['nullable', 'boolean'],
-            'edit_scope' => ['nullable', Rule::in(['occurrence', 'series'])],
             'location_details' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'billing_status' => ['nullable', Rule::in($billingStatuses)],

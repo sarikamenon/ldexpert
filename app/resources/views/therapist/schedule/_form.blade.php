@@ -12,7 +12,7 @@
     'weekDays' => [],
     'holidayDates' => [],
     'occurrenceRows' => [],
-    'editScope' => 'series',
+    'editScope' => 'future',
     'subPanel' => null,
 ])
 
@@ -29,9 +29,6 @@
     @csrf
     @if ($isEdit)
         @method('PUT')
-        {{-- Edit reach: 'occurrence' detaches this row on date/time change;
-             'series' runs the full recurring-series reconcile. --}}
-        <input type="hidden" name="edit_scope" value="{{ $editScope }}">
     @endif
     @if (! empty($makeupRequestId ?? null))
         <input type="hidden" name="makeup_request_id" value="{{ $makeupRequestId }}">
@@ -210,7 +207,7 @@
     {{-- Section 2: Recurrence Options.
          Hidden in occurrence-scope edit ("Edit this schedule") — that flow edits
          only this schedule and never touches the recurring series. --}}
-    @if (! $isEdit || $editScope === 'series')
+    @if (! $isEdit || $editScope === 'future')
     @php
         $currentRecurrenceType = $isEdit
             ? old('recurrence_type', $schedule->recurrence_type?->value ?? 'none')
@@ -328,7 +325,7 @@
                 <p class="text-xs text-foreground/60 mt-1 mb-3">
                     @if ($isEdit)
                         Edit any session's date or time below, or remove unwanted occurrences with the ✕ button.
-                        A session whose time differs from the series is treated as a one-off and removed from the series.
+                        A session whose time differs from the series stays in the series as a modified session.
                         Dates on weekends or school holidays are highlighted in yellow.
                     @else
                         Review the occurrence dates below. You can modify any date or remove unwanted

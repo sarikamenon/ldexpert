@@ -9,10 +9,10 @@
                 <div>
                     <p class="text-sm text-foreground/60">Therapist · Schedule</p>
                     <h1 class="text-2xl font-semibold text-foreground">
-                        {{ ($editScope ?? 'series') === 'series' && $schedule->isRecurring() ? 'Edit Future Schedules' : 'Edit Schedule' }}
+                        {{ ($editScope ?? 'future') === 'future' && $schedule->isRecurring() ? 'Edit Future Schedules' : 'Edit Schedule' }}
                     </h1>
                     <p class="text-sm text-foreground/60 mt-1">
-                        @if (($editScope ?? 'series') === 'occurrence' && $schedule->isRecurring())
+                        @if (($editScope ?? 'future') === 'occurrence' && $schedule->isRecurring())
                             Editing this session only. Changes apply to this session and don't affect the rest of the series.
                         @else
                             Update schedule date, time, location, and notes.
@@ -62,7 +62,7 @@
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,
                 'scheduleLocalEndTime' => $scheduleLocalEndTime,
                 'occurrenceRows' => $occurrenceRows ?? [],
-                'editScope' => $editScope ?? 'series',
+                'editScope' => $editScope ?? 'future',
                 'subPanel' => $subPanel ?? null,
                 'makeupRequestId' => $makeupRequestId ?? null,
             ])
