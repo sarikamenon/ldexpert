@@ -7,6 +7,7 @@ namespace App\Domain\Schedule\Presenters;
 use App\Constants\UsTimezones;
 use App\Domain\School\Services\SchoolCalendarService;
 use App\Domain\Service\Services\ServiceCatalogService;
+use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Time\UserTimezoneService;
 use App\Enums\ServiceStatus;
 use App\Enums\WeekDay;
@@ -31,6 +32,7 @@ final class ScheduleFormPresenter
         private readonly UserTimezoneService $timezoneService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly SchoolCalendarService $calendarService,
+        private readonly ScheduleService $scheduleService,
     ) {}
 
     /**
@@ -103,6 +105,7 @@ final class ScheduleFormPresenter
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
+            'occurrenceRows' => $this->scheduleService->buildOccurrenceRows($schedule, $therapist),
         ];
     }
 

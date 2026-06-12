@@ -215,6 +215,11 @@ final class ScheduleController extends Controller
             ?? $schedule->student?->studentProfile?->school_id;
         $holidayDates = $editSchoolId ? $this->resolveUpcomingHolidayDates((int) $editSchoolId) : [];
 
+        // Edit reach: 'future' shows the full recurrence editor (all future
+        // sessions); 'occurrence' (the default for every entry point except the
+        // modal's explicit "Edit future schedules" button) edits only this schedule.
+        $editScope = $request->query('scope') === 'future' ? 'future' : 'occurrence';
+
         return view('therapist.schedule.edit', [
             'schedule' => $schedule,
             'therapistTimezone' => $therapistTimezone,
@@ -227,6 +232,10 @@ final class ScheduleController extends Controller
             'scheduleLocalDateFormatted' => $localStart->format('M d, Y'),
             'scheduleLocalStartTime' => $localStart->format('H:i'),
             'scheduleLocalEndTime' => $localEnd->format('H:i'),
+            'editScope' => $editScope,
+            'occurrenceRows' => $editScope === 'future'
+                ? $this->scheduleService->buildOccurrenceRows($schedule, $therapist)
+                : [],
             'subPanel' => $subPanel,
             'makeupRequestId' => $request->query('makeup_request_id') !== null
                 ? (int) $request->query('makeup_request_id')

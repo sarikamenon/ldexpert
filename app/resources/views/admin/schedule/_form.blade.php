@@ -12,6 +12,7 @@
     'allowsWeekendScheduling'=> false,
     'weekDays'              => [],
     'holidayDates'          => [],
+    'occurrenceRows'        => [],
     'formAction'            => '',
     'therapistId'           => null,
     'defaultMeetingLocation'=> null,
@@ -268,13 +269,25 @@
                 <x-input-error :messages="$errors->get('recurrence_end_date')" class="mt-2" />
             </div>
 
-            <div id="occurrence_dates_container" class="hidden mt-4">
+            @if ($isEdit)
+                <input type="hidden" name="occurrences_regenerated" id="occurrences_regenerated" value="0" />
+            @endif
+
+            <div id="occurrence_dates_container" class="hidden mt-4"
+                @if ($isEdit) data-edit-mode="1" data-occurrence-rows="{{ json_encode($occurrenceRows) }}" @endif>
                 <x-input-label value="Occurrence Dates *" />
                 <p class="text-xs text-foreground/60 mt-1 mb-3">
-                    Review and adjust generated occurrence dates. Remove any you don't want.
+                    @if ($isEdit)
+                        Edit any session's date or time below, or remove unwanted occurrences with the ✕ button.
+                        A session whose time differs from the series stays in the series as a modified session.
+                    @else
+                        Review and adjust generated occurrence dates. Remove any you don't want.
+                    @endif
                 </p>
                 <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
                 <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
+                <x-input-error :messages="$errors->get('occurrence_start_times.*')" class="mt-2" />
+                <x-input-error :messages="$errors->get('occurrence_end_times.*')" class="mt-2" />
             </div>
 
             <div id="additional_dates_container" class="hidden mt-4">

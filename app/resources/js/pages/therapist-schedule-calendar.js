@@ -58,6 +58,7 @@ import { openScheduleDetailsModal } from '../common/schedule-modal';
                 if (!scheduleId) return;
                 openScheduleDetailsModal(scheduleId, '/therapist/schedule', {
                     studentUrl: (id) => `/therapist/students/${id}`,
+                    editUrl: (id) => `/therapist/schedule/${id}/edit`,
                 });
             });
         }

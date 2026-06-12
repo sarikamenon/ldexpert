@@ -11,6 +11,8 @@
     'allowsWeekendScheduling' => false,
     'weekDays' => [],
     'holidayDates' => [],
+    'occurrenceRows' => [],
+    'editScope' => 'future',
     'subPanel' => null,
 ])
 
@@ -202,7 +204,10 @@
         @endif
     </x-ui::card>
 
-    {{-- Section 2: Recurrence Options --}}
+    {{-- Section 2: Recurrence Options.
+         Hidden in occurrence-scope edit ("Edit this schedule") — that flow edits
+         only this schedule and never touches the recurring series. --}}
+    @if (! $isEdit || $editScope === 'future')
     @php
         $currentRecurrenceType = $isEdit
             ? old('recurrence_type', $schedule->recurrence_type?->value ?? 'none')
@@ -307,15 +312,31 @@
                 <x-input-error :messages="$errors->get('recurrence_end_date')" class="mt-2" />
             </div>
 
-            <div id="occurrence_dates_container" class="hidden mt-4">
+            {{-- Hidden flag: set to 1 by the JS whenever it rebuilds the whole
+                 occurrence list (recurrence type / end date changed), telling the
+                 backend to delete and regenerate instead of reconciling in place. --}}
+            @if ($isEdit)
+                <input type="hidden" name="occurrences_regenerated" id="occurrences_regenerated" value="0" />
+            @endif
+
+            <div id="occurrence_dates_container" class="hidden mt-4"
+                @if ($isEdit) data-edit-mode="1" data-occurrence-rows="{{ json_encode($occurrenceRows) }}" @endif>
                 <x-input-label value="Occurrence Dates *" />
                 <p class="text-xs text-foreground/60 mt-1 mb-3">
-                    Review the occurrence dates below. You can modify any date or remove unwanted
-                    occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
-                    Dates falling on weekends or school holidays are highlighted in yellow.
+                    @if ($isEdit)
+                        Edit any session's date or time below, or remove unwanted occurrences with the ✕ button.
+                        A session whose time differs from the series stays in the series as a modified session.
+                        Dates on weekends or school holidays are highlighted in yellow.
+                    @else
+                        Review the occurrence dates below. You can modify any date or remove unwanted
+                        occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
+                        Dates falling on weekends or school holidays are highlighted in yellow.
+                    @endif
                 </p>
                 <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
                 <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
+                <x-input-error :messages="$errors->get('occurrence_start_times.*')" class="mt-2" />
+                <x-input-error :messages="$errors->get('occurrence_end_times.*')" class="mt-2" />
             </div>
 
             {{-- Additional one-off dates (custom weekly) --}}
@@ -335,6 +356,7 @@
             </div>
         </div>
     </x-ui::card>
+    @endif
 
     {{-- Section 3: Location & Meeting Details --}}
     <x-ui::card class="p-6 space-y-6">

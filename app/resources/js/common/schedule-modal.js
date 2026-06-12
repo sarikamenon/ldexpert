@@ -546,9 +546,24 @@ function renderFooter(schedule, actionUrls) {
     }
 
     if (!isBilled && !isCancelled && actionUrls.editUrl) {
-        buttons.push(`<a href="${escapeAttr(actionUrls.editUrl(schedule.id))}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-            Edit Schedule
-        </a>`);
+        const editBase = actionUrls.editUrl(schedule.id);
+        const sep = editBase.includes('?') ? '&' : '?';
+
+        if (schedule.is_recurring) {
+            // Recurring: offer both scopes. "Edit this schedule" edits only this
+            // session (it stays in the series as a modified session); "Edit future
+            // schedules" opens the full editor for all future sessions.
+            buttons.push(`<a href="${escapeAttr(editBase + sep + 'scope=occurrence')}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Edit this schedule
+            </a>`);
+            buttons.push(`<a href="${escapeAttr(editBase + sep + 'scope=future')}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Edit future schedules
+            </a>`);
+        } else {
+            buttons.push(`<a href="${escapeAttr(editBase)}" class="inline-flex items-center px-4 py-2 border border-border rounded-lg hover:bg-muted/50 text-sm font-medium text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                Edit Schedule
+            </a>`);
+        }
     }
 
     if (!buttons.length) {

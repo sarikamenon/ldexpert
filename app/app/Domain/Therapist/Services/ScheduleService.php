@@ -14,6 +14,7 @@ use App\DTOs\CreateScheduleDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\OverlapCheckDTO;
 use App\DTOs\OverlapExclusionsDTO;
+use App\DTOs\Schedule\OccurrenceInputDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
@@ -50,6 +51,7 @@ final class ScheduleService
         private readonly ServiceRepositoryInterface $serviceRepository,
         private readonly StudentRepositoryInterface $studentRepository,
         private readonly SchoolRepositoryInterface $schoolRepository,
+        private readonly OccurrenceSyncService $occurrenceSyncService,
     ) {}
 
     /**
@@ -354,8 +356,36 @@ final class ScheduleService
                 && $dto->recurrenceType !== $schedule->recurrence_type;
             $endDateChanged = $dto->recurrenceEndDate !== null
                 && $dto->recurrenceEndDate !== $schedule->recurrence_end_date?->format('Y-m-d');
-            $occurrenceDatesChanged = $dto->occurrenceDates !== null;
-            $recurrenceSettingsChanged = $recurrenceChanged || $endDateChanged || $occurrenceDatesChanged;
+
+            // The occurrence list is posted on every save of a recurring schedule.
+            // Treat it as "changed" only when it actually differs from what is
+            // stored, so a no-op save no longer rebuilds the whole series.
+            $occurrenceDatesChanged = $dto->occurrenceDates !== null
+                && $this->occurrenceListDiffersFromBatch($schedule, $dto->occurrenceDates);
+
+            // A full regenerate (delete + recreate all unbilled future occurrences,
+            // with a new batch anchor) is warranted when the recurrence RULE
+            // changes — i.e. the recurrence type changes, which alters the pattern
+            // for every occurrence (the client also flags this via
+            // occurrences_regenerated). Extending/shrinking the end date is handled
+            // additively below via the sync path instead, preserving existing rows.
+            $regenerate = $recurrenceChanged || $dto->occurrencesRegenerated;
+
+            // Otherwise, when an occurrence list is submitted that differs from the
+            // DB (dates added/removed via an end-date change, or per-occurrence
+            // times edited), reconcile it in place — preserving row ids and any
+            // linked session logs. Adding dates (end-date extension) creates only
+            // the new rows; removing dates (end-date shrink) deletes only the
+            // dropped rows.
+            $syncOccurrences = ! $regenerate
+                && $dto->occurrenceDates !== null
+                && $schedule->recurring_batch_number !== null
+                && ($occurrenceDatesChanged || $endDateChanged || $dto->occurrenceStartTimes !== null);
+
+            $recurrenceSettingsChanged = $regenerate;
+
+            // The stored end date still needs updating even on the additive path.
+            $persistEndDateOnly = ! $regenerate && $endDateChanged;
 
             // Validate overlap (exclude current schedule and its entire batch so
             // siblings in the same recurring series don't false-positive against the new time).
@@ -399,18 +429,28 @@ final class ScheduleService
                 });
             }
 
-            // Switching to NONE removes recurring fields and clears parent linkage.
+            // Following the iCalendar model, an occurrence-scope edit ("Edit this
+            // schedule") keeps the row in its series as a modified exception — it
+            // changes only this row's date/time/details and never touches the
+            // recurrence linkage. So the branches below run only for series-scope
+            // recurrence changes.
             if ($incomingRecurrenceType === RecurrenceType::NONE) {
+                // Switching to NONE removes recurring fields and clears parent linkage.
                 $data['recurrence_type'] = RecurrenceType::NONE->value;
                 $data['recurrence_end_date'] = null;
                 $data['recurring_batch_number'] = null;
                 $data['parent_schedule_id'] = null;
             } elseif ($recurrenceSettingsChanged) {
-                // New recurrence settings: this schedule becomes the new series anchor.
+                // New recurrence rule: this schedule becomes the new series anchor.
                 $data['recurrence_type'] = $incomingRecurrenceType->value;
                 $data['recurrence_end_date'] = $incomingEndDate;
                 $data['recurring_batch_number'] = $this->repository->generateBatchNumber('recurring');
                 $data['parent_schedule_id'] = null;
+            } elseif ($persistEndDateOnly) {
+                // Additive end-date change: keep the batch/anchor, just record the
+                // new end date. Existing rows are preserved; the sync path below
+                // adds rows beyond the old end or trims rows past a shortened end.
+                $data['recurrence_end_date'] = $incomingEndDate;
             }
 
             $updated = $this->repository->update($schedule, $data);
@@ -454,6 +494,44 @@ final class ScheduleService
                 }
             }
 
+            // Reconcile individually-edited occurrences in place (no full rebuild):
+            // updates matching rows' times, detaches rows whose date/time leaves the
+            // series pattern, deletes removed dates, and creates added ones.
+            if ($syncOccurrences && $updated->isRecurring() && $dto->occurrenceDates !== null) {
+                $studentIds = [$updated->student_id];
+                if ($updated->isGroup()) {
+                    $groupStudentIds = $this->repository
+                        ->getGroupSchedulesByBatch($updated->group_batch_number ?? '')
+                        ->pluck('student_id')
+                        ->unique()
+                        ->all();
+
+                    if ($groupStudentIds !== []) {
+                        $studentIds = $groupStudentIds;
+                    }
+                }
+
+                $this->occurrenceSyncService->sync(
+                    $updated,
+                    OccurrenceInputDTO::listFromArrays(
+                        $dto->occurrenceDates,
+                        $dto->occurrenceStartTimes,
+                        $dto->occurrenceEndTimes,
+                    ),
+                    $studentIds,
+                    $updated->isGroup(),
+                    $therapist,
+                );
+
+                // Shrinking the list (removing dates) can leave the batch
+                // mis-structured or down to one session — keep the anchor valid
+                // and demote a lone survivor.
+                if ($updated->recurring_batch_number !== null) {
+                    $this->reanchorBatch($updated->recurring_batch_number);
+                    $this->demoteBatchIfSingleRemaining($updated->recurring_batch_number);
+                }
+            }
+
             // Update billing status if provided
             if ($dto->billingStatus instanceof BillingStatus) {
                 $updated = $this->repository->updateBillingStatus($updated, $dto->billingStatus);
@@ -480,7 +558,91 @@ final class ScheduleService
                 throw new CannotDeleteBilledScheduleException;
             }
 
+            $batchNumber = $schedule->recurring_batch_number;
+
             $this->repository->delete($schedule);
+
+            // Deleting a batch row (possibly the anchor) can orphan siblings or
+            // leave a single survivor — re-anchor the batch, then demote if one.
+            if ($batchNumber !== null) {
+                $this->reanchorBatch($batchNumber);
+                $this->demoteBatchIfSingleRemaining($batchNumber);
+            }
+        });
+    }
+
+    /**
+     * When a recurring batch is reduced to a single remaining (non-deleted)
+     * occurrence, that occurrence is no longer part of a series — clear its
+     * recurrence metadata so it behaves and displays as a standalone schedule.
+     * Billed survivors are left untouched (we never mutate billed rows).
+     */
+    private function demoteBatchIfSingleRemaining(string $batchNumber): void
+    {
+        $remaining = $this->repository->getRecurringOccurrencesByBatch($batchNumber);
+
+        if ($remaining->count() !== 1) {
+            return;
+        }
+
+        $survivor = $remaining->first();
+
+        if ($survivor === null || $survivor->billing_status === BillingStatus::BILLED) {
+            return;
+        }
+
+        $this->repository->update($survivor, [
+            'recurrence_type' => RecurrenceType::NONE->value,
+            'recurrence_end_date' => null,
+            'recurring_batch_number' => null,
+            'parent_schedule_id' => null,
+        ]);
+    }
+
+    /**
+     * Keep a recurring batch's parent/child structure consistent after rows leave
+     * it (e.g. the anchor itself was detached or deleted). Ensures exactly one
+     * anchor (`parent_schedule_id IS NULL`) remains and every other row points at
+     * it, so siblings never reference a row that has left the batch.
+     *
+     * Idempotent: a no-op when the batch already has a single valid anchor.
+     */
+    private function reanchorBatch(string $batchNumber): void
+    {
+        $rows = $this->repository->getRecurringOccurrencesByBatch($batchNumber);
+
+        // 0 rows: nothing to anchor. 1 row: demotion handles collapsing it.
+        if ($rows->count() < 2) {
+            return;
+        }
+
+        $anchors = $rows->whereNull('parent_schedule_id');
+
+        // Already exactly one anchor and all children point at it → nothing to do.
+        if ($anchors->count() === 1) {
+            $anchorId = $anchors->first()?->id;
+            $orphaned = $rows->contains(
+                fn (Schedule $s): bool => $s->parent_schedule_id !== null && $s->parent_schedule_id !== $anchorId
+            );
+
+            if (! $orphaned) {
+                return;
+            }
+        }
+
+        // Promote the earliest row as the sole anchor; repoint the rest to it.
+        // Rows are ordered by schedule_date (then start_time) by the repository.
+        $newAnchor = $rows->first();
+        if ($newAnchor === null) {
+            return;
+        }
+
+        $rows->each(function (Schedule $row) use ($newAnchor): void {
+            $shouldBeParent = $row->id === $newAnchor->id ? null : $newAnchor->id;
+
+            if ($row->parent_schedule_id !== $shouldBeParent) {
+                $this->repository->update($row, ['parent_schedule_id' => $shouldBeParent]);
+            }
         });
     }
 
@@ -502,7 +664,12 @@ final class ScheduleService
                 return 0;
             }
 
+            $batchNumber = $schedule->recurring_batch_number;
+
             $futureSchedules->each(fn (Schedule $s) => $this->repository->delete($s));
+
+            $this->reanchorBatch($batchNumber);
+            $this->demoteBatchIfSingleRemaining($batchNumber);
 
             return $futureSchedules->count();
         });
@@ -732,6 +899,48 @@ final class ScheduleService
         return $occurrences;
     }
 
+    /**
+     * Compare the submitted occurrence dates against the local dates already
+     * stored for this schedule's batch (anchor + unbilled future siblings).
+     * Returns true when the sets differ — i.e. a date was added or removed.
+     *
+     * @param  array<int, string>  $submittedDates  user-local Y-m-d strings (may include trailing time)
+     */
+    private function occurrenceListDiffersFromBatch(Schedule $schedule, array $submittedDates): bool
+    {
+        if ($schedule->recurring_batch_number === null) {
+            return true;
+        }
+
+        /** @var User|null $therapist */
+        $therapist = $this->userRepository->findById($schedule->therapist_id);
+        if ($therapist === null) {
+            return true;
+        }
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+
+        $existingDates = $this->repository
+            ->getUnbilledFutureRecurringOccurrencesByBatch(
+                $schedule->recurring_batch_number,
+                $schedule->schedule_date->format('Y-m-d'),
+            )
+            ->map(fn (Schedule $s): string => $s->startUtc()->setTimezone($tz)->format('Y-m-d'))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        $normalizedSubmitted = collect($submittedDates)
+            ->map(static fn (string $date): string => str_contains($date, ' ') ? explode(' ', $date)[0] : $date)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return $existingDates !== $normalizedSubmitted;
+    }
+
     private function calculateRecurrenceEndDate(string $startDate, RecurrenceType $type, int $occurrenceCount): string
     {
         $cursor = Carbon::parse($startDate);
@@ -752,6 +961,47 @@ final class ScheduleService
             RecurrenceType::MONTHLY => $date->copy()->addMonth(),
             RecurrenceType::NONE, RecurrenceType::CUSTOM_WEEKLY => $date->copy(),
         };
+    }
+
+    /**
+     * Editable occurrence rows for a recurring schedule's edit form: the anchor
+     * plus its unbilled future siblings, each as a user-local date + start/end
+     * time, with a flag marking rows whose time differs from the series default.
+     *
+     * @return array<int, array{date: string, start_time: string, end_time: string, is_custom_time: bool, is_anchor: bool}>
+     */
+    public function buildOccurrenceRows(Schedule $schedule, User $therapist): array
+    {
+        if (! $schedule->isRecurring() || $schedule->recurring_batch_number === null) {
+            return [];
+        }
+
+        $tz = $this->timezoneService->resolveTimezone($therapist);
+        $seriesStartTime = $schedule->localStart($tz)->format('H:i');
+        $seriesEndTime = $schedule->localEnd($tz)->format('H:i');
+
+        return $this->repository
+            ->getUnbilledFutureRecurringOccurrencesByBatch(
+                $schedule->recurring_batch_number,
+                $schedule->schedule_date->format('Y-m-d'),
+            )
+            ->map(function (Schedule $occurrence) use ($tz, $seriesStartTime, $seriesEndTime, $schedule): array {
+                $start = $occurrence->localStart($tz);
+                $end = $occurrence->localEnd($tz);
+                $startTime = $start->format('H:i');
+                $endTime = $end->format('H:i');
+
+                return [
+                    'date' => $start->format('Y-m-d'),
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
+                    'is_custom_time' => $startTime !== $seriesStartTime || $endTime !== $seriesEndTime,
+                    'is_anchor' => $occurrence->id === $schedule->id,
+                ];
+            })
+            ->sortBy('date')
+            ->values()
+            ->all();
     }
 
     public function generateBatchNumber(string $type = 'recurring'): string

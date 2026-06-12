@@ -12,6 +12,9 @@ architectural decisions live in [../adr/](../adr/).
   parents, and duplicate detection.
 - [Services](./services.md) — the work types a therapist logs, their independent flags
   (direct/indirect, THO counting, billable), and how sessions count toward owed hours.
+- [Scheduling & Recurrence](./scheduling.md) — schedules, recurring series and their
+  anchor/occurrences, modified occurrences, additive end-date, and the
+  occurrence-vs-future edit scope.
 
 ## Relationships
 
