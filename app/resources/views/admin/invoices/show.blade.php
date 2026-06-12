@@ -46,16 +46,20 @@
             </a>
 
             @if ($invoice->isDraft())
-                {{-- The send modal carries the recipient email field, so the admin can
-                     supply or correct the address when the snapshot is missing
-                     (e.g. the school had no invoice email when the invoice was created). --}}
-                <x-ui::button type="button" variant="success" id="open-send-email-button" x-data=""
-                    data-is-private-family="{{ ($invoice->school?->is_private_student ?? false) ? '1' : '0' }}"
-                    data-invoice-total="{{ $invoice->total }}"
-                    data-attach-sessions-url="{{ route('admin.invoices.attach-sessions', $invoice) }}"
-                    x-on:click="$dispatch('open-send-email-modal')">
-                    Send Invoice
-                </x-ui::button>
+                {{-- Send delivers the invoice to the school/family's invoice email when
+                     one is on file; otherwise it just marks the invoice as sent without
+                     emailing. Either way it is a single confirmed action — no modal. --}}
+                <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}" id="send-email-form"
+                    class="inline">
+                    @csrf
+                    <x-ui::button type="submit" variant="success" id="send-invoice-button"
+                        data-is-private-family="{{ ($invoice->school?->is_private_student ?? false) ? '1' : '0' }}"
+                        data-invoice-total="{{ $invoice->total }}"
+                        data-has-invoice-email="{{ filled($invoice->school_invoice_email) ? '1' : '0' }}"
+                        data-attach-sessions-url="{{ route('admin.invoices.attach-sessions', $invoice) }}">
+                        Send Invoice
+                    </x-ui::button>
+                </form>
             @endif
         </x-slot>
     </x-ui::show-header>
@@ -325,63 +329,6 @@
 
     {{-- Record Payment Modal --}}
     @include('admin.invoices._record-payment-modal')
-
-    {{-- Send Email Modal --}}
-    @if ($invoice->isDraft())
-        <div x-data="{ open: false }" x-on:open-send-email-modal.window="open = true" x-show="open"
-            class="fixed inset-0 z-[100] overflow-y-auto" style="display: none;" role="dialog" aria-modal="true"
-            aria-labelledby="send-email-modal-title">
-            <div class="fixed inset-0 bg-foreground/50" x-on:click="open = false" aria-hidden="true"></div>
-
-            <div class="relative z-10 flex min-h-full items-center justify-center px-4 py-8 sm:py-10">
-                <div
-                    class="flex w-full max-w-md flex-col overflow-hidden rounded-lg border border-border bg-background shadow-xl outline-none focus:outline-none">
-                    <div class="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
-                        <h3 id="send-email-modal-title" class="text-lg font-semibold text-foreground">Send Invoice
-                            Email</h3>
-                        <button type="button"
-                            class="shrink-0 rounded-md p-2 text-foreground/70 transition-colors hover:bg-background/subtle hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
-                            x-on:click="open = false" aria-label="Close dialog">
-                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    </div>
-
-                    <form method="POST" action="{{ route('admin.invoices.send', $invoice) }}"
-                        id="send-email-form" class="flex flex-col px-6 pt-4 pb-8">
-                        @csrf
-
-                        <div class="space-y-4">
-                            <div>
-                                <x-input-label for="send_email" value="Recipient Email *" />
-                                <p class="mt-1 text-xs text-foreground/60" id="send_email_help">
-                                    The email address to send the invoice to. Prefilled from the school/family's
-                                    invoice email; edit it here if it is missing or incorrect.
-                                </p>
-                                <x-text-input id="send_email" name="email" type="email" class="mt-1 block w-full"
-                                    aria-describedby="send_email_help"
-                                    value="{{ old('email', $invoice->school_invoice_email) }}" required />
-                                <x-input-error :messages="$errors->get('email')" class="mt-2" />
-                            </div>
-                        </div>
-
-                        <div class="mt-6 flex gap-3 border-t border-border pt-6">
-                            <button type="button" x-on:click="open = false"
-                                class="flex-1 px-4 py-2 border border-border rounded-md hover:bg-background/subtle focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
-                                Cancel
-                            </button>
-                            <button type="submit"
-                                class="flex-1 px-4 py-2 bg-success text-success-foreground rounded-md hover:bg-success/90 active:bg-success/80 focus:outline-none focus:ring-2 focus:ring-ring focus-visible:ring-2 focus-visible:ring-ring">
-                                Send Invoice
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endif
 
     {{-- Resend Email Modal --}}
     @if ($invoice->isSent() && !$invoice->isPaid())

@@ -378,7 +378,7 @@ it('sends invoice via email', function () {
         ->and($invoice->fresh()->sent_by_id)->toBe($admin->id);
 });
 
-it('sends a draft with a missing email snapshot using the address supplied on send, backfilling the school', function () {
+it('marks a draft as sent without emailing when no invoice email is on file', function () {
     Mail::fake();
 
     $admin = invoiceAdminUser();
@@ -392,23 +392,19 @@ it('sends a draft with a missing email snapshot using the address supplied on se
     ]);
 
     $this->actingAs($admin)
-        ->post(route('admin.invoices.send', $invoice), [
-            'email' => 'typed@school.com',
-        ])
+        ->post(route('admin.invoices.send', $invoice))
         ->assertRedirect()
-        ->assertSessionHas('success', 'Invoice sent successfully. Saved this email to the school/family for future invoices.');
+        ->assertSessionHas('success', 'Invoice marked as sent. No invoice email on file, so no email was sent.');
 
-    Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
-        return $mail->hasTo('typed@school.com');
-    });
-
-    // Persisted onto the invoice snapshot AND backfilled onto the school.
-    expect($invoice->fresh()->school_invoice_email)->toBe('typed@school.com')
-        ->and($invoice->fresh()->status)->toBe(InvoiceStatus::SENT)
-        ->and($school->fresh()->invoice_email)->toBe('typed@school.com');
+    // No email goes out, and nothing is backfilled onto the school.
+    Mail::assertNothingSent();
+    expect($invoice->fresh()->status)->toBe(InvoiceStatus::SENT)
+        ->and($invoice->fresh()->sent_by_id)->toBe($admin->id)
+        ->and($invoice->fresh()->school_invoice_email)->toBeNull()
+        ->and($school->fresh()->invoice_email)->toBeNull();
 });
 
-it('does not overwrite a school that already has an invoice email when sending', function () {
+it('sends to the invoice email snapshot and ignores any stray posted email on send', function () {
     Mail::fake();
 
     $admin = invoiceAdminUser();
@@ -420,6 +416,7 @@ it('does not overwrite a school that already has an invoice email when sending',
         'total' => 100.00,
     ]);
 
+    // Send no longer accepts a typed recipient — a stray posted email is ignored.
     $this->actingAs($admin)
         ->post(route('admin.invoices.send', $invoice), [
             'email' => 'oneoff@override.com',
@@ -428,11 +425,11 @@ it('does not overwrite a school that already has an invoice email when sending',
         ->assertSessionHas('success', 'Invoice sent successfully.');
 
     Mail::assertSent(\App\Mail\InvoiceMail::class, function ($mail) {
-        return $mail->hasTo('oneoff@override.com');
+        return $mail->hasTo('school@existing.com');
     });
 
-    // The one-off override lands on the invoice snapshot but never clobbers the school.
-    expect($invoice->fresh()->school_invoice_email)->toBe('oneoff@override.com')
+    // The snapshot and the school are both untouched by the stray param.
+    expect($invoice->fresh()->school_invoice_email)->toBe('school@existing.com')
         ->and($school->fresh()->invoice_email)->toBe('school@existing.com');
 });
 
@@ -463,7 +460,7 @@ it('persists a corrected email onto the snapshot when resending', function () {
         ->and($school->fresh()->invoice_email)->toBe('old@school.com');
 });
 
-it('shows the send modal with a recipient email field on a draft invoice', function () {
+it('shows a send button that posts directly with no recipient email field on a draft invoice', function () {
     $admin = invoiceAdminUser();
     $invoice = Invoice::factory()->create([
         'status' => InvoiceStatus::DRAFT->value,
@@ -474,9 +471,11 @@ it('shows the send modal with a recipient email field on a draft invoice', funct
     $this->actingAs($admin)
         ->get(route('admin.invoices.show', $invoice))
         ->assertOk()
-        ->assertSee('open-send-email-modal')
         ->assertSee('id="send-email-form"', false)
-        ->assertSee('name="email"', false);
+        ->assertSee('id="send-invoice-button"', false)
+        ->assertSee('data-has-invoice-email="0"', false)
+        // No recipient email field — send is a one-click action now.
+        ->assertDontSee('open-send-email-modal');
 });
 
 it('prevents admin from sending zero amount invoice', function () {
