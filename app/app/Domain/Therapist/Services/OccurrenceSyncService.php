@@ -12,7 +12,6 @@ use App\DTOs\OverlapCheckDTO;
 use App\DTOs\OverlapExclusionsDTO;
 use App\DTOs\Schedule\OccurrenceInputDTO;
 use App\Enums\BillingStatus;
-use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
@@ -28,11 +27,11 @@ use Illuminate\Support\Collection;
  * service handles only the sibling occurrences. For each submitted row it:
  *   - reuses the matching existing row (same UTC date) and updates time in place,
  *     preserving the row id and any linked session log;
- *   - detaches a row from the batch when its date/time no longer fits the series
- *     pattern (the row survives as a standalone schedule);
  *   - deletes existing occurrences the user removed from the list;
  *   - creates new occurrences for added dates.
  *
+ * Occurrences always stay in the series: a date/time that differs from the
+ * series default is a modified exception (iCalendar model), never detached.
  * Billed occurrences are never modified or deleted.
  */
 final class OccurrenceSyncService
@@ -91,15 +90,17 @@ final class OccurrenceSyncService
 
             $match = $existing->get($utcDate);
 
-            $matchesSeriesTime = $startTime === $seriesStartTime && $endTime === $seriesEndTime;
-
             if ($match instanceof Schedule) {
-                $this->updateExisting($match, $utcStart->toTimeString(), $utcEnd->toTimeString(), $matchesSeriesTime, $therapist, $students);
+                $this->updateExisting($match, $anchor, $utcStart->toTimeString(), $utcEnd->toTimeString(), $therapist, $students);
 
                 continue;
             }
 
-            $this->createOccurrence($anchor, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $studentIds, $isGroup, $therapist, $students, $matchesSeriesTime);
+            // A submitted date with no existing match is a new occurrence (an
+            // end-date extension or a moved date). Following the iCalendar model,
+            // it stays in the series — a per-occurrence date/time that differs
+            // from the series default is a modified exception, not a detached row.
+            $this->createOccurrence($anchor, $utcStart->toDateString(), $utcStart->toTimeString(), $utcEnd->toTimeString(), $studentIds, $isGroup, $therapist, $students);
         }
 
         // Anything left in $existing that the user did not resubmit was removed.
@@ -109,17 +110,16 @@ final class OccurrenceSyncService
     }
 
     /**
-     * Update an existing occurrence's time in place. When the new time no longer
-     * matches the series time, detach the row from the batch so a later
-     * series-level regeneration leaves it untouched.
+     * Update an existing occurrence's time in place, keeping it in the series.
+     * A time that differs from the series default is a modified exception.
      *
      * @param  Collection<int, User>  $students
      */
     private function updateExisting(
         Schedule $occurrence,
+        Schedule $anchor,
         string $utcStartTime,
         string $utcEndTime,
-        bool $matchesSeriesTime,
         User $therapist,
         Collection $students,
     ): void {
@@ -137,16 +137,14 @@ final class OccurrenceSyncService
             );
         }
 
-        $data = [
+        // The occurrence stays in the series even if its time now differs from
+        // the series default (iCalendar exception). Keep its end date in sync
+        // with the anchor.
+        $this->repository->update($occurrence, [
             'start_time' => $utcStartTime,
             'end_time' => $utcEndTime,
-        ];
-
-        if (! $matchesSeriesTime) {
-            $this->applyDetachment($data);
-        }
-
-        $this->repository->update($occurrence, $data);
+            'recurrence_end_date' => $anchor->recurrence_end_date?->format('Y-m-d'),
+        ]);
     }
 
     /**
@@ -162,7 +160,6 @@ final class OccurrenceSyncService
         bool $isGroup,
         User $therapist,
         Collection $students,
-        bool $matchesSeriesTime,
     ): void {
         $this->assertNoOverlap($therapist, $students, $utcDate, $utcStartTime, $utcEndTime, null);
 
@@ -174,7 +171,9 @@ final class OccurrenceSyncService
             $schoolId = $this->studentRepository->getSchoolIdByUserId($studentId)
                 ?? throw new \InvalidArgumentException("Student {$studentId} has no school assigned.");
 
-            $data = [
+            // New occurrences always join the series — a differing date/time is a
+            // modified exception, not a detached standalone schedule.
+            $this->repository->create([
                 'therapist_id' => $anchor->therapist_id,
                 'student_id' => $studentId,
                 'ssa_id' => $anchor->ssa_id,
@@ -196,28 +195,8 @@ final class OccurrenceSyncService
                 'location_details' => $anchor->location_details,
                 'created_by' => $anchor->created_by,
                 'updated_by' => $anchor->updated_by,
-            ];
-
-            if (! $matchesSeriesTime) {
-                $this->applyDetachment($data);
-            }
-
-            $this->repository->create($data);
+            ]);
         }
-    }
-
-    /**
-     * Clear the recurrence linkage so the row becomes a standalone schedule that
-     * series-level regeneration will not touch.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    private function applyDetachment(array &$data): void
-    {
-        $data['recurrence_type'] = RecurrenceType::NONE;
-        $data['recurrence_end_date'] = null;
-        $data['recurring_batch_number'] = null;
-        $data['parent_schedule_id'] = null;
     }
 
     private function resolveUtcEnd(string $date, string $startTime, string $endTime, User $therapist): CarbonInterface

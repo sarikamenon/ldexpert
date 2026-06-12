@@ -8,9 +8,15 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm text-foreground/60">Therapist · Schedule</p>
-                    <h1 class="text-2xl font-semibold text-foreground">Edit Schedule</h1>
+                    <h1 class="text-2xl font-semibold text-foreground">
+                        {{ ($editScope ?? 'series') === 'series' && $schedule->isRecurring() ? 'Edit Future Schedules' : 'Edit Schedule' }}
+                    </h1>
                     <p class="text-sm text-foreground/60 mt-1">
-                        Update schedule date, time, location, and notes.
+                        @if (($editScope ?? 'series') === 'occurrence' && $schedule->isRecurring())
+                            Editing this session only. Changes apply to this session and don't affect the rest of the series.
+                        @else
+                            Update schedule date, time, location, and notes.
+                        @endif
                     </p>
                 </div>
                 <a href="{{ route('therapist.schedule-calendar.index') }}"
@@ -56,6 +62,7 @@
                 'scheduleLocalStartTime' => $scheduleLocalStartTime,
                 'scheduleLocalEndTime' => $scheduleLocalEndTime,
                 'occurrenceRows' => $occurrenceRows ?? [],
+                'editScope' => $editScope ?? 'series',
                 'subPanel' => $subPanel ?? null,
                 'makeupRequestId' => $makeupRequestId ?? null,
             ])

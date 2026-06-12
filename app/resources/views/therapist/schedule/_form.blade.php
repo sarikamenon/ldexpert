@@ -12,6 +12,7 @@
     'weekDays' => [],
     'holidayDates' => [],
     'occurrenceRows' => [],
+    'editScope' => 'series',
     'subPanel' => null,
 ])
 
@@ -28,6 +29,9 @@
     @csrf
     @if ($isEdit)
         @method('PUT')
+        {{-- Edit reach: 'occurrence' detaches this row on date/time change;
+             'series' runs the full recurring-series reconcile. --}}
+        <input type="hidden" name="edit_scope" value="{{ $editScope }}">
     @endif
     @if (! empty($makeupRequestId ?? null))
         <input type="hidden" name="makeup_request_id" value="{{ $makeupRequestId }}">
@@ -203,7 +207,10 @@
         @endif
     </x-ui::card>
 
-    {{-- Section 2: Recurrence Options --}}
+    {{-- Section 2: Recurrence Options.
+         Hidden in occurrence-scope edit ("Edit this schedule") — that flow edits
+         only this schedule and never touches the recurring series. --}}
+    @if (! $isEdit || $editScope === 'series')
     @php
         $currentRecurrenceType = $isEdit
             ? old('recurrence_type', $schedule->recurrence_type?->value ?? 'none')
@@ -352,6 +359,7 @@
             </div>
         </div>
     </x-ui::card>
+    @endif
 
     {{-- Section 3: Location & Meeting Details --}}
     <x-ui::card class="p-6 space-y-6">

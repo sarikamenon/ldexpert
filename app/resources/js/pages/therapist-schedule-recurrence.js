@@ -64,24 +64,36 @@ $(function () {
     }
 
     // Series-level default time, used to pre-fill new occurrence rows and to
-    // decide whether a row's time is "custom" (i.e. detaches it from the series).
+    // decide whether a row's time is "modified" (differs from the series default).
     function getSeriesStartTime() {
         return $startTimeInput.val() || '';
     }
 
-    function getSeriesEndTime() {
-        // Mirror the time module: end = start + duration. Compute from the
-        // duration field so the default end time tracks edits to start/duration.
-        const start = getSeriesStartTime();
-        const duration = parseInt($('#duration_minutes').val(), 10);
-        if (!start || !Number.isFinite(duration)) {
+    function getSeriesDuration() {
+        return parseInt($('#duration_minutes').val(), 10);
+    }
+
+    // Add the session duration to a HH:mm start time, wrapping past midnight.
+    // Returns '' if inputs are invalid. Shared by the series default and each
+    // occurrence so end time always tracks start + duration.
+    function addDurationToTime(startTime, durationMinutes) {
+        if (!startTime || !Number.isFinite(durationMinutes)) {
             return '';
         }
-        const [h, m] = start.split(':').map(Number);
-        const total = h * 60 + m + duration;
-        const eh = Math.floor((total % 1440) / 60);
-        const em = total % 60;
+        const [h, m] = startTime.split(':').map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) {
+            return '';
+        }
+        const total = h * 60 + m + durationMinutes;
+        const eh = Math.floor((((total % 1440) + 1440) % 1440) / 60);
+        const em = ((total % 60) + 60) % 60;
         return String(eh).padStart(2, '0') + ':' + String(em).padStart(2, '0');
+    }
+
+    function getSeriesEndTime() {
+        // Mirror the time module: end = start + duration, so the default end
+        // time tracks edits to the series start/duration.
+        return addDurationToTime(getSeriesStartTime(), getSeriesDuration());
     }
 
     // Mark the series as regenerated so the backend rebuilds (delete + recreate)
@@ -102,19 +114,13 @@ $(function () {
         }
 
         const currentType = getRecurrenceType();
-        const currentEndDate = $recurrenceEndDateInput.val() || '';
 
+        // Only a recurrence-TYPE change is destructive (delete + regenerate all
+        // unbilled future sessions). End-date changes are additive — existing
+        // rows are preserved — so they no longer trip the warning banner.
         const typeChanged = currentType !== originalRecurrenceType;
-        const endDateChanged = currentEndDate !== originalRecurrenceEndDate;
 
-        const selectedDaysChanged = currentType === RECURRENCE_TYPE_CUSTOM_WEEKLY
-            && isEditMode;
-
-        if (typeChanged || endDateChanged || selectedDaysChanged) {
-            $warningBanner.removeClass('hidden');
-        } else {
-            $warningBanner.addClass('hidden');
-        }
+        $warningBanner.toggleClass('hidden', !typeChanged);
     }
     const $weeklyDaysContainer = $('#weekly_days_container');
     const additionalDatesContainer = document.getElementById('additional_dates_container');
@@ -297,7 +303,7 @@ $(function () {
      */
     function reIndexOccurrenceLabels() {
         $occurrenceDatesContainer.find('.occurrence-date-row').each(function (i) {
-            $(this).find('.occurrence-label').text(i === 0 ? 'Start Date:' : 'Occurrence ' + (i + 1) + ':');
+            $(this).find('.occurrence-label').text(i === 0 ? 'Start Date' : 'Occurrence ' + (i + 1));
         });
     }
 
@@ -309,69 +315,146 @@ $(function () {
     function buildOccurrenceRow(row, index) {
         const dateStr = row.date;
         const isWeekendDate = isWeekend(dateStr);
-        const dayName = dateStr ? new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long' }) : '';
         const isHolidayDate = isHoliday(dateStr);
+        const labelText = index === 0 ? 'Start Date' : 'Occurrence ' + (index + 1);
 
-        const $item = $('<div class="flex items-start gap-3 occurrence-date-row"></div>');
-        const $label = $('<label class="occurrence-label block w-32 text-sm text-foreground/70 pt-2">' +
-            (index === 0 ? 'Start Date:' : 'Occurrence ' + (index + 1) + ':') +
-            '</label>');
+        const $item = $('<div class="occurrence-date-row flex items-center gap-3 rounded-lg border border-border/70 bg-background/40 px-3 py-2"></div>');
 
-        const $inputGroup = $('<div class="flex-1"></div>');
-        const $inputRow = $('<div class="flex items-center gap-2"></div>');
+        // Compact single-line row: label column (label + one-off badge stacked,
+        // so the badge never shifts the date/time columns), then date, start–end
+        // time, and the remove button.
+        const $labelCol = $('<div class="w-28 shrink-0"></div>');
+        $labelCol.append($('<span class="occurrence-label block text-xs font-medium text-foreground/70">' + labelText + '</span>'));
+        $labelCol.append($('<span class="occurrence-modified-badge mt-1 hidden w-fit rounded-full bg-warning/15 px-2 py-0.5 text-[10px] font-medium text-warning" title="This session\'s time differs from the series default. It stays in the series as a modified session.">Modified</span>'));
+        $item.append($labelCol);
 
         const $input = $('<input>')
             .attr('type', 'date')
             .attr('name', 'occurrence_dates[]')
-            .attr('class', 'mt-1 block w-full border border-border rounded-lg px-3 py-2 text-sm occurrence-date-input')
+            .attr('class', 'w-36 shrink-0 border border-border rounded-lg px-2.5 py-1.5 text-sm occurrence-date-input')
             .attr('data-index', index)
             .attr('value', dateStr)
+            .attr('aria-label', labelText + ' date')
             .attr('min', $scheduleDateInput.val() || '');
 
         if ((isWeekendDate && !allowWeekendScheduling) || isHolidayDate) {
             $input.addClass('border-warning bg-warning/10');
         }
 
-        $inputRow.append($input);
+        $item.append($input);
 
         // Per-occurrence start/end time (edit mode only).
         if (isOccurrenceEditMode) {
             const $start = $('<input>')
                 .attr('type', 'time')
                 .attr('name', 'occurrence_start_times[]')
-                .attr('class', 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-start-time-input')
+                .attr('class', 'w-32 shrink-0 border border-border rounded-lg px-2.5 py-1.5 text-sm occurrence-start-time-input')
+                .attr('aria-label', labelText + ' start time')
                 .attr('value', row.startTime || getSeriesStartTime());
+            // End time is computed (start + duration), so it's read-only — same
+            // as the series end time on the main form. readonly (not disabled)
+            // keeps the value in the submitted occurrence_end_times[] array.
+            // On initial render, prefer the row's stored end so a previously
+            // saved occurrence keeps its real duration; recompute only when the
+            // user edits the start (handled by recomputeRowEnd).
+            const startVal = row.startTime || getSeriesStartTime();
+            const endVal = row.endTime || addDurationToTime(startVal, getSeriesDuration()) || getSeriesEndTime();
             const $end = $('<input>')
                 .attr('type', 'time')
                 .attr('name', 'occurrence_end_times[]')
-                .attr('class', 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-end-time-input')
-                .attr('value', row.endTime || getSeriesEndTime());
-            $inputRow.append($start);
-            $inputRow.append($('<span class="pt-2 text-foreground/40 text-sm">–</span>'));
-            $inputRow.append($end);
+                .attr('class', 'w-32 shrink-0 border border-border rounded-lg bg-muted/30 px-2.5 py-1.5 text-sm text-foreground/70 occurrence-end-time-input')
+                .attr('aria-label', labelText + ' end time')
+                .attr('readonly', 'readonly')
+                .attr('tabindex', '-1')
+                .attr('value', endVal);
+
+            $item.append($start);
+            $item.append($('<span class="shrink-0 text-foreground/40 text-sm">–</span>'));
+            $item.append($end);
         }
+
+        // Inline message (weekend / holiday warning or blocking error) sits in
+        // the flow; the spacer pushes the remove button to the row's right edge.
+        // Colour is set per-message in validateAllOccurrenceDates().
+        $item.append($('<div class="occurrence-error min-w-0 flex-1 text-xs"></div>'));
 
         // Remove button for all occurrences except the first (start date), unless
         // the start date is a holiday (then it can be dropped like any other).
         if (index > 0 || isHolidayDate) {
-            const $removeBtn = $('<button type="button" class="occurrence-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors" title="Remove this occurrence">' +
+            $item.append($('<button type="button" class="occurrence-remove-btn shrink-0 p-1.5 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-md transition-colors" title="Remove this occurrence" aria-label="Remove this occurrence">' +
                 '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                 '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />' +
                 '</svg>' +
-                '</button>');
-            $inputRow.append($removeBtn);
+                '</button>'));
         }
 
-        const $errorDiv = $('<div class="occurrence-error text-xs text-danger mt-1"></div>');
-
-        $inputGroup.append($inputRow);
-        if (isWeekendDate && !allowWeekendScheduling) {
-            $inputGroup.append($('<p class="text-xs text-warning mt-1">⚠️ ' + dayName + ' (Weekend)</p>'));
+        if (isOccurrenceEditMode) {
+            refreshModifiedBadge($item[0]);
         }
-        $inputGroup.append($errorDiv);
 
-        $item.append($label).append($inputGroup);
         return $item;
+    }
+
+    /**
+     * Toggle the "Modified" badge on a row when its time differs from the series
+     * default — an informational cue that this session is a modified exception
+     * within the series (it stays in the series, it is not detached).
+     */
+    function refreshModifiedBadge(rowEl) {
+        if (!rowEl) {
+            return;
+        }
+        const badge = rowEl.querySelector('.occurrence-modified-badge');
+        const start = rowEl.querySelector('.occurrence-start-time-input');
+        const end = rowEl.querySelector('.occurrence-end-time-input');
+        if (!badge || !start || !end) {
+            return;
+        }
+        const differs = start.value !== getSeriesStartTime() || end.value !== getSeriesEndTime();
+        badge.classList.toggle('hidden', !differs);
+    }
+
+    /**
+     * Show the "Sync times for all recurrences" button when at least one occurrence's
+     * time no longer matches the main start time / duration (e.g. the user just
+     * changed the main time on an already-scheduled series).
+     */
+    function refreshSyncTimesButton() {
+        const btn = document.getElementById('sync_occurrence_times_btn');
+        if (!btn) {
+            return;
+        }
+        const seriesStart = getSeriesStartTime();
+        const seriesEnd = getSeriesEndTime();
+        const anyDiffers = Array.from(
+            document.querySelectorAll('.occurrence-date-row, .additional-date-row')
+        ).some(function (rowEl) {
+            const start = rowEl.querySelector('.occurrence-start-time-input');
+            const end = rowEl.querySelector('.occurrence-end-time-input');
+            return start && end && (start.value !== seriesStart || end.value !== seriesEnd);
+        });
+        btn.classList.toggle('hidden', !anyDiffers);
+    }
+
+    /**
+     * Reset every occurrence's start/end time to the main series time, clearing
+     * one-off overrides. Dates are left untouched.
+     */
+    function syncOccurrenceTimesToSeries() {
+        const seriesStart = getSeriesStartTime();
+        const seriesEnd = getSeriesEndTime();
+        document.querySelectorAll('.occurrence-date-row, .additional-date-row').forEach(function (rowEl) {
+            const start = rowEl.querySelector('.occurrence-start-time-input');
+            const end = rowEl.querySelector('.occurrence-end-time-input');
+            if (start) {
+                start.value = seriesStart;
+            }
+            if (end) {
+                end.value = seriesEnd;
+            }
+            refreshModifiedBadge(rowEl);
+        });
+        refreshSyncTimesButton();
     }
 
     /**
@@ -392,8 +475,19 @@ $(function () {
             return row;
         });
 
-        const $counter = $('<p class="occurrence-counter text-sm font-medium text-primary mb-2"></p>');
-        $occurrenceDatesContainer.append($counter);
+        const $counterRow = $('<div class="flex flex-wrap items-center gap-3 mb-2"></div>');
+        $counterRow.append($('<p class="occurrence-counter text-sm font-medium text-primary"></p>'));
+
+        // Edit mode: a "Sync times for all recurrences" action appears here when the main
+        // start time / duration no longer matches the occurrence rows.
+        if (isOccurrenceEditMode) {
+            $counterRow.append($('<button type="button" id="sync_occurrence_times_btn" class="hidden inline-flex items-center gap-1.5 rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10">' +
+                '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">' +
+                '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />' +
+                '</svg>' +
+                'Sync times for all recurrences</button>'));
+        }
+        $occurrenceDatesContainer.append($counterRow);
 
         const $list = $('<div class="space-y-3"></div>');
         normalized.forEach((row, index) => $list.append(buildOccurrenceRow(row, index)));
@@ -468,6 +562,11 @@ $(function () {
     // renders the stored occurrences instead of regenerating the series.
     let editInitialRender = isOccurrenceEditMode;
 
+    // Set transiently while handling a recurrence-type change so the occurrence
+    // list is fully rebuilt (and flagged for a backend regenerate) rather than
+    // taking the additive end-date path.
+    let recurrenceTypeRebuild = false;
+
     /**
      * Update occurrence dates when recurrence type, schedule date, or end date
      * changes. In edit mode the first pass renders the stored rows untouched;
@@ -490,6 +589,18 @@ $(function () {
             return;
         }
 
+        // Edit mode, end-date change: additive — keep the existing rows (with any
+        // per-occurrence time edits) and only append new pattern dates beyond the
+        // current last date, or trim rows past a shortened end date. The backend
+        // reconciles this list in place (no delete-and-regenerate).
+        if (isOccurrenceEditMode && !recurrenceTypeRebuild) {
+            applyAdditiveEndDate(scheduleDate, endDate, recurrenceType);
+            validateAllOccurrenceDates();
+            return;
+        }
+
+        // Edit mode, recurrence-type change: the pattern changed for every row,
+        // so rebuild the whole list and flag the series for a backend regenerate.
         if (isOccurrenceEditMode) {
             markRegenerated();
         }
@@ -499,6 +610,55 @@ $(function () {
 
         // Validate after rendering
         validateAllOccurrenceDates();
+    }
+
+    /**
+     * Edit-mode end-date change: preserve existing occurrence rows (and their
+     * edited times), append rows for new pattern dates beyond the current last
+     * date, and remove rows that fall past a shortened end date.
+     */
+    function applyAdditiveEndDate(scheduleDate, endDate, recurrenceType) {
+        const patternDates = generateOccurrenceDates(scheduleDate, endDate, recurrenceType)
+            .map((d) => formatDate(d));
+        const patternSet = new Set(patternDates);
+
+        const existing = readOccurrenceRows();
+        const existingByDate = new Map(existing.map((r) => [r.date, r]));
+
+        // Keep existing rows still within the (possibly shortened) range; build
+        // the merged list in pattern order, reusing existing rows where present.
+        const merged = patternDates.map((date) => existingByDate.get(date) || {
+            date: date,
+            startTime: getSeriesStartTime(),
+            endTime: getSeriesEndTime(),
+        });
+
+        // Preserve any existing one-off date that isn't on the pattern but still
+        // falls on or before the new end date (e.g. an added custom date).
+        existing.forEach((row) => {
+            if (!patternSet.has(row.date) && row.date <= endDate) {
+                merged.push(row);
+            }
+        });
+
+        merged.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+        renderOccurrenceDates(merged);
+    }
+
+    /**
+     * Snapshot the current occurrence rows as { date, startTime, endTime }.
+     */
+    function readOccurrenceRows() {
+        return Array.from(document.querySelectorAll('.occurrence-date-row, .additional-date-row')).map((rowEl) => {
+            const date = rowEl.querySelector('.occurrence-date-input');
+            const start = rowEl.querySelector('.occurrence-start-time-input');
+            const end = rowEl.querySelector('.occurrence-end-time-input');
+            return {
+                date: date ? date.value : '',
+                startTime: start ? start.value : getSeriesStartTime(),
+                endTime: end ? end.value : getSeriesEndTime(),
+            };
+        }).filter((r) => r.date);
     }
 
     /**
@@ -524,6 +684,7 @@ $(function () {
             const errorDiv = row ? row.querySelector('.occurrence-error') : null;
             if (errorDiv) {
                 errorDiv.textContent = '';
+                errorDiv.classList.remove('text-danger', 'text-warning');
             }
             input.classList.remove('border-danger', 'border-warning', 'bg-warning/10');
 
@@ -532,9 +693,11 @@ $(function () {
             }
 
             // Duplicate of another occurrence — server enforces unique dates.
+            // This is a blocking error (red), unlike the weekend/holiday warnings.
             if (dateCounts[dateStr] > 1) {
                 if (errorDiv) {
                     errorDiv.textContent = 'This date is already scheduled. Each session must be on a unique date.';
+                    errorDiv.classList.add('text-danger');
                 }
                 input.classList.add('border-danger');
                 return;
@@ -551,12 +714,14 @@ $(function () {
 
             // Check for school holiday (warning only — not blocking)
             if (isHoliday(dateStr)) {
-                messages.push('⚠️ School holiday');
+                messages.push('⚠️ School holiday. Please adjust the date.');
             }
 
+            // Weekend/holiday are warnings, not hard errors — render amber.
             if (messages.length > 0) {
                 if (errorDiv) {
                     errorDiv.innerHTML = messages.join('<br>');
+                    errorDiv.classList.add('text-warning');
                 }
                 input.classList.add('border-warning', 'bg-warning/10');
             }
@@ -566,16 +731,22 @@ $(function () {
     // Initialize: Check initial recurrence type value
     toggleRecurrenceFields();
 
-    // Listen to recurrence type changes
+    // Listen to recurrence type changes. A type change alters the pattern for
+    // every occurrence, so it forces a full rebuild (delete + regenerate on the
+    // backend) rather than the additive end-date path.
     $recurrenceTypeSelect.on('change', function () {
+        recurrenceTypeRebuild = true;
         toggleRecurrenceFields();
+        recurrenceTypeRebuild = false;
         updateWarningBanner();
     });
 
     // If Select2 is available, also listen to its change event
     if ($recurrenceTypeSelect.data('select2')) {
         $recurrenceTypeSelect.on('select2:select select2:change', function () {
+            recurrenceTypeRebuild = true;
             toggleRecurrenceFields();
+            recurrenceTypeRebuild = false;
             updateWarningBanner();
         });
     }
@@ -633,7 +804,7 @@ $(function () {
         additionalDatesList.querySelectorAll('.additional-date-row').forEach(function (row, index) {
             const label = row.querySelector('.additional-date-label');
             if (label) {
-                label.textContent = 'Additional ' + (index + 1) + ':';
+                label.textContent = 'Additional ' + (index + 1);
             }
         });
     }
@@ -649,41 +820,29 @@ $(function () {
         const scheduleDate = $scheduleDateInput.val() || '';
         const count = additionalDatesList.querySelectorAll('.additional-date-row').length;
 
+        const labelText = 'Additional ' + (count + 1);
+
         const row = document.createElement('div');
-        row.className = 'flex items-start gap-3 additional-date-row';
+        row.className = 'additional-date-row flex items-center gap-3 rounded-lg border border-border/70 bg-background/40 px-3 py-2';
 
-        const label = document.createElement('label');
-        label.className = 'additional-date-label block w-32 text-sm text-foreground/70 pt-2';
-        label.textContent = 'Additional ' + (count + 1) + ':';
-
-        const group = document.createElement('div');
-        group.className = 'flex-1';
-
-        const inputRow = document.createElement('div');
-        inputRow.className = 'flex items-center gap-2';
+        const label = document.createElement('span');
+        label.className = 'additional-date-label w-28 shrink-0 text-xs font-medium text-foreground/70';
+        label.textContent = labelText;
+        row.appendChild(label);
 
         const input = document.createElement('input');
         input.type = 'date';
         input.name = 'occurrence_dates[]';
-        input.className = 'mt-1 block w-full border border-border rounded-lg px-3 py-2 text-sm occurrence-date-input additional-date-input';
+        input.className = 'w-36 shrink-0 border border-border rounded-lg px-2.5 py-1.5 text-sm occurrence-date-input additional-date-input';
+        input.setAttribute('aria-label', labelText + ' date');
         if (scheduleDate) {
             input.min = scheduleDate;
         }
 
-        const removeBtn = document.createElement('button');
-        removeBtn.type = 'button';
-        removeBtn.className = 'additional-date-remove-btn mt-1 p-2 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-lg transition-colors';
-        removeBtn.title = 'Remove this date';
-        removeBtn.setAttribute('aria-label', 'Remove this additional date');
-        removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
-
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'occurrence-error text-xs text-danger mt-1';
-
         // Re-validate (weekend + duplicate) and refresh the session counter as the date changes.
         input.addEventListener('change', validateAllOccurrenceDates);
 
-        inputRow.appendChild(input);
+        row.appendChild(input);
 
         // In edit mode keep the parallel time arrays aligned: every occurrence
         // date input must have a matching start/end time input.
@@ -691,29 +850,42 @@ $(function () {
             const startInput = document.createElement('input');
             startInput.type = 'time';
             startInput.name = 'occurrence_start_times[]';
-            startInput.className = 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-start-time-input';
+            startInput.className = 'w-32 shrink-0 border border-border rounded-lg px-2.5 py-1.5 text-sm occurrence-start-time-input';
+            startInput.setAttribute('aria-label', labelText + ' start time');
             startInput.value = getSeriesStartTime();
 
             const sep = document.createElement('span');
-            sep.className = 'pt-2 text-foreground/40 text-sm';
+            sep.className = 'shrink-0 text-foreground/40 text-sm';
             sep.textContent = '–';
 
+            // End is computed (start + duration) and read-only, matching the
+            // generated rows and the main form's end time.
             const endInput = document.createElement('input');
             endInput.type = 'time';
             endInput.name = 'occurrence_end_times[]';
-            endInput.className = 'mt-1 w-32 border border-border rounded-lg px-2 py-2 text-sm occurrence-end-time-input';
-            endInput.value = getSeriesEndTime();
+            endInput.className = 'w-32 shrink-0 border border-border rounded-lg bg-muted/30 px-2.5 py-1.5 text-sm text-foreground/70 occurrence-end-time-input';
+            endInput.setAttribute('aria-label', labelText + ' end time');
+            endInput.readOnly = true;
+            endInput.tabIndex = -1;
+            endInput.value = addDurationToTime(getSeriesStartTime(), getSeriesDuration()) || getSeriesEndTime();
 
-            inputRow.appendChild(startInput);
-            inputRow.appendChild(sep);
-            inputRow.appendChild(endInput);
+            row.appendChild(startInput);
+            row.appendChild(sep);
+            row.appendChild(endInput);
         }
 
-        inputRow.appendChild(removeBtn);
-        group.appendChild(inputRow);
-        group.appendChild(errorDiv);
-        row.appendChild(label);
-        row.appendChild(group);
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'occurrence-error min-w-0 flex-1 text-xs text-danger';
+        row.appendChild(errorDiv);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'additional-date-remove-btn shrink-0 p-1.5 text-danger/60 hover:text-danger hover:bg-danger/10 rounded-md transition-colors';
+        removeBtn.title = 'Remove this date';
+        removeBtn.setAttribute('aria-label', 'Remove this additional date');
+        removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>';
+        row.appendChild(removeBtn);
+
         additionalDatesList.appendChild(row);
 
         updateOccurrenceCounter();
@@ -766,6 +938,57 @@ $(function () {
     $(document).on('change', '.occurrence-date-input', function() {
         validateAllOccurrenceDates();
     });
+
+    // Recompute a row's read-only end time from its start + the series duration,
+    // then refresh its one-off badge.
+    function recomputeRowEnd(rowEl) {
+        if (!rowEl) {
+            return;
+        }
+        const start = rowEl.querySelector('.occurrence-start-time-input');
+        const end = rowEl.querySelector('.occurrence-end-time-input');
+        if (start && end) {
+            const computed = addDurationToTime(start.value, getSeriesDuration());
+            if (computed) {
+                end.value = computed;
+            }
+        }
+        refreshModifiedBadge(rowEl);
+    }
+
+    // When an occurrence's own start time is edited, slide its end time to keep
+    // the session duration (the end field is read-only). This is a deliberate
+    // per-occurrence override, so it does NOT surface the sync button.
+    //
+    // The anchor (first) occurrence row IS the series start: the backend saves
+    // the anchor schedule from the main #start_time field, not from the occurrence
+    // list. So mirror the anchor row's start time into #start_time, otherwise an
+    // edit to the Start Date row would be silently dropped on save.
+    $(document).on('change input', '.occurrence-start-time-input', function () {
+        const row = this.closest('.occurrence-date-row, .additional-date-row');
+        recomputeRowEnd(row);
+
+        const firstRow = $occurrenceDatesContainer.find('.occurrence-date-row').first()[0];
+        if (row && row === firstRow && this.value) {
+            const $main = $('#start_time');
+            if ($main.length && $main.val() !== this.value) {
+                $main.val(this.value);
+                $main[0].dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }
+    });
+
+    // When the MAIN start time / duration changes, do NOT silently move the
+    // occurrences — instead re-evaluate each row's one-off badge and surface the
+    // "Sync times for all recurrences" button so the user can opt in to applying it. The
+    // button is driven only by main-time edits, never by per-occurrence edits.
+    $startTimeInput.add($('#duration_minutes')).on('change input', function () {
+        document.querySelectorAll('.occurrence-date-row, .additional-date-row').forEach(refreshModifiedBadge);
+        refreshSyncTimesButton();
+    });
+
+    // Apply the main start time / duration to every occurrence on demand.
+    $(document).on('click', '#sync_occurrence_times_btn', syncOccurrenceTimesToSeries);
 
     // Handle removal of occurrence dates
     $(document).on('click', '.occurrence-remove-btn', function() {

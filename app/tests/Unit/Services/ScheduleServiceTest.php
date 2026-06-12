@@ -652,10 +652,22 @@ it('deletes only the single record even when the schedule is recurring', functio
         'parent_schedule_id' => null,
     ]);
 
+    // The batch still has a valid structure after the delete: one anchor + one
+    // child pointing at it. Re-anchor and demote should both be no-ops (no update).
+    $child = Schedule::factory()->make([
+        'recurring_batch_number' => $batchId,
+        'parent_schedule_id' => $parent->id,
+    ]);
+
     $mocks['repository']->shouldReceive('findForTherapist')
         ->once()->with($therapist, $parent->id)->andReturn($parent);
-    $mocks['repository']->shouldNotReceive('getRecurringOccurrencesByBatch');
     $mocks['repository']->shouldReceive('delete')->once()->with($parent);
+    // Both re-anchor and demote re-read the batch; here two rows remain in a valid
+    // structure, so neither mutates anything.
+    $mocks['repository']->shouldReceive('getRecurringOccurrencesByBatch')
+        ->with($batchId)
+        ->andReturn(collect([$parent, $child]));
+    $mocks['repository']->shouldNotReceive('update');
 
     makeScheduleService($mocks)->deleteSchedule($therapist, $parent->id);
 });
@@ -718,6 +730,21 @@ it('deletes current and future occurrences but not past ones', function (): void
     $mocks['repository']->shouldReceive('delete')->once()->with($currentSchedule);
     $mocks['repository']->shouldReceive('delete')->once()->with($futureSchedule);
     $mocks['repository']->shouldNotReceive('delete')->with($pastSchedule);
+    // Deleting both future rows leaves only the past session in the batch. Both
+    // re-anchor (no-op: <2 rows) and demote read the batch; demote collapses the
+    // lone survivor to a standalone schedule.
+    $mocks['repository']->shouldReceive('getRecurringOccurrencesByBatch')
+        ->with($batchId)
+        ->andReturn(collect([$pastSchedule]));
+    $mocks['repository']->shouldReceive('update')
+        ->once()
+        ->andReturnUsing(function (Schedule $s, array $data) use ($pastSchedule): Schedule {
+            expect($s->id)->toBe($pastSchedule->id)
+                ->and($data['recurring_batch_number'])->toBeNull()
+                ->and($data['recurrence_type'])->toBe('none');
+
+            return $s;
+        });
 
     expect(makeScheduleService($mocks)->deleteFutureRecurringSchedules($therapist, $currentSchedule->id))->toBe(2);
 });

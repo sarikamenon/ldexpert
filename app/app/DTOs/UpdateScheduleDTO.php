@@ -31,6 +31,8 @@ final class UpdateScheduleDTO
         /** @var array<int, string>|null */
         public readonly ?array $occurrenceEndTimes = null,
         public readonly bool $occurrencesRegenerated = false,
+        /** 'occurrence' (edit this one only) or 'series' (full recurring editor). */
+        public readonly ?string $editScope = null,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -101,6 +103,9 @@ final class UpdateScheduleDTO
             occurrenceStartTimes: $occurrenceStartTimes,
             occurrenceEndTimes: $occurrenceEndTimes,
             occurrencesRegenerated: (bool) ($data['occurrences_regenerated'] ?? false),
+            editScope: isset($data['edit_scope']) && $data['edit_scope'] !== ''
+                ? (string) $data['edit_scope']
+                : null,
         );
     }
 
