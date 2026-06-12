@@ -225,12 +225,14 @@ final class InvoiceController extends Controller
         try {
             /** @var \App\Models\User $user */
             $user = $request->user();
+            // No invoice email on file means we skip the email and only mark the
+            // invoice as sent — reflect that in the confirmation message.
+            $hadEmail = filled($invoice->school_invoice_email);
             $this->invoiceService->sendInvoice($user, $invoice, $dto);
 
-            $backfilled = $this->invoiceService->backfillSchoolInvoiceEmail($invoice, $dto->email);
-            $message = $backfilled
-                ? 'Invoice sent successfully. Saved this email to the school/family for future invoices.'
-                : 'Invoice sent successfully.';
+            $message = $hadEmail
+                ? 'Invoice sent successfully.'
+                : 'Invoice marked as sent. No invoice email on file, so no email was sent.';
 
             return redirect()
                 ->route('admin.invoices.show', $invoice)

@@ -341,51 +341,42 @@ final class InvoiceService
         }
 
         return DB::transaction(function () use ($user, $invoice, $dto) {
-            // Determine recipient email — invoice email only, no contact-email fallback
-            $recipientEmail = $dto->email
-                ?? $invoice->school_invoice_email;
+            // Recipient email comes from the invoice snapshot (invoice email only,
+            // no contact-email fallback). When the school/family has no invoice
+            // email on file we skip emailing entirely and just mark the invoice as
+            // sent — the admin can still deliver it manually via the PDF.
+            $recipientEmail = $invoice->school_invoice_email;
 
-            if (! $recipientEmail) {
-                throw new \InvalidArgumentException('No invoice email address available for sending invoice.');
-            }
+            if ($recipientEmail) {
+                // Generate payment token for online payment link (private-student schools only)
+                $paymentUrl = null;
+                if ((float) $invoice->total > 0 && $invoice->allowsOnlinePayment()) {
+                    $invoice->ensurePaymentToken();
+                    $paymentUrl = $invoice->getPaymentUrl();
+                }
 
-            // Persist the resolved recipient onto the invoice snapshot so the show
-            // page, PDFs ("Bill To"), and future resends reflect what was actually
-            // sent — covers the case where the school had no invoice email at
-            // creation and the admin supplied or corrected it on send.
-            if ($invoice->school_invoice_email !== $recipientEmail) {
-                $invoice->school_invoice_email = $recipientEmail;
-                $invoice->save();
-            }
+                // Send email with PDF attachment and payment link
+                try {
+                    Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
+                } catch (\Throwable $e) {
+                    Log::error('InvoiceService: failed to send invoice email', [
+                        'invoice_id' => $invoice->id,
+                        'email' => $recipientEmail,
+                        'error' => $e->getMessage(),
+                    ]);
+                    throw $e;
+                }
 
-            // Generate payment token for online payment link (private-student schools only)
-            $paymentUrl = null;
-            if ((float) $invoice->total > 0 && $invoice->allowsOnlinePayment()) {
-                $invoice->ensurePaymentToken();
-                $paymentUrl = $invoice->getPaymentUrl();
-            }
-
-            // Send email with PDF attachment and payment link
-            try {
-                Mail::to($recipientEmail)->send(new InvoiceMail($invoice, $dto->message, $paymentUrl));
-            } catch (\Throwable $e) {
-                Log::error('InvoiceService: failed to send invoice email', [
+                // Log initial email send
+                InvoiceEmailLog::create([
                     'invoice_id' => $invoice->id,
-                    'email' => $recipientEmail,
-                    'error' => $e->getMessage(),
+                    'type' => InvoiceEmailType::INITIAL->value,
+                    'recipient_email' => $recipientEmail,
+                    'custom_message' => $dto->message,
+                    'sent_by_id' => $user->id,
+                    'sent_at' => now(),
                 ]);
-                throw $e;
             }
-
-            // Log initial email send
-            InvoiceEmailLog::create([
-                'invoice_id' => $invoice->id,
-                'type' => InvoiceEmailType::INITIAL->value,
-                'recipient_email' => $recipientEmail,
-                'custom_message' => $dto->message,
-                'sent_by_id' => $user->id,
-                'sent_at' => now(),
-            ]);
 
             // Mark invoice as sent
             $invoice = $this->repository->markAsSent($invoice, $user->id);

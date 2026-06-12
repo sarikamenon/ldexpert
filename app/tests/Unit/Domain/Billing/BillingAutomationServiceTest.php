@@ -236,6 +236,42 @@ test('auto-send sends and marks the invoice sent when the schedule opts in', fun
     \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\InvoiceMail::class);
 });
 
+test('auto-send marks the invoice sent without emailing when the school has no invoice email', function () {
+    \Illuminate\Support\Facades\Mail::fake();
+
+    // No invoice email on file — auto-send must still mark the invoice sent
+    // rather than failing and leaving it a draft.
+    $school = School::factory()->create(['invoice_email' => null]);
+    User::factory()->admin()->create();
+    $therapist = User::factory()->therapist()->create();
+    $student = User::factory()->student()->create();
+
+    $schedule = BillingSchedule::factory()->forSchool($school)->due()->create([
+        'last_period_end' => null,
+        'auto_send' => true,
+    ]);
+
+    SessionLog::factory()->create([
+        'school_id' => $school->id,
+        'therapist_id' => $therapist->id,
+        'student_id' => $student->id,
+        'status' => SessionLogStatus::APPROVED->value,
+        'is_billable_school' => true,
+        'school_invoice_amount' => 200.00,
+        'invoice_id' => null,
+        'session_date' => now()->subDays(3),
+    ]);
+
+    $result = $this->service->processSingleSchedule($schedule);
+
+    $invoice = \App\Models\Invoice::find($result->invoiceId);
+
+    expect($invoice->isSent())->toBeTrue()
+        ->and($invoice->school_invoice_email)->toBeNull();
+
+    \Illuminate\Support\Facades\Mail::assertNothingSent();
+});
+
 test('auto-send does nothing when the schedule has auto_send off', function () {
     \Illuminate\Support\Facades\Mail::fake();
 

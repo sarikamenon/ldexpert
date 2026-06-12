@@ -10,6 +10,7 @@ use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
+use App\Models\InvoiceEmailLog;
 use App\Models\School;
 use App\Models\SessionLog;
 use App\Models\Setting;
@@ -186,7 +187,7 @@ test('invoice service sends invoice via email', function () {
     expect($result)->toBe($invoice);
 });
 
-test('invoice service throws when no invoice email and never falls back to contact email', function () {
+test('invoice service marks as sent without emailing when no invoice email on file', function () {
     $user = User::factory()->admin()->create();
     $invoice = Invoice::factory()->create([
         'status' => InvoiceStatus::DRAFT,
@@ -196,10 +197,21 @@ test('invoice service throws when no invoice email and never falls back to conta
 
     $dto = SendInvoiceDTO::fromArray(['email' => null, 'message' => null]);
 
-    expect(fn () => $this->service->sendInvoice($user, $invoice, $dto))
-        ->toThrow(\InvalidArgumentException::class, 'No invoice email address available for sending invoice.');
+    $this->repository->shouldReceive('markAsSent')
+        ->once()
+        ->with($invoice, $user->id)
+        ->andReturn($invoice);
 
+    $this->ledgerService->shouldReceive('createInvoiceGeneratedEntry')
+        ->once()
+        ->with($invoice);
+
+    $result = $this->service->sendInvoice($user, $invoice, $dto);
+
+    // No email on file → no email sent, no email-log row, but still marked sent.
     Mail::assertNothingSent();
+    expect($result)->toBe($invoice);
+    expect(InvoiceEmailLog::where('invoice_id', $invoice->id)->count())->toBe(0);
 });
 
 test('invoice service includes payment link for private-student schools', function () {

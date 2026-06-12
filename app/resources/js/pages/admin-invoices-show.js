@@ -6,26 +6,21 @@
 import { actionAlert, confirmDialog } from '../common/sweetalert';
 
 document.addEventListener('DOMContentLoaded', function () {
-    // The Send button opens the send modal (which carries the recipient email
-    // field). A $0.00 invoice can never be sent, so intercept the click and steer
-    // the admin to attach sessions instead of opening the modal.
-    const sendButton = document.getElementById('open-send-email-button');
-    if (sendButton) {
-        sendButton.addEventListener(
-            'click',
-            async function (e) {
-                const invoiceTotal = Number.parseFloat(sendButton.dataset.invoiceTotal ?? '0');
-                if (invoiceTotal > 0) {
-                    return;
-                }
+    // Send posts the invoice directly: it emails the school/family when an invoice
+    // email is on file, otherwise it just marks the invoice as sent. A $0.00 invoice
+    // can never be sent, so intercept the submit and steer the admin to attach
+    // sessions; otherwise confirm with wording that reflects whether an email goes out.
+    const sendButton = document.getElementById('send-invoice-button');
+    const sendForm = document.getElementById('send-email-form');
+    if (sendForm && sendButton) {
+        sendForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-                // Stop Alpine's $dispatch from opening the modal for a $0 invoice.
-                e.preventDefault();
-                e.stopImmediatePropagation();
-
+            const invoiceTotal = Number.parseFloat(sendButton.dataset.invoiceTotal ?? '0');
+            if (invoiceTotal <= 0) {
                 const attachSessionsUrl = sendButton.dataset.attachSessionsUrl ?? '';
 
-                const result = await actionAlert({
+                const zeroResult = await actionAlert({
                     title: 'Cannot send this invoice',
                     text: 'This invoice total is $0.00, so it cannot be sent. Add billable sessions or keep it as draft.',
                     icon: 'warning',
@@ -34,27 +29,23 @@ document.addEventListener('DOMContentLoaded', function () {
                     reverseButtons: true,
                 });
 
-                if (result.isConfirmed && attachSessionsUrl) {
+                if (zeroResult.isConfirmed && attachSessionsUrl) {
                     window.location.href = attachSessionsUrl;
                 }
-            },
-            true
-        );
-    }
+                return;
+            }
 
-    const sendForm = document.getElementById('send-email-form');
-    if (sendForm) {
-        sendForm.addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const isFamily = sendButton?.getAttribute('data-is-private-family') === '1';
+            const hasInvoiceEmail = sendButton.dataset.hasInvoiceEmail === '1';
+            const isFamily = sendButton.dataset.isPrivateFamily === '1';
             const recipientEntity = isFamily ? 'family' : 'school';
 
             const result = await confirmDialog({
                 title: 'Send Invoice?',
-                text: `This will send the invoice to the ${recipientEntity} via email. Are you sure you want to continue?`,
+                text: hasInvoiceEmail
+                    ? `This will send the invoice to the ${recipientEntity} via email. Are you sure you want to continue?`
+                    : `No invoice email is on file for this ${recipientEntity}, so no email will be sent — the invoice will just be marked as sent. Continue?`,
                 icon: 'question',
-                confirmButtonText: 'Yes, send invoice',
+                confirmButtonText: hasInvoiceEmail ? 'Yes, send invoice' : 'Yes, mark as sent',
                 cancelButtonText: 'Cancel',
             });
 
