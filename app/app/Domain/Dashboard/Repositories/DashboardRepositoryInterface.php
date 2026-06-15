@@ -56,14 +56,11 @@ interface DashboardRepositoryInterface
 
     public function getUnassignedSSAsCount(): int;
 
-    /** @return Collection<string, ServiceSupportAgreement> */
-    public function getSSAStatusDistribution(): Collection;
-
     /** @return array<string, array<int, mixed>> */
-    public function getTherapistsByPosition(): array;
+    public function getOpenSubRequestsByPosition(): array;
 
-    /** @return array<string, array<int, mixed>> */
-    public function getUtilizationTrendData(): array;
+    /** @return Collection<int, ServiceSupportAgreement> */
+    public function getPendingSSAs(int $limit = 5): Collection;
 
     /** @return Collection<int, ServiceSupportAgreement> */
     public function getExpiringSSAs(int $days = 30, int $limit = 4): Collection;

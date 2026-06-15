@@ -80,4 +80,13 @@ class Expense extends Model
     {
         return ExpenseScope::forSource($query, $source);
     }
+
+    /**
+     * @param  Builder<Expense>  $query
+     * @return Builder<Expense>
+     */
+    public function scopeExcludingTherapistPayouts(Builder $query): Builder
+    {
+        return ExpenseScope::excludingTherapistPayouts($query);
+    }
 }

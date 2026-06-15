@@ -43,7 +43,7 @@ final class EloquentFinanceSummaryRepository implements FinanceSummaryRepository
 
     public function getOtherExpenses(Carbon $start, Carbon $end): float
     {
-        return (float) Expense::sum('amount');
+        return (float) Expense::excludingTherapistPayouts()->sum('amount');
     }
 
     public function getOutstandingReceivablesTotals(InvoiceStatus $paidStatus): array

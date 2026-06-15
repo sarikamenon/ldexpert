@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
+use App\Domain\Finance\Repositories\FinanceSummaryRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
-use App\Enums\SSAStatus;
+use App\Models\ServiceSupportAgreement;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardService
@@ -14,6 +16,7 @@ class DashboardService
     public function __construct(
         private readonly UserTimezoneService $userTimezoneService,
         private readonly DashboardRepositoryInterface $repository,
+        private readonly FinanceSummaryRepositoryInterface $financeSummaryRepository,
     ) {}
 
     /** @return array<string, mixed> */
@@ -112,27 +115,38 @@ class DashboardService
     /** @return array<string, mixed> */
     public function getChartData(): array
     {
-        $ssaDistribution = $this->repository->getSSAStatusDistribution();
-
-        $pending = $ssaDistribution->get(SSAStatus::PENDING->value);
-        $active = $ssaDistribution->get(SSAStatus::ACTIVE->value);
-        $completed = $ssaDistribution->get(SSAStatus::COMPLETED->value);
-        $deactivated = $ssaDistribution->get(SSAStatus::DEACTIVATED->value);
-        $ssaDistributionData = [
-            'Pending' => $pending !== null ? (int) $pending->getAttribute('count') : 0,
-            'Active' => $active !== null ? (int) $active->getAttribute('count') : 0,
-            'Completed' => $completed !== null ? (int) $completed->getAttribute('count') : 0,
-            'Deactivated' => $deactivated !== null ? (int) $deactivated->getAttribute('count') : 0,
+        return [
+            'account_balance' => $this->getAccountBalanceChartData(),
+            'open_sub_requests_by_position' => $this->repository->getOpenSubRequestsByPosition(),
         ];
+    }
+
+    /**
+     * Income, therapist payouts, and other expenses across all ledger activity.
+     *
+     * @return array{labels: array<int, string>, data: array<int, float>, formatted: array<int, string>, colors: array<int, string>}
+     */
+    private function getAccountBalanceChartData(): array
+    {
+        // These finance-summary methods return all-time totals; the date range is
+        // not honoured by the repository, so the bounds below are nominal (epoch
+        // to now) and exist only to satisfy the shared interface signature.
+        $start = Carbon::createFromTimestamp(0);
+        $end = now();
+
+        $income = $this->financeSummaryRepository->getRevenueCollected($start, $end);
+        $therapistPayouts = $this->financeSummaryRepository->getTherapistPayments($start, $end);
+        $otherExpenses = $this->financeSummaryRepository->getOtherExpenses($start, $end);
+
+        $values = [$income, $therapistPayouts, $otherExpenses];
 
         return [
-            'ssa_distribution' => [
-                'labels' => array_keys($ssaDistributionData),
-                'data' => array_values($ssaDistributionData),
-                'colors' => ['#f59e0b', '#10b981', '#3b82f6', '#6b7280'],
-            ],
-            'therapist_by_position' => $this->repository->getTherapistsByPosition(),
-            'utilization_trend' => $this->repository->getUtilizationTrendData(),
+            'labels' => ['Income', 'Therapist Payouts', 'Other Expenses'],
+            'data' => $values,
+            'formatted' => collect($values)
+                ->map(static fn (float $v): string => '$'.number_format($v, 2))
+                ->all(),
+            'colors' => ['#10b981', '#5563b8', '#f59e0b'],
         ];
     }
 
@@ -204,6 +218,31 @@ class DashboardService
         }
 
         return $events;
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    public function getPendingSSAEvents(int $limit = 5): array
+    {
+        $pendingSSAs = $this->repository->getPendingSSAs($limit);
+
+        return $pendingSSAs->map(function (ServiceSupportAgreement $ssa): array {
+            $studentName = $ssa->student?->studentProfile
+                ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
+                : 'Student';
+            $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
+
+            return [
+                'student' => $studentName,
+                'service' => $serviceName,
+                'is_unassigned' => $ssa->assigned_therapist_id === null,
+                'link' => route('admin.ssas.show', $ssa),
+            ];
+        })->all();
+    }
+
+    public function getPendingSSACount(): int
+    {
+        return $this->repository->getPendingSSACount();
     }
 
     /** @return array<int, array<string, mixed>> */
