@@ -82,7 +82,7 @@ final class DashboardServiceTest extends TestCase
 
         $financeSummary->shouldReceive('getRevenueCollected')->once()->andReturn(1000.0);
         $financeSummary->shouldReceive('getTherapistPayments')->once()->andReturn(600.0);
-        $financeSummary->shouldReceive('getOtherExpenses')->once()->andReturn(150.0);
+        $financeSummary->shouldReceive('getNonPayoutExpenses')->once()->andReturn(150.0);
         $repository->shouldReceive('getOpenSubRequestsByPosition')->once()->andReturn(['labels' => [], 'data' => [], 'colors' => []]);
 
         $service = new DashboardService($timezoneService, $repository, $financeSummary);

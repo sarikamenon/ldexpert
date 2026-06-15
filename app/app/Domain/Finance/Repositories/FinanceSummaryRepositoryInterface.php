@@ -20,6 +20,8 @@ interface FinanceSummaryRepositoryInterface
 
     public function getOtherExpenses(Carbon $start, Carbon $end): float;
 
+    public function getNonPayoutExpenses(Carbon $start, Carbon $end): float;
+
     /**
      * @return array{total_invoiced: float, total_paid: float}
      */

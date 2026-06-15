@@ -136,7 +136,7 @@ class DashboardService
 
         $income = $this->financeSummaryRepository->getRevenueCollected($start, $end);
         $therapistPayouts = $this->financeSummaryRepository->getTherapistPayments($start, $end);
-        $otherExpenses = $this->financeSummaryRepository->getOtherExpenses($start, $end);
+        $otherExpenses = $this->financeSummaryRepository->getNonPayoutExpenses($start, $end);
 
         $values = [$income, $therapistPayouts, $otherExpenses];
 
