@@ -77,7 +77,7 @@ final class TherapistSessionLogRowTransformer
         }
         $therapistServiceCell .= '</div>';
 
-        $amountsCell = self::amountsCell($log);
+        $amountsCell = self::amountsCell($log, showSchoolAmount: false);
 
         $notesCell = self::notesCell($log->notes);
 

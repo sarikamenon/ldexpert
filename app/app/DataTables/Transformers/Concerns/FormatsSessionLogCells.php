@@ -27,12 +27,16 @@ trait FormatsSessionLogCells
             .'</div>';
     }
 
-    private static function amountsCell(SessionLog $log): string
+    private static function amountsCell(SessionLog $log, bool $showSchoolAmount = true): string
     {
-        return '<div class="flex flex-col space-y-1">'
-            .'<span class="text-xs text-foreground/60">School: <span class="text-foreground font-medium">'.e(self::formatCurrency($log->school_invoice_amount)).'</span></span>'
-            .'<span class="text-xs text-foreground/60">Therapist: <span class="text-foreground font-medium">'.e(self::formatCurrency($log->therapist_billable_amount)).'</span></span>'
+        $html = '<div class="flex flex-col space-y-1">';
+        if ($showSchoolAmount) {
+            $html .= '<span class="text-xs text-foreground/60">School: <span class="text-foreground font-medium">'.e(self::formatCurrency($log->school_invoice_amount)).'</span></span>';
+        }
+        $html .= '<span class="text-xs text-foreground/60">Therapist: <span class="text-foreground font-medium">'.e(self::formatCurrency($log->therapist_billable_amount)).'</span></span>'
             .'</div>';
+
+        return $html;
     }
 
     private static function formatCurrency(float|string|null $amount): string

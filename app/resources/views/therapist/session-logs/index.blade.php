@@ -84,7 +84,7 @@
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Date</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Student & School/Family</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Therapist & Service</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Amounts</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Amount</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Notes</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Status</th>
                                 <th class="px-4 py-2 text-left text-xs font-medium text-foreground/70 uppercase">Actions</th>
