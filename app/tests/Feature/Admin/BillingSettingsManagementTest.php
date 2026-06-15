@@ -115,7 +115,7 @@ test('billing settings update validates boundary values', function () {
         'advance_default_generation_day_type' => 'invalid',
         'advance_default_generation_day_of_week' => 7, // max is 6
         'advance_default_delay_days' => 31, // max is 30
-        'advance_default_payment_terms_days' => 0, // min is 1
+        'advance_default_payment_terms_days' => 91, // max is 90 (0 is allowed for advance)
         'advance_default_auto_generate' => true,
         'advance_default_auto_send' => false,
         'standard_default_frequency' => 'invalid',
@@ -152,6 +152,44 @@ test('billing settings update validates boundary values', function () {
         'reminder_days_after_due',
         'reminder_overdue_repeat_days',
         'max_overdue_reminders',
+    ]);
+});
+
+test('billing settings update allows zero advance payment terms days', function () {
+    $admin = User::factory()->admin()->create();
+
+    $data = [
+        'default_frequency' => 'monthly',
+        'default_generation_day_type' => 'fixed_delay',
+        'default_generation_day_of_week' => 3,
+        'default_delay_days' => 5,
+        'default_payment_terms_days' => 45,
+        'default_auto_generate' => true,
+        'default_auto_send' => false,
+        'advance_default_frequency' => 'weekly',
+        'advance_default_generation_day_type' => 'day_of_week',
+        'advance_default_generation_day_of_week' => 1,
+        'advance_default_delay_days' => 3,
+        'advance_default_payment_terms_days' => 0,
+        'advance_default_auto_generate' => true,
+        'advance_default_auto_send' => true,
+        'standard_default_frequency' => 'bi_weekly',
+        'standard_default_generation_day_type' => 'fixed_delay',
+        'standard_default_generation_day_of_week' => 4,
+        'standard_default_delay_days' => 6,
+        'standard_default_payment_terms_days' => 25,
+        'standard_default_auto_generate' => false,
+        'reminder_days_before_due' => 7,
+        'reminder_days_after_due' => 5,
+        'reminder_overdue_repeat_days' => 10,
+        'max_overdue_reminders' => 5,
+    ];
+
+    $response = $this->actingAs($admin)->put(route('admin.billing.settings.update'), $data);
+
+    $response->assertSessionDoesntHaveErrors('advance_default_payment_terms_days');
+    $this->assertDatabaseHas('billing_settings', [
+        'advance_default_payment_terms_days' => 0,
     ]);
 });
 

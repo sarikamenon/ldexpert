@@ -106,6 +106,7 @@ final class SessionLogRowTransformer
                 'Delete',
                 'Delete session log?',
                 'This will remove the session log and make the session available to log again.',
+                ['data-ajax' => 'true'],
             );
         }
 

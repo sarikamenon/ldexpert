@@ -157,7 +157,7 @@ final class ActionButtons
             self::ICON_DELETE,
             self::VARIANT_DANGER,
             $label,
-            array_merge($confirmAttrs, ['data-ajax' => 'true'], $attrs),
+            array_merge($confirmAttrs, $attrs),
         );
     }
 

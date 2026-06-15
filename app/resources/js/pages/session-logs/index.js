@@ -118,10 +118,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await successToast(json.message || 'Done.');
                     reloadTable();
                 } else {
-                    errorAlert(json.message || 'Something went wrong.');
+                    await errorAlert(json.message || 'Something went wrong.');
                 }
             } catch {
-                errorAlert('Request failed. Please try again.');
+                await errorAlert('Request failed. Please try again.');
             }
         },
         true,
