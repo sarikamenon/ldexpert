@@ -142,7 +142,7 @@
                     <x-input-label for="advance_default_payment_terms_days" value="Payment Terms (Days) *" />
                     <p class="mt-1 text-xs text-foreground/60" id="adv_terms_help">Due date = generation date + this many days.</p>
                     <x-ui::input type="number" id="advance_default_payment_terms_days" name="advance_default_payment_terms_days" class="mt-1 block w-full" required
-                        value="{{ old('advance_default_payment_terms_days', $settings->advance_default_payment_terms_days) }}" min="1" max="90" aria-describedby="adv_terms_help" />
+                        value="{{ old('advance_default_payment_terms_days', $settings->advance_default_payment_terms_days) }}" min="0" max="90" aria-describedby="adv_terms_help" />
                     <x-input-error :messages="$errors->get('advance_default_payment_terms_days')" class="mt-2" />
                 </div>
 
