@@ -98,3 +98,9 @@ send-reminders:
 
 queue-work:
 	$(ARTISAN) queue:work
+
+erd:
+	$(PHP_SHELL) 'cd /var/www/html/app && export DB_DATABASE=bird_test DB_HOST=mysql DB_PORT=3306 && php artisan migrate:fresh --force --no-interaction >/dev/null && php artisan diagrams:erd'
+
+erd-check:
+	$(PHP_SHELL) 'cd /var/www/html/app && export DB_DATABASE=bird_test DB_HOST=mysql DB_PORT=3306 && php artisan migrate:fresh --force --no-interaction >/dev/null && php artisan diagrams:erd --check'
