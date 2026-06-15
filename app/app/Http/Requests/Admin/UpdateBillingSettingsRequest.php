@@ -33,7 +33,7 @@ final class UpdateBillingSettingsRequest extends FormRequest
             'advance_default_generation_day_type' => ['required', Rule::in(GenerationDayType::values())],
             'advance_default_generation_day_of_week' => ['required', 'integer', 'min:0', 'max:6'],
             'advance_default_delay_days' => ['required', 'integer', 'min:0', 'max:30'],
-            'advance_default_payment_terms_days' => ['required', 'integer', 'min:1', 'max:90'],
+            'advance_default_payment_terms_days' => ['required', 'integer', 'min:0', 'max:90'],
             'advance_default_auto_generate' => ['boolean'],
             'advance_default_auto_send' => ['boolean'],
             'standard_default_frequency' => ['required', Rule::in(BillingFrequency::values())],
