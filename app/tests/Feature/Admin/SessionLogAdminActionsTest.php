@@ -2,84 +2,82 @@
 
 declare(strict_types=1);
 
-namespace Tests\Feature\Admin;
-
 use App\Models\SessionLog;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 
-final class SessionLogAdminActionsTest extends TestCase
-{
-    use RefreshDatabase;
+test('admin can approve submitted session log', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->submitted()->create();
 
-    public function test_admin_can_approve_submitted_session_log(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->submitted()->create();
+    $response = $this->actingAs($admin)
+        ->post(route('admin.session-logs.approve', $sessionLog));
 
-        $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.approve', $sessionLog));
+    $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
+    $sessionLog->refresh();
+    expect($sessionLog->isApproved())->toBeTrue();
+    expect($sessionLog->approved_at)->not->toBeNull();
+    expect($sessionLog->approved_by_id)->toBe($admin->id);
+});
 
-        $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
-        $sessionLog->refresh();
-        $this->assertTrue($sessionLog->isApproved());
-        $this->assertNotNull($sessionLog->approved_at);
-        $this->assertSame($admin->id, $sessionLog->approved_by_id);
-    }
+test('admin approve via ajax returns json instead of redirecting', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->submitted()->create();
 
-    public function test_admin_cannot_approve_draft_session_log(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->draft()->create();
+    $response = $this->actingAs($admin)
+        ->postJson(route('admin.session-logs.approve', $sessionLog));
 
-        $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.approve', $sessionLog));
+    $response->assertOk()
+        ->assertJson(['success' => true, 'message' => 'Session log approved.']);
+    expect($sessionLog->fresh()->isApproved())->toBeTrue();
+});
 
-        $response->assertForbidden();
-    }
+test('admin cannot approve draft session log', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->draft()->create();
 
-    public function test_admin_can_cancel_draft_session_log(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->draft()->create();
+    $response = $this->actingAs($admin)
+        ->post(route('admin.session-logs.approve', $sessionLog));
 
-        $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.cancel', $sessionLog), [
-                'cancellation_reason' => 'Cancelled by admin for review',
-            ]);
+    $response->assertForbidden();
+});
 
-        $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
-        $sessionLog->refresh();
-        $this->assertTrue($sessionLog->isCancelled());
-        $this->assertNotNull($sessionLog->cancellation_reason);
-    }
+test('admin can cancel draft session log', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->draft()->create();
 
-    public function test_admin_can_cancel_submitted_session_log(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->submitted()->create();
+    $response = $this->actingAs($admin)
+        ->post(route('admin.session-logs.cancel', $sessionLog), [
+            'cancellation_reason' => 'Cancelled by admin for review',
+        ]);
 
-        $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.cancel', $sessionLog), [
-                'cancellation_reason' => 'Cancelled by admin',
-            ]);
+    $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
+    $sessionLog->refresh();
+    expect($sessionLog->isCancelled())->toBeTrue();
+    expect($sessionLog->cancellation_reason)->not->toBeNull();
+});
 
-        $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
-        $sessionLog->refresh();
-        $this->assertTrue($sessionLog->isCancelled());
-    }
+test('admin can cancel submitted session log', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->submitted()->create();
 
-    public function test_admin_cannot_cancel_approved_session_log(): void
-    {
-        $admin = User::factory()->admin()->create();
-        $sessionLog = SessionLog::factory()->approved()->create();
+    $response = $this->actingAs($admin)
+        ->post(route('admin.session-logs.cancel', $sessionLog), [
+            'cancellation_reason' => 'Cancelled by admin',
+        ]);
 
-        $response = $this->actingAs($admin)
-            ->post(route('admin.session-logs.cancel', $sessionLog), [
-                'cancellation_reason' => 'Test',
-            ]);
+    $response->assertRedirect(route('admin.session-logs.show', $sessionLog));
+    $sessionLog->refresh();
+    expect($sessionLog->isCancelled())->toBeTrue();
+});
 
-        $response->assertForbidden();
-    }
-}
+test('admin cannot cancel approved session log', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->approved()->create();
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.session-logs.cancel', $sessionLog), [
+            'cancellation_reason' => 'Test',
+        ]);
+
+    $response->assertForbidden();
+});

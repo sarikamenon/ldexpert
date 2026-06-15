@@ -30,3 +30,15 @@ test('admin cannot delete an approved session log', function () {
     $response->assertForbidden();
     $this->assertNotSoftDeleted($sessionLog);
 });
+
+test('admin delete via ajax returns json instead of redirecting', function () {
+    $admin = User::factory()->admin()->create();
+    $sessionLog = SessionLog::factory()->submitted()->create();
+
+    $response = $this->actingAs($admin)
+        ->deleteJson(route('admin.session-logs.destroy', $sessionLog));
+
+    $response->assertOk()
+        ->assertJson(['success' => true, 'message' => 'Session log deleted.']);
+    $this->assertSoftDeleted($sessionLog);
+});

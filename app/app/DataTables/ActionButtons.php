@@ -157,7 +157,7 @@ final class ActionButtons
             self::ICON_DELETE,
             self::VARIANT_DANGER,
             $label,
-            array_merge($confirmAttrs, $attrs),
+            array_merge($confirmAttrs, ['data-ajax' => 'true'], $attrs),
         );
     }
 
@@ -174,6 +174,7 @@ final class ActionButtons
             'data-confirm-title' => $confirmTitle,
             'data-confirm-text' => $confirmText,
             'data-confirm-icon' => 'question',
+            'data-ajax' => 'true',
         ]);
     }
 
@@ -311,7 +312,7 @@ final class ActionButtons
     }
 
     /**
-     * Extract data-confirm-* keys from attrs and render them as HTML attributes for the form tag.
+     * Extract data-confirm-* and data-ajax keys from attrs and render them as HTML attributes for the form tag.
      *
      * @param  array<string, string|int|null>  $attrs
      */
@@ -319,7 +320,7 @@ final class ActionButtons
     {
         $html = '';
         foreach (array_keys($attrs) as $key) {
-            if (str_starts_with((string) $key, 'data-confirm-')) {
+            if (str_starts_with((string) $key, 'data-confirm-') || $key === 'data-ajax') {
                 $html .= ' '.e($key).'="'.e((string) $attrs[$key]).'"';
                 unset($attrs[$key]);
             }

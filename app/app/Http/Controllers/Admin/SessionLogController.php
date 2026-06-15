@@ -161,7 +161,7 @@ final class SessionLogController extends Controller
         }
     }
 
-    public function approve(Request $request, SessionLog $sessionLog): RedirectResponse
+    public function approve(Request $request, SessionLog $sessionLog): RedirectResponse|JsonResponse
     {
         $this->authorize('approve', $sessionLog);
 
@@ -170,10 +170,18 @@ final class SessionLogController extends Controller
             $user = $request->user();
             $this->service->approve($user, $sessionLog);
 
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Session log approved.']);
+            }
+
             return redirect()
                 ->route('admin.session-logs.show', $sessionLog)
                 ->with('success', 'Session log approved.');
         } catch (\InvalidArgumentException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
@@ -218,7 +226,7 @@ final class SessionLogController extends Controller
         }
     }
 
-    public function destroy(Request $request, SessionLog $sessionLog): RedirectResponse
+    public function destroy(Request $request, SessionLog $sessionLog): RedirectResponse|JsonResponse
     {
         $this->authorize('delete', $sessionLog);
 
@@ -227,10 +235,18 @@ final class SessionLogController extends Controller
             $user = $request->user();
             $this->service->deleteSessionLog($user, $sessionLog);
 
+            if ($request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Session log deleted.']);
+            }
+
             return redirect()
                 ->route('admin.session-logs.index')
                 ->with('success', 'Session log deleted.');
         } catch (\InvalidArgumentException $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
@@ -239,6 +255,10 @@ final class SessionLogController extends Controller
                 'session_log_id' => $sessionLog->id,
                 'error' => $e->getMessage(),
             ]);
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to delete the session log. Please try again.'], 500);
+            }
 
             return redirect()
                 ->back()
