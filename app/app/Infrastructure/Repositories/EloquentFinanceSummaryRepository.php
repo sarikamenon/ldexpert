@@ -46,6 +46,11 @@ final class EloquentFinanceSummaryRepository implements FinanceSummaryRepository
         return (float) Expense::sum('amount');
     }
 
+    public function getNonPayoutExpenses(Carbon $start, Carbon $end): float
+    {
+        return (float) Expense::excludingTherapistPayouts()->sum('amount');
+    }
+
     public function getOutstandingReceivablesTotals(InvoiceStatus $paidStatus): array
     {
         // NOTE: Payments are linked to invoices via the invoice_payment_allocations table,

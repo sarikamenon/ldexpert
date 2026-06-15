@@ -97,6 +97,24 @@ test('prevents non-admin access to SSAs index', function () {
         ->assertForbidden();
 });
 
+test('accepts a statuses filter and passes it to the view', function () {
+    $admin = ssaAdmin();
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.ssas.index', ['statuses' => ['pending']]));
+
+    $response->assertOk()
+        ->assertViewHas('filters', fn (array $filters): bool => ($filters['statuses'] ?? null) === ['pending']);
+});
+
+test('rejects an invalid statuses filter value', function () {
+    $admin = ssaAdmin();
+
+    $this->actingAs($admin)
+        ->get(route('admin.ssas.index', ['statuses' => ['not-a-status']]))
+        ->assertSessionHasErrors('statuses.0');
+});
+
 test('allows admin to view create SSA form', function () {
     $admin = ssaAdmin();
     ssaStudent();

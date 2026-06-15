@@ -22,6 +22,8 @@ class DashboardController extends Controller
             'charts' => $this->dashboardService->getChartData(),
             'upcomingSchoolContracts' => $this->dashboardService->getExpiringSchoolContractEvents(),
             'upcomingSSAs' => $this->dashboardService->getExpiringSSAEvents(),
+            'pendingSSAs' => $this->dashboardService->getPendingSSAEvents(),
+            'pendingSSACount' => $this->dashboardService->getPendingSSACount(),
             'operationalMetrics' => $this->dashboardService->getOperationalMetrics(),
             'quickActions' => $this->dashboardService->getQuickActions(),
         ]);

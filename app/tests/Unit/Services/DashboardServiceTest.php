@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
+use App\Domain\Finance\Repositories\FinanceSummaryRepositoryInterface;
 use App\Domain\Time\UserTimezoneService;
 use App\Models\School;
 use App\Models\SchoolContract;
+use App\Models\Service;
+use App\Models\ServiceSupportAgreement;
+use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\DashboardService;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +44,7 @@ final class DashboardServiceTest extends TestCase
         $repository->shouldReceive('getSSAsExpiringSoon')->once()->with(7)->andReturn(5);
         $repository->shouldReceive('getAverageSSAUtilization')->once()->andReturn(75);
 
-        $service = new DashboardService($timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
         $result = $service->getKeyMetrics();
 
         $this->assertIsArray($result);
@@ -64,7 +68,7 @@ final class DashboardServiceTest extends TestCase
         $repository->shouldReceive('getStudentsWithActiveSSAsCount')->once()->andReturn(45);
         $repository->shouldReceive('getUnassignedSSAsCount')->once()->andReturn(0);
 
-        $service = new DashboardService($timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
         $result = $service->getCriticalAlerts();
 
         $this->assertIsArray($result);
@@ -74,18 +78,24 @@ final class DashboardServiceTest extends TestCase
     {
         $repository = Mockery::mock(DashboardRepositoryInterface::class);
         $timezoneService = Mockery::mock(UserTimezoneService::class);
+        $financeSummary = Mockery::mock(FinanceSummaryRepositoryInterface::class);
 
-        $repository->shouldReceive('getSSAStatusDistribution')->once()->andReturn(collect());
-        $repository->shouldReceive('getTherapistsByPosition')->once()->andReturn(['labels' => [], 'data' => [], 'colors' => []]);
-        $repository->shouldReceive('getUtilizationTrendData')->once()->andReturn(['labels' => [], 'tho_hours' => [], 'served_hours' => []]);
+        $financeSummary->shouldReceive('getRevenueCollected')->once()->andReturn(1000.0);
+        $financeSummary->shouldReceive('getTherapistPayments')->once()->andReturn(600.0);
+        $financeSummary->shouldReceive('getNonPayoutExpenses')->once()->andReturn(150.0);
+        $repository->shouldReceive('getOpenSubRequestsByPosition')->once()->andReturn(['labels' => [], 'data' => [], 'colors' => []]);
 
-        $service = new DashboardService($timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository, $financeSummary);
         $result = $service->getChartData();
 
         $this->assertIsArray($result);
-        $this->assertArrayHasKey('ssa_distribution', $result);
-        $this->assertArrayHasKey('therapist_by_position', $result);
-        $this->assertArrayHasKey('utilization_trend', $result);
+        $this->assertArrayHasKey('account_balance', $result);
+        $this->assertArrayHasKey('open_sub_requests_by_position', $result);
+        $this->assertArrayNotHasKey('therapist_by_position', $result);
+
+        $this->assertSame(['Income', 'Therapist Payouts', 'Other Expenses'], $result['account_balance']['labels']);
+        $this->assertSame([1000.0, 600.0, 150.0], $result['account_balance']['data']);
+        $this->assertSame(['$1,000.00', '$600.00', '$150.00'], $result['account_balance']['formatted']);
     }
 
     public function test_get_quick_actions_includes_invoice_and_billing_and_excludes_analytics(): void
@@ -93,7 +103,7 @@ final class DashboardServiceTest extends TestCase
         $repository = Mockery::mock(DashboardRepositoryInterface::class);
         $timezoneService = Mockery::mock(UserTimezoneService::class);
 
-        $service = new DashboardService($timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
         $actions = $service->getQuickActions();
 
         $routes = array_map(static fn (array $a): string => (string) $a['route'], $actions);
@@ -126,7 +136,7 @@ final class DashboardServiceTest extends TestCase
 
         Auth::shouldReceive('user')->andReturn(new User);
 
-        $service = new DashboardService($timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
         $events = $service->getExpiringSchoolContractEvents();
 
         $this->assertCount(1, $events);
@@ -146,11 +156,64 @@ final class DashboardServiceTest extends TestCase
 
         Auth::shouldReceive('user')->andReturn(new User);
 
-        $service = new DashboardService($timezoneService, $repository);
+        $service = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
         $events = $service->getExpiringSSAEvents();
 
         $this->assertIsArray($events);
         $this->assertCount(0, $events);
+    }
+
+    public function test_get_pending_ssa_events_returns_compact_rows(): void
+    {
+        $school = new School(['display_name' => 'Sunrise Academy']);
+        $profile = new StudentProfile(['first_name' => 'Jane', 'last_name' => 'Doe']);
+        $profile->setRelation('school', $school);
+        $student = new User;
+        $student->setRelation('studentProfile', $profile);
+        $service = new Service(['name' => 'Speech']);
+
+        $ssa = new ServiceSupportAgreement;
+        $ssa->id = 42;
+        $ssa->setRelation('student', $student);
+        $ssa->setRelation('primaryService', $service);
+
+        $repository = Mockery::mock(DashboardRepositoryInterface::class);
+        $timezoneService = Mockery::mock(UserTimezoneService::class);
+
+        $repository->shouldReceive('getPendingSSAs')->once()->with(5)->andReturn(collect([$ssa]));
+
+        $dashboardService = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
+        $events = $dashboardService->getPendingSSAEvents();
+
+        $this->assertCount(1, $events);
+        $this->assertSame('Jane Doe', $events[0]['student']);
+        $this->assertSame('Sunrise Academy', $events[0]['school']);
+        $this->assertSame('Speech', $events[0]['service']);
+        $this->assertStringContainsString('/ssas/42', $events[0]['link']);
+    }
+
+    public function test_get_pending_ssa_events_school_is_null_for_private_students(): void
+    {
+        $profile = new StudentProfile(['first_name' => 'John', 'last_name' => 'Smith']);
+        $profile->setRelation('school', null);
+        $student = new User;
+        $student->setRelation('studentProfile', $profile);
+        $service = new Service(['name' => 'OT']);
+
+        $ssa = new ServiceSupportAgreement;
+        $ssa->id = 99;
+        $ssa->setRelation('student', $student);
+        $ssa->setRelation('primaryService', $service);
+
+        $repository = Mockery::mock(DashboardRepositoryInterface::class);
+        $timezoneService = Mockery::mock(UserTimezoneService::class);
+
+        $repository->shouldReceive('getPendingSSAs')->once()->with(5)->andReturn(collect([$ssa]));
+
+        $dashboardService = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
+        $events = $dashboardService->getPendingSSAEvents();
+
+        $this->assertNull($events[0]['school']);
     }
 
     protected function tearDown(): void

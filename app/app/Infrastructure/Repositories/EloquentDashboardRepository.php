@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
-use App\Domain\Analytics\Services\TherapistPositionChartService;
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Enums\ContractStatus;
 use App\Enums\Role;
 use App\Enums\SchoolStatus;
 use App\Enums\SSAStatus;
+use App\Enums\SubRequestStatus;
 use App\Enums\UserStatus;
+use App\Models\ScheduleSubRequest;
 use App\Models\School;
 use App\Models\SchoolContract;
 use App\Models\ServiceSupportAgreement;
@@ -23,9 +24,7 @@ use Illuminate\Support\Facades\DB;
 final class EloquentDashboardRepository implements DashboardRepositoryInterface
 {
     /** @var array<int, string> */
-    private const THERAPIST_POSITION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-    public function __construct(private readonly TherapistPositionChartService $therapistPositionChartService) {}
+    private const POSITION_CHART_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
     public function getSchoolCount(): int
     {
@@ -179,71 +178,54 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
             ->count();
     }
 
-    /** @return Collection<string, ServiceSupportAgreement> */
-    public function getSSAStatusDistribution(): Collection
+    /**
+     * Open sub requests grouped by the original therapist's position, limited to
+     * sessions whose combined (schedule_date + start_time) UTC instant is still
+     * in the future — coverage that is genuinely pending. Requests for sessions
+     * that have already passed are no longer actionable and are excluded.
+     *
+     * @return array<string, array<int, mixed>>
+     */
+    public function getOpenSubRequestsByPosition(): array
     {
-        return ServiceSupportAgreement::select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->get()
-            ->keyBy('status');
-    }
+        $positionExpression = "COALESCE(positions.name, 'Unassigned')";
 
-    /** @return array<string, array<int, mixed>> */
-    public function getTherapistsByPosition(): array
-    {
-        $result = $this->therapistPositionChartService->getCounts();
-        $palette = self::THERAPIST_POSITION_CHART_COLORS;
-        $colors = collect($result['labels'])
+        $nowUtc = now()->toDateTimeString();
+
+        $rows = ScheduleSubRequest::query()
+            ->where('schedule_sub_requests.status', SubRequestStatus::OPEN->value)
+            ->join('schedules', 'schedules.id', '=', 'schedule_sub_requests.schedule_id')
+            ->whereNull('schedules.deleted_at')
+            ->whereRaw('TIMESTAMP(schedules.schedule_date, schedules.start_time) > ?', [$nowUtc])
+            ->join('therapist_profiles', 'therapist_profiles.user_id', '=', 'schedules.therapist_id')
+            ->leftJoin('positions', 'positions.id', '=', 'therapist_profiles.position_id')
+            ->selectRaw($positionExpression.' as position, count(*) as count')
+            ->groupBy(DB::raw($positionExpression))
+            ->orderBy('position')
+            ->get();
+
+        $labels = $rows->pluck('position')->map(static fn ($label): string => (string) $label)->values()->all();
+        $palette = self::POSITION_CHART_COLORS;
+        $colors = collect($labels)
             ->keys()
             ->map(static fn (int $index): string => $palette[$index % count($palette)])
             ->all();
 
         return [
-            'labels' => $result['labels'],
-            'data' => $result['data'],
+            'labels' => $labels,
+            'data' => $rows->pluck('count')->map(static fn ($count): int => (int) $count)->values()->all(),
             'colors' => $colors,
         ];
     }
 
-    /** @return array<string, array<int, mixed>> */
-    public function getUtilizationTrendData(): array
+    /** @return Collection<int, ServiceSupportAgreement> */
+    public function getPendingSSAs(int $limit = 5): Collection
     {
-        $labels = [];
-        for ($i = 29; $i >= 0; $i--) {
-            $labels[] = now()->subDays($i)->format('M d');
-        }
-
-        $thoMinutes = [];
-        $servedMinutes = [];
-
-        for ($i = 29; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-
-            $thoSum = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-                ->whereDate('start_date', '<=', $date)
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('end_date')
-                        ->orWhereDate('end_date', '>=', $date);
-                })
-                ->sum('tho_minutes');
-
-            $servedSum = ServiceSupportAgreement::where('status', SSAStatus::ACTIVE)
-                ->whereDate('start_date', '<=', $date)
-                ->where(function ($query) use ($date) {
-                    $query->whereNull('end_date')
-                        ->orWhereDate('end_date', '>=', $date);
-                })
-                ->sum('served_minutes');
-
-            $thoMinutes[] = round((float) $thoSum / 60, 2);
-            $servedMinutes[] = round((float) $servedSum / 60, 2);
-        }
-
-        return [
-            'labels' => $labels,
-            'tho_hours' => $thoMinutes,
-            'served_hours' => $servedMinutes,
-        ];
+        return ServiceSupportAgreement::with(['student.studentProfile.school', 'primaryService'])
+            ->where('status', SSAStatus::PENDING)
+            ->orderByDesc('created_at')
+            ->take($limit)
+            ->get();
     }
 
     /** @return Collection<int, ServiceSupportAgreement> */

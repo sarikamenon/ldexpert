@@ -23,6 +23,8 @@ final class IndexSSARequest extends FormRequest
         return [
             'search' => ['nullable', 'string', 'max:255'],
             'status' => ['nullable', Rule::in($statuses)],
+            'statuses' => ['nullable', 'array'],
+            'statuses.*' => [Rule::in($statuses)],
             'student_id' => ['nullable', 'integer', Rule::exists('users', 'id')],
             'service_id' => ['nullable', 'integer', Rule::exists('services', 'id')],
             'therapist_id' => ['nullable', 'integer', Rule::exists('users', 'id')],

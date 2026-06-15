@@ -40,7 +40,221 @@
         <p class="text-foreground/60 mt-1">Here's your NOVA command center overview</p>
     </div>
 
-    {{-- Section 1: Key Performance Indicators --}}
+    {{-- Section 1: Quick Actions --}}
+    <x-ui::card class="p-6 mb-6">
+        <h3 class="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            @foreach ($quickActions as $action)
+                <a href="{{ $action['route'] === '#' ? 'javascript:void(0)' : route($action['route']) }}"
+                    class="flex flex-col items-center p-4 rounded-lg border border-border hover:border-{{ $action['color'] }} hover:bg-{{ $action['color'] }}/5 transition-colors {{ $action['route'] === '#' ? 'opacity-50 cursor-not-allowed' : '' }}">
+                    <div
+                        class="w-12 h-12 rounded-lg bg-{{ $action['color'] }}/10 flex items-center justify-center mb-3">
+                        <svg class="w-6 h-6 text-{{ $action['color'] }}" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            @if ($action['icon'] === 'document-add')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            @elseif($action['icon'] === 'school')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                            @elseif($action['icon'] === 'user-add')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            @elseif($action['icon'] === 'user')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            @elseif($action['icon'] === 'invoice')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            @elseif($action['icon'] === 'billing')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                            @elseif($action['icon'] === 'chart')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            @elseif($action['icon'] === 'list')
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            @endif
+                        </svg>
+                    </div>
+                    <p class="text-sm font-medium text-center text-foreground">{{ $action['title'] }}</p>
+                    <p class="text-xs text-center text-foreground/60 mt-1">{{ $action['description'] }}</p>
+                </a>
+            @endforeach
+        </div>
+    </x-ui::card>
+
+    {{-- Section 2: Critical Alerts (Hidden for now - will be implemented later) --}}
+    @if (false && count($alerts) > 0)
+        <x-ui::card class="p-6 mb-6 border-l-4 border-warning">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 mt-1">
+                    <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-semibold text-foreground mb-4">Needs Attention</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        @foreach ($alerts as $alert)
+                            <a href="{{ $alert['link'] }}"
+                                class="flex items-center gap-3 p-4 rounded-lg bg-{{ $alert['type'] }}/5 border border-{{ $alert['type'] }}/20 hover:border-{{ $alert['type'] }} hover:bg-{{ $alert['type'] }}/10 transition-colors">
+                                <div
+                                    class="flex-shrink-0 w-8 h-8 rounded-full bg-{{ $alert['type'] }}/10 flex items-center justify-center">
+                                    <span class="w-2 h-2 rounded-full bg-{{ $alert['type'] }}"></span>
+                                </div>
+                                <span class="text-sm font-medium text-foreground">{{ $alert['message'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </x-ui::card>
+    @endif
+
+    {{-- Section 3: Visual Analytics --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {{-- Account Balance Overview --}}
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Account Balance Overview</h3>
+            <div style="position: relative; height: 250px;">
+                <canvas id="accountBalanceChart" data-chart="{{ json_encode($charts['account_balance']) }}"></canvas>
+            </div>
+        </x-ui::card>
+
+        {{-- Pending SSAs --}}
+        <x-ui::card class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-foreground">
+                    Pending SSAs
+                    <span class="ml-1 text-sm font-medium text-foreground/60">{{ $pendingSSACount }}</span>
+                </h3>
+                <a href="{{ route('admin.ssas.index', ['statuses' => ['pending']]) }}"
+                    class="flex-shrink-0 text-sm text-primary hover:text-primary/80 focus:outline-none focus:ring-2 focus:ring-ring rounded">
+                    View all →
+                </a>
+            </div>
+            <div class="overflow-y-auto" style="max-height: 250px;">
+                @forelse ($pendingSSAs as $ssa)
+                    <a href="{{ $ssa['link'] }}"
+                        class="flex items-start space-x-3 px-3 py-2.5 rounded-lg border border-transparent hover:border-border hover:bg-primary/5 transition-colors">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 rounded-full bg-warning/10 flex items-center justify-center">
+                                <span class="w-2 h-2 rounded-full bg-warning"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-foreground truncate">
+                                {{ $ssa['student'] }}
+                                @if ($ssa['school'])
+                                    <span class="font-normal text-foreground/50">· {{ $ssa['school'] }}</span>
+                                @endif
+                            </p>
+                            <p class="text-xs text-foreground/50 mt-0.5 truncate">{{ $ssa['service'] }}</p>
+                        </div>
+                    </a>
+                @empty
+                    <p class="text-sm text-foreground/60">No pending SSAs.</p>
+                @endforelse
+            </div>
+        </x-ui::card>
+
+        {{-- Open Sub Requests by Position --}}
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Open Sub Requests by Position</h3>
+            <div style="position: relative; height: 250px;">
+                <canvas id="openSubRequestsChart"
+                    data-chart="{{ json_encode($charts['open_sub_requests_by_position']) }}"></canvas>
+            </div>
+        </x-ui::card>
+    </div>
+
+    {{-- Section 4: Expiring Events --}}
+    <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring School/Family Contracts</h3>
+            <div class="space-y-3">
+                @forelse ($upcomingSchoolContracts as $event)
+                    <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
+                        <div class="flex-shrink-0">
+                            <div
+                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
+                                <span
+                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span
+                                        class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span
+                                            class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
+                            <p class="text-xs text-foreground/60 mt-1">
+                                Due: {{ $event['due_date']->format('M d, Y') }}
+                                ({{ $event['due_date_local']->diffForHumans() }})
+                            </p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-foreground/60">No school/family contracts expiring in the next 30 days.</p>
+                @endforelse
+            </div>
+        </x-ui::card>
+
+        <x-ui::card class="p-6">
+            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring SSAs</h3>
+            <div class="space-y-3">
+                @forelse ($upcomingSSAs as $event)
+                    <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
+                        <div class="flex-shrink-0">
+                            <div
+                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
+                                <span
+                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center flex-wrap gap-1.5">
+                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
+                                @if ($event['is_private_student'])
+                                    <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
+                                        Family
+                                    </span>
+                                    @if ($event['is_auto_extend'])
+                                        <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
+                                            Auto-Extend
+                                        </span>
+                                    @endif
+                                @endif
+                            </div>
+                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
+                            <p class="text-xs text-foreground/60 mt-1">
+                                Due: {{ $event['due_date']->format('M d, Y') }}
+                                ({{ $event['due_date_local']->diffForHumans() }})
+                            </p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-foreground/60">No SSAs expiring in the next 30 days.</p>
+                @endforelse
+            </div>
+        </x-ui::card>
+    </div>
+
+    {{-- Section 5: Key Performance Indicators --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {{-- Schools/Families Overview --}}
         <a href="{{ route('admin.schools.index') }}" class="block hover:scale-[1.02] transition-transform">
@@ -182,190 +396,6 @@
         </a>
     </div>
 
-    {{-- Section 2: Critical Alerts (Hidden for now - will be implemented later) --}}
-    @if (false && count($alerts) > 0)
-        <x-ui::card class="p-6 mb-6 border-l-4 border-warning">
-            <div class="flex items-start gap-3">
-                <div class="flex-shrink-0 mt-1">
-                    <svg class="w-6 h-6 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                </div>
-                <div class="flex-1 min-w-0">
-                    <h3 class="text-lg font-semibold text-foreground mb-4">Needs Attention</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        @foreach ($alerts as $alert)
-                            <a href="{{ $alert['link'] }}"
-                                class="flex items-center gap-3 p-4 rounded-lg bg-{{ $alert['type'] }}/5 border border-{{ $alert['type'] }}/20 hover:border-{{ $alert['type'] }} hover:bg-{{ $alert['type'] }}/10 transition-colors">
-                                <div
-                                    class="flex-shrink-0 w-8 h-8 rounded-full bg-{{ $alert['type'] }}/10 flex items-center justify-center">
-                                    <span class="w-2 h-2 rounded-full bg-{{ $alert['type'] }}"></span>
-                                </div>
-                                <span class="text-sm font-medium text-foreground">{{ $alert['message'] }}</span>
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </x-ui::card>
-    @endif
-
-    {{-- Section 3: Visual Analytics --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {{-- SSA Status Distribution --}}
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">SSA Status Distribution</h3>
-            <div style="position: relative; height: 250px;">
-                <canvas id="ssaDistributionChart"></canvas>
-            </div>
-        </x-ui::card>
-
-        {{-- Therapist by Position --}}
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Therapists by Position</h3>
-            <div style="position: relative; height: 250px;">
-                <canvas id="therapistPositionChart"></canvas>
-            </div>
-        </x-ui::card>
-
-        {{-- Service Utilization Trend --}}
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">30-Day Utilization</h3>
-            <div style="position: relative; height: 250px;">
-                <canvas id="utilizationTrendChart"></canvas>
-            </div>
-        </x-ui::card>
-    </div>
-
-    {{-- Section 4: Expiring Events --}}
-    <div class="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring School/Family Contracts</h3>
-            <div class="space-y-3">
-                @forelse ($upcomingSchoolContracts as $event)
-                    <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
-                        <div class="flex-shrink-0">
-                            <div
-                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
-                                <span
-                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center flex-wrap gap-1.5">
-                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
-                                @if ($event['is_private_student'])
-                                    <span
-                                        class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
-                                        Family
-                                    </span>
-                                    @if ($event['is_auto_extend'])
-                                        <span
-                                            class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
-                                            Auto-Extend
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
-                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
-                            <p class="text-xs text-foreground/60 mt-1">
-                                Due: {{ $event['due_date']->format('M d, Y') }}
-                                ({{ $event['due_date_local']->diffForHumans() }})
-                            </p>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-sm text-foreground/60">No school/family contracts expiring in the next 30 days.</p>
-                @endforelse
-            </div>
-        </x-ui::card>
-
-        <x-ui::card class="p-6">
-            <h3 class="text-lg font-semibold text-foreground mb-4">Expiring SSAs</h3>
-            <div class="space-y-3">
-                @forelse ($upcomingSSAs as $event)
-                    <div class="flex items-start space-x-3 pb-3 border-b border-border last:border-b-0 last:pb-0">
-                        <div class="flex-shrink-0">
-                            <div
-                                class="w-8 h-8 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}/10 flex items-center justify-center">
-                                <span
-                                    class="w-2 h-2 rounded-full bg-{{ $event['priority'] === 'high' ? 'danger' : ($event['priority'] === 'medium' ? 'warning' : 'primary') }}"></span>
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex items-center flex-wrap gap-1.5">
-                                <p class="text-sm font-medium text-foreground">{{ $event['entity'] }}</p>
-                                @if ($event['is_private_student'])
-                                    <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-primary/10 text-primary leading-none">
-                                        Family
-                                    </span>
-                                    @if ($event['is_auto_extend'])
-                                        <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-success/10 text-success leading-none">
-                                            Auto-Extend
-                                        </span>
-                                    @endif
-                                @endif
-                            </div>
-                            <p class="text-xs text-foreground/70 mt-1">{{ $event['title'] }}</p>
-                            <p class="text-xs text-foreground/60 mt-1">
-                                Due: {{ $event['due_date']->format('M d, Y') }}
-                                ({{ $event['due_date_local']->diffForHumans() }})
-                            </p>
-                        </div>
-                    </div>
-                @empty
-                    <p class="text-sm text-foreground/60">No SSAs expiring in the next 30 days.</p>
-                @endforelse
-            </div>
-        </x-ui::card>
-    </div>
-
-    {{-- Section 5: Quick Actions --}}
-    <x-ui::card class="p-6 mb-6">
-        <h3 class="text-lg font-semibold text-foreground mb-4">Quick Actions</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            @foreach ($quickActions as $action)
-                <a href="{{ $action['route'] === '#' ? 'javascript:void(0)' : route($action['route']) }}"
-                    class="flex flex-col items-center p-4 rounded-lg border border-border hover:border-{{ $action['color'] }} hover:bg-{{ $action['color'] }}/5 transition-colors {{ $action['route'] === '#' ? 'opacity-50 cursor-not-allowed' : '' }}">
-                    <div
-                        class="w-12 h-12 rounded-lg bg-{{ $action['color'] }}/10 flex items-center justify-center mb-3">
-                        <svg class="w-6 h-6 text-{{ $action['color'] }}" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            @if ($action['icon'] === 'document-add')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            @elseif($action['icon'] === 'school')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                            @elseif($action['icon'] === 'user-add')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                            @elseif($action['icon'] === 'user')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            @elseif($action['icon'] === 'invoice')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            @elseif($action['icon'] === 'billing')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                            @elseif($action['icon'] === 'chart')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                            @elseif($action['icon'] === 'list')
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                            @endif
-                        </svg>
-                    </div>
-                    <p class="text-sm font-medium text-center text-foreground">{{ $action['title'] }}</p>
-                    <p class="text-xs text-center text-foreground/60 mt-1">{{ $action['description'] }}</p>
-                </a>
-            @endforeach
-        </div>
-    </x-ui::card>
-
     {{-- Section 6: Operational Metrics --}}
     <x-ui::card class="p-6">
         <h3 class="text-lg font-semibold text-foreground mb-4">Key Operational Metrics</h3>
@@ -409,110 +439,6 @@
     </x-ui::card>
 
     <x-slot name="scripts">
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // SSA Distribution Chart
-                const ssaData = @json($charts['ssa_distribution']);
-                new Chart(document.getElementById('ssaDistributionChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: ssaData.labels,
-                        datasets: [{
-                            data: ssaData.data,
-                            backgroundColor: ssaData.colors,
-                            borderWidth: 2,
-                            borderColor: '#ffffff'
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 10,
-                                    font: {
-                                        size: 11
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-
-                // Therapist Position Chart
-                const therapistData = @json($charts['therapist_by_position']);
-                new Chart(document.getElementById('therapistPositionChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: therapistData.labels,
-                        datasets: [{
-                            label: 'Therapists',
-                            data: therapistData.data,
-                            backgroundColor: therapistData.colors,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        }
-                    }
-                });
-
-                // Utilization Trend Chart
-                const utilizationData = @json($charts['utilization_trend']);
-                new Chart(document.getElementById('utilizationTrendChart'), {
-                    type: 'line',
-                    data: {
-                        labels: utilizationData.labels.filter((_, i) => i % 5 === 0), // Show every 5th label
-                        datasets: [{
-                                label: 'THO Hours',
-                                data: utilizationData.tho_hours.filter((_, i) => i % 5 === 0),
-                                borderColor: novaColors.primary,
-                                backgroundColor: novaColors.primaryBg,
-                                fill: false,
-                            },
-                            {
-                                label: 'Served Hours',
-                                data: utilizationData.served_hours.filter((_, i) => i % 5 === 0),
-                                borderColor: novaColors.accent,
-                                backgroundColor: novaColors.accentBg,
-                                fill: false,
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true
-                            }
-                        },
-                        plugins: {
-                            legend: {
-                                position: 'bottom',
-                                labels: {
-                                    padding: 10,
-                                    font: {
-                                        size: 11
-                                    }
-                                }
-                            }
-                        }
-                    }
-                });
-            });
-        </script>
+        @vite(['resources/js/pages/admin-dashboard.js'])
     </x-slot>
 </x-admin.layouts.app>
