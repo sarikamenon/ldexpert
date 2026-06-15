@@ -166,9 +166,12 @@ table.session-log-table.dataTable thead th {
     padding: 0.5rem 0.75rem;
 }
 
-/* Notes column: cap width so long notes wrap instead of stretching the table */
+/* Notes column: matches the fixed 20rem column width set in the DataTables
+   columnDefs (session-logs/index.js) so long notes wrap instead of stretching
+   the table and short notes don't let the column collapse. */
 table.session-log-table .notes-cell {
-    max-width: 18rem;
+    width: 20rem;
+    max-width: 20rem;
     white-space: normal;
 }
 
