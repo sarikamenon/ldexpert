@@ -226,15 +226,17 @@ class DashboardService
         $pendingSSAs = $this->repository->getPendingSSAs($limit);
 
         return $pendingSSAs->map(function (ServiceSupportAgreement $ssa): array {
-            $studentName = $ssa->student?->studentProfile
-                ? "{$ssa->student->studentProfile->first_name} {$ssa->student->studentProfile->last_name}"
+            $studentProfile = $ssa->student?->studentProfile;
+            $studentName = $studentProfile
+                ? "{$studentProfile->first_name} {$studentProfile->last_name}"
                 : 'Student';
             $serviceName = $ssa->primaryService !== null ? $ssa->primaryService->name : 'Service';
+            $schoolName = $studentProfile?->school?->name;
 
             return [
                 'student' => $studentName,
+                'school' => $schoolName,
                 'service' => $serviceName,
-                'is_unassigned' => $ssa->assigned_therapist_id === null,
                 'link' => route('admin.ssas.show', $ssa),
             ];
         })->all();

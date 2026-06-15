@@ -190,7 +190,7 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     {
         $positionExpression = "COALESCE(positions.name, 'Unassigned')";
 
-        $nowUtc = now()->setTimezone('UTC')->format('Y-m-d H:i:s');
+        $nowUtc = now()->toDateTimeString();
 
         $rows = ScheduleSubRequest::query()
             ->where('schedule_sub_requests.status', SubRequestStatus::OPEN->value)
@@ -221,7 +221,7 @@ final class EloquentDashboardRepository implements DashboardRepositoryInterface
     /** @return Collection<int, ServiceSupportAgreement> */
     public function getPendingSSAs(int $limit = 5): Collection
     {
-        return ServiceSupportAgreement::with(['student.studentProfile', 'primaryService'])
+        return ServiceSupportAgreement::with(['student.studentProfile.school', 'primaryService'])
             ->where('status', SSAStatus::PENDING)
             ->orderByDesc('created_at')
             ->take($limit)

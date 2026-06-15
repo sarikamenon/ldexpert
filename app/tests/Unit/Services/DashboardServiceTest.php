@@ -165,12 +165,14 @@ final class DashboardServiceTest extends TestCase
 
     public function test_get_pending_ssa_events_returns_compact_rows(): void
     {
+        $school = new School(['display_name' => 'Sunrise Academy']);
         $profile = new StudentProfile(['first_name' => 'Jane', 'last_name' => 'Doe']);
+        $profile->setRelation('school', $school);
         $student = new User;
         $student->setRelation('studentProfile', $profile);
         $service = new Service(['name' => 'Speech']);
 
-        $ssa = new ServiceSupportAgreement(['assigned_therapist_id' => null]);
+        $ssa = new ServiceSupportAgreement;
         $ssa->id = 42;
         $ssa->setRelation('student', $student);
         $ssa->setRelation('primaryService', $service);
@@ -185,9 +187,33 @@ final class DashboardServiceTest extends TestCase
 
         $this->assertCount(1, $events);
         $this->assertSame('Jane Doe', $events[0]['student']);
+        $this->assertSame('Sunrise Academy', $events[0]['school']);
         $this->assertSame('Speech', $events[0]['service']);
-        $this->assertTrue($events[0]['is_unassigned']);
         $this->assertStringContainsString('/ssas/42', $events[0]['link']);
+    }
+
+    public function test_get_pending_ssa_events_school_is_null_for_private_students(): void
+    {
+        $profile = new StudentProfile(['first_name' => 'John', 'last_name' => 'Smith']);
+        $profile->setRelation('school', null);
+        $student = new User;
+        $student->setRelation('studentProfile', $profile);
+        $service = new Service(['name' => 'OT']);
+
+        $ssa = new ServiceSupportAgreement;
+        $ssa->id = 99;
+        $ssa->setRelation('student', $student);
+        $ssa->setRelation('primaryService', $service);
+
+        $repository = Mockery::mock(DashboardRepositoryInterface::class);
+        $timezoneService = Mockery::mock(UserTimezoneService::class);
+
+        $repository->shouldReceive('getPendingSSAs')->once()->with(5)->andReturn(collect([$ssa]));
+
+        $dashboardService = new DashboardService($timezoneService, $repository, Mockery::mock(FinanceSummaryRepositoryInterface::class));
+        $events = $dashboardService->getPendingSSAEvents();
+
+        $this->assertNull($events[0]['school']);
     }
 
     protected function tearDown(): void

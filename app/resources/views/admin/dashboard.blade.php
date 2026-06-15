@@ -146,15 +146,13 @@
                             </div>
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center flex-wrap gap-1.5">
-                                <p class="text-sm font-medium text-foreground">{{ $ssa['student'] }}</p>
-                                @if ($ssa['is_unassigned'])
-                                    <span class="inline-flex items-center px-1 py-px rounded text-[12px] font-medium tracking-wide bg-danger/10 text-danger leading-none">
-                                        Unassigned
-                                    </span>
+                            <p class="text-sm font-medium text-foreground truncate">
+                                {{ $ssa['student'] }}
+                                @if ($ssa['school'])
+                                    <span class="font-normal text-foreground/50">· {{ $ssa['school'] }}</span>
                                 @endif
-                            </div>
-                            <p class="text-xs text-foreground/70 mt-1">{{ $ssa['service'] }}</p>
+                            </p>
+                            <p class="text-xs text-foreground/50 mt-0.5 truncate">{{ $ssa['service'] }}</p>
                         </div>
                     </a>
                 @empty
