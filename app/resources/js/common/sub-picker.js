@@ -57,8 +57,13 @@ export function buildPickerState(els) {
             els.listEl.appendChild(empty);
         }
 
-        if (filtered.length > 0) {
-            const allSelected = filtered.every((o) => selected.has(o.id));
+        // Declined invitees are excluded from bulk select: re-adding a declined
+        // ID re-invites them (and fires a fresh invitation email) on submit, so
+        // "Select all" must not sweep them in silently.
+        const selectable = filtered.filter((o) => o.invitee_status !== 'declined');
+
+        if (selectable.length > 0) {
+            const allSelected = selectable.every((o) => selected.has(o.id));
 
             const selectAll = document.createElement('label');
             selectAll.className = 'flex items-center gap-2.5 px-3 py-2 rounded-md cursor-pointer text-sm font-medium border-b border-border mb-1 transition-colors hover:bg-muted/50 text-foreground';
@@ -77,9 +82,9 @@ export function buildPickerState(els) {
 
             selectAllCb.addEventListener('change', () => {
                 if (selectAllCb.checked) {
-                    filtered.forEach((o) => selected.add(o.id));
+                    selectable.forEach((o) => selected.add(o.id));
                 } else {
-                    filtered.forEach((o) => selected.delete(o.id));
+                    selectable.forEach((o) => selected.delete(o.id));
                 }
                 syncHiddenInputs();
                 render();
