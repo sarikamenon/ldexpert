@@ -1,6 +1,6 @@
 import { initDataTable, initServerSideDataTable, loadDataTablesLibrary } from '../../common/datatables';
 import { initSessionLogNotes } from '../../common/session-log-notes';
-import { confirmDialog } from '../../common/sweetalert';
+import { confirmDialog, successToast, errorAlert } from '../../common/sweetalert';
 
 document.addEventListener('DOMContentLoaded', async () => {
     await loadDataTablesLibrary();
@@ -69,9 +69,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initSessionLogNotes(table);
 
+    const reloadTable = () => {
+        if (table?.id && typeof window.jQuery !== 'undefined') {
+            const dt = window.jQuery(`#${table.id}`).DataTable();
+            if (dt?.ajax?.reload) dt.ajax.reload(null, false);
+        }
+    };
+
     // Delegated handler for AJAX-rendered rows (DataTable action buttons).
     // Confirmation metadata lives on the <form data-confirm-*> wrapping the
-    // submit button, so we intercept the form's submit event.
+    // submit button, so we intercept the form's submit event. Forms marked
+    // data-ajax="true" (approve/delete) are submitted via fetch and reload the
+    // table in place, preserving the current page and active filters.
     document.body.addEventListener(
         'submit',
         async (event) => {
@@ -87,9 +96,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 confirmButtonText: 'Yes',
             });
 
-            if (result.isConfirmed) {
+            if (!result.isConfirmed) return;
+
+            if (form.dataset.ajax !== 'true') {
                 form.dataset.confirmed = 'true';
                 form.submit();
+                return;
+            }
+
+            try {
+                const response = await fetch(form.action, {
+                    method: form.method,
+                    headers: {
+                        Accept: 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: new FormData(form),
+                });
+                const json = await response.json();
+                if (json.success) {
+                    await successToast(json.message || 'Done.');
+                    reloadTable();
+                } else {
+                    await errorAlert(json.message || 'Something went wrong.');
+                }
+            } catch {
+                await errorAlert('Request failed. Please try again.');
             }
         },
         true,

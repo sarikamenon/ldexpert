@@ -138,6 +138,55 @@ test('store requires generation_day_of_week when type is day_of_week', function 
     $response->assertSessionHasErrors('generation_day_of_week');
 });
 
+test('store allows zero payment terms days for advance billing mode', function () {
+    $admin = scheduleAdminUser();
+    $school = School::factory()->create();
+
+    $data = [
+        'schedulable_type' => 'App\\Models\\School',
+        'schedulable_id' => $school->id,
+        'schedule_type' => 'school_invoice',
+        'billing_mode' => 'advance',
+        'frequency' => 'monthly',
+        'generation_day_type' => 'day_of_week',
+        'generation_day_of_week' => 2,
+        'min_grace_days' => 2,
+        'payment_terms_days' => 0,
+        'auto_generate' => true,
+        'auto_send' => false,
+    ];
+
+    $response = $this->actingAs($admin)->post(route('admin.billing.schedules.store'), $data);
+
+    $response->assertRedirect(route('admin.billing.schedules.index'));
+    $response->assertSessionDoesntHaveErrors('payment_terms_days');
+    $this->assertDatabaseHas('billing_schedules', [
+        'schedulable_id' => $school->id,
+        'payment_terms_days' => 0,
+    ]);
+});
+
+test('store rejects zero payment terms days for standard billing mode', function () {
+    $admin = scheduleAdminUser();
+    $school = School::factory()->create();
+
+    $data = [
+        'schedulable_type' => 'App\\Models\\School',
+        'schedulable_id' => $school->id,
+        'schedule_type' => 'school_invoice',
+        'billing_mode' => 'standard',
+        'frequency' => 'monthly',
+        'generation_day_type' => 'day_of_week',
+        'generation_day_of_week' => 2,
+        'min_grace_days' => 2,
+        'payment_terms_days' => 0,
+    ];
+
+    $response = $this->actingAs($admin)->post(route('admin.billing.schedules.store'), $data);
+
+    $response->assertSessionHasErrors('payment_terms_days');
+});
+
 // --- Edit & Update ---
 
 test('admin can access billing schedule edit form', function () {
