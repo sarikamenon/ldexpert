@@ -39,36 +39,3 @@ test('invoice pdf service generates pdf', function () {
 
     expect($pdf)->toBeInstanceOf(\Barryvdh\DomPDF\PDF::class);
 });
-
-test('resolvePaymentTermsDays returns whole-day diff between invoice and due date', function () {
-    $invoice = Invoice::factory()->make([
-        'invoice_date' => '2026-05-01',
-        'due_date' => '2026-05-31',
-    ]);
-
-    expect(InvoicePdfService::resolvePaymentTermsDays($invoice))->toBe(30);
-});
-
-test('resolvePaymentTermsDays returns a clean integer even when dates carry time components', function () {
-    // Regression: due_date->diffInDays(created_at) previously yielded a signed
-    // fractional value like -29.55. Both date columns cast to date (midnight),
-    // so the diff must be a non-negative whole number.
-    $invoice = Invoice::factory()->make([
-        'invoice_date' => '2026-06-04',
-        'due_date' => '2026-07-04',
-    ]);
-
-    $days = InvoicePdfService::resolvePaymentTermsDays($invoice);
-
-    expect($days)->toBe(30)
-        ->and($days)->toBeInt();
-});
-
-test('resolvePaymentTermsDays defaults to 30 when due date is null', function () {
-    $invoice = Invoice::factory()->make([
-        'invoice_date' => '2026-05-01',
-        'due_date' => null,
-    ]);
-
-    expect(InvoicePdfService::resolvePaymentTermsDays($invoice))->toBe(30);
-});

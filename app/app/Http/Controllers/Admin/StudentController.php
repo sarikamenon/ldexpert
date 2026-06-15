@@ -14,7 +14,6 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SSA\Services\SSAGoalService;
 use App\Domain\SSA\Services\SSAService;
-use App\Domain\Student\Services\DuplicateStudentService;
 use App\Domain\Student\Services\StudentCommentService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Student\Services\StudentImportListService;
@@ -23,12 +22,10 @@ use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\Domain\Therapist\Services\ScheduleService;
 use App\Domain\Therapist\Services\TherapistService;
-use App\Domain\Time\UserTimezoneService;
 use App\DTOs\ChangeStudentStatusDTO;
 use App\DTOs\CreateStudentDTO;
 use App\DTOs\ScheduleFilterDTO;
 use App\DTOs\StoreStudentImportDTO;
-use App\DTOs\Student\Duplicate\DuplicateCandidateDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Enums\BillingStatus;
@@ -59,7 +56,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -69,7 +65,6 @@ final class StudentController extends Controller
 
     public function __construct(
         private readonly StudentService $studentService,
-        private readonly DuplicateStudentService $duplicateStudentService,
         private readonly StudentImportService $importService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly TherapistService $therapistService,
@@ -82,7 +77,6 @@ final class StudentController extends Controller
         private readonly PositionCatalogService $positionCatalogService,
         private readonly StudentImportListService $importListService,
         private readonly SessionLogRepositoryInterface $sessionLogRepository,
-        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     /** Column index => allowed order column for student imports list. */
@@ -164,20 +158,13 @@ final class StudentController extends Controller
             abort(403, 'Student mismatch.');
         }
 
-        // Resolve the logged-in admin's timezone once; both the date-range
-        // filter and the displayed rows render against this viewer timezone so
-        // they stay consistent at day boundaries.
-        $viewerTimezone = $this->timezoneService->resolveTimezone($request->user());
-
         $filters = ScheduleFilterDTO::fromRequest([
             'student_id' => $student->id,
-            'date_from' => $request->input('filter_date_from'),
-            'date_to' => $request->input('filter_date_to'),
+            'date' => $request->input('filter_date'),
             'status' => $request->input('filter_status'),
             'billing_status' => $request->input('filter_billing_status'),
             'ssa_id' => $request->input('filter_ssa_id'),
             'therapist_id' => $request->input('filter_therapist_id'),
-            'viewer_timezone' => $viewerTimezone,
         ]);
         $params = DataTablesRequest::fromRequest($request, self::STUDENT_SCHEDULES_ORDER_WHITELIST);
         $result = $this->scheduleService->listForDataTablesForStudent($student, $filters, $params);
@@ -187,7 +174,7 @@ final class StudentController extends Controller
             $result['recordsTotal'],
             $result['recordsFiltered'],
             $result['rows'],
-            static fn ($schedule) => ScheduleRowTransformer::transform($schedule, $viewerTimezone),
+            static fn ($schedule) => ScheduleRowTransformer::transform($schedule),
         );
     }
 
@@ -216,12 +203,6 @@ final class StudentController extends Controller
         $this->authorize('create', StudentProfile::class);
 
         $validated = $request->validated();
-
-        $duplicateRedirect = $this->duplicateGuard($request, $validated);
-        if ($duplicateRedirect !== null) {
-            return $duplicateRedirect;
-        }
-
         $validated['password'] = Str::password(12);
 
         $dto = CreateStudentDTO::fromArray($validated);
@@ -292,10 +273,6 @@ final class StudentController extends Controller
             $servedMinutes = (int) $ssasForMetrics->sum('served_minutes');
             $totalThoHours = round($totalThoMinutes / 60, 2);
             $servedHours = round($servedMinutes / 60, 2);
-            $isPrivate = (bool) $student->studentProfile?->school?->is_private_student;
-            $scheduledHours = $isPrivate
-                ? round((float) $ssasForMetrics->where('status', SSAStatus::ACTIVE)->sum(fn ($ssa) => $ssa->scheduled_hours), 2)
-                : 0.0;
             $totalGoals = $goalsForMetrics->count();
             $masteredGoals = $goalsForMetrics
                 ->filter(static fn ($goal): bool => $goal->status === SSAGoalStatus::MASTERED)
@@ -306,10 +283,8 @@ final class StudentController extends Controller
                 'total_hours' => round($totalOutcomeHours, 2),
                 'total_tho_hours' => $totalThoHours,
                 'served_hours' => $servedHours,
-                'scheduled_hours' => $scheduledHours,
                 'remaining_hours' => round(max(0, $totalThoHours - $servedHours), 2),
                 'progress' => $totalThoMinutes > 0 ? round(($servedMinutes / $totalThoMinutes) * 100, 1) : 0,
-                'is_private' => $isPrivate,
             ];
 
             $viewData['metrics'] = [
@@ -358,16 +333,8 @@ final class StudentController extends Controller
             $viewData['datatableUrl'] = route('admin.therapists.data');
             $viewData['studentId'] = $student->id;
         } elseif ($activeTab === 'schedule') {
-            $defaultDateFrom = now()->toDateString();
-            $defaultDateTo = now()->addDays(7)->toDateString();
-
-            $scheduleFilters = $request->query();
-            $scheduleFilters['date_from'] ??= $defaultDateFrom;
-            $scheduleFilters['date_to'] ??= $defaultDateTo;
-
-            $viewData['scheduleFilters'] = $scheduleFilters;
-            $viewData['scheduleDefaultDateFrom'] = $defaultDateFrom;
-            $viewData['scheduleDefaultDateTo'] = $defaultDateTo;
+            $viewData['schedules'] = collect();
+            $viewData['scheduleFilters'] = $request->query();
             $viewData['scheduleStatuses'] = ScheduleStatus::cases();
             $viewData['billingStatuses'] = BillingStatus::cases();
             $viewData['ssas'] = $this->ssaService->getSSAsForStudentSchedule($student->id);
@@ -413,53 +380,12 @@ final class StudentController extends Controller
     {
         $this->authorize('update', StudentProfile::class);
 
-        $validated = $request->validated();
-
-        $duplicateRedirect = $this->duplicateGuard($request, $validated, $student->id);
-        if ($duplicateRedirect !== null) {
-            return $duplicateRedirect;
-        }
-
-        $dto = UpdateStudentDTO::fromArray($validated);
+        $dto = UpdateStudentDTO::fromArray($request->validated());
         $this->studentService->update($student, $dto);
 
         return redirect()
             ->route('admin.students.index')
             ->with('status', 'Student information updated successfully.');
-    }
-
-    /**
-     * Run the duplicate name-gate check. Returns a redirect-back-with-matches when a
-     * possible duplicate exists and the admin has not acknowledged it; null otherwise
-     * (no match, acknowledged, or the check itself failed — never block the save).
-     *
-     * @param  array<string, mixed>  $validated
-     */
-    private function duplicateGuard(Request $request, array $validated, ?int $excludeUserId = null): ?RedirectResponse
-    {
-        if ($request->input('duplicate_acknowledged') === '1') {
-            return null;
-        }
-
-        try {
-            $candidate = DuplicateCandidateDTO::fromArray($validated);
-            $matches = $this->duplicateStudentService->findMatches($candidate, $excludeUserId);
-
-            if ($matches->isEmpty()) {
-                return null;
-            }
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('duplicateMatches', $matches->map(static fn ($match) => $match->toArray())->all());
-        } catch (\Throwable $e) {
-            Log::error('StudentController: duplicate check failed', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return null;
-        }
     }
 
     public function updateStatus(ChangeStudentStatusRequest $request, User $student): JsonResponse
@@ -711,8 +637,6 @@ final class StudentController extends Controller
             'genderOptions' => ['Male', 'Female', 'Non-binary', 'Prefer not to say'],
             'preselectedSchoolId' => null,
             'preselectedTimezone' => null,
-            'duplicateMatchesJson' => (string) json_encode(session('duplicateMatches', [])),
-            'schoolTimezonesJson' => (string) json_encode($this->schoolRepository->listSchoolTimezones()->all()),
             'privateStudentIdsJson' => (string) json_encode($privateFamilies->pluck('id')->values()->all()),
             'privateFamilyContactsJson' => (string) json_encode(
                 $privateFamilies->mapWithKeys(fn (School $s) => [

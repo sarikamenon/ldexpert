@@ -6,7 +6,6 @@ namespace App\Models;
 
 use App\Enums\Role;
 use App\Enums\UserStatus;
-use App\Models\ScheduleMakeupAvailability;
 use App\Models\Concerns\HasAudits;
 use App\Observers\UserObserver;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -258,14 +257,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function therapistBills(): HasMany
     {
         return $this->hasMany(TherapistBill::class, 'therapist_id');
-    }
-
-    /**
-     * @return HasMany<ScheduleMakeupAvailability, $this>
-     */
-    public function makeupAvailabilities(): HasMany
-    {
-        return $this->hasMany(ScheduleMakeupAvailability::class, 'therapist_id');
     }
 
     /**

@@ -38,7 +38,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -54,7 +53,7 @@ final class SessionLogController extends Controller
      */
     private const ORDER_WHITELIST = [
         0 => 'session_logs.session_date',
-        3 => 'session_logs.therapist_billable_amount',
+        4 => 'session_logs.therapist_billable_amount',
         5 => 'session_logs.status',
     ];
 
@@ -153,14 +152,13 @@ final class SessionLogController extends Controller
         $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
 
         $result = $this->sessionLogIndexService->listForDataTablesForTherapist($therapist, $filters, $params);
-        $timezone = $this->timezoneService->resolveTimezone($therapist);
 
         return $this->dataTablesResponse(
             $params,
             $result['recordsTotal'],
             $result['recordsFiltered'],
             $result['rows'],
-            static fn (SessionLog $log): array => TherapistSessionLogRowTransformer::transform($log, $timezone),
+            static fn (SessionLog $log): array => TherapistSessionLogRowTransformer::transform($log),
         );
     }
 
@@ -477,49 +475,6 @@ final class SessionLogController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
-        }
-    }
-
-    public function destroy(Request $request, SessionLog $sessionLog): JsonResponse|RedirectResponse
-    {
-        $this->authorize('delete', $sessionLog);
-
-        /** @var \App\Models\User $therapist */
-        $therapist = $request->user();
-
-        try {
-            $this->sessionLogService->deleteSessionLog($therapist, $sessionLog);
-
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'Session log deleted successfully.']);
-            }
-
-            return redirect()
-                ->route('therapist.session-logs.index')
-                ->with('success', 'Session log deleted successfully.');
-        } catch (\InvalidArgumentException $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $e->getMessage()], 422);
-            }
-
-            return redirect()
-                ->back()
-                ->withErrors(['error' => $e->getMessage()]);
-        } catch (\Throwable $e) {
-            Log::error('Therapist\SessionLogController: failed to delete session log', [
-                'session_log_id' => $sessionLog->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            $message = 'Failed to delete the session log. Please try again.';
-
-            if ($request->expectsJson()) {
-                return response()->json(['error' => $message], 500);
-            }
-
-            return redirect()
-                ->back()
-                ->withErrors(['error' => $message]);
         }
     }
 

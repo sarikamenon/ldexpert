@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Repositories;
 
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Repositories\ScheduleSubRequestRepositoryInterface;
-use App\DTOs\Schedule\SubRequest\EligibleSubDTO;
 use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
@@ -157,13 +157,6 @@ final class EloquentScheduleSubRequestRepository implements ScheduleSubRequestRe
             ->forSubTherapist($subTherapistId)
             ->with($with)
             ->first();
-    }
-
-    public function softDeleteSubSsasForRequest(int $requestId): int
-    {
-        return ScheduleSubSsa::query()
-            ->where('schedule_sub_request_id', $requestId)
-            ->delete();
     }
 
     /** @return Collection<int, ScheduleSubSsa> */

@@ -12,8 +12,7 @@ final class CreateSSAGoalDTO
         public readonly int $ssaId,
         public readonly int $studentId,
         public readonly string $number,
-        public readonly string $goal,
-        public readonly ?string $objective,
+        public readonly string $objective,
         public readonly ?string $progress,
     ) {}
 
@@ -24,8 +23,7 @@ final class CreateSSAGoalDTO
             ssaId: (int) $data['ssa_id'],
             studentId: (int) $data['student_id'],
             number: (string) $data['number'],
-            goal: (string) $data['goal'],
-            objective: isset($data['objective']) && $data['objective'] !== '' ? (string) $data['objective'] : null,
+            objective: (string) $data['objective'],
             progress: isset($data['progress']) && $data['progress'] !== '' ? (string) $data['progress'] : null,
         );
     }
@@ -37,7 +35,6 @@ final class CreateSSAGoalDTO
             'ssa_id' => $this->ssaId,
             'student_id' => $this->studentId,
             'number' => $this->number,
-            'goal' => $this->goal,
             'objective' => $this->objective,
             'progress' => $this->progress,
             'status' => SSAGoalStatus::ACTIVE->value,

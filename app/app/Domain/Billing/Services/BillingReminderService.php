@@ -40,7 +40,6 @@ final class BillingReminderService
         $reminderDate = Carbon::now()->addDays((int) $settings->reminder_days_before_due);
 
         $invoices = Invoice::query()
-            ->with('school')
             ->where('status', InvoiceStatus::SENT->value)
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<=', $reminderDate->toDateString())
@@ -77,7 +76,6 @@ final class BillingReminderService
         $overdueThreshold = Carbon::now()->subDays((int) $settings->reminder_days_after_due);
 
         $invoices = Invoice::query()
-            ->with('school')
             ->where('status', InvoiceStatus::SENT->value)
             ->whereNotNull('due_date')
             ->whereDate('due_date', '<', $overdueThreshold->toDateString())
@@ -157,7 +155,7 @@ final class BillingReminderService
             return;
         }
 
-        $paymentUrl = $invoice->allowsOnlinePayment() ? $invoice->getPaymentUrl() : null;
+        $paymentUrl = $invoice->getPaymentUrl();
 
         try {
             Mail::to($recipientEmail)->send(new InvoiceReminderMail($invoice, $paymentUrl));
@@ -180,7 +178,7 @@ final class BillingReminderService
             return;
         }
 
-        $paymentUrl = $invoice->allowsOnlinePayment() ? $invoice->getPaymentUrl() : null;
+        $paymentUrl = $invoice->getPaymentUrl();
 
         try {
             Mail::to($recipientEmail)->send(new InvoiceOverdueMail($invoice, $daysOverdue, $paymentUrl));
@@ -195,6 +193,7 @@ final class BillingReminderService
 
     private function resolveRecipientEmail(Invoice $invoice): ?string
     {
-        return $invoice->school_invoice_email;
+        return $invoice->school_invoice_email
+            ?? $invoice->school_contact_email;
     }
 }

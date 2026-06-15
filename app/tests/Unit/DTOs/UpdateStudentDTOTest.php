@@ -27,9 +27,6 @@ final class UpdateStudentDTOTest extends TestCase
             'parent_guardian_email' => 'andy@example.com',
             'parent_guardian_phone' => '555-222-1111',
             'schedule_email' => 'schedules@example.com',
-            'parent_guardian_2_name' => 'Jamie Park',
-            'parent_guardian_2_email' => 'jamie@example.com',
-            'parent_guardian_2_phone' => '555-333-2222',
             'address' => '22 River Rd',
             'city' => 'Austin',
             'state' => 'TX',
@@ -53,9 +50,6 @@ final class UpdateStudentDTOTest extends TestCase
         $this->assertSame('andy@example.com', $dto->parentGuardianEmail);
         $this->assertSame('555-222-1111', $dto->parentGuardianPhone);
         $this->assertSame('schedules@example.com', $dto->scheduleEmail);
-        $this->assertSame('Jamie Park', $dto->parentGuardian2Name);
-        $this->assertSame('jamie@example.com', $dto->parentGuardian2Email);
-        $this->assertSame('555-333-2222', $dto->parentGuardian2Phone);
         $this->assertSame('22 River Rd', $dto->address);
         $this->assertSame('Austin', $dto->city);
         $this->assertSame('TX', $dto->state);
@@ -80,9 +74,6 @@ final class UpdateStudentDTOTest extends TestCase
             parentGuardianEmail: null,
             parentGuardianPhone: null,
             scheduleEmail: null,
-            parentGuardian2Name: null,
-            parentGuardian2Email: null,
-            parentGuardian2Phone: null,
             address: null,
             city: null,
             state: null,
@@ -114,9 +105,6 @@ final class UpdateStudentDTOTest extends TestCase
             parentGuardianEmail: 'laura@example.com',
             parentGuardianPhone: '321-654-0987',
             scheduleEmail: 'reminders@example.com',
-            parentGuardian2Name: 'Diego Rivera',
-            parentGuardian2Email: 'diego@example.com',
-            parentGuardian2Phone: '444-222-1111',
             address: '999 Pine Ln',
             city: 'Miami',
             state: 'FL',
@@ -140,9 +128,6 @@ final class UpdateStudentDTOTest extends TestCase
         $this->assertSame('laura@example.com', $profile['parent_guardian_email']);
         $this->assertSame('321-654-0987', $profile['parent_guardian_phone']);
         $this->assertSame('reminders@example.com', $profile['schedule_email']);
-        $this->assertSame('Diego Rivera', $profile['parent_guardian_2_name']);
-        $this->assertSame('diego@example.com', $profile['parent_guardian_2_email']);
-        $this->assertSame('444-222-1111', $profile['parent_guardian_2_phone']);
         $this->assertSame('2012-02-14', $profile['date_of_birth']);
         $this->assertSame('7', $profile['grade_level']);
     }

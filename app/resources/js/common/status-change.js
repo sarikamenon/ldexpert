@@ -30,9 +30,6 @@ const entityConfigs = {
             active: 'Activate',
             inactive: 'Deactivate',
         },
-        // Extra warning shown only when deactivating (status === 'inactive').
-        deactivateWarning:
-            'This will also permanently delete all of this therapist\'s future scheduled sessions. This cannot be undone.',
     },
     ssa: {
         routePrefix: '/admin/ssas',
@@ -116,14 +113,11 @@ export function setupStatusChanges(entityType, selector = '.change-status-btn', 
 
         // Show confirmation dialog
         const isOptionalReason = entityType === 'ssa' && requiresReason;
-        const deactivateWarning = (status === 'inactive' && config.deactivateWarning)
-            ? ` ${config.deactivateWarning}`
-            : '';
         const result = await confirmDialog({
             title: `${action} ${config.entityName}?`,
-            text: (requiresReason
+            text: requiresReason
                 ? `You are about to ${actionLower} this ${config.entityName.toLowerCase()}. ${isOptionalReason ? 'Please provide a reason (optional).' : 'Please provide a reason.'}`
-                : `You are about to ${actionLower} this ${config.entityName.toLowerCase()}.`) + deactivateWarning,
+                : `You are about to ${actionLower} this ${config.entityName.toLowerCase()}.`,
             icon: 'warning',
             confirmButtonText: `Yes, ${actionLower}`,
             showInput: requiresReason,
@@ -261,12 +255,9 @@ export function setupStatusToggles(entityType, selector, options = {}) {
         const action = nextStatus === 'active' ? 'activate' : 'deactivate';
 
         // Show confirmation dialog
-        const deactivateWarning = (nextStatus === 'inactive' && config.deactivateWarning)
-            ? ` ${config.deactivateWarning}`
-            : '';
         const result = await confirmDialog({
             title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${config.entityName}?`,
-            text: `You are about to ${action} this ${config.entityName.toLowerCase()}.${deactivateWarning}`,
+            text: `You are about to ${action} this ${config.entityName.toLowerCase()}.`,
             icon: 'warning',
             confirmButtonText: `Yes, ${action}`,
             showInput: true,

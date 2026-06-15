@@ -83,24 +83,6 @@ it('cancel mirrors manageInvitees authorization', function () {
     expect(subRequestPolicy()->cancel($w['B'], $request))->toBeFalse();
 });
 
-it('withdraw allows requester and admin only once the request is accepted', function () {
-    $w = $this->buildSubCoverageWorld();
-    $admin = User::factory()->admin()->create();
-    $request = app(ScheduleSubRequestService::class)
-        ->create($w['A'], $w['schedule'], [$w['B']->id], null);
-
-    // While still open, nobody can withdraw.
-    expect(subRequestPolicy()->withdraw($w['A'], $request->fresh()))->toBeFalse();
-
-    app(ScheduleSubRequestService::class)->accept($w['B'], $request->fresh());
-
-    $request->refresh();
-    expect(subRequestPolicy()->withdraw($w['A'], $request))->toBeTrue();
-    expect(subRequestPolicy()->withdraw($admin, $request))->toBeTrue();
-    // Covering therapist cannot withdraw — only the requester.
-    expect(subRequestPolicy()->withdraw($w['B'], $request))->toBeFalse();
-});
-
 it('view allows requester, accepted sub, invited therapist, and admin', function () {
     $w = $this->buildSubCoverageWorld();
     $admin = User::factory()->admin()->create();

@@ -45,13 +45,17 @@ class SchoolFactory extends Factory
         ];
     }
 
-    public function private(): static
+    /**
+     * Mark this school as QA test data (prefixes names with QA).
+     */
+    public function qa(): static
     {
-        return $this->state(fn (): array => ['is_private_student' => true]);
-    }
-
-    public function nonPrivate(): static
-    {
-        return $this->state(fn (): array => ['is_private_student' => false]);
+        return $this->state(fn (array $attributes) => [
+            'full_name'     => 'QA ' . $this->faker->company() . ' School',
+            'display_name'  => 'QA ' . $this->faker->unique()->company(),
+            'contact_email' => 'qa.' . $this->faker->safeEmail(),
+            'invoice_email' => 'qa.' . $this->faker->safeEmail(),
+            'manager_id'    => User::factory()->admin()->qa(),
+        ]);
     }
 }

@@ -98,9 +98,9 @@
 
                 <div id="fixedDelayGroup" style="display: none;">
                     <x-input-label for="generation_delay_days" value="Delay Days" />
-                    <p class="mt-1 text-xs text-foreground/60" id="delay_help">Number of days after period end to generate. 0 means the next day.</p>
+                    <p class="mt-1 text-xs text-foreground/60" id="delay_help">Number of days after period end to generate.</p>
                     <x-ui::input type="number" id="generation_delay_days" name="generation_delay_days" class="mt-1 block w-full"
-                        value="{{ old('generation_delay_days', $schedule->generation_delay_days ?? '3') }}" min="0" max="30" aria-describedby="delay_help" />
+                        value="{{ old('generation_delay_days', $schedule->generation_delay_days ?? '3') }}" min="1" max="30" aria-describedby="delay_help" />
                     <x-input-error :messages="$errors->get('generation_delay_days')" class="mt-2" />
                 </div>
 
@@ -139,6 +139,7 @@
                     </div>
                 </div>
 
+                {{-- Auto-send disabled: invoices must be reviewed and sent manually.
                 <div class="flex items-start gap-3">
                     <input type="hidden" name="auto_send" value="0">
                     <input type="checkbox" id="auto_send" name="auto_send" value="1"
@@ -149,6 +150,7 @@
                         <p class="text-xs text-foreground/60">Automatically send invoices/bills without admin review.</p>
                     </div>
                 </div>
+                --}}
             </div>
 
             <div>

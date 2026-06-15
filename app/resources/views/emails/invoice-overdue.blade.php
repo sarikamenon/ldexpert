@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Overdue Payment Notice</title>
+    <title>Overdue Notice — Invoice {{ $invoice->invoice_number }}</title>
 </head>
 
 <body style="font-family: 'Inter', ui-sans-serif, system-ui; background:#f5f7fb; padding:24px; color:#0f172a;">
@@ -17,14 +17,20 @@
         </tr>
         <tr>
             <td style="padding:8px 28px 0 28px; line-height:1.5; color:#475569;">
+                @php
+                    $recipientName = $invoice->parent_name
+                        ?? $invoice->school_contact_first_name
+                        ?? 'Valued Client';
+                @endphp
+
                 <p style="margin:0 0 12px;">
-                    Dear {{ $invoice->school_contact_first_name ?? 'Valued Client' }},
+                    Dear {{ $recipientName }},
                 </p>
 
                 <p style="margin:0 0 16px;">
-                    Your invoice for
+                    Invoice <strong>{{ $invoice->invoice_number }}</strong> for
                     <strong>${{ number_format((float) $invoice->total, 2) }}</strong> was due on
-                    <strong>{{ $invoice->due_date?->format(config('display.date')) ?? '—' }}</strong> and is now
+                    <strong>{{ $invoice->due_date?->format('M d, Y') ?? '—' }}</strong> and is now
                     <strong>{{ $daysOverdue }} {{ $daysOverdue === 1 ? 'day' : 'days' }} past due</strong>.
                 </p>
 
@@ -37,7 +43,7 @@
                         <strong>Amount Due:</strong> ${{ number_format((float) $invoice->total, 2) }}
                     </p>
                     <p style="margin:0 0 4px; color:#991b1b;">
-                        <strong>Original Due Date:</strong> {{ $invoice->due_date?->format(config('display.date')) ?? '—' }}
+                        <strong>Original Due Date:</strong> {{ $invoice->due_date?->format('M d, Y') ?? '—' }}
                     </p>
                     <p style="margin:0; color:#991b1b;">
                         <strong>Days Overdue:</strong> {{ $daysOverdue }}
@@ -58,20 +64,14 @@
 
                 <p style="margin:0 0 16px;">
                     Please arrange payment at your earliest convenience. If you have already submitted payment,
-                    please disregard this notice. If you have any questions, please contact us at
-                    <a href="mailto:{{ config('invoice.contact_email') }}"
-                        style="color:#5563b8;">{{ config('invoice.contact_email') }}</a>.
-                </p>
-
-                <p style="margin:0 0 16px;">
-                    To avoid a convenience fee, you can also pay via Venmo or check.<br>
-                    Venmo: {{ config('invoice.venmo_handle') }}<br>
-                    Mailing address for check payment: {{ config('invoice.check_mailing_address') }}
+                    please disregard this notice. For questions, contact us at
+                    <a href="mailto:{{ $invoice->company_email ?? 'support@nova.com' }}"
+                        style="color:#5563b8;">{{ $invoice->company_email ?? 'our office' }}</a>.
                 </p>
 
                 <p style="margin:24px 0 0;">
-                    Warmly,<br>
-                    The LD Expert Team
+                    Thank you,<br>
+                    {{ $invoice->company_name }}
                 </p>
             </td>
         </tr>

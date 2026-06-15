@@ -21,16 +21,13 @@ final class SSAGoalFactory extends Factory
      */
     public function definition(): array
     {
-        $ssa = ServiceSupportAgreement::factory()->create();
-
         return [
-            'ssa_id' => $ssa->id,
-            'student_id' => $ssa->student_id,
-            'number' => (string) $this->faker->numberBetween(1, 20),
-            'goal' => $this->faker->sentence(12),
-            'objective' => $this->faker->optional()->sentence(10),
-            'progress' => $this->faker->optional()->sentence(8),
-            'status' => SSAGoalStatus::ACTIVE->value,
+            'ssa_id'     => ServiceSupportAgreement::factory(),
+            'student_id' => fn (array $attributes) => ServiceSupportAgreement::find($attributes['ssa_id'])?->student_id,
+            'number'     => (string) $this->faker->numberBetween(1, 20),
+            'objective'  => $this->faker->sentence(12),
+            'progress'   => $this->faker->optional()->sentence(8),
+            'status'     => SSAGoalStatus::ACTIVE->value,
         ];
     }
 

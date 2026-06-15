@@ -31,7 +31,7 @@ final class UpdateBillingScheduleRequest extends FormRequest
             'frequency' => ['required', Rule::in(BillingFrequency::values())],
             'generation_day_type' => ['required', Rule::in(GenerationDayType::values())],
             'generation_day_of_week' => ['nullable', 'required_if:generation_day_type,day_of_week', 'integer', 'min:0', 'max:6'],
-            'generation_delay_days' => ['nullable', 'required_if:generation_day_type,fixed_delay', 'integer', 'min:0', 'max:30'],
+            'generation_delay_days' => ['nullable', 'required_if:generation_day_type,fixed_delay', 'integer', 'min:1', 'max:30'],
             'min_grace_days' => ['nullable', 'integer', 'min:0', 'max:14'],
             'payment_terms_days' => ['required', 'integer', 'min:1', 'max:90'],
             'auto_generate' => ['boolean'],

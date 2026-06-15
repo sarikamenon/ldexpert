@@ -39,10 +39,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
-use Throwable;
 
 final class TherapistController extends Controller
 {
@@ -233,21 +231,7 @@ final class TherapistController extends Controller
         $this->authorize('changeStatus', TherapistProfile::class);
 
         $dto = ChangeTherapistStatusDTO::fromArray($request->validated());
-
-        try {
-            $this->therapistService->changeStatus($therapist, $dto);
-        } catch (Throwable $e) {
-            Log::error('TherapistController@updateStatus: failed to change therapist status', [
-                'therapist_id' => $therapist->id,
-                'status' => $dto->status,
-                'exception' => $e,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update therapist status. Please try again.',
-            ], 500);
-        }
+        $this->therapistService->changeStatus($therapist, $dto);
 
         $message = $dto->status === 'active'
             ? 'Therapist activated successfully.'

@@ -6,7 +6,6 @@ use App\Domain\Invoice\Services\CompanyInfoService;
 use App\Domain\Invoice\Services\InvoiceService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\CreateInvoiceDTO;
-use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
 use App\Enums\InvoiceStatus;
 use App\Models\Invoice;
@@ -31,10 +30,6 @@ beforeEach(function () {
         $this->companyInfoService,
         $this->schoolRepository,
         $this->ledgerService,
-        app(\App\Domain\Billing\Services\BillingScheduleService::class),
-        app(\App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface::class),
-        app(\App\Domain\Billing\Services\AdvanceChargeLineBuilder::class),
-        app(\App\Domain\Billing\Services\BillingSettingsService::class),
     );
 
     // Set up company settings
@@ -111,7 +106,6 @@ test('invoice service generates invoice with snapshots', function () {
     $school = School::factory()->create([
         'full_name' => 'Test School Full',
         'display_name' => 'Test School',
-        'is_private_student' => false, // standard (session-log) billing path
     ]);
 
     $sessionLog1 = SessionLog::factory()->make(['id' => 1, 'school_id' => $school->id, 'school_invoice_amount' => 100.00]);
@@ -185,101 +179,3 @@ test('invoice service sends invoice via email', function () {
     Mail::assertSent(\App\Mail\InvoiceMail::class);
     expect($result)->toBe($invoice);
 });
-
-test('invoice service throws when no invoice email and never falls back to contact email', function () {
-    $user = User::factory()->admin()->create();
-    $invoice = Invoice::factory()->create([
-        'status' => InvoiceStatus::DRAFT,
-        'school_invoice_email' => null,
-        'school_contact_email' => 'contact@school.com',
-    ]);
-
-    $dto = SendInvoiceDTO::fromArray(['email' => null, 'message' => null]);
-
-    expect(fn () => $this->service->sendInvoice($user, $invoice, $dto))
-        ->toThrow(\InvalidArgumentException::class, 'No invoice email address available for sending invoice.');
-
-    Mail::assertNothingSent();
-});
-
-test('invoice service includes payment link for private-student schools', function () {
-    $user = User::factory()->admin()->create();
-    $school = School::factory()->create(['is_private_student' => true]);
-    $invoice = Invoice::factory()->create([
-        'status' => InvoiceStatus::DRAFT,
-        'school_id' => $school->id,
-        'school_invoice_email' => 'family@example.com',
-        'total' => 250.00,
-    ]);
-
-    $dto = SendInvoiceDTO::fromArray(['email' => null, 'message' => null]);
-
-    $this->repository->shouldReceive('markAsSent')->once()->andReturn($invoice);
-    $this->ledgerService->shouldReceive('createInvoiceGeneratedEntry')->once();
-
-    $this->service->sendInvoice($user, $invoice, $dto);
-
-    Mail::assertSent(\App\Mail\InvoiceMail::class, fn ($mail) => $mail->paymentUrl !== null);
-});
-
-test('invoice service omits payment link for non-private schools', function () {
-    $user = User::factory()->admin()->create();
-    $school = School::factory()->create(['is_private_student' => false]);
-    $invoice = Invoice::factory()->create([
-        'status' => InvoiceStatus::DRAFT,
-        'school_id' => $school->id,
-        'school_invoice_email' => 'billing@school.com',
-        'total' => 250.00,
-    ]);
-
-    $dto = SendInvoiceDTO::fromArray(['email' => null, 'message' => null]);
-
-    $this->repository->shouldReceive('markAsSent')->once()->andReturn($invoice);
-    $this->ledgerService->shouldReceive('createInvoiceGeneratedEntry')->once();
-
-    $this->service->sendInvoice($user, $invoice, $dto);
-
-    Mail::assertSent(\App\Mail\InvoiceMail::class, fn ($mail) => $mail->paymentUrl === null);
-    expect($invoice->fresh()->payment_token)->toBeNull();
-});
-
-test('invoice service prevents sending zero amount invoice', function () {
-    $user = User::factory()->admin()->create();
-    $invoice = Invoice::factory()->create([
-        'status' => InvoiceStatus::DRAFT,
-        'subtotal' => 0,
-        'tax_total' => 0,
-        'total' => 0,
-        'school_invoice_email' => 'billing@school.com',
-    ]);
-
-    $dto = SendInvoiceDTO::fromArray([
-        'email' => null,
-        'message' => null,
-    ]);
-
-    $this->repository->shouldNotReceive('markAsSent');
-    $this->ledgerService->shouldNotReceive('createInvoiceGeneratedEntry');
-
-    $this->service->sendInvoice($user, $invoice, $dto);
-})->throws(\InvalidArgumentException::class, 'Zero amount invoices cannot be sent.');
-
-test('invoice service prevents resending email for zero amount invoice', function () {
-    $user = User::factory()->admin()->create();
-    $invoice = Invoice::factory()->create([
-        'status' => InvoiceStatus::SENT,
-        'subtotal' => 0,
-        'tax_total' => 0,
-        'total' => 0,
-        'school_invoice_email' => 'billing@school.com',
-    ]);
-
-    $dto = ResendInvoiceEmailDTO::fromArray([
-        'email' => 'billing@school.com',
-        'message' => null,
-    ]);
-
-    $this->service->resendInvoiceEmail($user, $invoice, $dto);
-
-    Mail::assertNothingSent();
-})->throws(\InvalidArgumentException::class, 'Zero amount invoices cannot be sent.');

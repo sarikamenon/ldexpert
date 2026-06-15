@@ -42,7 +42,7 @@ class TherapistProfileFactory extends Factory
             'position_id' => Position::inRandomOrder()->first()?->id ?? Position::factory(),
             'state' => $state,
             'timezone' => $timezone,
-            'manager_id' => User::factory()->admin(),
+            'manager_id' => User::factory()->admin()->qa(),
             'max_weekly_hours' => $this->faker->numberBetween(10, 60),
             'hourly_rate' => $this->faker->randomFloat(2, 25, 120),
             'dob' => $this->faker->optional()->dateTimeBetween('-60 years', '-22 years'),

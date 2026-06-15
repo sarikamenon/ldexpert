@@ -1,6 +1,6 @@
 <?php
 
-use App\DTOs\School\CalendarEvent\UpdateSchoolCalendarEventDTO;
+use App\DTOs\UpdateSchoolCalendarEventDTO;
 use App\Enums\SchoolCalendarEventType;
 
 it('creates an update school calendar event dto from array', function () {

@@ -1,32 +1,25 @@
 @props([
     'formId' => null,
     'formAction' => null,
-    'actionsOnly' => false,
 ])
 
-<div @class([
-    'flex flex-col md:flex-row gap-4 items-start md:items-center',
-    'md:justify-end' => $actionsOnly,
-    'justify-between' => ! $actionsOnly,
-])>
-    @unless ($actionsOnly)
-        {{-- Left side: Filters --}}
-        <div class="flex gap-3">
-            <form method="GET" class="flex items-end gap-2" @if($formId) id="{{ $formId }}" @endif @if($formAction) action="{{ $formAction }}" @endif>
-                {{ $filters }}
-                <x-ui::button type="submit">Filter</x-ui::button>
-                <x-ui::button
-                    type="button"
-                    variant="secondary"
-                    data-filter-clear
-                    data-filter-form="{{ $formId }}"
-                    data-clear-url="{{ $formAction ?? url()->current() }}"
-                >
-                    Clear
-                </x-ui::button>
-            </form>
-        </div>
-    @endunless
+<div class="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+    {{-- Left side: Filters --}}
+    <div class="flex gap-3">
+        <form method="GET" class="flex items-end gap-2" @if($formId) id="{{ $formId }}" @endif @if($formAction) action="{{ $formAction }}" @endif>
+            {{ $filters }}
+            <x-ui::button type="submit">Filter</x-ui::button>
+            <x-ui::button
+                type="button"
+                variant="secondary"
+                data-filter-clear
+                data-filter-form="{{ $formId }}"
+                data-clear-url="{{ $formAction ?? url()->current() }}"
+            >
+                Clear
+            </x-ui::button>
+        </form>
+    </div>
 
     {{-- Right side: Action buttons (optional) --}}
     @if(isset($actions) && $actions->isNotEmpty())

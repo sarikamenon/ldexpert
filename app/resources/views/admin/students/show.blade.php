@@ -60,38 +60,23 @@
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <h3 class="text-lg font-semibold text-foreground">Service Progress</h3>
-                        <p class="text-xs text-foreground/60 mt-0.5">
-                            {{ ($chartData['is_private'] ?? false) ? 'Hours by service activity' : 'THO hours by session outcome' }}
-                        </p>
+                        <p class="text-xs text-foreground/60 mt-0.5">THO hours by session outcome</p>
                     </div>
-                    @if (!($chartData['is_private'] ?? false))
-                        <span class="text-sm text-foreground/70">{{ $chartData['progress'] ?? 0 }}%</span>
-                    @endif
+                    <span class="text-sm text-foreground/70">{{ $chartData['progress'] ?? 0 }}%</span>
                 </div>
                 <div class="flex items-stretch gap-2 mb-4">
-                    @if ($chartData['is_private'] ?? false)
-                        <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
-                            <p class="text-[11px] font-medium text-foreground/60 truncate">Served</p>
-                            <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['served_hours'] ?? 0, 2) }}</p>
-                        </div>
-                        <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
-                            <p class="text-[11px] font-medium text-foreground/60 truncate">Scheduled</p>
-                            <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['scheduled_hours'] ?? 0, 2) }}</p>
-                        </div>
-                    @else
-                        <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
-                            <p class="text-[11px] font-medium text-foreground/60 truncate">Total THO</p>
-                            <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['total_tho_hours'] ?? 0, 2) }}</p>
-                        </div>
-                        <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
-                            <p class="text-[11px] font-medium text-foreground/60 truncate">Served</p>
-                            <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['served_hours'] ?? 0, 2) }}</p>
-                        </div>
-                        <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
-                            <p class="text-[11px] font-medium text-foreground/60 truncate">Remaining</p>
-                            <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['remaining_hours'] ?? 0, 2) }}</p>
-                        </div>
-                    @endif
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Total THO</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['total_tho_hours'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Served</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['served_hours'] ?? 0, 2) }}</p>
+                    </div>
+                    <div class="flex-1 min-w-0 rounded-md bg-muted/40 px-2 py-2 text-center">
+                        <p class="text-[11px] font-medium text-foreground/60 truncate">Remaining</p>
+                        <p class="text-sm font-semibold text-foreground">{{ number_format($chartData['remaining_hours'] ?? 0, 2) }}</p>
+                    </div>
                 </div>
                 @if (!empty($chartData['outcomes']))
                     <div class="relative" style="height: 260px;">
@@ -149,13 +134,6 @@
                             @if ($student->studentProfile?->schedule_email)
                                 <p class="text-xs text-foreground/60 mt-1">Schedule email: {{ $student->studentProfile->schedule_email }}</p>
                             @endif
-                            @if ($student->studentProfile?->parent_guardian_2_name || $student->studentProfile?->parent_guardian_2_email || $student->studentProfile?->parent_guardian_2_phone)
-                                <p class="text-sm font-semibold mt-2">{{ $student->studentProfile->parent_guardian_2_name ?? '—' }}</p>
-                                <p class="text-xs text-foreground/60">
-                                    {{ $student->studentProfile->parent_guardian_2_email ?? '—' }} ·
-                                    {{ $student->studentProfile->parent_guardian_2_phone ?? '—' }}
-                                </p>
-                            @endif
                         </div>
                     </div>
                 </x-ui::card>
@@ -183,10 +161,9 @@
         <x-admin.therapists-list :therapists="$therapists" :filters="$therapistFilters ?? []" :positions="$positions ?? []"
             :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />
     @elseif (($activeTab ?? 'dashboard') === 'schedule' && isset($scheduleFilters))
-        <x-admin.schedules-list :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
+        <x-admin.schedules-list :schedules="$schedules ?? collect()" :filters="$scheduleFilters ?? []" :statuses="$scheduleStatuses ?? []" :billingStatuses="$billingStatuses ?? []"
             :ssas="$ssas ?? []" :therapists="$therapists ?? []" context="detail"
-            :datatable-url="$scheduleDatatableUrl ?? null" :student-id="$scheduleStudentId ?? null"
-            :default-date-from="$scheduleDefaultDateFrom ?? null" :default-date-to="$scheduleDefaultDateTo ?? null" />
+            :datatable-url="$scheduleDatatableUrl ?? null" :student-id="$scheduleStudentId ?? null" />
     @elseif (($activeTab ?? 'dashboard') === 'session_logs' && isset($sessionLogStatuses))
         <x-admin.session-logs-list :filters="$sessionLogFilters ?? []" :statuses="$sessionLogStatuses ?? []"
             :datatable-url="$datatableUrl ?? null" :student-id="$studentId ?? null" context="detail" />

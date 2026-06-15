@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\DataTables\Transformers\InvoiceRowTransformer;
-use App\Domain\Billing\Services\BillingScheduleService;
-use App\Domain\Billing\Services\BillingSettingsService;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoicePdfService;
 use App\Domain\Invoice\Services\InvoiceService;
@@ -33,7 +31,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 final class InvoiceController extends Controller
@@ -60,8 +57,6 @@ final class InvoiceController extends Controller
         private readonly TherapistService $therapistService,
         private readonly StudentService $studentService,
         private readonly ServiceCatalogService $serviceCatalogService,
-        private readonly BillingSettingsService $billingSettingsService,
-        private readonly BillingScheduleService $billingScheduleService,
     ) {}
 
     public function index(InvoiceIndexRequest $request): View
@@ -113,25 +108,11 @@ final class InvoiceController extends Controller
         $dateFrom = now()->subDays(30)->format('Y-m-d');
         $dateTo = now()->format('Y-m-d');
 
-        $schools = $this->schoolRepository->listActiveForSelect();
-        $schoolPaymentTermsDays = $this->billingScheduleService->resolveSchoolPaymentTermsDaysMap($schools);
-
-        // Page-load seed only: no school is selected yet, so there's no
-        // advance/standard mode to key off. Use the standard default (the common
-        // case); the JS recomputes from the school's resolved terms the moment
-        // one is picked. The legacy default_payment_terms_days is intentionally
-        // not used here — it's the therapist/generic default, not school-mode aware.
-        $paymentTermsDays = $this->billingSettingsService->getSettings()->standard_default_payment_terms_days;
-        $defaultDueDate = now()->addDays($paymentTermsDays)->format('Y-m-d');
-
         return view('admin.invoices.create', [
-            'schools' => $schools,
+            'schools' => $this->schoolRepository->listActiveForSelect(),
             'invoiceNumber' => $this->invoiceRepository->generateInvoiceNumber(),
             'defaultDateFrom' => $dateFrom,
             'defaultDateTo' => $dateTo,
-            'paymentTermsDays' => $paymentTermsDays,
-            'schoolPaymentTermsDays' => $schoolPaymentTermsDays,
-            'defaultDueDate' => $defaultDueDate,
         ]);
     }
 
@@ -227,14 +208,9 @@ final class InvoiceController extends Controller
             $user = $request->user();
             $this->invoiceService->sendInvoice($user, $invoice, $dto);
 
-            $backfilled = $this->invoiceService->backfillSchoolInvoiceEmail($invoice, $dto->email);
-            $message = $backfilled
-                ? 'Invoice sent successfully. Saved this email to the school/family for future invoices.'
-                : 'Invoice sent successfully.';
-
             return redirect()
                 ->route('admin.invoices.show', $invoice)
-                ->with('success', $message);
+                ->with('success', 'Invoice sent successfully.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()
@@ -257,14 +233,9 @@ final class InvoiceController extends Controller
             $user = $request->user();
             $this->invoiceService->resendInvoiceEmail($user, $invoice, $dto);
 
-            $backfilled = $this->invoiceService->backfillSchoolInvoiceEmail($invoice, $dto->email);
-            $message = $backfilled
-                ? 'Invoice email resent successfully. Saved this email to the school/family for future invoices.'
-                : 'Invoice email resent successfully.';
-
             return redirect()
                 ->route('admin.invoices.show', $invoice)
-                ->with('success', $message);
+                ->with('success', 'Invoice email resent successfully.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()
@@ -285,7 +256,7 @@ final class InvoiceController extends Controller
         return $pdf->download("invoice-{$invoice->invoice_number}.pdf");
     }
 
-    public function attachSessions(Request $request, Invoice $invoice): View|RedirectResponse
+    public function attachSessions(Request $request, Invoice $invoice): View
     {
         $this->authorize('update', $invoice);
 
@@ -293,33 +264,10 @@ final class InvoiceController extends Controller
             abort(404);
         }
 
-        // Advance invoices select schedules (not session logs) for the period.
-        if ($invoice->isAdvanceMode()) {
-            try {
-                $advanceData = $this->invoiceService->getAdvanceAttachData($invoice);
-            } catch (\Throwable $e) {
-                Log::error('Failed to load advance attach data', [
-                    'invoice_id' => $invoice->id,
-                    'exception' => $e,
-                ]);
-
-                return redirect()
-                    ->route('admin.invoices.show', $invoice)
-                    ->withErrors(['error' => 'Unable to load schedules for this invoice. Please try again later.']);
-            }
-
-            return view('admin.invoices.attach-schedules', [
-                'invoice' => $invoice,
-                'scheduleRows' => $advanceData['rows'],
-                'attachedScheduleIds' => $advanceData['attachedScheduleIds'],
-                'periodLabel' => $advanceData['periodLabel'],
-            ]);
-        }
-
         $filters = [
             'school_id' => $invoice->school_id,
-            'date_from' => $request->input('date_from', $invoice->billing_period_start->format('Y-m-d')),
-            'date_to' => $request->input('date_to', $invoice->billing_period_end->format('Y-m-d')),
+            'date_from' => $request->input('date_from', $invoice->billing_period_start?->format('Y-m-d')),
+            'date_to' => $request->input('date_to', $invoice->billing_period_end?->format('Y-m-d')),
             'therapist_id' => $request->input('therapist_id'),
             'student_id' => $request->input('student_id'),
             'service_id' => $request->input('service_id'),

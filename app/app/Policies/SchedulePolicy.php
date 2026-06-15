@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Enums\Role;
 use App\Models\Schedule;
 use App\Models\User;
 
@@ -11,40 +12,34 @@ final class SchedulePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isTherapist() || $user->isAdmin();
+        return $this->isTherapist($user) || $this->isAdmin($user);
     }
 
     public function view(User $user, Schedule $schedule): bool
     {
-        if ($user->isAdmin() || $this->ownsSchedule($user, $schedule)) {
+        if ($this->isAdmin($user) || $this->ownsSchedule($user, $schedule)) {
             return true;
         }
 
         // Covering sub: when an accepted sub-request assigns this schedule to the user,
         // they need to view it to deliver the session and submit the log.
-        return $this->isCoveringSub($user, $schedule);
+        return $this->isTherapist($user)
+            && (int) ($schedule->sub_therapist_id ?? 0) === (int) $user->id;
     }
 
     public function create(User $user): bool
     {
-        return $user->isTherapist() || $user->isAdmin();
+        return $this->isTherapist($user);
     }
 
     public function update(User $user, Schedule $schedule): bool
     {
-        if ($user->isAdmin()) {
-            return true;
-        }
-
-        // Covering subs can edit the schedule they're covering so they can adjust
-        // session details before delivering it; only the owner may delete it.
-        return $this->ownsSchedule($user, $schedule)
-            || $this->isCoveringSub($user, $schedule);
+        return $this->ownsSchedule($user, $schedule);
     }
 
     public function delete(User $user, Schedule $schedule): bool
     {
-        return $user->isAdmin() || $this->ownsSchedule($user, $schedule);
+        return $this->ownsSchedule($user, $schedule);
     }
 
     public function createSubRequest(User $user, Schedule $schedule): bool
@@ -54,7 +49,7 @@ final class SchedulePolicy
 
     public function updateBillingStatus(User $user, Schedule $schedule): bool
     {
-        if ($user->isAdmin()) {
+        if ($this->isAdmin($user)) {
             return true;
         }
 
@@ -63,12 +58,16 @@ final class SchedulePolicy
 
     private function ownsSchedule(User $user, Schedule $schedule): bool
     {
-        return $user->isTherapist() && $schedule->therapist_id === $user->id;
+        return $this->isTherapist($user) && $schedule->therapist_id === $user->id;
     }
 
-    private function isCoveringSub(User $user, Schedule $schedule): bool
+    private function isTherapist(User $user): bool
     {
-        return $user->isTherapist()
-            && (int) ($schedule->sub_therapist_id ?? 0) === (int) $user->id;
+        return $user->role === Role::THERAPIST;
+    }
+
+    private function isAdmin(User $user): bool
+    {
+        return $user->role === Role::ADMIN;
     }
 }

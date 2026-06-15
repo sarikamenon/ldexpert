@@ -23,11 +23,6 @@ interface InvoiceLineItemRepositoryInterface
     public function getForInvoice(int $invoiceId): Collection;
 
     /**
-     * Delete all line items for an invoice (used when re-selecting an advance draft).
-     */
-    public function deleteForInvoice(int $invoiceId): void;
-
-    /**
      * @return Collection<int, InvoiceLineItem>
      */
     public function getAdvanceLinesForPeriod(int $invoiceId, Carbon $periodStart, Carbon $periodEnd): Collection;

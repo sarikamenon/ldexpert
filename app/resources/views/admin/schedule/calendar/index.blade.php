@@ -3,11 +3,7 @@
         @vite(['resources/css/fullcalendar-custom.css'])
     </x-slot>
 
-    <x-page-title title="Schedule Calendar" description="View all therapist and student schedules by day, week, or month.">
-        <x-slot name="actions">
-            <x-ui::button type="button" id="addScheduleButton">+ Add New Schedule</x-ui::button>
-        </x-slot>
-    </x-page-title>
+    <x-page-title title="Schedule Calendar" description="View all therapist and student schedules by day, week, or month." />
 
     <x-ui::card class="p-6">
         {{-- Filters --}}
@@ -54,18 +50,12 @@
         {{-- Calendar --}}
         <div id="fullCalendar"
             data-events-url="{{ route('admin.schedule-calendar.events') }}"
-            data-details-url="{{ url('/admin/schedule/calendar') }}"
-            data-edit-url="{{ url('/admin/schedule') }}"
-            data-delete-url="{{ url('/admin/schedule') }}"
-            data-student-url="{{ url('/admin/students') }}">
+            data-details-url="{{ url('/admin/schedule/calendar') }}">
         </div>
     </x-ui::card>
 
     {{-- Schedule Details Modal --}}
     <x-schedule.schedule-details-modal />
-
-    {{-- Add Schedule: therapist + SSA selection --}}
-    @include('admin.schedule._selection-modal', ['therapists' => $therapists])
 
     <x-slot name="scripts">
         @vite(['resources/js/common/select-box.js', 'resources/js/pages/admin-schedule-calendar.js'])

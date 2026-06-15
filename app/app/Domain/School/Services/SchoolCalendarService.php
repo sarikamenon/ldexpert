@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\School\Services;
 
 use App\Domain\School\Repositories\SchoolCalendarEventRepositoryInterface;
-use App\DTOs\School\CalendarEvent\CreateSchoolCalendarEventDTO;
-use App\DTOs\School\CalendarEvent\SchoolCalendarEventResponseDTO;
-use App\DTOs\School\CalendarEvent\UpdateSchoolCalendarEventDTO;
+use App\DTOs\CreateSchoolCalendarEventDTO;
+use App\DTOs\SchoolCalendarEventResponseDTO;
+use App\DTOs\UpdateSchoolCalendarEventDTO;
 use App\Enums\SchoolCalendarEventType;
 use App\Models\SchoolCalendarEvent;
 use Carbon\CarbonInterface;
@@ -53,23 +53,6 @@ final class SchoolCalendarService
         return $this->repository
             ->listBySchoolAndRange($schoolId, $start, $end)
             ->filter(static fn (SchoolCalendarEvent $event) => $event->event_type === SchoolCalendarEventType::HOLIDAY);
-    }
-
-    /**
-     * Expand every holiday event in the range into its constituent Y-m-d
-     * date strings (multi-day holidays produce one entry per day). Used by
-     * the therapist scheduling form to render an inline warning list.
-     *
-     * @return array<int, string>
-     */
-    public function listHolidayDateStringsForSchool(int $schoolId, CarbonInterface $start, CarbonInterface $end): array
-    {
-        return $this->listHolidayEventsBySchoolAndRange($schoolId, $start, $end)
-            ->flatMap(static fn (SchoolCalendarEvent $event): Collection => Collection::make(iterator_to_array($event->start_date->daysUntil($event->end_date), false))
-                ->map(static fn (CarbonInterface $day): string => $day->format('Y-m-d')))
-            ->unique()
-            ->values()
-            ->all();
     }
 
     public function create(CreateSchoolCalendarEventDTO $dto): SchoolCalendarEvent

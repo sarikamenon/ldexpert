@@ -9,7 +9,6 @@ use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
 use App\Enums\ScheduleSubCoverageStatus;
 use App\Enums\SubRequestStatus;
-use App\Models\Concerns\HasAudits;
 use App\Models\Scopes\ScheduleScope;
 use App\Observers\ScheduleObserver;
 use Carbon\Carbon;
@@ -39,19 +38,7 @@ use Illuminate\Support\Collection;
 class Schedule extends Model
 {
     /** @use HasFactory<\Database\Factories\ScheduleFactory> */
-    use HasAudits, HasFactory, SoftDeletes;
-
-    /**
-     * invoice_id is billing plumbing: it rotates whenever a schedule is attached
-     * to or detached from an (advance) invoice, mostly via mass updates that
-     * bypass model events anyway. Exclude it from the audit timeline so the
-     * meaningful schedule changes are not drowned out by invoice-link churn.
-     *
-     * @var array<int, string>
-     */
-    protected array $auditIgnoreFields = [
-        'invoice_id',
-    ];
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'therapist_id',
@@ -59,7 +46,6 @@ class Schedule extends Model
         'ssa_id',
         'service_id',
         'school_id',
-        'invoice_id',
         'parent_schedule_id',
         'schedule_date',
         'start_time',
@@ -76,8 +62,6 @@ class Schedule extends Model
         'location_details',
         'sub_therapist_id',
         'sub_request_status',
-        'created_by',
-        'updated_by',
     ];
 
     protected function casts(): array
@@ -137,16 +121,6 @@ class Schedule extends Model
     public function school(): BelongsTo
     {
         return $this->belongsTo(School::class, 'school_id');
-    }
-
-    /**
-     * The advance invoice this schedule has been billed on, if any.
-     *
-     * @return BelongsTo<Invoice, $this>
-     */
-    public function invoice(): BelongsTo
-    {
-        return $this->belongsTo(Invoice::class, 'invoice_id');
     }
 
     /**
@@ -212,43 +186,6 @@ class Schedule extends Model
     public function subSsa(): HasOne
     {
         return $this->hasOne(ScheduleSubSsa::class, 'schedule_id');
-    }
-
-    /**
-     * Make-up reminder rows raised for this scheduled session (it was missed).
-     *
-     * @return HasMany<ScheduleMakeupRequest, $this>
-     */
-    public function makeupRequests(): HasMany
-    {
-        return $this->hasMany(ScheduleMakeupRequest::class, 'schedule_id');
-    }
-
-    /**
-     * If this schedule is itself a make-up session, this points back to the
-     * originating make-up request row.
-     *
-     * @return HasOne<ScheduleMakeupRequest, $this>
-     */
-    public function originatingMakeupRequest(): HasOne
-    {
-        return $this->hasOne(ScheduleMakeupRequest::class, 'makeup_schedule_id');
-    }
-
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function createdBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
-    /**
-     * @return BelongsTo<User, $this>
-     */
-    public function updatedBy(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'updated_by');
     }
 
     /**
@@ -325,28 +262,6 @@ class Schedule extends Model
     }
 
     /**
-     * Schedules not yet placed on any (advance) invoice.
-     *
-     * @param  Builder<Schedule>  $query
-     * @return Builder<Schedule>
-     */
-    public function scopeNotYetInvoiced(Builder $query): Builder
-    {
-        return ScheduleScope::notYetInvoiced($query, $this);
-    }
-
-    /**
-     * Schedules placed on a specific invoice.
-     *
-     * @param  Builder<Schedule>  $query
-     * @return Builder<Schedule>
-     */
-    public function scopeForInvoice(Builder $query, int $invoiceId): Builder
-    {
-        return ScheduleScope::forInvoice($query, $this, $invoiceId);
-    }
-
-    /**
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
@@ -395,31 +310,9 @@ class Schedule extends Model
      * @param  Builder<Schedule>  $query
      * @return Builder<Schedule>
      */
-    public function scopeForTherapistOwned(Builder $query, int $therapistId): Builder
-    {
-        return ScheduleScope::forTherapistOwned($query, $this, $therapistId);
-    }
-
-    /**
-     * @param  Builder<Schedule>  $query
-     * @return Builder<Schedule>
-     */
     public function scopeForStudent(Builder $query, User $student): Builder
     {
         return ScheduleScope::forStudent($query, $this, $student);
-    }
-
-    /**
-     * Sessions for a specific school on a specific calendar date.
-     *
-     * @param  Builder<Schedule>  $query
-     * @return Builder<Schedule>
-     */
-    public function scopeForSchoolOnDate(Builder $query, int $schoolId, string $date): Builder
-    {
-        return $query
-            ->where('school_id', $schoolId)
-            ->where('schedule_date', $date);
     }
 
     /**
@@ -498,15 +391,6 @@ class Schedule extends Model
     }
 
     /**
-     * @param  Builder<Schedule>  $query
-     * @return Builder<Schedule>
-     */
-    public function scopeOverlappingWindow(Builder $query, string $windowStartUtc, string $windowEndUtc): Builder
-    {
-        return ScheduleScope::overlappingWindow($query, $this, $windowStartUtc, $windowEndUtc);
-    }
-
-    /**
      * Matches the parent schedule itself plus all its child occurrences.
      * Used to load all occurrences in a recurring batch when raising sub requests.
      *
@@ -534,11 +418,6 @@ class Schedule extends Model
     public function isGroup(): bool
     {
         return $this->is_group === true;
-    }
-
-    public function isBilled(): bool
-    {
-        return $this->billing_status === BillingStatus::BILLED;
     }
 
     public function durationMinutes(): int

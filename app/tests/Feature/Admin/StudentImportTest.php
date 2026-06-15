@@ -533,109 +533,6 @@ final class StudentImportTest extends TestCase
         $this->assertEquals('America/New_York', $profile->timezone);
     }
 
-    public function test_nova_import_stores_second_parent_guardian(): void
-    {
-        Mail::fake();
-
-        $csvContent = $this->generateCsvContent([
-            [
-                'first_name' => 'Ava',
-                'last_name' => 'Thompson',
-                'email' => 'ava.thompson@example.com',
-                'gender' => 'Female',
-                'date_of_birth' => '2013-04-12',
-                'school_name' => $this->school->external_emr_name,
-                'id_number' => 'STU-2P',
-                'timezone' => 'America/New_York',
-                'grade_level' => '5',
-                'city' => 'Denver',
-                'state' => 'CO',
-                'zip_code' => '80202',
-                'parent_guardian_name' => 'Sarah Thompson',
-                'parent_guardian_email' => 'sarah.thompson@example.com',
-                'parent_guardian_phone' => '303-555-0101',
-                'parent_guardian_2_name' => 'David Thompson',
-                'parent_guardian_2_email' => 'david.thompson@example.com',
-                'parent_guardian_2_phone' => '303-555-0202',
-            ],
-        ]);
-
-        $file = UploadedFile::fake()->createWithContent('students.csv', $csvContent);
-
-        $response = $this->actingAs($this->admin)
-            ->postJson(route('admin.students.import.store'), [
-                'file' => $file,
-                'type' => StudentImportType::NOVA->value,
-            ]);
-
-        $response->assertOk()->assertJson(['success' => true]);
-
-        $import = StudentImport::first();
-        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
-
-        $import->refresh();
-        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
-
-        $profile = StudentProfile::where('id_number', 'STU-2P')->first();
-        $this->assertNotNull($profile);
-        $this->assertEquals('David Thompson', $profile->parent_guardian_2_name);
-        $this->assertEquals('david.thompson@example.com', $profile->parent_guardian_2_email);
-        $this->assertEquals('303-555-0202', $profile->parent_guardian_2_phone);
-    }
-
-    public function test_tutorbird_import_stores_second_parent_from_contact_two(): void
-    {
-        Mail::fake();
-
-        $tutorbirdSchool = School::factory()->create([
-            'external_emr_name' => 'NR School 01',
-            'timezone' => 'America/Chicago',
-        ]);
-
-        $csvContent = $this->generateTutorbirdCsvContent([
-            [
-                'First Name' => 'Liam',
-                'Last Name' => 'Carter',
-                'TutorBird Student ID' => 'TB-2P',
-                'School' => 'NR School 01',
-                'Email' => 'liam.carter@example.com',
-                'Parent Contact 1 First Name' => 'Helen',
-                'Parent Contact 1 Last Name' => 'Carter',
-                'Parent Contact 1 Email' => 'helen.carter@example.com',
-                'Parent Contact 1 Mobile Phone' => '303-555-0303',
-                'Parent Contact 2 First Name' => 'Chris',
-                'Parent Contact 2 Last Name' => 'Carter',
-                'Parent Contact 2 Email' => 'chris.carter@example.com',
-                'Parent Contact 2 Mobile Phone' => '(303) 555-0505',
-            ],
-        ]);
-
-        $file = UploadedFile::fake()->createWithContent('tutorbird.csv', $csvContent);
-
-        $response = $this->actingAs($this->admin)
-            ->postJson(route('admin.students.import.store'), [
-                'file' => $file,
-                'type' => StudentImportType::TUTORBIRD->value,
-            ]);
-
-        $response->assertOk()->assertJson(['success' => true]);
-
-        $import = StudentImport::first();
-        (new ProcessStudentImportJob($import))->handle(app(\App\Domain\Student\Services\StudentImportService::class));
-
-        $import->refresh();
-        $this->assertEquals(StudentImportStatus::COMPLETED, $import->status);
-
-        $profile = StudentProfile::where('id_number', 'TB-2P')->first();
-        $this->assertNotNull($profile);
-        $this->assertEquals($tutorbirdSchool->id, $profile->school_id);
-        // First+last name combine into the second guardian name.
-        $this->assertEquals('Chris Carter', $profile->parent_guardian_2_name);
-        $this->assertEquals('chris.carter@example.com', $profile->parent_guardian_2_email);
-        // Phone is normalized like the first guardian's.
-        $this->assertEquals('303-555-0505', $profile->parent_guardian_2_phone);
-    }
-
     public function test_timezone_fallback_to_school_when_not_provided(): void
     {
         Mail::fake();
@@ -1075,8 +972,6 @@ final class StudentImportTest extends TestCase
             'Email', 'Birthday', 'Address', 'Gender', 'Mobile Phone',
             'Parent Contact 1 Last Name', 'Parent Contact 1 First Name',
             'Parent Contact 1 Email', 'Parent Contact 1 Mobile Phone',
-            'Parent Contact 2 Last Name', 'Parent Contact 2 First Name',
-            'Parent Contact 2 Email', 'Parent Contact 2 Mobile Phone',
         ];
 
         $handle = fopen('php://temp', 'r+');
@@ -1142,9 +1037,6 @@ final class StudentImportTest extends TestCase
             'parent_guardian_name',
             'parent_guardian_email',
             'parent_guardian_phone',
-            'parent_guardian_2_name',
-            'parent_guardian_2_email',
-            'parent_guardian_2_phone',
         ];
 
         $allColumns = array_merge($requiredColumns, $optionalColumns);

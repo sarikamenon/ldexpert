@@ -5,6 +5,9 @@ uses(
     // Illuminate\Foundation\Testing\DatabaseMigrations::class,
 )->in('Browser');
 
+// BrowserQA tests declare uses(QaDuskTestCase::class) in each file directly
+// so they are intentionally excluded from the global DuskTestCase binding above.
+
 /*
 |--------------------------------------------------------------------------
 | Test Case

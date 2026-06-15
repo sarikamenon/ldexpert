@@ -353,7 +353,7 @@ final class SessionLogCreateTest extends TestCase
         $response->assertSessionHasErrors(['session_date']);
     }
 
-    public function test_allows_session_on_school_holiday(): void
+    public function test_rejects_session_on_school_holiday(): void
     {
         $therapist = User::factory()->therapist()->create();
         $school = School::factory()->create();
@@ -371,11 +371,11 @@ final class SessionLogCreateTest extends TestCase
             'primary_service_id' => $service->id,
             'assigned_therapist_id' => $therapist->id,
             'status' => SSAStatus::ACTIVE,
-            'start_date' => now()->subDays(2),
+            'start_date' => now()->subDay(),
             'end_date' => now()->addMonth(),
         ]);
 
-        $holidayDate = now()->subDay()->format('Y-m-d');
+        $holidayDate = now()->addDays(2)->format('Y-m-d');
         SchoolCalendarEvent::factory()->holiday()->create([
             'school_id' => $school->id,
             'start_date' => $holidayDate,
@@ -383,24 +383,13 @@ final class SessionLogCreateTest extends TestCase
             'event_type' => SchoolCalendarEventType::HOLIDAY->value,
         ]);
 
-        // Schedule on the holiday — make-up-eligible closures must allow
-        // scheduling and logging on the closure day (warning only, no block).
-        $schedule = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'student_id' => $student->id,
-            'ssa_id' => $ssa->id,
-            'service_id' => $service->id,
-            'school_id' => $school->id,
-        ]);
-
-        $this->seedContracts($therapist, $school, $service, now()->subDay());
+        $this->seedContracts($therapist, $school, $service, now());
 
         $startTime = Carbon::parse($holidayDate)->setTime(10, 0, 0);
         $endTime = $startTime->copy()->addHour();
 
         $response = $this->actingAs($therapist)
             ->post(route('therapist.session-logs.store'), [
-                'schedule_id' => $schedule->id,
                 'student_id' => $student->id,
                 'ssa_id' => $ssa->id,
                 'service_id' => $service->id,
@@ -414,7 +403,7 @@ final class SessionLogCreateTest extends TestCase
                 '_token' => csrf_token(),
             ]);
 
-        $response->assertSessionDoesntHaveErrors(['session_date']);
+        $response->assertSessionHasErrors(['session_date']);
     }
 
     public function test_rejects_duration_below_service_minimum(): void

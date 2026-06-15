@@ -41,9 +41,6 @@ interface SchoolRepositoryInterface
     /** @return Collection<int, School> */
     public function listAllForSelect(): Collection;
 
-    /** @return Collection<int, string|null> map of school id => timezone */
-    public function listSchoolTimezones(): Collection;
-
     /** @return Collection<int, School> */
     public function listPrivateFamilyContacts(): Collection;
 

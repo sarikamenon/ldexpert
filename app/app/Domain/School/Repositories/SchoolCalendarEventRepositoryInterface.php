@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Domain\School\Repositories;
 
-use App\DTOs\School\CalendarEvent\CreateSchoolCalendarEventDTO;
-use App\DTOs\School\CalendarEvent\UpdateSchoolCalendarEventDTO;
+use App\DTOs\CreateSchoolCalendarEventDTO;
+use App\DTOs\UpdateSchoolCalendarEventDTO;
 use App\Models\SchoolCalendarEvent;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Enums\SubRequestInviteeStatus;
-use App\Mail\ScheduleSubRequest\SubRequestInvitationMail;
+use App\Mail\SubRequestInvitationMail;
 use App\Models\ScheduleSubRequestInvitee;
 use App\Models\User;
 use Carbon\Carbon;

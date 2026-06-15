@@ -2,73 +2,42 @@
 
 declare(strict_types=1);
 
+namespace Tests\Unit\Constants;
+
 use App\Constants\UsTimezones;
-use Illuminate\Support\Carbon;
+use PHPUnit\Framework\TestCase;
 
-afterEach(function () {
-    Carbon::setTestNow();
-});
+final class UsTimezonesTest extends TestCase
+{
+    public function test_resolve_from_input_accepts_timezone_key(): void
+    {
+        $this->assertSame('America/New_York', UsTimezones::resolveFromInput('America/New_York'));
+        $this->assertSame('America/Chicago', UsTimezones::resolveFromInput('America/Chicago'));
+        $this->assertSame('Pacific/Honolulu', UsTimezones::resolveFromInput('Pacific/Honolulu'));
+    }
 
-it('resolves from input by timezone key', function () {
-    expect(UsTimezones::resolveFromInput('America/New_York'))->toBe('America/New_York');
-    expect(UsTimezones::resolveFromInput('America/Chicago'))->toBe('America/Chicago');
-    expect(UsTimezones::resolveFromInput('Pacific/Honolulu'))->toBe('Pacific/Honolulu');
-    expect(UsTimezones::resolveFromInput('Asia/Karachi'))->toBe('Asia/Karachi');
-    expect(UsTimezones::resolveFromInput('Europe/Istanbul'))->toBe('Europe/Istanbul');
-    expect(UsTimezones::resolveFromInput('Europe/London'))->toBe('Europe/London');
-});
+    public function test_resolve_from_input_accepts_display_label(): void
+    {
+        $this->assertSame('America/New_York', UsTimezones::resolveFromInput('Eastern Time (ET)'));
+        $this->assertSame('America/Chicago', UsTimezones::resolveFromInput('Central Time (CT)'));
+        $this->assertSame('America/Los_Angeles', UsTimezones::resolveFromInput('Pacific Time (PT)'));
+    }
 
-it('resolves from input by display label', function () {
-    expect(UsTimezones::resolveFromInput('Eastern Time (ET)'))->toBe('America/New_York');
-    expect(UsTimezones::resolveFromInput('Central Time (CT)'))->toBe('America/Chicago');
-    expect(UsTimezones::resolveFromInput('Pacific Time (PT)'))->toBe('America/Los_Angeles');
-    expect(UsTimezones::resolveFromInput('Islamabad, Karachi'))->toBe('Asia/Karachi');
-    expect(UsTimezones::resolveFromInput('Istanbul'))->toBe('Europe/Istanbul');
-    expect(UsTimezones::resolveFromInput('Edinburgh, London'))->toBe('Europe/London');
-});
+    public function test_resolve_from_input_returns_null_for_empty(): void
+    {
+        $this->assertNull(UsTimezones::resolveFromInput(null));
+        $this->assertNull(UsTimezones::resolveFromInput(''));
+        $this->assertNull(UsTimezones::resolveFromInput('   '));
+    }
 
-it('returns null for empty input', function () {
-    expect(UsTimezones::resolveFromInput(null))->toBeNull();
-    expect(UsTimezones::resolveFromInput(''))->toBeNull();
-    expect(UsTimezones::resolveFromInput('   '))->toBeNull();
-});
+    public function test_resolve_from_input_returns_null_for_invalid(): void
+    {
+        $this->assertNull(UsTimezones::resolveFromInput('Invalid/Timezone'));
+        $this->assertNull(UsTimezones::resolveFromInput('Some Random Label'));
+    }
 
-it('returns null for invalid input', function () {
-    expect(UsTimezones::resolveFromInput('Invalid/Timezone'))->toBeNull();
-    expect(UsTimezones::resolveFromInput('Some Random Label'))->toBeNull();
-});
-
-it('trims whitespace before resolving', function () {
-    expect(UsTimezones::resolveFromInput('  Eastern Time (ET)  '))->toBe('America/New_York');
-});
-
-it('labels fixed-offset international zones with their live UTC offset', function () {
-    // Karachi (PKT) and Istanbul (TRT) do not observe DST, so the offset is stable.
-    Carbon::setTestNow('2026-01-15 12:00:00');
-    expect(UsTimezones::getTimezoneLabel('Asia/Karachi'))->toBe('Islamabad, Karachi (UTC+05:00)');
-    expect(UsTimezones::getTimezoneLabel('Europe/Istanbul'))->toBe('Istanbul (UTC+03:00)');
-
-    Carbon::setTestNow('2026-07-15 12:00:00');
-    expect(UsTimezones::getTimezoneLabel('Asia/Karachi'))->toBe('Islamabad, Karachi (UTC+05:00)');
-    expect(UsTimezones::getTimezoneLabel('Europe/Istanbul'))->toBe('Istanbul (UTC+03:00)');
-});
-
-it('shifts the UK & Ireland offset with daylight saving time', function () {
-    // Standard time (GMT, UTC+00:00) in January.
-    Carbon::setTestNow('2026-01-15 12:00:00');
-    expect(UsTimezones::getTimezoneLabel('Europe/London'))->toBe('Edinburgh, London (UTC+00:00)');
-    expect(UsTimezones::getTimezoneLabel('Europe/Dublin'))->toBe('Dublin (UTC+00:00)');
-    expect(UsTimezones::getTimezoneLabel('Europe/Lisbon'))->toBe('Lisbon (UTC+00:00)');
-
-    // Summer time (BST/IST/WEST, UTC+01:00) in July.
-    Carbon::setTestNow('2026-07-15 12:00:00');
-    expect(UsTimezones::getTimezoneLabel('Europe/London'))->toBe('Edinburgh, London (UTC+01:00)');
-    expect(UsTimezones::getTimezoneLabel('Europe/Dublin'))->toBe('Dublin (UTC+01:00)');
-    expect(UsTimezones::getTimezoneLabel('Europe/Lisbon'))->toBe('Lisbon (UTC+01:00)');
-});
-
-it('leaves US zone labels unchanged (no offset suffix)', function () {
-    Carbon::setTestNow('2026-07-15 12:00:00');
-    expect(UsTimezones::getTimezoneLabel('America/New_York'))->toBe('Eastern Time (ET)');
-    expect(UsTimezones::getTimezoneLabel('Pacific/Honolulu'))->toBe('Hawaii Time (HT)');
-});
+    public function test_resolve_from_input_trims_whitespace(): void
+    {
+        $this->assertSame('America/New_York', UsTimezones::resolveFromInput('  Eastern Time (ET)  '));
+    }
+}

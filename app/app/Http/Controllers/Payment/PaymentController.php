@@ -44,7 +44,9 @@ class PaymentController extends Controller
             abort(404);
         }
 
-        $customerEmail = $invoice->school_invoice_email ?? '';
+        $customerEmail = $invoice->school_invoice_email
+            ?? $invoice->school_contact_email
+            ?? '';
 
         try {
             $session = $this->paymentService->createCheckoutSession($invoice, $customerEmail);

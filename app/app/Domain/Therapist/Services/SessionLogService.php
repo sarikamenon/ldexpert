@@ -415,29 +415,6 @@ final class SessionLogService
         return $this->repository->cancel($sessionLog, $reason);
     }
 
-    /**
-     * Delete a session log (UI: "delete") — soft-deletes the log and, when it
-     * came from a schedule, frees that schedule to be logged again. Approved
-     * logs are billed and locked, so they cannot be deleted.
-     *
-     * Business-invariant guard for ALL callers (HTTP and direct). Over HTTP the
-     * controller also runs SessionLogPolicy::delete() first; both layers gate on
-     * status?->canDelete() so they stay in sync. This re-check keeps the service
-     * safe for non-HTTP callers (commands, jobs) that bypass the policy.
-     */
-    public function deleteSessionLog(User $user, SessionLog $sessionLog): void
-    {
-        if (! $user->isAdmin() && $sessionLog->therapist_id !== $user->id) {
-            throw new \InvalidArgumentException('Therapist does not have access to this session log.');
-        }
-
-        if (! $sessionLog->status?->canDelete()) {
-            throw new \InvalidArgumentException('Approved session logs cannot be deleted.');
-        }
-
-        $this->repository->deleteAndUnbill($sessionLog);
-    }
-
     private function assertSessionDateWithinSsa(string $sessionDate, \DateTimeInterface $ssaStart, ?\DateTimeInterface $ssaEnd): void
     {
         $date = Carbon::parse($sessionDate);

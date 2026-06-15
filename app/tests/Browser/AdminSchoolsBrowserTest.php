@@ -97,67 +97,6 @@ class AdminSchoolsBrowserTest extends DuskTestCase
         });
     }
 
-    public function test_phone_field_accepts_direct_paste(): void
-    {
-        $this->browse(function (Browser $browser) {
-            $admin = $this->createAdminUser();
-
-            $browser->loginAs($admin)
-                ->visit('/admin/schools/create')
-                ->type('full_name', 'Test School')
-                ->type('display_name', 'Test NOVA School')
-                ->select('state', 'NY')
-                ->select('timezone', 'America/New_York')
-                ->select('manager_id', 1)
-                ->type('contact_phone', '5551234567')
-                ->assertInputValue('contact_phone', '5551234567');
-        });
-    }
-
-    public function test_same_as_full_name_checkbox_syncs_display_name(): void
-    {
-        $this->browse(function (Browser $browser) {
-            $admin = $this->createAdminUser();
-
-            $browser->loginAs($admin)
-                ->visit('/admin/schools/create')
-                ->type('full_name', 'Complete School Name')
-                ->check('#same_as_full_name')
-                ->assertInputValue('display_name', 'Complete School Name');
-        });
-    }
-
-    public function test_same_as_full_name_checkbox_keeps_syncing_while_checked(): void
-    {
-        $this->browse(function (Browser $browser) {
-            $admin = $this->createAdminUser();
-
-            $browser->loginAs($admin)
-                ->visit('/admin/schools/create')
-                ->type('full_name', 'School A')
-                ->check('#same_as_full_name')
-                ->assertInputValue('display_name', 'School A')
-                ->clear('#full_name')
-                ->type('full_name', 'School B')
-                ->assertInputValue('display_name', 'School B');
-        });
-    }
-
-    public function test_same_as_full_name_checkbox_unchecks_on_manual_edit(): void
-    {
-        $this->browse(function (Browser $browser) {
-            $admin = $this->createAdminUser();
-
-            $browser->loginAs($admin)
-                ->visit('/admin/schools/create')
-                ->type('full_name', 'Full Name')
-                ->check('#same_as_full_name')
-                ->assertChecked('#same_as_full_name')
-                ->type('display_name', ' Custom')
-                ->assertNotChecked('#same_as_full_name');
-        });
-    }
-
     private function createAdminUser(): User
     {
         return User::factory()->admin()->create([

@@ -56,58 +56,44 @@ final class EntityBillingController extends Controller
 
         $settings = $this->settingsService->getSettings();
 
-        $isPrivateSchool = false;
+        $useAdvanceDefaults = false;
         if ($entityType === 'school') {
             /** @var School|null $school */
             $school = School::find($entityId);
-            $isPrivateSchool = $school?->is_private_student === true;
+            $useAdvanceDefaults = $school?->is_private_student === true;
         }
 
-        // Private-student schools use the advance (prepaid) invoice defaults; other
-        // schools use the standard (postpaid) invoice defaults; therapists use the
-        // standard billing defaults.
-        if ($entityType === 'school') {
-            $data = $isPrivateSchool
-                ? [
+        if ($useAdvanceDefaults) {
+            return response()->json([
+                'is_default' => true,
+                'data' => [
                     'billing_mode' => 'advance',
                     'frequency' => $settings->advance_default_frequency->value,
                     'generation_day_type' => $settings->advance_default_generation_day_type->value,
                     'generation_day_of_week' => $settings->advance_default_generation_day_of_week,
-                    'generation_delay_days' => $settings->advance_default_delay_days,
+                    'generation_delay_days' => null,
+                    'min_grace_days' => $settings->advance_default_min_grace_days,
                     'payment_terms_days' => $settings->advance_default_payment_terms_days,
                     'auto_generate' => $settings->advance_default_auto_generate,
                     'auto_send' => $settings->advance_default_auto_send,
-                ]
-                : [
-                    'billing_mode' => 'standard',
-                    'frequency' => $settings->standard_default_frequency->value,
-                    'generation_day_type' => $settings->standard_default_generation_day_type->value,
-                    'generation_day_of_week' => $settings->standard_default_generation_day_of_week,
-                    'generation_delay_days' => $settings->standard_default_delay_days,
-                    'payment_terms_days' => $settings->standard_default_payment_terms_days,
-                    'auto_generate' => $settings->standard_default_auto_generate,
-                    'auto_send' => $settings->standard_default_auto_send,
-                ];
-        } else {
-            $data = [
-                'billing_mode' => 'standard',
-                'frequency' => $settings->default_frequency->value,
-                'generation_day_type' => $settings->default_generation_day_type->value,
-                'generation_day_of_week' => $settings->default_generation_day_of_week,
-                'generation_delay_days' => $settings->default_delay_days,
-                'payment_terms_days' => $settings->default_payment_terms_days,
-                'auto_generate' => $settings->default_auto_generate,
-                'auto_send' => $settings->default_auto_send,
-            ];
+                    'billing_start_date' => null,
+                    'notes' => null,
+                ],
+            ]);
         }
 
         return response()->json([
             'is_default' => true,
             'data' => [
-                ...$data,
-                // Dormant passthrough: kept so the (unused) billing_schedules.min_grace_days
-                // column receives a value on save. No longer drives generation timing.
-                'min_grace_days' => $data['generation_delay_days'],
+                'billing_mode' => 'standard',
+                'frequency' => $settings->default_frequency->value,
+                'generation_day_type' => $settings->default_generation_day_type->value,
+                'generation_day_of_week' => $settings->default_generation_day_of_week,
+                'generation_delay_days' => null,
+                'min_grace_days' => $settings->default_min_grace_days,
+                'payment_terms_days' => $settings->default_payment_terms_days,
+                'auto_generate' => $settings->default_auto_generate,
+                'auto_send' => $settings->default_auto_send,
                 'billing_start_date' => null,
                 'notes' => null,
             ],

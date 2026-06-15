@@ -27,8 +27,7 @@ final class UpdateSSAGoalRequest extends FormRequest
     {
         return [
             'number' => ['required', 'string', 'max:50'],
-            'goal' => ['required', 'string', 'max:5000'],
-            'objective' => ['nullable', 'string', 'max:5000'],
+            'objective' => ['required', 'string', 'max:5000'],
             'progress' => ['nullable', 'string', 'max:1000'],
         ];
     }

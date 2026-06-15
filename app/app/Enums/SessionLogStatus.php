@@ -58,9 +58,4 @@ enum SessionLogStatus: string
     {
         return $this === self::DRAFT || $this === self::SUBMITTED;
     }
-
-    public function canDelete(): bool
-    {
-        return $this !== self::APPROVED;
-    }
 }

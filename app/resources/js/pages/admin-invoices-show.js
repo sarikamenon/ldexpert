@@ -3,51 +3,15 @@
  * Handles invoice send and resend email confirmations
  */
 
-import { actionAlert, confirmDialog } from '../common/sweetalert';
+import { confirmDialog } from '../common/sweetalert';
 
 document.addEventListener('DOMContentLoaded', function () {
-    // The Send button opens the send modal (which carries the recipient email
-    // field). A $0.00 invoice can never be sent, so intercept the click and steer
-    // the admin to attach sessions instead of opening the modal.
-    const sendButton = document.getElementById('open-send-email-button');
-    if (sendButton) {
-        sendButton.addEventListener(
-            'click',
-            async function (e) {
-                const invoiceTotal = Number.parseFloat(sendButton.dataset.invoiceTotal ?? '0');
-                if (invoiceTotal > 0) {
-                    return;
-                }
-
-                // Stop Alpine's $dispatch from opening the modal for a $0 invoice.
-                e.preventDefault();
-                e.stopImmediatePropagation();
-
-                const attachSessionsUrl = sendButton.dataset.attachSessionsUrl ?? '';
-
-                const result = await actionAlert({
-                    title: 'Cannot send this invoice',
-                    text: 'This invoice total is $0.00, so it cannot be sent. Add billable sessions or keep it as draft.',
-                    icon: 'warning',
-                    confirmButtonText: 'Add or remove sessions',
-                    cancelButtonText: 'Close',
-                    reverseButtons: true,
-                });
-
-                if (result.isConfirmed && attachSessionsUrl) {
-                    window.location.href = attachSessionsUrl;
-                }
-            },
-            true
-        );
-    }
-
-    const sendForm = document.getElementById('send-email-form');
-    if (sendForm) {
+    const sendForm = document.querySelector('form[action*="/send"]');
+    if (sendForm && !sendForm.action.includes('resend')) {
         sendForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            const isFamily = sendButton?.getAttribute('data-is-private-family') === '1';
+            const isFamily = sendForm.getAttribute('data-is-private-family') === '1';
             const recipientEntity = isFamily ? 'family' : 'school';
 
             const result = await confirmDialog({

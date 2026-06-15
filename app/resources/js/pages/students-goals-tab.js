@@ -3,7 +3,6 @@ import { initSsaGoalStatusButtons } from '../common/ssa-goal-status';
 document.addEventListener('DOMContentLoaded', () => {
     initGoalsFilter();
     initSsaToggles();
-    initObjectivesToggle();
     initProgressNotesToggle();
     initSsaGoalStatusButtons();
 });
@@ -96,32 +95,6 @@ function collapseSsaSection(btn, body) {
     btn.setAttribute('aria-expanded', 'false');
     const chevron = btn.querySelector('.ssa-chevron');
     if (chevron) chevron.classList.remove('rotate-180');
-}
-
-function initObjectivesToggle() {
-    document.querySelectorAll('.objectives-toggle').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const panelId = btn.getAttribute('aria-controls');
-            const panel = document.getElementById(panelId);
-            if (!panel) return;
-
-            const expanded = btn.getAttribute('aria-expanded') === 'true';
-            const chevron = btn.querySelector('.objectives-chevron');
-            const label = btn.querySelector('.toggle-label');
-
-            if (expanded) {
-                panel.classList.add('hidden');
-                btn.setAttribute('aria-expanded', 'false');
-                if (chevron) chevron.classList.remove('rotate-90');
-                if (label) label.textContent = 'Show objectives';
-            } else {
-                panel.classList.remove('hidden');
-                btn.setAttribute('aria-expanded', 'true');
-                if (chevron) chevron.classList.add('rotate-90');
-                if (label) label.textContent = 'Hide objectives';
-            }
-        });
-    });
 }
 
 function initProgressNotesToggle() {

@@ -168,7 +168,7 @@
                             <button type="button" id="copy-goals-btn"
                                 class="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium text-primary border border-primary/30 bg-primary/5 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors shrink-0"
                                 aria-label="Copy goals to Notes field"
-                                data-goals="{{ $ssaContext['goals']->map(fn($g) => $g->number . ' / ' . $g->goal)->implode("\n") }}">
+                                data-goals="{{ $ssaContext['goals']->map(fn($g) => $g->number . ' / ' . $g->objective)->implode("\n") }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 0 1-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 0 1 1.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 0 0-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 0 1-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 0 0-3.375-3.375h-1.5a1.125 1.125 0 0 1-1.125-1.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H9.75" />
                                 </svg>
@@ -178,7 +178,7 @@
                     </div>
                     @forelse ($ssaContext['goals'] as $goal)
                         <p class="text-sm text-foreground/80 py-1 {{ !$loop->last ? 'border-b border-border' : '' }}">
-                            <span class="font-medium text-foreground">{{ $goal->number }}</span> / {{ $goal->goal }}
+                            <span class="font-medium text-foreground">{{ $goal->number }}</span> / {{ $goal->objective }}
                         </p>
                     @empty
                         <p class="text-sm text-foreground/60">No active goals are recorded for this SSA. Add goals on the SSA's Goals tab.</p>
@@ -253,7 +253,7 @@
     </x-ui::card>
 
     <div class="flex justify-end gap-3">
-        <x-ui::loading-button variant="primary" loadingText="{{ $isEdit ? 'Updating...' : 'Creating...' }}"
+        <x-ui::loading-button dusk="submit-log-btn" variant="primary" loadingText="{{ $isEdit ? 'Updating...' : 'Creating...' }}"
             x-on:click="if ($el.closest('form').checkValidity()) { $nextTick(() => loading = true) }">
             {{ $isEdit ? 'Update Session Log' : 'Create Session Log' }}
         </x-ui::loading-button>

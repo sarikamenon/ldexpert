@@ -9,7 +9,6 @@ use App\Domain\Service\Services\ServiceCatalogService;
 use App\Domain\SessionLog\Services\SessionLogIndexService;
 use App\Domain\Student\Services\StudentDocumentService;
 use App\Domain\Therapist\Services\SessionLogService;
-use App\Domain\Time\UserTimezoneService;
 use App\Domain\User\Services\UserService;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\SendBackSessionLogRequest;
@@ -22,7 +21,6 @@ use App\Models\SessionLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 final class SessionLogController extends Controller
@@ -34,8 +32,9 @@ final class SessionLogController extends Controller
      */
     private const ORDER_WHITELIST = [
         0 => 'session_logs.session_date',
-        3 => 'session_logs.school_invoice_amount',
-        5 => 'session_logs.status',
+        4 => 'session_logs.school_invoice_amount',
+        5 => 'session_logs.therapist_billable_amount',
+        6 => 'session_logs.status',
     ];
 
     public function __construct(
@@ -44,7 +43,6 @@ final class SessionLogController extends Controller
         private readonly UserService $userService,
         private readonly ServiceCatalogService $serviceCatalogService,
         private readonly StudentDocumentService $documentService,
-        private readonly UserTimezoneService $timezoneService,
     ) {}
 
     public function index(SessionLogIndexRequest $request): View
@@ -99,16 +97,12 @@ final class SessionLogController extends Controller
 
         $result = $this->indexService->listForDataTables($filters, $params);
 
-        /** @var \App\Models\User $viewer */
-        $viewer = $request->user();
-        $timezone = $this->timezoneService->resolveTimezone($viewer);
-
         return $this->dataTablesResponse(
             $params,
             $result['recordsTotal'],
             $result['recordsFiltered'],
             $result['rows'],
-            static fn (SessionLog $log): array => SessionLogRowTransformer::transform($log, $timezone),
+            static fn (SessionLog $log): array => SessionLogRowTransformer::transform($log),
         );
     }
 
@@ -215,34 +209,6 @@ final class SessionLogController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => $e->getMessage()]);
-        }
-    }
-
-    public function destroy(Request $request, SessionLog $sessionLog): RedirectResponse
-    {
-        $this->authorize('delete', $sessionLog);
-
-        try {
-            /** @var \App\Models\User $user */
-            $user = $request->user();
-            $this->service->deleteSessionLog($user, $sessionLog);
-
-            return redirect()
-                ->route('admin.session-logs.index')
-                ->with('success', 'Session log deleted.');
-        } catch (\InvalidArgumentException $e) {
-            return redirect()
-                ->back()
-                ->withErrors(['error' => $e->getMessage()]);
-        } catch (\Throwable $e) {
-            Log::error('Admin\SessionLogController: failed to delete session log', [
-                'session_log_id' => $sessionLog->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()
-                ->back()
-                ->withErrors(['error' => 'Failed to delete the session log. Please try again.']);
         }
     }
 }

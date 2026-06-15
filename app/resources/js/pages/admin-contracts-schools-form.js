@@ -23,9 +23,6 @@ function initServiceRows() {
         const newRow = wrapper.firstElementChild;
         tableBody.appendChild(newRow);
         rowIndex += 1;
-        if (window.initSelectBoxes) {
-            window.initSelectBoxes();
-        }
     });
 
     const startDateInput = document.querySelector('input[name="start_date"]');

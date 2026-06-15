@@ -9,14 +9,11 @@ use App\DTOs\ChangeTherapistStatusDTO;
 use App\DTOs\CreateTherapistDTO;
 use App\DTOs\TherapistFilterDTO;
 use App\DTOs\UpdateTherapistDTO;
-use App\Enums\BillingStatus;
-use App\Enums\ScheduleStatus;
+use App\Infrastructure\Repositories\EloquentTherapistRepository;
 use App\Mail\WelcomeTherapistMail;
 use App\Models\Position;
-use App\Models\Schedule;
 use App\Models\TherapistProfile;
 use App\Models\User;
-use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
@@ -31,7 +28,7 @@ final class TherapistServiceTest extends TestCase
     {
         parent::setUp();
         Mail::fake();
-        $this->service = app(TherapistService::class);
+        $this->service = new TherapistService(new EloquentTherapistRepository);
 
         Position::factory()->create(['name' => 'SLP']);
         Position::factory()->create(['name' => 'OT']);
@@ -131,90 +128,6 @@ final class TherapistServiceTest extends TestCase
         $updatedUser = $this->service->changeStatus($user, $dto);
 
         $this->assertSame('inactive', $updatedUser->status->value);
-    }
-
-    public function test_deactivating_therapist_soft_deletes_only_their_future_scheduled_sessions(): void
-    {
-        $manager = User::factory()->admin()->create();
-        $therapist = User::factory()
-            ->therapist()
-            ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
-            ->create(['status' => 'active']);
-        $otherTherapist = User::factory()->therapist()->create();
-
-        $future = CarbonImmutable::now()->addWeek();
-        $past = CarbonImmutable::now()->subWeek();
-
-        // Should be deleted: future, scheduled, unbilled, owned by this therapist.
-        $futureOwned = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'schedule_date' => $future->toDateString(),
-            'start_time' => $future->format('H:i'),
-            'status' => ScheduleStatus::SCHEDULED,
-            'billing_status' => BillingStatus::PENDING,
-        ]);
-
-        // Should be preserved: past session.
-        $pastOwned = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'schedule_date' => $past->toDateString(),
-            'start_time' => $past->format('H:i'),
-            'status' => ScheduleStatus::SCHEDULED,
-        ]);
-
-        // Should be preserved: future but already billed.
-        $futureBilled = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'schedule_date' => $future->toDateString(),
-            'start_time' => $future->format('H:i'),
-            'status' => ScheduleStatus::SCHEDULED,
-            'billing_status' => BillingStatus::BILLED,
-        ]);
-
-        // Should be preserved: future but cancelled.
-        $futureCancelled = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'schedule_date' => $future->toDateString(),
-            'start_time' => $future->format('H:i'),
-            'status' => ScheduleStatus::CANCELLED,
-        ]);
-
-        // Should be preserved: a session this therapist only covers as a sub.
-        $covered = Schedule::factory()->coveredBy($therapist)->create([
-            'therapist_id' => $otherTherapist->id,
-            'schedule_date' => $future->toDateString(),
-            'start_time' => $future->format('H:i'),
-            'status' => ScheduleStatus::SCHEDULED,
-        ]);
-
-        $this->service->changeStatus($therapist, new ChangeTherapistStatusDTO(status: 'inactive'));
-
-        $this->assertSoftDeleted('schedules', ['id' => $futureOwned->id]);
-        $this->assertNotSoftDeleted('schedules', ['id' => $pastOwned->id]);
-        $this->assertNotSoftDeleted('schedules', ['id' => $futureBilled->id]);
-        $this->assertNotSoftDeleted('schedules', ['id' => $futureCancelled->id]);
-        $this->assertNotSoftDeleted('schedules', ['id' => $covered->id]);
-    }
-
-    public function test_activating_therapist_does_not_delete_schedules(): void
-    {
-        $manager = User::factory()->admin()->create();
-        $therapist = User::factory()
-            ->therapist()
-            ->has(TherapistProfile::factory()->state(['manager_id' => $manager->id]), 'therapistProfile')
-            ->create(['status' => 'inactive']);
-
-        $future = CarbonImmutable::now()->addWeek();
-        $schedule = Schedule::factory()->create([
-            'therapist_id' => $therapist->id,
-            'schedule_date' => $future->toDateString(),
-            'start_time' => $future->format('H:i'),
-            'status' => ScheduleStatus::SCHEDULED,
-        ]);
-
-        $this->service->changeStatus($therapist, new ChangeTherapistStatusDTO(status: 'active'));
-
-        $this->assertNotSoftDeleted('schedules', ['id' => $schedule->id]);
     }
 
     public function test_list_returns_all_therapists(): void

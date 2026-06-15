@@ -103,4 +103,15 @@ class UserFactory extends Factory
             'role' => Role::ADMIN->value,
         ]);
     }
+
+    /**
+     * Mark this user as QA test data (prefixes email and username with qa).
+     */
+    public function qa(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email'    => 'qa.' . fake()->unique()->safeEmail(),
+            'username' => 'qa_' . fake()->unique()->userName(),
+        ]);
+    }
 }

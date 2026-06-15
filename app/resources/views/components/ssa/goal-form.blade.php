@@ -29,18 +29,9 @@
     </div>
 
     <div>
-        <x-input-label for="goal_text" value="Goal *" />
-        <p id="goal_text_help" class="mt-1 text-xs text-foreground/60">The goal the student is working toward.</p>
-        <textarea id="goal_text" name="goal" rows="4" maxlength="5000" required
-            class="mt-1 block w-full rounded-base border border-input bg-background px-3 py-2 text-foreground placeholder:text-foreground/50 focus:ring-2 focus:ring-ring focus:border-ring"
-            aria-describedby="goal_text_help">{{ old('goal', $goal?->goal) }}</textarea>
-        <x-input-error :messages="$errors->get('goal')" class="mt-2" />
-    </div>
-
-    <div>
-        <x-input-label for="objective" value="Objectives" />
-        <p id="goal_objective_help" class="mt-1 text-xs text-foreground/60">Optional. Specific objectives or benchmarks under this goal.</p>
-        <textarea id="objective" name="objective" rows="4" maxlength="5000"
+        <x-input-label for="objective" value="Objective *" />
+        <p id="goal_objective_help" class="mt-1 text-xs text-foreground/60">What the student is working toward.</p>
+        <textarea id="objective" name="objective" rows="4" maxlength="5000" required
             class="mt-1 block w-full rounded-base border border-input bg-background px-3 py-2 text-foreground placeholder:text-foreground/50 focus:ring-2 focus:ring-ring focus:border-ring"
             aria-describedby="goal_objective_help">{{ old('objective', $goal?->objective) }}</textarea>
         <x-input-error :messages="$errors->get('objective')" class="mt-2" />

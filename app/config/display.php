@@ -21,19 +21,6 @@ return [
     'date_long' => 'l, F j, Y',
 
     /*
-     * Year-less short date, for the start of a same-year date range.
-     * e.g. "May 11" in "May 11 - May 30, 2026"
-     */
-    'date_short' => 'M d',
-
-    /*
-     * Year-less date with full month name, for email subjects and range starts
-     * where the abbreviated month reads awkwardly.
-     * e.g. "May 11" in "Invoice - May 11 - May 30"
-     */
-    'date_short_month' => 'F j',
-
-    /*
      * Standard datetime format combining date + 12-hour time.
      * e.g. "May 11, 2026 9:30 AM"
      */

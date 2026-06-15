@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class InvoiceFactory extends Factory
 {
-    private static int $sequence = 1;
-
     /**
      * Define the model's default state.
      *
@@ -24,10 +22,12 @@ class InvoiceFactory extends Factory
         $startDate = $this->faker->dateTimeBetween('-3 months', '-1 month');
         $endDate = $this->faker->dateTimeBetween($startDate, 'now');
 
+        // Include microseconds + random suffix so the number is unique across
+        // repeated test runs on the same day (avoids unique-key violations).
         $invoiceNumber = sprintf(
-            'INV-%s-F%04d',
-            now()->format('Ymd'),
-            self::$sequence++
+            'INV-%s-%06d',
+            now()->format('YmdHis'),
+            mt_rand(1, 999999)
         );
 
         return [

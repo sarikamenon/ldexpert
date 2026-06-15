@@ -9,23 +9,21 @@ use App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface;
 use App\Domain\Invoice\Repositories\InvoiceRepositoryInterface;
 use App\Domain\Invoice\Services\InvoiceService;
 use App\Domain\School\Repositories\SchoolRepositoryInterface;
+use App\Domain\Therapist\Services\SessionLogRateService;
 use App\DTOs\BillingRunResultDTO;
 use App\DTOs\InvoiceLineItemDTO;
-use App\DTOs\SendInvoiceDTO;
 use App\Enums\BillingMode;
 use App\Enums\BillingScheduleRunStatus;
 use App\Enums\InvoiceLineType;
 use App\Enums\InvoiceStatus;
-use App\Enums\Role;
+use App\Enums\ScheduleStatus;
 use App\Enums\SessionLogStatus;
 use App\Enums\SessionOutcome;
 use App\Models\BillingSchedule;
-use App\Models\BillingScheduleRun;
 use App\Models\Invoice;
 use App\Models\InvoiceLineItem;
 use App\Models\Schedule;
 use App\Models\SessionLog;
-use App\Models\User;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +37,7 @@ final class AdvanceBillingService
         private readonly InvoiceRepositoryInterface $invoiceRepository,
         private readonly InvoiceService $invoiceService,
         private readonly SchoolRepositoryInterface $schoolRepository,
-        private readonly AdvanceChargeLineBuilder $chargeLineBuilder,
+        private readonly SessionLogRateService $rateService,
         private readonly BillingScheduleService $billingScheduleService,
     ) {}
 
@@ -142,7 +140,7 @@ final class AdvanceBillingService
             );
         }
 
-        [$result, $invoice, $run] = DB::transaction(function () use (
+        return DB::transaction(function () use (
             $schedule,
             $schoolId,
             $completedPeriod,
@@ -153,7 +151,7 @@ final class AdvanceBillingService
             $advanceTotal,
             $netTotal,
             $newCarryForward,
-        ): array {
+        ): BillingRunResultDTO {
             $invoice = $this->createAdvanceInvoice(
                 $schoolId,
                 $upcomingPeriod['start'],
@@ -171,8 +169,6 @@ final class AdvanceBillingService
                 $allLines->map(fn (InvoiceLineItemDTO $l): array => $l->toArray())->all()
             );
 
-            $this->stampSchedulesOnInvoice($advanceLines, $invoice);
-
             $result = new BillingRunResultDTO(
                 billingScheduleId: $schedule->id,
                 status: BillingScheduleRunStatus::SUCCESS->value,
@@ -189,14 +185,11 @@ final class AdvanceBillingService
                 autoSent: false,
             );
 
-            $run = $this->logRun($schedule, $result);
+            $this->logRun($schedule, $result);
             $this->billingScheduleService->advanceSchedule($schedule, $completedPeriod['end']);
 
-            return [$result, $invoice, $run];
+            return $result;
         });
-
-        // Auto-send after commit (a mailer failure must not roll back the invoice).
-        return $this->maybeAutoSendInvoice($schedule, $invoice, $result, $run);
     }
 
     /**
@@ -366,30 +359,49 @@ final class AdvanceBillingService
         Carbon $periodStart,
         Carbon $periodEnd,
     ): Collection {
-        return $this->chargeLineBuilder->build($schoolId, $periodStart, $periodEnd);
-    }
+        /** @var Collection<int, InvoiceLineItemDTO> $lines */
+        $lines = collect();
 
-    /**
-     * Stamp invoice_id onto every schedule that became an ADVANCE_SCHEDULED line,
-     * so the generator's notYetInvoiced() filter never re-charges them.
-     *
-     * @param  Collection<int, InvoiceLineItemDTO>  $advanceLines
-     */
-    private function stampSchedulesOnInvoice(Collection $advanceLines, Invoice $invoice): void
-    {
-        $scheduleIds = $advanceLines
-            ->map(fn (InvoiceLineItemDTO $line): ?int => $line->scheduleId)
-            ->filter()
-            ->values()
-            ->all();
+        /** @var Collection<int, Schedule> $schedules */
+        $schedules = Schedule::query()
+            ->where('school_id', $schoolId)
+            ->where('schedule_date', '>=', $periodStart->toDateString())
+            ->where('schedule_date', '<=', $periodEnd->toDateString())
+            ->where('status', ScheduleStatus::SCHEDULED->value)
+            ->with(['service', 'therapist', 'school'])
+            ->orderBy('schedule_date')
+            ->get();
 
-        if ($scheduleIds === []) {
-            return;
+        foreach ($schedules as $schedule) {
+            $rate = $this->getScheduleRate($schedule);
+
+            if ($rate === null) {
+                Log::warning('Could not determine rate for scheduled session', [
+                    'schedule_id' => $schedule->id,
+                    'school_id' => $schoolId,
+                ]);
+
+                continue;
+            }
+
+            $serviceName = $schedule->service->name ?? 'Session';
+            $date = $schedule->schedule_date->format('D M j');
+            $duration = $schedule->durationMinutes();
+            $isGroup = $schedule->is_group ? ' (group)' : '';
+
+            $lines->push(new InvoiceLineItemDTO(
+                lineType: InvoiceLineType::ADVANCE_SCHEDULED->value,
+                description: "{$serviceName} — {$date} ({$duration} min){$isGroup}",
+                billingPeriodStart: $periodStart->toDateString(),
+                billingPeriodEnd: $periodEnd->toDateString(),
+                quantity: 1,
+                unitPrice: $rate,
+                total: $rate,
+                scheduleId: $schedule->id,
+            ));
         }
 
-        Schedule::query()
-            ->whereIn('id', $scheduleIds)
-            ->update(['invoice_id' => $invoice->id]);
+        return $lines;
     }
 
     /**
@@ -558,6 +570,32 @@ final class AdvanceBillingService
     }
 
     /**
+     * Get the billing rate for a scheduled session using the rate service.
+     */
+    private function getScheduleRate(Schedule $schedule): ?float
+    {
+        try {
+            $durationMinutes = $schedule->durationMinutes();
+            $result = $this->rateService->calculateDualBilling(
+                $schedule->therapist_id,
+                $schedule->school_id,
+                $schedule->service_id,
+                $schedule->schedule_date->toDateString(),
+                $durationMinutes,
+            );
+
+            return $result['school']['invoice_amount'] ?? null;
+        } catch (\Throwable $e) {
+            Log::warning('Rate calculation failed for schedule', [
+                'schedule_id' => $schedule->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * Create the advance invoice record for a school.
      */
     private function createAdvanceInvoice(
@@ -659,13 +697,7 @@ final class AdvanceBillingService
             return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $nextDay);
         }
 
-        // First-ever run: anchor on billing_start_date when set so the first
-        // advance charge covers the intended period instead of "now".
-        $anchor = $schedule->billing_start_date !== null
-            ? $schedule->billing_start_date->copy()
-            : now();
-
-        return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $anchor);
+        return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, now());
     }
 
     /**
@@ -681,9 +713,9 @@ final class AdvanceBillingService
         return $this->billingScheduleService->determineBillingPeriod($schedule->frequency, $nextDay);
     }
 
-    private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): BillingScheduleRun
+    private function logRun(BillingSchedule $schedule, BillingRunResultDTO $result): void
     {
-        return $this->scheduleRepository->logRun([
+        $this->scheduleRepository->logRun([
             'billing_schedule_id' => $schedule->id,
             'billing_period_start' => $result->billingPeriodStart,
             'billing_period_end' => $result->billingPeriodEnd,
@@ -702,40 +734,5 @@ final class AdvanceBillingService
             'started_at' => now(),
             'completed_at' => now(),
         ]);
-    }
-
-    /**
-     * Auto-send a freshly generated advance invoice when the schedule opts in.
-     *
-     * Runs outside the generation transaction. Skips non-positive totals (a
-     * fully-credited advance invoice nets to $0 and the send path rejects it) and
-     * swallows mailer failures so a send failure never undoes a generated invoice.
-     */
-    private function maybeAutoSendInvoice(BillingSchedule $schedule, Invoice $invoice, BillingRunResultDTO $result, BillingScheduleRun $run): BillingRunResultDTO
-    {
-        if (! $schedule->auto_send || (float) $invoice->total <= 0) {
-            return $result;
-        }
-
-        $admin = User::query()->byRole(Role::ADMIN)->orderBy('id')->first();
-
-        if ($admin === null) {
-            return $result;
-        }
-
-        try {
-            $this->invoiceService->sendInvoice($admin, $invoice, new SendInvoiceDTO);
-            $run->update(['auto_sent' => true]);
-
-            return $result->withAutoSent(true);
-        } catch (\Throwable $e) {
-            Log::error('Advance billing auto-send invoice failed', [
-                'schedule_id' => $schedule->id,
-                'invoice_id' => $invoice->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return $result;
-        }
     }
 }

@@ -37,12 +37,6 @@ interface SessionLogRepositoryInterface
 
     public function delete(SessionLog $sessionLog): void;
 
-    /**
-     * Soft-delete the session log and, when it originates from a schedule,
-     * revert that schedule's billing status to PENDING so it can be logged again.
-     */
-    public function deleteAndUnbill(SessionLog $sessionLog): void;
-
     public function submit(SessionLog $sessionLog, User $submittedBy): SessionLog;
 
     public function approve(SessionLog $sessionLog, User $approvedBy): SessionLog;

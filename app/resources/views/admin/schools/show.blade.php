@@ -111,8 +111,6 @@
         @include('admin.schools._calendar-events', [
             'school' => $school,
             'selectedDate' => $selectedDate ?? now(),
-            'eventTypeOptions' => $eventTypeOptions ?? [],
-            'defaultEventType' => $defaultEventType ?? null,
         ])
     @elseif (($activeTab ?? 'dashboard') === 'billing')
         @include('admin.billing._entity-billing-tab', [

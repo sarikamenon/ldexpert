@@ -10,7 +10,6 @@
     'isPrivateStudent' => false,
     'allowsWeekendScheduling' => false,
     'weekDays' => [],
-    'holidayDates' => [],
     'subPanel' => null,
 ])
 
@@ -22,14 +21,10 @@
 <form method="POST"
     action="{{ $isEdit ? route('therapist.schedule.update', $schedule->id) : route('therapist.schedule.store') }}"
     id="{{ $isEdit ? 'scheduleEditForm' : 'scheduleCreateForm' }}" class="space-y-6"
-    data-allow-weekend-scheduling="{{ $allowsWeekendScheduling ? '1' : '0' }}"
-    data-holiday-dates="@json($holidayDates)">
+    data-allow-weekend-scheduling="{{ $allowsWeekendScheduling ? '1' : '0' }}">
     @csrf
     @if ($isEdit)
         @method('PUT')
-    @endif
-    @if (! empty($makeupRequestId ?? null))
-        <input type="hidden" name="makeup_request_id" value="{{ $makeupRequestId }}">
     @endif
 
     {{-- Section 1: Schedule Details --}}
@@ -312,26 +307,10 @@
                 <p class="text-xs text-foreground/60 mt-1 mb-3">
                     Review the occurrence dates below. You can modify any date or remove unwanted
                     occurrences using the ✕ button (e.g., if a month has an extra week for a bi-weekly student).
-                    Dates falling on weekends or school holidays are highlighted in yellow.
+                    Dates falling on weekends are highlighted in yellow.
                 </p>
                 <x-input-error :messages="$errors->get('occurrence_dates')" class="mt-2" />
                 <x-input-error :messages="$errors->get('occurrence_dates.*')" class="mt-2" />
-            </div>
-
-            {{-- Additional one-off dates (custom weekly) --}}
-            <div id="additional_dates_container" class="hidden mt-4">
-                <x-input-label value="Additional Dates" />
-                <p class="text-xs text-foreground/60 mt-1 mb-3" id="additional_dates_help">
-                    One-off extra sessions outside your weekly pattern. Same time and duration; they don't repeat.
-                </p>
-                <div id="additional_dates_list" class="space-y-3" aria-describedby="additional_dates_help"></div>
-                <button type="button" id="add_additional_date_btn"
-                    class="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-primary/40 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/10">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add another date
-                </button>
             </div>
         </div>
     </x-ui::card>

@@ -133,7 +133,7 @@ class DashboardService
             $canBill = $hasEventStarted && $isPendingBilling && $coverageRole !== 'covered';
 
             // Subs covering someone else's schedule cannot edit/delete it — they're just delivering the session.
-            $canEditOrDelete = ! $isBilled && $coverageRole !== 'covering';
+            $canEditOrDelete = !$isBilled && $coverageRole !== 'covering';
 
             return [
                 'id' => $schedule->id,

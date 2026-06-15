@@ -110,13 +110,6 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
             ->get();
     }
 
-    /** @return Collection<int, string|null> map of school id => timezone */
-    public function listSchoolTimezones(): Collection
-    {
-        return School::query()
-            ->pluck('timezone', 'id');
-    }
-
     /** @return Collection<int, School> */
     public function listPrivateFamilyContacts(): Collection
     {
@@ -139,7 +132,7 @@ class EloquentSchoolRepository implements SchoolRepositoryInterface
     {
         return School::query()
             ->active()
-            ->select(['id', 'display_name', 'is_private_student'])
+            ->select(['id', 'display_name'])
             ->orderBy('display_name')
             ->get();
     }

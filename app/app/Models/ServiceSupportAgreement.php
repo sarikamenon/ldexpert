@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\Role;
-use App\Enums\ScheduleStatus;
 use App\Enums\ServiceFrequency;
 use App\Enums\SSAStatus;
 use App\Models\Concerns\HasAudits;
@@ -26,7 +25,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property ServiceFrequency|null $frequency
  * @property-read float $tho_hours
  * @property-read float $served_hours
- * @property-read float $scheduled_hours
  */
 class ServiceSupportAgreement extends Model
 {
@@ -115,21 +113,6 @@ class ServiceSupportAgreement extends Model
     public function goals(): HasMany
     {
         return $this->hasMany(SSAGoal::class, 'ssa_id');
-    }
-
-    /** @return HasMany<Schedule, $this> */
-    public function schedules(): HasMany
-    {
-        return $this->hasMany(Schedule::class, 'ssa_id');
-    }
-
-    /** Non-cancelled, future-or-today schedules — used to calculate scheduled_hours. */
-    /** @return HasMany<Schedule, $this> */
-    public function scheduledSchedules(): HasMany
-    {
-        return $this->hasMany(Schedule::class, 'ssa_id')
-            ->where('status', ScheduleStatus::SCHEDULED)
-            ->whereDate('schedule_date', '>=', now()->toDateString());
     }
 
     /**
@@ -360,14 +343,6 @@ class ServiceSupportAgreement extends Model
     public function getServedHoursAttribute(): float
     {
         return round($this->served_minutes / 60, 2);
-    }
-
-    public function getScheduledHoursAttribute(): float
-    {
-        $minutes = $this->scheduledSchedules
-            ->sum(fn (Schedule $s): int => $s->durationMinutes());
-
-        return round($minutes / 60, 2);
     }
 
     /**

@@ -31,13 +31,6 @@ final class EloquentInvoiceLineItemRepository implements InvoiceLineItemReposito
         return $created;
     }
 
-    public function deleteForInvoice(int $invoiceId): void
-    {
-        InvoiceLineItem::query()
-            ->where('invoice_id', $invoiceId)
-            ->delete();
-    }
-
     /**
      * @return Collection<int, InvoiceLineItem>
      */

@@ -75,20 +75,4 @@ final class StudentScope extends BaseModelScope
     {
         return $builder->whereNotNull('school_id');
     }
-
-    /**
-     * The duplicate-detection name gate: first AND last name both match.
-     *
-     * The columns use a `utf8mb4_unicode_ci` collation, so equality is already
-     * case-insensitive and accent-folding (`José` = `Jose`) at the SQL level.
-     *
-     * @param  Builder<StudentProfile>  $builder
-     * @return Builder<StudentProfile>
-     */
-    public static function matchingName(Builder $builder, string $firstName, string $lastName): Builder
-    {
-        return $builder
-            ->where('first_name', $firstName)
-            ->where('last_name', $lastName);
-    }
 }

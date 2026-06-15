@@ -7,7 +7,6 @@ namespace App\Mail;
 use App\Models\Invoice;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Address;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
@@ -23,14 +22,10 @@ class InvoiceReminderMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $dueDate = $this->invoice->due_date?->format(config('display.date')) ?? '';
+        $dueDate = $this->invoice->due_date?->format('M d, Y') ?? '';
 
         return new Envelope(
-            from: new Address(
-                config('invoice.from_address'),
-                config('invoice.from_name'),
-            ),
-            subject: "Payment Reminder — Due {$dueDate}",
+            subject: "Reminder: Invoice {$this->invoice->invoice_number} — Due {$dueDate}",
         );
     }
 

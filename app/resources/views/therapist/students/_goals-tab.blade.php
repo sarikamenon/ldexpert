@@ -138,7 +138,6 @@
                         @forelse ($ssaGoals as $index => $goal)
                             @php
                                 $progressNotesId = 'progress-notes-' . $ssa->id . '-' . $goal->id;
-                                $objectivePanelId = 'objective-' . $ssa->id . '-' . $goal->id;
                             @endphp
 
                             <div class="goal-item {{ $index > 0 ? 'border-t border-border' : '' }} {{ $goal->status->borderClass() }}"
@@ -167,6 +166,7 @@
                                             @can('changeStatus', $goal)
                                                 @if ($goal->can_transition_status)
                                                     <x-ui::button variant="success" size="sm" type="button"
+                                                        dusk="mark-mastered-{{ $goal->id }}"
                                                         class="ssa-goal-status-btn gap-1.5"
                                                         data-status-url="{{ route($goalsRouteGroup . '.change-status', ['ssa' => $ssa, 'goal' => $goal]) }}"
                                                         data-status="mastered"
@@ -199,30 +199,8 @@
                                         </div>
                                     </div>
 
-                                    {{-- Goal (required, always shown) --}}
-                                    <p class="text-xs font-semibold tracking-widest uppercase text-foreground/40 mt-3 mb-1">Goal</p>
-                                    <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->goal }}</p>
-                                </div>
-
-                                {{-- Objectives toggle (collapsible, optional) --}}
-                                <div class="px-5 pt-1 {{ $goal->progress ? '' : 'pb-2' }}">
-                                    <button type="button"
-                                        class="objectives-toggle inline-flex items-center gap-1.5 text-xs font-medium text-foreground/60 hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                                        aria-expanded="false"
-                                        aria-controls="{{ $objectivePanelId }}">
-                                        <svg class="objectives-chevron w-3.5 h-3.5 transition-transform duration-150" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6" />
-                                        </svg>
-                                        <span class="toggle-label">Show objectives</span>
-                                    </button>
-
-                                    <div id="{{ $objectivePanelId }}" class="objectives-panel hidden mt-3">
-                                        @if ($goal->objective)
-                                            <p class="text-sm text-foreground/70 whitespace-pre-wrap">{{ $goal->objective }}</p>
-                                        @else
-                                            <p class="text-sm text-foreground/40 italic">No objectives recorded.</p>
-                                        @endif
-                                    </div>
+                                    <p class="text-xs font-semibold tracking-widest uppercase text-foreground/40 mt-3 mb-1">Objective</p>
+                                    <p class="text-sm text-foreground/80 whitespace-pre-wrap">{{ $goal->objective }}</p>
                                 </div>
 
                                 {{-- Progress notes toggle --}}

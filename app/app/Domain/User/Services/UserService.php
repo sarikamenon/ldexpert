@@ -58,11 +58,6 @@ class UserService
         return $this->repository->listByRole($role->value);
     }
 
-    public function findById(int $id): ?User
-    {
-        return $this->repository->findById($id);
-    }
-
     /** @param array<string, mixed> $data */
     public function updateProfile(User $user, array $data): User
     {

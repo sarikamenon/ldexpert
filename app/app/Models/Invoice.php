@@ -24,8 +24,8 @@ use Illuminate\Support\Str;
  * @property float $carry_forward_balance
  * @property Carbon $invoice_date
  * @property Carbon|null $due_date
- * @property Carbon $billing_period_start
- * @property Carbon $billing_period_end
+ * @property Carbon|null $billing_period_start
+ * @property Carbon|null $billing_period_end
  * @property Carbon|null $sent_at
  */
 class Invoice extends Model
@@ -105,16 +105,6 @@ class Invoice extends Model
     }
 
     /**
-     * Schedules billed on this (advance) invoice.
-     *
-     * @return HasMany<Schedule, $this>
-     */
-    public function schedules(): HasMany
-    {
-        return $this->hasMany(Schedule::class, 'invoice_id');
-    }
-
-    /**
      * @return HasMany<InvoiceLineItem, $this>
      */
     public function lineItems(): HasMany
@@ -176,11 +166,6 @@ class Invoice extends Model
         return $this->status === InvoiceStatus::PAID;
     }
 
-    public function isZeroAmount(): bool
-    {
-        return (float) $this->total <= 0.0;
-    }
-
     public function getTotalPaidAttribute(): float
     {
         return (float) $this->paymentAllocations()->sum('allocated_amount');
@@ -238,14 +223,5 @@ class Invoice extends Model
         }
 
         return route('payment.show', $this->payment_token);
-    }
-
-    /**
-     * Online payment (the "Pay Now" link) is offered only to private-student
-     * schools. Regular schools receive the invoice without a pay-online link.
-     */
-    public function allowsOnlinePayment(): bool
-    {
-        return $this->school?->is_private_student === true;
     }
 }

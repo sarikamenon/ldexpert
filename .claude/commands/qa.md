@@ -1,4 +1,6 @@
-Run the full QA pipeline (Pint + PHPStan + Pest) via Docker and summarize any errors.
+Run the developer code quality pipeline (Pint + PHPStan + Pest) via Docker and summarize any errors.
+
+> **Note:** This is NOT the browser test runner. To run QA browser tests use `/qa-admin`, `/qa-therapist`, `/qa-student`, `/qa-finance`, `/qa-e2e`, or `/qa-smoke` instead.
 
 Steps:
 1. Run `make qa` inside Docker

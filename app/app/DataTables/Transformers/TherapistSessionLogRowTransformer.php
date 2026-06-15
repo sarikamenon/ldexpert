@@ -5,55 +5,48 @@ declare(strict_types=1);
 namespace App\DataTables\Transformers;
 
 use App\DataTables\ActionButtons;
-use App\DataTables\Transformers\Concerns\FormatsSessionLogCells;
 use App\Models\SessionLog;
 use App\Support\DateHelper;
-use Carbon\Carbon;
 
 final class TherapistSessionLogRowTransformer
 {
-    use FormatsSessionLogCells;
-
     /**
-     * $timezone is the logged-in viewer's timezone, resolved once per request
-     * via UserTimezoneService::resolveTimezone() — never the row owner's.
-     *
      * @return array<int, string>
      */
-    public static function transform(SessionLog $log, string $timezone): array
+    public static function transform(SessionLog $log): array
     {
-        $localStart = $log->localStart($timezone);
-        $localEnd = $log->localEnd($timezone);
+        $tz = $log->displayTimezone();
+        $localStart = $log->localStart($tz);
+        $localEnd = $log->localEnd($tz);
         $sessionDate = $localStart;
-        $createdAt = $log->created_at ? Carbon::parse($log->created_at)->setTimezone($timezone) : null;
+        $createdAt = $log->created_at ? \Carbon\Carbon::parse($log->created_at)->setTimezone($tz) : null;
 
         $startTime = $localStart->format(config('display.time'));
         $endTime = $localEnd->format(config('display.time'));
         $timeRange = "{$startTime} - {$endTime}";
         $duration = $log->duration_minutes ? "{$log->duration_minutes} mins" : null;
 
-        $dateLine = e($sessionDate->format('M d, Y'));
+        $dateTimeCell = '<div class="flex flex-col space-y-1">'
+            .'<span class="text-foreground font-medium">'.e($sessionDate->format('M d, Y')).'</span>'
+            .'<span class="text-foreground">'.e($timeRange).'</span>';
         if ($duration) {
-            $dateLine .= ' <span class="text-foreground/60 font-normal">· '.e($duration).'</span>';
+            $dateTimeCell .= '<span class="text-xs text-foreground/60">'.e($duration).'</span>';
         }
+        $dateTimeCell .= '</div>';
 
         $entryCreated = $createdAt ? $createdAt->format('M d, Y') : null;
         $entryDiff = DateHelper::daysDifferenceBetweenDates($sessionDate, $createdAt);
-
-        $dateTimeCell = '<div class="flex flex-col">'
-            .'<span class="text-foreground font-medium whitespace-nowrap">'.$dateLine.'</span>'
-            .'<span class="text-foreground text-sm">'.e($timeRange).'</span>';
-        if ($entryCreated || $entryDiff) {
-            $dateTimeCell .= '<span class="inline-flex flex-wrap items-center gap-1 text-xs text-foreground/50">';
-            if ($entryCreated) {
-                $dateTimeCell .= 'Entry: '.e($entryCreated);
-            }
-            if ($entryDiff) {
-                $dateTimeCell .= '<span class="inline-flex items-center px-2 py-0.5 leading-none rounded-base font-medium bg-warning/10 text-warning border border-warning/20">'.e($entryDiff).'</span>';
-            }
-            $dateTimeCell .= '</span>';
+        $entryInfoCell = '<div class="flex flex-col space-y-1">';
+        if ($entryCreated) {
+            $entryInfoCell .= '<span class="text-xs text-foreground/60">'.e($entryCreated).'</span>';
         }
-        $dateTimeCell .= '</div>';
+        if ($entryDiff) {
+            $entryInfoCell .= '<span class="inline-flex items-center px-2 py-0.5 rounded-base text-xs font-medium bg-warning/10 text-warning border border-warning/20 w-fit">'.e($entryDiff).'</span>';
+        }
+        if (! $entryCreated && ! $entryDiff) {
+            $entryInfoCell .= '<span class="text-foreground/40">-</span>';
+        }
+        $entryInfoCell .= '</div>';
 
         $studentName = $log->student->name ?? null;
         $schoolName = $log->school->display_name ?? null;
@@ -77,9 +70,8 @@ final class TherapistSessionLogRowTransformer
         }
         $therapistServiceCell .= '</div>';
 
-        $amountsCell = self::amountsCell($log);
-
-        $notesCell = self::notesCell($log->notes);
+        $schoolAmountCell = self::formatCurrency($log->school_invoice_amount);
+        $therapistAmountCell = self::formatCurrency($log->therapist_billable_amount);
 
         $statusLabel = self::getStatusLabel($log);
         $statusVariant = match ($statusLabel) {
@@ -104,26 +96,30 @@ final class TherapistSessionLogRowTransformer
             $buttons[] = ActionButtons::submit(route('therapist.session-logs.submit', $log));
         }
 
-        if ($log->status?->canDelete()) {
-            $buttons[] = ActionButtons::delete(
-                route('therapist.session-logs.destroy', $log),
-                'Delete',
-                'Delete session log?',
-                'This will remove the session log and make the session available to log again.',
-            );
-        }
-
         $actionsCell = ActionButtons::wrap(...$buttons);
 
         return [
             $dateTimeCell,
+            $entryInfoCell,
             $studentSchoolCell,
             $therapistServiceCell,
-            $amountsCell,
-            $notesCell,
+            $schoolAmountCell,
+            $therapistAmountCell,
             $statusCell,
             $actionsCell,
         ];
+    }
+
+    private static function formatCurrency(float|string|null $amount): string
+    {
+        if ($amount === null || $amount === '') {
+            return '-';
+        }
+        if (! is_numeric($amount)) {
+            return '-';
+        }
+
+        return '$'.number_format((float) $amount, 2);
     }
 
     private static function getStatusLabel(SessionLog $log): string

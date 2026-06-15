@@ -56,7 +56,6 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'student.studentProfile.school',
                 'primaryService',
                 'assignedTherapist',
-                'scheduledSchedules',
             ]);
 
         $queryForTotal = (clone $baseQuery);
@@ -216,8 +215,8 @@ final class EloquentSSARepository implements SSARepositoryInterface
                 'assigned_therapist_id' => $dto->therapistId,
             ];
 
-            // Automatically change status to ACTIVE if currently PENDING or DEACTIVATED
-            if (in_array($ssa->status, [SSAStatus::PENDING, SSAStatus::DEACTIVATED], true)) {
+            // Automatically change status to ACTIVE if currently PENDING
+            if ($ssa->status === SSAStatus::PENDING) {
                 $updateData['status'] = SSAStatus::ACTIVE->value;
             }
 
@@ -359,7 +358,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForMetrics(int $studentId, int $therapistId): Collection
     {
-        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist', 'scheduledSchedules'])
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
             ->where('student_id', $studentId)
             ->where('assigned_therapist_id', $therapistId)
             ->get();
@@ -397,7 +396,7 @@ final class EloquentSSARepository implements SSARepositoryInterface
     /** @return Collection<int, ServiceSupportAgreement> */
     public function getSSAsForStudentMetrics(int $studentId): Collection
     {
-        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist', 'scheduledSchedules'])
+        return ServiceSupportAgreement::with(['primaryService', 'assignedTherapist'])
             ->where('student_id', $studentId)
             ->get();
     }

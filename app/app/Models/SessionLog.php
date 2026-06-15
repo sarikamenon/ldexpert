@@ -76,6 +76,7 @@ class SessionLog extends Model
         'sent_back_by_id',
         'cancellation_reason',
         'original_therapist_id',
+        'test_run_id',
     ];
 
     protected function casts(): array

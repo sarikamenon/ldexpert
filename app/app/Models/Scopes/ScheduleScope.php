@@ -111,24 +111,6 @@ final class ScheduleScope extends BaseModelScope
      * @param  Builder<Schedule>  $builder
      * @return Builder<Schedule>
      */
-    public static function notYetInvoiced(Builder $builder, Model $model): Builder
-    {
-        return $builder->whereNull(self::qualify($model, 'invoice_id'));
-    }
-
-    /**
-     * @param  Builder<Schedule>  $builder
-     * @return Builder<Schedule>
-     */
-    public static function forInvoice(Builder $builder, Model $model, int $invoiceId): Builder
-    {
-        return $builder->where(self::qualify($model, 'invoice_id'), $invoiceId);
-    }
-
-    /**
-     * @param  Builder<Schedule>  $builder
-     * @return Builder<Schedule>
-     */
     public static function recurring(Builder $builder, Model $model): Builder
     {
         return $builder->where(self::qualify($model, 'recurrence_type'), '!=', RecurrenceType::NONE->value);
@@ -163,17 +145,6 @@ final class ScheduleScope extends BaseModelScope
             $q->where(self::qualify($model, 'therapist_id'), $therapist->id)
                 ->orWhere(self::qualify($model, 'sub_therapist_id'), $therapist->id);
         });
-    }
-
-    /**
-     * Primary therapist only — excludes sessions the therapist is covering as a sub.
-     *
-     * @param  Builder<Schedule>  $builder
-     * @return Builder<Schedule>
-     */
-    public static function forTherapistOwned(Builder $builder, Model $model, int $therapistId): Builder
-    {
-        return $builder->where(self::qualify($model, 'therapist_id'), $therapistId);
     }
 
     /**
@@ -219,25 +190,6 @@ final class ScheduleScope extends BaseModelScope
     public static function startingAtOrBefore(Builder $builder, Model $model, CarbonInterface $moment): Builder
     {
         return self::compareStartTimestamp($builder, $model, '<=', $moment);
-    }
-
-    /**
-     * Filter to schedules whose UTC interval overlaps [windowStart, windowEnd).
-     * Overlap condition: schedule starts before window ends AND schedule ends after window starts.
-     * Expects UTC datetime strings (Y-m-d H:i:s).
-     *
-     * @param  Builder<Schedule>  $builder
-     * @return Builder<Schedule>
-     */
-    public static function overlappingWindow(Builder $builder, Model $model, string $windowStartUtc, string $windowEndUtc): Builder
-    {
-        $date = self::qualify($model, 'schedule_date');
-        $st = self::qualify($model, 'start_time');
-        $et = self::qualify($model, 'end_time');
-
-        return $builder
-            ->whereRaw("TIMESTAMP({$date}, {$st}) < ?", [$windowEndUtc])
-            ->whereRaw("TIMESTAMP({$date}, {$et}) > ?", [$windowStartUtc]);
     }
 
     /**

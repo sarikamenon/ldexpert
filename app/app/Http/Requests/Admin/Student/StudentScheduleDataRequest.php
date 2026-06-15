@@ -23,8 +23,7 @@ final class StudentScheduleDataRequest extends FormRequest
     {
         return [
             'filter_student_id' => ['required', 'integer', 'exists:users,id'],
-            'filter_date_from' => ['nullable', 'date'],
-            'filter_date_to' => ['nullable', 'date', 'after_or_equal:filter_date_from'],
+            'filter_date' => ['nullable', 'date'],
             'filter_status' => ['nullable', Rule::in(array_map(fn (\BackedEnum $e) => $e->value, ScheduleStatus::cases()))],
             'filter_billing_status' => ['nullable', Rule::in(array_map(fn (\BackedEnum $e) => $e->value, BillingStatus::cases()))],
             'filter_ssa_id' => ['nullable', 'integer', 'exists:service_support_agreements,id'],

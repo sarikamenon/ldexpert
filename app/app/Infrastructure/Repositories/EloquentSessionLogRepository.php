@@ -7,7 +7,6 @@ namespace App\Infrastructure\Repositories;
 use App\Domain\Therapist\Repositories\SessionLogRepositoryInterface;
 use App\DTOs\DataTablesParamsDTO;
 use App\DTOs\ScheduleFilterDTO;
-use App\Enums\BillingStatus;
 use App\Enums\SessionLogCommentType;
 use App\Enums\SessionLogStatus;
 use App\Enums\SSAStatus;
@@ -172,18 +171,6 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
         $sessionLog->delete();
     }
 
-    public function deleteAndUnbill(SessionLog $sessionLog): void
-    {
-        DB::transaction(function () use ($sessionLog): void {
-            $schedule = $sessionLog->schedule;
-            if ($schedule && $schedule->isBilled()) {
-                $schedule->update(['billing_status' => BillingStatus::PENDING]);
-            }
-
-            $sessionLog->delete();
-        });
-    }
-
     public function submit(SessionLog $sessionLog, User $submittedBy): SessionLog
     {
         $data = [
@@ -192,7 +179,7 @@ final class EloquentSessionLogRepository implements SessionLogRepositoryInterfac
             'submitted_by_id' => $submittedBy->id,
         ];
         // Clear sent-back fields when resubmitting from SENT_BACK
-        if ($sessionLog->isSentBack()) {
+        if ($sessionLog->status === SessionLogStatus::SENT_BACK) {
             $data['sent_back_at'] = null;
             $data['sent_back_by_id'] = null;
         }

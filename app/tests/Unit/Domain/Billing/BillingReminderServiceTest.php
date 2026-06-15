@@ -187,7 +187,8 @@ test('returns zero counts when no eligible invoices', function () {
         ->and($result['skipped'])->toBe(0);
 });
 
-test('sends reminder to the invoice email, ignoring contact email', function () {
+test('resolves recipient email with fallback chain', function () {
+    // school_invoice_email takes priority
     Invoice::factory()->sent()->create([
         'due_date' => now()->addDays(3),
         'school_invoice_email' => 'invoice@school.com',
@@ -200,16 +201,4 @@ test('sends reminder to the invoice email, ignoring contact email', function () 
     Mail::assertSent(\App\Mail\InvoiceReminderMail::class, function ($mail) {
         return $mail->hasTo('invoice@school.com');
     });
-});
-
-test('sends no reminder email when invoice email is missing, never falling back to contact email', function () {
-    Invoice::factory()->sent()->create([
-        'due_date' => now()->addDays(3),
-        'school_invoice_email' => null,
-        'school_contact_email' => 'contact@school.com',
-    ]);
-
-    $this->service->processReminders();
-
-    Mail::assertNothingSent();
 });

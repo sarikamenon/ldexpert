@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Schedule\Sub\Repositories;
 
-use App\DTOs\Schedule\SubRequest\EligibleSubDTO;
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Enums\SubRequestInviteeStatus;
 use App\Models\Schedule;
 use App\Models\ScheduleSubRequest;
@@ -100,12 +100,6 @@ interface ScheduleSubRequestRepositoryInterface
      * @param  array<int, string>  $with  optional eager-load list
      */
     public function findSubSsaForSchedule(int $scheduleId, int $subTherapistId, array $with = []): ?ScheduleSubSsa;
-
-    /**
-     * Soft-delete every sub-SSA snapshot tied to the given request. Used when an
-     * accepted request is withdrawn and coverage is revoked. Returns affected count.
-     */
-    public function softDeleteSubSsasForRequest(int $requestId): int;
 
     /**
      * Find all sub-SSA snapshots matching a performing therapist on a given date + service + student.

@@ -19,8 +19,8 @@ use App\DTOs\UpdateScheduleDTO;
 use App\Enums\BillingStatus;
 use App\Enums\RecurrenceType;
 use App\Enums\ScheduleStatus;
-use App\Events\Schedule\Created;
-use App\Events\Schedule\Updated;
+use App\Events\ScheduleCreated;
+use App\Events\ScheduleUpdated;
 use App\Exceptions\CannotDeleteBilledScheduleException;
 use App\Exceptions\ScheduleOverlapException;
 use App\Models\Schedule;
@@ -100,16 +100,6 @@ final class ScheduleService
     }
 
     /**
-     * Find any schedule by id regardless of owning therapist (admin context).
-     *
-     * @param  array<int, string>  $relations
-     */
-    public function findById(int $scheduleId, array $relations = []): ?Schedule
-    {
-        return $this->repository->findById($scheduleId, $relations);
-    }
-
-    /**
      * @param  array<int, string>  $relations
      */
     public function findForTherapistWithRelations(User $therapist, int $scheduleId, array $relations = []): ?Schedule
@@ -166,9 +156,9 @@ final class ScheduleService
         return $this->repository->getStudentServiceMappings($therapist);
     }
 
-    public function createSchedule(User $therapist, CreateScheduleDTO $dto, ?int $actorId = null): Schedule
+    public function createSchedule(User $therapist, CreateScheduleDTO $dto): Schedule
     {
-        return DB::transaction(function () use ($therapist, $dto, $actorId): Schedule {
+        return DB::transaction(function () use ($therapist, $dto): Schedule {
             // Access validation (in addition to FormRequest)
             if ($dto->ssaId !== null && ! $this->repository->validateTherapistAccessToSSA($therapist, $dto->ssaId)) {
                 throw new \InvalidArgumentException('Therapist does not have access to the selected SSA.');
@@ -260,8 +250,6 @@ final class ScheduleService
                         'is_billable' => $this->isSchoolBillable($schoolId),
                         'notes' => $dto->notes,
                         'location_details' => $dto->locationDetails,
-                        'created_by' => $actorId,
-                        'updated_by' => $actorId,
                     ];
 
                     $schedules->push($this->repository->create($data));
@@ -294,8 +282,6 @@ final class ScheduleService
                     'is_billable' => $this->isSchoolBillable($firstSchoolId),
                     'notes' => $dto->notes,
                     'location_details' => $dto->locationDetails,
-                    'created_by' => $actorId,
-                    'updated_by' => $actorId,
                 ]);
 
                 $schedules->push($parentSchedule);
@@ -315,20 +301,20 @@ final class ScheduleService
             // Dispatch events
             if ($dto->recurrenceType === RecurrenceType::NONE) {
                 foreach ($schedules as $schedule) {
-                    Created::dispatch($schedule);
+                    ScheduleCreated::dispatch($schedule);
                 }
             } else {
                 // For recurring, only dispatch for the parent/first occurrence to avoid spam
-                Created::dispatch($first);
+                ScheduleCreated::dispatch($first);
             }
 
             return $first;
         });
     }
 
-    public function updateSchedule(User $therapist, int $scheduleId, UpdateScheduleDTO $dto, ?int $actorId = null): Schedule
+    public function updateSchedule(User $therapist, int $scheduleId, UpdateScheduleDTO $dto): Schedule
     {
-        return DB::transaction(function () use ($therapist, $scheduleId, $dto, $actorId): Schedule {
+        return DB::transaction(function () use ($therapist, $scheduleId, $dto): Schedule {
             $schedule = $this->repository->findForTherapist($therapist, $scheduleId);
 
             if (! $schedule) {
@@ -383,8 +369,6 @@ final class ScheduleService
 
             $effectiveSchoolId = (int) (array_key_exists('school_id', $data) ? $data['school_id'] : $schedule->school_id);
             $data['is_billable'] = $this->isSchoolBillable($effectiveSchoolId);
-
-            $data['updated_by'] = $actorId;
 
             // When recurrence settings change, delete all unbilled future occurrences from
             // this schedule's date forward (preserving past/billed sessions in the series).
@@ -460,7 +444,7 @@ final class ScheduleService
             }
 
             if ($hasMeaningfulChange) {
-                Updated::dispatch($updated);
+                ScheduleUpdated::dispatch($updated);
             }
 
             return $updated;
@@ -501,25 +485,6 @@ final class ScheduleService
             if ($futureSchedules->isEmpty()) {
                 return 0;
             }
-
-            $futureSchedules->each(fn (Schedule $s) => $this->repository->delete($s));
-
-            return $futureSchedules->count();
-        });
-    }
-
-    /**
-     * Soft-delete a therapist's future, scheduled, unbilled sessions (used when a
-     * therapist is deactivated). Only sessions the therapist owns are removed —
-     * sessions they merely cover as a sub are left untouched. Returns the count.
-     */
-    public function deleteTherapistFutureSchedules(User $therapist): int
-    {
-        return DB::transaction(function () use ($therapist): int {
-            $futureSchedules = $this->repository->getFutureScheduledForTherapistOwned(
-                $therapist->id,
-                Carbon::now(),
-            );
 
             $futureSchedules->each(fn (Schedule $s) => $this->repository->delete($s));
 
@@ -624,8 +589,6 @@ final class ScheduleService
                     'is_billable' => $this->isSchoolBillable($schoolId),
                     'notes' => $parentSchedule->notes,
                     'location_details' => $parentSchedule->location_details,
-                    'created_by' => $parentSchedule->created_by,
-                    'updated_by' => $parentSchedule->updated_by,
                 ]));
             }
 
@@ -723,8 +686,6 @@ final class ScheduleService
                     'is_billable' => $this->isSchoolBillable($schoolId),
                     'notes' => $parentSchedule->notes,
                     'location_details' => $parentSchedule->location_details,
-                    'created_by' => $parentSchedule->created_by,
-                    'updated_by' => $parentSchedule->updated_by,
                 ]));
             }
         }

@@ -3,8 +3,6 @@
 use App\Http\Controllers\Therapist\Billing\TherapistBillController;
 use App\Http\Controllers\Therapist\DashboardController;
 use App\Http\Controllers\Therapist\Finance\PayStubController;
-use App\Http\Controllers\Therapist\MakeupAvailabilityController;
-use App\Http\Controllers\Therapist\MakeupRequestController;
 use App\Http\Controllers\Therapist\QGlobRequestController;
 use App\Http\Controllers\Therapist\ScheduleCalendarController;
 use App\Http\Controllers\Therapist\ScheduleController;
@@ -96,29 +94,11 @@ Route::middleware('role:therapist')
             Route::post('{subRequest}/accept', [SubRequestController::class, 'accept'])->name('accept')->whereNumber('subRequest');
             Route::post('{subRequest}/decline', [SubRequestController::class, 'decline'])->name('decline')->whereNumber('subRequest');
             Route::post('{subRequest}/cancel', [SubRequestController::class, 'cancel'])->name('cancel')->whereNumber('subRequest');
-            Route::post('{subRequest}/withdraw', [SubRequestController::class, 'withdraw'])->name('withdraw')->whereNumber('subRequest');
             Route::patch('{subRequest}/invitees', [SubRequestController::class, 'updateInvitees'])->name('invitees.update')->whereNumber('subRequest');
             Route::get('{subRequest}/eligible-subs', [SubRequestController::class, 'eligibleSubs'])->name('eligible-subs-for-request')->whereNumber('subRequest');
         });
 
         Route::post('schedules/{schedule}/sub-request', [SubRequestController::class, 'store'])->name('sub-requests.store-for-schedule')->whereNumber('schedule');
-
-        // Make-Up requests
-        Route::prefix('makeup-requests')->name('makeup-requests.')->group(function () {
-            Route::get('/', [MakeupRequestController::class, 'index'])->name('index');
-            Route::post('data', [MakeupRequestController::class, 'data'])->name('data');
-            Route::get('{makeupRequest}', [MakeupRequestController::class, 'show'])->name('show')->whereNumber('makeupRequest');
-            Route::post('{makeupRequest}/decline', [MakeupRequestController::class, 'decline'])->name('decline')->whereNumber('makeupRequest');
-            Route::post('{makeupRequest}/not-required', [MakeupRequestController::class, 'markNotRequired'])->name('mark-not-required')->whereNumber('makeupRequest');
-            Route::get('{makeupRequest}/book', [MakeupRequestController::class, 'book'])->name('book')->whereNumber('makeupRequest');
-
-            Route::prefix('availability')->name('availability.')->group(function () {
-                Route::get('/', [MakeupAvailabilityController::class, 'index'])->name('index');
-                Route::get('create', [MakeupAvailabilityController::class, 'create'])->name('create');
-                Route::post('/', [MakeupAvailabilityController::class, 'store'])->name('store');
-                Route::delete('{availability}', [MakeupAvailabilityController::class, 'destroy'])->name('destroy')->whereNumber('availability');
-            });
-        });
 
         // Session Log routes
         Route::prefix('session-logs')->name('session-logs.')->group(function () {
@@ -134,7 +114,6 @@ Route::middleware('role:therapist')
             Route::put('{sessionLog}', [SessionLogController::class, 'update'])->name('update');
             Route::post('{sessionLog}/submit', [SessionLogController::class, 'submit'])->name('submit');
             Route::post('{sessionLog}/cancel', [SessionLogController::class, 'cancel'])->name('cancel');
-            Route::delete('{sessionLog}', [SessionLogController::class, 'destroy'])->name('destroy');
             Route::post('{sessionLog}/comment', [SessionLogController::class, 'addComment'])->name('comment');
 
             // Session Log Documents

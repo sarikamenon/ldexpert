@@ -2,50 +2,60 @@
 
 declare(strict_types=1);
 
+namespace Tests\Feature\Therapist;
+
 use App\Enums\SessionLogStatus;
 use App\Models\SessionLog;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
 
-afterEach(function () {
-    Carbon::setTestNow();
-});
+final class SessionLogIndexTest extends TestCase
+{
+    use RefreshDatabase;
 
-it('shows the merged status columns and actions to therapists', function () {
-    Carbon::setTestNow('2025-01-15 10:00:00');
+    public function test_therapist_sees_status_columns_and_actions(): void
+    {
+        Carbon::setTestNow('2025-01-15 10:00:00');
 
-    $therapist = User::factory()->therapist()->create();
+        $therapist = User::factory()->therapist()->create();
 
-    SessionLog::factory()->draft()->create([
-        'therapist_id' => $therapist->id,
-        'status' => SessionLogStatus::DRAFT,
-        'session_date' => Carbon::now()->startOfMonth(),
-    ]);
+        SessionLog::factory()->draft()->create([
+            'therapist_id' => $therapist->id,
+            'status' => SessionLogStatus::DRAFT,
+            'session_date' => Carbon::now()->startOfMonth(),
+        ]);
 
-    $response = $this->actingAs($therapist)
-        ->get(route('therapist.session-logs.index'));
+        $response = $this->actingAs($therapist)
+            ->get(route('therapist.session-logs.index'));
 
-    $response->assertOk();
-    $response->assertViewIs('therapist.session-logs.index');
-    $response->assertSee('Amounts');
-    $response->assertSee('Notes');
-    $response->assertSee('Status');
-});
+        $response->assertOk();
+        $response->assertViewIs('therapist.session-logs.index');
+        $response->assertSee('Therapist Amount');
+        $response->assertSee('Status');
 
-it('defaults the index to the current month for therapists', function () {
-    Carbon::setTestNow('2025-01-15 10:00:00');
+        Carbon::setTestNow();
+    }
 
-    $therapist = User::factory()->therapist()->create();
+    public function test_index_defaults_to_current_month_for_therapist(): void
+    {
+        Carbon::setTestNow('2025-01-15 10:00:00');
 
-    SessionLog::factory()->create([
-        'therapist_id' => $therapist->id,
-        'session_date' => Carbon::now()->copy()->startOfMonth(),
-    ]);
+        $therapist = User::factory()->therapist()->create();
 
-    $response = $this->actingAs($therapist)
-        ->get(route('therapist.session-logs.index'));
+        SessionLog::factory()->create([
+            'therapist_id' => $therapist->id,
+            'session_date' => Carbon::now()->copy()->startOfMonth(),
+        ]);
 
-    $response->assertOk();
-    $response->assertViewIs('therapist.session-logs.index');
-    $response->assertViewHas('datatableUrl');
-});
+        $response = $this->actingAs($therapist)
+            ->get(route('therapist.session-logs.index'));
+
+        $response->assertOk();
+        $response->assertViewIs('therapist.session-logs.index');
+        $response->assertViewHas('datatableUrl');
+
+        Carbon::setTestNow();
+    }
+}

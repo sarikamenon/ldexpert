@@ -18,7 +18,7 @@
                         </svg>
                         Add Indirect Service
                     </a>
-                    <button id="addScheduleButton" type="button" data-create-base="{{ route('therapist.schedule.create') }}"
+                    <button id="addScheduleButton" type="button" dusk="create-schedule-btn" data-create-base="{{ route('therapist.schedule.create') }}"
                         class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 text-sm font-medium"
                         @if ($activeSSAs->count() === 0) disabled title="No active SSAs available" @endif>
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

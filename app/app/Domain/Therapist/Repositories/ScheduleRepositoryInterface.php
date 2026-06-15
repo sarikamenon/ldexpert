@@ -12,7 +12,6 @@ use App\Enums\BillingStatus;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
@@ -54,9 +53,6 @@ interface ScheduleRepositoryInterface
 
     public function findForTherapist(User $therapist, int $scheduleId): ?Schedule;
 
-    /** @param array<int, string> $relations */
-    public function findById(int $scheduleId, array $relations = []): ?Schedule;
-
     /** @return Collection<int, Schedule> */
     public function getRecurringOccurrences(Schedule $parentSchedule): Collection;
 
@@ -65,15 +61,6 @@ interface ScheduleRepositoryInterface
 
     /** @return Collection<int, Schedule> */
     public function getUnbilledFutureRecurringOccurrencesByBatch(string $recurringBatchNumber, string $fromDate): Collection;
-
-    /**
-     * Future, scheduled, unbilled sessions owned by the therapist (excludes sessions
-     * they merely cover as a sub). "Future" is the combined schedule_date + start_time
-     * UTC instant compared against the given moment.
-     *
-     * @return Collection<int, Schedule>
-     */
-    public function getFutureScheduledForTherapistOwned(int $therapistId, CarbonInterface $now): Collection;
 
     /** @return Collection<int, Schedule> */
     public function getGroupSchedulesByBatch(string $groupBatchNumber): Collection;

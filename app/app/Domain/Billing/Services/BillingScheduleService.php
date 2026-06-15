@@ -9,13 +9,9 @@ use App\DTOs\BillingScheduleDTO;
 use App\DTOs\BillingScheduleFilterDTO;
 use App\DTOs\DataTablesParamsDTO;
 use App\Enums\BillingFrequency;
-use App\Enums\BillingMode;
-use App\Enums\BillingScheduleType;
 use App\Enums\GenerationDayType;
 use App\Models\BillingSchedule;
 use App\Models\BillingScheduleRun;
-use App\Models\BillingSetting;
-use App\Models\School;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -33,94 +29,6 @@ final class BillingScheduleService
     public function getEntityConfig(string $schedulableType, int $schedulableId, string $scheduleType): ?BillingSchedule
     {
         return $this->repository->getForEntity($schedulableType, $schedulableId, $scheduleType);
-    }
-
-    /**
-     * Resolve a school's effective billing mode for manual invoice generation.
-     *
-     * Reads the school's school_invoice BillingSchedule (every school has one
-     * after creation, per §4). Falls back to the is_private_student flag for
-     * pre-§4 schools that were created before billing config was auto-seeded:
-     * private-student schools bill in advance, all others standard.
-     */
-    public function resolveSchoolBillingMode(School $school): BillingMode
-    {
-        $schedule = $this->getEntityConfig(
-            School::class,
-            $school->id,
-            BillingScheduleType::SCHOOL_INVOICE->value,
-        );
-
-        if ($schedule !== null) {
-            return $schedule->billing_mode;
-        }
-
-        return $school->is_private_student === true
-            ? BillingMode::ADVANCE
-            : BillingMode::STANDARD;
-    }
-
-    /**
-     * Resolve a school's effective payment-terms days for invoice due dates.
-     *
-     * Prefers the school's school_invoice BillingSchedule value; falls back to
-     * the mode-specific billing-settings default (advance vs standard) when the
-     * school has no schedule, matching resolveSchoolBillingMode()'s fallback.
-     */
-    public function resolveSchoolPaymentTermsDays(School $school): int
-    {
-        $schedule = $this->getEntityConfig(
-            School::class,
-            $school->id,
-            BillingScheduleType::SCHOOL_INVOICE->value,
-        );
-
-        if ($schedule !== null) {
-            return $schedule->payment_terms_days;
-        }
-
-        $settings = BillingSetting::getSettings();
-
-        return $this->resolveSchoolBillingMode($school) === BillingMode::ADVANCE
-            ? $settings->advance_default_payment_terms_days
-            : $settings->standard_default_payment_terms_days;
-    }
-
-    /**
-     * Batch-resolve effective payment-terms days for many schools without N+1:
-     * one schedules query plus a single settings read.
-     *
-     * @param  Collection<int, School>  $schools  Each must carry id + is_private_student.
-     * @return array<int, int> Map of school id => payment-terms days.
-     */
-    public function resolveSchoolPaymentTermsDaysMap(Collection $schools): array
-    {
-        if ($schools->isEmpty()) {
-            return [];
-        }
-
-        $schedules = BillingSchedule::query()
-            ->forSchools()
-            ->where('schedule_type', BillingScheduleType::SCHOOL_INVOICE->value)
-            ->whereIn('schedulable_id', $schools->pluck('id'))
-            ->get()
-            ->keyBy('schedulable_id');
-
-        $settings = BillingSetting::getSettings();
-
-        return $schools->mapWithKeys(function (School $school) use ($schedules, $settings): array {
-            $schedule = $schedules->get($school->id);
-
-            if ($schedule !== null) {
-                return [$school->id => $schedule->payment_terms_days];
-            }
-
-            $days = $school->is_private_student === true
-                ? $settings->advance_default_payment_terms_days
-                : $settings->standard_default_payment_terms_days;
-
-            return [$school->id => $days];
-        })->all();
     }
 
     /**
@@ -162,33 +70,19 @@ final class BillingScheduleService
     public function createSchedule(BillingScheduleDTO $dto): BillingSchedule
     {
         $data = $dto->toArray();
-        $frequency = BillingFrequency::from($dto->frequency);
 
-        // Anchor the first period on billing_start_date when set, so generation
-        // follows the intended cadence instead of always starting from "now".
-        $anchor = $dto->billingStartDate !== null
-            ? Carbon::parse($dto->billingStartDate)
-            : now();
+        $periodEnd = $this->determineCurrentPeriodEnd(
+            BillingFrequency::from($dto->frequency),
+            now(),
+        );
 
-        $periodEnd = $this->determineCurrentPeriodEnd($frequency, $anchor);
-
-        $nextRunAt = $this->calculateNextRunDate(
+        $data['next_run_at'] = $this->calculateNextRunDate(
             GenerationDayType::from($dto->generationDayType),
             $dto->generationDayOfWeek,
             $dto->generationDelayDays,
+            $dto->minGraceDays,
             $periodEnd,
-        );
-
-        // A future start date holds the schedule idle until billing has begun:
-        // never generate before billing_start_date.
-        if ($dto->billingStartDate !== null) {
-            $startDate = Carbon::parse($dto->billingStartDate);
-            if ($nextRunAt->lessThan($startDate)) {
-                $nextRunAt = $startDate;
-            }
-        }
-
-        $data['next_run_at'] = $nextRunAt->toDateString();
+        )->toDateString();
 
         return $this->repository->create($data);
     }
@@ -213,6 +107,7 @@ final class BillingScheduleService
             GenerationDayType::from($dto->generationDayType),
             $dto->generationDayOfWeek,
             $dto->generationDelayDays,
+            $dto->minGraceDays,
             $periodEnd,
         )->toDateString();
 
@@ -252,22 +147,23 @@ final class BillingScheduleService
 
     /**
      * Calculate the next run date for a billing schedule after a given period end.
-     *
-     * Fixed delay: run on `periodEnd + max(delay, 1)` — a delay of 0 means the next
-     * day, never the same day as the period end. Day of week: walk forward from the
-     * period end to the configured weekday. Neither branch applies a grace floor.
      */
     public function calculateNextRunDate(
         GenerationDayType $generationDayType,
         ?int $generationDayOfWeek,
         ?int $generationDelayDays,
+        int $minGraceDays,
         Carbon $periodEnd,
     ): Carbon {
+        $earliest = $periodEnd->copy()->addDays($minGraceDays);
+
         if ($generationDayType === GenerationDayType::FIXED_DELAY) {
-            return $periodEnd->copy()->addDays(max($generationDelayDays ?? 3, 1));
+            $delayDate = $periodEnd->copy()->addDays($generationDelayDays ?? 3);
+
+            return $delayDate->greaterThan($earliest) ? $delayDate : $earliest;
         }
 
-        $target = $periodEnd->copy();
+        $target = $earliest->copy();
         $dayOfWeek = $generationDayOfWeek ?? 2; // Default to Tuesday
 
         while ((int) $target->dayOfWeek !== $dayOfWeek) {
@@ -319,8 +215,9 @@ final class BillingScheduleService
 
         $nextRunAt = $this->calculateNextRunDate(
             $schedule->generation_day_type,
-            $schedule->generation_day_of_week !== null ? (int) $schedule->generation_day_of_week : null,
-            $schedule->generation_delay_days !== null ? (int) $schedule->generation_delay_days : null,
+            $schedule->generation_day_of_week ? (int) $schedule->generation_day_of_week : null,
+            $schedule->generation_delay_days ? (int) $schedule->generation_delay_days : null,
+            (int) $schedule->min_grace_days,
             $nextPeriodEnd,
         );
 

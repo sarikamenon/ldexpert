@@ -12,15 +12,13 @@ export function initPhoneInputs() {
     phoneInputs.forEach(input => {
         // Prevent non-digit and non-dash characters
         input.addEventListener('keydown', (e) => {
-            // Allow any shortcut with Ctrl (Windows/Linux) or Cmd (macOS) held,
-            // e.g. select-all, copy, cut, and paste (Cmd+V). The paste/input
-            // handlers below sanitize the resulting value.
-            if (e.ctrlKey || e.metaKey) {
-                return;
-            }
-
             // Allow: backspace, delete, tab, escape, enter, home, end, left, right arrows
-            if ([8, 9, 27, 13, 46, 35, 36, 37, 39].indexOf(e.keyCode) !== -1) {
+            if ([8, 9, 27, 13, 46, 35, 36, 37, 39].indexOf(e.keyCode) !== -1 ||
+                // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true)) {
                 return;
             }
             

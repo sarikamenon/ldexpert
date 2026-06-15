@@ -29,7 +29,8 @@ final class StudentImportService
         private readonly StudentService $studentService,
         private readonly SchoolRepositoryInterface $schoolRepository,
         private readonly StorageServiceInterface $storageService,
-    ) {}
+    ) {
+    }
 
     public function storeImportRequest(StoreStudentImportDTO $dto): StudentImport
     {
@@ -65,7 +66,7 @@ final class StudentImportService
 
         // Validate file structure
         $structureErrors = $this->validateFileStructure($import, $template);
-        if (! empty($structureErrors)) {
+        if (!empty($structureErrors)) {
             $import->update([
                 'status' => StudentImportStatus::FAILED,
                 'error_message' => implode(' ', $structureErrors),
@@ -100,7 +101,7 @@ final class StudentImportService
             ->where('row_number', $rowNumber)
             ->first();
 
-        if (! $importRow) {
+        if (!$importRow) {
             return;
         }
 
@@ -116,7 +117,7 @@ final class StudentImportService
 
             // Look up school by external_emr_name (exact match)
             $schoolName = $mappedData['school_name'] ?? null;
-            if (! $schoolName) {
+            if (!$schoolName) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
                     'error_message' => 'School/family name is required.',
@@ -127,7 +128,7 @@ final class StudentImportService
             }
 
             $school = $this->lookupSchoolByExternalEmrName($schoolName);
-            if (! $school) {
+            if (!$school) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
                     'error_message' => "School/family with name '{$schoolName}' not found.",
@@ -141,12 +142,8 @@ final class StudentImportService
             $mappedData = $this->applyTemplateTransformations($mappedData, $template, $school);
 
             // Normalize parent_guardian_phone (e.g. (385) 497-0814 -> 385-497-0814)
-            if (! empty($mappedData['parent_guardian_phone'])) {
+            if (!empty($mappedData['parent_guardian_phone'])) {
                 $mappedData['parent_guardian_phone'] = $this->normalizePhone($mappedData['parent_guardian_phone']);
-            }
-
-            if (! empty($mappedData['parent_guardian_2_phone'])) {
-                $mappedData['parent_guardian_2_phone'] = $this->normalizePhone($mappedData['parent_guardian_2_phone']);
             }
 
             // Resolve timezone: accept key or display label, fallback to school timezone
@@ -157,7 +154,7 @@ final class StudentImportService
             $importDTO = ImportStudentDTO::fromArray($mappedData, $rowNumber);
             $validationErrors = $this->validateRow($importDTO, $school->id);
 
-            if (! empty($validationErrors)) {
+            if (!empty($validationErrors)) {
                 $importRow->update([
                     'status' => StudentImportRowStatus::VALIDATION_ERROR,
                     'error_message' => implode('; ', $validationErrors),
@@ -198,7 +195,7 @@ final class StudentImportService
         } catch (\Exception $e) {
             $importRow->update([
                 'status' => StudentImportRowStatus::VALIDATION_ERROR,
-                'error_message' => 'Failed to process row: '.$e->getMessage(),
+                'error_message' => 'Failed to process row: ' . $e->getMessage(),
                 'processed_at' => now(),
             ]);
         }
@@ -243,20 +240,20 @@ final class StudentImportService
         }
 
         // Normalize headers
-        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
+        $headers = array_map(static fn($v): string => trim((string) $v), $headers);
 
         // Check required columns
         $requiredColumns = $template['required_columns'] ?? [];
         $missingColumns = [];
 
         foreach ($requiredColumns as $requiredColumn) {
-            if (! in_array($requiredColumn, $headers, true)) {
+            if (!in_array($requiredColumn, $headers, true)) {
                 $missingColumns[] = $requiredColumn;
             }
         }
 
-        if (! empty($missingColumns)) {
-            $errors[] = 'Missing required columns: '.implode(', ', $missingColumns);
+        if (!empty($missingColumns)) {
+            $errors[] = 'Missing required columns: ' . implode(', ', $missingColumns);
         }
 
         return $errors;
@@ -295,7 +292,7 @@ final class StudentImportService
         }
 
         // Normalize headers
-        $headers = array_map(static fn ($v): string => trim((string) $v), $headers);
+        $headers = array_map(static fn($v): string => trim((string) $v), $headers);
 
         // Parse data rows
         while (($row = fgetcsv($tempFile)) !== false) {
@@ -359,9 +356,6 @@ final class StudentImportService
             'parent_guardian_name' => ['nullable', 'string', 'max:255'],
             'parent_guardian_email' => ['nullable', 'email:rfc', 'max:255'],
             'parent_guardian_phone' => ['nullable', 'regex:/^[\d-]+$/'],
-            'parent_guardian_2_name' => ['nullable', 'string', 'max:255'],
-            'parent_guardian_2_email' => ['nullable', 'email:rfc', 'max:255'],
-            'parent_guardian_2_phone' => ['nullable', 'regex:/^[\d-]+$/'],
             'address' => ['nullable', 'string'],
             'city' => ['nullable', 'string', 'max:255'],
             'state' => ['nullable', 'string'],
@@ -396,7 +390,7 @@ final class StudentImportService
         if (isset($data['username'])) {
             $existing = User::where('username', $data['username'])->first();
             if ($existing !== null) {
-                return 'A user with username "'.$data['username'].'" already exists.';
+                return 'A user with username "' . $data['username'] . '" already exists.';
             }
         }
 
@@ -404,7 +398,7 @@ final class StudentImportService
         if (isset($data['id_number'])) {
             $existing = $this->repository->findByIdNumber($data['id_number'], $schoolId);
             if ($existing !== null) {
-                return 'Student with ID number "'.$data['id_number'].'" already exists for this school.';
+                return 'Student with ID number "' . $data['id_number'] . '" already exists for this school.';
             }
         }
 
@@ -426,9 +420,9 @@ final class StudentImportService
     {
         $year = now()->format('Y');
         $month = now()->format('m');
-        $filename = now()->format('Ymd_His').'_'.Str::random(8).'_'.$file->getClientOriginalName();
+        $filename = now()->format('Ymd_His') . '_' . Str::random(8) . '_' . $file->getClientOriginalName();
 
-        $path = config('student-import.s3.path_prefix', 'student-imports')."/{$year}/{$month}/{$filename}";
+        $path = config('student-import.s3.path_prefix', 'student-imports') . "/{$year}/{$month}/{$filename}";
 
         $this->storageService->put($path, (string) file_get_contents($file->getRealPath()));
 
@@ -449,7 +443,7 @@ final class StudentImportService
 
         // Count data rows
         while (($row = fgetcsv($handle)) !== false) {
-            if (! empty(array_filter($row))) {
+            if (!empty(array_filter($row))) {
                 $count++;
             }
         }
@@ -493,7 +487,7 @@ final class StudentImportService
                 $sources = $t['sources'] ?? [];
                 $target = $t['target'] ?? null;
                 $separator = $t['separator'] ?? ' ';
-                if ($target && ! empty($sources)) {
+                if ($target && !empty($sources)) {
                     $parts = [];
                     foreach ($sources as $src) {
                         $parts[] = trim($mappedData[$src] ?? '');
@@ -509,7 +503,7 @@ final class StudentImportService
                 $source = $t['source'] ?? null;
                 $targets = $t['targets'] ?? [];
                 $delimiter = $t['delimiter'] ?? ' ';
-                if ($source && ! empty($targets)) {
+                if ($source && !empty($targets)) {
                     $value = trim($mappedData[$source] ?? '');
                     $parts = $delimiter !== '' ? explode($delimiter, $value, count($targets)) : [$value];
                     foreach ($targets as $i => $tgt) {
@@ -562,7 +556,7 @@ final class StudentImportService
         $digits = (string) preg_replace('/\D/', '', $phone);
 
         if (strlen($digits) === 10) {
-            return substr($digits, 0, 3).'-'.substr($digits, 3, 3).'-'.substr($digits, 6, 4);
+            return substr($digits, 0, 3) . '-' . substr($digits, 3, 3) . '-' . substr($digits, 6, 4);
         }
 
         return $digits;

@@ -289,11 +289,6 @@ return [
                         'route' => 'therapist.sub-requests.index',
                         'active' => 'therapist.sub-requests.*',
                     ],
-                    [
-                        'label' => 'Make-Up Requests',
-                        'route' => 'therapist.makeup-requests.index',
-                        'active' => 'therapist.makeup-requests.*',
-                    ],
                 ],
             ],
             [

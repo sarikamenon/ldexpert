@@ -4,15 +4,6 @@
 
 You are an expert in Laravel, PHP, and related web development technologies.
 
-## Working Approach
-
-Behavioral guidelines (adapted from Andrej Karpathy's notes on LLM coding pitfalls) for *how* to approach a task. These bias toward caution over speed — use judgment on trivial tasks. They complement the convention rules below; where they conflict with a project convention, the project convention wins.
-
-- **Think before coding.** State your assumptions explicitly. If multiple interpretations exist, present them — don't pick silently. If a simpler approach exists, say so. If something is unclear, stop and ask rather than guessing.
-- **Simplicity first.** Write the minimum code that solves the problem. No features beyond what was asked, no abstractions for single-use code, no unrequested "flexibility" or "configurability." If 200 lines could be 50, rewrite it. (Note: this does **not** relax the mandatory try-catch on controller actions and side-effects — that is a required convention, not speculative error handling.)
-- **Surgical changes.** Touch only what the request requires. Don't "improve" adjacent code, comments, or formatting, and don't refactor things that aren't broken. Match existing style even if you'd do it differently. Remove imports/variables your own changes orphaned; flag unrelated dead code rather than deleting it. Every changed line should trace directly to the request.
-- **Goal-driven execution.** Turn tasks into verifiable success criteria and loop until they pass — e.g. "fix the bug" → write a failing test that reproduces it, then make it pass. For multi-step work, state a brief plan with a verification check per step. (See the Testing Standards and Quality Gates sections for what "verified" means here.)
-
 ## Core Laravel Principle
 
 **Follow Laravel conventions first.** If Laravel has a documented way to do something, use it. Only deviate when you have a clear justification.
@@ -36,32 +27,32 @@ Behavioral guidelines (adapted from Andrej Karpathy's notes on LLM coding pitfal
 > **See `app/docs/ARCHITECTURE.md`** for the full DDD layer contract, hard boundary rules with examples, and directory structure. The rules below are enforced in addition to that document.
 
 - **Monolith only**: No public API controllers. Use Blade pages with Form Requests and jQuery AJAX where asynchronous behavior is needed.
-- **Always use DTOs** for input transport between layers. New DTOs MUST live under `app/DTOs/<Domain>/<Subdomain>/` — see `app/docs/ARCHITECTURE.md` (§ DTOs → Where DTOs live).
+- **Always use DTOs** for input transport between layers.
 - **Always use Form Request classes** for validation. Controllers MUST type-hint Request objects from `app/Http/Requests/**`.
 - **Prefer Eloquent**; raw queries only with justification.
-- **Eloquent scopes are mandatory for domain concepts.** Any `where` encoding status, ownership, eligibility, date range, or role MUST be an Eloquent scope — never inline. Before writing any `where(...)`, check if a scope exists; if yes, use it; if no, add one first. Raw `where` is only acceptable for structural one-offs with no domain meaning. See `app/docs/ARCHITECTURE.md` § Scopes.
 - **Prefer `whereHas` over `whereExists` with subqueries** when filtering by related model conditions. `whereHas` uses Eloquent relationships, respects soft deletes, and reads as business logic rather than SQL. Only fall back to `whereExists`/`DB::raw` when the relationship does not exist and adding it would be disproportionate, or when performance profiling justifies it. If a `whereHas` is needed and the inverse relationship is missing from the model, add it first.
 - **Prefer collection methods** (`map`, `filter`, `reject`, `flatMap`, etc.) over `foreach` loops when transforming or filtering Eloquent results. Loops are acceptable only for side-effectful operations (e.g., creating DB records inside the loop).
 - **Always use `use` statements** for class imports. Never use fully qualified class names (e.g., `\App\Models\User`) in code; use `use App\Models\User;` at the top instead.
 - **No public registration routes**; users created via command or privileged UI.
-- **New models MUST use soft deletes**: add `use SoftDeletes;` and a `deleted_at` column. Never hard-delete domain records.
-- **Keep files under 300 lines.** Split fat controllers/services into focused classes; extract row HTML into transformers and data-shaping into services. Treat 300 lines as a refactor signal, not a hard ceiling for legacy files.
 - **Ledger writes** (`ledger_entries`): every insert MUST go through `App\Domain\Finance\Services\LedgerService` (`createEntry`, the four credit-note/refund creators, or the source-document creators). Never call `LedgerEntry::create()` directly outside the service. Every entry MUST have `recorded_at` set from a real source-document date — never let it default. Backdated, edited, or deleted entries MUST run through `LedgerService::recomputeChainFrom()` to maintain the `balance_after` invariant. Only `credit_note` and `refund` types are editable/deletable from the ledger UI; all other types must be edited via their source-document page (Invoices, Bills, Payments, Expenses). Sign convention lives in `TransactionType::balanceDelta()` — never hardcode `+/-`. Run `php artisan ledger:verify` to audit drift. See [LEDGER_SYSTEM.md](app/docs/LEDGER_SYSTEM.md) for the full reference.
 - **Audit log** (`audits`): change-tracking for opted-in models. Add `use App\Models\Concerns\HasAudits;` to a model and it produces audit rows on `updating` / `deleting`. **Pivot syncs, mass deletes, and `createMany` bypass model events** — for those, add a `*Snapshot()` method on the parent model and emit a custom event via `App\Domain\Audit\Services\AuditRecorder::record()` attached to the parent (see `EloquentSchoolContractRepository::syncServices()` for the canonical pattern). Never audit on child rows — IDs rotate and the timeline fragments. See [AUDIT_SYSTEM.md](app/docs/AUDIT_SYSTEM.md) for the full reference.
 - **Follow PSR-12**; run `make qa` before commits.
 
 ## Dates & Timezones (MANDATORY)
 
-> **See [app/docs/TIMEZONE_GUIDE.md](app/docs/TIMEZONE_GUIDE.md)** for the full reference — conversion-service API, worked examples (the NYC day-boundary case), the two date-column flavors, and edge cases. The imperatives below are enforced in addition to that document.
-
-- **Store all timestamps and date-times in UTC.** No exceptions for new code or new columns. Convert to the user-relevant timezone on read; never store user-local. All conversions go through `App\Domain\Time\UserTimezoneService` (`parseUserLocalToUtc()` write, `toUserTimezone()` read, `resolveTimezone()` lookup, `userDayUtcRange()` for date-range queries).
-- **Display in the logged-in viewer's timezone**, resolved by role: admin/school → `users.timezone`; therapist → `therapist_profiles.timezone`; student → `student_profiles.timezone`. Resolve once per request via `resolveTimezone()` and apply to every row. (`viewerTimezone()` is **planned, not yet implemented** — do not call it.) Do NOT use `Schedule::displayTimezone()` / `SessionLog::displayTimezone()` on viewer-facing surfaces; those resolve the **row owner's** TZ and are reserved for queue jobs and emails. **NOTE:** existing surfaces still resolve per-row-owner TZ — migration tracked in [`_local_docs/viewer-timezone-display-plan.md`](_local_docs/viewer-timezone-display-plan.md); expect mixed behavior until done.
-- **`users.timezone` must mirror the profile's timezone.** Therapist/student DTOs write to both the `users` row and the profile, and MUST include `timezone` in `toUserArray()`.
-- **Two date-column flavors — never confuse them:** *Event dates* (`session_logs.session_date`, `schedules.schedule_date`) are the **UTC calendar date** of a paired instant — derive display from the converted datetime, never TZ-shift the date column; use it only for UTC-level SQL filtering. *Pure calendar dates* (`recurrence_end_date`, `ssa.start_date`, contract dates) are stored as typed, never converted. When in doubt, ask before adding a new date column.
-- **Never assume DB date == user-local date.** Convert user-local ranges to UTC via `userDayUtcRange()` before any `whereBetween` on a date column.
-- **Never use MySQL `CONVERT_TZ`** (staging lacks named-zone tables) — convert in PHP/Carbon only.
-- **Display formatting** is governed by [BLADE_GUIDELINES.md](app/docs/BLADE_GUIDELINES.md) (pre-format in controllers, `config('display.time')` / `config('display.datetime')`) — applies to transformers, Resources, and mail too.
-- **Data-reinterpreting migrations** (e.g. local-as-UTC → true UTC backfill) must snapshot originals to a backup table. Pattern: `2026_04_30_000001_backfill_schedules_utc_from_therapist_timezone.php`.
+- **Store all timestamps and date-times in UTC.** No exceptions for new code or new columns. Schedules, session logs, and any future event/instant data go in as UTC.
+- **Convert to the user-relevant timezone on read**, never store user-local. The conversion service is `App\Domain\Time\UserTimezoneService` (`parseUserLocalToUtc()` for writes, `toUserTimezone()` for reads, `resolveTimezone()` to look up a user's effective TZ).
+- **Whose timezone for display:** per-viewer — display DATETIMEs in the logged-in user's own timezone. Resolved by role: **admin** → `users.timezone`; **therapist** → `therapist_profiles.timezone`; **student** → `student_profiles.timezone`; **school** → `users.timezone`. Use `App\Domain\Time\UserTimezoneService::viewerTimezone()` (to be added) — resolve once per request, then apply to every row in the response. Do NOT use `Schedule::displayTimezone()` / `SessionLog::displayTimezone()` for viewer-facing surfaces; those resolve the **row owner's** TZ and remain reserved for queue jobs and emails that must render in the recipient's TZ. Pure DATE columns (invoice_date, due_date, bill_date, expense_date, paid_at, billing_period_*, contract/SSA start/end) are never timezone-converted. **NOTE:** Existing surfaces still resolve per-row owner TZ — implementation plan is at [`_local_docs/viewer-timezone-display-plan.md`](_local_docs/viewer-timezone-display-plan.md) and must still be applied. Until then, expect mixed behavior.
+- **Date and time display formatting** is governed by [BLADE_GUIDELINES.md](app/docs/BLADE_GUIDELINES.md) (pre-format in controllers, never in Blade; use `config('display.time')` / `config('display.datetime')` for all user-visible times). Those rules apply to DataTable transformers, API Resources, and mail templates too — not just Blade.
+- **`users.timezone` must mirror the profile's timezone.** Therapist DTOs write to both `users.timezone` and `therapist_profiles.timezone`; student DTOs write to both `users.timezone` and `student_profiles.timezone`. `UserTimezoneService::resolveTimezone()` falls back to the profile if the user row is empty/UTC.
+- **Two date-column flavors — know the difference:**
+  - **Event dates** (companions to a UTC `start_time`/`recorded_at`): `session_logs.session_date`, `schedules.schedule_date`. These are the **UTC calendar date** of the underlying instant — they are written through the same UTC conversion as the time column. Do NOT treat them as "school-local" or "therapist-local" dates. **For display, always derive the date from the paired datetime (`start_time`/`recorded_at`) converted to the relevant TZ — never from `session_date`/`schedule_date` directly.** TZ-shifting a DATE-only column moves the entire day boundary (a 6 AM NYC session has session_date Apr 29 UTC; that midnight UTC shifts to Apr 28 8 PM NYC, displaying as Apr 28). Use the date column only for SQL filtering at the UTC level. Convert user-local date ranges to UTC ranges via `UserTimezoneService::userDayUtcRange()` first.
+  - **Pure calendar dates** (no time companion): `recurrence_end_date`, `ssa.start_date`, contract effective dates. Stored as the user typed them — they represent "the date in the operating timezone" and have no specific UTC moment. No conversion on read or write.
+  - When in doubt, ask before adding a new date column.
+- **DTOs must include `timezone`** in `toUserArray()` for any user create/update flow that exposes a timezone field, so `users.timezone` stays in sync with the profile.
+- **Never assume the database date matches the user's local date.** A late-evening session in PT will store as the next-day UTC date. Date-range queries (`whereBetween('schedule_date', ...)`) must convert the user's local range to a UTC range using `UserTimezoneService::userDayUtcRange()` before querying.
+- **MySQL `CONVERT_TZ` is NOT available** in all environments (staging lacks the named-zone tables). Do timezone conversions in PHP/Carbon, never in SQL.
+- **Migrations that re-interpret existing data** (e.g. backfilling from local-as-UTC to true UTC) must snapshot original values to a backup table for reversibility. See `2026_04_30_000001_backfill_schedules_utc_from_therapist_timezone.php` for the canonical pattern.
 
 ## PHP/Laravel
 
@@ -203,6 +194,58 @@ try {
 - **MANDATORY**: Run design quality checklist before marking UI complete
 - **MANDATORY**: Verify all form fields have help text and proper ARIA labels
 - **MANDATORY**: Test all interactive states (hover, focus, active, disabled)
+
+## QA Browser Testing
+
+This project has a dedicated QA browser test suite separate from regular Dusk tests.
+
+### Folder Structure
+- `app/tests/BrowserQA/` — QA-authored Dusk tests (generated from `qa/LD-Expert-QA.xlsx`)
+  - `Admin/` — Admin flow tests (TC-A001–A030)
+  - `Therapist/` — Therapist flow tests (TC-T001–T025)
+  - `Student/` — Student flow tests (TC-S001–S025)
+  - `Finance/` — Finance/billing tests (TC-F001–F010)
+  - `E2E/` — End-to-end cross-role tests (TC-E001–E015)
+- `app/tests/Browser/` — Developer Dusk tests (separate, not QA-owned)
+
+### Base Class
+All QA browser tests extend `Tests\BrowserQA\QaDuskTestCase` (at `app/tests/BrowserQA/QaDuskTestCase.php`), which:
+- Uses selective data cleanup via `cleanUpQaTestData()` method called in `tearDown()`
+- Deletes only test-created data with `qa` prefix in email or `QA ` prefix in school names
+- Preserves seed data (system admin, production records) between tests for fast, safe runs
+- Always targets `bird_test` database via `.env.testing` — **never touches the main `bird` DB**
+
+### Running QA Tests (Docker)
+```bash
+# All QA browser tests
+docker compose exec -T app bash -lc 'php artisan dusk tests/BrowserQA/ --env=testing'
+
+# By role
+docker compose exec -T app bash -lc 'php artisan dusk tests/BrowserQA/Admin/ --env=testing'
+docker compose exec -T app bash -lc 'php artisan dusk tests/BrowserQA/Therapist/ --env=testing'
+docker compose exec -T app bash -lc 'php artisan dusk tests/BrowserQA/Student/ --env=testing'
+docker compose exec -T app bash -lc 'php artisan dusk tests/BrowserQA/Finance/ --env=testing'
+docker compose exec -T app bash -lc 'php artisan dusk tests/BrowserQA/E2E/ --env=testing'
+```
+
+### Available QA Skill Commands
+| Command | What it runs |
+|---------|-------------|
+| `/qa` | Code quality pipeline (Pint + PHPStan + Pest) — NOT browser tests |
+| `/qa-smoke` | Smoke tests — fastest sanity check (login + key pages) |
+| `/qa-admin` | Admin flow browser tests |
+| `/qa-therapist` | Therapist flow browser tests |
+| `/qa-student` | Student flow browser tests |
+| `/qa-finance` | Finance/billing browser tests |
+| `/qa-e2e` | End-to-end cross-role tests |
+| `/qa-generate-tests` | Generate Dusk test files from `qa/LD-Expert-QA.xlsx` |
+
+### Database Safety
+- `.env.testing` always sets `DB_DATABASE=bird_test` and `DB_HOST=mysql` (Docker-internal)
+- After each test, `cleanUpQaTestData()` deletes only records with `qa*` email prefix or `QA *` school name prefix
+- Seed data (system admin, production data) is preserved across all test runs — safe for repeated execution and staging databases
+- The main `bird` database is **never touched** by any test run
+- **Factory helpers:** Use `$this->createQaUser()` and `$this->createQaSchool()` to ensure test data gets auto-cleaned
 
 ## Design System & UI/UX Standards (MANDATORY)
 

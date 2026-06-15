@@ -78,20 +78,6 @@ final class ScheduleSubRequestPolicy
             && (int) $subRequest->requested_by_id === (int) $user->id;
     }
 
-    public function withdraw(User $user, ScheduleSubRequest $subRequest): bool
-    {
-        if (! $subRequest->isAccepted()) {
-            return false;
-        }
-
-        if ($user->isAdmin()) {
-            return true;
-        }
-
-        return $user->isTherapist()
-            && (int) $subRequest->requested_by_id === (int) $user->id;
-    }
-
     private function hasInvitedRow(User $user, ScheduleSubRequest $subRequest): bool
     {
         return $subRequest->invitees()

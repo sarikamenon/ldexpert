@@ -8,6 +8,10 @@ RUN apt-get update \
     && docker-php-ext-install intl pdo_mysql bcmath exif pcntl zip \
     && rm -rf /var/lib/apt/lists/*
 
+# OPcache for performance (critical on Docker/Windows volumes)
+RUN docker-php-ext-enable opcache
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
 # Coverage tools: PCOV (fast) and Xdebug (off by default)
 RUN pecl install pcov xdebug \
     && docker-php-ext-enable pcov \
@@ -33,8 +37,12 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor
 WORKDIR /var/www/html
 
 # Align www-data uid/gid to host (common dev env)
-RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
+# Give www-data a writable home so Chrome (Dusk) can write its profile/crash data
+RUN usermod -u 1000 www-data && groupmod -g 1000 www-data \
+    && mkdir -p /home/www-data && chown www-data:www-data /home/www-data \
+    && usermod -d /home/www-data www-data
 USER www-data
+ENV HOME=/home/www-data
 
 CMD ["php-fpm"]
 

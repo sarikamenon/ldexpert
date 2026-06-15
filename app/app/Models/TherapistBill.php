@@ -52,6 +52,7 @@ class TherapistBill extends Model
         'sent_by_id',
         'paid_at',
         'notes',
+        'test_run_id',
     ];
 
     protected function casts(): array

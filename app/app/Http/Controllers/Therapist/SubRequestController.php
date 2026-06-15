@@ -6,9 +6,9 @@ namespace App\Http\Controllers\Therapist;
 
 use App\DataTables\Transformers\MySubRequestRowTransformer;
 use App\DataTables\Transformers\SubRequestRowTransformer;
+use App\Domain\Schedule\Sub\DTOs\EligibleSubDTO;
 use App\Domain\Schedule\Sub\Services\ScheduleSubRequestService;
 use App\Domain\Time\UserTimezoneService;
-use App\DTOs\Schedule\SubRequest\EligibleSubDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Therapist\EligibleSubsRequest;
 use App\Http\Requests\Therapist\StoreSubRequestRequest;
@@ -309,36 +309,5 @@ final class SubRequestController extends Controller
         return redirect()
             ->route('therapist.sub-requests.index')
             ->with('status', 'Sub request cancelled.');
-    }
-
-    public function withdraw(Request $request, ScheduleSubRequest $subRequest): JsonResponse|RedirectResponse
-    {
-        $this->authorize('withdraw', $subRequest);
-
-        try {
-            $this->subRequestService->withdraw($subRequest);
-        } catch (\InvalidArgumentException $e) {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => $e->getMessage()], 422);
-            }
-
-            return back()->withErrors(['sub_request' => $e->getMessage()]);
-        } catch (\Throwable $e) {
-            Log::error('SubRequestController::withdraw failed', ['exception' => $e]);
-
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'An unexpected error occurred.'], 500);
-            }
-
-            return back()->withErrors(['sub_request' => 'An unexpected error occurred.']);
-        }
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Sub request withdrawn. The covering therapist has been notified.']);
-        }
-
-        return redirect()
-            ->route('therapist.sub-requests.index')
-            ->with('status', 'Sub request withdrawn. The covering therapist has been notified.');
     }
 }

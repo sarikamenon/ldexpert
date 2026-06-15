@@ -19,7 +19,6 @@ use App\Models\School;
 use App\Models\ServiceSupportAgreement;
 use App\Models\User;
 use Carbon\Carbon;
-use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -236,15 +235,6 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->first();
     }
 
-    /** @param array<int, string> $relations */
-    public function findById(int $scheduleId, array $relations = []): ?Schedule
-    {
-        return Schedule::query()
-            ->with($relations)
-            ->whereKey($scheduleId)
-            ->first();
-    }
-
     /** @return Collection<int, Schedule> */
     public function getRecurringOccurrences(Schedule $parentSchedule): Collection
     {
@@ -272,19 +262,6 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->byRecurringBatch($recurringBatchNumber)
             ->scheduleDateFrom($fromDate)
             ->unbilled()
-            ->orderBy('schedule_date')
-            ->orderBy('start_time')
-            ->get();
-    }
-
-    /** @return Collection<int, Schedule> */
-    public function getFutureScheduledForTherapistOwned(int $therapistId, CarbonInterface $now): Collection
-    {
-        return Schedule::query()
-            ->forTherapistOwned($therapistId)
-            ->scheduled()
-            ->unbilled()
-            ->startingAfter($now)
             ->orderBy('schedule_date')
             ->orderBy('start_time')
             ->get();
@@ -504,31 +481,8 @@ final class EloquentScheduleRepository implements ScheduleRepositoryInterface
             ->forStudent($student)
             ->with(['therapist', 'service', 'ssa', 'school']);
 
-        // The user picks From/To in the logged-in viewer's timezone, so convert
-        // each bound to its UTC day boundary and filter on the paired instant
-        // TIMESTAMP(schedule_date, start_time). Comparing the raw UTC date
-        // column against local dates would drop or pull in boundary-day rows
-        // for viewers far from UTC.
-        // PERF NOTE: the TIMESTAMP() expression is not indexable, so these
-        // bounds force a filesort. Acceptable while per-student schedule lists
-        // stay small; if this grows, add a stored generated `start_at_utc`
-        // column and index it (see the therapist daily-list note above).
-        $viewerTz = $filters->viewerTimezone;
-
-        if ($filters->dateFrom) {
-            [$startUtc] = $this->timezoneService->userDayUtcRange($filters->dateFrom, null, $viewerTz);
-            $query->whereRaw(
-                'TIMESTAMP(schedule_date, start_time) >= ?',
-                [$startUtc->format('Y-m-d H:i:s')],
-            );
-        }
-
-        if ($filters->dateTo) {
-            [, $endUtc] = $this->timezoneService->userDayUtcRange($filters->dateTo, null, $viewerTz);
-            $query->whereRaw(
-                'TIMESTAMP(schedule_date, start_time) <= ?',
-                [$endUtc->format('Y-m-d H:i:s')],
-            );
+        if ($filters->date) {
+            $query->whereDate('schedule_date', $filters->date);
         }
 
         if ($filters->status) {

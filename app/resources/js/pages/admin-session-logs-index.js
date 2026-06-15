@@ -1,29 +1,26 @@
 import { initDataTable, initServerSideDataTable, loadDataTablesLibrary } from '../common/datatables';
-import { initSessionLogNotes } from '../common/session-log-notes';
 import { confirmDialog } from '../common/sweetalert';
 
 const bindConfirmations = () => {
-    document.querySelectorAll('form[data-confirm-title]').forEach((form) => {
-        if (form.dataset.confirmBound === 'true') {
+    document.querySelectorAll('button[data-confirm-title]').forEach((button) => {
+        const form = button.closest('form');
+        if (!form || button.dataset.confirmBound === 'true') {
             return;
         }
 
-        form.dataset.confirmBound = 'true';
+        button.dataset.confirmBound = 'true';
 
-        form.addEventListener('submit', async (event) => {
-            if (form.dataset.confirmed === 'true') return;
-
+        button.addEventListener('click', async (event) => {
             event.preventDefault();
 
             const result = await confirmDialog({
-                title: form.dataset.confirmTitle || 'Are you sure?',
-                text: form.dataset.confirmText || '',
-                icon: form.dataset.confirmIcon || 'warning',
+                title: button.dataset.confirmTitle || 'Are you sure?',
+                text: button.dataset.confirmText || '',
+                icon: button.dataset.confirmIcon || 'question',
                 confirmButtonText: 'Yes',
             });
 
             if (result.isConfirmed) {
-                form.dataset.confirmed = 'true';
                 form.submit();
             }
         });
@@ -45,11 +42,7 @@ async function initServerSideSessionLogsTable() {
         await initServerSideDataTable('#sessionLogsTable', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
-            // Notes column (index 4) is not orderable; mirrors session-logs/index.js
-            columnDefs: [
-                { orderable: false, targets: -1 },
-                { orderable: false, targets: 4 },
-            ],
+            columnDefs: [{ orderable: false, targets: -1 }],
             getExtraData(d) {
                 if (!form) return;
                 d.filter_date_from = form.querySelector('[name="date_from"]')?.value ?? '';
@@ -60,8 +53,6 @@ async function initServerSideSessionLogsTable() {
                 d.filter_ssa_id = form.querySelector('[name="ssa_id"]')?.value ?? '';
             },
         });
-
-        initSessionLogNotes(table);
 
         // Reload table when filters change
         if (form) {
@@ -111,32 +102,28 @@ async function initClientSideSessionLogsTable() {
     bindConfirmations();
 }
 
-// Event delegation for confirm dialogs on AJAX-loaded rows. Confirmation
-// metadata lives on the <form data-confirm-*> wrapping the submit button,
-// so we intercept the form's submit event (capture phase).
+// Event delegation for confirm dialogs on AJAX-loaded rows
 function bindDelegatedConfirmations() {
-    document.body.addEventListener(
-        'submit',
-        async (event) => {
-            const form = event.target.closest('#sessionLogsTable form[data-confirm-title]');
-            if (!form || form.dataset.confirmed === 'true') return;
+    document.body.addEventListener('click', async (event) => {
+        const button = event.target.closest('#sessionLogsTable button[data-confirm-title]');
+        if (!button) return;
 
-            event.preventDefault();
+        const form = button.closest('form');
+        if (!form) return;
 
-            const result = await confirmDialog({
-                title: form.dataset.confirmTitle || 'Are you sure?',
-                text: form.dataset.confirmText || '',
-                icon: form.dataset.confirmIcon || 'warning',
-                confirmButtonText: 'Yes',
-            });
+        event.preventDefault();
 
-            if (result.isConfirmed) {
-                form.dataset.confirmed = 'true';
-                form.submit();
-            }
-        },
-        true,
-    );
+        const result = await confirmDialog({
+            title: button.dataset.confirmTitle || 'Are you sure?',
+            text: button.dataset.confirmText || '',
+            icon: button.dataset.confirmIcon || 'question',
+            confirmButtonText: 'Yes',
+        });
+
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
