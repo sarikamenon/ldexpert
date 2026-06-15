@@ -57,6 +57,39 @@ export function buildPickerState(els) {
             els.listEl.appendChild(empty);
         }
 
+        if (filtered.length > 0) {
+            const allSelected = filtered.every((o) => selected.has(o.id));
+
+            const selectAll = document.createElement('label');
+            selectAll.className = 'flex items-center gap-2.5 px-3 py-2 rounded-md cursor-pointer text-sm font-medium border-b border-border mb-1 transition-colors hover:bg-muted/50 text-foreground';
+            selectAll.setAttribute('role', 'option');
+            selectAll.setAttribute('aria-selected', String(allSelected));
+
+            const selectAllCb = document.createElement('input');
+            selectAllCb.type = 'checkbox';
+            selectAllCb.checked = allSelected;
+            selectAllCb.className = 'h-4 w-4 rounded border-border text-primary focus:ring-primary shrink-0';
+            selectAllCb.setAttribute('aria-label', 'Select all therapists');
+
+            const selectAllSpan = document.createElement('span');
+            selectAllSpan.className = 'flex-1';
+            selectAllSpan.textContent = allSelected ? 'Deselect all' : 'Select all';
+
+            selectAllCb.addEventListener('change', () => {
+                if (selectAllCb.checked) {
+                    filtered.forEach((o) => selected.add(o.id));
+                } else {
+                    filtered.forEach((o) => selected.delete(o.id));
+                }
+                syncHiddenInputs();
+                render();
+            });
+
+            selectAll.appendChild(selectAllCb);
+            selectAll.appendChild(selectAllSpan);
+            els.listEl.appendChild(selectAll);
+        }
+
         filtered.forEach((opt) => {
             const isChecked = selected.has(opt.id);
             const isDeclined = opt.invitee_status === 'declined';
