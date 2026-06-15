@@ -6,15 +6,13 @@ namespace App\Services;
 
 use App\Domain\Dashboard\Repositories\DashboardRepositoryInterface;
 use App\Domain\Finance\Repositories\FinanceSummaryRepositoryInterface;
-use App\Domain\Time\UserTimezoneService;
+use App\Enums\SessionLogStatus;
 use App\Models\ServiceSupportAgreement;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
 
 class DashboardService
 {
     public function __construct(
-        private readonly UserTimezoneService $userTimezoneService,
         private readonly DashboardRepositoryInterface $repository,
         private readonly FinanceSummaryRepositoryInterface $financeSummaryRepository,
     ) {}
@@ -162,22 +160,22 @@ class DashboardService
     /** @return array<int, array<string, mixed>> */
     public function getExpiringSchoolContractEvents(int $limit = 4): array
     {
-        /** @var \App\Models\User $currentUser */
-        $currentUser = Auth::user();
         $events = [];
 
         $expiringContracts = $this->repository->getExpiringSchoolContracts(30, $limit);
 
         foreach ($expiringContracts as $contract) {
             $school = $contract->school;
-            $daysUntilExpiry = now()->diffInDays($contract->end_date);
+            // end_date is a pure calendar date (cast 'date') — compare day-to-day,
+            // never TZ-convert. Signed diff so already-expired contracts read negative
+            // and fall into the high-priority bucket rather than looking far off.
+            $daysUntilExpiry = now()->startOfDay()->diffInDays($contract->end_date, false);
             $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
 
             $events[] = [
                 'title' => 'Contract Expiring',
                 'entity' => $school !== null ? $school->display_name : 'School/Family',
                 'due_date' => $contract->end_date,
-                'due_date_local' => $this->userTimezoneService->toUserTimezone($contract->end_date, $currentUser),
                 'priority' => $priority,
                 'is_private_student' => (bool) ($school?->is_private_student),
                 'is_auto_extend' => (bool) ($school?->is_auto_extend),
@@ -190,14 +188,14 @@ class DashboardService
     /** @return array<int, array<string, mixed>> */
     public function getExpiringSSAEvents(int $limit = 4): array
     {
-        /** @var \App\Models\User $currentUser */
-        $currentUser = Auth::user();
         $events = [];
 
         $expiringSSAs = $this->repository->getExpiringSSAs(30, $limit);
 
         foreach ($expiringSSAs as $ssa) {
-            $daysUntilExpiry = now()->diffInDays($ssa->end_date);
+            // end_date is a pure calendar date (cast 'date') — compare day-to-day,
+            // never TZ-convert. Signed diff so already-expired SSAs read negative.
+            $daysUntilExpiry = now()->startOfDay()->diffInDays($ssa->end_date, false);
             $priority = $daysUntilExpiry <= 7 ? 'high' : ($daysUntilExpiry <= 14 ? 'medium' : 'low');
 
             $studentName = $ssa->student?->studentProfile
@@ -210,7 +208,6 @@ class DashboardService
                 'title' => 'SSA Expiring',
                 'entity' => "{$studentName} - {$serviceName}",
                 'due_date' => $ssa->end_date,
-                'due_date_local' => $ssa->end_date ? $this->userTimezoneService->toUserTimezone($ssa->end_date, $currentUser) : null,
                 'priority' => $priority,
                 'is_private_student' => (bool) ($school?->is_private_student),
                 'is_auto_extend' => (bool) ($school?->is_auto_extend),
@@ -298,45 +295,46 @@ class DashboardService
     {
         return [
             [
-                'title' => 'Create New SSA',
+                'title' => 'Schedule Calendar',
+                'description' => 'Schedule calendar',
+                'route' => 'admin.schedule-calendar.index',
+                'icon_path' => 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z',
+                'color' => 'primary',
+            ],
+            [
+                'title' => 'Submitted Sessions',
+                'description' => 'Review Submitted sessions',
+                'route' => 'admin.session-logs.index',
+                'route_params' => ['status' => SessionLogStatus::SUBMITTED->value],
+                'icon_path' => 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
+                'color' => 'primary',
+            ],
+            [
+                'title' => 'Invoice Payments',
+                'description' => 'Manage invoice payments',
+                'route' => 'admin.payments.invoices.index',
+                'icon_path' => 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+                'color' => 'primary',
+            ],
+            [
+                'title' => 'Student List',
+                'description' => 'Browse all students',
+                'route' => 'admin.students.index',
+                'icon_path' => 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+                'color' => 'primary',
+            ],
+            [
+                'title' => 'Create SSA',
                 'description' => 'Set up service agreement',
                 'route' => 'admin.ssas.create',
-                'icon' => 'document-add',
+                'icon_path' => 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
                 'color' => 'primary',
             ],
             [
-                'title' => 'Add School/Family',
-                'description' => 'Onboard new school or family',
-                'route' => 'admin.schools.create',
-                'icon' => 'school',
-                'color' => 'primary',
-            ],
-            [
-                'title' => 'Add Therapist',
-                'description' => 'Register new therapist',
-                'route' => 'admin.therapists.create',
-                'icon' => 'user-add',
-                'color' => 'primary',
-            ],
-            [
-                'title' => 'Add Student',
-                'description' => 'Enroll new student',
-                'route' => 'admin.students.create',
-                'icon' => 'user',
-                'color' => 'primary',
-            ],
-            [
-                'title' => 'Create Invoice',
-                'description' => 'Bill a school/family or client',
-                'route' => 'admin.invoices.create',
-                'icon' => 'invoice',
-                'color' => 'primary',
-            ],
-            [
-                'title' => 'Create Billing',
-                'description' => 'New therapist bill',
-                'route' => 'admin.billing.therapist-bills.create',
-                'icon' => 'billing',
+                'title' => 'Lead List',
+                'description' => 'Browse and manage leads',
+                'route' => 'admin.leads.index',
+                'icon_path' => 'M4 6h16M4 10h16M4 14h16M4 18h16',
                 'color' => 'primary',
             ],
         ];

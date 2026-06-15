@@ -10,18 +10,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const formId = table?.getAttribute('data-filter-form') || 'adminSessionLogsFiltersForm';
     const form = formId ? document.getElementById(formId) : null;
 
+    let dataTable = null;
+
     if (table && dataUrl) {
         const isTherapistForm = formId === 'sessionLogsFiltersForm';
 
-        // The Notes column (index 4) renders free text and is not orderable.
+        // The Notes column (index 4) renders free text, is not orderable, and
+        // gets a fixed width so it stays consistent regardless of note length
+        // (short notes were letting the column collapse).
         const columnDefs = [
             { orderable: false, targets: -1 },
-            { orderable: false, targets: 4 },
+            { orderable: false, width: '20rem', targets: 4 },
         ];
 
-        await initServerSideDataTable(table.id ? `#${table.id}` : '.session-log-table', dataUrl, {
+        dataTable = await initServerSideDataTable(table.id ? `#${table.id}` : '.session-log-table', dataUrl, {
             order: [[0, 'desc']],
             pageLength: 25,
+            // Fixed column widths require autoWidth off so DataTables stops
+            // re-sizing columns by content.
+            autoWidth: false,
             columnDefs,
             getExtraData(d) {
                 if (!form) return;
@@ -43,19 +50,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             },
         });
 
-        if (form && table.id) {
-            form.addEventListener('change', () => {
-                if (typeof window.jQuery !== 'undefined') {
-                    const dt = window.jQuery(`#${table.id}`).DataTable();
-                    if (dt?.ajax?.reload) dt.ajax.reload();
-                }
-            });
+        if (form) {
+            form.addEventListener('change', () => dataTable.ajax.reload());
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                if (typeof window.jQuery !== 'undefined') {
-                    const dt = window.jQuery(`#${table.id}`).DataTable();
-                    if (dt?.ajax?.reload) dt.ajax.reload();
-                }
+                dataTable.ajax.reload();
             });
         }
     } else {
@@ -69,12 +68,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initSessionLogNotes(table);
 
-    const reloadTable = () => {
-        if (table?.id && typeof window.jQuery !== 'undefined') {
-            const dt = window.jQuery(`#${table.id}`).DataTable();
-            if (dt?.ajax?.reload) dt.ajax.reload(null, false);
-        }
-    };
+    // Reload preserving the current page (second arg false), so an in-place
+    // approve/delete doesn't bounce the user back to page 1.
+    const reloadTable = () => dataTable?.ajax.reload(null, false);
 
     // Delegated handler for AJAX-rendered rows (DataTable action buttons).
     // Confirmation metadata lives on the <form data-confirm-*> wrapping the
