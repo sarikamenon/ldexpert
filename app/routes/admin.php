@@ -249,6 +249,7 @@ Route::middleware('role:admin')
         Route::post('invoices/{invoice}/resend-email', [InvoiceController::class, 'resendEmail'])->name('invoices.resend-email');
         Route::get('invoices/{invoice}/attach-sessions', [InvoiceController::class, 'attachSessions'])->name('invoices.attach-sessions');
         Route::post('invoices/{invoice}/attach-sessions', [InvoiceController::class, 'storeAttachedSessions'])->name('invoices.attach-sessions.store');
+        Route::post('invoices/{invoice}/reopen', [InvoiceController::class, 'reopen'])->name('invoices.reopen');
         Route::resource('invoices', InvoiceController::class);
 
         // Invoice Payments

@@ -39,6 +39,21 @@
                 </x-ui::button>
             @endif
 
+            @if ($invoice->canBeReopened())
+                {{-- "Edit Invoice" is the user-facing label; internally this re-opens the
+                     sent advance invoice back to draft so its schedules can be corrected
+                     (e.g. removing a cancelled session) and re-sent under the same number.
+                     A required reason is captured via SweetAlert. --}}
+                <form method="POST" action="{{ route('admin.invoices.reopen', $invoice) }}" id="reopen-invoice-form"
+                    class="inline">
+                    @csrf
+                    <input type="hidden" name="reason" id="reopen-reason-input">
+                    <x-ui::button type="button" variant="secondary" id="reopen-invoice-button">
+                        Edit Invoice
+                    </x-ui::button>
+                </form>
+            @endif
+
             <a href="{{ route('admin.invoices.download', $invoice) }}">
                 <x-ui::button>
                     Download PDF

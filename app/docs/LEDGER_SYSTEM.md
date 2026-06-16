@@ -99,7 +99,7 @@ Only `credit_note` and `refund` rows are mutable from the ledger UI. All other t
 
 | transaction_type | Edit on ledger UI | Source-document page |
 |---|---|---|
-| `invoice_generated` | ❌ | Invoices |
+| `invoice_generated` | ❌ | Invoices (reversed by **re-open**) |
 | `bill_generated` | ❌ | Therapist Bills |
 | `payment_received` | ❌ | Invoices → Payments |
 | `payment_made` | ❌ | Therapist Bills → Payments |
@@ -111,6 +111,8 @@ The guard has three layers, in order:
 1. **`role:admin` middleware** on the route group — non-admins never reach the controller.
 2. **`LedgerEntryPolicy::update` / `delete`** invoked via `$this->authorize(...)` in `LedgerAdjustmentController` — returns **403** on a non-credit-note/refund row before the action runs.
 3. **`LedgerService::editAdjustment` / `deleteAdjustment`** — throws `InvalidArgumentException` if a service caller bypasses the controller. Defence in depth.
+
+**Re-opening an invoice** is the one path that reverses an `invoice_generated` row, and it does so from the **Invoices source-document page**, never the ledger UI. When a sent advance invoice is re-opened back to draft, `LedgerService::reverseInvoiceGeneratedEntry(Invoice $invoice)` soft-deletes its `invoice_generated` entry and recomputes the chain (the standard soft-delete + recompute pattern, §8/§11). It deliberately bypasses the `editAdjustment` / `deleteAdjustment` adjustment-only guard above. Re-sending the corrected invoice mints a fresh `invoice_generated` entry that **reuses the original entry's exact `recorded_at`** — `createInvoiceGeneratedEntry` reads it back off the soft-deleted row (`withTrashed`) rather than re-deriving from `invoice_date`, so the re-issued charge keeps its original `(recorded_at, id)` chain position (time-of-day included, not just the date). A genuine first send, with no prior entry, falls back to the date-only derivation. This backdated insert is one the walker handles, so the school's statement keeps one advance charge dated the period start (corrected), not a void+recharge pair. See `_local_docs/advance-invoice-reopen-plan.md` and `docs/context/billing.md` (*Re-open*).
 
 ## 8. Soft-delete semantics
 

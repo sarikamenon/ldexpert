@@ -36,6 +36,7 @@ beforeEach(function () {
         app(\App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface::class),
         app(\App\Domain\Billing\Services\AdvanceChargeLineBuilder::class),
         app(\App\Domain\Billing\Services\BillingSettingsService::class),
+        app(\App\Domain\Audit\Services\AuditRecorder::class),
     );
 
     // Set up company settings

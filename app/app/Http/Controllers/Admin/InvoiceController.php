@@ -16,6 +16,7 @@ use App\Domain\Student\Services\StudentService;
 use App\Domain\Therapist\Services\TherapistService;
 use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
+use App\DTOs\Finance\Invoice\ReopenInvoiceDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\DTOs\ResendInvoiceEmailDTO;
 use App\DTOs\SendInvoiceDTO;
@@ -24,6 +25,7 @@ use App\Http\Requests\Admin\Invoice\AttachSessionsRequest;
 use App\Http\Requests\Admin\Invoice\CreateInvoiceRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceDataRequest;
 use App\Http\Requests\Admin\Invoice\InvoiceIndexRequest;
+use App\Http\Requests\Admin\Invoice\ReopenInvoiceRequest;
 use App\Http\Requests\Admin\Invoice\ResendInvoiceEmailRequest;
 use App\Http\Requests\Admin\Invoice\SendInvoiceRequest;
 use App\Http\Support\DataTablesRequest;
@@ -275,6 +277,38 @@ final class InvoiceController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Failed to resend invoice email. Please try again later.']);
+        }
+    }
+
+    public function reopen(ReopenInvoiceRequest $request, Invoice $invoice): RedirectResponse
+    {
+        $this->authorize('reopen', $invoice);
+
+        $dto = ReopenInvoiceDTO::fromArray($request->validated());
+
+        try {
+            /** @var \App\Models\User $user */
+            $user = $request->user();
+            $this->invoiceService->reopenInvoice($user, $invoice, $dto);
+
+            // "Re-open" is the internal verb; the user clicked "Edit Invoice", so
+            // the message speaks in edit terms (see docs/context/billing.md → Re-open).
+            return redirect()
+                ->route('admin.invoices.attach-sessions', $invoice)
+                ->with('success', 'Invoice ready to edit. Update the schedules, then re-send the corrected invoice.');
+        } catch (\InvalidArgumentException $e) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => $e->getMessage()]);
+        } catch (\Throwable $e) {
+            Log::error('InvoiceController: failed to re-open invoice', [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to edit invoice. Please try again later.']);
         }
     }
 

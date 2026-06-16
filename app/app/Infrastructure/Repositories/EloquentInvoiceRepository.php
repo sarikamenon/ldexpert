@@ -150,6 +150,18 @@ final class EloquentInvoiceRepository implements InvoiceRepositoryInterface
         return $invoice->refresh();
     }
 
+    public function reopenToDraft(Invoice $invoice): Invoice
+    {
+        $invoice->update([
+            'status' => InvoiceStatus::DRAFT->value,
+            'sent_at' => null,
+            'sent_by_id' => null,
+            'payment_token' => null,
+        ]);
+
+        return $invoice->refresh();
+    }
+
     public function generateInvoiceNumber(): string
     {
         $date = now()->format('Ymd');

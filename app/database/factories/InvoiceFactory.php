@@ -74,6 +74,16 @@ class InvoiceFactory extends Factory
     }
 
     /**
+     * Indicate that the invoice is an advance (prepaid) invoice.
+     */
+    public function advance(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'billing_mode' => \App\Enums\BillingMode::ADVANCE->value,
+        ]);
+    }
+
+    /**
      * Indicate that the invoice is paid.
      */
     public function paid(): static

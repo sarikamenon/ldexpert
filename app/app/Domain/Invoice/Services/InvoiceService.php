@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Invoice\Services;
 
+use App\Domain\Audit\Services\AuditRecorder;
 use App\Domain\Billing\Repositories\InvoiceLineItemRepositoryInterface;
 use App\Domain\Billing\Services\AdvanceChargeLineBuilder;
 use App\Domain\Billing\Services\BillingScheduleService;
@@ -14,6 +15,7 @@ use App\Domain\School\Repositories\SchoolRepositoryInterface;
 use App\DTOs\AttachSessionsDTO;
 use App\DTOs\CreateInvoiceDTO;
 use App\DTOs\DataTablesParamsDTO;
+use App\DTOs\Finance\Invoice\ReopenInvoiceDTO;
 use App\DTOs\InvoiceFilterDTO;
 use App\DTOs\InvoiceLineItemDTO;
 use App\DTOs\ResendInvoiceEmailDTO;
@@ -48,6 +50,7 @@ final class InvoiceService
         private readonly InvoiceLineItemRepositoryInterface $lineItemRepository,
         private readonly AdvanceChargeLineBuilder $chargeLineBuilder,
         private readonly BillingSettingsService $billingSettingsService,
+        private readonly AuditRecorder $auditRecorder,
     ) {}
 
     public function generateInvoice(User $user, CreateInvoiceDTO $dto): Invoice
@@ -383,6 +386,42 @@ final class InvoiceService
 
             // Create ledger entry for invoice generation
             $this->ledgerService->createInvoiceGeneratedEntry($invoice);
+
+            return $invoice;
+        });
+    }
+
+    /**
+     * Re-open a sent advance invoice back to draft so its schedule selection can
+     * be corrected (e.g. removing a cancelled session) and re-sent under the same
+     * invoice number.
+     *
+     * Reverses the invoice_generated ledger entry (soft-delete + recompute),
+     * moves the invoice SENT → DRAFT, clears sent_at, and kills the online
+     * payment token. The who/when audit trail comes from HasAudits (the
+     * status/sent_at/payment_token field diff); the *reason* is recorded as a
+     * custom `reopened` audit event. Schedules stay linked here — the existing
+     * draft re-select path (attachSchedulesToAdvanceDraft) handles the
+     * unlink/relink on the subsequent edit. Re-sending creates a fresh ledger
+     * entry at the original invoice_date via sendInvoice().
+     */
+    public function reopenInvoice(User $user, Invoice $invoice, ReopenInvoiceDTO $dto): Invoice
+    {
+        if (! $invoice->canBeReopened()) {
+            throw new \InvalidArgumentException('Only a sent advance invoice can be edited.');
+        }
+
+        return DB::transaction(function () use ($user, $invoice, $dto): Invoice {
+            $this->ledgerService->reverseInvoiceGeneratedEntry($invoice);
+
+            $invoice = $this->repository->reopenToDraft($invoice);
+
+            $this->auditRecorder->record(
+                auditable: $invoice,
+                event: 'reopened',
+                newValues: ['reason' => $dto->reason],
+                createdBy: $user->id,
+            );
 
             return $invoice;
         });

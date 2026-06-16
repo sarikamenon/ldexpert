@@ -29,6 +29,14 @@ class LedgerService
 
     /**
      * Create a ledger entry when an invoice is generated.
+     *
+     * On a *re-send* (the invoice was re-opened, corrected, and sent again) the
+     * original invoice_generated entry was soft-deleted, not destroyed. We reuse
+     * its exact recorded_at so the re-issued charge keeps its original position
+     * in the (recorded_at, id) chain — preserving the time-of-day, not just the
+     * date. A plain re-derivation from invoice_date would re-stamp the time from
+     * now() and could reorder the row against other same-day entries. First-time
+     * sends (no prior entry) fall back to the date-only derivation.
      */
     public function createInvoiceGeneratedEntry(Invoice $invoice): ?LedgerEntry
     {
@@ -41,12 +49,32 @@ class LedgerService
             ledgerableId: $invoice->school_id,
             type: TransactionType::INVOICE_GENERATED,
             amount: (float) $invoice->total,
-            recordedAt: self::resolveDateOnlyRecordedAt($invoice->invoice_date),
+            recordedAt: $this->originalInvoiceGeneratedRecordedAt($invoice)
+                ?? self::resolveDateOnlyRecordedAt($invoice->invoice_date),
             referenceType: Invoice::class,
             referenceId: $invoice->id,
             notes: 'Invoice generated: '.$invoice->invoice_number,
             recordedById: $invoice->sent_by_id,
         );
+    }
+
+    /**
+     * The recorded_at of the most recent prior invoice_generated entry for this
+     * invoice, including soft-deleted rows (a re-opened invoice's reversed entry
+     * is soft-deleted, not removed). Returns null when the invoice has never had
+     * one — i.e. a genuine first send.
+     */
+    private function originalInvoiceGeneratedRecordedAt(Invoice $invoice): ?CarbonInterface
+    {
+        $prior = LedgerEntry::withTrashed()
+            ->where('reference_type', Invoice::class)
+            ->where('reference_id', $invoice->id)
+            ->where('transaction_type', TransactionType::INVOICE_GENERATED)
+            ->orderByDesc('recorded_at')
+            ->orderByDesc('id')
+            ->first();
+
+        return $prior?->recorded_at;
     }
 
     /**
@@ -157,6 +185,37 @@ class LedgerService
             $entry->delete();
 
             $this->chain->recomputeChain($ledgerableType, $ledgerableId);
+        });
+    }
+
+    /**
+     * Reverse the invoice_generated entry for an invoice when it is re-opened
+     * back to draft. Soft-deletes the entry (so it stops contributing to the
+     * running balance) and recomputes the chain so every later row keeps a
+     * correct balance_after.
+     *
+     * This is the source-document path for reversing an invoice_generated row —
+     * it deliberately bypasses the credit_note/refund-only editAdjustment /
+     * deleteAdjustment guard (LEDGER_SYSTEM.md §7). The entry is *soft*-deleted,
+     * so its original recorded_at survives: re-sending the corrected invoice via
+     * createInvoiceGeneratedEntry() reads it back off this trashed row and
+     * reuses it, keeping the re-issued charge in its original chain position.
+     */
+    public function reverseInvoiceGeneratedEntry(Invoice $invoice): void
+    {
+        DB::transaction(function () use ($invoice): void {
+            $entries = LedgerEntry::query()
+                ->where('reference_type', Invoice::class)
+                ->where('reference_id', $invoice->id)
+                ->where('transaction_type', TransactionType::INVOICE_GENERATED)
+                ->get();
+
+            foreach ($entries as $entry) {
+                /** @var class-string $ledgerableType */
+                $ledgerableType = $entry->ledgerable_type;
+                $entry->delete();
+                $this->chain->recomputeChain($ledgerableType, (int) $entry->ledgerable_id);
+            }
         });
     }
 
