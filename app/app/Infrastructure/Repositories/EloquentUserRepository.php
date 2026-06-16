@@ -78,9 +78,14 @@ class EloquentUserRepository implements UserRepositoryInterface
     {
         $user->fill($data);
 
-        // If email changed, reset email verification
+        // If email changed, reset email verification. Therapists and admins use
+        // username for login and it must mirror their email.
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
+
+            if ($user->isTherapist() || $user->isAdmin()) {
+                $user->username = $user->email;
+            }
         }
 
         $user->save();

@@ -79,6 +79,7 @@ final class UpdateTherapistDTOTest extends TestCase
 
         $this->assertSame('Michael Brown', $array['name']);
         $this->assertSame('michael.b@example.com', $array['email']);
+        $this->assertSame('michael.b@example.com', $array['username']);
     }
 
     public function test_to_profile_array_returns_correct_format(): void
