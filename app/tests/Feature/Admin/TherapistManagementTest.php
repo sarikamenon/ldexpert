@@ -175,6 +175,13 @@ final class TherapistManagementTest extends TestCase
             'hourly_rate' => 62.50,
             'default_meeting_location' => 'https://meet.google.com/updated',
         ]);
+
+        // Username mirrors email and is used for login, so it must update too.
+        $this->assertDatabaseHas('users', [
+            'id' => $this->therapist->id,
+            'email' => 'updated@example.com',
+            'username' => 'updated@example.com',
+        ]);
     }
 
     public function test_admin_can_change_therapist_status(): void

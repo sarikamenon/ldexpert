@@ -133,6 +133,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->role === Role::THERAPIST;
     }
 
+    public function isStudent(): bool
+    {
+        return $this->role === Role::STUDENT;
+    }
+
     /**
      * Get the therapist profile for the user.
      *
