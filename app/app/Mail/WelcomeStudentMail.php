@@ -21,12 +21,10 @@ final class WelcomeStudentMail extends Mailable
 
     public function build(): self
     {
-        $brandName = (string) config('brand.name');
-
-        return $this->subject('Welcome to '.$brandName)
+        return $this->subject('Welcome to '.(string) config('brand.name'))
             ->view('emails.welcome-student')
             ->with([
-                'brandName' => $brandName,
+                'brandName' => (string) config('brand.short_name'),
                 'platformName' => (string) config('brand.platform_name'),
                 'supportEmail' => (string) config('brand.support_email'),
                 'copyrightName' => (string) config('brand.copyright_name'),
