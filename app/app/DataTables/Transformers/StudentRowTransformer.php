@@ -10,7 +10,7 @@ use App\Models\User;
 final class StudentRowTransformer
 {
     /**
-     * @return array<int, string> 9 cell HTML strings in column order
+     * @return array<int, string> 10 cell HTML strings in column order
      */
     public static function transform(User $student): array
     {
@@ -44,6 +44,7 @@ final class StudentRowTransformer
             : e($profile !== null ? ($profile->parent_guardian_name ?? '—') : '—');
 
         return [
+            '<input type="checkbox" class="student-select" value="'.(int) $student->id.'" aria-label="Select student '.e($student->name).'">',
             '<a href="'.e($showUrl).'" class="inline-flex items-center justify-center px-3 py-1.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:bg-primary/90" title="View Student" aria-label="View student '.e($student->name).'">'.(int) $student->id.'</a>',
             '<a href="'.e($showUrl).'" class="text-primary hover:underline font-medium">'.e($student->name).'</a>',
             $parentName,

@@ -22,6 +22,10 @@
             </x-ui::badge>
         </x-slot>
         <x-slot name="actions">
+            <x-ui::button type="button" variant="secondary" id="sendLoginDetailsButton"
+                data-url="{{ route('admin.students.send-welcome-email') }}" data-student-id="{{ $student->id }}">
+                Send Login Details
+            </x-ui::button>
             <x-ui::status-toggle :status="$student->status?->value" data-student-id="{{ $student->id }}" />
         </x-slot>
     </x-ui::show-header>

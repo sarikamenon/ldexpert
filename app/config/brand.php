@@ -2,6 +2,12 @@
 
 return [
 
+
+    /*
+     * Public facing platform name, used in email templates 
+     */
+    'platform_name' => 'Nova',
+
     /*
      * The public-facing brand name used in email subjects and footers.
      * Override via BRAND_NAME in .env.
@@ -18,6 +24,6 @@ return [
      * Support / contact email shown to recipients in automated emails.
      * Override via BRAND_SUPPORT_EMAIL in .env.
      */
-    'support_email' => env('BRAND_SUPPORT_EMAIL', 'info@LDexpert.org'),
+    'support_email' => env('BRAND_SUPPORT_EMAIL', 'info@ldexpert.org'),
 
 ];

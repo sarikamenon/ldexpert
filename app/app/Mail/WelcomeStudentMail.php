@@ -16,12 +16,21 @@ final class WelcomeStudentMail extends Mailable
         public readonly string $name,
         public readonly string $username,
         public readonly string $email,
-        public readonly string $plainPassword,
+        public readonly string $resetUrl,
     ) {}
 
     public function build(): self
     {
-        return $this->subject('Welcome to NOVA')
-            ->view('emails.welcome-student');
+        $brandName = (string) config('brand.name');
+
+        return $this->subject('Welcome to '.$brandName)
+            ->view('emails.welcome-student')
+            ->with([
+                'brandName' => $brandName,
+                'platformName' => (string) config('brand.platform_name'),
+                'supportEmail' => (string) config('brand.support_email'),
+                'copyrightName' => (string) config('brand.copyright_name'),
+                'currentYear' => now()->year,
+            ]);
     }
 }

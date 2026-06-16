@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
 
 final class StudentService
 {
@@ -45,27 +46,80 @@ final class StudentService
             $profileData // user_id will be set in repository
         );
 
-        // TODO: Re-enable student welcome emails in the future. Temporarily disabled
-        // for both private students and bulk imports — no email is sent on student creation.
-        // if ($school?->is_private_student) {
-        //     try {
-        //         Mail::to($dto->email)->send(
-        //             new WelcomeStudentMail(
-        //                 name: $dto->firstName.' '.$dto->lastName,
-        //                 username: $dto->username,
-        //                 email: $dto->email,
-        //                 plainPassword: $dto->password
-        //             )
-        //         );
-        //     } catch (\Throwable $e) {
-        //         Log::error('StudentService: failed to send welcome email', [
-        //             'email' => $dto->email,
-        //             'error' => $e->getMessage(),
-        //         ]);
-        //     }
-        // }
-
         return $profile;
+    }
+
+    /**
+     * Send the welcome email (username + set-password link) to a single student.
+     *
+     * Sending is the primary intent here, so failures are logged and re-thrown
+     * for the caller to surface a friendly error.
+     */
+    public function sendWelcomeEmail(User $student): void
+    {
+        if (! $student->isStudent()) {
+            throw new \InvalidArgumentException("User {$student->id} is not a student.");
+        }
+
+        $resetUrl = $this->buildPasswordResetUrl($student);
+
+        try {
+            Mail::to($student->email)->send(
+                new WelcomeStudentMail(
+                    name: $student->name,
+                    username: $student->username,
+                    email: $student->email,
+                    resetUrl: $resetUrl,
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::error('StudentService: failed to send welcome email', [
+                'user_id' => $student->id,
+                'email' => $student->email,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Send the welcome email to many students, reporting partial success.
+     *
+     * @param  array<int, int>  $studentIds
+     * @return array{sent: int, failed: int}
+     */
+    public function sendWelcomeEmails(array $studentIds): array
+    {
+        $students = User::query()->whereIn('id', $studentIds)->get();
+
+        $sent = 0;
+        $failed = 0;
+
+        foreach ($students as $student) {
+            try {
+                $this->sendWelcomeEmail($student);
+                $sent++;
+            } catch (\Throwable) {
+                $failed++;
+            }
+        }
+
+        return ['sent' => $sent, 'failed' => $failed];
+    }
+
+    /**
+     * Build a username-based password reset URL, matching the app's
+     * ResetPassword::createUrlUsing convention (see AppServiceProvider).
+     */
+    private function buildPasswordResetUrl(User $student): string
+    {
+        $token = Password::broker()->createToken($student);
+
+        return url(route('password.reset', [
+            'token' => $token,
+            'username' => $student->getEmailForPasswordReset(),
+        ], false));
     }
 
     public function update(User $user, UpdateStudentDTO $dto): StudentProfile
