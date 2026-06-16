@@ -42,6 +42,13 @@ interface InvoiceRepositoryInterface
 
     public function markAsSent(Invoice $invoice, int $sentById): Invoice;
 
+    /**
+     * Move a sent invoice back to draft: clear sent_at / sent_by_id and kill the
+     * online payment token. The who/when/why audit trail is recorded separately
+     * (HasAudits field diff + a custom `reopened` event carrying the reason).
+     */
+    public function reopenToDraft(Invoice $invoice): Invoice;
+
     public function generateInvoiceNumber(): string;
 
     /**

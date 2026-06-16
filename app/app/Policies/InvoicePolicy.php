@@ -44,4 +44,9 @@ final class InvoicePolicy
     {
         return $user->role === Role::ADMIN && $invoice->isSent() && ! $invoice->isPaid();
     }
+
+    public function reopen(User $user, Invoice $invoice): bool
+    {
+        return $user->role === Role::ADMIN && $invoice->canBeReopened();
+    }
 }

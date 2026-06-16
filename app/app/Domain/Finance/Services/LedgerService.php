@@ -161,6 +161,41 @@ class LedgerService
     }
 
     /**
+     * Reverse the invoice_generated entry for an invoice when it is re-opened
+     * back to draft. Soft-deletes the entry (so it stops contributing to the
+     * running balance) and recomputes the chain from its recorded_at so any
+     * later rows keep a correct balance_after.
+     *
+     * This is the source-document path for reversing an invoice_generated row —
+     * it deliberately bypasses the credit_note/refund-only editAdjustment /
+     * deleteAdjustment guard (LEDGER_SYSTEM.md §7). Re-sending the corrected
+     * invoice creates a fresh invoice_generated entry via
+     * createInvoiceGeneratedEntry().
+     */
+    public function reverseInvoiceGeneratedEntry(Invoice $invoice): void
+    {
+        DB::transaction(function () use ($invoice): void {
+            $entries = LedgerEntry::query()
+                ->where('reference_type', Invoice::class)
+                ->where('reference_id', $invoice->id)
+                ->where('transaction_type', TransactionType::INVOICE_GENERATED)
+                ->get();
+
+            foreach ($entries as $entry) {
+                $recordedAt = $entry->recorded_at;
+                /** @var class-string $ledgerableType */
+                $ledgerableType = $entry->ledgerable_type;
+                $entry->delete();
+                $this->chain->recomputeChainFrom(
+                    $ledgerableType,
+                    (int) $entry->ledgerable_id,
+                    $recordedAt,
+                );
+            }
+        });
+    }
+
+    /**
      * Guard: only credit_note and refund rows are mutable from the ledger UI.
      * Other types must be edited via their source-document page.
      */

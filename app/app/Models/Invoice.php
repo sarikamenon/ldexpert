@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\BillingMode;
 use App\Enums\InvoiceStatus;
+use App\Models\Concerns\HasAudits;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,7 +32,22 @@ use Illuminate\Support\Str;
 class Invoice extends Model
 {
     /** @use HasFactory<\Database\Factories\InvoiceFactory> */
-    use HasFactory, SoftDeletes;
+    use HasAudits, HasFactory, SoftDeletes;
+
+    /**
+     * Only the columns the re-open transition mutates are audited, so an
+     * ordinary invoice save (send, payment allocation, etc.) does not produce
+     * noisy audit rows. The re-open reason itself is recorded as a custom
+     * `reopened` audit event (see InvoiceService::reopenInvoice).
+     *
+     * @var array<int, string>
+     */
+    protected array $auditFields = [
+        'status',
+        'sent_at',
+        'sent_by_id',
+        'payment_token',
+    ];
 
     protected $fillable = [
         'school_id',
@@ -179,6 +195,19 @@ class Invoice extends Model
     public function isZeroAmount(): bool
     {
         return (float) $this->total <= 0.0;
+    }
+
+    /**
+     * Whether this invoice may be re-opened back to draft for correction.
+     *
+     * Only a SENT advance invoice qualifies: a draft is already editable, a
+     * standard invoice bills delivered work (nothing to correct), and a fully
+     * PAID invoice is no longer SENT. A partially-paid advance invoice is still
+     * SENT, so it qualifies — the admin reconciles any delta manually.
+     */
+    public function canBeReopened(): bool
+    {
+        return $this->isSent() && $this->isAdvanceMode();
     }
 
     public function getTotalPaidAttribute(): float
