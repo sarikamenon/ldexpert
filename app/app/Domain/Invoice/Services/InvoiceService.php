@@ -408,7 +408,7 @@ final class InvoiceService
     public function reopenInvoice(User $user, Invoice $invoice, ReopenInvoiceDTO $dto): Invoice
     {
         if (! $invoice->canBeReopened()) {
-            throw new \InvalidArgumentException('Only a sent advance invoice can be re-opened.');
+            throw new \InvalidArgumentException('Only a sent advance invoice can be edited.');
         }
 
         return DB::transaction(function () use ($user, $invoice, $dto): Invoice {

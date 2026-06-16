@@ -291,9 +291,11 @@ final class InvoiceController extends Controller
             $user = $request->user();
             $this->invoiceService->reopenInvoice($user, $invoice, $dto);
 
+            // "Re-open" is the internal verb; the user clicked "Edit Invoice", so
+            // the message speaks in edit terms (see docs/context/billing.md → Re-open).
             return redirect()
                 ->route('admin.invoices.attach-sessions', $invoice)
-                ->with('success', 'Invoice re-opened. Update the schedules, then re-send the corrected invoice.');
+                ->with('success', 'Invoice ready to edit. Update the schedules, then re-send the corrected invoice.');
         } catch (\InvalidArgumentException $e) {
             return redirect()
                 ->back()
@@ -306,7 +308,7 @@ final class InvoiceController extends Controller
 
             return redirect()
                 ->back()
-                ->withErrors(['error' => 'Failed to re-open invoice. Please try again later.']);
+                ->withErrors(['error' => 'Failed to edit invoice. Please try again later.']);
         }
     }
 
