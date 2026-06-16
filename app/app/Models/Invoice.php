@@ -40,13 +40,16 @@ class Invoice extends Model
      * noisy audit rows. The re-open reason itself is recorded as a custom
      * `reopened` audit event (see InvoiceService::reopenInvoice).
      *
+     * `payment_token` is intentionally absent: it is a bearer secret and is
+     * globally redacted from the audit trail (HasAudits::$globalAuditIgnoreFields).
+     * The status/sent_at diff already proves the invoice was re-opened.
+     *
      * @var array<int, string>
      */
     protected array $auditFields = [
         'status',
         'sent_at',
         'sent_by_id',
-        'payment_token',
     ];
 
     protected $fillable = [

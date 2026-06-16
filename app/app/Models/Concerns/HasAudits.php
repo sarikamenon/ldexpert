@@ -35,6 +35,7 @@ trait HasAudits
         'remember_token',
         'api_token',
         'two_factor_secret',
+        'payment_token',
         'two_factor_recovery_codes',
     ];
 

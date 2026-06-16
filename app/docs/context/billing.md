@@ -139,10 +139,16 @@ token is killed** (`payment_token` → null) so a stale `payment.show/{token}` l
 longer collect the *old* amount; re-send mints a fresh token via `ensurePaymentToken()`.
 
 **Ledger dating:** re-open is an *edit* of the same period's bill, so the re-issued
-`invoice_generated` entry keeps the **original `invoice_date` / `recorded_at`** (not the
-re-send date). The soft-delete-then-reinsert at the original date is a backdated insert the
-chain walker already handles (LEDGER_SYSTEM.md §11), and the school's statement keeps one
-advance charge dated the period start, corrected — not a confusing void+recharge pair.
+`invoice_generated` entry keeps the **original `recorded_at`** (not the re-send date) —
+the full timestamp, including time-of-day, not merely the date. Re-open only *soft*-deletes
+the original entry, so `createInvoiceGeneratedEntry` reads its `recorded_at` back off the
+trashed row (`withTrashed`) and reuses it; the re-issued charge therefore lands in the exact
+same `(recorded_at, id)` chain position it had before. (Re-deriving from `invoice_date`
+would re-stamp the time-of-day from `now()` and could reorder the row against other same-day
+entries — see the `recorded_at` time-of-day note in LEDGER_SYSTEM.md §4.) This backdated
+insert is one the chain walker already handles (LEDGER_SYSTEM.md §11), and the school's
+statement keeps one advance charge dated the period start, corrected — not a confusing
+void+recharge pair.
 
 ## Cancelled Schedule (on an advance invoice)
 
