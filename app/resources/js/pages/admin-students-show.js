@@ -1,5 +1,17 @@
 import { setupStatusChanges } from '../common/status-change';
 import { resolveChartColor } from '../common/chart-colors';
+import { sendLoginDetails } from '../common/welcome-email';
+
+function setupSendLoginDetails() {
+    const button = document.getElementById('sendLoginDetailsButton');
+    if (!button) {
+        return;
+    }
+
+    button.addEventListener('click', () => {
+        sendLoginDetails(button.dataset.url, [button.dataset.studentId]);
+    });
+}
 
 function initStudentProgressChart() {
     const canvas = document.getElementById('studentProgressChart');
@@ -64,5 +76,6 @@ document.addEventListener('DOMContentLoaded', () => {
     paintOutcomeSwatches();
     initStudentProgressChart();
     setupStatusChanges('student', '.change-status-btn', { idAttribute: 'student-id' });
+    setupSendLoginDetails();
 });
 

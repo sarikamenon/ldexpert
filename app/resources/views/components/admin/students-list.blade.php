@@ -87,11 +87,6 @@
 
         <x-slot:actions>
             @if ($context !== 'therapist')
-                <a href="{{ route('admin.students.export', $filters) }}" id="exportStudentsButton">
-                    <x-ui::button variant="secondary">
-                        Export
-                    </x-ui::button>
-                </a>
                 @if ($context === 'index' || $context === 'detail')
                     <a href="{{ route('admin.students.create', $schoolId ? ['school_id' => $schoolId] : []) }}">
                         <x-ui::button>
@@ -99,15 +94,61 @@
                         </x-ui::button>
                     </a>
                 @endif
+
+                <div class="relative" id="studentsMoreMenuWrapper">
+                    <button type="button" id="studentsMoreMenuButton" aria-haspopup="menu" aria-expanded="false"
+                        aria-label="More actions"
+                        class="inline-flex items-center justify-center w-10 h-10 rounded-md text-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"
+                            aria-hidden="true">
+                            <circle cx="12" cy="5" r="1.75" />
+                            <circle cx="12" cy="12" r="1.75" />
+                            <circle cx="12" cy="19" r="1.75" />
+                        </svg>
+                    </button>
+
+                    <div id="studentsMoreMenu" role="menu"
+                        class="hidden absolute right-0 z-20 mt-2 w-56 rounded-md border border-border bg-popover py-1 shadow-lg">
+                        <a href="{{ route('admin.students.export', $filters) }}" id="exportStudentsButton" role="menuitem"
+                            class="block px-4 py-2 text-sm text-foreground hover:bg-muted focus:bg-muted focus:outline-none">
+                            Export
+                        </a>
+                        <button type="button" id="welcomeEmailModeButton" role="menuitem"
+                            class="block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted focus:bg-muted focus:outline-none">
+                            Send Login Details
+                        </button>
+                    </div>
+                </div>
             @endif
         </x-slot:actions>
     </x-ui::filter-toolbar>
+
+    @if ($context !== 'therapist')
+        <div id="studentsSelectionBar"
+            class="hidden items-center justify-between gap-3 rounded-md border border-border bg-muted/50 px-4 py-3">
+            <p class="text-sm text-foreground/80"><span id="studentsSelectedCount">0</span> selected</p>
+            <div class="flex items-center gap-2">
+                <x-ui::button type="button" variant="secondary" id="cancelWelcomeEmailButton">
+                    Cancel
+                </x-ui::button>
+                <x-ui::button type="button" id="sendWelcomeEmailButton"
+                    data-url="{{ route('admin.students.send-welcome-email') }}">
+                    Send Login Details
+                </x-ui::button>
+            </div>
+        </div>
+    @endif
 
     @if (isset($datatableUrl) || $students->count() > 0)
         <div class="overflow-x-auto">
             <table id="studentsTable" class="w-full display" @if(isset($datatableUrl)) data-datatable-url="{{ $datatableUrl }}" @endif>
                 <thead>
                     <tr>
+                        @if ($context !== 'therapist')
+                            <th class="select-col hidden">
+                                <input type="checkbox" id="studentsSelectAll" aria-label="Select all students">
+                            </th>
+                        @endif
                         <th>ID</th>
                         <th>Name</th>
                         <th>Parent</th>
@@ -127,6 +168,12 @@
                             $isActive = ($student->status?->value ?? 'inactive') === 'active';
                         @endphp
                         <tr>
+                            @if ($context !== 'therapist')
+                                <td class="select-col hidden">
+                                    <input type="checkbox" class="student-select" value="{{ $student->id }}"
+                                        aria-label="Select student {{ $student->name }}">
+                                </td>
+                            @endif
                             <td>
                                 @if ($context === 'therapist')
                                     <a href="{{ route('therapist.students.show', $student) }}"

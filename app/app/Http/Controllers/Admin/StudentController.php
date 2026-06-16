@@ -43,6 +43,7 @@ use App\Http\Requests\Admin\Student\ChangeStudentStatusRequest;
 use App\Http\Requests\Admin\Student\ExportStudentsRequest;
 use App\Http\Requests\Admin\Student\ImportStudentsRequest;
 use App\Http\Requests\Admin\Student\IndexStudentRequest;
+use App\Http\Requests\Admin\Student\SendWelcomeEmailRequest;
 use App\Http\Requests\Admin\Student\StoreStudentRequest;
 use App\Http\Requests\Admin\Student\StudentDataRequest;
 use App\Http\Requests\Admin\Student\StudentImportDataRequest;
@@ -153,6 +154,33 @@ final class StudentController extends Controller
             $result['rows'],
             static fn (User $student): array => StudentRowTransformer::transform($student),
         );
+    }
+
+    public function sendWelcomeEmail(SendWelcomeEmailRequest $request): JsonResponse
+    {
+        $this->authorize('viewAny', StudentProfile::class);
+
+        try {
+            $result = $this->studentService->sendWelcomeEmails($request->studentIds());
+        } catch (\Throwable $e) {
+            Log::error('StudentController: failed to send welcome emails', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Something went wrong while sending the login details. Please try again.',
+            ], 500);
+        }
+
+        $message = $result['failed'] === 0
+            ? "Login details sent to {$result['sent']} student(s)."
+            : "Sent to {$result['sent']} student(s); {$result['failed']} failed.";
+
+        return response()->json([
+            'message' => $message,
+            'sent' => $result['sent'],
+            'failed' => $result['failed'],
+        ]);
     }
 
     public function scheduleData(StudentScheduleDataRequest $request, User $student): JsonResponse

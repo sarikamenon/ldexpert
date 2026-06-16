@@ -239,9 +239,9 @@ final class StudentManagementTest extends TestCase
             'school_id' => $this->school->id,
         ]);
 
-        // TODO: Re-enable when StudentService::create re-enables the welcome email
-        // (currently commented out there). Uncomment this assertion in tandem.
-        // Mail::assertSent(WelcomeStudentMail::class, fn (WelcomeStudentMail $mail) => $mail->hasTo('ava@example.com'));
+        // The welcome email is no longer sent on creation; it is now a manual
+        // admin action (admin.students.send-welcome-email).
+        Mail::assertNotSent(WelcomeStudentMail::class);
     }
 
     public function test_admin_can_view_edit_form(): void

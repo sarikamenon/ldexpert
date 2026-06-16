@@ -10,7 +10,6 @@ use App\DTOs\CreateStudentDTO;
 use App\DTOs\StudentFilterDTO;
 use App\DTOs\UpdateStudentDTO;
 use App\Infrastructure\Repositories\EloquentStudentRepository;
-use App\Mail\WelcomeStudentMail;
 use App\Models\School;
 use App\Models\StudentProfile;
 use App\Models\User;
@@ -31,7 +30,7 @@ final class StudentServiceTest extends TestCase
         $this->service = new StudentService(new EloquentStudentRepository);
     }
 
-    public function test_create_creates_student_and_sends_welcome_email(): void
+    public function test_create_creates_student_without_sending_email(): void
     {
         $school = School::factory()->create();
 
@@ -66,11 +65,9 @@ final class StudentServiceTest extends TestCase
         $this->assertInstanceOf(StudentProfile::class, $profile);
         $this->assertSame('Ava', $profile->first_name);
 
-        // TODO: Re-enable when StudentService::create re-enables the welcome email
-        // (currently commented out there). Uncomment this assertion in tandem.
-        // Mail::assertSent(WelcomeStudentMail::class, function (WelcomeStudentMail $mail) use ($dto) {
-        //     return $mail->hasTo($dto->email);
-        // });
+        // The welcome email is no longer sent automatically on creation;
+        // it is now a manual admin action (StudentService::sendWelcomeEmail).
+        Mail::assertNothingSent();
     }
 
     public function test_update_updates_student_profile(): void

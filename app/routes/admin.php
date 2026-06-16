@@ -78,6 +78,7 @@ Route::middleware('role:admin')
         Route::patch('students/{student}/status', [StudentController::class, 'updateStatus'])->name('students.status');
         Route::post('students/{student}/comments', [StudentCommentController::class, 'store'])->name('students.comments.store');
         Route::post('students/data', [StudentController::class, 'data'])->name('students.data');
+        Route::post('students/send-welcome-email', [StudentController::class, 'sendWelcomeEmail'])->name('students.send-welcome-email');
         Route::post('students/{student}/schedules/data', [StudentController::class, 'scheduleData'])->name('students.schedules.data');
         Route::resource('students', StudentController::class)->except(['destroy']);
 
