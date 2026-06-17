@@ -6,6 +6,7 @@ namespace Tests\BrowserQA;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
@@ -384,9 +385,12 @@ abstract class QaDuskTestCase extends DuskTestCase
                 DB::table('therapist_student')
                     ->whereIn('student_id', $qaUserIds)->delete();
 
-                // therapist_school pivot — therapist side (school side handled in step 9c)
-                DB::table('therapist_school')
-                    ->whereIn('therapist_id', $qaUserIds)->delete();
+                // therapist_school pivot — therapist side (school side handled in step 9c).
+                // Guard: some environments (e.g. techup/main) may not have this table yet.
+                if (Schema::hasTable('therapist_school')) {
+                    DB::table('therapist_school')
+                        ->whereIn('therapist_id', $qaUserIds)->delete();
+                }
 
                 // student_comments (student and author FKs)
                 DB::table('student_comments')
@@ -401,9 +405,12 @@ abstract class QaDuskTestCase extends DuskTestCase
             if ($qaSchoolIds->isNotEmpty()) {
                 DB::table('schedule_sub_ssas')
                     ->whereIn('school_id', $qaSchoolIds)->delete();
-                // therapist_school pivot — school side (therapist side cleaned in 9b)
-                DB::table('therapist_school')
-                    ->whereIn('school_id', $qaSchoolIds)->delete();
+                // therapist_school pivot — school side (therapist side cleaned in 9b).
+                // Guard: some environments (e.g. techup/main) may not have this table yet.
+                if (Schema::hasTable('therapist_school')) {
+                    DB::table('therapist_school')
+                        ->whereIn('school_id', $qaSchoolIds)->delete();
+                }
             }
 
             // ── 9d. Delete QA schools (BEFORE users) ──────────────────
