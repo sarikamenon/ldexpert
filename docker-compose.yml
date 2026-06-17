@@ -56,21 +56,6 @@ services:
     networks:
       - bird
 
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: bird-phpmyadmin
-    environment:
-      PMA_HOST: mysql
-      PMA_USER: bird
-      PMA_PASSWORD: secret
-      PMA_DB: bird_test
-    ports:
-      - "8081:80"
-    depends_on:
-      - mysql
-    networks:
-      - bird
-
 volumes:
   bird-db-data:
 
