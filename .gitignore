@@ -37,8 +37,46 @@ $RECYCLE.BIN/
 
 # Local-only docs (implementation plans, feature analysis, etc.) – do not push
 /_local_docs/
-/memory/
 app/test_output*.txt
 debug-*.php
 ignore
 ignore2
+
+# Claude Code local config – machine-specific, not for team
+.claude/launch.json
+.claude/settings.local.json
+.claude/memory/
+
+# Excel lock files (created when file is open in Excel/LibreOffice)
+~$*.xlsx
+~$*.xls
+qa/~$*.xlsx
+
+# Generated QA reports and debug artifacts – do not push
+app/storage/reports/
+app/storage/*.png
+app/storage/*.jpg
+
+# Dusk test artifacts – generated per run
+app/tests/Browser/screenshots/*.png
+app/tests/Browser/screenshots/*.jpg
+app/tests/Browser/console/*.log
+app/tests/Browser/source/*.txt
+app/tests/BrowserQA/screenshots/*.png
+app/tests/BrowserQA/screenshots/*.jpg
+app/tests/BrowserQA/console/*.log
+app/tests/BrowserQA/source/*.txt
+
+# BrowserQA CI run artifacts – JUnit XML + HTML report, generated per run
+app/tests/ci-reports/
+
+# Allure report artifacts – generated per run
+app/tests/allure-report/
+app/tests/allure-results/
+
+# QA report artifacts – generated per run, not committed
+qa/reports/
+
+# QA local documentation – session summaries and setup guides, not for team
+HOW_TO_CREATE_TESTS.md
+QA_UPDATES_SUMMARY.md

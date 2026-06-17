@@ -8,6 +8,13 @@ RUN apt-get update \
     && docker-php-ext-install intl pdo_mysql bcmath exif pcntl zip \
     && rm -rf /var/lib/apt/lists/*
 
+# OPcache for performance (critical on Docker/Windows volumes)
+RUN docker-php-ext-enable opcache
+COPY docker/php/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+
+# PHP-FPM configuration
+COPY docker/php/www.conf /usr/local/etc/php-fpm.d/www.conf
+
 # Coverage tools: PCOV (fast) and Xdebug (off by default)
 RUN pecl install pcov xdebug \
     && docker-php-ext-enable pcov \
@@ -32,9 +39,18 @@ RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor
 
 WORKDIR /var/www/html
 
+# Configure Git to trust the mounted volume (prevents "dubious ownership" errors)
+RUN git config --global --add safe.directory /var/www/html
+
 # Align www-data uid/gid to host (common dev env)
-RUN usermod -u 1000 www-data && groupmod -g 1000 www-data
-USER www-data
+# Give www-data a writable home so Chrome (Dusk) can write its profile/crash data
+RUN usermod -u 1000 www-data && groupmod -g 1000 www-data \
+    && mkdir -p /home/www-data && chown www-data:www-data /home/www-data \
+    && usermod -d /home/www-data www-data
+
+# Keep PHP-FPM running as root so it can manage user/group directives
+# PHP-FPM pool config will drop to www-data for actual request processing
+ENV HOME=/home/www-data
 
 CMD ["php-fpm"]
 

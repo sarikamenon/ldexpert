@@ -1,0 +1,77 @@
+name: Browser QA (Dusk)
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: browser-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-qa:
+    name: BrowserQA Dusk
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start application stack
+        run: docker compose up -d --build
+
+      # NOTE: We do NOT wait for the app to be "ready" here — the app cannot serve
+      # requests until run-browser-qa.sh installs Composer dependencies (vendor/).
+      # That script installs deps, restarts the app container, then waits for readiness.
+      - name: Run BrowserQA suite and build HTML report
+        run: bash scripts/ci/run-browser-qa.sh
+
+      - name: Send Email Report
+        if: always()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Daily QA Browser Test Report - Run #${{ github.run_number }}"
+          to: sarika.menon@techuplabs.com
+          from: QA Automation <develop.ldexpert@gmail.com>
+          html_body: "The daily Dusk QA Browser test suite has completed. Please find the HTML report attached."
+          attachments: app/tests/ci-reports/dusk-report.html
+
+      - name: Upload Dusk HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserqa-dusk-html-report
+          path: app/tests/ci-reports/dusk-report.html
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserqa-dusk-junit
+          path: app/tests/ci-reports/junit.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserqa-dusk-screenshots
+          path: app/tests/BrowserQA/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down -v

@@ -9,6 +9,18 @@ services:
       - ./:/var/www/html
     environment:
       - PHP_IDE_CONFIG=serverName=laravel
+      - APP_ENV=testing
+    security_opt:
+      - seccomp:unconfined
+    cap_add:
+      - SYS_ADMIN
+    shm_size: '256mb'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/login"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 15s
     depends_on:
       - mysql
     networks:
@@ -41,6 +53,21 @@ services:
       - bird-db-data:/var/lib/mysql
       - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     command: --default-authentication-plugin=mysql_native_password
+    networks:
+      - bird
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: bird-phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: bird
+      PMA_PASSWORD: secret
+      PMA_DB: bird_test
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
     networks:
       - bird
 
