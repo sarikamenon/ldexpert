@@ -14,6 +14,11 @@ jobs:
     name: BrowserQA Dusk
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    # The QA suite needs the served app (FPM) in testing mode so it uses
+    # .env.testing -> bird_test. docker-compose defaults APP_ENV to local for
+    # dev; CI opts into testing here so every docker compose command inherits it.
+    env:
+      APP_ENV: testing
 
     steps:
       - name: Checkout

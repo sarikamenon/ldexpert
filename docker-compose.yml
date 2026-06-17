@@ -9,7 +9,9 @@ services:
       - ./:/var/www/html
     environment:
       - PHP_IDE_CONFIG=serverName=laravel
-      - APP_ENV=testing
+      # Defaults to local for normal dev; the QA/CI runner exports APP_ENV=testing
+      # so the served app (FPM) uses .env.testing -> bird_test during Dusk runs.
+      - APP_ENV=${APP_ENV:-local}
     security_opt:
       - seccomp:unconfined
     cap_add:
