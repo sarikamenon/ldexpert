@@ -5,7 +5,7 @@
 # (CI container — never a shared DB), self-heals locator failures once, builds a
 # report, and opens PR #2 with the tests + report for final review.
 #
-# DORMANT until QA_AUTOMATION_ENABLED=true AND secret CLAUDE_CODE_OAUTH_TOKEN set.
+# DORMANT until QA_AUTOMATION_ENABLED=true AND secret ANTHROPIC_API_KEY set.
 # See .github/QA_AUTOMATION_SETUP.md.
 name: QA Stage 2 - Generate + Run + Report
 
@@ -41,7 +41,7 @@ jobs:
 
       - name: Generate + review tests with Claude
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
           npm install -g @anthropic-ai/claude-code
@@ -79,7 +79,7 @@ jobs:
       - name: Self-heal locator/timeout failures (one pass)
         if: steps.run1.outcome == 'failure'
         env:
-          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -euo pipefail
           claude -p "/qa-review-tests app/tests/BrowserQA/

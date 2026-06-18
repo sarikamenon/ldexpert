@@ -36,14 +36,19 @@ The human does exactly two things: **review/approve PR #1**, then **review/appro
 
 Requires **org/repo admin** on `TechUp-Labs/LD-Expert-Bird`.
 
-### 1. Add the Claude auth token (secret)
-The AI steps run Claude Code in CI. Provide a token one of two ways:
+### 1. Add the Claude auth key (secret)
+The AI steps run Claude Code in CI. The workflows read **`ANTHROPIC_API_KEY`**.
 
-- **Company Claude Max** → run `claude setup-token` locally on the plan, copy the token.
-- **Anthropic API key** → from the org's Anthropic console.
+- Get an **Anthropic API key** from the org's Anthropic console (console.anthropic.com
+  → API Keys). It starts with `sk-ant-api...`.
 
 Add it: **Settings → Secrets and variables → Actions → New repository secret**
-- Name: `CLAUDE_CODE_OAUTH_TOKEN` (for a Max token) — or change the workflows to read `ANTHROPIC_API_KEY` if using an API key.
+- Name: `ANTHROPIC_API_KEY`
+- Value: the key
+
+> Using a Claude Max subscription token instead? Generate it with `claude setup-token`
+> (starts with `sk-ant-oat...`), name the secret `CLAUDE_CODE_OAUTH_TOKEN`, and change
+> the `ANTHROPIC_API_KEY:` env lines in both workflows to `CLAUDE_CODE_OAUTH_TOKEN:`.
 
 ### 2. Add the config variables
 **Settings → Secrets and variables → Actions → Variables → New repository variable**
