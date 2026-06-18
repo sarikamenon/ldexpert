@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Models\{Service, ServiceSupportAgreement, SessionLog, TherapistProfile, User};
+use App\Models\Service;
+use App\Models\ServiceSupportAgreement;
+use App\Models\SessionLog;
+use App\Models\TherapistProfile;
+use App\Models\User;
 use Laravel\Dusk\Browser;
 use Tests\BrowserQA\QaDuskTestCase;
 
@@ -60,30 +64,30 @@ it('TC-A101 Admin can view individual session log details', function (): void {
 
     $service = Service::where('status', 'active')->first() ?? Service::factory()->create();
     $ssa = ServiceSupportAgreement::create([
-        'student_id'            => $student->id,
-        'primary_service_id'    => $service->id,
+        'student_id' => $student->id,
+        'primary_service_id' => $service->id,
         'assigned_therapist_id' => $therapist->id,
-        'start_date'            => now()->toDateString(),
-        'end_date'              => now()->addYear()->toDateString(),
-        'minutes_per_session'   => 30,
-        'frequency'             => 'weekly',
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addYear()->toDateString(),
+        'minutes_per_session' => 30,
+        'frequency' => 'weekly',
         'sessions_per_frequency' => 1,
-        'tho_minutes'           => 120,
+        'tho_minutes' => 120,
     ]);
 
     $sessionLog = SessionLog::factory()->create([
-        'student_id'  => $student->id,
+        'student_id' => $student->id,
         'therapist_id' => $therapist->id,
-        'school_id'   => $school->id,
-        'ssa_id'      => $ssa->id,
-        'service_id'  => $service->id,
+        'school_id' => $school->id,
+        'ssa_id' => $ssa->id,
+        'service_id' => $service->id,
         'session_date' => now()->toDateString(),
     ]);
 
     $this->browse(function (Browser $browser) use ($admin, $sessionLog): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/session-logs/' . $sessionLog->id)
+            ->visit('/admin/session-logs/'.$sessionLog->id)
             ->waitFor('h1, h2', 20)
             ->assertSee('Session Log');
     });
@@ -101,31 +105,31 @@ it('TC-A102 Admin can approve a submitted session log', function (): void {
 
     $service = Service::where('status', 'active')->first() ?? Service::factory()->create();
     $ssa = ServiceSupportAgreement::create([
-        'student_id'            => $student->id,
-        'primary_service_id'    => $service->id,
+        'student_id' => $student->id,
+        'primary_service_id' => $service->id,
         'assigned_therapist_id' => $therapist->id,
-        'start_date'            => now()->toDateString(),
-        'end_date'              => now()->addYear()->toDateString(),
-        'minutes_per_session'   => 30,
-        'frequency'             => 'weekly',
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addYear()->toDateString(),
+        'minutes_per_session' => 30,
+        'frequency' => 'weekly',
         'sessions_per_frequency' => 1,
-        'tho_minutes'           => 120,
+        'tho_minutes' => 120,
     ]);
 
     $sessionLog = SessionLog::factory()->create([
-        'student_id'  => $student->id,
+        'student_id' => $student->id,
         'therapist_id' => $therapist->id,
-        'school_id'   => $school->id,
-        'ssa_id'      => $ssa->id,
-        'service_id'  => $service->id,
+        'school_id' => $school->id,
+        'ssa_id' => $ssa->id,
+        'service_id' => $service->id,
         'session_date' => now()->toDateString(),
-        'status'      => 'submitted',
+        'status' => 'submitted',
     ]);
 
     $this->browse(function (Browser $browser) use ($admin, $sessionLog): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/session-logs/' . $sessionLog->id)
+            ->visit('/admin/session-logs/'.$sessionLog->id)
             ->waitFor('form[action*="approve"] button[type="submit"]', 20)
             ->waitForReload(function (Browser $b): void {
                 $b->click('form[action*="approve"] button[type="submit"]');
@@ -148,31 +152,31 @@ it('TC-A103 Admin can send back a session log for revision', function (): void {
 
     $service = Service::where('status', 'active')->first() ?? Service::factory()->create();
     $ssa = ServiceSupportAgreement::create([
-        'student_id'            => $student->id,
-        'primary_service_id'    => $service->id,
+        'student_id' => $student->id,
+        'primary_service_id' => $service->id,
         'assigned_therapist_id' => $therapist->id,
-        'start_date'            => now()->toDateString(),
-        'end_date'              => now()->addYear()->toDateString(),
-        'minutes_per_session'   => 30,
-        'frequency'             => 'weekly',
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addYear()->toDateString(),
+        'minutes_per_session' => 30,
+        'frequency' => 'weekly',
         'sessions_per_frequency' => 1,
-        'tho_minutes'           => 120,
+        'tho_minutes' => 120,
     ]);
 
     $sessionLog = SessionLog::factory()->create([
-        'student_id'  => $student->id,
+        'student_id' => $student->id,
         'therapist_id' => $therapist->id,
-        'school_id'   => $school->id,
-        'ssa_id'      => $ssa->id,
-        'service_id'  => $service->id,
+        'school_id' => $school->id,
+        'ssa_id' => $ssa->id,
+        'service_id' => $service->id,
         'session_date' => now()->toDateString(),
-        'status'      => 'submitted',
+        'status' => 'submitted',
     ]);
 
     $this->browse(function (Browser $browser) use ($admin, $sessionLog): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/session-logs/' . $sessionLog->id)
+            ->visit('/admin/session-logs/'.$sessionLog->id)
             ->waitFor('a[href="#send-back-form"]', 20)
             ->click('a[href="#send-back-form"]')
             ->pause(300)
@@ -198,31 +202,31 @@ it('TC-A104 Admin can cancel a session log', function (): void {
 
     $service = Service::where('status', 'active')->first() ?? Service::factory()->create();
     $ssa = ServiceSupportAgreement::create([
-        'student_id'            => $student->id,
-        'primary_service_id'    => $service->id,
+        'student_id' => $student->id,
+        'primary_service_id' => $service->id,
         'assigned_therapist_id' => $therapist->id,
-        'start_date'            => now()->toDateString(),
-        'end_date'              => now()->addYear()->toDateString(),
-        'minutes_per_session'   => 30,
-        'frequency'             => 'weekly',
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addYear()->toDateString(),
+        'minutes_per_session' => 30,
+        'frequency' => 'weekly',
         'sessions_per_frequency' => 1,
-        'tho_minutes'           => 120,
+        'tho_minutes' => 120,
     ]);
 
     $sessionLog = SessionLog::factory()->create([
-        'student_id'  => $student->id,
+        'student_id' => $student->id,
         'therapist_id' => $therapist->id,
-        'school_id'   => $school->id,
-        'ssa_id'      => $ssa->id,
-        'service_id'  => $service->id,
+        'school_id' => $school->id,
+        'ssa_id' => $ssa->id,
+        'service_id' => $service->id,
         'session_date' => now()->toDateString(),
-        'status'      => 'submitted',
+        'status' => 'submitted',
     ]);
 
     $this->browse(function (Browser $browser) use ($admin, $sessionLog): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/session-logs/' . $sessionLog->id)
+            ->visit('/admin/session-logs/'.$sessionLog->id)
             ->waitFor('form[action*="cancel"] button[type="submit"]', 20)
             ->waitForReload(function (Browser $b): void {
                 $b->click('form[action*="cancel"] button[type="submit"]');
@@ -269,10 +273,10 @@ it('TC-A110 Admin can create an SSA with student and therapist', function (): vo
                     var freq = document.getElementById('frequency');
                     var spf  = document.getElementById('sessions_per_frequency');
                     var tho  = document.getElementById('tho_minutes');
-                    if (sid)  sid.value  = '" . $student->id . "';
-                    if (psid) psid.value = '" . $service->id . "';
-                    if (sd)   sd.value   = '" . now()->toDateString() . "';
-                    if (ed)   ed.value   = '" . now()->addYear()->toDateString() . "';
+                    if (sid)  sid.value  = '".$student->id."';
+                    if (psid) psid.value = '".$service->id."';
+                    if (sd)   sd.value   = '".now()->toDateString()."';
+                    if (ed)   ed.value   = '".now()->addYear()->toDateString()."';
                     if (freq) freq.value = 'weekly';
                     if (mps)  mps.value  = '30';
                     if (spf)  spf.value  = '1';
@@ -328,7 +332,7 @@ it('TC-A112 Admin can edit an SSA', function (): void {
     $this->browse(function (Browser $browser) use ($admin, $ssa): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/ssas/' . $ssa->id . '/edit')
+            ->visit('/admin/ssas/'.$ssa->id.'/edit')
             ->waitFor('#start_date', 20)
             // Submit the form as-is; waitForReload handles redirect after save
             ->waitForReload(function (Browser $b): void {
@@ -365,7 +369,7 @@ it('TC-A113 Admin can deactivate an SSA', function (): void {
     $this->browse(function (Browser $browser) use ($admin, $ssa): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/ssas/' . $ssa->id)
+            ->visit('/admin/ssas/'.$ssa->id)
             ->waitFor('button.change-status-btn[data-status="deactivated"]', 20)
             ->click('button.change-status-btn[data-status="deactivated"]')
             ->waitFor('.swal2-confirm', 10)
@@ -403,20 +407,27 @@ it('TC-A120 Admin can create a school contract', function (): void {
             // Full-suite Chrome is under more memory pressure; increase timeout to 60s
             ->waitFor('input[name="start_date"]', 60)
             // Fill all fields AND submit inside waitForReload so the reload sentinel
-            // is in place before the click navigates away. Dispatching 'change'
-            // on start_date lets the form JS auto-set end_date to ${year+1}-05-31.
+            // is in place before the click navigates away. end_date is set explicitly
+            // (required|after:start_date) rather than relying on the page's auto-fill
+            // JS, which is racy under full-suite browser load and left end_date empty.
             ->waitForReload(function (Browser $b) use ($school, $service): void {
                 $b->script("(function() {
                     var school = document.querySelector('select[name=\"school_id\"]');
                     var sd = document.querySelector('input[name=\"start_date\"]');
+                    var ed = document.querySelector('input[name=\"end_date\"]');
                     var sid = document.querySelector('select[name=\"services[0][service_id]\"]');
                     var sr = document.querySelector('input[name=\"services[0][rate]\"]');
                     var srt = document.querySelector('select[name=\"services[0][rate_type]\"]');
-                    if (school) school.value = '" . $school->id . "';
-                    if (sd) { sd.value = '" . now()->subYear()->toDateString() . "'; sd.dispatchEvent(new Event('change')); }
-                    if (sid) sid.value = '" . $service->id . "';
+                    var nsr = document.querySelector('input[name=\"services[0][no_show_rate]\"]');
+                    if (school) school.value = '".$school->id."';
+                    if (sd) sd.value = '".now()->subYear()->toDateString()."';
+                    if (ed) ed.value = '".now()->addYear()->toDateString()."';
+                    if (sid) sid.value = '".$service->id."';
                     if (sr) sr.value = '50.00';
                     if (srt) srt.value = 'H';
+                    // no_show_rate_type defaults to 'H' on the form, which makes
+                    // no_show_rate required (required_with) — set it so validation passes.
+                    if (nsr) nsr.value = '0';
                 })()");
                 $b->click('button[type="submit"]');
             }, 30)
@@ -464,7 +475,7 @@ it('TC-A122 Admin can edit a school contract', function (): void {
     $this->browse(function (Browser $browser) use ($admin, $contract): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/contracts/schools/' . $contract->id . '/edit')
+            ->visit('/admin/contracts/schools/'.$contract->id.'/edit')
             ->waitFor('input[name="start_date"]', 20)
             // Set start_date AND submit inside waitForReload so the sentinel is in
             // place before form.submit() navigates. end_date is already pre-filled
@@ -472,7 +483,7 @@ it('TC-A122 Admin can edit a school contract', function (): void {
             ->waitForReload(function (Browser $b): void {
                 $b->script("(function() {
                     var sd = document.querySelector('input[name=\"start_date\"]');
-                    if (sd) sd.value = '" . now()->subYear()->toDateString() . "';
+                    if (sd) sd.value = '".now()->subYear()->toDateString()."';
                 })()");
                 $b->click('button[type="submit"]');
             }, 15)
@@ -502,20 +513,27 @@ it('TC-A130 Admin can create a therapist contract', function (): void {
             // Full-suite Chrome is under more memory pressure; increase timeout to 60s
             ->waitFor('select[name="therapist_id"]', 60)
             // Fill all fields AND submit inside waitForReload so the reload sentinel
-            // is in place before form.submit() navigates away. Dispatching 'change'
-            // on start_date lets the form JS auto-set end_date to ${year+1}-05-31.
+            // is in place before form.submit() navigates away. end_date is set explicitly
+            // (required|after:start_date) rather than relying on the page's auto-fill
+            // JS, which is racy under full-suite browser load and left end_date empty.
             ->waitForReload(function (Browser $b) use ($profile, $service): void {
                 $b->script("(function() {
                     var tid = document.querySelector('select[name=\"therapist_id\"]');
                     var sd = document.querySelector('input[name=\"start_date\"]');
+                    var ed = document.querySelector('input[name=\"end_date\"]');
                     var sid = document.querySelector('select[name=\"services[0][service_id]\"]');
                     var sr = document.querySelector('input[name=\"services[0][rate]\"]');
                     var srt = document.querySelector('select[name=\"services[0][rate_type]\"]');
-                    if (tid) tid.value = '" . $profile->id . "';
-                    if (sd) { sd.value = '" . now()->subYear()->toDateString() . "'; sd.dispatchEvent(new Event('change')); }
-                    if (sid) sid.value = '" . $service->id . "';
+                    var nsr = document.querySelector('input[name=\"services[0][no_show_rate]\"]');
+                    if (tid) tid.value = '".$profile->id."';
+                    if (sd) sd.value = '".now()->subYear()->toDateString()."';
+                    if (ed) ed.value = '".now()->addYear()->toDateString()."';
+                    if (sid) sid.value = '".$service->id."';
                     if (sr) sr.value = '50.00';
                     if (srt) srt.value = 'H';
+                    // no_show_rate_type defaults to 'H' on the form, which makes
+                    // no_show_rate required (required_with) — set it so validation passes.
+                    if (nsr) nsr.value = '0';
                 })()");
                 $b->click('button[type="submit"]');
             }, 30)
@@ -566,7 +584,7 @@ it('TC-A132 Admin can edit a therapist contract', function (): void {
     $this->browse(function (Browser $browser) use ($admin, $contract): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/contracts/therapists/' . $contract->id . '/edit')
+            ->visit('/admin/contracts/therapists/'.$contract->id.'/edit')
             ->waitFor('input[name="start_date"]', 20)
             // Set start_date AND submit inside waitForReload so the sentinel is in
             // place before form.submit() navigates. end_date is already pre-filled
@@ -574,7 +592,7 @@ it('TC-A132 Admin can edit a therapist contract', function (): void {
             ->waitForReload(function (Browser $b): void {
                 $b->script("(function() {
                     var sd = document.querySelector('input[name=\"start_date\"]');
-                    if (sd) sd.value = '" . now()->subYear()->toDateString() . "';
+                    if (sd) sd.value = '".now()->subYear()->toDateString()."';
                 })()");
                 $b->click('button[type="submit"]');
             }, 15)
@@ -640,31 +658,31 @@ it('TC-A150 Admin can override session log rates', function (): void {
 
     $service = Service::where('status', 'active')->first() ?? Service::factory()->create();
     $ssa = ServiceSupportAgreement::create([
-        'student_id'            => $student->id,
-        'primary_service_id'    => $service->id,
+        'student_id' => $student->id,
+        'primary_service_id' => $service->id,
         'assigned_therapist_id' => $therapist->id,
-        'start_date'            => now()->toDateString(),
-        'end_date'              => now()->addYear()->toDateString(),
-        'minutes_per_session'   => 30,
-        'frequency'             => 'weekly',
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addYear()->toDateString(),
+        'minutes_per_session' => 30,
+        'frequency' => 'weekly',
         'sessions_per_frequency' => 1,
-        'tho_minutes'           => 120,
+        'tho_minutes' => 120,
     ]);
 
     $sessionLog = SessionLog::factory()->create([
-        'student_id'  => $student->id,
+        'student_id' => $student->id,
         'therapist_id' => $therapist->id,
-        'school_id'   => $school->id,
-        'ssa_id'      => $ssa->id,
-        'service_id'  => $service->id,
+        'school_id' => $school->id,
+        'ssa_id' => $ssa->id,
+        'service_id' => $service->id,
         'session_date' => now()->toDateString(),
-        'status'      => 'approved',
+        'status' => 'approved',
     ]);
 
     $this->browse(function (Browser $browser) use ($admin, $sessionLog): void {
         $browser
             ->loginAs($admin)
-            ->visit('/admin/session-logs/' . $sessionLog->id . '/edit')
+            ->visit('/admin/session-logs/'.$sessionLog->id.'/edit')
             ->waitFor('#therapist_rate_type', 20)
             // Override form fields: therapist_rate_type (H/F), therapist_rate_amount
             ->select('#therapist_rate_type', 'H')

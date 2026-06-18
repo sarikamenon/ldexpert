@@ -103,4 +103,16 @@ class UserFactory extends Factory
             'role' => Role::ADMIN->value,
         ]);
     }
+
+    /**
+     * Prefix email/username with a QA marker so QaDuskTestCase cleanup can
+     * identify and delete the record (users.email LIKE 'qa.%').
+     */
+    public function qa(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email' => 'qa.'.fake()->unique()->safeEmail(),
+            'username' => 'qa_'.fake()->unique()->userName(),
+        ]);
+    }
 }

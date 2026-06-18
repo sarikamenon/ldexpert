@@ -54,4 +54,19 @@ class SchoolFactory extends Factory
     {
         return $this->state(fn (): array => ['is_private_student' => false]);
     }
+
+    /**
+     * Prefix name/emails with a QA marker so QaDuskTestCase cleanup can
+     * identify and delete the record (schools.full_name LIKE 'QA %').
+     */
+    public function qa(): static
+    {
+        return $this->state(fn (array $attributes): array => [
+            'full_name' => 'QA '.$this->faker->company().' School',
+            'display_name' => 'QA '.$this->faker->unique()->company(),
+            'contact_email' => 'qa.'.$this->faker->safeEmail(),
+            'invoice_email' => 'qa.'.$this->faker->safeEmail(),
+            'manager_id' => User::factory()->admin()->qa(),
+        ]);
+    }
 }

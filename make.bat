@@ -139,23 +139,23 @@ docker compose build
 exit /b %ERRORLEVEL%
 
 :migrate
-docker compose exec -T app php/var/www/html/app/artisan migrate
+docker compose exec -T app php /var/www/html/app/artisan migrate
 exit /b %ERRORLEVEL%
 
 :fresh
-docker compose exec -T app php/var/www/html/app/artisan migrate:fresh
+docker compose exec -T app php /var/www/html/app/artisan migrate:fresh
 exit /b %ERRORLEVEL%
 
 :seed
-docker compose exec -T app php/var/www/html/app/artisan db:seed
+docker compose exec -T app php /var/www/html/app/artisan db:seed
 exit /b %ERRORLEVEL%
 
 :test
-docker compose exec -T app php/var/www/html/app/artisan test --env=testing
+docker compose exec -T app php /var/www/html/app/artisan test --env=testing
 exit /b %ERRORLEVEL%
 
 :cache_clear
-docker compose exec -T app php/var/www/html/app/artisan optimize:clear
+docker compose exec -T app php /var/www/html/app/artisan optimize:clear
 exit /b %ERRORLEVEL%
 
 :assets_build
