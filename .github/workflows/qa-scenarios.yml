@@ -1,0 +1,139 @@
+# QA automation — Stage 1: author test scenarios from a merge.
+#
+# Fires when a feature lands on main (wiki OR code). Runs /qa-create-scenarios
+# headless to draft test cases into qa/LD-Expert-QA.xlsx + test-plan.md, then
+# opens PR #1 for a human to review/edit/approve. Merging PR #1 triggers
+# Stage 2 (qa-tests.yml).
+#
+# DORMANT until an admin sets repo variable QA_AUTOMATION_ENABLED=true AND adds
+# secret CLAUDE_CODE_OAUTH_TOKEN. See .github/QA_AUTOMATION_SETUP.md.
+name: QA Stage 1 - Author Scenarios
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/wiki/**'
+      - 'app/app/**'
+      - 'app/routes/**'
+      - 'app/resources/views/**'
+  # Manual trigger for testing — pick a role, runs without needing a real merge.
+  workflow_dispatch:
+    inputs:
+      role:
+        description: 'Role to generate scenarios for (Admin / Therapist / Student / Finance, or blank for all)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  author-scenarios:
+    if: ${{ vars.QA_AUTOMATION_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with previous commit for diff)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Determine changed area + skip guard
+        id: scope
+        run: |
+          set -euo pipefail
+
+          # Manual test run: skip the diff guard, use the chosen role input.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual dispatch — role='${{ github.event.inputs.role }}'"
+            echo "skip=false" >> "${GITHUB_OUTPUT}"
+            echo "role=${{ github.event.inputs.role }}" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          CHANGED="$(git diff --name-only HEAD~1 HEAD || true)"
+          echo "Changed files:"; echo "${CHANGED}"
+
+          # Guard: anything testable in this merge? If not, skip cleanly (green).
+          if ! echo "${CHANGED}" | grep -qE '^app/(wiki|app|routes|resources/views)/'; then
+            echo "No testable change — skipping."
+            echo "skip=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          echo "skip=false" >> "${GITHUB_OUTPUT}"
+
+          # Detect the primary role from the changed paths (empty => skill decides).
+          ROLE=""
+          if echo "${CHANGED}" | grep -qiE 'wiki/finance|/Billing|finance'; then ROLE="Finance";
+          elif echo "${CHANGED}" | grep -qiE 'wiki/admin|Controllers/Admin|views/admin'; then ROLE="Admin";
+          elif echo "${CHANGED}" | grep -qiE 'wiki/therapist|Controllers/Therapist|views/therapist'; then ROLE="Therapist";
+          elif echo "${CHANGED}" | grep -qiE 'wiki/student|Controllers/Student|views/student'; then ROLE="Student";
+          fi
+          echo "role=${ROLE}" >> "${GITHUB_OUTPUT}"
+          echo "Detected role: '${ROLE}'"
+
+      - name: Set up Node (for Claude Code CLI)
+        if: steps.scope.outputs.skip != 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create scenarios with Claude (wiki, else code + PR description)
+        if: steps.scope.outputs.skip != 'true'
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          npm install -g @anthropic-ai/claude-code
+          # The skill reads app/wiki when present; otherwise it should use the
+          # merged code diff + the merge commit message as the intent source.
+          claude -p "/qa-create-scenarios ${{ steps.scope.outputs.role }}
+          If app/wiki has no entry for this change, derive scenarios from the merged
+          code diff (git diff HEAD~1 HEAD) and the commit message as the intent.
+          Only write to qa/ and app/tests/BrowserQA/ — never touch any other files." \
+            --permission-mode acceptEdits
+
+      - name: Guard — QA files only (block if dev code touched)
+        if: steps.scope.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          OFFENDERS="$(git diff --name-only | grep -vE '^(app/tests/BrowserQA/|qa/)' || true)"
+          if [ -n "${OFFENDERS}" ]; then
+            echo "❌ BLOCKED: scenario step changed non-QA files:"; echo "${OFFENDERS}"
+            exit 1
+          fi
+          echo "✓ Only QA files changed."
+
+      - name: Open PR #1 (scenarios for review)
+        if: steps.scope.outputs.skip != 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: qa/scenarios-${{ github.run_id }}
+          base: main
+          title: "QA scenarios for ${{ github.sha }}"
+          labels: qa-scenarios
+          reviewers: ${{ vars.QA_REVIEWER }}
+          commit-message: "QA: author test scenarios for ${{ github.sha }}"
+          body: |
+            Automated **Stage 1** — generated test scenarios for the latest merge.
+
+            **Review the test cases** in `qa/LD-Expert-QA.xlsx` (and the readable
+            `test-plan.md`). Edit wrong rows, add missing cases, delete unwanted ones.
+
+            ✅ **Approve & merge this PR** to trigger Stage 2 (generate + run + report).
+
+            > Tests are written only under `app/tests/BrowserQA/`. No app code is touched.
+
+      - name: Email reviewer
+        if: steps.scope.outputs.skip != 'true' && vars.QA_NOTIFY_EMAIL != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "QA scenarios ready for review — ${{ github.sha }}"
+          to: ${{ vars.QA_NOTIFY_EMAIL }}
+          from: QA Automation <develop.ldexpert@gmail.com>
+          html_body: "Stage 1 generated test scenarios. Please review and approve the scenarios PR to start test generation."
