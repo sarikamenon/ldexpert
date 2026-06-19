@@ -36,19 +36,19 @@ jobs:
       - name: Run BrowserQA suite and build HTML report
         run: bash scripts/ci/run-browser-qa.sh
 
-      - name: Send Email Report
+      # No SMTP sender needed: the HTML report is uploaded as the artifact below,
+      # and GitHub notifies watchers / the run owner. Run summary links it here.
+      - name: Write run summary
         if: always()
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "Daily QA Browser Test Report - Run #${{ github.run_number }}"
-          to: sarika.menon@techuplabs.com
-          from: QA Automation <develop.ldexpert@gmail.com>
-          html_body: "The daily Dusk QA Browser test suite has completed. Please find the HTML report attached."
-          attachments: app/tests/ci-reports/dusk-report.html
+        run: |
+          {
+            echo "## Daily Browser QA report — Run #${{ github.run_number }}"
+            echo ""
+            echo "Status: **${{ job.status }}**"
+            echo ""
+            echo "Download the full HTML report from the **Artifacts** section of this run"
+            echo "(\`browserqa-dusk-html-report\`)."
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Upload Dusk HTML report
         if: always()
