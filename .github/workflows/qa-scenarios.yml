@@ -6,7 +6,7 @@
 # Stage 2 (qa-tests.yml).
 #
 # DORMANT until an admin sets repo variable QA_AUTOMATION_ENABLED=true AND adds
-# secret ANTHROPIC_API_KEY. See .github/QA_AUTOMATION_SETUP.md.
+# secret CLAUDE_CODE_OAUTH_TOKEN. See .github/QA_AUTOMATION_SETUP.md.
 name: QA Stage 1 - Author Scenarios
 
 on:
@@ -82,7 +82,7 @@ jobs:
       - name: Create scenarios with Claude (wiki, else code + PR description)
         if: steps.scope.outputs.skip != 'true'
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           set -euo pipefail
           npm install -g @anthropic-ai/claude-code
