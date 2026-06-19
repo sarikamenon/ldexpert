@@ -18,7 +18,7 @@ description: Generate complete, enumerated QA test cases for LD Expert Bird with
 This skill generates three outputs **per role**:
 1. **test-plan.md** — Human-readable feature reference with menu structure and scenarios
 2. **test-data.md** — PHP factory setup for all test preconditions
-3. **Excel rows in qa/LD-Expert-QA.xlsx** — Enumerated test cases by role (TC-A001+, TC-T001+, TC-S001+, TC-F001+)
+3. **Excel rows in app/qa/LD-Expert-QA.xlsx** — Enumerated test cases by role (TC-A001+, TC-T001+, TC-S001+, TC-F001+)
 
 ### Key Features
 - **Systematic menu-based discovery** ensures 100% coverage of every feature  
@@ -30,13 +30,13 @@ This skill generates three outputs **per role**:
 
 ## How to Use This Skill
 
-See **`qa/QUICK-START.md`** for exact commands, workflow steps, and examples.
+See **`app/qa/QUICK-START.md`** for exact commands, workflow steps, and examples.
 
 ---
 
 ## Generation Modes — Incremental by Default (NEVER Re-emit Existing Features)
 
-**CRITICAL:** This skill must NOT regenerate test cases for features that are already in `qa/LD-Expert-QA.xlsx`. Re-running a role must only add cases for features that are new since the last run. Three modes:
+**CRITICAL:** This skill must NOT regenerate test cases for features that are already in `app/qa/LD-Expert-QA.xlsx`. Re-running a role must only add cases for features that are new since the last run. Three modes:
 
 | Mode | When it applies | What it generates |
 |---|---|---|
@@ -187,7 +187,7 @@ E2E      → Generate test cases for cross-role workflows
 
 ## Excel Organization — Test Cases By Role
 
-**Master file: `qa/LD-Expert-QA.xlsx`** — Contains separate sheets for each role with complete test case enumeration (discovered via Pass 1).
+**Master file: `app/qa/LD-Expert-QA.xlsx`** — Contains separate sheets for each role with complete test case enumeration (discovered via Pass 1).
 
 | Sheet | TC ID Prefix | Distribution | Row Format |
 |-------|--------------|--------------|-----------|
@@ -204,16 +204,16 @@ E2E      → Generate test cases for cross-role workflows
 ### E2E Exception
 
 **For the `e2e` role ONLY:**
-- **DO NOT** write `qa/e2e/test-plan.md`
-- **DO** write workflow spec files: `qa/e2e/{workflow-name}.md` (e.g., `student-journey.md`, `therapist-session-to-billing.md`)
+- **DO NOT** write `app/qa/e2e/test-plan.md`
+- **DO** write workflow spec files: `app/qa/e2e/{workflow-name}.md` (e.g., `student-journey.md`, `therapist-session-to-billing.md`)
   - Each file covers one end-to-end user journey with a step table, pass criteria, and factory setup comment
-- **DO** write `qa/e2e/test-data.md` (factories for all workflows)
+- **DO** write `app/qa/e2e/test-data.md` (factories for all workflows)
 - **DO** append Excel rows to E2E sheet (TC-E001, TC-E002, etc.)
-- See existing files in `qa/e2e/` for format reference
+- See existing files in `app/qa/e2e/` for format reference
 
 ---
 
-### File 1: qa/{role}/test-plan.md — Feature Reference
+### File 1: app/qa/{role}/test-plan.md — Feature Reference
 
 **Purpose:** Human-readable feature inventory by menu item with scenarios
 
@@ -254,7 +254,7 @@ Brief description of role capabilities and testing scope.
 
 ---
 
-### File 2: qa/{role}/test-data.md — Factory Setup Reference
+### File 2: app/qa/{role}/test-data.md — Factory Setup Reference
 
 **Purpose:** PHP factory code for preconditions (run in Laravel Tinker)
 
@@ -302,7 +302,7 @@ SessionLog::factory(3)
 
 ---
 
-### File 3: qa/LD-Expert-QA.xlsx — Master Test Case Spreadsheet
+### File 3: app/qa/LD-Expert-QA.xlsx — Master Test Case Spreadsheet
 
 **Append rows to the correct role sheet (Admin, Therapist, Student, Finance, or E2E) with ALL columns:**
 
@@ -428,11 +428,11 @@ BAD:  "Currency handling"
 
 ---
 
-## Output Format: Excel Rows (qa/LD-Expert-QA.xlsx)
+## Output Format: Excel Rows (app/qa/LD-Expert-QA.xlsx)
 
-**Use the Excel MCP to write directly.** Open `qa/LD-Expert-QA.xlsx`, go to the correct role sheet, read the last existing TC ID to avoid duplicates, then append one row per test case.
+**Use the Excel MCP to write directly.** Open `app/qa/LD-Expert-QA.xlsx`, go to the correct role sheet, read the last existing TC ID to avoid duplicates, then append one row per test case.
 
-Note: First time running this skill? See `qa/SETUP.md` for Excel MCP installation and configuration.
+Note: First time running this skill? See `app/qa/SETUP.md` for Excel MCP installation and configuration.
 
 ### TC ID Prefixes By Sheet
 
@@ -480,7 +480,7 @@ Note: First time running this skill? See `qa/SETUP.md` for Excel MCP installatio
 **Goal:** Determine which features are NEW so the skill only generates those. Run this FIRST, before discovery output is finalized.
 
 ```
-Step 1: Open qa/LD-Expert-QA.xlsx → go to the role's sheet (Admin/Therapist/Student/Finance/E2E)
+Step 1: Open app/qa/LD-Expert-QA.xlsx → go to the role's sheet (Admin/Therapist/Student/Finance/E2E)
 
 Step 2: If the sheet is empty (header row only):
   → MODE = Full. Skip to Pass 1, generate everything. Note: "First run — full generation."
@@ -579,10 +579,10 @@ Precondition: "School (ACTIVE), 3 approved SessionLogs (Aug 2026)"
 
 ### Pass 4: Excel Row Generation
 
-**Goal:** Append test case rows to qa/LD-Expert-QA.xlsx — **only for `newFeatures` from Pass 0.**
+**Goal:** Append test case rows to app/qa/LD-Expert-QA.xlsx — **only for `newFeatures` from Pass 0.**
 
 Using Excel MCP:
-1. Open qa/LD-Expert-QA.xlsx
+1. Open app/qa/LD-Expert-QA.xlsx
 2. Navigate to sheet: {role}
 3. Find last row with data; start appending at `nextId` from Pass 0 (continue the sequence — never restart at 001)
 4. Append rows ONLY for features in the `newFeatures` work list. Never write a row whose `Feature` already exists in `coveredFeatures`.

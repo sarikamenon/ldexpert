@@ -1,11 +1,11 @@
 ---
 name: qa-add-test-cases
-description: Add test cases directly to qa/LD-Expert-QA.xlsx in the correct format without requiring wiki PRDs. Use when test case specifications are provided and you need to populate Excel before running qa-generate-tests. Triggers on "add test cases to excel", "write test cases to sheet", "populate excel with tests".
+description: Add test cases directly to app/qa/LD-Expert-QA.xlsx in the correct format without requiring wiki PRDs. Use when test case specifications are provided and you need to populate Excel before running qa-generate-tests. Triggers on "add test cases to excel", "write test cases to sheet", "populate excel with tests".
 ---
 
 # QA Test Case Writer — Direct to Excel
 
-Add test cases to `qa/LD-Expert-QA.xlsx` in the official format when wiki PRDs are not available. This enables the **Option B workflow** (direct Excel without wiki).
+Add test cases to `app/qa/LD-Expert-QA.xlsx` in the official format when wiki PRDs are not available. This enables the **Option B workflow** (direct Excel without wiki).
 
 ---
 
@@ -279,7 +279,7 @@ Expected Result: All breakdowns accurate
 
 ### Output
 
-✅ **Added 2 test cases to qa/LD-Expert-QA.xlsx (Admin sheet)**
+✅ **Added 2 test cases to app/qa/LD-Expert-QA.xlsx (Admin sheet)**
 - TC-Dashboard-001: Admin can view all overview cards on page load
 - TC-Dashboard-002: Overview cards display accurate breakdown
 
@@ -316,7 +316,7 @@ After using this skill:
 
 # 2. Generate PHP Dusk test files (next step)
 /qa-generate-tests
-# Reads: qa/LD-Expert-QA.xlsx
+# Reads: app/qa/LD-Expert-QA.xlsx
 # Outputs: app/tests/BrowserQA/Admin/QaAdminDashboardBrowserTest.php
 
 # 3. Run tests (final step)
@@ -341,5 +341,5 @@ After using this skill:
 
 - [`qa-generate-tests`](../qa-generate-tests/SKILL.md) — Generate PHP Dusk test files from Excel
 - [`qa-create-scenarios`](../qa-create-scenarios/SKILL.md) — Generate test cases from wiki PRDs
-- [`qa/SETUP.md`](../../../../qa/SETUP.md) — Excel access setup
-- [`qa/BROWSER_QA_FLOW.md`](../../../../qa/BROWSER_QA_FLOW.md) — Complete QA workflow
+- [`app/qa/SETUP.md`](../../../app/qa/SETUP.md) — Excel access setup
+- [`app/qa/BROWSER_QA_FLOW.md`](../../../app/qa/BROWSER_QA_FLOW.md) — Complete QA workflow

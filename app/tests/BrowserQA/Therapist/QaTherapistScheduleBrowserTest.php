@@ -39,8 +39,8 @@ it('TC-T006 therapist can create a single session schedule', function (): void {
         // Step 1 — Calendar: click "Add New Schedule" → SSA selection modal opens
         $browser->loginAs($therapist)
             ->visit('/therapist/schedule/calendar')
-            ->waitFor('@create-schedule-btn')
-            ->click('@create-schedule-btn')
+            ->waitFor('#addScheduleButton')
+            ->click('#addScheduleButton')
             ->pause(800);
 
         // Select SSA in modal (Select2 — must use script(), which returns array not $browser)
@@ -98,8 +98,8 @@ it('TC-T007 therapist can create a recurring weekly schedule', function (): void
         // Step 1 — Calendar: open SSA modal and select SSA
         $browser->loginAs($therapist)
             ->visit('/therapist/schedule/calendar')
-            ->waitFor('@create-schedule-btn')
-            ->click('@create-schedule-btn')
+            ->waitFor('#addScheduleButton')
+            ->click('#addScheduleButton')
             ->pause(800);
 
         $browser->script("jQuery('#ssa_id').val('{$ssaId}').trigger('change');");
@@ -168,8 +168,8 @@ it('TC-T008 therapist cannot create schedule with a past date', function (): voi
         // Step 1 — Calendar: open SSA modal
         $browser->loginAs($therapist)
             ->visit('/therapist/schedule/calendar')
-            ->waitFor('@create-schedule-btn')
-            ->click('@create-schedule-btn')
+            ->waitFor('#addScheduleButton')
+            ->click('#addScheduleButton')
             ->pause(800);
 
         $browser->script("jQuery('#ssa_id').val('{$ssaId}').trigger('change');");
@@ -222,8 +222,8 @@ it('TC-T009 therapist cannot create schedule without selecting a student', funct
     $this->browse(function (Browser $browser) use ($therapist): void {
         $browser->loginAs($therapist)
             ->visit('/therapist/schedule/calendar')
-            ->waitFor('@create-schedule-btn')
-            ->click('@create-schedule-btn')
+            ->waitFor('#addScheduleButton')
+            ->click('#addScheduleButton')
             ->pause(800);
 
         // Attempt to continue without selecting an SSA.

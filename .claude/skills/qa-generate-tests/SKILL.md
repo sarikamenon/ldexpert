@@ -1,6 +1,6 @@
 ---
 name: qa-generate-tests
-description: Write Laravel Dusk browser tests for LD Expert Bird from QA test plans. Reads the master Excel file qa/LD-Expert-QA.xlsx and produces PHP Dusk test files in tests/BrowserQA/. Use when converting a QA test plan into automated browser tests. Triggers on "write dusk tests", "automate test cases", "generate browser tests", "implement test plan".
+description: Write Laravel Dusk browser tests for LD Expert Bird from QA test plans. Reads the master Excel file app/qa/LD-Expert-QA.xlsx and produces PHP Dusk test files in tests/BrowserQA/. Use when converting a QA test plan into automated browser tests. Triggers on "write dusk tests", "automate test cases", "generate browser tests", "implement test plan".
 ---
 
 # QA Engineer — Dusk Test Writer for LD Expert Bird
@@ -17,7 +17,7 @@ You are a QA engineer for LD Expert Bird, a school therapy management platform. 
 - [ ] **2. Login to test environment** — Log in as system admin: `develop.ldexpert@gmail.com` / `Password123!`
 - [ ] **3. Inspect key pages** — For each route in the Excel, open that page in the browser
 - [ ] **4. Discover selectors** — Use DevTools Inspector (F12) to find actual HTML selectors (id, name, data-testid, etc.)
-- [ ] **5. Document selectors** — Create `qa/{role}/selectors.md` with selector reference (see Locator Discovery section)
+- [ ] **5. Document selectors** — Create `app/qa/{role}/selectors.md` with selector reference (see Locator Discovery section)
 - [ ] **6. Update Excel Step columns** — Replace generic descriptions with actual selectors
 - [ ] **7. Validate selectors** — In DevTools Console, run `document.querySelector('your-selector')` to confirm each one
 - [ ] **8. Run `/qa-generate-tests`** — Generate tests using the updated Excel with actual selectors
@@ -36,7 +36,7 @@ You are a QA engineer for LD Expert Bird, a school therapy management platform. 
 
 ## Where to read from
 
-The master test case file is `qa/LD-Expert-QA.xlsx`. It has one sheet per role:
+The master test case file is `app/qa/LD-Expert-QA.xlsx`. It has one sheet per role:
 
 | Sheet | Write files to (project root) | Docker run path |
 |-------|-------------------------------|-----------------|
@@ -48,9 +48,9 @@ The master test case file is `qa/LD-Expert-QA.xlsx`. It has one sheet per role:
 
 Read **all rows** from the first row after the column headers to the last non-empty row. Never stop at a hardcoded TC ID — the number of test cases grows over time as new scenarios are added, and the skill must always process all of them.
 
-**Use the Excel MCP to read the file directly** — the `excel` MCP server must be configured in the user's Claude Code settings. This means you can open and read `qa/LD-Expert-QA.xlsx` inline without spawning a separate agent. If the MCP is not available, fall back to the xlsx skill (Python/openpyxl).
+**Use the Excel MCP to read the file directly** — the `excel` MCP server must be configured in the user's Claude Code settings. This means you can open and read `app/qa/LD-Expert-QA.xlsx` inline without spawning a separate agent. If the MCP is not available, fall back to the xlsx skill (Python/openpyxl).
 
-> **First time running this skill?** See [`qa/SETUP.md`](../../../../qa/SETUP.md) for installation and configuration of the Excel MCP server, the xlsx skill fallback, and how to verify both before proceeding.
+> **First time running this skill?** See [`app/qa/SETUP.md`](../../../app/qa/SETUP.md) for installation and configuration of the Excel MCP server, the xlsx skill fallback, and how to verify both before proceeding.
 
 For each row, read all columns. Here's what each column means:
 
@@ -68,7 +68,7 @@ For each row, read all columns. Here's what each column means:
 | **Expected Result** | Redirects to /admin/dashboard, user is authenticated | Assertions | Converted into `$browser->assert*()` and `$this->assertDatabase*()` calls |
 | **Dusk Test File** | QaAdminCoreBrowserTest.php | File destination | Which PHP test file this case goes into; auto-populated after generation |
 
-Also read `qa/{role}/test-data.md` to understand what database records are needed for preconditions.
+Also read `app/qa/{role}/test-data.md` to understand what database records are needed for preconditions.
 
 **After writing tests**, use the Excel MCP to update the Dusk Test File column for any rows where it is empty, so the Excel stays in sync with the generated test files.
 
@@ -122,15 +122,15 @@ Never modify any file that does not have the `Qa` prefix. Never write into `app/
 | SSA goals, student comments, documents | `QaTherapistStudentsBrowserTest.php` |
 | Paystub report | `QaTherapistPaystubBrowserTest.php` |
 
-**E2E — split by user journey workflow.** Each workflow maps to its spec file in `qa/e2e/`:
+**E2E — split by user journey workflow.** Each workflow maps to its spec file in `app/qa/e2e/`:
 
 | Workflow | Spec file | Test file |
 |---|---|---|
-| Student Journey | `qa/e2e/student-journey.md` | `QaStudentJourneyBrowserTest.php` |
-| Therapist Session to Billing | `qa/e2e/therapist-session-to-billing.md` | `QaTherapistSessionToBillingBrowserTest.php` |
-| Admin Audit Flow | `qa/e2e/admin-audit-flow.md` | `QaAdminAuditFlowBrowserTest.php` |
+| Student Journey | `app/qa/e2e/student-journey.md` | `QaStudentJourneyBrowserTest.php` |
+| Therapist Session to Billing | `app/qa/e2e/therapist-session-to-billing.md` | `QaTherapistSessionToBillingBrowserTest.php` |
+| Admin Audit Flow | `app/qa/e2e/admin-audit-flow.md` | `QaAdminAuditFlowBrowserTest.php` |
 
-When a new E2E workflow is added, a new spec file goes in `qa/e2e/` and a corresponding test file goes in `app/tests/BrowserQA/E2E/`.
+When a new E2E workflow is added, a new spec file goes in `app/qa/e2e/` and a corresponding test file goes in `app/tests/BrowserQA/E2E/`.
 
 **Admin — split by feature group:**
 
@@ -541,7 +541,7 @@ document.querySelector('button:contains("Login")')  // Won't work! (CSS limitati
 
 **Before running `/qa-generate-tests`, document selectors:**
 
-Create `qa/{role}/selectors.md`:
+Create `app/qa/{role}/selectors.md`:
 
 ```markdown
 # Admin Page Selectors Reference
@@ -809,19 +809,19 @@ $browser->loginAs($therapist);
 **Guard: E2E generation should verify spec files exist before creating tests:**
 ```php
 // In the /qa-generate-tests skill, before generating E2E tests:
-// Check that qa/e2e/*.md files exist for the workflows:
-// - qa/e2e/student-journey.md
-// - qa/e2e/therapist-session-to-billing.md
-// - qa/e2e/admin-audit-flow.md
+// Check that app/qa/e2e/*.md files exist for the workflows:
+// - app/qa/e2e/student-journey.md
+// - app/qa/e2e/therapist-session-to-billing.md
+// - app/qa/e2e/admin-audit-flow.md
 
 // If spec file missing, log warning: "Spec file missing for workflow X"
 // Still generate tests but flag them with comment: "// TODO: verify spec"
 ```
 
 **Existing spec files (reference):**
-- `qa/e2e/student-journey.md` — Student registration → SSA → session logging flow
-- `qa/e2e/therapist-session-to-billing.md` — Therapist logs session → admin approves → invoice → payment
-- `qa/e2e/admin-audit-flow.md` — Admin manages school → therapists → students → audits changes
+- `app/qa/e2e/student-journey.md` — Student registration → SSA → session logging flow
+- `app/qa/e2e/therapist-session-to-billing.md` — Therapist logs session → admin approves → invoice → payment
+- `app/qa/e2e/admin-audit-flow.md` — Admin manages school → therapists → students → audits changes
 
 ---
 
@@ -1150,12 +1150,14 @@ After running tests:
 
 ### CI / GitHub Actions
 
-Tests run automatically on every push to `main`:
+Tests run automatically every night (08:00 UTC) on the staging server:
 
-1. **Workflow file:** `.github/workflows/browser-qa.yml`
-2. **Database:** Uses `.env.testing` → `bird_test` (safe, isolated)
-3. **Artifacts:** Screenshots/console logs saved as `browserqa-dusk-html-report`
-4. **On failure:** Download artifact to debug failure screenshots
+1. **Workflow file:** `.github/workflows/browser-qa-staging.yml` (scheduled nightly + manual dispatch). It SSHes into the staging server and runs `scripts/ci/run-browser-qa-staging.sh` — **no Docker stack is built in CI**.
+2. **Database:** Uses the server's `.env.testing` → `bird_test` (safe, isolated; the runner hard-aborts if the DB is anything else).
+3. **Artifacts:** HTML report saved as `browserqa-staging-html-report`; JUnit XML and failure screenshots uploaded alongside.
+4. **On failure:** Download the artifact to debug failure screenshots.
+
+> The older Docker-based workflow (`.github/workflows/browser-qa.yml` → `scripts/ci/run-browser-qa.sh`) is now **manual-trigger only**, kept as an on-demand fallback.
 
 ---
 
@@ -1167,8 +1169,8 @@ After tests complete, **three reports are automatically generated** from the sam
 
 | Report | Location | Format | View With | Best For |
 |--------|----------|--------|-----------|----------|
-| **Markdown Summary** | `qa/reports/admin-YYYY-MM-DD-HHMM.md` | Plain text table | Editor/terminal | Quick pass/fail counts, CI logs |
-| **HTML Static** | `qa/reports/admin-YYYY-MM-DD-HHMM.html` | Interactive HTML | Browser | Sharing results, email summaries |
+| **Markdown Summary** | `app/qa/reports/admin-YYYY-MM-DD-HHMM.md` | Plain text table | Editor/terminal | Quick pass/fail counts, CI logs |
+| **HTML Static** | `app/qa/reports/admin-YYYY-MM-DD-HHMM.html` | Interactive HTML | Browser | Sharing results, email summaries |
 | **Allure Dashboard** | `app/tests/allure-report/index.html` | Interactive web app | Browser | Trends, history, flakiness analysis |
 
 ### Running Tests with Reports
@@ -1181,8 +1183,8 @@ bash scripts/qa/run-qa-report.sh admin tests/BrowserQA/Admin/
 
 # Output:
 # ==> Wrote:
-#     qa/reports/admin-2026-06-12-1453.md         ← Markdown
-#     qa/reports/admin-2026-06-12-1453.html       ← HTML
+#     app/qa/reports/admin-2026-06-12-1453.md         ← Markdown
+#     app/qa/reports/admin-2026-06-12-1453.html       ← HTML
 # ✅ Allure report generated: file://...         ← Allure dashboard
 ```
 
@@ -1193,7 +1195,7 @@ bash scripts/qa/run-qa-report.sh admin tests/BrowserQA/Admin/
 **Fastest** — read in terminal or editor:
 
 ```bash
-cat qa/reports/admin-YYYY-MM-DD-HHMM.md
+cat app/qa/reports/admin-YYYY-MM-DD-HHMM.md
 
 # Output example:
 # | Status | Test | Time (s) | Details |
@@ -1208,16 +1210,16 @@ cat qa/reports/admin-YYYY-MM-DD-HHMM.md
 
 ```bash
 # macOS
-open qa/reports/admin-YYYY-MM-DD-HHMM.html
+open app/qa/reports/admin-YYYY-MM-DD-HHMM.html
 
 # Linux
-xdg-open qa/reports/admin-YYYY-MM-DD-HHMM.html
+xdg-open app/qa/reports/admin-YYYY-MM-DD-HHMM.html
 
 # Windows
-start qa/reports/admin-YYYY-MM-DD-HHMM.html
+start app/qa/reports/admin-YYYY-MM-DD-HHMM.html
 
 # Or just find the latest report:
-ls -lht qa/reports/*.html | head -1
+ls -lht app/qa/reports/*.html | head -1
 ```
 
 Features:
@@ -1324,10 +1326,10 @@ Generated 2026-06-12 10:52:44 UTC
    bash scripts/qa/run-qa-report.sh admin tests/BrowserQA/Admin/
 
 2. Review quick summary:
-   cat qa/reports/admin-YYYY-MM-DD-HHMM.md
+   cat app/qa/reports/admin-YYYY-MM-DD-HHMM.md
 
 3. View failures in detail:
-   open qa/reports/admin-YYYY-MM-DD-HHMM.html
+   open app/qa/reports/admin-YYYY-MM-DD-HHMM.html
    ↑ click on failed tests to see error messages
 
 4. Deep dive into trends (if multiple runs):
@@ -1348,7 +1350,7 @@ Generated 2026-06-12 10:52:44 UTC
 
 ```bash
 # Remove all generated reports
-rm -rf qa/reports/*.md qa/reports/*.html
+rm -rf app/qa/reports/*.md app/qa/reports/*.html
 rm -rf app/tests/allure-results
 rm -rf app/tests/allure-report
 

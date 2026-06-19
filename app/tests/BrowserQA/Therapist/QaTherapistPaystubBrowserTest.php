@@ -12,7 +12,7 @@ uses(QaDuskTestCase::class);
 // ─── Paystub Report ───────────────────────────────────────────────────────────
 
 /**
- * Paystub test cases are pending formal TC IDs in qa/LD-Expert-QA.xlsx.
+ * Paystub test cases are pending formal TC IDs in app/qa/LD-Expert-QA.xlsx.
  * This file exists as a placeholder per the BrowserQA file structure contract.
  * Add TC-T026+ rows to the Therapist sheet and regenerate to expand coverage.
  */

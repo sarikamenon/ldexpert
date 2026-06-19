@@ -159,7 +159,10 @@ it('TC-T013 therapist cannot submit a log with missing required fields', functio
             if (visible) { visible.value = ''; visible.dispatchEvent(new Event('change', {bubbles:true})); }
         ");
 
-        $browser->press('Update Session Log')
+        // The submit control is an x-ui::loading-button whose label sits in a
+        // nested <span>, so Dusk's press(label) cannot resolve it. Click the
+        // form's submit button directly (matches the QA suite convention).
+        $browser->click('button[type="submit"]')
             ->pause(1000);
 
         // Expect validation error — we stay on the edit page with an error message.
@@ -719,7 +722,10 @@ it('TC-TC129 therapist can edit draft session before submission', function (): v
             ->waitFor('textarea[name="notes"]', 10)
             ->clear('notes')
             ->type('notes', 'Updated notes after edit')
-            ->press('Update Session Log')
+            // press('Update Session Log') cannot resolve the loading-button
+            // (its label is in a nested <span>), so it silently fails to submit
+            // and the notes never persist. Click the submit button directly.
+            ->click('button[type="submit"]')
             ->pause(2000);
     });
 
@@ -811,7 +817,13 @@ it('TC-TC132 therapist cannot edit another therapist\'s draft session', function
     TherapistProfile::factory()->for($therapist1, 'user')->create(['manager_id' => $admin->id]);
     TherapistProfile::factory()->for($therapist2, 'user')->create(['manager_id' => $admin->id]);
 
-    $school = School::factory()->qa()->create();
+    // Explicit unique names avoid Faker's finite company() pool colliding with
+    // seeded schools on the schools_display_name_unique constraint.
+    $uniqueSuffix = uniqid();
+    $school = School::factory()->qa()->create([
+        'full_name' => 'QA T132 School '.$uniqueSuffix,
+        'display_name' => 'QA T132 '.$uniqueSuffix,
+    ]);
     $student = User::factory()->student()->qa()->create();
     $student->studentProfile()->update(['school_id' => $school->id]);
 

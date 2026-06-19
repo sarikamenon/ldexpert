@@ -1,8 +1,9 @@
 name: Browser QA (Dusk)
 
+# Manual-trigger only. The daily scheduled run now lives in
+# browser-qa-staging.yml (runs on the staging server, no Docker). This Docker-based
+# workflow is kept as an on-demand fallback you can launch from the Actions tab.
 on:
-  schedule:
-    - cron: '0 8 * * *'
   workflow_dispatch:
 
 concurrency:

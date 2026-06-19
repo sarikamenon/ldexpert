@@ -33,19 +33,20 @@ it('TC-T021 therapist can view a student active goals list', function (): void {
         'primary_service_id'    => $service->id,
     ]);
 
+    $goalDescription = 'Complete phonological awareness tasks at 85% accuracy';
+
     SSAGoal::factory()->create([
         'ssa_id'     => $ssa->id,
         'student_id' => $student->id,
         'status'     => SSAGoalStatus::ACTIVE,
-        'objective'  => 'Complete phonological awareness tasks at 85% accuracy',
-        'goal'       => 'Goal description',
+        'goal'       => $goalDescription,
     ]);
 
-    $this->browse(function (Browser $browser) use ($therapist, $student): void {
+    $this->browse(function (Browser $browser) use ($therapist, $student, $goalDescription): void {
         $browser->loginAs($therapist)
             ->visit('/therapist/students/' . $student->id . '?tab=goals')
-            ->waitForText('Complete phonological awareness tasks', 10)
-            ->assertSee('Complete phonological awareness tasks');
+            ->waitForText($goalDescription, 10)
+            ->assertSee($goalDescription);
     });
 });
 
@@ -70,15 +71,18 @@ it('TC-T022 therapist can mark an active goal as mastered', function (): void {
         'ssa_id'     => $ssa->id,
         'student_id' => $student->id,
         'status'     => SSAGoalStatus::ACTIVE,
-        'objective'  => 'Mark as Mastered Goal',
-        'goal'       => 'Goal description',
+        'goal'       => 'Mark as Mastered Goal',
     ]);
 
-    $this->browse(function (Browser $browser) use ($therapist, $student, $goal): void {
+    // The mark-as-mastered control is a button.ssa-goal-status-btn[data-status="mastered"]
+    // rendered per active goal; only one active goal exists for this student.
+    $markMasteredSelector = '.ssa-goal-status-btn[data-status="mastered"]';
+
+    $this->browse(function (Browser $browser) use ($therapist, $student, $markMasteredSelector): void {
         $browser->loginAs($therapist)
             ->visit('/therapist/students/' . $student->id . '?tab=goals')
-            ->waitFor('@mark-mastered-' . $goal->id, 10)
-            ->click('@mark-mastered-' . $goal->id)
+            ->waitFor($markMasteredSelector, 10)
+            ->click($markMasteredSelector)
             ->waitForText('Yes, mark mastered', 10)
             ->press('Yes, mark mastered')
             ->pause(1500);

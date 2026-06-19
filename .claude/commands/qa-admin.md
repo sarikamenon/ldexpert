@@ -1,9 +1,9 @@
-Run the full admin QA suite — reads qa/admin/ test plans, executes Admin Dusk tests, and publishes a timestamped .md + .html report pair into qa/reports/.
+Run the full admin QA suite — reads app/qa/admin/ test plans, executes Admin Dusk tests, and publishes a timestamped .md + .html report pair into app/qa/reports/.
 
 ## Source files
-- Test plan: `qa/admin/test-plan.md`
-- Test cases: `qa/LD-Expert-QA.xlsx` — Admin sheet
-- Test data: `qa/admin/test-data.md`
+- Test plan: `app/qa/admin/test-plan.md`
+- Test cases: `app/qa/LD-Expert-QA.xlsx` — Admin sheet
+- Test data: `app/qa/admin/test-data.md`
 - Wiki PRDs: `app/wiki/admin/*.md`
 
 > **Prerequisite 1:** If `app/tests/BrowserQA/Admin/` contains only `.gitkeep`, run `/qa-generate-tests` first to generate the PHP test files.
@@ -12,12 +12,12 @@ Run the full admin QA suite — reads qa/admin/ test plans, executes Admin Dusk 
 
 ## Steps
 
-1. **Run the suite and publish the report** — this migrates the test DB (`bird_test`), runs the Admin Dusk suite, and writes a timestamped `.md` + `.html` report pair into the unified `qa/reports/` folder:
+1. **Run the suite and publish the report** — this migrates the test DB (`bird_test`), runs the Admin Dusk suite, and writes a timestamped `.md` + `.html` report pair into the unified `app/qa/reports/` folder:
    ```bash
    bash scripts/qa/run-qa-report.sh admin tests/BrowserQA/Admin/
    ```
 
-2. **Feature areas to validate** (cross-reference against qa/LD-Expert-QA.xlsx — Admin sheet)
+2. **Feature areas to validate** (cross-reference against app/qa/LD-Expert-QA.xlsx — Admin sheet)
 
    | Area | Key actions to test |
    |------|-------------------|
@@ -32,7 +32,7 @@ Run the full admin QA suite — reads qa/admin/ test plans, executes Admin Dusk 
    | Reports | SSA utilization, caseload, expirations |
    | Role isolation | Admin cannot access /therapist/* or /student/* |
 
-3. **Report back** — the script prints the two generated paths (`qa/reports/admin-YYYY-MM-DD-HHMM.md` and `.html`). Both are auto-generated from the run's JUnit output (summary counts + per-test table), so no hand-written result file is needed. Summarize the pass/fail totals and call out any failures or blockers. Failure screenshots, if any, are under `app/tests/BrowserQA/screenshots/`.
+3. **Report back** — the script prints the two generated paths (`app/qa/reports/admin-YYYY-MM-DD-HHMM.md` and `.html`). Both are auto-generated from the run's JUnit output (summary counts + per-test table), so no hand-written result file is needed. Summarize the pass/fail totals and call out any failures or blockers. Failure screenshots, if any, are under `app/tests/BrowserQA/screenshots/`.
 
 ## Reports
 
@@ -40,5 +40,5 @@ After the test run, **two reports are generated** from the same JUnit output:
 
 | Report | Path | View |
 |--------|------|------|
-| **Markdown** | `qa/reports/admin-YYYY-MM-DD-HHMM.md` | Read in editor or Markdown viewer |
-| **HTML** | `qa/reports/admin-YYYY-MM-DD-HHMM.html` | Double-click to open in browser |
+| **Markdown** | `app/qa/reports/admin-YYYY-MM-DD-HHMM.md` | Read in editor or Markdown viewer |
+| **HTML** | `app/qa/reports/admin-YYYY-MM-DD-HHMM.html` | Double-click to open in browser |

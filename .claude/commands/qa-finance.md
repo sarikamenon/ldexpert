@@ -1,11 +1,11 @@
-Run the full finance QA suite — reads qa/finance/ test plans, executes Finance Dusk tests, and publishes a timestamped .md + .html report pair into qa/reports/.
+Run the full finance QA suite — reads app/qa/finance/ test plans, executes Finance Dusk tests, and publishes a timestamped .md + .html report pair into app/qa/reports/.
 
 > **Finance is not a separate user role.** There is no `Role::FINANCE` enum and no `User::factory()->finance()` state. Finance is a feature module within the admin dashboard. All Finance tests log in with `User::factory()->admin()->create()`. Role isolation tests in the Finance suite verify that therapist and student accounts are blocked from `/admin/invoices/*`, `/admin/billing/*`, `/admin/payments/*`, `/admin/ledger/*`, and `/admin/expenses/*`.
 
 ## Source files
-- Test plan: `qa/finance/test-plan.md`
-- Test cases: `qa/LD-Expert-QA.xlsx` — Finance sheet
-- Test data: `qa/finance/test-data.md`
+- Test plan: `app/qa/finance/test-plan.md`
+- Test cases: `app/qa/LD-Expert-QA.xlsx` — Finance sheet
+- Test data: `app/qa/finance/test-data.md`
 - Wiki PRDs: `app/wiki/finance/*.md`
 
 > **Prerequisite 1:** If `app/tests/BrowserQA/Finance/` contains only `.gitkeep`, run `/qa-generate-tests` first to generate the PHP test files.
@@ -14,12 +14,12 @@ Run the full finance QA suite — reads qa/finance/ test plans, executes Finance
 
 ## Steps
 
-1. **Run the suite and publish the report** — this migrates the test DB (`bird_test`), runs the Finance Dusk suite, and writes a timestamped `.md` + `.html` report pair into the unified `qa/reports/` folder:
+1. **Run the suite and publish the report** — this migrates the test DB (`bird_test`), runs the Finance Dusk suite, and writes a timestamped `.md` + `.html` report pair into the unified `app/qa/reports/` folder:
    ```bash
    bash scripts/qa/run-qa-report.sh finance tests/BrowserQA/Finance/
    ```
 
-2. **Feature areas to validate** (cross-reference against qa/finance/test-plan.md)
+2. **Feature areas to validate** (cross-reference against app/qa/finance/test-plan.md)
 
    | Area | Key actions to test |
    |------|-------------------|
@@ -38,4 +38,4 @@ Run the full finance QA suite — reads qa/finance/ test plans, executes Finance
    ```
    Must return zero drift errors. If any found, call them out in your report-back.
 
-4. **Report back** — the script prints the two generated paths (`qa/reports/finance-YYYY-MM-DD-HHMM.md` and `.html`). Both are auto-generated from the run's JUnit output (summary counts + per-test table), so no hand-written result file is needed. Summarize the pass/fail totals, include the `ledger:verify` result (PASS/FAIL + any drift errors), and call out any blockers.
+4. **Report back** — the script prints the two generated paths (`app/qa/reports/finance-YYYY-MM-DD-HHMM.md` and `.html`). Both are auto-generated from the run's JUnit output (summary counts + per-test table), so no hand-written result file is needed. Summarize the pass/fail totals, include the `ledger:verify` result (PASS/FAIL + any drift errors), and call out any blockers.

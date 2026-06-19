@@ -50,7 +50,7 @@ ignore2
 # Excel lock files (created when file is open in Excel/LibreOffice)
 ~$*.xlsx
 ~$*.xls
-qa/~$*.xlsx
+app/qa/~$*.xlsx
 
 # Generated QA reports and debug artifacts – do not push
 app/storage/reports/
@@ -75,7 +75,7 @@ app/tests/allure-report/
 app/tests/allure-results/
 
 # QA report artifacts – generated per run, not committed
-qa/reports/
+app/qa/reports/
 
 # QA local documentation – session summaries and setup guides, not for team
 HOW_TO_CREATE_TESTS.md
