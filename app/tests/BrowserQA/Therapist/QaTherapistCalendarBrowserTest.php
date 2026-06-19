@@ -616,12 +616,15 @@ it('TC-TC033 billing filter Not Billable shows only not-billable sessions', func
     $school  = School::factory()->qa()->create();
     $service = Service::factory()->create();
 
+    // Date both schedules on today so they are guaranteed to fall inside the
+    // default Month-view visible range regardless of the run date (mid-week dates
+    // can slip outside the visible month grid near a month boundary).
     foreach ([BillingStatus::PENDING, BillingStatus::NOT_BILLABLE] as $i => $billing) {
         $student = User::factory()->student()->qa()->create();
         $student->studentProfile()->update(['school_id' => $school->id]);
         $student->therapists()->attach($therapist->id, ['assigned_at' => now(), 'status' => 'active']);
-        $ssa = ServiceSupportAgreement::factory()->active()->create(['student_id' => $student->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
-        Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $student->id, 'ssa_id' => $ssa->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => now()->startOfWeek()->addDays($i)->toDateString(), 'start_time' => '16:00', 'end_time' => '17:00', 'billing_status' => $billing->value]);
+        $ssa = ServiceSupportAgreement::factory()->create(['status' => SSAStatus::ACTIVE->value, 'student_id' => $student->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
+        Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $student->id, 'ssa_id' => $ssa->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => now()->toDateString(), 'start_time' => '16:00', 'end_time' => '17:00', 'billing_status' => $billing->value]);
     }
 
     $this->browse(function (Browser $browser) use ($therapist): void {
@@ -732,8 +735,10 @@ it('TC-TC044 triple filter Student Status Billing gives correct results', functi
     $studentA = User::factory()->student()->qa()->create();
     $studentA->studentProfile()->update(['school_id' => $school->id]);
     $studentA->therapists()->attach($therapist->id, ['assigned_at' => now(), 'status' => 'active']);
-    $ssaA = ServiceSupportAgreement::factory()->active()->create(['student_id' => $studentA->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
-    Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $studentA->id, 'ssa_id' => $ssaA->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => now()->startOfWeek()->toDateString(), 'start_time' => '16:00', 'end_time' => '17:00', 'status' => 'completed', 'billing_status' => 'billed']);
+    $ssaA = ServiceSupportAgreement::factory()->create(['status' => SSAStatus::ACTIVE->value, 'student_id' => $studentA->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
+    // Date on today so the schedule is guaranteed to fall inside the default
+    // Month-view visible range regardless of the run date.
+    Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $studentA->id, 'ssa_id' => $ssaA->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => now()->toDateString(), 'start_time' => '16:00', 'end_time' => '17:00', 'status' => 'completed', 'billing_status' => 'billed']);
 
     $this->browse(function (Browser $browser) use ($therapist, $studentA): void {
         visitCalendar($browser, $therapist);
@@ -940,7 +945,10 @@ it('TC-TC062 modal displays correct student name', function (): void {
 });
 
 it('TC-TC063 modal displays correct session status badge', function (): void {
-    $data = calendarScaffold('scheduled', 'pending');
+    // Date the schedule on today so the event reliably renders in the default
+    // Month view (a mid-week date can slip outside the visible month grid near a
+    // month boundary, leaving no .fc-event to click).
+    $data = calendarScaffold('scheduled', 'pending', now()->toDateString());
 
     $this->browse(function (Browser $browser) use ($data): void {
         visitCalendar($browser, $data['therapist']);
@@ -1024,14 +1032,16 @@ it('TC-TC069 closing modal via X returns to calendar without error', function ()
 
 it('TC-TC070 direct API request for another therapist schedule returns 403', function (): void {
     $admin     = User::where('email', 'develop.ldexpert@gmail.com')->firstOrFail();
-    $therapistA = User::factory()->therapist()->qa()->create();
-    $therapistB = User::factory()->therapist()->qa()->create();
+    // Pin explicit unique usernames/emails so the Faker-generated values can't
+    // collide with seeded users (e.g. the duplicate 'dkuhn' username crash).
+    $therapistA = User::factory()->therapist()->qa()->create(['username' => 'qa_t070a_'.uniqid(), 'email' => 'qa.t070a_'.uniqid().'@example.test']);
+    $therapistB = User::factory()->therapist()->qa()->create(['username' => 'qa_t070b_'.uniqid(), 'email' => 'qa.t070b_'.uniqid().'@example.test']);
     TherapistProfile::factory()->for($therapistA, 'user')->create(['manager_id' => $admin->id]);
     TherapistProfile::factory()->for($therapistB, 'user')->create(['manager_id' => $admin->id]);
 
     $school  = School::factory()->qa()->create();
     $service = Service::factory()->create();
-    $student = User::factory()->student()->qa()->create();
+    $student = User::factory()->student()->qa()->create(['username' => 'qa_t070s_'.uniqid(), 'email' => 'qa.t070s_'.uniqid().'@example.test']);
     $student->studentProfile()->update(['school_id' => $school->id]);
     $student->therapists()->attach($therapistB->id, ['assigned_at' => now(), 'status' => 'active']);
     $ssaB = ServiceSupportAgreement::factory()->active()->create(['student_id' => $student->id, 'assigned_therapist_id' => $therapistB->id, 'primary_service_id' => $service->id]);
@@ -1102,7 +1112,7 @@ it('TC-TC073 clicking second event replaces modal content', function (): void {
         $s->studentProfile()->update(['school_id' => $school->id]);
         $s->therapists()->attach($therapist->id, ['assigned_at' => now(), 'status' => 'active']);
     }
-    $ssaA = ServiceSupportAgreement::factory()->active()->create(['student_id' => $studentA->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
+    $ssaA = ServiceSupportAgreement::factory()->create(['status' => SSAStatus::ACTIVE->value, 'student_id' => $studentA->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
     $ssaB = ServiceSupportAgreement::factory()->active()->create(['student_id' => $studentB->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
     Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $studentA->id, 'ssa_id' => $ssaA->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => $date, 'start_time' => '16:00', 'end_time' => '17:00']);
     Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $studentB->id, 'ssa_id' => $ssaB->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => $date, 'start_time' => '17:00', 'end_time' => '18:00']);
@@ -1227,7 +1237,7 @@ it('TC-TC085 SSA Details shows only the scheduled student own SSA data', functio
         $s->studentProfile()->update(['school_id' => $school->id]);
         $s->therapists()->attach($therapist->id, ['assigned_at' => now(), 'status' => 'active']);
     }
-    $ssaA = ServiceSupportAgreement::factory()->active()->create(['student_id' => $studentA->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
+    $ssaA = ServiceSupportAgreement::factory()->create(['status' => SSAStatus::ACTIVE->value, 'student_id' => $studentA->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
     ServiceSupportAgreement::factory()->active()->create(['student_id' => $studentB->id, 'assigned_therapist_id' => $therapist->id, 'primary_service_id' => $service->id]);
 
     Schedule::factory()->create(['therapist_id' => $therapist->id, 'student_id' => $studentA->id, 'ssa_id' => $ssaA->id, 'service_id' => $service->id, 'school_id' => $school->id, 'schedule_date' => now()->startOfWeek()->toDateString(), 'start_time' => '16:00', 'end_time' => '17:00']);
