@@ -125,15 +125,5 @@ jobs:
 
             > Tests are written only under `app/tests/BrowserQA/`. No app code is touched.
 
-      - name: Email reviewer
-        if: steps.scope.outputs.skip != 'true' && vars.QA_NOTIFY_EMAIL != ''
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "QA scenarios ready for review — ${{ github.sha }}"
-          to: ${{ vars.QA_NOTIFY_EMAIL }}
-          from: QA Automation <develop.ldexpert@gmail.com>
-          html_body: "Stage 1 generated test scenarios. Please review and approve the scenarios PR to start test generation."
+      # No SMTP needed: PR #1 tags QA_REVIEWER, and GitHub emails that reviewer
+      # automatically when review is requested. Watchers also get Actions alerts.

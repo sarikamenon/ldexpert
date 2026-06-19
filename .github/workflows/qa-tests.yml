@@ -135,18 +135,19 @@ jobs:
           if-no-files-found: warn
           retention-days: 30
 
-      - name: Email reviewer
-        if: always() && vars.QA_NOTIFY_EMAIL != ''
-        uses: dawidd6/action-send-mail@v3
-        with:
-          server_address: smtp.gmail.com
-          server_port: 465
-          username: ${{ secrets.MAIL_USERNAME }}
-          password: ${{ secrets.MAIL_PASSWORD }}
-          subject: "QA tests run — report ready for ${{ github.sha }}"
-          to: ${{ vars.QA_NOTIFY_EMAIL }}
-          from: QA Automation <develop.ldexpert@gmail.com>
-          html_body: "Stage 2 generated and ran the tests. Review the report PR and merge when green."
+      # Notification is handled by GitHub for free: PR #2 tags QA_REVIEWER (GitHub
+      # emails them), and Actions notifications alert watchers. The report is the
+      # uploaded artifact above + the run summary below — no SMTP sender needed.
+      - name: Write run summary (report link + result)
+        if: always()
+        run: |
+          {
+            echo "## QA Stage 2 — tests run in bird_test"
+            echo ""
+            echo "- Result: **${{ steps.run1.outcome == 'success' && 'passed' || 'see report (some failed)' }}**"
+            echo "- Download the full report from the **Artifacts** section of this run (\`qa-stage2-report\`)."
+            echo "- Review PR #2 to approve or fix."
+          } >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Stop stack
         if: always()
