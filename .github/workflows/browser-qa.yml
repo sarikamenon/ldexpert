@@ -50,6 +50,26 @@ jobs:
             echo "(\`browserqa-dusk-html-report\`)."
           } >> "${GITHUB_STEP_SUMMARY}"
 
+      # Email the report to QA_REPORT_EMAIL (comma-separated for multiple).
+      # Needs a sender: secrets MAIL_USERNAME + MAIL_PASSWORD.
+      #   Gmail   → defaults below; MAIL_PASSWORD = a Gmail App Password
+      #   SendGrid→ set vars MAIL_SERVER=smtp.sendgrid.net, MAIL_USERNAME secret=apikey,
+      #             MAIL_PASSWORD secret=<API key>
+      # Skipped automatically if QA_REPORT_EMAIL is not set.
+      - name: Email the report
+        if: always() && vars.QA_REPORT_EMAIL != ''
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ vars.MAIL_SERVER || 'smtp.gmail.com' }}
+          server_port: ${{ vars.MAIL_PORT || '465' }}
+          username: ${{ secrets.MAIL_USERNAME }}
+          password: ${{ secrets.MAIL_PASSWORD }}
+          subject: "Daily QA Browser Test Report - Run #${{ github.run_number }} (${{ job.status }})"
+          to: ${{ vars.QA_REPORT_EMAIL }}
+          from: QA Automation <${{ vars.MAIL_FROM || 'develop.ldexpert@gmail.com' }}>
+          html_body: "The daily Dusk QA Browser test suite has completed (status: ${{ job.status }}). The HTML report is attached."
+          attachments: app/tests/ci-reports/dusk-report.html
+
       - name: Upload Dusk HTML report
         if: always()
         uses: actions/upload-artifact@v4
