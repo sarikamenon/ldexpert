@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run a BrowserQA Dusk suite inside Docker and write a timestamped report PAIR
-# (.md + .html) into qa/reports/. Both files are generated from the same Dusk
+# (.md + .html) into app/qa/reports/. Both files are generated from the same Dusk
 # JUnit XML, so they always agree. Each run appends a new pair — the timestamp in
 # the filename means runs never overwrite one another.
 #
@@ -12,7 +12,7 @@
 #   scripts/qa/run-qa-report.sh student   tests/BrowserQA/Student/
 #   scripts/qa/run-qa-report.sh smoke     "tests/BrowserQA/ --group=smoke"
 #
-# Output: qa/reports/<suite>-YYYY-MM-DD-HHMM.md and .html
+# Output: app/qa/reports/<suite>-YYYY-MM-DD-HHMM.md and .html
 # Exit code mirrors the Dusk run (report is still produced on test failures).
 set -uo pipefail
 
@@ -35,10 +35,10 @@ BASE="${SUITE}-${STAMP}"
 # The container WORKDIR is /var/www/html/app, which is mounted from the host's
 # app/ directory — so tests/ci-reports/<base>.xml inside the container is
 # app/tests/ci-reports/<base>.xml on the host. That dir is gitignored scratch;
-# only the qa/reports/*.{md,html} pair is committed.
+# only the app/qa/reports/*.{md,html} pair is committed.
 CONTAINER_JUNIT="tests/ci-reports/${BASE}.xml"
 HOST_JUNIT="app/tests/ci-reports/${BASE}.xml"
-REPORT_DIR="qa/reports"
+REPORT_DIR="app/qa/reports"
 
 mkdir -p "${ROOT_DIR}/${REPORT_DIR}" "${ROOT_DIR}/app/tests/ci-reports"
 

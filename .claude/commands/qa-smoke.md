@@ -6,7 +6,7 @@ Run a fast smoke test across all roles to verify the application is alive and al
 
 ## Steps
 
-1. **Run the smoke suite and publish the report** — this migrates the test DB (`bird_test`), runs every `@group smoke` test across all roles, and writes a timestamped `.md` + `.html` report pair into the unified `qa/reports/` folder:
+1. **Run the smoke suite and publish the report** — this migrates the test DB (`bird_test`), runs every `@group smoke` test across all roles, and writes a timestamped `.md` + `.html` report pair into the unified `app/qa/reports/` folder:
    ```bash
    bash scripts/qa/run-qa-report.sh smoke tests/BrowserQA/ --group=smoke
    ```
@@ -28,9 +28,9 @@ Run a fast smoke test across all roles to verify the application is alive and al
    | Therapist | Visit `/admin/students` | 403 or redirect |
    | Student | Visit `/admin/dashboard` | 403 or redirect |
 
-3. **Report back** — the script prints the two generated paths (`qa/reports/smoke-YYYY-MM-DD-HHMM.md` and `.html`), both auto-generated from the run's JUnit output. Summarize the result inline, e.g.:
+3. **Report back** — the script prints the two generated paths (`app/qa/reports/smoke-YYYY-MM-DD-HHMM.md` and `.html`), both auto-generated from the run's JUnit output. Summarize the result inline, e.g.:
    ```
-   Smoke — 6/7 passed, 1 blocker (Admin student list: DataTable 500). Report: qa/reports/smoke-YYYY-MM-DD-HHMM.md
+   Smoke — 6/7 passed, 1 blocker (Admin student list: DataTable 500). Report: app/qa/reports/smoke-YYYY-MM-DD-HHMM.md
    ```
 
 4. **If any check fails** — stop. A failing smoke test signals a deployment or migration issue. Fix before running deeper suites.

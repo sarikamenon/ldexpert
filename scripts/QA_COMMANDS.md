@@ -69,7 +69,7 @@ docker compose exec -T app bash -lc 'cd /var/www/html/app && php artisan dusk te
 
 ---
 
-## 2. Running with Reports (.md + .html in `qa/reports/`)
+## 2. Running with Reports (.md + .html in `app/qa/reports/`)
 
 > ### 🛑 DATA-LOSS WARNING — `run-qa-report.sh` WIPES `bird_test`
 > This script runs `php artisan migrate:fresh --seed` **before and after** the
@@ -111,25 +111,25 @@ bash scripts/qa/run-qa-report.sh e2e       tests/BrowserQA/E2E/
 
 Output:
 ```
-qa/reports/admin-YYYY-MM-DD-HHMM.md     ← Markdown summary
-qa/reports/admin-YYYY-MM-DD-HHMM.html   ← Open in browser
+app/qa/reports/admin-YYYY-MM-DD-HHMM.md     ← Markdown summary
+app/qa/reports/admin-YYYY-MM-DD-HHMM.html   ← Open in browser
 ```
 
 ### Open the generated HTML report
 
 **Windows (PowerShell):**
 ```powershell
-start (Get-ChildItem qa/reports/*.html | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
+start (Get-ChildItem app/qa/reports/*.html | Sort-Object LastWriteTime | Select-Object -Last 1).FullName
 ```
 
 **macOS:**
 ```bash
-open "$(ls -t qa/reports/*.html | head -1)"
+open "$(ls -t app/qa/reports/*.html | head -1)"
 ```
 
 **Linux:**
 ```bash
-xdg-open "$(ls -t qa/reports/*.html | head -1)"
+xdg-open "$(ls -t app/qa/reports/*.html | head -1)"
 ```
 
 ---
@@ -234,12 +234,12 @@ bash scripts/qa/run-qa-report.sh admin tests/BrowserQA/Admin/
 
 **Claude Code slash-commands.** Run them inside an interactive Claude session by
 typing `/<name>` (same on every OS). Each reads the role's test plan, runs the
-Dusk suite, and publishes a `.md` + `.html` report into `qa/reports/`.
+Dusk suite, and publishes a `.md` + `.html` report into `app/qa/reports/`.
 
 | Command | What it does |
 |---------|--------------|
 | `/qa` | Full code-quality pipeline (`make qa` = Pint + PHPStan + Pest) and error summary. **Not** a browser suite. |
-| `/qa-admin` | Full Admin QA suite — reads `qa/admin/` plans, runs Admin Dusk tests, publishes report. |
+| `/qa-admin` | Full Admin QA suite — reads `app/qa/admin/` plans, runs Admin Dusk tests, publishes report. |
 | `/qa-therapist` | Full Therapist QA suite. |
 | `/qa-student` | Full Student QA suite. |
 | `/qa-finance` | Full Finance QA suite (billing/invoicing module of admin; not a separate role). |
@@ -257,7 +257,7 @@ they do **not** run the browser suites themselves.
 | Skill | Purpose | Example trigger |
 |-------|---------|-----------------|
 | `/qa-create-scenarios` | Plan full coverage from wiki PRDs → `test-plan.md`, `test-data.md`, Excel rows (incremental). | "create test plan", "plan QA for admin" |
-| `/qa-add-test-cases` | Add test cases directly to `qa/LD-Expert-QA.xlsx` in the correct format. | "add test cases to excel" |
+| `/qa-add-test-cases` | Add test cases directly to `app/qa/LD-Expert-QA.xlsx` in the correct format. | "add test cases to excel" |
 | `/qa-generate-tests` | Convert Excel test cases → PHP Dusk files under `app/tests/BrowserQA/`. | "generate browser tests" |
 | `/qa-review-tests` | Review generated tests for selector/assertion/PHPStan issues before a full run. | "review tests `app/tests/BrowserQA/Admin/`" |
 | `/qa-test-strategy` | Coordinate execution, coverage mapping, Excel sync. | "test strategy", "sync excel test cases" |
@@ -291,7 +291,8 @@ is never touched). But **not all commands are equal** — some wipe `bird_test`:
 - `.\make.ps1 qa-fresh` / `make.bat qa-fresh`
 - `.\make.ps1 fresh` / `make.bat fresh` / `make fresh`
 - `make erd` / `make erd-check`
-- CI: `scripts/ci/run-browser-qa.sh`
+- CI (nightly, staging server): `scripts/ci/run-browser-qa-staging.sh`
+- CI (Docker fallback, manual only): `scripts/ci/run-browser-qa.sh`
 
 > **`bird_test` is intended as a disposable test database.** Keep real/important
 > data in `bird` (production), never in `bird_test`. If you must keep data in
@@ -359,7 +360,7 @@ docker compose exec -T app bash -lc 'cd /var/www/html/app && timeout 1800 php ar
 scripts/
 ├── qa-functions.ps1        ← Windows PowerShell shortcuts (qa-admin, …)
 ├── QA_COMMANDS.md          ← This file
-└── qa/
+└── app/qa/
     ├── run-qa-report.sh    ← Runs a suite + generates .md/.html reports
     └── run-suite-docker.sh ← In-container worker (Chrome + Dusk + reports)
 
@@ -367,7 +368,7 @@ scripts/
 ├── commands/qa*.md         ← Slash-commands: /qa-admin, … (run a suite + report)
 └── skills/qa*/             ← Skills: /qa-generate-tests, … (author/maintain tests)
 
-qa/
+app/qa/
 ├── LD-Expert-QA.xlsx       ← Master test-case workbook (one sheet per role)
 └── reports/                ← Generated .md + .html report pairs
 ```

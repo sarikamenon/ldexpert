@@ -1,0 +1,145 @@
+name: Browser QA (Staging)
+
+# Runs the BrowserQA Dusk suite on the staging / test server (via SSH deployment,
+# same box as deploy_staging.yml) against the dedicated `bird_test` database.
+# No Docker stack is built in CI — tests run directly on the server; this job
+# orchestrates via SSH and fetches back an HTML report.
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: browser-qa-staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-qa-staging:
+    name: BrowserQA Dusk (Staging server)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      # No PHP/Node setup on the runner: the tests run on the staging server,
+      # which has its own PHP/Node toolchain. The runner only needs to SSH out,
+      # then merge reports + build HTML (handled by python3, preinstalled on
+      # ubuntu-latest).
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Run Browser QA on Server (bird_test database only)
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          # Configure SSH
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keygen -R $SERVER_IP
+          ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
+
+          # Copy runner script to the test server
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa \
+            scripts/ci/run-browser-qa-staging.sh \
+            $SSH_USER@$SERVER_IP:/tmp/run-browser-qa-staging.sh
+
+          # Run the BrowserQA suite on the test server
+          # SAFETY: The runner script enforces that .env.testing targets bird_test ONLY
+          # and aborts if any other database is configured. This prevents accidental
+          # destruction of production or staging data.
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa $SSH_USER@$SERVER_IP \
+            'bash -l -c "chmod +x /tmp/run-browser-qa-staging.sh && /tmp/run-browser-qa-staging.sh"'
+
+      - name: Fetch reports from the test server
+        if: always()
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+        run: |
+          mkdir -p ci-reports/screenshots
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa \
+            $SSH_USER@$SERVER_IP:/tmp/browserqa-reports/junit-*.xml ci-reports/ \
+            || echo "No JUnit reports to fetch"
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa \
+            $SSH_USER@$SERVER_IP:/tmp/browserqa-reports/screenshots/* ci-reports/screenshots/ \
+            || echo "No screenshots to fetch"
+
+      - name: Merge per-role JUnit reports
+        if: always()
+        run: |
+          python3 - ci-reports <<'PY' || true
+          import sys, glob, os
+          import xml.etree.ElementTree as ET
+
+          report_dir = sys.argv[1]
+          out = ET.Element("testsuites")
+          files = sorted(glob.glob(os.path.join(report_dir, "junit-*.xml")))
+          if not files:
+              print("No junit-*.xml files found to merge")
+              sys.exit(0)
+          for f in files:
+              try:
+                  root = ET.parse(f).getroot()
+              except Exception as e:
+                  print(f"  skip {os.path.basename(f)}: {e}")
+                  continue
+              if root.tag == "testsuites":
+                  for ts in root.findall("testsuite"):
+                      out.append(ts)
+              elif root.tag == "testsuite":
+                  out.append(root)
+              print(f"  merged {os.path.basename(f)}")
+          ET.ElementTree(out).write(os.path.join(report_dir, "junit.xml"),
+                                    encoding="utf-8", xml_declaration=True)
+          print("Wrote merged junit.xml")
+          PY
+
+      - name: Generate HTML report
+        if: always()
+        run: |
+          python3 scripts/ci/generate-dusk-html-report.py \
+            --junit ci-reports/junit.xml \
+            --output ci-reports/dusk-report.html || true
+
+      - name: Write run summary
+        if: always()
+        run: |
+          {
+            echo "## Daily Browser QA report (staging server) — Run #${{ github.run_number }}"
+            echo ""
+            echo "Status: **${{ job.status }}**"
+            echo ""
+            echo "Download the full HTML report from the **Artifacts** section of this run"
+            echo "(\`browserqa-staging-html-report\`)."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload Dusk HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserqa-staging-html-report
+          path: ci-reports/dusk-report.html
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload JUnit XML
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserqa-staging-junit
+          path: ci-reports/junit.xml
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Upload failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browserqa-staging-screenshots
+          path: ci-reports/screenshots/
+          if-no-files-found: ignore
+          retention-days: 14

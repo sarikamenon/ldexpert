@@ -1,9 +1,9 @@
-Run the full student QA suite — reads qa/student/ test plans, executes Student Dusk tests, and publishes a timestamped .md + .html report pair into qa/reports/.
+Run the full student QA suite — reads app/qa/student/ test plans, executes Student Dusk tests, and publishes a timestamped .md + .html report pair into app/qa/reports/.
 
 ## Source files
-- Test plan: `qa/student/test-plan.md`
-- Test cases: `qa/LD-Expert-QA.xlsx` — Student sheet
-- Test data: `qa/student/test-data.md`
+- Test plan: `app/qa/student/test-plan.md`
+- Test cases: `app/qa/LD-Expert-QA.xlsx` — Student sheet
+- Test data: `app/qa/student/test-data.md`
 - Wiki PRDs: `app/wiki/student/portal.md`, `app/wiki/student/menu.md`
 
 > **Prerequisite 1:** If `app/tests/BrowserQA/Student/` contains only `.gitkeep`, run `/qa-generate-tests` first to generate the PHP test files.
@@ -12,12 +12,12 @@ Run the full student QA suite — reads qa/student/ test plans, executes Student
 
 ## Steps
 
-1. **Run the suite and publish the report** — this migrates the test DB (`bird_test`), runs the Student Dusk suite, and writes a timestamped `.md` + `.html` report pair into the unified `qa/reports/` folder:
+1. **Run the suite and publish the report** — this migrates the test DB (`bird_test`), runs the Student Dusk suite, and writes a timestamped `.md` + `.html` report pair into the unified `app/qa/reports/` folder:
    ```bash
    bash scripts/qa/run-qa-report.sh student tests/BrowserQA/Student/
    ```
 
-2. **Feature areas to validate** (cross-reference against qa/LD-Expert-QA.xlsx — Student sheet)
+2. **Feature areas to validate** (cross-reference against app/qa/LD-Expert-QA.xlsx — Student sheet)
 
    | Area | Key actions to test |
    |------|-------------------|
@@ -30,4 +30,4 @@ Run the full student QA suite — reads qa/student/ test plans, executes Student
    | Data isolation | Student cannot see another student's data |
    | Role isolation | Student cannot access /admin/* or /therapist/* routes |
 
-3. **Report back** — the script prints the two generated paths (`qa/reports/student-YYYY-MM-DD-HHMM.md` and `.html`). Both are auto-generated from the run's JUnit output (summary counts + per-test table), so no hand-written result file is needed. Summarize the pass/fail totals and call out any failures or blockers.
+3. **Report back** — the script prints the two generated paths (`app/qa/reports/student-YYYY-MM-DD-HHMM.md` and `.html`). Both are auto-generated from the run's JUnit output (summary counts + per-test table), so no hand-written result file is needed. Summarize the pass/fail totals and call out any failures or blockers.

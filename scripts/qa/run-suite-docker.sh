@@ -7,8 +7,8 @@
 #   $2  test path    e.g. tests/BrowserQA/Admin/
 #
 # Output files (all relative to project root /var/www/html/):
-#   qa/reports/<suite>-YYYY-MM-DD-HHMM.md
-#   qa/reports/<suite>-YYYY-MM-DD-HHMM.html
+#   app/qa/reports/<suite>-YYYY-MM-DD-HHMM.md
+#   app/qa/reports/<suite>-YYYY-MM-DD-HHMM.html
 
 set -uo pipefail
 
@@ -20,7 +20,7 @@ APP="${ROOT}/app"
 STAMP="$(date +%Y-%m-%d-%H%M)"
 BASE="${SUITE}-${STAMP}"
 JUNIT_FILE="${APP}/tests/ci-reports/${BASE}.xml"
-REPORT_DIR="${ROOT}/qa/reports"
+REPORT_DIR="${ROOT}/app/qa/reports"
 
 mkdir -p "${REPORT_DIR}" "${APP}/tests/ci-reports"
 
@@ -29,7 +29,7 @@ echo "========================================"
 echo "  LD Expert Bird - QA Test Suite"
 echo "  Suite  : ${SUITE}"
 echo "  Target : ${TEST_PATH}"
-echo "  Report : qa/reports/${BASE}.md"
+echo "  Report : app/qa/reports/${BASE}.md"
 echo "========================================"
 echo ""
 
@@ -64,8 +64,8 @@ if [[ -f "${JUNIT_FILE}" ]]; then
     --junit "${JUNIT_FILE}" \
     --output "${REPORT_DIR}/${BASE}.html" \
     --md    "${REPORT_DIR}/${BASE}.md" || true
-  echo "      Written: qa/reports/${BASE}.md"
-  echo "      Written: qa/reports/${BASE}.html"
+  echo "      Written: app/qa/reports/${BASE}.md"
+  echo "      Written: app/qa/reports/${BASE}.html"
 else
   echo "      WARNING: JUnit XML not found at ${JUNIT_FILE} — skipping report"
 fi
@@ -73,8 +73,8 @@ fi
 echo ""
 echo "========================================"
 echo "  DONE"
-echo "  qa/reports/${BASE}.md"
-echo "  qa/reports/${BASE}.html"
+echo "  app/qa/reports/${BASE}.md"
+echo "  app/qa/reports/${BASE}.html"
 echo "  Exit code: ${DUSK_EXIT}"
 echo "========================================"
 echo ""
